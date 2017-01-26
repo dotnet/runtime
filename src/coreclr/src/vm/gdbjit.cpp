@@ -1021,8 +1021,10 @@ void ByteTypeInfo::DumpStrings(char* ptr, int& offset)
 void ByteTypeInfo::DumpDebugInfo(char *ptr, int &offset)
 {
     m_typedef_info->DumpDebugInfo(ptr, offset);
-    m_type_offset = m_typedef_info->m_typedef_type_offset;
     PrimitiveTypeInfo::DumpDebugInfo(ptr, offset);
+    // Replace offset from real type to typedef
+    if (ptr != nullptr)
+        m_type_offset = m_typedef_info->m_typedef_type_offset;
 }
 
 void PrimitiveTypeInfo::DumpDebugInfo(char* ptr, int& offset)
