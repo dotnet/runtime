@@ -1992,14 +1992,14 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc)
 
         if (howToPassStruct == SPK_ByValueAsHfa)
         {
-            assert(type = TYP_STRUCT);
+            assert(type == TYP_STRUCT);
             return true;
         }
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
         if (howToPassStruct == SPK_ByValue)
         {
-            assert(type = TYP_STRUCT);
+            assert(type == TYP_STRUCT);
             return true;
         }
 #endif
