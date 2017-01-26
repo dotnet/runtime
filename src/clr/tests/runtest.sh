@@ -592,7 +592,7 @@ function print_info_from_core_file {
 
 function download_dumpling_script {
     echo "Downloading latest version of dumpling script."
-    wget "https://raw.githubusercontent.com/Microsoft/dotnet-reliability/master/src/triage.python/dumpling.py"
+    wget "https://dumpling.azurewebsites.net/api/client/dumpling.py"
 
     local dumpling_script="dumpling.py"
     chmod +x $dumpling_script
@@ -623,8 +623,11 @@ function upload_core_file_to_dumpling {
         paths_to_add=$coreClrBinDir
     fi
 
+    # Ensure the script has Unix line endings
+    perl -pi -e 's/\r\n|\n|\r/\n/g' "$dumpling_script"
+
     # The output from this will include a unique ID for this dump.
-    ./$dumpling_script "--corefile" "$core_file_name" "upload" "--addpaths" $paths_to_add "--squelch" | tee -a $dumpling_file
+    ./$dumpling_script "upload" "--dumppath" "$core_file_name" "--incpaths" $paths_to_add "--properties" "Project=CoreCLR" "--squelch" | tee -a $dumpling_file
 }
 
 function preserve_core_file {
