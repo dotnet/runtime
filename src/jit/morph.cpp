@@ -13518,12 +13518,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             /*     and also  "a = x <op> a" into "a <op>= x" for communative ops */
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !LONG_ASG_OPS
             if (typ == TYP_LONG)
             {
                 break;
             }
-#endif
 
             if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
             {
@@ -13679,25 +13677,9 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                 case GT_LSH:
                 case GT_RSH:
                 case GT_RSZ:
-
-#if LONG_ASG_OPS
-
-                    if (typ == TYP_LONG)
-                        break;
-#endif
-
                 case GT_OR:
                 case GT_XOR:
                 case GT_AND:
-
-#if LONG_ASG_OPS
-
-                    /* TODO: allow non-const long assignment operators */
-
-                    if (typ == TYP_LONG && op2->gtOp.gtOp2->gtOper != GT_CNS_LNG)
-                        break;
-#endif
-
                 ASG_OP:
                 {
                     bool bReverse       = false;
