@@ -382,7 +382,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(12778)]
         public void Timeout_SetTo60AndGetResponseFromServerWhichTakes40_Success()
         {
             // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
@@ -390,7 +389,7 @@ namespace System.Net.Http.Functional.Tests
             
             using (var client = new HttpClient())
             {
-                client.Timeout = TimeSpan.FromSeconds(60);
+                client.Timeout = TimeSpan.FromMinutes(5);
                 var response = client.GetAsync(SlowServer).GetAwaiter().GetResult();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
