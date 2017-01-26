@@ -1859,6 +1859,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     bool               isClosed;
     LIR::ReadOnlyRange secondArgRange = BlockRange().GetTreeRange(arg0, &isClosed);
     assert(isClosed);
+    BlockRange().Remove(std::move(secondArgRange));
 
     argEntry->node->gtOp.gtOp1 = callTarget;
 
