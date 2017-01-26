@@ -268,10 +268,6 @@ public:
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 #endif
-#if FANCY_ARRAY_OPT
-    unsigned char lvAssignOne : 1; // assigned at least  once?
-    unsigned char lvAssignTwo : 1; // assigned at least twice?
-#endif
 
     unsigned char lvSpilled : 1; // enregistered variable was spilled
 #ifndef _TARGET_64BIT_
@@ -708,10 +704,6 @@ public:
     typeInfo lvVerTypeInfo; // type info needed for verification
 
     BYTE* lvGcLayout; // GC layout info for structs
-
-#if FANCY_ARRAY_OPT
-    GenTreePtr lvKnownDim; // array size if known
-#endif
 
 #if ASSERTION_PROP
     BlockSet   lvRefBlks;          // Set of blocks that contain refs
@@ -5937,10 +5929,6 @@ protected:
 
     ssize_t optGetArrayRefScaleAndIndex(GenTreePtr mul, GenTreePtr* pIndex DEBUGARG(bool bRngChk));
     GenTreePtr optFindLocalInit(BasicBlock* block, GenTreePtr local, VARSET_TP* pKilledInOut, bool* isKilledAfterInit);
-
-#if FANCY_ARRAY_OPT
-    bool optIsNoMore(GenTreePtr op1, GenTreePtr op2, int add1 = 0, int add2 = 0);
-#endif
 
     bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
 
