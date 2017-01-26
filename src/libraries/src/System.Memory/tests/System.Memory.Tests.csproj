@@ -24,6 +24,7 @@
     <Compile Include="Span\DangerousGetPinnableReference.cs" />
     <Compile Include="Span\Empty.cs" />
     <Compile Include="Span\Equality.cs" />
+    <Compile Include="Span\GcReporting.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
     <Compile Include="Span\IndexOf.byte.cs" />
     <Compile Include="Span\IndexOf.char.cs" />
