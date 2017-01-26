@@ -379,7 +379,7 @@ if test -z "$PLATFORM_LINUX_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.so
 fi
 
-if test -z "$HOST_WIN32"; then :
+if test -z "$HOST_WIN32_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.dll
 fi
 
