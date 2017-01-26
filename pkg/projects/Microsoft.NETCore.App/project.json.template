@@ -9,7 +9,7 @@
       "exclude": "compile"
     },
     "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-24926-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-24925-08",
+    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-24926-03",
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.10.0-preview1-22036",
     "Microsoft.NETCore.Platforms": "2.0.0-beta-24926-02",
