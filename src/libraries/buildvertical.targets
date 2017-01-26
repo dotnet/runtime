@@ -9,8 +9,7 @@
   <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
 
   <!-- Runs during traversal to select which projects and configurations of those projects to build -->
-  <Target Name="AnnotateAndFilterProjects"
-          BeforeTargets="BuildAllProjects;TestAllProjects">
+  <Target Name="FilterProjects">
 
     <!-- find the best configuration for each project, projects that shouldn't build for this configuration
          return an empty item.  -->
@@ -101,13 +100,13 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="BuildAll">
+  <Target Name="BuildAllConfigurations">
     <ItemGroup>
       <_buildConfigurations Include="$(BuildConfigurations)" />
       <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(BuildConfiguration)" />
     </ItemGroup>
 
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="Configuration=%(_buildConfigurations.Identity)" />
+             Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
   </Target>
 </Project>
