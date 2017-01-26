@@ -27,10 +27,9 @@
     <Message Text="%(PackageIds.Identity)" Importance="High" />
   </Target>
 
-  <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll -->
-  <Import Project="buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true' and Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" />
+  <Import Project="buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true'" />
 
-  <Target Name="BuildAllProjects">
+  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
       <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
     </PropertyGroup>
@@ -78,7 +77,8 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="GetFilesToPackage" DependsOnTargets="FilterProjects"
+  <Target Name="GetFilesToPackage" 
+          DependsOnTargets="FilterProjects" 
           Returns="@(FilesToPackage)">
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
@@ -143,36 +143,6 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
-  <Target Name="GenerateAllTestProjectJsons">
-    <PropertyGroup>
-      <DefaultGenerateAllTestProjectJsonsTarget Condition="'$(DefaultGenerateAllTestProjectJsonsTarget)' == ''">GenerateAllTestProjectJsons</DefaultGenerateAllTestProjectJsonsTarget>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <GeneratedProject Include="@(Project)">
-        <AdditionalProperties>GeneratedTargetGroup=%(Project.TargetGroup);GeneratedOSGroup=%(Project.OSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
-      </GeneratedProject>
-    </ItemGroup>
-
-    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
-         however since the project names are unique it will essentially force each to run in its own batch -->
-    <MSBuild Targets="$(DefaultGenerateAllTestProjectJsonsTarget)"
-             Projects="@(GeneratedProject)"
-             Condition="'$(SerializeProjects)' != 'true'"
-             Properties="GenerateAllTestProjectJsons=$(DefaultGenerateAllTestProjectJsonsTarget)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue" />
-
-    <MSBuild Targets="$(DefaultGenerateAllTestProjectJsonsTarget)"
-             Projects="@(GeneratedProject)"
-             Condition="'$(SerializeProjects)' == 'true' AND '%(Identity)' != ''"
-             Properties="GenerateAllTestProjectJsons=$(DefaultGenerateAllTestProjectJsonsTarget)"
-             ContinueOnError="ErrorAndContinue" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
-  </Target>
-
   <PropertyGroup>
     <TraversalBuildDependsOn>
       BuildAllProjects;
@@ -184,18 +154,8 @@
       $(TraversalCleanDependsOn);
     </TraversalCleanDependsOn>
 
-    <TraversalGenerateTestProjectJsonsDependsOn>
-      GenerateAllTestProjectJsons;
-      $(TraversalGenerateTestProjectJsonsDependsOn)
-    </TraversalGenerateTestProjectJsonsDependsOn>
-
     <TraversalRestorePackagesDependsOn>
       RestoreAllProjectPackages;
-      $(TraversalRestorePackagesDependsOn)
-    </TraversalRestorePackagesDependsOn>
-
-    <TraversalRestorePackagesDependsOn Condition="'$(_BuildAgainstPackages)' == 'true'">
-      $(TraversalGenerateTestProjectJsonsDependsOn);
       $(TraversalRestorePackagesDependsOn)
     </TraversalRestorePackagesDependsOn>
   </PropertyGroup>
@@ -210,8 +170,5 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Test" />
-
-  <!-- Target will be overridden if buildagainstpackages.targets is imported. -->
-  <Target Name="GenerateTestProjectJson" />
  <Import Condition="'$(_BuildAgainstPackages)' == 'true'" Project="$(ToolsDir)/buildagainstpackages.targets" />
 </Project>
