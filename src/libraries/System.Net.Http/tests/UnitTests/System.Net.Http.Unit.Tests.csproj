@@ -27,7 +27,7 @@
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
-      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+      <Link>ProductionCode\Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
