@@ -2326,7 +2326,7 @@ void CodeGen::inst_RV_TT(instruction ins,
 #if CPU_LOAD_STORE_ARCH
     if (ins == INS_mov)
     {
-#if defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_) && CPU_LONG_USES_REGPAIR
         if (tree->TypeGet() != TYP_LONG)
         {
             ins = ins_Move_Extend(tree->TypeGet(), (tree->gtFlags & GTF_REG_VAL) != 0);
@@ -2341,7 +2341,7 @@ void CodeGen::inst_RV_TT(instruction ins,
             ins = ins_Move_Extend(TYP_INT,
                                   (tree->gtFlags & GTF_REG_VAL) != 0 && genRegPairHi(tree->gtRegPair) != REG_STK);
         }
-#elif defined(_TARGET_ARM64_)
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         ins = ins_Move_Extend(tree->TypeGet(), (tree->gtFlags & GTF_REG_VAL) != 0);
 #else
         NYI("CodeGen::inst_RV_TT with INS_mov");
@@ -2485,9 +2485,11 @@ AGAIN:
                 default:
                     regNumber regTmp;
 #ifndef LEGACY_BACKEND
+#if CPU_LONG_USES_REGPAIR
                     if (tree->TypeGet() == TYP_LONG)
                         regTmp = (offs == 0) ? genRegPairLo(tree->gtRegPair) : genRegPairHi(tree->gtRegPair);
                     else
+#endif // CPU_LONG_USES_REGPAIR
                         regTmp = tree->gtRegNum;
 #else  // LEGACY_BACKEND
                     if (varTypeIsFloating(tree))
@@ -2575,6 +2577,7 @@ AGAIN:
             inst_RV_IV(ins, reg, tree->gtIntCon.gtIconVal, emitActualTypeSize(tree->TypeGet()), flags);
             break;
 
+#if CPU_LONG_USES_REGPAIR
         case GT_CNS_LNG:
 
             assert(size == EA_4BYTE || size == EA_8BYTE);
@@ -2609,6 +2612,7 @@ AGAIN:
 
             inst_RV_IV(ins, reg, constVal, size, flags);
             break;
+#endif // CPU_LONG_USES_REGPAIR
 
         case GT_COMMA:
             tree = tree->gtOp.gtOp2;
