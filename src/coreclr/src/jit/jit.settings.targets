@@ -95,6 +95,7 @@
     <ItemGroup Condition="'$(TargetArch)'=='i386'">
         <CppCompile Include="..\emitXArch.cpp" />
         <CppCompile Include="..\TargetX86.cpp" />
+        <CppCompile Include="..\unwindx86.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\stackfp.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\DecomposeLongs.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerXArch.cpp" />
