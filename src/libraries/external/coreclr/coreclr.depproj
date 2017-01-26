@@ -3,6 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputPath>$(RuntimePath)</OutputPath>
+     <!-- WORKAROUND: Force external packages to be restored for x64 until arm packages are fully broughtup-->
+    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'arm'">$(RuntimeOS)-x64</NugetRuntimeIdentifier>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
