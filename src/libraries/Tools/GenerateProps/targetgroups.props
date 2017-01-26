@@ -33,6 +33,7 @@
       <PackageTargetRuntime>aot</PackageTargetRuntime>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
       <Imports>uap101aot</Imports>
+      <CompatibleWith>uap;netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
