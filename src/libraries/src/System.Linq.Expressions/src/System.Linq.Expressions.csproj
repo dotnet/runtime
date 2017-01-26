@@ -164,7 +164,15 @@
     <Compile Include="System\Dynamic\Utils\CachedReflectionInfo.cs" />
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\EmptyReadOnlyCollection.cs" />
-    <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs" />
+    <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>UpdateDelegates.Generated.tt</DependentUpon>
+    </Compile>
+    <Content Include="System\Dynamic\UpdateDelegates.Generated.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>UpdateDelegates.Generated.cs</LastGenOutput>
+    </Content>
     <Compile Include="System\Dynamic\DynamicMetaObjectBinder.cs" />
     <Compile Include="System\Dynamic\DynamicMetaObject.cs" />
     <Compile Include="System\Dynamic\IDynamicMetaObjectProvider.cs" />
@@ -282,6 +290,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
