@@ -5,6 +5,9 @@
     <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.ilproj" Exclude="@(ProjectExclusions)">
+      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
+    </Project>
     <Project Include="$(MSBuildThisFileDirectory)*/src/*.vbproj" Exclude="@(ProjectExclusions)">
       <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
     </Project>
