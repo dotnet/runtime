@@ -7656,5 +7656,174 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     }
 }
 
+regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2)
+{
+    regNumber result = REG_NA;
+
+    // dst can only be a reg
+    assert(!dst->isContained());
+
+    // find immed (if any) - it cannot be a dst
+    // Only one src can be an int.
+    GenTreeIntConCommon* intConst  = nullptr;
+    GenTree*             nonIntReg = nullptr;
+
+    if (varTypeIsFloating(dst))
+    {
+        // src1 can only be a reg
+        assert(!src1->isContained());
+        // src2 can only be a reg
+        assert(!src2->isContained());
+    }
+    else // not floating point
+    {
+        // src2 can be immed or reg
+        assert(!src2->isContained() || src2->isContainedIntOrIImmed());
+
+        // Check src2 first as we can always allow it to be a contained immediate
+        if (src2->isContainedIntOrIImmed())
+        {
+            intConst  = src2->AsIntConCommon();
+            nonIntReg = src1;
+        }
+        // Only for commutative operations do we check src1 and allow it to be a contained immediate
+        else if (dst->OperIsCommutative())
+        {
+            // src1 can be immed or reg
+            assert(!src1->isContained() || src1->isContainedIntOrIImmed());
+
+            // Check src1 and allow it to be a contained immediate
+            if (src1->isContainedIntOrIImmed())
+            {
+                assert(!src2->isContainedIntOrIImmed());
+                intConst  = src1->AsIntConCommon();
+                nonIntReg = src2;
+            }
+        }
+        else
+        {
+            // src1 can only be a reg
+            assert(!src1->isContained());
+        }
+    }
+    bool      isMulOverflow = false;
+    bool      isUnsignedMul = false;
+    regNumber extraReg      = REG_NA;
+    if (dst->gtOverflowEx())
+    {
+        NYI_ARM("emitInsTernary overflow");
+#if 0
+        if (ins == INS_add)
+        {
+            ins = INS_adds;
+        }
+        else if (ins == INS_sub)
+        {
+            ins = INS_subs;
+        }
+        else if (ins == INS_mul)
+        {
+            isMulOverflow = true;
+            isUnsignedMul = ((dst->gtFlags & GTF_UNSIGNED) != 0);
+            assert(intConst == nullptr); // overflow format doesn't support an int constant operand
+        }
+        else
+        {
+            assert(!"Invalid ins for overflow check");
+        }
+#endif
+    }
+    if (intConst != nullptr)
+    {
+        emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, intConst->IconValue());
+    }
+    else
+    {
+        if (isMulOverflow)
+        {
+            NYI_ARM("emitInsTernary overflow");
+#if 0
+            // Make sure that we have an internal register
+            assert(genCountBits(dst->gtRsvdRegs) == 2);
+
+            // There will be two bits set in tmpRegsMask.
+            // Remove the bit for 'dst->gtRegNum' from 'tmpRegsMask'
+            regMaskTP tmpRegsMask = dst->gtRsvdRegs & ~genRegMask(dst->gtRegNum);
+            assert(tmpRegsMask != RBM_NONE);
+            regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask); // set tmpRegMsk to a one-bit mask
+            extraReg             = genRegNumFromMask(tmpRegMask); // set tmpReg from that mask
+
+            if (isUnsignedMul)
+            {
+                if (attr == EA_4BYTE)
+                {
+                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
+                    emitIns_R_R_R(INS_umull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+
+                    // Get the high result by shifting dst.
+                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
+                }
+                else
+                {
+                    assert(attr == EA_8BYTE);
+                    // Compute the high result.
+                    emitIns_R_R_R(INS_umulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+
+                    // Now multiply without skewing the high result.
+                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                }
+
+                // zero-sign bit comparision to detect overflow.
+                emitIns_R_I(INS_cmp, attr, extraReg, 0);
+            }
+            else
+            {
+                int bitShift = 0;
+                if (attr == EA_4BYTE)
+                {
+                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
+                    emitIns_R_R_R(INS_smull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+
+                    // Get the high result by shifting dst.
+                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
+
+                    bitShift = 31;
+                }
+                else
+                {
+                    assert(attr == EA_8BYTE);
+                    // Save the high result in a temporary register.
+                    emitIns_R_R_R(INS_smulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+
+                    // Now multiply without skewing the high result.
+                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+
+                    bitShift = 63;
+                }
+
+                // Sign bit comparision to detect overflow.
+                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, bitShift, INS_OPTS_ASR);
+            }
+#endif
+        }
+        else
+        {
+            // We can just multiply.
+            emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+        }
+    }
+
+    if (dst->gtOverflowEx())
+    {
+        NYI_ARM("emitInsTernary overflow");
+#if 0
+        assert(!varTypeIsFloating(dst));
+        codeGen->genCheckOverflow(dst);
+#endif
+    }
+
+    return dst->gtRegNum;
+}
+
 #endif // !LEGACY_BACKEND
 #endif // defined(_TARGET_ARM_)
