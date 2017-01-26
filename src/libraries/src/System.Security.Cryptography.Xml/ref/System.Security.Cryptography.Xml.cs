@@ -426,12 +426,6 @@ namespace System.Security.Cryptography.Xml
         public void Add(System.Security.Cryptography.Xml.Transform transform) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct X509IssuerSerial
-    {
-        public string IssuerName { get { throw null; } set { } }
-        public string SerialNumber { get { throw null; } set { } }
-    }
     public partial class XmlDecryptionTransform : System.Security.Cryptography.Xml.Transform
     {
         public XmlDecryptionTransform() { }
