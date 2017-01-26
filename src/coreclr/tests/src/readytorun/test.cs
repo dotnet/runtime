@@ -403,3 +403,10 @@ public class ByteChildClass : ByteBaseClass
         ChildByte = 67;
     }
 }
+
+public enum MyEnum
+{
+    Apple = 1,
+    Banana = 2,
+    Orange = 3
+}

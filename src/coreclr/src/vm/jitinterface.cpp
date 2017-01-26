@@ -5180,6 +5180,14 @@ void CEEInfo::getCallInfo(
             {
                 // Pretend this was a "constrained. UnderlyingType" instruction prefix
                 constrainedType = TypeHandle(MscorlibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
+
+                // Native image signature encoder will use this field. It needs to match that pretended type, a bogus signature
+                // would be produced otherwise.
+                pConstrainedResolvedToken->hClass = (CORINFO_CLASS_HANDLE)constrainedType.AsPtr();
+
+                // Clear the token and typespec because of they do not match hClass anymore.
+                pConstrainedResolvedToken->token = mdTokenNil;
+                pConstrainedResolvedToken->pTypeSpec = NULL;
             }
         }
 
