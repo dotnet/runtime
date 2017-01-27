@@ -75,10 +75,9 @@
 #endif
 #endif
 
-#define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
+#define INIT_FRAME(frame,parent_frame,method_args,method_retval,domain,mono_method,error)	\
 	do {	\
 		(frame)->parent = (parent_frame);	\
-		(frame)->obj = (obj_this);	\
 		(frame)->stack_args = (method_args);	\
 		(frame)->retval = (method_retval);	\
 		(frame)->runtime_method = mono_interp_get_runtime_method ((domain), (mono_method), (error));	\
@@ -558,7 +557,7 @@ ves_array_set (MonoInvocation *frame)
 	gpointer ea;
 	MonoType *mt;
 
-	o = frame->obj;
+	o = frame->stack_args->data.p;
 	ao = (MonoArray *)o;
 	ac = o->vtable->klass;
 
@@ -612,7 +611,7 @@ ves_array_get (MonoInvocation *frame)
 	gpointer ea;
 	MonoType *mt;
 
-	o = frame->obj;
+	o = frame->stack_args->data.p;
 	ao = (MonoArray *)o;
 	ac = o->vtable->klass;
 
@@ -655,7 +654,7 @@ ves_array_element_address (MonoInvocation *frame)
 	gint32 i, t, pos, esize;
 	gpointer ea;
 
-	o = frame->obj;
+	o = frame->stack_args->data.p;
 	ao = (MonoArray *)o;
 	ac = o->vtable->klass;
 
@@ -777,7 +776,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	size_t int_i = 0;
 
 	if (sig->hasthis) {
-		margs->iargs [0] = frame->obj;
+		margs->iargs [0] = frame->stack_args->data.p;
 		int_i++;
 	}
 
@@ -929,7 +928,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 {
 	MonoMethod *method = frame->runtime_method->method;
 	const char *name = method->name;
-	MonoObject *obj = (MonoObject*)frame->obj;
+	MonoObject *obj = (MonoObject*) frame->stack_args->data.p;
 	MonoObject *isinst_obj;
 	MonoError error;
 
@@ -939,7 +938,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	if (obj && isinst_obj) {
 		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-			interp_delegate_ctor (context->domain, obj, frame->stack_args[0].data.p, frame->stack_args[1].data.p);
+			interp_delegate_ctor (context->domain, obj, frame->stack_args [1].data.p, frame->stack_args[2].data.p);
 			return;
 		}
 	}
@@ -1035,14 +1034,16 @@ dump_args (MonoInvocation *inv)
 	int i;
 	MonoMethodSignature *signature = mono_method_signature (inv->runtime_method->method);
 	
-	if (signature->param_count == 0)
+	if (signature->param_count == 0 && !signature->hasthis)
 		return g_string_free (str, FALSE);
 
-	if (signature->hasthis)
-		g_string_append_printf (str, "%p ", inv->obj);
+	if (signature->hasthis) {
+		MonoMethod *method = inv->runtime_method->method;
+		dump_stackval (str, inv->stack_args, &method->klass->byval_arg);
+	}
 
 	for (i = 0; i < signature->param_count; ++i)
-		dump_stackval (str, inv->stack_args + i, signature->params [i]);
+		dump_stackval (str, inv->stack_args + (!!signature->hasthis) + i, signature->params [i]);
 
 	return g_string_free (str, FALSE);
 }
@@ -1230,7 +1231,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	int i, type, isobject = 0;
 	void *ret = NULL;
 	stackval result;
-	stackval *args = alloca (sizeof (stackval) * sig->param_count);
+	stackval *args = alloca (sizeof (stackval) * (sig->param_count + !!sig->hasthis));
 	ThreadContext context_struct;
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
@@ -1288,9 +1289,13 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 	}
 
+	if (sig->hasthis)
+		args [0].data.p = obj;
+
 	for (i = 0; i < sig->param_count; ++i) {
+		int a_index = i + !!sig->hasthis;
 		if (sig->params [i]->byref) {
-			args [i].data.p = params [i];
+			args [a_index].data.p = params [i];
 			continue;
 		}
 		type = sig->params [i]->type;
@@ -1299,12 +1304,12 @@ handle_enum:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_BOOLEAN:
-			args [i].data.i = *(MonoBoolean*)params [i];
+			args [a_index].data.i = *(MonoBoolean*)params [i];
 			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
-			args [i].data.i = *(gint16*)params [i];
+			args [a_index].data.i = *(gint16*)params [i];
 			break;
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_U: /* use VAL_POINTER? */
@@ -1312,7 +1317,7 @@ handle_enum:
 #endif
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
-			args [i].data.i = *(gint32*)params [i];
+			args [a_index].data.i = *(gint32*)params [i];
 			break;
 #if SIZEOF_VOID_P == 8
 		case MONO_TYPE_U:
@@ -1320,14 +1325,14 @@ handle_enum:
 #endif
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			args [i].data.l = *(gint64*)params [i];
+			args [a_index].data.l = *(gint64*)params [i];
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
 				goto handle_enum;
 			} else {
-				args [i].data.p = params [i];
+				args [a_index].data.p = params [i];
 			}
 			break;
 		case MONO_TYPE_STRING:
@@ -1335,7 +1340,7 @@ handle_enum:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
-			args [i].data.p = params [i];
+			args [a_index].data.p = params [i];
 			break;
 		default:
 			g_error ("type 0x%x not handled in  runtime invoke", sig->params [i]->type);
@@ -1344,7 +1349,7 @@ handle_enum:
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
-	INIT_FRAME(&frame,context->current_frame,obj,args,&result,mono_get_root_domain (),method,error);
+	INIT_FRAME (&frame,context->current_frame,args,&result,mono_get_root_domain (),method,error);
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
@@ -1792,14 +1797,10 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= csignature->param_count;
-			child_frame.stack_args = sp;
-			if (csignature->hasthis) {
+			if (csignature->hasthis)
 				--sp;
-				child_frame.obj = sp->data.p;
-			} else {
-				child_frame.obj = NULL;
-			}
-			if (csignature->hasthis && mono_object_is_transparent_proxy (child_frame.obj)) {
+			child_frame.stack_args = sp;
+			if (csignature->hasthis && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -1844,13 +1845,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= csignature->param_count;
-			child_frame.stack_args = sp;
-			if (csignature->hasthis) {
+			if (csignature->hasthis)
 				--sp;
-				child_frame.obj = sp->data.p;
-			} else {
-				child_frame.obj = NULL;
-			}
+			child_frame.stack_args = sp;
 			ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
 
 			context->current_frame = frame;
@@ -1885,14 +1882,10 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= child_frame.runtime_method->param_count;
-			child_frame.stack_args = sp;
-			if (child_frame.runtime_method->hasthis) {
+			if (child_frame.runtime_method->hasthis)
 				--sp;
-				child_frame.obj = sp->data.p;
-			} else {
-				child_frame.obj = NULL;
-			}
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (child_frame.obj)) {
+			child_frame.stack_args = sp;
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -1923,15 +1916,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= child_frame.runtime_method->param_count;
-			child_frame.stack_args = sp;
-			if (child_frame.runtime_method->hasthis) {
+			if (child_frame.runtime_method->hasthis)
 				--sp;
-				child_frame.obj = sp->data.p;
-			} else {
-				child_frame.obj = NULL;
-			}
+			child_frame.stack_args = sp;
 
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (child_frame.obj)) {
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -1963,16 +1952,15 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 
 			/* decrement by the actual number of args */
-			sp -= child_frame.runtime_method->param_count;
+			sp -= child_frame.runtime_method->param_count + 1;
 			child_frame.stack_args = sp;
-			--sp;
-			child_frame.obj = this_arg = sp->data.p;
+			this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
 			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
-				child_frame.obj = (char *)this_arg + sizeof(MonoObject);
+				sp->data.p = (char *) this_arg + sizeof (MonoObject);
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
@@ -2009,16 +1997,15 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 
 			/* decrement by the actual number of args */
-			sp -= child_frame.runtime_method->param_count;
+			sp -= child_frame.runtime_method->param_count + 1;
 			child_frame.stack_args = sp;
-			--sp;
-			child_frame.obj = this_arg = sp->data.p;
+			this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
 			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
-				child_frame.obj = (char *)this_arg + sizeof(MonoObject);
+				sp->data.p = (char *) this_arg + sizeof (MonoObject);
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
@@ -2757,7 +2744,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
 			}*/
 				
-
 			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
 				o = ves_array_create (context->domain, newobj_class, csig, sp);
@@ -2770,11 +2756,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (newobj_class->valuetype) {
 				MonoType *t = &newobj_class->byval_arg;
 				if (!newobj_class->enumtype && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
-					child_frame.obj = vt_sp;
+					sp->data.p = vt_sp;
 					valuetype_this.data.p = vt_sp;
 				} else {
 					memset (&valuetype_this, 0, sizeof (stackval));
-					child_frame.obj = &valuetype_this;
+					sp->data.p = &valuetype_this;
 				}
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
@@ -2784,14 +2770,14 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 					context->managed_code = 1;
 					if (*mono_thread_interruption_request_flag ())
 						mono_thread_interruption_checkpoint ();
-					child_frame.obj = o;
+					sp->data.p = o;
 				} else {
 					child_frame.retval = &retval;
 				}
 			}
 
-			if (csig->param_count) {
-				sp -= csig->param_count;
+			if (csig->param_count || csig->hasthis) {
+				sp -= csig->param_count + !!csig->hasthis;
 				child_frame.stack_args = sp;
 			} else {
 				child_frame.stack_args = NULL;
@@ -3806,18 +3792,9 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDTHIS)
-			sp->data.p = frame->obj;
-			++ip;
-			++sp; 
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTHIS)
-			--sp; 
-			frame->obj = sp->data.p;
-			++ip;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDTHISA)
-			sp->data.p = &frame->obj;
+			g_error ("should not happen");
+			// sp->data.p = &frame->obj;
 			++ip;
 			++sp; 
 			MINT_IN_BREAK;

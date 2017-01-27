@@ -51,8 +51,6 @@ OPDEF(MINT_LDARG_O, "ldarg.o", 2, MintOpUShortInt)
 OPDEF(MINT_LDARG_P, "ldarg.p", 2, MintOpUShortInt)
 OPDEF(MINT_LDARG_VT, "ldarg.vt", 4, MintOpShortAndInt)
 
-OPDEF(MINT_LDTHIS, "ldthis", 1, MintOpNoArgs)
-
 OPDEF(MINT_STARG_I1, "starg.i1", 2, MintOpUShortInt)
 OPDEF(MINT_STARG_U1, "starg.u1", 2, MintOpUShortInt)
 OPDEF(MINT_STARG_I2, "starg.i2", 2, MintOpUShortInt)
@@ -64,8 +62,6 @@ OPDEF(MINT_STARG_R8, "starg.r8", 2, MintOpUShortInt)
 OPDEF(MINT_STARG_O, "starg.o", 2, MintOpUShortInt)
 OPDEF(MINT_STARG_P, "starg.p", 2, MintOpUShortInt)
 OPDEF(MINT_STARG_VT, "starg.vt", 4, MintOpShortAndInt)
-
-OPDEF(MINT_STTHIS, "stthis", 1, MintOpNoArgs)
 
 OPDEF(MINT_STINARG_I1, "stinarg.i1", 2, MintOpUShortInt)
 OPDEF(MINT_STINARG_U1, "stinarg.u1", 2, MintOpUShortInt)

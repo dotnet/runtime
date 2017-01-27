@@ -435,36 +435,39 @@ load_arg(TransformData *td, int n)
 {
 	int mt;
 	MonoClass *klass = NULL;
-	if (n == 0 && mono_method_signature (td->method)->hasthis) {
-		if (td->method->klass->valuetype)
+	MonoType *type;
+
+	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	if (hasthis && n == 0)
+		type = &td->method->klass->byval_arg;
+	else
+		type = mono_method_signature (td->method)->params [hasthis ? n - 1 : n];
+
+	mt = mint_type (type);
+	if (mt == MINT_TYPE_VT) {
+		gint32 size;
+		klass = mono_class_from_mono_type (type);
+		if (mono_method_signature (td->method)->pinvoke)
+			size = mono_class_native_size (klass, NULL);
+		else
+			size = mono_class_value_size (klass, NULL);
+
+		if (hasthis && n == 0) {
 			mt = MINT_TYPE_P;
-		else {
-			mt = MINT_TYPE_O;
-			klass = td->method->klass;
-		}
-		ADD_CODE(td, MINT_LDTHIS);
-	} else {
-		MonoType *type;
-		n -= mono_method_signature (td->method)->hasthis;
-		type = mono_method_signature (td->method)->params [n];
-		mt = mint_type (type);
-		if (mt == MINT_TYPE_VT) {
-			gint32 size;
-			klass = mono_class_from_mono_type (type);
-			if (mono_method_signature (td->method)->pinvoke)
-				size = mono_class_native_size (klass, NULL);
-			else
-				size = mono_class_value_size (klass, NULL);
-			PUSH_VT(td, size);
-			ADD_CODE(td, MINT_LDARG_VT);
-			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-			WRITE32(td, &size);		
+			ADD_CODE (td, MINT_LDARG_P);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			klass = NULL;
 		} else {
-			ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
-			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-			if (mt == MINT_TYPE_O)
-				klass = mono_class_from_mono_type (type);
+			PUSH_VT (td, size);
+			ADD_CODE (td, MINT_LDARG_VT);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			WRITE32 (td, &size);
 		}
+	} else {
+		ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
+		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+		if (mt == MINT_TYPE_O)
+			klass = mono_class_from_mono_type (type);
 	}
 	PUSH_TYPE(td, stack_type[mt], klass);
 }
@@ -474,29 +477,30 @@ store_arg(TransformData *td, int n)
 {
 	int mt;
 	CHECK_STACK (td, 1);
-	if (n == 0 && mono_method_signature (td->method)->hasthis)
-		ADD_CODE(td, MINT_STTHIS);
-	else {
-		MonoType *type;
-		n -= mono_method_signature (td->method)->hasthis;
-		type = mono_method_signature (td->method)->params [n];
-		mt = mint_type (type);
-		if (mt == MINT_TYPE_VT) {
-			gint32 size;
-			g_error ("data.klass");
-			if (mono_method_signature (td->method)->pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-			ADD_CODE(td, MINT_STARG_VT);
-			ADD_CODE(td, n);
-			WRITE32(td, &size);
-			if (td->sp [-1].type == STACK_TYPE_VT)
-				POP_VT(td, size);
-		} else {
-			ADD_CODE(td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
-			ADD_CODE(td, td->rtm->arg_offsets [n]);
-		}
+	MonoType *type;
+
+	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	if (hasthis && n == 0)
+		type = &td->method->klass->byval_arg;
+	else
+		type = mono_method_signature (td->method)->params [n - !!hasthis];
+
+	mt = mint_type (type);
+	if (mt == MINT_TYPE_VT) {
+		gint32 size;
+		g_error ("data.klass");
+		if (mono_method_signature (td->method)->pinvoke)
+			size = mono_class_native_size (type->data.klass, NULL);
+		else
+			size = mono_class_value_size (type->data.klass, NULL);
+		ADD_CODE(td, MINT_STARG_VT);
+		ADD_CODE(td, n);
+		WRITE32(td, &size);
+		if (td->sp [-1].type == STACK_TYPE_VT)
+			POP_VT(td, size);
+	} else {
+		ADD_CODE(td, MINT_STARG_I1 + (mt - MINT_TYPE_I1));
+		ADD_CODE(td, td->rtm->arg_offsets [n]);
 	}
 	--td->sp;
 }
@@ -504,9 +508,21 @@ store_arg(TransformData *td, int n)
 static void 
 store_inarg(TransformData *td, int n)
 {
-	MonoClass *klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n]);
-	int mt = mint_type (&klass->byval_arg);
+	MonoType *type;
+	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	if (hasthis && n == 0)
+		type = &td->method->klass->byval_arg;
+	else
+		type = mono_method_signature (td->method)->params [n - !!hasthis];
+
+	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
+		if (hasthis && n == 0) {
+			ADD_CODE (td, MINT_STINARG_P);
+			ADD_CODE (td, n);
+			return;
+		}
+		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
@@ -677,7 +693,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				store_arg (td, i + csignature->hasthis);
 
 			if (csignature->hasthis) {
-				ADD_CODE(td, MINT_STTHIS);
+				g_error ("STTHIS removal");
+				// ADD_CODE(td, MINT_STTHIS);
 				--td->sp;
 			}
 			ADD_CODE(td, MINT_BR_S);
@@ -712,9 +729,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 	}
 	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
-	td->sp -= csignature->param_count + csignature->hasthis;
+	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
-		if (td->sp [i + csignature->hasthis].type == STACK_TYPE_VT) {
+		if (td->sp [i + !!csignature->hasthis].type == STACK_TYPE_VT) {
 			gint32 size;
 			MonoClass *klass = mono_class_from_mono_type (csignature->params [i]);
 			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
@@ -852,8 +869,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		g_free (name);
 	}
 
+	if (signature->hasthis)
+		store_inarg (&td, 0);
 	for (i = 0; i < signature->param_count; i++)
-		store_inarg(&td, i);
+		store_inarg (&td, i + !!signature->hasthis);
 
 	body_start_offset = td.new_ip - td.new_code;
 
@@ -963,8 +982,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			break;
 		case CEE_LDARGA_S: {
 			int n = ((guint8 *)td.ip)[1];
-			if (n == 0 && signature->hasthis) 
+			if (n == 0 && signature->hasthis) {
+				g_error ("LDTHISA: NOPE");
 				ADD_CODE(&td, MINT_LDTHISA);
+			}
 			else {
 				ADD_CODE(&td, MINT_LDARGA);
 				ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]);
@@ -2738,8 +2759,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				break;
 			case CEE_LDARGA: {
 				int n = read16 (td.ip + 1);
-				if (n == 0 && signature->hasthis) 
+				if (n == 0 && signature->hasthis) {
+					g_error ("LDTHISA: NOPE");
 					ADD_CODE(&td, MINT_LDTHISA);
+				}
 				else {
 					ADD_CODE(&td, MINT_LDARGA);
 					ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]); /* FIX for large offsets */
@@ -2985,6 +3008,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		/* assumes all internal calls with an array this are built in... */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature (method)->hasthis || method->klass->rank == 0)) {
 			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
+			signature = mono_method_signature (nm);
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
@@ -3150,7 +3174,17 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	runtime_method->locals_size = offset;
 	g_assert (runtime_method->locals_size < 65536);
 	offset = 0;
-	runtime_method->arg_offsets = g_malloc(signature->param_count * sizeof(guint32));
+	runtime_method->arg_offsets = g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
+
+	if (signature->hasthis) {
+		g_assert (!signature->pinvoke);
+		size = mono_type_stack_size (&method->klass->byval_arg, &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		runtime_method->arg_offsets [0] = offset;
+		offset += size;
+	}
+
 	for (i = 0; i < signature->param_count; ++i) {
 		if (signature->pinvoke) {
 			guint32 dummy;
@@ -3161,7 +3195,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			size = mono_type_stack_size (signature->params [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
-		runtime_method->arg_offsets [i] = offset;
+		runtime_method->arg_offsets [i + !!signature->hasthis] = offset;
 		offset += size;
 	}
 	offset = (offset + 7) & ~7;

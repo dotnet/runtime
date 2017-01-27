@@ -87,7 +87,6 @@ struct _MonoInvocation {
 	RuntimeMethod  *runtime_method; /* parent */
 	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
-	void           *obj;    /* this - parent */
 	char           *args;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
