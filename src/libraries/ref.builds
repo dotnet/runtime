@@ -3,8 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <NETStandardBuildConfiguration Condition="'$(NETStandardBuildConfiguration)' == ''">netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</NETStandardBuildConfiguration>
-    <BuildConfiguration>$(BuildConfiguration);$(NETStandardBuildConfiguration)</BuildConfiguration>
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
   </PropertyGroup>
 
   <ItemGroup>

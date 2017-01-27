@@ -3,6 +3,8 @@
   <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
   <PropertyGroup>
     <ImportedBuildVerticalTargets>true</ImportedBuildVerticalTargets>
+    <_traversalBuildConfigurations>$(BuildConfiguration)</_traversalBuildConfigurations>
+    <_traversalBuildConfigurations Condition="'$(AdditionalBuildConfigurations)' != ''">$(_traversalBuildConfigurations);$(AdditionalBuildConfigurations)</_traversalBuildConfigurations>
   </PropertyGroup>
 
   <!-- Import configuration data model -->
@@ -49,7 +51,7 @@
     <FindBestConfigurations Properties="@(Property)"
                             PropertyValues="@(PropertyValue)"
                             SupportedConfigurations="$(_projectBuildConfigurations)"
-                            Configurations="$(BuildConfiguration)">
+                            Configurations="$(_traversalBuildConfigurations)">
       <Output TaskParameter="BestConfigurations" ItemName="_projectBestConfigurations" />
     </FindBestConfigurations>
 
@@ -71,7 +73,7 @@
           Returns="$(_AllBuildConfigurations)">
      <PropertyGroup>
        <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
-       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_AllBuildConfigurations>
+       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(_traversalBuildConfigurations)</_AllBuildConfigurations>
      </PropertyGroup>
   </Target>
 
@@ -107,7 +109,7 @@
   <Target Name="BuildAllConfigurations">
     <ItemGroup>
       <_buildConfigurations Include="$(BuildConfigurations)" />
-      <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(BuildConfiguration)" />
+      <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(_traversalBuildConfigurations)" />
     </ItemGroup>
 
     <MSBuild Projects="$(MSBuildProjectFullPath)"
