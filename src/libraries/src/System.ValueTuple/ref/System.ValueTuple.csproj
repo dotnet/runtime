@@ -22,6 +22,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">
     <Compile Include="System.ValueTuple.TypeForwards.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Reference Include="netstandard" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
