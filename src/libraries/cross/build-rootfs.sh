@@ -2,9 +2,10 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [LinuxCodeName]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName] [--SkipUnmount]"
     echo "BuildArch can be: arm, armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, jessie(default) or tizen."
+    echo "[--SkipUnmount] - do not unmount rootfs folders."
     exit 1
 }
 
@@ -38,6 +39,7 @@ __UbuntuArch=armhf
 __LinuxCodeName=trusty
 __UbuntuRepo="http://ports.ubuntu.com/"
 __MachineTriple=arm-linux-gnueabihf
+__SkipUnmount=0
 
 __UnprocessedBuildArgs=
 for i in "$@" ; do
@@ -46,6 +48,9 @@ for i in "$@" ; do
         -?|-h|--help)
             usage
             exit 1
+            ;;
+        --skipunmount)
+            __SkipUnmount=1
             ;;
         arm)
             __BuildArch=arm
@@ -119,7 +124,10 @@ if [[ -n "$ROOTFS_DIR" ]]; then
     __RootfsDir=$ROOTFS_DIR
 fi
 
-umount $__RootfsDir/*
+if [ $__SkipUnmount == 0 ]; then
+    umount $__RootfsDir/*
+fi
+
 rm -rf $__RootfsDir
 
 if [[ -n $__LinuxCodeName ]]; then
@@ -129,7 +137,11 @@ if [[ -n $__LinuxCodeName ]]; then
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
     chroot $__RootfsDir symlinks -cr /usr
-    umount $__RootfsDir/*
+
+    if [ $__SkipUnmount == 0 ]; then
+        umount $__RootfsDir/*
+    fi
+
 elif [ "$__Tizen" == "tizen" ]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh
 else

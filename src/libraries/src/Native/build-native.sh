@@ -150,8 +150,8 @@ __UnprocessedBuildArgs=
 __CrossBuild=0
 __ServerGC=0
 __VerboseBuild=false
-__ClangMajorVersion=3
-__ClangMinorVersion=5
+__ClangMajorVersion=0
+__ClangMinorVersion=0
 __StaticLibLink=0
 __PortableLinux=0
 
@@ -302,6 +302,17 @@ case $CPUName in
         fi
         ;;
 esac
+
+# Set the default clang version if not already set
+if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
+    if [ $__CrossBuild == 1 ]; then
+        __ClangMajorVersion=3
+        __ClangMinorVersion=6
+    else
+        __ClangMajorVersion=3
+        __ClangMinorVersion=5
+    fi
+fi
 
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/native"
