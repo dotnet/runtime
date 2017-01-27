@@ -494,8 +494,8 @@ GetTempPathA(
     }
     else /* env var not found or was empty */
     {
-        /* no luck, use /tmp/ */
-        const char *defaultDir = "/tmp/";
+        /* no luck, use /tmp/ or /data/local/tmp on Android */
+        const char *defaultDir = TEMP_DIRECTORY_PATH;
         int defaultDirLen = strlen(defaultDir);
         if (defaultDirLen < nBufferLength)
         {
