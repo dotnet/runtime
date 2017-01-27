@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // to the best applicable method in the group.
     // ----------------------------------------------------------------------------
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         internal class GroupToArgsBinder
         {
