@@ -1609,5 +1609,29 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.Aggregate_TSource_TAccumulate_TResult_4(typeof(TSource), typeof(TAccumulate), typeof(TResult)), source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
         }
+
+        public static IQueryable<TSource> SkipLast<TSource>(this IQueryable<TSource> source, int count)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.SkipLast_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
+                    ));
+        }
+
+        public static IQueryable<TSource> TakeLast<TSource>(this IQueryable<TSource> source, int count)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.TakeLast_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(count)
+                    ));
+        }
     }
 }
