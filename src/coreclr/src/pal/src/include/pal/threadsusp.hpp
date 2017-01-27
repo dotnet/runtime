@@ -55,6 +55,8 @@ Abstract:
 
 #if HAVE_SYS_SEMAPHORE_H
 #include <sys/semaphore.h>
+#elif HAVE_SEMAPHORE_H
+#include <semaphore.h>
 #endif // HAVE_SYS_SEMAPHORE_H
 
 #elif HAS_PTHREAD_MUTEXES && HAVE_MACH_EXCEPTIONS
