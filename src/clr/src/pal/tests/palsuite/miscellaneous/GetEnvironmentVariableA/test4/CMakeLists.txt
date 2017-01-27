@@ -13,7 +13,5 @@ add_executable(paltest_getenvironmentvariablea_test4
 add_dependencies(paltest_getenvironmentvariablea_test4 coreclrpal)
 
 target_link_libraries(paltest_getenvironmentvariablea_test4
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

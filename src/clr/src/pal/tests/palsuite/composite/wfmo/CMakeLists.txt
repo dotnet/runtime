@@ -14,8 +14,6 @@ add_executable(paltest_composite_wfmo
 add_dependencies(paltest_composite_wfmo coreclrpal)
 
 target_link_libraries(paltest_composite_wfmo
-  pthread
+  ${COMMON_TEST_LIBRARIES}
   rt
-  m
-  coreclrpal
 )

@@ -13,7 +13,5 @@ add_executable(paltest_tls_test6_optimizedtls
 add_dependencies(paltest_tls_test6_optimizedtls coreclrpal)
 
 target_link_libraries(paltest_tls_test6_optimizedtls
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

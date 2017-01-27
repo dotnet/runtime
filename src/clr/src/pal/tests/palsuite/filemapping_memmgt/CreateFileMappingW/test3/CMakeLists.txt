@@ -13,7 +13,5 @@ add_executable(paltest_createfilemappingw_test3
 add_dependencies(paltest_createfilemappingw_test3 coreclrpal)
 
 target_link_libraries(paltest_createfilemappingw_test3
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

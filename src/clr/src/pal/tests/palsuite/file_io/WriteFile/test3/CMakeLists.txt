@@ -13,7 +13,5 @@ add_executable(paltest_writefile_test3
 add_dependencies(paltest_writefile_test3 coreclrpal)
 
 target_link_libraries(paltest_writefile_test3
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

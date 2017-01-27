@@ -43,7 +43,7 @@ add_dependencies(paltest_pal_sxs_test1_dll1
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll1
-    pthread
+    ${COMMON_TEST_LIBRARIES}
     m
     coreclrpal
 )
@@ -71,13 +71,10 @@ set_property(TARGET paltest_pal_sxs_test1_dll2 APPEND_STRING PROPERTY LINK_DEPEN
 
 add_dependencies(paltest_pal_sxs_test1_dll2
    dlltest2_exports
-   coreclrpal
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll2
-   pthread
-   m
-   coreclrpal
+   ${COMMON_TEST_LIBRARIES}
 )
 
 # Main program

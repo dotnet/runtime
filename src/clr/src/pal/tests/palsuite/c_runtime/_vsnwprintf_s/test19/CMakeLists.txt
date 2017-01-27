@@ -13,7 +13,5 @@ add_executable(paltest_vsnwprintf_test19
 add_dependencies(paltest_vsnwprintf_test19 coreclrpal)
 
 target_link_libraries(paltest_vsnwprintf_test19
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
