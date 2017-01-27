@@ -2866,6 +2866,11 @@ array_constructed:
 			if (!(isinst_obj || ((o->vtable->klass->rank == 0) && (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+				int size = mono_class_native_size (c, NULL);
+				sp [-1].data.p = vt_sp;
+				vt_sp += (size + 7) & ~7;
+			}
 			stackval_from_data (&c->byval_arg, &sp [-1], mono_object_unbox (o), FALSE);
 			ip += 2;
 			MINT_IN_BREAK;
