@@ -2296,11 +2296,18 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
     // case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT)
+    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
     {
-        gcPtrs[0] = TYPE_GC_BYREF;
-        gcPtrs[1] = TYPE_GC_NONE;
-        return 1;
+        if (gcPtrs[0] == TYPE_GC_NONE)
+        {
+            gcPtrs[0] = TYPE_GC_BYREF;
+            result++;
+        }
+        else if (gcPtrs[0] != TYPE_GC_BYREF)
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        return result;
     }
 
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
@@ -2326,22 +2333,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
         else
         {
             MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            if (pFieldMT->HasSameTypeDefAs(g_pByReferenceClass))
-            {
-                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
-                {
-                    gcPtrs[fieldStartIndex] = TYPE_GC_BYREF;
-                    result++;
-                }
-                else if (gcPtrs[fieldStartIndex] != TYPE_GC_BYREF)
-                {
-                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-                }
-            }
-            else
-            {
-                result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
-            }
+            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
         }
     }
     return result;
