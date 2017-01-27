@@ -848,6 +848,52 @@ mono_debug_free_locals (MonoDebugLocalsInfo *info)
 	g_free (info);
 }
 
+/*
+* mono_debug_lookup_method_async_debug_info:
+*
+*   Return information about the async stepping information of method.
+* The result should be freed using mono_debug_free_async_debug_info ().
+*/
+MonoDebugMethodAsyncInfo*
+mono_debug_lookup_method_async_debug_info (MonoMethod *method)
+{
+	MonoDebugMethodInfo *minfo;
+	MonoDebugMethodAsyncInfo *res = NULL;
+
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return NULL;
+
+	mono_debugger_lock ();
+	minfo = mono_debug_lookup_method_internal (method);
+	if (!minfo || !minfo->handle) {
+		mono_debugger_unlock ();
+		return NULL;
+	}
+
+	if (minfo->handle->ppdb)
+		res = mono_ppdb_lookup_method_async_debug_info (minfo);
+
+	mono_debugger_unlock ();
+
+	return res;
+}
+
+/*
+ * mono_debug_free_method_async_debug_info:
+ *
+ *   Free all the data allocated by mono_debug_lookup_method_async_debug_info ().
+ */
+void
+mono_debug_free_method_async_debug_info (MonoDebugMethodAsyncInfo *info)
+{
+	if (info->num_awaits) {
+		g_free (info->yield_offsets);
+		g_free (info->resume_offsets);
+		g_free (info->move_next_method_token);
+	}
+	g_free (info);
+}
+
 /**
  * mono_debug_free_source_location:
  * @location: A `MonoDebugSourceLocation'.

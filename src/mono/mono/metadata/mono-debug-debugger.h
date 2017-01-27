@@ -20,4 +20,7 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 MONO_API void
 mono_debug_free_locals (MonoDebugLocalsInfo *info);
 
+void
+mono_debug_free_method_async_debug_info (MonoDebugMethodAsyncInfo *info);
+
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */

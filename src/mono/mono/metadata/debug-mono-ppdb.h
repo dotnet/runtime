@@ -35,4 +35,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 MonoDebugLocalsInfo*
 mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo);
 
+MonoDebugMethodAsyncInfo*
+mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo);
+
 #endif

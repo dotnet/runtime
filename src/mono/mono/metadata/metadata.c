@@ -109,7 +109,10 @@ enum {
 	MONO_MT_HS_IDX,
 
 	/* ResolutionScope coded index: Module, ModuleRef, AssemblytRef, TypeRef */
-	MONO_MT_RS_IDX
+	MONO_MT_RS_IDX,
+
+	/* CustomDebugInformation parent encoded index */
+	MONO_MT_HASCUSTDEBUG_IDX
 };
 
 const static unsigned char TableSchemas [] = {
@@ -397,7 +400,28 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_STRING_IDX,  /* Name */
 	MONO_MT_END,
 
-#define NULL_SCHEMA_OFFSET LOCALVARIABLE_SCHEMA_OFFSET + 4
+#define LOCALCONSTANT_SCHEMA_OFFSET LOCALVARIABLE_SCHEMA_OFFSET + 4
+	MONO_MT_STRING_IDX,  /* Name (String heap index) */
+	MONO_MT_BLOB_IDX,    /* Signature (Blob heap index, LocalConstantSig blob) */
+	MONO_MT_END,
+
+#define IMPORTSCOPE_SCHEMA_OFFSET LOCALCONSTANT_SCHEMA_OFFSET + 3
+	MONO_MT_TABLE_IDX, /* Parent (ImportScope row id or nil) */
+	MONO_MT_BLOB_IDX,  /* Imports (Blob index, encoding: Imports blob) */
+	MONO_MT_END,
+
+#define ASYNCMETHOD_SCHEMA_OFFSET IMPORTSCOPE_SCHEMA_OFFSET + 3
+	MONO_MT_TABLE_IDX, /* MoveNextMethod (MethodDef row id) */
+	MONO_MT_TABLE_IDX, /* KickoffMethod (MethodDef row id) */
+	MONO_MT_END,
+
+#define CUSTOMDEBUGINFORMATION_SCHEMA_OFFSET ASYNCMETHOD_SCHEMA_OFFSET + 3
+	MONO_MT_HASCUSTDEBUG_IDX, /* Parent (HasCustomDebugInformation coded index) */
+	MONO_MT_GUID_IDX,  /* Kind (Guid heap index) */
+	MONO_MT_BLOB_IDX,  /* Value (Blob heap index) */
+	MONO_MT_END,
+
+#define NULL_SCHEMA_OFFSET CUSTOMDEBUGINFORMATION_SCHEMA_OFFSET + 4
 	MONO_MT_END
 };
 
@@ -455,7 +479,11 @@ table_description [] = {
 	DOCUMENT_SCHEMA_OFFSET, /* 0x30 */
 	METHODBODY_SCHEMA_OFFSET,
 	LOCALSCOPE_SCHEMA_OFFSET,
-	LOCALVARIABLE_SCHEMA_OFFSET
+	LOCALVARIABLE_SCHEMA_OFFSET,
+	LOCALCONSTANT_SCHEMA_OFFSET,
+	IMPORTSCOPE_SCHEMA_OFFSET,
+	ASYNCMETHOD_SCHEMA_OFFSET,
+	CUSTOMDEBUGINFORMATION_SCHEMA_OFFSET
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -673,8 +701,13 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				break;
 			case MONO_TABLE_METHODBODY:
 				g_assert (i == 0);
-				field_size = idx_size (meta, MONO_TABLE_DOCUMENT);
-				break;
+				field_size = idx_size (meta, MONO_TABLE_DOCUMENT); break;
+			case MONO_TABLE_IMPORTSCOPE:
+				g_assert(i == 0);
+				field_size = idx_size (meta, MONO_TABLE_IMPORTSCOPE); break;
+			case MONO_TABLE_STATEMACHINEMETHOD:
+				g_assert(i == 0 || i == 1);
+				field_size = idx_size(meta, MONO_TABLE_METHOD); break;
 			default:
 				g_error ("Can't handle MONO_MT_TABLE_IDX for table %d element %d", tableindex, i);
 			}
@@ -727,9 +760,50 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_FILE].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_EXPORTEDTYPE].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MANIFESTRESOURCE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_GENERICPARAM].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_GENERICPARAMCONSTRAINT].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_METHODSPEC].rows);
 
 			/* 5 bits to encode */
 			field_size = rtsize (meta, n, 16-5);
+			break;
+
+			/*
+			* HasCustomAttribute: points to any table but
+			* itself.
+			*/
+
+		case MONO_MT_HASCUSTDEBUG_IDX:
+			n = MAX(meta->tables[MONO_TABLE_METHOD].rows,
+				meta->tables[MONO_TABLE_FIELD].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_TYPEREF].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_TYPEDEF].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_PARAM].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_INTERFACEIMPL].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_MEMBERREF].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_MODULE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_DECLSECURITY].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_PROPERTY].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_EVENT].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_STANDALONESIG].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_MODULEREF].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_TYPESPEC].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_ASSEMBLY].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_ASSEMBLYREF].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_FILE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_EXPORTEDTYPE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_MANIFESTRESOURCE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_GENERICPARAM].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_GENERICPARAMCONSTRAINT].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_METHODSPEC].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_DOCUMENT].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_LOCALSCOPE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_LOCALVARIABLE].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_LOCALCONSTANT].rows);
+			n = MAX(n, meta->tables[MONO_TABLE_IMPORTSCOPE].rows);
+
+			/* 5 bits to encode */
+			field_size = rtsize(meta, n, 16 - 5);
 			break;
 
 			/*
@@ -1125,7 +1199,7 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
  * @rptr: the new position of the pointer
  *
  * This routine decompresses 32-bit values as specified in the "Blob and
- * Signature" section (22.2)
+ * Signature" section (23.2)
  *
  * Returns: the decoded value
  */

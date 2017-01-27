@@ -30,6 +30,7 @@ typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
 typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct _MonoDebugLocalsInfo		MonoDebugLocalsInfo;
+typedef struct _MonoDebugMethodAsyncInfo	MonoDebugMethodAsyncInfo;
 typedef struct _MonoDebugSourceLocation		MonoDebugSourceLocation;
 
 typedef struct _MonoDebugList			MonoDebugList;
@@ -185,6 +186,9 @@ mono_debug_add_delegate_trampoline (void* code, int size);
 
 MONO_API MonoDebugLocalsInfo*
 mono_debug_lookup_locals (MonoMethod *method);
+
+MonoDebugMethodAsyncInfo*
+mono_debug_lookup_method_async_debug_info (MonoMethod *method);
 
 MonoDebugSourceLocation *
 mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset);
