@@ -4,6 +4,12 @@ project(PALTESTSUITE)
 
 include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
 
+# All test will link against these libraries:
+set(COMMON_TEST_LIBRARIES
+    pthread
+    m
+    coreclrpal)
+
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 add_compile_options(-Wno-int-to-void-pointer-cast)
 

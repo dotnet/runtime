@@ -14,8 +14,6 @@ add_executable(paltest_event_shared
 add_dependencies(paltest_event_shared coreclrpal)
 
 target_link_libraries(paltest_event_shared
-  pthread
+  ${COMMON_TEST_LIBRARIES}
   rt
-  m
-  coreclrpal
 )

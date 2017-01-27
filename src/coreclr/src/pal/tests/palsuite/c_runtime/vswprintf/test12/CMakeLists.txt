@@ -13,7 +13,5 @@ add_executable(paltest_vswprintf_test12
 add_dependencies(paltest_vswprintf_test12 coreclrpal)
 
 target_link_libraries(paltest_vswprintf_test12
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
