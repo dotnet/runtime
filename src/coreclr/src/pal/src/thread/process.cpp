@@ -1453,7 +1453,7 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #define HashSemaphoreName(a,b) a,b
 #endif
 
-static const char* PipeNameFormat = "/tmp/clr-debug-pipe-%d-%llu-%s";
+static const char* PipeNameFormat = TEMP_DIRECTORY_PATH "clr-debug-pipe-%d-%llu-%s";
 
 class PAL_RuntimeStartupHelper
 {
