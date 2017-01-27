@@ -22,15 +22,15 @@ namespace System.Linq.Tests
                 typeof(Enumerable),
                 typeof(Queryable),
                  new[] {
-                     "ToLookup",
-                     "ToDictionary",
-                     "ToArray",
-                     "AsEnumerable",
-                     "ToList",
+                     nameof(Enumerable.ToLookup),
+                     nameof(Enumerable.ToDictionary),
+                     nameof(Enumerable.ToArray),
+                     nameof(Enumerable.AsEnumerable),
+                     nameof(Enumerable.ToList),
                      "Fold",
                      "LeftJoin",
-                     "Append",
-                     "Prepend",
+                     nameof(Enumerable.Append),
+                     nameof(Enumerable.Prepend),
                      "ToHashSet"
                  }
                 );
@@ -41,7 +41,7 @@ namespace System.Linq.Tests
                 typeof(Queryable),
                 typeof(Enumerable),
                  new[] {
-                     "AsQueryable"
+                     nameof(Queryable.AsQueryable)
                  }
                 );
 

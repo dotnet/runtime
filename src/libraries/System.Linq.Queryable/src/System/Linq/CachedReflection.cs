@@ -837,5 +837,19 @@ namespace System.Linq
              (s_Zip_TFirst_TSecond_TResult_3 = new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TFirst, TSecond, TResult);
 
+
+        private static MethodInfo s_SkipLast_TSource_2;
+
+        public static MethodInfo SkipLast_TSource_2(Type TSource) =>
+             (s_SkipLast_TSource_2 ??
+             (s_SkipLast_TSource_2 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.SkipLast).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
+        private static MethodInfo s_TakeLast_TSource_2;
+
+        public static MethodInfo TakeLast_TSource_2(Type TSource) =>
+             (s_TakeLast_TSource_2 ??
+             (s_TakeLast_TSource_2 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.TakeLast).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
     }
 }

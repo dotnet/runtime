@@ -45,9 +45,11 @@
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
+    <Compile Include="SkipLastTests.cs" />
     <Compile Include="SkipTests.cs" />
     <Compile Include="SkipWhileTests.cs" />
     <Compile Include="SumTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
@@ -55,6 +57,9 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Linq\SkipTakeData.cs">
+      <Link>Common\System\Linq\SkipTakeData.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
