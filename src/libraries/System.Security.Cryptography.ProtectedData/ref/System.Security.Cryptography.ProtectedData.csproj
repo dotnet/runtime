@@ -4,8 +4,5 @@
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.ProtectedData.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

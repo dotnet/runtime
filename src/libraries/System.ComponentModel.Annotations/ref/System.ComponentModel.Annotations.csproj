@@ -4,9 +4,5 @@
   <ItemGroup>
     <Compile Include="System.ComponentModel.Annotations.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
