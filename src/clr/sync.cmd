@@ -7,6 +7,7 @@ if /I [%1] == [-help] goto Usage
 @if [%1]==[] set __args=-p
 
  @call %~dp0run.cmd sync %__args% %*
+ @call %~dp0run.cmd sync -PublishTestNativeBins %__args% %*
 @exit /b %ERRORLEVEL%
 
 :Usage
@@ -26,12 +27,6 @@ echo                 -BuildMajor
 echo                 -BuildMinor
 echo              To download from a specific container, specify:
 echo                 -Container="container name"
-echo     -n     - Downloads test native binaries for the specified OS
-echo              The following properties are required:
-echo                 -AzureAccount="Account name"
-echo                 -AzureToken="Access token"
-echo                 -Container="container name (with RID suffix)"
-echo.
 echo.
 echo.
 echo If no option is specified then sync.cmd -p is implied.
