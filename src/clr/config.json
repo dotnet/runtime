@@ -441,13 +441,6 @@
             "Project": "./src/syncAzure.proj"
           }
         },
-        "n": {
-          "description": "Downloads test native binaries. The values for '-AzureAccount', '-AzureToken', and '-Container' are required",
-          "settings": {
-            "Project": "./src/syncAzure.proj",
-            "PublishTestNativeBins": "true"
-          }
-        },
         "azureToken": {
           "description": "Account token to connect to Azure Blob storage.",
           "settings": {
@@ -482,6 +475,12 @@
           "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
           "settings": {
             "BuildNumberMinor": "default"
+          }
+        },
+        "PublishTestNativeBins": {
+          "description": "Downloads Published test native binaries.",
+          "settings": {
+            "PublishTestNativeBins": "default"
           }
         }
       },
