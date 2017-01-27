@@ -2035,15 +2035,23 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 			g_assert (klass->valuetype);
-			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->enumtype) {
-				size = mono_class_value_size (klass, NULL);
-				size = (size + 7) & ~7;
-				td.vt_sp -= size;
+
+			if (mono_class_is_nullable (klass)) {
+				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
+				/* td.ip is incremented by interp_transform_call */
+				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
+			} else {
+				if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->enumtype) {
+					size = mono_class_value_size (klass, NULL);
+					size = (size + 7) & ~7;
+					td.vt_sp -= size;
+				}
+				ADD_CODE(&td, MINT_BOX);
+				ADD_CODE(&td, get_data_item_index (&td, klass));
+				SET_TYPE(td.sp - 1, STACK_TYPE_O, klass);
+				td.ip += 5;
 			}
-			ADD_CODE(&td, MINT_BOX);
-			ADD_CODE(&td, get_data_item_index (&td, klass));
-			SET_TYPE(td.sp - 1, STACK_TYPE_O, klass);
-			td.ip += 5;
+
 			break;
 		}
 		case CEE_NEWARR:
