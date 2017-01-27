@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
     <AssemblyName>System.Memory</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
