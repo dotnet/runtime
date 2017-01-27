@@ -170,29 +170,6 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
-bool pal::get_local_shared_package_dir(pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t dir;
-    if (!pal::getenv("HOME", &dir))
-    {
-        struct passwd* pw = getpwuid(getuid());
-        if (pw && pw->pw_dir)
-        {
-            dir.assign(pw->pw_dir);
-        }
-    }
-    if (dir.empty())
-    {
-        return false;
-    }
-    append_path(&dir, _X(".dotnet"));
-    append_path(&dir, get_arch());
-    append_path(&dir, _X("packages"));
-    recv->assign(dir);
-    return true;
-}
-
 static
 bool is_executable(const pal::string_t& file_path)
 {
@@ -235,7 +212,29 @@ bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
     return false;
 }
 
-bool pal::get_global_shared_package_dir(pal::string_t* recv)
+bool pal::get_local_dotnet_dir(pal::string_t* recv)
+{
+    recv->clear();
+    pal::string_t dir;
+    if (!pal::getenv("HOME", &dir))
+    {
+        struct passwd* pw = getpwuid(getuid());
+        if (pw && pw->pw_dir)
+        {
+            dir.assign(pw->pw_dir);
+        }
+    }
+    if (dir.empty())
+    {
+        return false;
+    }
+    append_path(&dir, _X(".dotnet"));
+    append_path(&dir, get_arch());
+    recv->assign(dir);
+    return true;
+}
+
+ bool pal::get_global_dotnet_dir(pal::string_t* recv)
 {
     recv->clear();
     pal::string_t dotnet_exe;
@@ -244,7 +243,6 @@ bool pal::get_global_shared_package_dir(pal::string_t* recv)
         return false;
     }
     pal::string_t dir = get_directory(dotnet_exe);
-    append_path(&dir, _X("packages"));
     recv->assign(dir);
     return true;
 }
