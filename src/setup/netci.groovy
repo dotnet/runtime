@@ -25,7 +25,7 @@ platformList.each { platform ->
     def buildCommand = '';
     def osForGHTrigger = os
 
-    // Calculate build command
+    // Calculate the build command
     if (os == 'Windows_NT') {
         if (architecture == 'arm') {
             buildCommand = ".\\build.cmd -Configuration ${configuration} -TargetArch ${architecture} -Targets Default"
