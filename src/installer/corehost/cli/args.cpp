@@ -12,7 +12,6 @@ arguments_t::arguments_t() :
     app_dir(_X("")),
     app_argc(0),
     app_argv(nullptr),
-    dotnet_packages_cache(_X("")),
     core_servicing(_X("")),
     deps_path(_X(""))
 {
@@ -136,7 +135,6 @@ bool parse_arguments(
         args.deps_path.append(_X(".deps.json"));
     }
 
-    pal::getenv(_X("DOTNET_HOSTING_OPTIMIZATION_CACHE"), &args.dotnet_packages_cache);
     pal::get_default_servicing_directory(&args.core_servicing);
 
     setup_shared_package_paths(init, own_dir, &args);

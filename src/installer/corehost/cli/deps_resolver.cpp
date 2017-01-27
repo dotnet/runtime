@@ -184,20 +184,6 @@ void deps_resolver_t::setup_probe_config(
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
     }
 
-    if (pal::directory_exists(args.dotnet_packages_cache))
-    {
-        pal::string_t ni_packages_cache = args.dotnet_packages_cache;
-        append_path(&ni_packages_cache, get_arch());
-        if (pal::directory_exists(ni_packages_cache))
-        {
-            // Packages cache NI probe
-            m_probes.push_back(probe_config_t::cache_ni(ni_packages_cache));
-        }
-
-        // Packages cache probe
-        m_probes.push_back(probe_config_t::cache(args.dotnet_packages_cache));
-    }
-
     if (pal::directory_exists(m_fx_dir))
     {
         // FX probe
