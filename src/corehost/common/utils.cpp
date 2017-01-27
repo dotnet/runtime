@@ -274,3 +274,24 @@ bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::st
     }
     return true;
 }
+
+bool get_global_shared_package_dir(pal::string_t* dir)
+{
+    if (!pal::get_global_dotnet_dir(dir))
+    {
+        return false;
+    }
+    append_path(dir, _X("packages"));
+    return true;
+}
+
+bool get_local_shared_package_dir(pal::string_t* dir)
+{
+    if (!pal::get_local_dotnet_dir(dir))
+    {
+        return false;
+    }
+
+    append_path(dir, _X("packages"));
+    return true;
+}

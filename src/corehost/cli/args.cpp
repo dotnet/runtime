@@ -42,7 +42,7 @@ void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string
 
     // User profile based packages
     pal::string_t local_shared_packages;
-    if (pal::get_local_shared_package_dir(&local_shared_packages))
+    if (get_local_shared_package_dir(&local_shared_packages))
     {
         append_path(&local_shared_packages, init.tfm.c_str());
         args->local_shared_packages = local_shared_packages;
@@ -57,7 +57,7 @@ void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string
     }
 
     // Global shared package dir
-    if (pal::get_global_shared_package_dir(&args->global_shared_packages))
+    if (get_global_shared_package_dir(&args->global_shared_packages))
     {
         append_path(&args->global_shared_packages, init.tfm.c_str());
     }
