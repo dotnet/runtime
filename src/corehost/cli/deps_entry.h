@@ -46,9 +46,6 @@ struct deps_entry_t
     // Given a "base" dir, yield the relative path with package name, version in the package layout.
     bool to_full_path(const pal::string_t& root, pal::string_t* str) const;
 
-    // Given a "base" dir, yield the relative path with package name, version in the package layout only if
-    // the hash matches contents of the hash file.
-    bool to_hash_matched_path(const pal::string_t& root, pal::string_t* str) const;
 };
 
 #endif // __DEPS_ENTRY_H_
