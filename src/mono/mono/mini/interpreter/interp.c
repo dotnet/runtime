@@ -973,7 +973,7 @@ dump_stack (stackval *stack, stackval *sp)
 		return g_string_free (str, FALSE);
 	
 	while (s < sp) {
-		g_string_append_printf (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
+		g_string_append_printf (str, "[%p (%lld)] ", s->data.l, s->data.l);
 		++s;
 	}
 	return g_string_free (str, FALSE);
@@ -2758,7 +2758,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			 * First arg is the object.
 			 */
 			if (newobj_class->valuetype) {
-				if (!newobj_class->enumtype && (newobj_class->byval_arg.type == MONO_TYPE_VALUETYPE)) {
+				MonoType *t = &newobj_class->byval_arg;
+				if (!newobj_class->enumtype && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
 					child_frame.obj = vt_sp;
 					valuetype_this.data.p = vt_sp;
 				} else {
