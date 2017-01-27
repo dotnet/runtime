@@ -388,6 +388,14 @@
       "value": "false",
       "allowOverride": true
     },
+    "PB_ConfigurationGroup": {
+      "value": "Debug",
+      "allowOverride": true
+    },
+    "PB_Platform": {
+      "value": "x64",
+      "allowOverride": true
+    },
     "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },

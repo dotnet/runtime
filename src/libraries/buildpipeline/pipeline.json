@@ -186,11 +186,14 @@
       "Parameters": {
         "TreatWarningsAsErrors": "false"
       },
-      "BuildParameters": {},
+      "BuildParameters": {
+        "PB_ConfigurationGroup": "Release"
+      },
       "Definitions": [
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "arm",
             "PB_BuildArguments": "-buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
@@ -206,6 +209,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "arm64",
             "PB_BuildArguments": "-buildArch=arm64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10",
@@ -221,6 +225,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "x64",
             "PB_BuildArguments": "-buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
@@ -236,6 +241,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "x86",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
@@ -431,11 +437,14 @@
       "Parameters": {
         "TreatWarningsAsErrors": "false"
       },
-      "BuildParameters": {},
+      "BuildParameters": {
+        "PB_ConfigurationGroup": "Debug"
+      },
       "Definitions": [
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "arm",
             "PB_BuildArguments": "-buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
@@ -451,6 +460,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "arm64",
             "PB_BuildArguments": "-buildArch=arm64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=arm64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:RuntimeOS=win10",
@@ -466,6 +476,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "x64",
             "PB_BuildArguments": "-buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
@@ -481,6 +492,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
+            "PB_Platform": "x86",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
