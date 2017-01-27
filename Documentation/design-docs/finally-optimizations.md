@@ -18,8 +18,8 @@ which is almost like a regular function with a prolog and epilog. A
 custom calling convention gives the funclet access to the parent stack
 frame.
 
-In this proposal we outline two optimizations for finallys: removing
-empty finallys and finally cloning.
+In this proposal we outline three optimizations for finallys: removing
+empty trys, removing empty finallys and finally cloning.
 
 Empty Finally Removal
 ---------------------
@@ -174,6 +174,42 @@ G_M60484_IG06:
 
 Empty finally removal is unconditionally profitable: it should always
 reduce code size and improve code speed.
+
+Empty Try Removal
+---------------------
+
+If the try region of a try-finally is empty, and the jitted code will
+execute on a runtime that does not protect finally execution from
+thread abort, then the try-finally can be replaced with just the
+content of the finally.
+
+Empty trys with non-empty finallys often exist in code that must run
+under both thread-abort aware and non-thread-abort aware runtimes. In
+the former case the placement of cleanup code in the finally ensures
+that the cleanup code will execute fully. But if thread abort is not
+possible, the extra protection offered by the finally is not needed.
+
+Empty try removal looks for try-finallys where the try region does
+nothing except invoke the finally. There are currently two different
+EH implementation models, so the try screening has two cases:
+
+* callfinally thunks (x64/arm64): the try must be a single empty
+basic block that always jumps to a callfinally that is the first
+half of a callfinally/always pair;
+* non-callfinally thunks (x86/arm32): the try must be a
+callfinally/always pair where the first block is an empty callfinally.
+
+The screening then verifies that the callfinally identified above is
+the only callfinally for the try. No other callfinallys are expected
+because this try cannot have multiple leaves and its handler cannot be
+reached by nested exit paths.
+
+When the empty try is identified, the jit modifies the
+callfinally/always pair to branch to the handler, modifies the
+handler's return to branch directly to the continuation (the
+branch target of the second half of the callfinally/always pair),
+updates various status flags on the blocks, and then removes the
+try-finally region.
 
 Finally Cloning
 ---------------

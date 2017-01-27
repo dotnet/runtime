@@ -16917,6 +16917,10 @@ void Compiler::fgMorph()
 
 // RemoveEmptyFinally is disabled on ARM due to github issue #9013
 #ifndef _TARGET_ARM_
+    fgRemoveEmptyTry();
+
+    EndPhase(PHASE_EMPTY_TRY);
+
     fgRemoveEmptyFinally();
 
     EndPhase(PHASE_EMPTY_FINALLY);
