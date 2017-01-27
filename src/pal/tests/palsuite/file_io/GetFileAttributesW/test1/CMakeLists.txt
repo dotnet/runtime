@@ -13,9 +13,7 @@ add_executable(paltest_getfileattributesw_test1
 add_dependencies(paltest_getfileattributesw_test1 coreclrpal)
 
 target_link_libraries(paltest_getfileattributesw_test1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 add_subdirectory(.hidden_directory)
 add_subdirectory(.hidden_ro_directory)

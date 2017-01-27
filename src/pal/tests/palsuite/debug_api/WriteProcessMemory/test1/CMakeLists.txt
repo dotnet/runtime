@@ -13,9 +13,7 @@ add_executable(paltest_writeprocessmemory_test1
 add_dependencies(paltest_writeprocessmemory_test1 coreclrpal)
 
 target_link_libraries(paltest_writeprocessmemory_test1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_writeprocessmemory_test1_helper
 add_dependencies(paltest_writeprocessmemory_test1_helper coreclrpal)
 
 target_link_libraries(paltest_writeprocessmemory_test1_helper
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

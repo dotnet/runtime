@@ -13,9 +13,7 @@ add_executable(paltest_createprocessa_test2
 add_dependencies(paltest_createprocessa_test2 coreclrpal)
 
 target_link_libraries(paltest_createprocessa_test2
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_createprocessa_test2_child
 add_dependencies(paltest_createprocessa_test2_child coreclrpal)
 
 target_link_libraries(paltest_createprocessa_test2_child
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

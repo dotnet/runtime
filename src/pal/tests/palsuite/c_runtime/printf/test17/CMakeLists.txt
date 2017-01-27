@@ -13,7 +13,5 @@ add_executable(paltest_printf_test17
 add_dependencies(paltest_printf_test17 coreclrpal)
 
 target_link_libraries(paltest_printf_test17
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

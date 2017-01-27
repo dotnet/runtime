@@ -13,7 +13,5 @@ add_executable(paltest_createdirectorya_test2
 add_dependencies(paltest_createdirectorya_test2 coreclrpal)
 
 target_link_libraries(paltest_createdirectorya_test2
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

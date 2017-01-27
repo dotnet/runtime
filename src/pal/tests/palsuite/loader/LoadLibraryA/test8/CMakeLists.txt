@@ -13,9 +13,7 @@ add_executable(paltest_loadlibrarya_test8
 add_dependencies(paltest_loadlibrarya_test8 coreclrpal)
 
 target_link_libraries(paltest_loadlibrarya_test8
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_loadlibrarya_test8_dlltest
 add_dependencies(paltest_loadlibrarya_test8_dlltest coreclrpal)
 
 target_link_libraries(paltest_loadlibrarya_test8_dlltest
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

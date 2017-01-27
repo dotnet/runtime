@@ -13,7 +13,5 @@ add_executable(paltest_interlockedincrement_test1
 add_dependencies(paltest_interlockedincrement_test1 coreclrpal)
 
 target_link_libraries(paltest_interlockedincrement_test1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
