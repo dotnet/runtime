@@ -10,6 +10,9 @@
 ** environment.
 ** 
 ============================================================*/
+#if ES_BUILD_STANDALONE
+#define FEATURE_MANAGED_ETW_CHANNELS
+#endif
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
