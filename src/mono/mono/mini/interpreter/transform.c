@@ -450,15 +450,15 @@ load_arg(TransformData *td, int n)
 		mt = mint_type (type);
 		if (mt == MINT_TYPE_VT) {
 			gint32 size;
+			klass = mono_class_from_mono_type (type);
 			if (mono_method_signature (td->method)->pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
+				size = mono_class_native_size (klass, NULL);
 			else
-				size = mono_class_value_size (type->data.klass, NULL);
+				size = mono_class_value_size (klass, NULL);
 			PUSH_VT(td, size);
 			ADD_CODE(td, MINT_LDARG_VT);
 			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
 			WRITE32(td, &size);		
-			klass = type->data.klass;
 		} else {
 			ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
 			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
@@ -483,6 +483,7 @@ store_arg(TransformData *td, int n)
 		mt = mint_type (type);
 		if (mt == MINT_TYPE_VT) {
 			gint32 size;
+			g_error ("data.klass");
 			if (mono_method_signature (td->method)->pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
@@ -507,10 +508,11 @@ store_inarg(TransformData *td, int n)
 	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
+		MonoClass *klass = mono_class_from_mono_type (type);
 		if (mono_method_signature (td->method)->pinvoke)
-			size = mono_class_native_size (type->data.klass, NULL);
+			size = mono_class_native_size (klass, NULL);
 		else
-			size = mono_class_value_size (type->data.klass, NULL);
+			size = mono_class_value_size (klass, NULL);
 		ADD_CODE(td, MINT_STINARG_VT);
 		ADD_CODE(td, n);
 		WRITE32(td, &size);
@@ -715,10 +717,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	for (i = 0; i < csignature->param_count; ++i) {
 		if (td->sp [i + csignature->hasthis].type == STACK_TYPE_VT) {
 			gint32 size;
+			MonoClass *klass = mono_class_from_mono_type (csignature->params [i]);
 			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
-				size = mono_class_native_size (csignature->params [i]->data.klass, NULL);
+				size = mono_class_native_size (klass, NULL);
 			else
-				size = mono_class_value_size (csignature->params [i]->data.klass, NULL);
+				size = mono_class_value_size (klass, NULL);
 			size = (size + 7) & ~7;
 			vt_stack_used += size;
 		}
@@ -1704,6 +1707,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 			ADD_CODE(&td, MINT_LDOBJ);
 			ADD_CODE(&td, get_data_item_index(&td, klass));
+			g_error ("data.klass");
 			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->byval_arg.data.klass->enumtype) {
 				size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, size);
@@ -1875,6 +1879,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			}
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
+				g_error ("data.klass");
 				int size = mono_class_value_size (field->type->data.klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
@@ -1899,6 +1904,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
 			}
 			if (mt == MINT_TYPE_VT) {
+				g_error ("data.klass");
 				int size = mono_class_value_size (field->type->data.klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
@@ -1922,6 +1928,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
+				g_error ("data.klass");
 				int size = mono_class_value_size (field->type->data.klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
@@ -1948,6 +1955,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			if (mt == MINT_TYPE_VT) {
+				g_error ("data.klass");
 				int size = mono_class_value_size (field->type->data.klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);

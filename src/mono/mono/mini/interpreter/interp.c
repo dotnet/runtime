@@ -491,6 +491,9 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 			memcpy (data, val->data.p, size);
 		}
 		return;
+	case MONO_TYPE_GENERICINST:
+		stackval_to_data (&type->data.generic_class->container_class->byval_arg, val, data, pinvoke);
+		return;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
