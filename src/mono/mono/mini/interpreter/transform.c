@@ -2173,6 +2173,28 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			--td.sp;
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_O);
 			break;
+		case CEE_LDELEM:
+			CHECK_STACK (&td, 2);
+			token = read32 (td.ip + 1);
+			klass = mono_class_get_full (image, token, generic_context);
+			switch (mint_type (&klass->byval_arg)) {
+				case MINT_TYPE_I4:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_I4);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
+				default: {
+					GString *res = g_string_new ("");
+					mono_type_get_desc (res, &klass->byval_arg, TRUE);
+					g_print ("LDELEM: %s -> %d (%s)\n", klass->name, mint_type (&klass->byval_arg), res->str);
+					g_string_free (res, TRUE);
+					g_assert (0);
+					break;
+				}
+			}
+			td.ip += 4;
+			break;
 		case CEE_STELEM_I:
 			CHECK_STACK (&td, 3);
 			ENSURE_I4 (&td, 2);
@@ -2221,10 +2243,28 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			SIMPLE_OP (td, MINT_STELEM_REF);
 			td.sp -= 3;
 			break;
+		case CEE_STELEM:
+			CHECK_STACK (&td, 3);
+			ENSURE_I4 (&td, 2);
+			token = read32 (td.ip + 1);
+			klass = mono_class_get_full (image, token, generic_context);
+			switch (mint_type (&klass->byval_arg)) {
+				case MINT_TYPE_I4:
+					SIMPLE_OP (td, MINT_STELEM_I4);
+					break;
+				default: {
+					GString *res = g_string_new ("");
+					mono_type_get_desc (res, &klass->byval_arg, TRUE);
+					g_print ("STELEM: %s -> %d (%s)\n", klass->name, mint_type (&klass->byval_arg), res->str);
+					g_string_free (res, TRUE);
+					g_assert (0);
+					break;
+				}
+			}
+			td.ip += 4;
+			td.sp -= 3;
+			break;
 #if 0
-		case CEE_LDELEM: 
-		case CEE_STELEM: 
-
 		case CEE_CONV_OVF_U1:
 
 		case CEE_CONV_OVF_I8:
