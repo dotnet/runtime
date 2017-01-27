@@ -153,7 +153,7 @@ namespace System.Net.NetworkInformation
                         {
                             ipv4Pattern.DangerousGetHandle(),
                             ipv6Pattern.DangerousGetHandle()
-                        }, 2))
+                        }, (UIntPtr)2))
                 {
                     // Try to register our pattern strings with the dynamic store instance.
                     if (patterns.IsInvalid || !Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
