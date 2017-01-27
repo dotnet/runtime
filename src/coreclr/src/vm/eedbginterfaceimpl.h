@@ -124,8 +124,10 @@ public:
 
     MethodDesc *GetNativeCodeMethodDesc(const PCODE address) DAC_UNEXPECTED();
 
+#ifndef USE_GC_INFO_DECODER
     BOOL IsInPrologOrEpilog(const BYTE *address,
                             size_t* prologSize);
+#endif
 
     void DetermineIfOffsetsInFilterOrHandler(const BYTE *functionAddress,
                                                   DebugOffsetToHandlerInfo *pOffsetToHandlerInfo,
