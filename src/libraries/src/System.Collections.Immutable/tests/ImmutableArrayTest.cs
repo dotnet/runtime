@@ -1127,7 +1127,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
-        [InlineData(-1, Skip = "#14961")]
+        [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
         public void RemoveAtDefaultInvalid(int index)
@@ -1217,7 +1217,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
-        [InlineData(-1, 0, Skip = "#14961")]
+        [InlineData(-1, 0)]
         [InlineData(0, -1)]
         [InlineData(0, 0)]
         [InlineData(1, -1)]
@@ -1446,9 +1446,8 @@ namespace System.Collections.Immutable.Tests
         {
             Assert.All(SharedEqualityComparers<int>(), comparer =>
             {
-                // Uncomment when #14961 is fixed.
-                // Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123));
-                // Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123, comparer));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123));
+                Assert.Throws<NullReferenceException>(() => s_emptyDefault.Replace(123, 123, comparer));
 
                 Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Replace(123, 123));
                 Assert.Throws<InvalidOperationException>(() => ((IImmutableList<int>)s_emptyDefault).Replace(123, 123, comparer));
@@ -1485,7 +1484,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
-        [InlineData(-1, Skip = "#14961")]
+        [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
         public void SetItemDefaultInvalid(int index)

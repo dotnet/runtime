@@ -75,6 +75,9 @@ namespace System.Collections.Immutable.Tests
             builder.AddRange((IEnumerable<int>)new[] { 2 });
             Assert.Equal(2, builder.Count);
 
+            builder.AddRange((IEnumerable<int>)new int[0]);
+            Assert.Equal(2, builder.Count);
+
             // Exceed capacity
             builder.AddRange(Enumerable.Range(3, 2)); // use an enumerable without a breakable Count
             Assert.Equal(4, builder.Count);
