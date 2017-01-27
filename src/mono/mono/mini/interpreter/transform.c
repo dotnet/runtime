@@ -1706,8 +1706,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 			ADD_CODE(&td, MINT_LDOBJ);
 			ADD_CODE(&td, get_data_item_index(&td, klass));
-			g_error ("data.klass");
-			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->byval_arg.data.klass->enumtype) {
+			if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
 				size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, size);
 			}
