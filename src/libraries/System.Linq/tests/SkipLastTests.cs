@@ -65,7 +65,7 @@ namespace System.Linq.Tests
             }
 
             Assert.False(iterator.MoveNext());
-            Assert.Equal(-1, index);
+            Assert.Equal(int.MinValue, index & int.MinValue);
         }
 
         [Theory]

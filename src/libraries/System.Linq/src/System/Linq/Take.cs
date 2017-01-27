@@ -141,7 +141,7 @@ namespace System.Linq
                 }
             }
 
-            Debug.Assert(queue.Count == count);
+            Debug.Assert(queue.Count <= count);
             do
             {
                 yield return queue.Dequeue();
