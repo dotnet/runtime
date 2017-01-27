@@ -3495,9 +3495,13 @@ public:
 
     void fgInline();
 
+    void fgRemoveEmptyTry();
+
     void fgRemoveEmptyFinally();
 
     void fgCloneFinally();
+
+    void fgCleanupContinuation(BasicBlock* continuation);
 
     GenTreePtr fgGetCritSectOfStaticMethod();
 

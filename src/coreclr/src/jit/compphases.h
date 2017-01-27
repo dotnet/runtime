@@ -26,6 +26,7 @@ CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                 
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,         "Morph - ByRefs",                 "MOR-BYREF",false, -1)
+CompPhaseNameMacro(PHASE_EMPTY_TRY,              "Remove empty try",               "EMPTYTRY", false, -1)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN", false, -1)
 CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN", false, -1)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1)
