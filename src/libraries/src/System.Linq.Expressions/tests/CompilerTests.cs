@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [Theory, ActiveIssue("https://github.com/dotnet/corefx/issues/15533"), ClassData(typeof(CompilationTypes))]
         public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
         {
             Expression e = Expression.Constant(0);
