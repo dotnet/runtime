@@ -1680,7 +1680,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         }
         if (source->gtOper == GT_IND)
         {
-            srcAddrOrFill = blkNode->Data()->gtGetOp1();
+            srcAddrOrFill = source->gtGetOp1();
             // We're effectively setting source as contained, but can't call MakeSrcContained, because the
             // "inheritance" of the srcCount is to a child not a parent - it would "just work" but could be misleading.
             // If srcAddr is already non-contained, we don't need to change it.
@@ -3259,83 +3259,6 @@ void Lowering::SetIndirAddrOpCounts(GenTreePtr indirTree)
     else if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirTree, addr))
     {
         MakeSrcContained(indirTree, addr);
-    }
-    else if (comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &mul, &cns, true /*nogen*/) &&
-             !AreSourcesPossiblyModifiedLocals(indirTree, base, index))
-    {
-        // An addressing mode will be constructed that may cause some
-        // nodes to not need a register, and cause others' lifetimes to be extended
-        // to the GT_IND or even its parent if it's an assignment
-
-        assert(base != addr);
-        m_lsra->clearOperandCounts(addr);
-
-        const bool hasBase  = base != nullptr;
-        const bool hasIndex = index != nullptr;
-        assert(hasBase || hasIndex); // At least one of a base or an index must be present.
-
-        // If the addressing mode has both a base and an index, bump its source count by one. If it only has one or the
-        // other, its source count is already correct (due to the source for the address itself).
-        if (hasBase && hasIndex)
-        {
-            info->srcCount++;
-        }
-
-        // Traverse the computation below GT_IND to find the operands
-        // for the addressing mode, marking the various constants and
-        // intermediate results as not consuming/producing.
-        // If the traversal were more complex, we might consider using
-        // a traversal function, but the addressing mode is only made
-        // up of simple arithmetic operators, and the code generator
-        // only traverses one leg of each node.
-
-        bool foundBase  = !hasBase;
-        bool foundIndex = !hasIndex;
-        for (GenTree *child = addr, *nextChild = nullptr; child != nullptr && !child->OperIsLeaf(); child = nextChild)
-        {
-            nextChild    = nullptr;
-            GenTree* op1 = child->gtOp.gtOp1;
-            GenTree* op2 = (child->OperIsBinary()) ? child->gtOp.gtOp2 : nullptr;
-
-            if (op1 == base)
-            {
-                foundBase = true;
-            }
-            else if (op1 == index)
-            {
-                foundIndex = true;
-            }
-            else
-            {
-                m_lsra->clearOperandCounts(op1);
-                if (!op1->OperIsLeaf())
-                {
-                    nextChild = op1;
-                }
-            }
-
-            if (op2 != nullptr)
-            {
-                if (op2 == base)
-                {
-                    foundBase = true;
-                }
-                else if (op2 == index)
-                {
-                    foundIndex = true;
-                }
-                else
-                {
-                    m_lsra->clearOperandCounts(op2);
-                    if (!op2->OperIsLeaf())
-                    {
-                        assert(nextChild == nullptr);
-                        nextChild = op2;
-                    }
-                }
-            }
-        }
-        assert(foundBase && foundIndex);
     }
     else if (addr->gtOper == GT_ARR_ELEM)
     {
