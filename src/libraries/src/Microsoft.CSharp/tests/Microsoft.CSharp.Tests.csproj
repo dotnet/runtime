@@ -12,6 +12,8 @@
     </Compile>
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
+    <Compile Include="IntegerBinaryOperationTests.cs" />
+    <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
   </ItemGroup>
