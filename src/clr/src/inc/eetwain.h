@@ -278,12 +278,14 @@ virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
                                CodeManState  * pState) = 0;
 
+#ifndef USE_GC_INFO_DECODER
 /*
   Returns true if the given IP is in the given method's prolog or an epilog.
 */
 virtual bool IsInPrologOrEpilog(DWORD  relPCOffset,
                                 GCInfoToken gcInfoToken,
                                 size_t* prologSize) = 0;
+#endif
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized methods only)
@@ -546,6 +548,7 @@ void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        CodeManState  * pState);
 
 
+#ifndef USE_GC_INFO_DECODER
 /*
   Returns true if the given IP is in the given method's prolog or an epilog.
 */
@@ -554,6 +557,7 @@ bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 size_t*     prologSize);
+#endif
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
