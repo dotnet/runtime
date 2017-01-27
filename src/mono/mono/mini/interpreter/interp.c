@@ -75,8 +75,6 @@
 #endif
 #endif
 
-int mono_interp_traceopt = 0;
-
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
 	do {	\
 		(frame)->parent = (parent_frame);	\
@@ -106,6 +104,7 @@ static char* dump_args (MonoInvocation *inv);
 #define DEBUG_INTERP 0
 #define COUNT_OPS 0
 #if DEBUG_INTERP
+int mono_interp_traceopt = 2;
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 1;
 
@@ -148,9 +147,9 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		debug_indent_level++;
 		output_indent ();
 		mn = mono_method_full_name (method, FALSE);
-		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);
+		g_print ("(%p) Entering %s (", mono_thread_internal_current (), mn);
 		g_free (mn);
-		g_printerr  ("%s)\n", args);
+		g_print  ("%s)\n", args);
 		g_free (args);
 	}
 	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)
@@ -164,9 +163,9 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_printerr  ("(0x%08x) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_print  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
-		g_printerr  (" => %s\n", args);	\
+		g_print  (" => %s\n", args);	\
 		g_free (args);	\
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
@@ -176,6 +175,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 
 #else
 
+int mono_interp_traceopt = 0;
 static void debug_enter (MonoInvocation *frame, int *tracing)
 {
 }
@@ -799,7 +799,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_I8:
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
-			g_printerr ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
+			g_print ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
 #endif
 			int_i++;
 			break;
@@ -847,8 +847,8 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 
 	MethodArguments *margs = build_args_from_sig (sig, frame);
 #if DEBUG_INTERP
-	g_printerr ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
-	g_printerr ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
+	g_print ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
+	g_print ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
 #endif
 
 	context->current_frame = frame;
@@ -1015,9 +1015,13 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-	default:
-		g_string_append_printf (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
+	default: {
+		GString *res = g_string_new ("");
+		mono_type_get_desc (res, type, TRUE);
+		g_string_append_printf (str, "[{%s} %lld/0x%0llx] ", res->str, s->data.l, s->data.l);
+		g_string_free (res, TRUE);
 		break;
+	}
 	}
 }
 
@@ -1522,7 +1526,9 @@ static int opcode_counts[512];
 		} \
 		sp->data.l = 0; \
 		output_indent (); \
-		g_print ("(%u) ", mono_thread_internal_current ()); \
+		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
+		g_print ("(%p) %s -> ", mono_thread_internal_current (), mn); \
+		g_free (mn); \
 		mono_interp_dis_mintop(rtm->code, ip); \
 		g_print ("\t%d:%s\n", vt_sp - vtalloc, ins); \
 		g_free (ins); \
@@ -1600,7 +1606,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		context->managed_code = 0;
 #if DEBUG_INTERP
 		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE);
-		g_printerr ("(0x%08x) Transforming %s\n", mono_thread_internal_current (), mn);
+		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
 		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
