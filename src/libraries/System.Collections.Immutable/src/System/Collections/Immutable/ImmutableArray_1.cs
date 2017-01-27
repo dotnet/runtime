@@ -613,7 +613,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            ThrowNullRefIfNotInitialized(items);
+            items.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
 
             if (self.IsEmpty)
@@ -692,6 +692,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> SetItem(int index, T item)
         {
             var self = this;
+            self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index < self.Length, nameof(index));
 
             T[] tmp = new T[self.Length];
@@ -728,7 +729,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
         {
             var self = this;
-            int index = self.IndexOf(oldValue, equalityComparer);
+            int index = self.IndexOf(oldValue, 0, self.Length, equalityComparer);
             if (index < 0)
             {
                 throw new ArgumentException(SR.CannotFindOldValue, nameof(oldValue));
@@ -764,7 +765,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            int index = self.IndexOf(item, equalityComparer);
+            int index = self.IndexOf(item, 0, self.Length, equalityComparer);
             return index < 0
                 ? self
                 : self.RemoveAt(index);
@@ -791,6 +792,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> RemoveRange(int index, int length)
         {
             var self = this;
+            self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
             Requires.Range(length >= 0 && index + length <= self.Length, nameof(length));
 
@@ -836,18 +838,18 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             Requires.NotNull(items, nameof(items));
 
-            var indexesToRemove = new SortedSet<int>();
+            var indicesToRemove = new SortedSet<int>();
             foreach (var item in items)
             {
-                int index = self.IndexOf(item, equalityComparer);
-                while (index >= 0 && !indexesToRemove.Add(index) && index + 1 < self.Length)
+                int index = self.IndexOf(item, 0, self.Length, equalityComparer);
+                while (index >= 0 && !indicesToRemove.Add(index) && index + 1 < self.Length)
                 {
                     // This is a duplicate of one we've found. Try hard to find another instance in the list to remove.
                     index = self.IndexOf(item, index + 1, equalityComparer);
                 }
             }
 
-            return self.RemoveAtRange(indexesToRemove);
+            return self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
@@ -917,22 +919,22 @@ namespace System.Collections.Immutable
                 return self;
             }
 
-            List<int> removeIndexes = null;
+            List<int> removeIndices = null;
             for (int i = 0; i < self.array.Length; i++)
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndexes == null)
+                    if (removeIndices == null)
                     {
-                        removeIndexes = new List<int>();
+                        removeIndices = new List<int>();
                     }
 
-                    removeIndexes.Add(i);
+                    removeIndices.Add(i);
                 }
             }
 
-            return removeIndexes != null ?
-                self.RemoveAtRange(removeIndexes) :
+            return removeIndices != null ?
+                self.RemoveAtRange(removeIndices) :
                 self;
         }
 
@@ -1566,7 +1568,9 @@ namespace System.Collections.Immutable
                 var theirs = other as IImmutableArray;
                 if (theirs != null)
                 {
-                    if (self.array == null && theirs.Array == null)
+                    otherArray = theirs.Array;
+
+                    if (self.array == null && otherArray == null)
                     {
                         return true;
                     }
@@ -1574,8 +1578,6 @@ namespace System.Collections.Immutable
                     {
                         return false;
                     }
-
-                    otherArray = theirs.Array;
                 }
             }
 
@@ -1617,16 +1619,16 @@ namespace System.Collections.Immutable
                 var theirs = other as IImmutableArray;
                 if (theirs != null)
                 {
-                    if (self.array == null && theirs.Array == null)
+                    otherArray = theirs.Array;
+
+                    if (self.array == null && otherArray == null)
                     {
                         return 0;
                     }
-                    else if (self.array == null ^ theirs.Array == null)
+                    else if (self.array == null ^ otherArray == null)
                     {
                         throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
                     }
-
-                    otherArray = theirs.Array;
                 }
             }
 
@@ -1673,33 +1675,28 @@ namespace System.Collections.Immutable
             }
         }
 
-        void IImmutableArray.ThrowInvalidOperationIfNotInitialized()
-        {
-            this.ThrowInvalidOperationIfNotInitialized();
-        }
-
         /// <summary>
-        /// Returns an array with items at the specified indexes removed.
+        /// Returns an array with items at the specified indices removed.
         /// </summary>
-        /// <param name="indexesToRemove">A **sorted set** of indexes to elements that should be omitted from the returned array.</param>
+        /// <param name="indicesToRemove">A **sorted set** of indices to elements that should be omitted from the returned array.</param>
         /// <returns>The new array.</returns>
-        private ImmutableArray<T> RemoveAtRange(ICollection<int> indexesToRemove)
+        private ImmutableArray<T> RemoveAtRange(ICollection<int> indicesToRemove)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.NotNull(indexesToRemove, nameof(indexesToRemove));
+            Requires.NotNull(indicesToRemove, nameof(indicesToRemove));
 
-            if (indexesToRemove.Count == 0)
+            if (indicesToRemove.Count == 0)
             {
                 // Be sure to return a !IsDefault instance.
                 return self;
             }
 
-            var newArray = new T[self.Length - indexesToRemove.Count];
+            var newArray = new T[self.Length - indicesToRemove.Count];
             int copied = 0;
             int removed = 0;
             int lastIndexRemoved = -1;
-            foreach (var indexToRemove in indexesToRemove)
+            foreach (var indexToRemove in indicesToRemove)
             {
                 int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
                 Debug.Assert(indexToRemove > lastIndexRemoved); // We require that the input be a sorted set.
@@ -1712,14 +1709,6 @@ namespace System.Collections.Immutable
             Array.Copy(self.array, copied + removed, newArray, copied, self.Length - (copied + removed));
 
             return new ImmutableArray<T>(newArray);
-        }
-
-        /// <summary>
-        /// Throws a <see cref="NullReferenceException"/> if the specified array is uninitialized.
-        /// </summary>
-        private static void ThrowNullRefIfNotInitialized(ImmutableArray<T> array)
-        {
-            array.ThrowNullRefIfNotInitialized();
         }
     }
 }
