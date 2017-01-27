@@ -231,7 +231,6 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
 
 /**
  * Given a deps entry, do a probe (lookup) for the file, based on the probe config.
- *   -- When match hash is specified, the nuget cache SHA is matched. See .sha512 files in %USERPROFILE%\.nuget.
  *   -- When crossgen-ed folders are looked up, look up only "runtime" (managed) assets.
  *   -- When servicing directories are looked up, look up only if the deps file marks the entry as serviceable.
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
@@ -256,16 +255,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
-        if (config.match_hash)
-        {
-            if (entry.to_hash_matched_path(probe_dir, candidate))
-            {
-                trace::verbose(_X("    Matched hash for [%s]"), candidate->c_str());
-                return true;
-            }
-            trace::verbose(_X("    Skipping... match hash failed"));
-        }
-        else if (config.probe_deps_json)
+       
+		if (config.probe_deps_json)
         {
             // If the deps json has the package name and version, then someone has already done rid selection and
             // put the right asset in the dir. So checking just package name and version would suffice.
