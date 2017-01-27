@@ -4443,7 +4443,7 @@ po/Makefile
 ])
 
 # Update all submodules recursively to ensure everything is checked out
-$srcdir/scripts/update_submodules
+$srcdir/scripts/update_submodules.sh
 
 if test x$host_win32 = xyes; then
    # Get rid of 'cyg' prefixes in library names

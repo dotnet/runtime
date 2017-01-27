@@ -19,7 +19,7 @@ all: update_submodules
 
 SUBMODULE_ERROR='Could not recursively update all git submodules. You may experience compilation problems if some submodules are out of date'
 update_submodules:
-	@$(srcdir)/scripts/update_submodules
+	@$(srcdir)/scripts/update_submodules.sh
 
 .PHONY: update_submodules
 
