@@ -4,8 +4,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <ProjectGuid>{0EF9D369-7097-44F9-BEBA-C32AF5EB4756}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Memory.cs" />
