@@ -1641,7 +1641,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp | TargetFrameworkMonikers.Netcoreapp1_0)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
