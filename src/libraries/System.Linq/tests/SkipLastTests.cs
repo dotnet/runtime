@@ -47,7 +47,7 @@ namespace System.Linq.Tests
             // As an example, if Enumerable.Range(1, 6).SkipLast(2) is called, then we should read in the first 3 items,
             // yield 1, read in 4, yield 2, and so on.
             int index = 0;
-            int limit = count * 2;
+            int limit = Math.Max(0, count * 2);
             
             var source = new DelegateIterator<int>(
                 moveNext: () => index++ != limit, // Stop once we go past the limit.
