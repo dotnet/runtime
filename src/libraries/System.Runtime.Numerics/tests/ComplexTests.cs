@@ -256,6 +256,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(Abs_Advanced_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Abs_Advanced(double real, double imaginary, double expected)
         {
             var complex = new Complex(real, imaginary);
@@ -389,9 +390,9 @@ namespace System.Numerics.Tests
             yield return new object[] { 0, 1234000000, 0, 21.62667394298955 }; // Imaginary part is positive
 
             // Extreme values
-            yield return new object[] { Double.MaxValue, 0.0, Math.PI / 2.0, Math.Log(2.0) + Math.Log(Double.MaxValue) };
-            yield return new object[] { 0.0, Double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(Double.MaxValue) };
-            yield return new object[] { Double.MaxValue, Double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(Double.MaxValue) };
+            yield return new object[] { double.MaxValue, 0.0, Math.PI / 2.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
+            yield return new object[] { 0.0, double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(double.MaxValue) };
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1288,6 +1289,11 @@ namespace System.Numerics.Tests
             yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
             yield return new object[] { 0, double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153 };
             yield return new object[] { 0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153 };
+        }
+
+        public static IEnumerable<object> Sqrt_AdvancedTestData ()
+        {
+            // Extreme values don't overflow, even when intermediate quantities would if handled naively.
             yield return new object[] { double.MaxValue, double.MaxValue, Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Cos(Math.PI / 8.0), Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Sin(Math.PI / 8.0) };
 
             // Infinities produce the expected infinities.
@@ -1309,11 +1315,23 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, -double.MaxValue, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN }; 
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
         }
 
-        [Theory, MemberData("Sqrt_TestData")]
+        [Theory]
+        [MemberData("Sqrt_TestData")]
         public static void Sqrt(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Sqrt(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+        [Theory]
+        [MemberData("Sqrt_AdvancedTestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Sqrt_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Sqrt(complex);
