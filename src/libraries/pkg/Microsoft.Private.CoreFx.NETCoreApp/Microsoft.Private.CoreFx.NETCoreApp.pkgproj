@@ -33,8 +33,8 @@
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
 
-    <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
-    <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
+    <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
+    <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>

@@ -248,9 +248,17 @@
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
+    <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
+    <!-- RefPath should be based off Configuration, not BuildConfiguration
+         IE: $(RefRootPath)/$(TargetGroup)
+         but we cannot change this until we build ref folders for more than just the Building targetgroup -->
     <RefPath>$(RefRootPath)$(_bc_TargetGroup)/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
+
+    <!-- Paths to binplace package content -->
+    <NETCoreAppPackageRefPath>$(BinDir)netcoreapp\pkg\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(BinDir)netcoreapp\pkg\lib</NETCoreAppPackageRuntimePath>
 
     <!-- Constructed shared fx path for testing -->
     <TestSharedFxDir>$(ToolsDir)testdotnetcli</TestSharedFxDir>

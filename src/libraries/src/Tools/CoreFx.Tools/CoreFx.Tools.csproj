@@ -20,7 +20,7 @@
     <Compile Include="Configuration\PropertyValue.cs" />
     <Compile Include="Configuration\PropertyInfo.cs" />
     <Compile Include="GenerateConfigurationProps.cs" />
-    <Compile Include="FindBestConfiguration.cs" />
+    <Compile Include="FindBestConfigurations.cs" />
     <Compile Include="GenerateDepsJson.cs" />
     <Compile Include="TryGetManagedAssemblyName.cs" />
     <Compile Include="ValidateVSConfigurations.cs" />
