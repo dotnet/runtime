@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms> <!-- TODO #15309: Re-enable once the seg fault is fixed -->
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Debug|AnyCPU'" />
