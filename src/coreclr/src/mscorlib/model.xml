@@ -12657,6 +12657,8 @@
       <Member Name="Slice(System.Int32,System.Int32)" />
       <Member Name="Equals(System.Object)" />
       <Member Name="DangerousCreate(System.Object,T@,System.Int32)" />
+      <Member Name="Clear" />
+      <Member Name="Fill(T)" />
       <Member Name="GetHashCode" />
       <Member Name="CopyTo(System.Span&lt;T&gt;)" />
       <Member Name="TryCopyTo(System.Span&lt;T&gt;)" />
