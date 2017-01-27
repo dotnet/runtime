@@ -21,7 +21,7 @@ namespace System.Numerics
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
         // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
-        private static readonly double s_sqrtRescaleThreshold = Double.MaxValue / (Math.Sqrt(2.0) + 1.0);
+        private static readonly double s_sqrtRescaleThreshold = double.MaxValue / (Math.Sqrt(2.0) + 1.0);
 
         private double _real;
         private double _imaginary;
@@ -119,7 +119,7 @@ namespace System.Numerics
         private static double Hypot(double a, double b)
         {
             // Using
-            //   sqrt(a^2 + b^2) = |a| * sqrt(a^2/a^2 + b^2/a^2)
+            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
             // we can factor out the larger component to dodge overflow even when a * a would overflow.
 
             a = Math.Abs(a);
@@ -141,11 +141,11 @@ namespace System.Numerics
             {
                 return (large);
             }
-            else if (Double.IsPositiveInfinity(large) && !Double.IsNaN(small))
+            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
             {
                 // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
                 // NaN in any other place returns NaN without any special handling.
-                return (Double.PositiveInfinity);
+                return (double.PositiveInfinity);
             }
             else
             {
@@ -358,12 +358,12 @@ namespace System.Numerics
                 bool rescale = false;
                 if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
                 {
-                    if (Double.IsInfinity(value._imaginary) && !Double.IsNaN(value._real))
+                    if (double.IsInfinity(value._imaginary) && !double.IsNaN(value._real))
                     {
                         // We need to handle infinite imaginary parts specially because otherwise
                         // our formulas below produce inf/inf = NaN. The NaN test is necessary
                         // so that we return NaN rather than (+inf,inf) for (NaN,inf).
-                        return (new Complex(Double.PositiveInfinity, value._imaginary));
+                        return (new Complex(double.PositiveInfinity, value._imaginary));
                     }
                     else
                     {
