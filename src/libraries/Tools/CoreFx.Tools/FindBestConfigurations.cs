@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 if (bestConfiguration == null)
                 {
-                    Log.LogMessage($"Could not find any applicable configuration for '{buildConfiguration}' among projectConfigurations {string.Join(", ", supportedProjectConfigurations.Select(c => c.ToString()))}");
+                    Log.LogMessage(MessageImportance.Low, $"Could not find any applicable configuration for '{buildConfiguration}' among projectConfigurations {string.Join(", ", supportedProjectConfigurations.Select(c => c.ToString()))}");
                     Log.LogMessage(MessageImportance.Low, $"Compatible configurations: {string.Join(", ", compatibleConfigurations.Select(c => c.ToString()))}");
                 }
                 else
