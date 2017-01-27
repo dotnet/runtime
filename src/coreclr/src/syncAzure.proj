@@ -5,7 +5,8 @@
   <PropertyGroup>
     <ContainerNamePrefix Condition="'$(ContainerNamePrefix)' == ''">coreclr-$(PreReleaseLabel)</ContainerNamePrefix>
     <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
-    <ContainerName Condition="'$(__Container)' != ''">$(__Container)</ContainerName>
+    <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
+    <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-test-native-bins</ContainerName>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins</DownloadDirectory>
   </PropertyGroup>
@@ -15,7 +16,6 @@
   <Target Name="ValidateRequiredProperties">
     <Error Condition="'$(CloudDropAccountName)' == ''" Text="Missing property CloudDropAccountName." />
     <Error Condition="'$(CloudDropAccessToken)' == ''" Text="Missing property CloudDropAccessToken." />
-    <Error Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'" Text="Missing property Container." />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" />
