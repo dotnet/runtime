@@ -571,6 +571,10 @@ typedef struct {
 	int nframes;
 	/* If set, don't stop in methods that are not part of user assemblies */
 	MonoAssembly** user_assemblies;
+	/* Used to distinguish stepping breakpoint hits in parallel tasks executions */
+	int async_id;
+	/* Used to know if we are in process of async step-out and distishing from exception breakpoints */
+	MonoMethod* async_stepout_method;
 } SingleStepReq;
 
 /*
@@ -4526,18 +4530,42 @@ static void ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx)
 	compute_frame_info (tls->thread, tls);
 }
 
+static gboolean
+ensure_jit (StackFrame* frame)
+{
+	if (!frame->jit) {
+		frame->jit = mono_debug_find_method (frame->api_method, frame->domain);
+		if (!frame->jit && frame->api_method->is_inflated)
+			frame->jit = mono_debug_find_method(mono_method_get_declaring_generic_method (frame->api_method), frame->domain);
+		if (!frame->jit) {
+			char *s;
+
+			/* This could happen for aot images with no jit debug info */
+			s = mono_method_full_name (frame->api_method, TRUE);
+			DEBUG_PRINTF(1, "[dbg] No debug information found for '%s'.\n", s);
+			g_free (s);
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 /*
  * ss_update:
  *
  * Return FALSE if single stepping needs to continue.
  */
 static gboolean
-ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *tls, MonoContext *ctx)
+ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *tls, MonoContext *ctx, MonoMethod* method)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugSourceLocation *loc = NULL;
 	gboolean hit = TRUE;
-	MonoMethod *method;
+
+	if (req->async_stepout_method == method) {
+		DEBUG_PRINTF (1, "[%p] Breakpoint hit during async step-out at %s hit, continuing stepping out.\n", (gpointer)(gsize)mono_native_thread_id_get (), method->name);
+		return FALSE;
+	}
 
 	if (req->depth == STEP_DEPTH_OVER && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK)) {
 		/*
@@ -4547,7 +4575,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		return FALSE;
 	}
 
-	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit) {
+	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit && !req->async_stepout_method) {
 		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
 
 		ss_calculate_framecount (tls, ctx);
@@ -4563,7 +4591,6 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && ss_req->start_method){
-		method = jinfo_get_method (ji);
 		ss_calculate_framecount (tls, ctx);
 		if (ss_req->start_method == method && req->nframes && tls->frame_count == req->nframes) {//Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
@@ -4571,11 +4598,22 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		}
 	}
 
+	MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
+	if (asyncMethod) {
+		for (int i = 0; i < asyncMethod->num_awaits; i++)
+		{
+			if (asyncMethod->yield_offsets[i] == sp->il_offset || asyncMethod->resume_offsets[i] == sp->il_offset) {
+				mono_debug_free_method_async_debug_info (asyncMethod);
+				return FALSE;
+			}
+		}
+		mono_debug_free_method_async_debug_info (asyncMethod);
+	}
+
 	if (req->size != STEP_SIZE_LINE)
 		return TRUE;
 
 	/* Have to check whenever a different source line was reached */
-	method = jinfo_get_method (ji);
 	minfo = mono_debug_lookup_method (method);
 
 	if (minfo)
@@ -4606,6 +4644,82 @@ static gboolean
 breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 {
 	return bp->method && bp->method->klass->image->assembly == assembly;
+}
+
+static MonoObject*
+get_this (StackFrame *frame)
+{
+	//Logic inspiered by "add_var" method and took out path that happens in async method for getting this
+	MonoDebugVarInfo *var = frame->jit->this_var;
+	if ((var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) != MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET)
+		return NULL;
+
+	guint8 * addr = (guint8 *)mono_arch_context_get_int_reg (&frame->ctx, var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS);
+	addr += (gint32)var->offset;
+	return *(MonoObject**)addr;
+}
+
+//This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
+//since thread probably changed...
+static int
+get_this_async_id (StackFrame *frame)
+{
+	return get_objid (get_this (frame));
+}
+
+static MonoMethod* set_notification_method_cache = NULL;
+
+static MonoMethod*
+get_set_notification_method ()
+{
+	if(set_notification_method_cache != NULL)
+		return set_notification_method_cache;
+	MonoError error;
+	MonoClass* async_builder_class = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.CompilerServices", "AsyncTaskMethodBuilder");
+	GPtrArray* array = mono_class_get_methods_by_name (async_builder_class, "SetNotificationForWaitCompletion", 0x24, FALSE, FALSE, &error);
+	mono_error_assert_ok (&error);
+	g_assert (array->len == 1);
+	set_notification_method_cache = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return set_notification_method_cache;
+}
+
+static void
+set_set_notification_for_wait_completion_flag (StackFrame *frame)
+{
+	MonoObject* obj = get_this (frame);
+	g_assert (obj);
+	MonoClassField *builder_field = mono_class_get_field_from_name (obj->vtable->klass, "<>t__builder");
+	g_assert (builder_field);
+	MonoObject* builder;
+	MonoError error;
+	builder = mono_field_get_value_object_checked (frame->domain, builder_field, obj, &error);
+	mono_error_assert_ok (&error);
+	g_assert (builder);
+
+	void* args [1];
+	gboolean arg = TRUE;
+	args [0] = &arg;
+	mono_runtime_invoke_checked (get_set_notification_method(), mono_object_unbox (builder), args, &error);
+	mono_error_assert_ok (&error);
+	mono_field_set_value (obj, builder_field, mono_object_unbox (builder));
+}
+
+static MonoMethod* notify_debugger_of_wait_completion_method_cache = NULL;
+
+static MonoMethod*
+get_notify_debugger_of_wait_completion_method ()
+{
+	if (notify_debugger_of_wait_completion_method_cache != NULL)
+		return notify_debugger_of_wait_completion_method_cache;
+	MonoError error;
+	MonoClass* task_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading.Tasks", "Task");
+	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, FALSE, FALSE, &error);
+	mono_error_assert_ok (&error);
+	g_assert (array->len == 1);
+	notify_debugger_of_wait_completion_method_cache = (MonoMethod *)g_ptr_array_index (array, 0);
+	g_ptr_array_free (array, TRUE);
+	return notify_debugger_of_wait_completion_method_cache;
 }
 
 static void
@@ -4696,10 +4810,45 @@ process_breakpoint_inner (DebuggerTlsData *tls, gboolean from_signal)
 		SingleStepReq *ss_req = (SingleStepReq *)req->info;
 		gboolean hit;
 
-		if (mono_thread_internal_current () != ss_req->thread)
-			continue;
+		//if we hit async_stepout_method, it's our no matter which thread
+		if ((ss_req->async_stepout_method != method) && (ss_req->async_id || mono_thread_internal_current () != ss_req->thread)) {
+			//We have different thread and we don't have async stepping in progress
+			//it's breakpoint in parallel thread, ignore it
+			if (ss_req->async_id == 0)
+				continue;
 
-		hit = ss_update (ss_req, ji, &sp, tls, ctx);
+			tls->context.valid = FALSE;
+			tls->async_state.valid = FALSE;
+			invalidate_frames (tls);
+			ss_calculate_framecount(tls, ctx);
+			//make sure we have enough data to get current async method instance id
+			if (tls->frame_count == 0 || !ensure_jit (tls->frames [0]))
+				continue;
+
+			//Check method is async before calling get_this_async_id
+			MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
+			if (!asyncMethod)
+				continue;
+			else
+				mono_debug_free_method_async_debug_info (asyncMethod);
+
+			//breakpoint was hit in parallelly executing async method, ignore it
+			if (ss_req->async_id != get_this_async_id (tls->frames [0]))
+				continue;
+		}
+
+		//Update stepping request to new thread/frame_count that we are continuing on
+		//so continuing with normal stepping works as expected
+		if (ss_req->async_stepout_method || ss_req->async_id) {
+			tls->context.valid = FALSE;
+			tls->async_state.valid = FALSE;
+			invalidate_frames (tls);
+			ss_calculate_framecount (tls, ctx);
+			ss_req->thread = mono_thread_internal_current ();
+			ss_req->nframes = tls->frame_count;
+		}
+
+		hit = ss_update (ss_req, ji, &sp, tls, ctx, method);
 		if (hit)
 			g_ptr_array_add (ss_reqs, req);
 
@@ -4937,7 +5086,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 
 	il_offset = sp.il_offset;
 
-	if (!ss_update (ss_req, ji, &sp, tls, ctx))
+	if (!ss_update (ss_req, ji, &sp, tls, ctx, method))
 		return;
 
 	/* Start single stepping again from the current sequence point */
@@ -5106,6 +5255,8 @@ ss_stop (SingleStepReq *ss_req)
 		ss_req->bps = NULL;
 	}
 
+	ss_req->async_id = 0;
+	ss_req->async_stepout_method = NULL;
 	if (ss_req->global) {
 		stop_single_stepping ();
 		ss_req->global = FALSE;
@@ -5191,6 +5342,28 @@ ss_bp_add_one (SingleStepReq *ss_req, int *ss_req_bp_count, GHashTable **ss_req_
 	}
 }
 
+static gboolean
+is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
+{
+	if (!sp->next_len)
+		return TRUE;
+	SeqPoint* next = g_new (SeqPoint, sp->next_len);
+	mono_seq_point_init_next (info, *sp, next);
+	for (int i = 0; i < sp->next_len; i++) {
+		if (next [i].flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) {
+			if (!is_last_non_empty (&next [i], info)) {
+				g_free (next);
+				return FALSE;
+			}
+		} else {
+			g_free (next);
+			return FALSE;
+		}
+	}
+	g_free (next);
+	return TRUE;
+}
+
 /*
  * ss_start:
  *
@@ -5236,6 +5409,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			nframes = tls->frame_count;
 		}
 
+		MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
+
 		/* Need to stop in catch clauses as well */
 		for (i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
 			StackFrame *frame = frames [i];
@@ -5243,6 +5418,9 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			if (frame->ji) {
 				MonoJitInfo *jinfo = frame->ji;
 				for (j = 0; j < jinfo->num_clauses; ++j) {
+					// In case of async method we don't want to place breakpoint on last catch handler(which state machine added for whole method)
+					if (asyncMethod && asyncMethod->num_awaits && i == 0 && j + 1 == jinfo->num_clauses)
+						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
 					if (mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
@@ -5251,10 +5429,46 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			}
 		}
 
+		if (asyncMethod && asyncMethod->num_awaits && nframes && ensure_jit (frames [0])) {
+			//asyncMethod has value and num_awaits > 0, this means we are inside async method with awaits
+
+			// Check if we hit yield_offset during normal stepping, because if we did...
+			// Go into special async stepping mode which places breakpoint on resumeOffset
+			// of this await call and sets async_id so we can distinguish it from parallel executions
+			for (i = 0; i < asyncMethod->num_awaits; i++) {
+				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
+					ss_req->async_id = get_this_async_id (frames [0]);
+					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
+					if (ss_req_bp_cache)
+						g_hash_table_destroy (ss_req_bp_cache);
+					mono_debug_free_method_async_debug_info (asyncMethod);
+					return;
+				}
+			}
+			//If we are at end of async method and doing step-in or step-over...
+			//Switch to step-out, so whole NotifyDebuggerOfWaitCompletion magic happens...
+			if (is_last_non_empty (sp, info)) {
+				ss_req->depth = STEP_DEPTH_OUT;//setting depth to step-out is important, don't inline IF, because code later depends on this
+			}
+			if (ss_req->depth == STEP_DEPTH_OUT) {
+				set_set_notification_for_wait_completion_flag (frames [0]);
+				ss_req->async_id = get_this_async_id (frames [0]);
+				ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
+				ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
+				if (ss_req_bp_cache)
+					g_hash_table_destroy (ss_req_bp_cache);
+				mono_debug_free_method_async_debug_info (asyncMethod);
+				return;
+			}
+		}
+
+		if (asyncMethod)
+			mono_debug_free_method_async_debug_info (asyncMethod);
+
 		/*
-		 * Find the first sequence point in the current or in a previous frame which
-		 * is not the last in its method.
-		 */
+		* Find the first sequence point in the current or in a previous frame which
+		* is not the last in its method.
+		*/
 		if (ss_req->depth == STEP_DEPTH_OUT) {
 			/* Ignore seq points in current method */
 			while (frame_index < nframes) {
@@ -9178,20 +9392,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (!frame->has_ctx)
 		return ERR_ABSENT_INFORMATION;
 
-	if (!frame->jit) {
-		frame->jit = mono_debug_find_method (frame->api_method, frame->domain);
-		if (!frame->jit && frame->api_method->is_inflated)
-			frame->jit = mono_debug_find_method (mono_method_get_declaring_generic_method (frame->api_method), frame->domain);
-		if (!frame->jit) {
-			char *s;
+	if (!ensure_jit (frame))
+		return ERR_ABSENT_INFORMATION;
 
-			/* This could happen for aot images with no jit debug info */
-			s = mono_method_full_name (frame->api_method, TRUE);
-			DEBUG_PRINTF (1, "[dbg] No debug information found for '%s'.\n", s);
-			g_free (s);
-			return ERR_ABSENT_INFORMATION;
-		}
-	}
 	jit = frame->jit;
 
 	sig = mono_method_signature (frame->actual_method);

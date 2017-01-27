@@ -7547,6 +7547,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_bitset_set_fast (seq_point_locs, sps [i].il_offset);
 			}
 			g_free (sps);
+
+			MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
+			if (asyncMethod) {
+				for (i = 0; asyncMethod != NULL && i < asyncMethod->num_awaits; i++)
+				{
+					mono_bitset_set_fast (seq_point_locs, asyncMethod->resume_offsets[i]);
+					mono_bitset_set_fast (seq_point_locs, asyncMethod->yield_offsets[i]);
+				}
+				mono_debug_free_method_async_debug_info (asyncMethod);
+			}
 		} else if (!method->wrapper_type && !method->dynamic && mono_debug_image_has_debug_info (method->klass->image)) {
 			/* Methods without line number info like auto-generated property accessors */
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);

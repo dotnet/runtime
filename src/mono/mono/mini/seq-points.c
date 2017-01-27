@@ -168,7 +168,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 				if (l) {
 					endfinally_seq_point = (MonoInst *)l->data;
 
-					for (bb2 = cfg->bb_entry; bb2; bb2 = bb2->next_bb) {
+					for (bb2 = bb->next_bb; bb2; bb2 = bb2->next_bb) {
 						GSList *l = g_slist_last (bb2->seq_points);
 
 						if (l) {
