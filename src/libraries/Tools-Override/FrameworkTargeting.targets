@@ -4,10 +4,10 @@
   <ItemGroup>
     <TargetingPackDirs Include="$(RefPath)" />
     <AdditionalReferencePaths Include="@(TargetingPackDirs)" />
+    <Reference Condition="($(NuGetTargetMoniker.StartsWith('.NETStandard')) OR '$(IsReferenceAssembly)' != 'true') AND Exists('$(RefPath)netstandard.dll') AND '$(MSBuildProjectExtension)' != '.pkgproj'" Include="netstandard" />
   </ItemGroup>
 
-  <PropertyGroup >
-    <!-- TODO: This will begin depending on a target once we start computing RefPath -->
+  <PropertyGroup>
     <ContractOutputPath>$(RefPath)</ContractOutputPath>
     <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
     <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
