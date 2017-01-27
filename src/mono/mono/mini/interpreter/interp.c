@@ -2750,6 +2750,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				goto array_constructed;
 			}
 
+			g_assert (csig->hasthis);
+			if (csig->param_count) {
+				sp -= csig->param_count;
+				memmove (sp + 1, sp, csig->param_count * sizeof (stackval));
+			}
+			child_frame.stack_args = sp;
+
 			/*
 			 * First arg is the object.
 			 */
@@ -2774,13 +2781,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				} else {
 					child_frame.retval = &retval;
 				}
-			}
-
-			if (csig->param_count || csig->hasthis) {
-				sp -= csig->param_count + !!csig->hasthis;
-				child_frame.stack_args = sp;
-			} else {
-				child_frame.stack_args = NULL;
 			}
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
