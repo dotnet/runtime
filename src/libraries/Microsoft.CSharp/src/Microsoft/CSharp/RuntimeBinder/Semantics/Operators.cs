@@ -3014,10 +3014,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
           will be a constant also. op2 can be null for a unary operator. The operands are assumed
           to be already converted to the correct type.
          */
-        // We have an intentional divide by 0 there, so disable the warning...
-#if _MSC_VER
-#pragma warning( disable : 4723 )
-#endif
         private EXPR bindFloatOp(ExpressionKind kind, EXPRFLAG flags, EXPR op1, EXPR op2)
         {
             //Debug.Assert(kind.isRelational() || kind.isArithmetic());
@@ -3125,10 +3121,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return exprRes;
         }
-
-#if _MSC_VER
-#pragma warning( default : 4723 )
-#endif
 
         private EXPR bindStringConcat(EXPR op1, EXPR op2)
         {
