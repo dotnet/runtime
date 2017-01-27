@@ -13,12 +13,12 @@
   
   <ItemGroup>
     <BinplaceConfiguration Include="$(BuildConfiguration)">
-      <RefPath>$(RefPath)</RefPath>
+      <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinplaceConfiguration>
     <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true'" Include="netcoreapp-$(OSGroup)">
-      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(BinDir)netcoreapp\pkg\ref</RefPath>
-      <RuntimePath>$(BinDir)netcoreapp\pkg\lib</RuntimePath>
+      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
+      <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">
       <RefPath>$(RefRootPath)netstandard</RefPath>
