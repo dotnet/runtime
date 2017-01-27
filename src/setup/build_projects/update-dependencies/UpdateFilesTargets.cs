@@ -36,6 +36,11 @@ namespace Microsoft.DotNet.Scripts
             dependencyInfos.Add(CreateDependencyInfo("CoreClr", Config.Instance.CoreClrVersionUrl).Result);
             dependencyInfos.Add(CreateDependencyInfo("Roslyn", Config.Instance.RoslynVersionUrl).Result);
 
+            if (Config.Instance.StandardVersionUrl != string.Empty)
+            {
+                dependencyInfos.Add(CreateDependencyInfo("Standard", Config.Instance.StandardVersionUrl).Result);
+            }
+
             return c.Success();
         }
 
