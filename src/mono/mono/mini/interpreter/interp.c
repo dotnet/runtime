@@ -1671,6 +1671,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			vt_sp -= READ32(ip + 2);
 			if (ret_size > 0) {
 				memmove (vt_sp, ret_vt_sp, ret_size);
+				sp [-1].data.p = vt_sp;
 				vt_sp += (ret_size + 7) & ~7;
 			}
 			ip += 4;
