@@ -8,7 +8,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // BindImplicitConversion

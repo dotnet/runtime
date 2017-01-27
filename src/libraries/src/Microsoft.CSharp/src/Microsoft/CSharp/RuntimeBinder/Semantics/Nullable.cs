@@ -142,7 +142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // Create an expr for exprSrc.Value where exprSrc.type is a NullableType.
         internal EXPR BindNubValue(EXPR exprSrc)

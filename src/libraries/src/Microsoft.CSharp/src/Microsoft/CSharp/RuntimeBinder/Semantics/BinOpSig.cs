@@ -7,9 +7,9 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
-        protected class BinOpSig
+        private class BinOpSig
         {
             public BinOpSig()
             {
@@ -50,7 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        protected class BinOpFullSig : BinOpSig
+        private class BinOpFullSig : BinOpSig
         {
             private readonly LiftFlags _grflt;
             private readonly CType _type1;

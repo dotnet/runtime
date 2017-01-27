@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // This class takes an EXPRMEMGRP and a set of arguments and binds the arguments
