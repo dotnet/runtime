@@ -20,6 +20,9 @@ namespace System.Numerics
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
+        // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
+        private static readonly double s_sqrtRescaleThreshold = double.MaxValue / (Math.Sqrt(2.0) + 1.0);
+
         private double _real;
         private double _imaginary;
         
@@ -110,31 +113,46 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            if (double.IsInfinity(value._real) || double.IsInfinity(value._imaginary))
-            {
-                return double.PositiveInfinity;
-            }
+            return Hypot(value._real, value._imaginary);
+        }
 
-            // |value| == sqrt(a^2 + b^2)
-            // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
-            // Using the above we can factor out the square of the larger component to dodge overflow.
-            double c = Math.Abs(value._real);
-            double d = Math.Abs(value._imaginary);
+        private static double Hypot(double a, double b)
+        {
+            // Using
+            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
+            // we can factor out the larger component to dodge overflow even when a * a would overflow.
 
-            if (c > d)
+            a = Math.Abs(a);
+            b = Math.Abs(b);
+
+            double small, large;
+            if (a < b)
             {
-                double r = d / c;
-                return c * Math.Sqrt(1.0 + r * r);
-            }
-            else if (d == 0.0)
-            {
-                return c;  // c is either 0.0 or NaN
+                small = a;
+                large = b;
             }
             else
             {
-                double r = c / d;
-                return d * Math.Sqrt(1.0 + r * r);
+                small = b;
+                large = a;
             }
+
+            if (small == 0.0)
+            {
+                return (large);
+            }
+            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
+            {
+                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
+                // NaN in any other place returns NaN without any special handling.
+                return (double.PositiveInfinity);
+            }
+            else
+            {
+                double ratio = small / large;
+                return (large * Math.Sqrt(1.0 + ratio * ratio));
+            }
+
         }
 
         public static Complex Conjugate(Complex value)
@@ -295,7 +313,90 @@ namespace System.Numerics
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sqrt", Justification = "Sqrt is the name of a mathematical function.")]
         public static Complex Sqrt(Complex value)
         {
-            return FromPolarCoordinates(Math.Sqrt(value.Magnitude), value.Phase / 2.0);
+
+            if (value._imaginary == 0.0)
+            {
+                // Handle the trivial case quickly.
+                if (value._real < 0.0)
+                {
+                    return new Complex(0.0, Math.Sqrt(-value._real));
+                }
+                else
+                {
+                    return new Complex(Math.Sqrt(value._real), 0.0);
+                }
+            }
+            else
+            {
+
+                // One way to compute Sqrt(z) is just to call Pow(z, 0.5), which coverts to polar coordinates
+                // (sqrt + atan), halves the phase, and reconverts to cartesian coordinates (cos + sin).
+                // Not only is this more expensive than necessary, it also fails to preserve certain expected
+                // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
+                // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
+                // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
+                // does not land us on an argument with cosine exactly equal to zero.
+
+                // To find a fast and symmetry-respecting formula for complex square root,
+                // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
+                // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
+                //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
+                // There is just one complication: depending on the sign on a, either x or y suffers from
+                // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
+                // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
+                // from cancelation, we can compute the other with just a division. This is basically just
+                // the right way to evaluate the quadratic formula without cancelation.
+
+                // All this reduces our total cost to two sqrts and a few flops, and it respects the desired
+                // symmetries. Much better than atan + cos + sin!
+
+                // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
+      
+                // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
+                // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
+                // when we encounter very large components to avoid intermediate infinities.
+                bool rescale = false;
+                if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
+                {
+                    if (double.IsInfinity(value._imaginary) && !double.IsNaN(value._real))
+                    {
+                        // We need to handle infinite imaginary parts specially because otherwise
+                        // our formulas below produce inf/inf = NaN. The NaN test is necessary
+                        // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                        return (new Complex(double.PositiveInfinity, value._imaginary));
+                    }
+                    else
+                    {
+                        value._real *= 0.25;
+                        value._imaginary *= 0.25;
+                        rescale = true;
+                    }
+                }
+ 
+                // This is the core of the algorithm. Everything else is special case handling.
+                double x, y;
+                if (value._real >= 0.0)
+                {
+                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) * 0.5);
+                    y = value._imaginary / (2.0 * x);
+                }
+                else
+                {
+                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) * 0.5);
+                    if (value._imaginary < 0.0) y = -y;
+                    x = value._imaginary / (2.0 * y);
+                }
+
+                if (rescale)
+                {
+                    x *= 2.0;
+                    y *= 2.0;
+                }
+
+                return new Complex(x, y);
+
+            }
+            
         }
 
         public static Complex Pow(Complex value, Complex power)
