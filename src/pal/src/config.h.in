@@ -51,6 +51,7 @@
 #cmakedefine01 HAVE_MACH_EXCEPTIONS
 #cmakedefine01 HAVE_VM_ALLOCATE
 #cmakedefine01 HAVE_VM_READ
+#cmakedefine01 HAVE_SEMAPHORE_H
 #cmakedefine01 HAS_SYSV_SEMAPHORES
 #cmakedefine01 HAS_PTHREAD_MUTEXES
 #cmakedefine01 HAVE_TTRACE
