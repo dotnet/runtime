@@ -5507,6 +5507,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 #endif
 }
 
+#ifndef USE_GC_INFO_DECODER
 /*****************************************************************************
  *
  *  Returns true if the given IP is in the given method's prolog or epilog.
@@ -5520,7 +5521,6 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, relPCoffset, &info);
@@ -5530,11 +5530,8 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
 
     return ((info.prologOffs != hdrInfo::NOT_IN_PROLOG) || 
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
-#else // USE_GC_INFO_DECODER
-    _ASSERTE(!"@NYI - EECodeManager::IsInPrologOrEpilog (EETwain.cpp)");
-    return false;
-#endif // USE_GC_INFO_DECODER
 }
+#endif // USE_GC_INFO_DECODER
 
 /*****************************************************************************
  *
