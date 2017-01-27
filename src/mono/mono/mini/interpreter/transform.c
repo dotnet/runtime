@@ -504,11 +504,10 @@ store_arg(TransformData *td, int n)
 static void 
 store_inarg(TransformData *td, int n)
 {
-	MonoType *type = mono_method_signature (td->method)->params [n];
-	int mt = mint_type (type);
+	MonoClass *klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n]);
+	int mt = mint_type (&klass->byval_arg);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
-		MonoClass *klass = mono_class_from_mono_type (type);
 		if (mono_method_signature (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
 		else
@@ -1127,7 +1126,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			if (td.sp > td.stack)
 				g_warning ("%s.%s: CEE_RET: more values on stack: %d", td.method->klass->name, td.method->name, td.sp - td.stack);
 			if (td.vt_sp != vt_size)
-				g_warning ("%s.%s: CEE_RET: value type stack: %d vs. %d", td.method->klass->name, td.method->name, td.vt_sp, vt_size);
+				g_error ("%s.%s: CEE_RET: value type stack: %d vs. %d", td.method->klass->name, td.method->name, td.vt_sp, vt_size);
 			if (vt_size == 0)
 				SIMPLE_OP(td, signature->ret->type == MONO_TYPE_VOID ? MINT_RET_VOID : MINT_RET);
 			else {
@@ -1843,6 +1842,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, MINT_UNBOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
 				SET_SIMPLE_TYPE (td.sp - 1, stack_type [mint_type (&klass->byval_arg)]);
+				if (klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
+					int size = mono_class_value_size (klass, NULL);
+					PUSH_VT (&td, size);
+				}
 				td.ip += 5;
 			}
 
@@ -1869,7 +1872,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
 			mono_class_init (klass);
-			mt = mint_type(field->type);
+
+			MonoClass *field_klass = mono_class_from_mono_type (field->type);
+			mt = mint_type (&field_klass->byval_arg);
 			if (klass->marshalbyref) {
 				ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDRMFLD_VT :  MINT_LDRMFLD);
 				ADD_CODE(&td, get_data_item_index (&td, field));
@@ -1877,17 +1882,18 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
 				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
 			}
-			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				int size = mono_class_value_size (field_klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
-				klass = field->type->data.klass;
-			} else if (mt == MINT_TYPE_O)
-				klass = mono_class_from_mono_type (field->type);
+			}
+			if (td.sp [-1].type == STACK_TYPE_VT) {
+				int size = mono_class_value_size (klass, NULL);
+				size = (size + 7) & ~7;
+				td.vt_sp -= size;
+			}
 			td.ip += 5;
-			SET_TYPE(td.sp - 1, stack_type [mt], klass);
+			SET_TYPE(td.sp - 1, stack_type [mt], field_klass);
 			break;
 		}
 		case CEE_STFLD:
@@ -1904,8 +1910,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
 			}
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
 			}
