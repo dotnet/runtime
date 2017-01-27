@@ -209,6 +209,8 @@ struct hostpolicy_init_t
 
         trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
+		//This check is to ensure is an old hostfxr can still load new hostpolicy.
+		//We should not read garbage due to potentially shorter struct size
         if (input->version_lo >= offsetof(host_interface_t, host_mode) + sizeof(input->host_mode))
         {
             make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
@@ -231,6 +233,8 @@ struct hostpolicy_init_t
                 offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
         }
 
+		//An old hostfxr before we added TFM struct field, will not provide it. 
+		//The version_lo (sizeof) the old hostfxr saw at build time would be smaller and we should not attempt to read tfm in that case.
         if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
         {
             init->tfm = input->tfm;

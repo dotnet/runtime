@@ -188,6 +188,33 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
+bool pal::get_global_dotnet_dir(pal::string_t* dir)
+{
+    if (!get_program_files_by_id(FOLDERID_ProgramFiles, dir))
+    {
+        return false;
+    }
+
+    append_path(dir, _X("dotnet"));
+    return true;
+}
+
+bool pal::get_local_dotnet_dir(pal::string_t* dir)
+{
+    pal::char_t* profile;
+    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &profile);
+    if (hr != S_OK)
+    {
+        trace::verbose(_X("Failed to obtain user profile directory, HRESULT: 0x%X"), hr);
+        return false;
+    }
+
+    dir->assign(profile);
+    append_path(dir, _X(".dotnet"));
+    append_path(dir, get_arch());
+    return true;
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
     return path.length() >= 2 && path[1] == L':';
@@ -335,30 +362,3 @@ void pal::readdir(const string_t& path, std::vector<pal::string_t>* list)
     pal::readdir(path, _X("*"), list);
 }
 
-bool pal::get_global_shared_package_dir(pal::string_t* dir)
-{
-    if (!get_program_files_by_id(FOLDERID_ProgramFiles, dir))
-    {
-        return false;
-    }
-    append_path(dir, _X("dotnet"));
-    append_path(dir, _X("packages"));
-    return true;
-}
-
-bool pal::get_local_shared_package_dir(pal::string_t* dir)
-{
-    pal::char_t* profile;
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_Profile, 0,  NULL, &profile);
-    if (hr != S_OK)
-    {
-        trace::verbose(_X("Failed to obtain user profile directory, HRESULT: 0x%X"), hr);
-        return false;
-    }
-
-    dir->assign(profile);
-    append_path(dir, _X(".dotnet"));
-    append_path(dir, get_arch());
-    append_path(dir, _X("packages"));
-    return true;
-}
