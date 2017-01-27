@@ -3553,9 +3553,10 @@ if test "x$target_mach" = "xyes"; then
           BTLS_SUPPORTED=no
        ])
 	fi
-	AM_CONDITIONAL(TARGET_OSX, test x$target_osx = xyes)
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
 fi
+
+AM_CONDITIONAL(TARGET_OSX, test x$target_osx = xyes)
 
 if test "x$sizeof_register" = "x4"; then
    AC_DEFINE(SIZEOF_REGISTER,4,[size of machine integer registers])
