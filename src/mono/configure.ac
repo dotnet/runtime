@@ -3545,6 +3545,7 @@ if test "x$target_mach" = "xyes"; then
 	   	  AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_OSX"
           CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_OSX"
+          target_osx=yes
        ], [
           AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
@@ -3552,6 +3553,7 @@ if test "x$target_mach" = "xyes"; then
           BTLS_SUPPORTED=no
        ])
 	fi
+	AM_CONDITIONAL(TARGET_OSX, test x$target_osx = xyes)
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
 fi
 
