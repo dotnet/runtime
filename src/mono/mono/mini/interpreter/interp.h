@@ -127,9 +127,6 @@ static void inline stackval_from_data (MonoType *type, stackval *result, char *d
 static void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
 
-MonoDomain *
-mono_interp_init(const char *file);
-
 /*
  * defined in an arch specific file.
  */

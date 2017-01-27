@@ -2051,10 +2051,8 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
-#if ENABLE_INTERPRETER
-	if (mono_use_interpreter)
-		domain = mono_interp_init (argv [i]);
-	else
+#ifdef ENABLE_INTERPRETER
+	mono_interp_init ();
 #endif
 	domain = mini_init (argv [i], forced_version);
 

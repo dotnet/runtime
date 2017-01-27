@@ -1767,6 +1767,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 
 	mono_error_init (error);
 
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		return interp_create_method_pointer (method, error);
+#endif
+
 	if (mono_llvm_only)
 		/* Should be handled by the caller */
 		g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));
@@ -2351,6 +2356,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
+
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		return interp_mono_runtime_invoke (method, obj, params, exc, error);
+#endif
 
 	mono_error_init (error);
 

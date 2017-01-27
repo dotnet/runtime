@@ -59,7 +59,6 @@
 
 #include "interp.h"
 #include "mintops.h"
-#include "embed.h"
 #include "hacks.h"
 
 #include <mono/mini/mini.h>
@@ -75,8 +74,6 @@
 #define finite isfinite
 #endif
 #endif
-
-static gint *abort_requested;
 
 int mono_interp_traceopt = 0;
 
@@ -254,13 +251,6 @@ ves_real_abort (int line, MonoMethod *mh,
 		ves_real_abort(__LINE__, frame->runtime_method->method, ip, frame->stack, sp); \
 		THROW_EX (mono_get_exception_execution_engine (NULL), ip); \
 	} while (0);
-
-static gpointer
-interp_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
-{
-	g_error ("FIXME: use domain and error");
-	// return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
-}
 
 static mono_mutex_t runtime_method_lookup_section;
 
@@ -870,7 +860,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	/* domain can only be changed by native code */
 	context->domain = mono_domain_get ();
 
-	if (*abort_requested)
+	if (*mono_thread_interruption_request_flag ())
 		mono_thread_interruption_checkpoint ();
 	
  	if (!MONO_TYPE_ISSTRUCT (sig->ret))
@@ -1222,7 +1212,7 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 #define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW64_UN(a,b)
 #endif
 
-static MonoObject*
+MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoInvocation frame;
@@ -1470,12 +1460,11 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-static gpointer
-mono_create_method_pointer (MonoMethod *method, MonoError *error)
+gpointer
+interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoJitInfo *ji;
-	mono_error_init (error);
 
 	mono_os_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
@@ -2782,7 +2771,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 					o = mono_object_new_checked (context->domain, newobj_class, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					context->managed_code = 1;
-					if (*abort_requested)
+					if (*mono_thread_interruption_request_flag ())
 						mono_thread_interruption_checkpoint ();
 					child_frame.obj = o;
 				} else {
@@ -4307,75 +4296,6 @@ usage (void)
 	exit (1);
 }
 
-static void
-add_signal_handler (int signo, void (*handler)(int))
-{
-#ifdef HOST_WIN32
-	signal (signo, handler);
-#else
-	struct sigaction sa;
-
-	sa.sa_handler = handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	g_assert (sigaction (signo, &sa, NULL) != -1);
-#endif
-}
-
-static void
-segv_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *segv_exception;
-
-	if (context == NULL)
-		return;
-	segv_exception = mono_get_exception_null_reference ();
-	segv_exception->message = mono_string_new (mono_domain_get (), "Null Reference (SIGSEGV)");
-	mono_raise_exception (segv_exception);
-}
-
-
-static void
-quit_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *quit_exception;
-
-	if (context == NULL)
-		return;
-	quit_exception = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
-	mono_raise_exception (quit_exception);
-}
-
-static void
-abrt_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *abrt_exception;
-
-	if (context == NULL)
-		return;
-	abrt_exception = mono_get_exception_execution_engine ("Abort (SIGABRT).");
-	mono_raise_exception (abrt_exception);
-}
-
-#if 0
-static void
-thread_abort_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *exc;
-
-	if (context == NULL)
-		return;
-
-	exc = mono_thread_request_interruption (context->managed_code); 
-	if (exc) mono_raise_exception (exc);
-}
-#endif
-
 static MonoBoolean
 interp_ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
 			  MonoReflectionMethod **method, 
@@ -4487,164 +4407,15 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	return delegate;
 }
 
-
-typedef struct
-{
-	MonoDomain *domain;
-	int enable_debugging;
-	char *file;
-	int argc;
-	char **argv;
-} MainThreadArgs;
-
-static void main_thread_handler (gpointer user_data)
-{
-	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
-	MonoAssembly *assembly;
-
-	if (main_args->enable_debugging) {
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-	}
-
-	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
-
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", main_args->file);
-		exit (1);
-	}
-
-	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
-}
-
-static void
-interp_mono_runtime_install_handlers (void)
-{
-	add_signal_handler (SIGSEGV, segv_handler);
-	add_signal_handler (SIGINT, quit_handler);
-	add_signal_handler (SIGABRT, abrt_handler);
-#if 0
-	add_signal_handler (mono_thread_get_abort_signal (), thread_abort_handler);
-#endif
-}
-
-static void
-quit_function (MonoDomain *domain, gpointer user_data)
-{
-	mono_profiler_shutdown ();
-	
-	mono_runtime_cleanup (domain);
-	mono_domain_free (domain, TRUE);
-
-}
-
 void
-mono_interp_cleanup(MonoDomain *domain)
+mono_interp_init ()
 {
-	quit_function (domain, NULL);
-}
-
-int
-mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
-{
-	return ves_exec (domain, assembly, argc, argv);
-}
-
-static gpointer
-interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
-{
-	// FIXME: implement me
-	return NULL;
-}
-
-static gpointer
-interp_create_ftnptr (MonoDomain *domain, gpointer addr)
-{
-	// FIXME: true on all arch?
-	return addr;
-}
-
-// FIXME
-static gboolean
-mono_current_thread_has_handle_block_guard (void)
-{
-	return FALSE;
-}
-
-// FIXME
-static gboolean
-mono_above_abort_threshold (void)
-{
-	return FALSE;
-}
-
-MonoDomain *
-mono_interp_init(const char *file)
-{
-	MonoDomain *domain;
-	MonoRuntimeCallbacks callbacks;
-	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
-	MonoError error;
-
-	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
-	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
-
 	mono_native_tls_alloc (&thread_context_id, NULL);
     mono_native_tls_set_value (thread_context_id, NULL);
 	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
-	mono_tls_init_runtime_keys ();
-
-	// TODO: use callbacks?
-	interp_mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
-
-	memset (&callbacks, 0, sizeof (callbacks));
-	// TODO: replace with `mono_install_callbacks`
-	callbacks.compile_method = mono_create_method_pointer;
-	callbacks.runtime_invoke = interp_mono_runtime_invoke;
-	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
-	callbacks.create_ftnptr = interp_create_ftnptr;
-#ifndef DISABLE_REMOTING
-	callbacks.create_remoting_trampoline = interp_create_remoting_trampoline;
-#endif
-	callbacks.create_jit_trampoline = interp_create_trampoline;
-	mono_install_callbacks (&callbacks);
-
-
-	memset (&ecallbacks, 0, sizeof (ecallbacks));
-	ecallbacks.mono_raise_exception = interp_ex_handler;
-	ecallbacks.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
-	ecallbacks.mono_above_abort_threshold = mono_above_abort_threshold;
-#if 0
-	// FIXME: ...
-	mono_install_stack_walk (interp_walk_stack);
-#endif
-	mono_install_eh_callbacks (&ecallbacks);
-
-	mono_install_runtime_cleanup (quit_function);
-
-	abort_requested = mono_thread_interruption_request_flag ();
-
-	domain = mono_init_from_assembly (file, file);
-#ifdef __hpux /* generates very big stack frames */
-	mono_threads_set_default_stacksize(32*1024*1024);
-#endif
-	mono_icall_init ();
-	/* TODO: this should use ves_icall_get_frame from mini-exceptions.c? */
-	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", interp_ves_icall_get_frame_info);
-	/* TODO: this should use ves_icall_get_trace from mini-exceptions.c? */
-	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", interp_ves_icall_get_trace);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", interp_mono_runtime_install_handlers);
-	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal);
-
-	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("object"), FALSE);
-
-	mono_runtime_init_checked (domain, NULL, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	mono_thread_attach (domain);
-	return domain;
 }
 
 typedef int (*TestMethod) (void);
