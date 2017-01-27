@@ -13,9 +13,7 @@ add_executable(paltest_openeventw_test3
 add_dependencies(paltest_openeventw_test3 coreclrpal)
 
 target_link_libraries(paltest_openeventw_test3
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_openeventw_test3_child
 add_dependencies(paltest_openeventw_test3_child coreclrpal)
 
 target_link_libraries(paltest_openeventw_test3_child
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

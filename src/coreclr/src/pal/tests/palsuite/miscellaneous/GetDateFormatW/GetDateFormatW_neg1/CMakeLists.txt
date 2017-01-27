@@ -13,7 +13,5 @@ add_executable(paltest_getdateformatw_getdateformatw_neg1
 add_dependencies(paltest_getdateformatw_getdateformatw_neg1 coreclrpal)
 
 target_link_libraries(paltest_getdateformatw_getdateformatw_neg1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

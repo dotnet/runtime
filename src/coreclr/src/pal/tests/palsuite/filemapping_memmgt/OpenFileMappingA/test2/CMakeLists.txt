@@ -13,7 +13,5 @@ add_executable(paltest_openfilemappinga_test2
 add_dependencies(paltest_openfilemappinga_test2 coreclrpal)
 
 target_link_libraries(paltest_openfilemappinga_test2
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

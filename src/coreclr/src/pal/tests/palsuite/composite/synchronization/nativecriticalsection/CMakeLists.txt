@@ -15,7 +15,5 @@ add_executable(paltest_synchronization_nativecriticalsection
 add_dependencies(paltest_synchronization_nativecriticalsection coreclrpal)
 
 target_link_libraries(paltest_synchronization_nativecriticalsection
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

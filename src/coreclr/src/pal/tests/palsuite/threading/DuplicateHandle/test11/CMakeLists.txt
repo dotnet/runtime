@@ -13,9 +13,7 @@ add_executable(paltest_duplicatehandle_test11
 add_dependencies(paltest_duplicatehandle_test11 coreclrpal)
 
 target_link_libraries(paltest_duplicatehandle_test11
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_duplicatehandle_test11_child
 add_dependencies(paltest_duplicatehandle_test11_child coreclrpal)
 
 target_link_libraries(paltest_duplicatehandle_test11_child
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

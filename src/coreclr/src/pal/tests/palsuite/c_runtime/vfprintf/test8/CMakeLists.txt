@@ -13,7 +13,5 @@ add_executable(paltest_vfprintf_test8
 add_dependencies(paltest_vfprintf_test8 coreclrpal)
 
 target_link_libraries(paltest_vfprintf_test8
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -13,7 +13,5 @@ add_executable(paltest_wfopen_test3
 add_dependencies(paltest_wfopen_test3 coreclrpal)
 
 target_link_libraries(paltest_wfopen_test3
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -16,7 +16,5 @@ add_executable(paltest_synchronization_nativecs_interlocked
 add_dependencies(paltest_synchronization_nativecs_interlocked coreclrpal)
 
 target_link_libraries(paltest_synchronization_nativecs_interlocked
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
