@@ -227,6 +227,30 @@ namespace System
         }
 
         /// <summary>
+        /// Clears the contents of this span.
+        /// </summary>
+        public void Clear()
+        {
+            // TODO: Optimize - https://github.com/dotnet/coreclr/issues/9161
+            for (int i = 0; i < _length; i++)
+            {
+                this[i] = default(T);
+            }
+        }
+
+        /// <summary>
+        /// Fills the contents of this span with the given value.
+        /// </summary>
+        public void Fill(T value)
+        {
+            // TODO: Optimize - https://github.com/dotnet/coreclr/issues/9161
+            for (int i = 0; i < _length; i++)
+            {
+                this[i] = value;
+            }
+        }
+
+        /// <summary>
         /// Copies the contents of this span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
