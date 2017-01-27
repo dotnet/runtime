@@ -5,11 +5,22 @@
 using System.Collections;
 using System.IO;
 
+// We keep this class in Common to allow utilizing it without taking a dependency on System.CodeDom
+#if CODEDOM
 namespace System.CodeDom.Compiler
+#else
+namespace System.IO.Internal
+#endif
 {
     // Explicitly not [Serializable], so as to avoid accidentally deleting
     // files specified in a serialized payload.
-    public class TempFileCollection : ICollection, IDisposable
+
+#if CODEDOM
+    public
+#else
+    internal
+#endif
+    class TempFileCollection : ICollection, IDisposable
     {
         private string _basePath;
         private readonly string _tempDir;

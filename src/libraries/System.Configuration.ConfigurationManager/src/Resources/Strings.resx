@@ -790,4 +790,10 @@
   <data name="Config_base_no_child_nodes" xml:space="preserve">
     <value>Child nodes not allowed.</value>
   </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="DuplicateFileName" xml:space="preserve">
+    <value>The file name '{0}' was already in the collection.</value>
+  </data>
 </root>
