@@ -98,12 +98,12 @@ namespace System.Linq
         private IEnumerable _enumerable;
     }
 
-    internal sealed class GroupingDebuggerProxy<TKey, TElement>
+    internal sealed class SystemLinq_GroupingDebugView<TKey, TElement>
     {
         private readonly Grouping<TKey, TElement> _grouping;
         private TElement[] _cachedValues;
 
-        public GroupingDebuggerProxy(Grouping<TKey, TElement> grouping)
+        public SystemLinq_GroupingDebugView(Grouping<TKey, TElement> grouping)
         {
             _grouping = grouping;
         }
@@ -115,12 +115,12 @@ namespace System.Linq
         public TElement[] Values => _cachedValues ?? (_cachedValues = _grouping.ToArray());
     }
 
-    internal sealed class LookupDebuggerProxy<TKey, TElement>
+    internal sealed class SystemLinq_LookupDebugView<TKey, TElement>
     {
         private readonly Lookup<TKey, TElement> _lookup;
         private IGrouping<TKey, TElement>[] _cachedGroupings;
 
-        public LookupDebuggerProxy(Lookup<TKey, TElement> lookup)
+        public SystemLinq_LookupDebugView(Lookup<TKey, TElement> lookup)
         {
             _lookup = lookup;
         }
