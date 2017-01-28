@@ -343,7 +343,8 @@ namespace System
                             // no one should be looking for a member whose name is longer than 1024
                             if (cUtf8Name > MAXNAMELEN)
                             {
-                                fixed (byte* pUtf8Name = new byte[cUtf8Name])
+                                byte[] utf8Name = new byte[cUtf8Name];
+                                fixed (byte* pUtf8Name = &utf8Name[0])
                                 {
                                     list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
                                 }

@@ -130,7 +130,7 @@ namespace System.Text
             if (bytes.Length == 0)
                 bytes = new byte[1];
             
-            fixed (char* pChars = s) fixed (byte* pBytes = bytes)
+            fixed (char* pChars = s) fixed (byte* pBytes = &bytes[0])
             {
                 return encoding.GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, encoder: null);
             }
@@ -170,7 +170,7 @@ namespace System.Text
                 bytes = new byte[1];
             
             // Just call the (internal) pointer version
-            fixed (char* pChars = chars) fixed (byte* pBytes = bytes)
+            fixed (char* pChars = chars) fixed (byte* pBytes = &bytes[0])
             {
                 return encoding.GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, encoder: null);
             }
@@ -266,7 +266,7 @@ namespace System.Text
             if (chars.Length == 0)
                 chars = new char[1];
 
-            fixed (byte* pBytes = bytes) fixed (char* pChars = chars)
+            fixed (byte* pBytes = bytes) fixed (char* pChars = &chars[0])
             {
                 return encoding.GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, decoder: null);
             }
