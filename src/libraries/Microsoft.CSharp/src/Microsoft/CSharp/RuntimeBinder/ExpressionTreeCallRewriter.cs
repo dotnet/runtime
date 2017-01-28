@@ -1034,7 +1034,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     if (m.IsGenericMethod)
                     {
-                        int size = methinfo.Method.TypeArgs != null ? methinfo.Method.TypeArgs.size : 0;
+                        int size = methinfo.Method.TypeArgs?.size ?? 0;
                         Type[] typeArgs = new Type[size];
                         if (size > 0)
                         {

@@ -726,7 +726,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         else
                         {
-                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc != null ? (_exprSrc.flags & EXPRFLAG.EXF_CANTBENULL) : 0));
+                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                         }
                     }
                     return AggCastResult.Success;
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CConversions.HasGenericDelegateExplicitReferenceConversion(GetSymbolLoader(), _typeSrc, aggTypeDest))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc != null ? (_exprSrc.flags & EXPRFLAG.EXF_CANTBENULL) : 0));
+                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                     return AggCastResult.Success;
                 }
                 return AggCastResult.Failure;

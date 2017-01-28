@@ -97,7 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateSymbol GetBaseAgg()
         {
-            return _pBaseClass == null ? null : _pBaseClass.getAggregate();
+            return _pBaseClass?.getAggregate();
         }
 
         public AggregateType getThisType()

@@ -748,7 +748,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fConstrained;
             bool bIsMatchingStatic;
             EXPR pObject = pMemGroup.GetOptionalObject();
-            CType callingObjectType = pObject != null ? pObject.type : null;
+            CType callingObjectType = pObject?.type;
             PostBindMethod((flags & MemLookFlags.BaseCall) != 0, ref mwi, pObject);
             pObject = AdjustMemberObject(mwi, pObject, out fConstrained, out bIsMatchingStatic);
             pMemGroup.SetOptionalObject(pObject);
@@ -1051,7 +1051,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (result.GetOptionalArguments() != null)
             {
-                verifyMethodArgs(result, pObjectThrough != null ? pObjectThrough.type : null);
+                verifyMethodArgs(result, pObjectThrough?.type);
             }
 
             if (mwtSet && objectIsLvalue(result.GetMemberGroup().GetOptionalObject()))

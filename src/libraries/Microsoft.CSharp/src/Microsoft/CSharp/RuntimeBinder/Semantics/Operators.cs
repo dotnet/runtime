@@ -1590,7 +1590,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private EXPR BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, EXPR arg, UnaOpFullSig uofs)
         {
             NullableType type = uofs.GetType().AsNullableType();
-            Debug.Assert(arg != null && arg.type != null);
+            Debug.Assert(arg?.type != null);
             if (arg.type.IsNullType())
             {
                 return BadOperatorTypesError(ek, arg, null, type);
@@ -3022,14 +3022,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             EXPR exprRes;
             EXPR opConst1 = op1.GetConst();
-            EXPR opConst2 = op2 != null ? op2.GetConst() : null;
+            EXPR opConst2 = op2?.GetConst();
 
             // Check for constants and fold them.
             if (opConst1 != null && (op2 == null || opConst2 != null))
             {
                 // Get the operands
                 double d1 = opConst1.asCONSTANT().getVal().doubleVal;
-                double d2 = opConst2 != null ? opConst2.asCONSTANT().getVal().doubleVal : 0.0;
+                double d2 = opConst2?.asCONSTANT().getVal().doubleVal ?? 0.0;
                 double result = 0;      // if isBoolResult is false
                 bool result_b = false;  // if isBoolResult is true
 

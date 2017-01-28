@@ -267,13 +267,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // class. This is so that if we have a base type that's generic, we'll be
                 // getting the correctly instantiated base type.
 
-                if (pAggregate.AssociatedSystemType != null &&
-                    pAggregate.AssociatedSystemType.GetTypeInfo().BaseType != null)
+                var baseType = pAggregate.AssociatedSystemType?.GetTypeInfo().BaseType;
+                if (baseType != null)
                 {
                     // Store the old base class.
 
                     AggregateType oldBaseType = agg.GetBaseClass();
-                    agg.SetBaseClass(_symbolTable.GetCTypeFromType(pAggregate.AssociatedSystemType.GetTypeInfo().BaseType).AsAggregateType());
+                    agg.SetBaseClass(_symbolTable.GetCTypeFromType(baseType).AsAggregateType());
                     pAggregate.GetBaseClass(); // Get the base type for the new agg type we're making.
 
                     agg.SetBaseClass(oldBaseType);
@@ -1033,7 +1033,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public CType SubstType(CType typeSrc, AggregateType atsCls, TypeArray typeArgsMeth)
         {
-            return SubstType(typeSrc, atsCls != null ? atsCls.GetTypeArgsAll() : null, typeArgsMeth);
+            return SubstType(typeSrc, atsCls?.GetTypeArgsAll(), typeArgsMeth);
         }
 
         public CType SubstType(CType typeSrc, CType typeCls, TypeArray typeArgsMeth)
@@ -1043,7 +1043,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls, TypeArray typeArgsMeth)
         {
-            return SubstTypeArray(taSrc, atsCls != null ? atsCls.GetTypeArgsAll() : null, typeArgsMeth);
+            return SubstTypeArray(taSrc, atsCls?.GetTypeArgsAll(), typeArgsMeth);
         }
 
         public TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls)
