@@ -154,7 +154,7 @@ namespace System {
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = lengths)
+            fixed (int* pLengths = &lengths[0])
                 return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,null);
         }
 
@@ -211,8 +211,8 @@ namespace System {
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = lengths)
-                fixed(int* pLowerBounds = lowerBounds)
+            fixed (int* pLengths = &lengths[0])
+                fixed(int* pLowerBounds = &lowerBounds[0])
                     return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,pLowerBounds);
         }
 
@@ -328,7 +328,7 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = indices)
+            fixed(int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
@@ -485,7 +485,7 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = indices)
+            fixed(int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             InternalSetValue(&elemref,value);
         }
