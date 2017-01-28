@@ -317,6 +317,10 @@ check_function_exists(
     mach_absolute_time
     HAVE_MACH_ABSOLUTE_TIME)
 
+check_function_exists(
+    mach_timebase_info
+    HAVE_MACH_TIMEBASE_INFO)
+
 check_cxx_source_runs(
     "
     #include <sys/mman.h>
