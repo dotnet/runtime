@@ -6434,6 +6434,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         eeGetSig(pResolvedToken->token, info.compScopeHnd, impTokenLookupContextHandle, &calliSig);
 
         callRetTyp = JITtype2varType(calliSig.retType);
+        clsHnd     = calliSig.retTypeClass;
 
         call = impImportIndirectCall(&calliSig, ilOffset);
 
@@ -6462,6 +6463,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         call->gtCall.callSig  = new (this, CMK_CorSig) CORINFO_SIG_INFO;
         *call->gtCall.callSig = calliSig;
 #endif // DEBUG
+
+        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        {
+            bool managedCall = (calliSig.callConv & GTF_CALL_UNMANAGED) == 0;
+            if (managedCall)
+            {
+                call->AsCall()->SetFatPointerCandidate();
+                setMethodHasFatPointer();
+            }
+        }
     }
     else // (opcode != CEE_CALLI)
     {
@@ -6608,7 +6619,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if ((mflags & CORINFO_FLG_VIRTUAL) && (mflags & CORINFO_FLG_EnC) && (opcode == CEE_CALLVIRT))
         {
             NO_WAY("Virtual call to a function added via EnC is not supported");
-            goto DONE_CALL;
         }
 
         if ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT &&
@@ -7544,10 +7554,8 @@ DONE:
         }
     }
 
-// Note: we assume that small return types are already normalized by the managed callee
-// or by the pinvoke stub for calls to unmanaged code.
-
-DONE_CALL:
+    // Note: we assume that small return types are already normalized by the managed callee
+    // or by the pinvoke stub for calls to unmanaged code.
 
     if (!bIntrinsicImported)
     {
@@ -7592,6 +7600,7 @@ DONE_CALL:
         impMarkInlineCandidate(call, exactContextHnd, callInfo);
     }
 
+DONE_CALL:
     // Push or append the result of the call
     if (callRetTyp == TYP_VOID)
     {
@@ -7644,9 +7653,11 @@ DONE_CALL:
             }
         }
 
-        if (call->gtOper == GT_CALL)
+        if (call->IsCall())
         {
             // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
+
+            bool fatPointerCandidate = call->AsCall()->IsFatPointerCandidate();
             if (varTypeIsStruct(callRetTyp))
             {
                 call = impFixupCallStructReturn(call, sig->retTypeClass);
@@ -7655,6 +7666,7 @@ DONE_CALL:
             if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
             {
                 assert(opts.OptEnabled(CLFLG_INLINING));
+                assert(!fatPointerCandidate); // We should not try to inline calli.
 
                 // Make the call its own tree (spill the stack if needed).
                 impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
@@ -7664,6 +7676,24 @@ DONE_CALL:
             }
             else
             {
+                if (fatPointerCandidate)
+                {
+                    // fatPointer candidates should be in statements of the form call() or var = call().
+                    // Such form allows to find statements with fat calls without walking through whole trees
+                    // and removes problems with cutting trees.
+                    assert(!bIntrinsicImported);
+                    assert(IsTargetAbi(CORINFO_CORERT_ABI));
+                    if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
+                    {
+                        unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
+                        LclVarDsc* varDsc     = &lvaTable[calliSlot];
+                        varDsc->lvVerTypeInfo = tiRetVal;
+                        impAssignTempGen(calliSlot, call, clsHnd, (unsigned)CHECK_SPILL_NONE);
+                        // impAssignTempGen can change src arg list and return type for call that returns struct.
+                        var_types type = genActualType(lvaTable[calliSlot].TypeGet());
+                        call           = gtNewLclvNode(calliSlot, type);
+                    }
+                }
                 // For non-candidates we must also spill, since we
                 // might have locals live on the eval stack that this
                 // call can modify.

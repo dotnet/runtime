@@ -3263,43 +3263,52 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-#define GTF_CALL_M_EXPLICIT_TAILCALL                                                                                   \
-    0x00000001 // GT_CALL -- the call is "tail" prefixed and importer has performed tail call checks
-#define GTF_CALL_M_TAILCALL 0x00000002          // GT_CALL -- the call is a tailcall
-#define GTF_CALL_M_VARARGS 0x00000004           // GT_CALL -- the call uses varargs ABI
-#define GTF_CALL_M_RETBUFFARG 0x00000008        // GT_CALL -- first parameter is the return buffer argument
-#define GTF_CALL_M_DELEGATE_INV 0x00000010      // GT_CALL -- call to Delegate.Invoke
-#define GTF_CALL_M_NOGCCHECK 0x00000020         // GT_CALL -- not a call for computing full interruptability
-#define GTF_CALL_M_SPECIAL_INTRINSIC 0x00000040 // GT_CALL -- function that could be optimized as an intrinsic
-                                                // in special cases. Used to optimize fast way out in morphing
-#define GTF_CALL_M_UNMGD_THISCALL                                                                                      \
-    0x00000080 // "this" pointer (first argument) should be enregistered (only for GTF_CALL_UNMANAGED)
-#define GTF_CALL_M_VIRTSTUB_REL_INDIRECT                                                                               \
-    0x00000080 // the virtstub is indirected through a relative address (only for GTF_CALL_VIRT_STUB)
-#define GTF_CALL_M_NONVIRT_SAME_THIS                                                                                   \
-    0x00000080 // callee "this" pointer is equal to caller this pointer (only for GTF_CALL_NONVIRT)
-#define GTF_CALL_M_FRAME_VAR_DEATH 0x00000100 // GT_CALL -- the compLvFrameListRoot variable dies here (last use)
+// clang-format off
+
+#define GTF_CALL_M_EXPLICIT_TAILCALL     0x00000001 // GT_CALL -- the call is "tail" prefixed and 
+                                                    // importer has performed tail call checks
+#define GTF_CALL_M_TAILCALL              0x00000002 // GT_CALL -- the call is a tailcall
+#define GTF_CALL_M_VARARGS               0x00000004 // GT_CALL -- the call uses varargs ABI
+#define GTF_CALL_M_RETBUFFARG            0x00000008 // GT_CALL -- first parameter is the return buffer argument
+#define GTF_CALL_M_DELEGATE_INV          0x00000010 // GT_CALL -- call to Delegate.Invoke
+#define GTF_CALL_M_NOGCCHECK             0x00000020 // GT_CALL -- not a call for computing full interruptability
+#define GTF_CALL_M_SPECIAL_INTRINSIC     0x00000040 // GT_CALL -- function that could be optimized as an intrinsic
+                                                    // in special cases. Used to optimize fast way out in morphing
+#define GTF_CALL_M_UNMGD_THISCALL        0x00000080 // GT_CALL -- "this" pointer (first argument) 
+                                                    // should be enregistered (only for GTF_CALL_UNMANAGED)
+#define GTF_CALL_M_VIRTSTUB_REL_INDIRECT 0x00000080 // the virtstub is indirected through 
+                                                    // a relative address (only for GTF_CALL_VIRT_STUB)
+#define GTF_CALL_M_NONVIRT_SAME_THIS     0x00000080 // GT_CALL -- callee "this" pointer is 
+                                                    // equal to caller this pointer (only for GTF_CALL_NONVIRT)
+#define GTF_CALL_M_FRAME_VAR_DEATH       0x00000100 // GT_CALL -- the compLvFrameListRoot variable dies here (last use)
 
 #ifndef LEGACY_BACKEND
-#define GTF_CALL_M_TAILCALL_VIA_HELPER 0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
-#endif                                            // !LEGACY_BACKEND
-
-#if FEATURE_TAILCALL_OPT
-#define GTF_CALL_M_IMPLICIT_TAILCALL                                                                                   \
-    0x00000400 // GT_CALL -- call is an opportunistic tail call and importer has performed tail call checks
-#define GTF_CALL_M_TAILCALL_TO_LOOP                                                                                    \
-    0x00000800 // GT_CALL -- call is a fast recursive tail call that can be converted into a loop
+#define GTF_CALL_M_TAILCALL_VIA_HELPER   0x00000200 // GT_CALL -- call is a tail call dispatched via tail call JIT helper.
 #endif
 
-#define GTF_CALL_M_PINVOKE 0x00001000 // GT_CALL -- call is a pinvoke.  This mirrors VM flag CORINFO_FLG_PINVOKE.
-                                      // A call marked as Pinvoke is not necessarily a GT_CALL_UNMANAGED. For e.g.
-                                      // an IL Stub dynamically generated for a PInvoke declaration is flagged as
-                                      // a Pinvoke but not as an unmanaged call. See impCheckForPInvokeCall() to
-                                      // know when these flags are set.
+#if FEATURE_TAILCALL_OPT
+#define GTF_CALL_M_IMPLICIT_TAILCALL     0x00000400 // GT_CALL -- call is an opportunistic 
+                                                    // tail call and importer has performed tail call checks
+#define GTF_CALL_M_TAILCALL_TO_LOOP      0x00000800 // GT_CALL -- call is a fast recursive tail call
+                                                    // that can be converted into a loop
+#endif
 
-#define GTF_CALL_M_R2R_REL_INDIRECT 0x00002000 // GT_CALL -- ready to run call is indirected through a relative address
-#define GTF_CALL_M_DOES_NOT_RETURN 0x00004000  // GT_CALL -- call does not return
-#define GTF_CALL_M_SECURE_DELEGATE_INV 0x00008000 // GT_CALL -- call is in secure delegate
+#define GTF_CALL_M_PINVOKE               0x00001000 // GT_CALL -- call is a pinvoke.  This mirrors VM flag CORINFO_FLG_PINVOKE.
+                                                    // A call marked as Pinvoke is not necessarily a GT_CALL_UNMANAGED. For e.g.
+                                                    // an IL Stub dynamically generated for a PInvoke declaration is flagged as
+                                                    // a Pinvoke but not as an unmanaged call. See impCheckForPInvokeCall() to
+                                                    // know when these flags are set.
+
+#define GTF_CALL_M_R2R_REL_INDIRECT      0x00002000 // GT_CALL -- ready to run call is indirected through a relative address
+#define GTF_CALL_M_DOES_NOT_RETURN       0x00004000 // GT_CALL -- call does not return
+#define GTF_CALL_M_SECURE_DELEGATE_INV   0x00008000 // GT_CALL -- call is in secure delegate
+#define GTF_CALL_M_FAT_POINTER_CHECK     0x00010000 // GT_CALL -- CoreRT managed calli needs transformation, that checks
+                                                    // special bit in calli address. If it is set, then it is necessary 
+                                                    // to restore real function address and load hidden argument 
+                                                    // as the first argument for calli. It is CoreRT replacement for instantiating 
+                                                    // stubs, because executable code cannot be generated at runtime.
+
+    // clang-format on
 
     bool IsUnmanaged() const
     {
@@ -3497,7 +3506,22 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
     }
 
+    bool IsFatPointerCandidate() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_FAT_POINTER_CHECK) != 0;
+    }
+
     bool IsPure(Compiler* compiler) const;
+
+    void ClearFatPointerCandidate()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_FAT_POINTER_CHECK;
+    }
+
+    void SetFatPointerCandidate()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_FAT_POINTER_CHECK;
+    }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags
 
