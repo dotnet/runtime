@@ -884,12 +884,12 @@ namespace System.Linq.Tests
             TKey key = (TKey)properties["Key"].GetValue(proxyObject);
             Assert.Equal(grouping.Key, key);
 
-            PropertyInfo elementsProperty = properties["Elements"];
-            Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(elementsProperty));
-            TElement[] elements = (TElement[])elementsProperty.GetValue(proxyObject);
-            Assert.IsType<TElement[]>(elements); // Arrays can be covariant / of assignment-compatible types
-            Assert.Equal(grouping, elements);
-            Assert.Same(elements, elementsProperty.GetValue(proxyObject)); // The result should be cached, as Grouping is immutable.
+            PropertyInfo valuesProperty = properties["Values"];
+            Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(valuesProperty));
+            TElement[] values = (TElement[])valuesProperty.GetValue(proxyObject);
+            Assert.IsType<TElement[]>(values); // Arrays can be covariant / of assignment-compatible types
+            Assert.Equal(grouping, values);
+            Assert.Same(values, valuesProperty.GetValue(proxyObject)); // The result should be cached, as Grouping is immutable.
         }
 
         public static IEnumerable<object[]> DebuggerAttributesValid_Data()
