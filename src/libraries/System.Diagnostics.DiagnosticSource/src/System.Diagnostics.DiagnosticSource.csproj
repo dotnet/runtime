@@ -6,8 +6,6 @@
     <AssemblyName>System.Diagnostics.DiagnosticSource</AssemblyName>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
-    <!-- unset PackageTargetFramework we'll use PackageDestination instead -->
-    <PackageTargetFramework />
     <!-- duplicate in net46 folder so older nuget clients can consume -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
@@ -28,9 +26,9 @@
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
+    <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DiagnosticSourceUsersGuide.md" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />

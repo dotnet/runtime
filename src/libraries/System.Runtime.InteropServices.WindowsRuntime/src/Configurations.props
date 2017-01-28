@@ -3,8 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcore50aot-Windows_NT;
-      netstandard1.3-Windows_NT;
-      netstandard1.3;
+      netcoreapp-Windows_NT;
+      netcoreapp;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
