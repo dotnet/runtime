@@ -84,7 +84,8 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var props = ProjectRootElement.Create();
             var itemGroup = props.AddItemGroup();
-            itemGroup.Condition = "'$(RuntimeIdentifer)' == '' AND '$(RuntimeIdentifiers)' == ''";
+            // only set the platform manifest when our RID-specific packages aren't in scope
+            itemGroup.Condition = "'$(RuntimeIdentifer)' == ''";
 
             var manifestFileName = Path.GetFileName(PlatformManifestFile);
             itemGroup.AddItem(PlatformManifestsItem, $"$(MSBuildThisFileDirectory){manifestFileName}");
