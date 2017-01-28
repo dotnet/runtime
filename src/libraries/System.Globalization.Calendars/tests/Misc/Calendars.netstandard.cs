@@ -37,7 +37,8 @@ namespace System.Globalization.Tests
             Calendar cloned = (Calendar) calendar.Clone();
             Assert.Equal(calendar.GetType(), cloned.GetType());
         }
-
+        
+        [ActiveIssue(15581)]
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void GetLeapMonthTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)
