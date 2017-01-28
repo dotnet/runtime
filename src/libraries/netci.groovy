@@ -317,7 +317,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup}")
+                            def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} ${portableLinux}")
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
                             // Tar up the appropriate bits.
                             shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
