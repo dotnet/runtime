@@ -25,7 +25,8 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'OpenSUSE13.2': 'Linux',
                   'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
-                  'LinuxARMEmulator': 'Linux']
+                  'LinuxARMEmulator': 'Linux',
+                  'PortableLinux': 'Linux']
 
 def osShortName = ['Windows 10': 'win10',
                    'Windows 7' : 'win7',
@@ -294,8 +295,15 @@ def buildArchConfiguration = ['Debug': 'x86',
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX', 'PortableLinux'].each { osName ->
                 def osGroup = osGroupMap[osName]
+                def osForMachineAffinity = osName
+                
+                if (osForMachineAffinity == 'PortableLinux') {
+                    // Portable Linux builds happen on RHEL7.2
+                    osForMachineAffinity = "RHEL7.2"
+                }
+
                 def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -318,7 +326,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                 }
 
                 // Set the affinity.
-                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto')
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
                 // Set up standard options.
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 // Add the unit test results
@@ -335,8 +343,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                 Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
                 // Set up triggers
                 if (isPR) {
-                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
+                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1, PortableLinux and OSX on every PR.
+                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' || osName== 'PortableLinux') {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
                     }
                     else {
