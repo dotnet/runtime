@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             BindingRestrictions restrictions = BindingRestrictions.Empty;
             ICSharpInvokeOrInvokeMemberBinder callPayload = action as ICSharpInvokeOrInvokeMemberBinder;
             ParameterExpression tempForIncrement = null;
-            IEnumerator<CSharpArgumentInfo> arginfosEnum = arginfos == null ? null : arginfos.GetEnumerator();
+            IEnumerator<CSharpArgumentInfo> arginfosEnum = (arginfos ?? Array.Empty<CSharpArgumentInfo>()).GetEnumerator();
 
             for (int index = 0; index < args.Length; ++index)
             {
@@ -42,9 +42,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                     Debug.Assert(false, "The runtime binder is being asked to bind a metaobject without a value");
                     throw Error.InternalCompilerError();
                 }
-                CSharpArgumentInfo info = null;
-                if (arginfosEnum != null && arginfosEnum.MoveNext())
-                    info = arginfosEnum.Current;
+
+                CSharpArgumentInfo info = arginfosEnum.MoveNext() ? arginfosEnum.Current : null;
 
                 if (index == 0 && IsIncrementOrDecrementActionOnLocal(action))
                 {
