@@ -74,10 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // DECLSYMs are not parented like named symbols.
             AggregateDeclaration sym = newBasicSym(SYMKIND.SK_AggregateDeclaration, agg.name, null).AsAggregateDeclaration();
 
-            if (declOuter != null)
-            {
-                declOuter.AddToChildList(sym);
-            }
+            declOuter?.AddToChildList(sym);
             agg.AddDecl(sym);
 
             Debug.Assert(sym != null);

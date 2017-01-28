@@ -60,7 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (_dictionary.TryGetValue(k, out sym))
             {
                 // Link onto the end of the symbol chain here.
-                while (sym != null && sym.nextSameName != null)
+                while (sym?.nextSameName != null)
                 {
                     sym = sym.nextSameName;
                 }

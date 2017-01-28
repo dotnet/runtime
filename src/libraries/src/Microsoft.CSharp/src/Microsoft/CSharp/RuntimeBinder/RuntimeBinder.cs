@@ -269,7 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (payload is CSharpInvokeMemberBinder)
             {
                 ICSharpInvokeOrInvokeMemberBinder callPayload = payload as ICSharpInvokeOrInvokeMemberBinder;
-                int arity = callPayload.TypeArguments != null ? callPayload.TypeArguments.Count : 0;
+                int arity = callPayload.TypeArguments?.Count ?? 0;
                 MemberLookup mem = new MemberLookup();
                 EXPR callingObject = CreateCallingObjectForCall(callPayload, arguments, dictionary);
 
@@ -532,12 +532,12 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 if (callOrInvoke.StaticCall)
                 {
-                    if (arguments[0].Value == null || !(arguments[0].Value is Type))
+                    type = arguments[0].Value as Type;
+                    if (type == null)
                     {
                         Debug.Assert(false, "Cannot make static call without specifying a type");
                         throw Error.InternalCompilerError();
                     }
-                    type = arguments[0].Value as Type;
                 }
                 else
                 {
@@ -1129,12 +1129,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             EXPR callingObject;
             if (payload.StaticCall)
             {
-                if (arguments[0].Value == null || !(arguments[0].Value is Type))
+                Type t = arguments[0].Value as Type;
+                if (t == null)
                 {
                     Debug.Assert(false, "Cannot make static call without specifying a type");
                     throw Error.InternalCompilerError();
                 }
-                Type t = arguments[0].Value as Type;
+
                 callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), null, t.GetTypeInfo().ContainsGenericParameters ?
                         _exprFactory.CreateTypeArguments(SymbolLoader.getBSymmgr().AllocParams(_symbolTable.GetCTypeArrayFromTypes(t.GetGenericArguments())), null) : null);
             }
@@ -1173,7 +1174,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             EXPR pResult = null;
-            int arity = payload.TypeArguments != null ? payload.TypeArguments.Count : 0;
+            int arity = payload.TypeArguments?.Count ?? 0;
             MemberLookup mem = new MemberLookup();
 
             Debug.Assert(_bindingContext.ContextForMemberLookup() != null);
