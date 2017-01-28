@@ -881,7 +881,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     underlyingType = underlyingType.getAggregate().GetUnderlyingType();
                 }
 
-                switch (underlyingType.AssociatedSystemType.GetTypeCode())
+                switch (Type.GetTypeCode(underlyingType.AssociatedSystemType))
                 {
                     case TypeCode.Boolean:
                         objval = val.boolVal;
