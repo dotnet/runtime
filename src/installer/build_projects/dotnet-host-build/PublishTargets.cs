@@ -313,7 +313,10 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult PublishManagedPackages(BuildTargetContext c)
         {
-            if (EnvVars.Signed)
+            // When building on non windows platforms, we don't compile the full set of
+            // tfms a package targets (to prevent the need of having mono and the reference
+            // assemblies installed. So we shouldn't publish these packages.
+            if (EnvVars.Signed && CurrentPlatform.IsWindows)
             {
                 foreach (var file in Directory.GetFiles(Dirs.Packages, "*.nupkg"))
                 {
