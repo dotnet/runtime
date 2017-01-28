@@ -94,7 +94,7 @@
 
     <WriteLinesToFile
       File="$(AssemblyInfoFile)"
-      Lines="@(AssemblyInfoUsings);@(AssemblyInfoLines)"
+      Lines="@(AssemblyInfoUsings);@(AssemblyInfoLines);@(AssemblyInfoSource)"
       Overwrite="true" />
 
     <ItemGroup>

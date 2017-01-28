@@ -9,9 +9,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Release|AnyCPU'" />
   <ItemGroup>
-    <TargetingPackReference Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

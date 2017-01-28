@@ -45,7 +45,7 @@
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
     <Compile Include="Microsoft\VisualBasic\Strings.vb" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Resources.ResourceManager" />
