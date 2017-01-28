@@ -871,7 +871,25 @@ namespace System.Linq.Tests
         {
             // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.
             Assert.Equal(expected, DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(grouping);
+            
+            object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
+            
+            // Validate proxy fields
+            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject));
+
+            // Validate proxy properties
+            IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
+            Assert.Equal(2, properties.Count);
+            
+            TKey key = (TKey)properties["Key"].GetValue(proxyObject);
+            Assert.Equal(grouping.Key, key);
+
+            PropertyInfo elementsProperty = properties["Elements"];
+            Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(elementsProperty));
+            TElement[] elements = (TElement[])elementsProperty.GetValue(proxyObject);
+            Assert.IsType<TElement[]>(elements); // Arrays can be covariant / of assignment-compatible types
+            Assert.Equal(grouping, elements);
+            Assert.Same(elements, elementsProperty.GetValue(proxyObject)); // The result should be cached, as Grouping is immutable.
         }
 
         public static IEnumerable<object[]> DebuggerAttributesValid_Data()

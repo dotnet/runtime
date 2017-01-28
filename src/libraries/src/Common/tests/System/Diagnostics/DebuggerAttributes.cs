@@ -34,11 +34,33 @@ namespace System.Diagnostics
             // Create an instance of the proxy type, and make sure we can access all of the instance properties 
             // on the type without exception
             object proxyInstance = Activator.CreateInstance(proxyType, obj);
-            foreach (var pi in proxyInstance.GetType().GetTypeInfo().DeclaredProperties)
-            {
-                pi.GetValue(proxyInstance, null);
-            }
+            GetDebuggerVisibleProperties(proxyInstance);
         }
+
+        public static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
+        {
+            CustomAttributeData debuggerBrowsableAttribute = info.CustomAttributes
+                .SingleOrDefault(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute));
+            return (DebuggerBrowsableState?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
+        }
+
+        public static IDictionary<string, FieldInfo> GetDebuggerVisibleFields(object obj)
+        {
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
+            IEnumerable<FieldInfo> visibleFields = typeInfo.DeclaredFields
+                .Where(fi => fi.IsPublic && GetDebuggerBrowsableState(fi) != DebuggerBrowsableState.Never);
+            return visibleFields.ToDictionary(fi => fi.Name, fi => fi);
+        }
+
+        public static IDictionary<string, PropertyInfo> GetDebuggerVisibleProperties(object obj)
+        {
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
+            IEnumerable<PropertyInfo> visibleProperties = typeInfo.DeclaredProperties
+                .Where(pi => pi.GetGetMethod() != null && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
+            return visibleProperties.ToDictionary(pi => pi.Name, pi => pi);
+        }
+
+        public static object GetProxyObject(object obj) => Activator.CreateInstance(GetProxyType(obj), obj);
 
         public static Type GetProxyType(object obj) => GetProxyType(obj.GetType());
 
@@ -53,8 +75,7 @@ namespace System.Diagnostics
                 .ToArray();
             if (attrs.Length != 1)
             {
-                throw new InvalidOperationException(
-                    string.Format("Expected one DebuggerTypeProxyAttribute on {0}.", type));
+                throw new InvalidOperationException($"Expected one DebuggerTypeProxyAttribute on {type}.");
             }
             CustomAttributeData cad = attrs[0];
 
