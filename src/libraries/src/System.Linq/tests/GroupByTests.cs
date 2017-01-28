@@ -881,9 +881,11 @@ namespace System.Linq.Tests
             IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
             Assert.Equal(2, properties.Count);
             
+            // Key
             TKey key = (TKey)properties["Key"].GetValue(proxyObject);
             Assert.Equal(grouping.Key, key);
 
+            // Values
             PropertyInfo valuesProperty = properties["Values"];
             Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(valuesProperty));
             TElement[] values = (TElement[])valuesProperty.GetValue(proxyObject);
