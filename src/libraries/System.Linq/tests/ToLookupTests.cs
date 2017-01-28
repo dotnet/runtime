@@ -306,6 +306,7 @@ namespace System.Linq.Tests
             IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
             Assert.Equal(1, properties.Count);
 
+            // Groupings
             PropertyInfo groupingsProperty = properties["Groupings"];
             Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(groupingsProperty));
             var groupings = (IGrouping<TKey, TElement>[])groupingsProperty.GetValue(proxyObject);

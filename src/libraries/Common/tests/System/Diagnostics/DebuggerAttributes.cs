@@ -41,6 +41,7 @@ namespace System.Diagnostics
         {
             CustomAttributeData debuggerBrowsableAttribute = info.CustomAttributes
                 .SingleOrDefault(a => a.AttributeType == typeof(DebuggerBrowsableAttribute));
+            // Enums in attribute constructors are boxed as ints, so cast to int? first.
             return (DebuggerBrowsableState?)(int?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
         }
 
@@ -48,6 +49,7 @@ namespace System.Diagnostics
         {
             TypeInfo typeInfo = obj.GetType().GetTypeInfo();
             IEnumerable<FieldInfo> visibleFields = typeInfo.DeclaredFields
+                // The debugger doesn't evaluate non-public members of type proxies.
                 .Where(fi => fi.IsPublic && GetDebuggerBrowsableState(fi) != DebuggerBrowsableState.Never);
             return visibleFields.ToDictionary(fi => fi.Name, fi => fi);
         }
@@ -56,6 +58,7 @@ namespace System.Diagnostics
         {
             TypeInfo typeInfo = obj.GetType().GetTypeInfo();
             IEnumerable<PropertyInfo> visibleProperties = typeInfo.DeclaredProperties
+                // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
                 .Where(pi => pi.GetGetMethod() != null && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
             return visibleProperties.ToDictionary(pi => pi.Name, pi => pi);
         }
