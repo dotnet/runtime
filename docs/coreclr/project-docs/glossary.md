@@ -22,7 +22,7 @@ As much as possible, we should link to the most authoritative and recent source 
 * ReadyToRun: A flavor of native images - command line switch of [crossgen](../building/crossgen.md).
 * Redhawk: Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/).
 * SOS: [Son of Strike](http://blogs.msdn.com/b/jasonz/archive/2003/10/21/53581.aspx). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation.
-* SuperPMI: JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface).
+* SuperPMI: JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/coreclr/blob/master/src/ToolBox/superpmi/readme.txt).
 * SVR: The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available.
 * TPA: Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application.
 * URT: Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT.
