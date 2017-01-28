@@ -4194,9 +4194,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     assert(!fgComputePredsDone);
     if (fgCheapPredsValid)
     {
-        // Remove cheap predecessors before inlining; allowing the cheap predecessor lists to be inserted
-        // with inlined blocks causes problems.
+        // Remove cheap predecessors before inlining and fat call transformation;
+        // allowing the cheap predecessor lists to be inserted causes problems
+        // with splitting existing blocks.
         fgRemovePreds();
+    }
+
+    if (IsTargetAbi(CORINFO_CORERT_ABI) && doesMethodHaveFatPointer())
+    {
+        fgTransformFatCalli();
     }
 
     EndPhase(PHASE_IMPORTATION);
