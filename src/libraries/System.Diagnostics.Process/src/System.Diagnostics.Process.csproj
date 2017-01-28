@@ -366,6 +366,9 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
+      <Link>Common\Unix\System.Native\Interop.GetTimestamp.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true') AND '$(IsPartialFacadeAssembly)'!='true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
