@@ -40,8 +40,8 @@ namespace System.Diagnostics
         public static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
         {
             CustomAttributeData debuggerBrowsableAttribute = info.CustomAttributes
-                .SingleOrDefault(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute));
-            return (DebuggerBrowsableState?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
+                .SingleOrDefault(a => a.AttributeType == typeof(DebuggerBrowsableAttribute));
+            return (DebuggerBrowsableState?)(int?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
         }
 
         public static IDictionary<string, FieldInfo> GetDebuggerVisibleFields(object obj)
