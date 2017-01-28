@@ -30,7 +30,7 @@
     <CoreClrExpectedPrerelease>beta-24927-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-24927-00</ProjectNTfsExpectedPrerelease>
-    <StandardExpectedPrerelease>beta-24919-01</StandardExpectedPrerelease>
+    <StandardExpectedPrerelease>beta-24927-02</StandardExpectedPrerelease>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-24926-02</SniPackageVersion>
   </PropertyGroup>
