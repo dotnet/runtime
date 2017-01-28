@@ -20,5 +20,35 @@ namespace System.Security.Cryptography.Xml.Tests
                 () => new SignedXml((XmlElement) null)
             );
         }
+
+        [Fact]
+        public void Constructor_NoArgs()
+        {
+            SignedXml signedXml = new SignedXml();
+
+            // TODO: Expand this
+            Assert.NotNull(signedXml.EncryptedXml);
+
+            Assert.Equal(0, signedXml.KeyInfo.Count);
+            Assert.Equal(null, signedXml.KeyInfo.Id);
+
+            // TODO: Expand
+            Assert.NotNull(signedXml.Signature);
+            Assert.NotNull(signedXml.Signature.SignedInfo);
+
+            Assert.Equal(signedXml.SafeCanonicalizationMethods,
+                new []
+                {
+                    SignedXml.XmlDsigC14NTransformUrl,
+                    SignedXml.XmlDsigC14NWithCommentsTransformUrl,
+                    SignedXml.XmlDsigExcC14NTransformUrl,
+                    SignedXml.XmlDsigExcC14NWithCommentsTransformUrl
+                });
+            Assert.NotNull(signedXml.SignatureFormatValidator);
+
+            Assert.Null(signedXml.SignatureLength);
+            Assert.Null(signedXml.SignatureMethod);
+            Assert.Null(signedXml.SignatureValue);
+        }
     }
 }
