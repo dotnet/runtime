@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -279,7 +280,7 @@ namespace System.Linq.Tests
                     break;
             }
 
-            var expected = new []
+            var expected = new[]
             {
                 new RoleMetadata {Role = new Role {Id = 1}, CountA = 17, CountrB = 0 },
                 new RoleMetadata {Role = new Role {Id = 2}, CountA = 0, CountrB = 17 },
@@ -295,7 +296,27 @@ namespace System.Linq.Tests
         {
             // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.
             Assert.Equal($"Count = {lookup.Count}", DebuggerAttributes.ValidateDebuggerDisplayReferences(lookup));
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(lookup);
+            
+            object proxyObject = DebuggerAttributes.GetProxyObject(lookup);
+
+            // Validate proxy fields
+            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject));
+
+            // Validate proxy properties
+            IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
+            Assert.Equal(1, properties.Count);
+
+            PropertyInfo groupingsProperty = properties["Groupings"];
+            Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(groupingsProperty));
+            var groupings = (IGrouping<TKey, TElement>[])groupingsProperty.GetValue(proxyObject);
+            Assert.IsType<IGrouping<TKey, TElement>[]>(groupings); // Arrays can be covariant / of assignment-compatible types
+
+            Assert.All(groupings.Zip(lookup, (l, r) => Tuple.Create(l, r)), tuple =>
+            {
+                Assert.Same(tuple.Item1, tuple.Item2);
+            });
+
+            Assert.Same(groupings, groupingsProperty.GetValue(proxyObject)); // The result should be cached, as Lookup is immutable.
         }
 
         public static IEnumerable<object[]> DebuggerAttributesValid_Data()

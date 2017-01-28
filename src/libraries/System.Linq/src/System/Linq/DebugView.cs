@@ -101,6 +101,7 @@ namespace System.Linq
     internal sealed class GroupingDebuggerProxy<TKey, TElement>
     {
         private readonly Grouping<TKey, TElement> _grouping;
+        private TElement[] _cachedValues;
 
         public GroupingDebuggerProxy(Grouping<TKey, TElement> grouping)
         {
@@ -111,7 +112,7 @@ namespace System.Linq
 
         // The name of this property must alphabetically follow `Key` so the elements appear last in the display.
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public TElement[] Values => _grouping._elements;
+        public TElement[] Values => _cachedValues ?? (_cachedValues = _grouping.ToArray());
     }
 
     internal sealed class LookupDebuggerProxy<TKey, TElement>
