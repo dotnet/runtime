@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class LocalVariableSymbol : VariableSymbol
+    internal sealed class LocalVariableSymbol : VariableSymbol
     {
         // To do expression tree rewriting we need to keep a map between a
         // local in an expression tree and the result of a ParameterExpression

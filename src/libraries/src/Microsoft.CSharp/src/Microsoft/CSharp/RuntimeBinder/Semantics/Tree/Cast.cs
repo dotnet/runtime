@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRCAST : EXPR
+    internal sealed class EXPRCAST : EXPR
     {
         public EXPR Argument;
         public EXPR GetArgument() { return Argument; }

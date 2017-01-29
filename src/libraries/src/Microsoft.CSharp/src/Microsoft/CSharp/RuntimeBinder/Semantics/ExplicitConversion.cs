@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // BindExplicitConversion
         // ----------------------------------------------------------------------------
 
-        private class ExplicitConversion
+        private sealed class ExplicitConversion
         {
             private readonly ExpressionBinder _binder;
             private EXPR _exprSrc;

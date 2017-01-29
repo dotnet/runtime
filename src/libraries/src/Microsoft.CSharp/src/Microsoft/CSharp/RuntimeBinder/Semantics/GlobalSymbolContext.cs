@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     This includes symbols, types, declarations.
     *****************************************************************************/
 
-    internal class GlobalSymbolContext
+    internal sealed class GlobalSymbolContext
     {
         private readonly PredefinedTypes _predefTypes;
         private readonly NameManager _nameManager;
@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeManager TypeManager { get; }
         public TypeManager GetTypes() { return TypeManager; }
-        public BSYMMGR GlobalSymbols { get; }
+        private BSYMMGR GlobalSymbols { get; }
         public BSYMMGR GetGlobalSymbols() { return GlobalSymbols; }
         public NameManager GetNameManager() { return _nameManager; }
         public PredefinedTypes GetPredefTypes() { return _predefTypes; }
