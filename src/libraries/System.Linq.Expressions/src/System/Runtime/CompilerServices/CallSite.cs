@@ -186,6 +186,7 @@ namespace System.Runtime.CompilerServices
         public static CallSite<T> Create(CallSiteBinder binder)
         {
             if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
+            ContractUtils.RequiresNotNull(binder, nameof(binder));
             return new CallSite<T>(binder);
         }
 
