@@ -33,6 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         Lim
     }
 
+    [Flags]
     internal enum ErrArgFlags
     {
         None = 0x0000,
