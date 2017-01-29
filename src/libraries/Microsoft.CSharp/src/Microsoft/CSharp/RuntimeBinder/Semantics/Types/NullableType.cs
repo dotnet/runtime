@@ -14,9 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class NullableType : CType
+    internal sealed class NullableType : CType
     {
-        public AggregateType ats;
+        private AggregateType ats;
         public BSYMMGR symmgr;
         public TypeManager typeManager;
 

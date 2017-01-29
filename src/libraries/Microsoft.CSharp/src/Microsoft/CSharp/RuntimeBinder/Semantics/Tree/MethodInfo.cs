@@ -8,7 +8,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRMETHODINFO : EXPR
+    internal sealed class EXPRMETHODINFO : EXPR
     {
         public MethWithInst Method;
     }

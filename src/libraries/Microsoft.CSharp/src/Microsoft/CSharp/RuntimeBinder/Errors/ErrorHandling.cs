@@ -50,7 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        public void MakeErrorLocArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
+        private void MakeErrorLocArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
         {
             error = new CParameterizedError();
             error.Initialize(id, prgarg);

@@ -136,7 +136,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             get { return parent.AsNamespaceOrAggregateSymbol(); }
         }
 
-        public new AggregateDeclaration DeclFirst()
+        private new AggregateDeclaration DeclFirst()
         {
             return (AggregateDeclaration)base.DeclFirst();
         }
@@ -157,7 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (aid == GetModuleID());
         }
 
-        public KAID GetModuleID()
+        private KAID GetModuleID()
         {
             return 0;
         }
@@ -341,9 +341,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        public bool IsUnmanagedStruct()
+        private bool IsUnmanagedStruct()
         {
-            return _isUnmanagedStruct == true;
+            return _isUnmanagedStruct;
         }
 
         public void SetUnmanagedStruct(bool unmanagedStruct)
@@ -506,7 +506,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pConvFirst = conv;
         }
 
-        public new bool InternalsVisibleTo(Assembly assembly)
+        public bool InternalsVisibleTo(Assembly assembly)
         {
             return _pTypeManager.InternalsVisibleTo(AssociatedAssembly, assembly);
         }

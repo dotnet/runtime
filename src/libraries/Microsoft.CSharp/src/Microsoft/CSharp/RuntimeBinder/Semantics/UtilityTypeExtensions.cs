@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal static class UtilityTypeExtensions
     {
-        public static IEnumerable<AggregateType> InterfaceAndBases(this AggregateType type)
+        private static IEnumerable<AggregateType> InterfaceAndBases(this AggregateType type)
         {
             Debug.Assert(type != null);
             yield return type;
@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 yield return t;
         }
 
-        public static IEnumerable<AggregateType> AllConstraintInterfaces(this TypeArray constraints)
+        private static IEnumerable<AggregateType> AllConstraintInterfaces(this TypeArray constraints)
         {
             Debug.Assert(constraints != null);
             foreach (AggregateType c in constraints.ToArray())
@@ -25,7 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     yield return t;
         }
 
-        public static IEnumerable<AggregateType> TypeAndBaseClasses(this AggregateType type)
+        private static IEnumerable<AggregateType> TypeAndBaseClasses(this AggregateType type)
         {
             Debug.Assert(type != null);
             AggregateType t = type;
@@ -36,7 +36,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public static IEnumerable<AggregateType> TypeAndBaseClassInterfaces(this AggregateType type)
+        private static IEnumerable<AggregateType> TypeAndBaseClassInterfaces(this AggregateType type)
         {
             Debug.Assert(type != null);
             foreach (AggregateType b in type.TypeAndBaseClasses())

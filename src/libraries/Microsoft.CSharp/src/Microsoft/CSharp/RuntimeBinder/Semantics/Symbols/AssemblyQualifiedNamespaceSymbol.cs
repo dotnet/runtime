@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // The name is a form of the aid.
     // ----------------------------------------------------------------------------
 
-    internal class AssemblyQualifiedNamespaceSymbol : ParentSymbol, ITypeOrNamespace
+    internal sealed class AssemblyQualifiedNamespaceSymbol : ParentSymbol, ITypeOrNamespace
     {
         // ----------------------------------------------------------------------------
         // AssemblyQualifiedNamespaceSymbol

@@ -4,9 +4,9 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class NameTable
+    internal sealed class NameTable
     {
-        private class Entry
+        private sealed class Entry
         {
             internal readonly Name name;
             internal readonly int hashCode;

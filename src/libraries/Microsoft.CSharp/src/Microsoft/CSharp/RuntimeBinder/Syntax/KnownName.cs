@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal partial class NameManager
     {
-        internal class KnownName : Name
+        private sealed class KnownName : Name
         {
             public KnownName(string text)
                 : base(text)
@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                 PredefinedName = id;
             }
 
-            public override PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
+            public PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
         }
 
         private static NameTable s_knownNames;
