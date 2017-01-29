@@ -226,6 +226,49 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         HexInt16 = UInt16 + (EventFieldFormat.Hexadecimal << 8),
 
+#if false 
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 32-bit value.
+        /// Decoding treats as process identifier.
+        /// </summary>
+        ProcessId = UInt32 + (EventSourceFieldFormat.ProcessId << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 32-bit value.
+        /// Decoding treats as thread identifier.
+        /// </summary>
+        ThreadId = UInt32 + (EventSourceFieldFormat.ThreadId << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 16-bit value.
+        /// Decoding treats as IP port.
+        /// </summary>
+        Port = UInt16 + (EventSourceFieldFormat.Port << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 32-bit value.
+        /// Decoding treats as IPv4 address.
+        /// </summary>
+        Ipv4Address = UInt32 + (EventSourceFieldFormat.Ipv4Address << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 16-bit bytecount followed by binary data.
+        /// Decoding treats as IPv6 address.
+        /// </summary>
+        Ipv6Address = Binary + (EventSourceFieldFormat.Ipv6Address << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 16-bit bytecount followed by binary data.
+        /// Decoding treats as SOCKADDR.
+        /// </summary>
+        SocketAddress = Binary + (EventSourceFieldFormat.SocketAddress << 8),
+#endif
         /// <summary>
         /// Formatted type.
         /// Encoding assumes null-terminated Char16 string.
@@ -281,6 +324,21 @@ namespace System.Diagnostics.Tracing
         /// Decoding treats as MBCS JSON.
         /// </summary>
         CountedMbcsJson = CountedMbcsString + (EventFieldFormat.Json << 8),
+#if false 
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 32-bit value.
+        /// Decoding treats as Win32 error.
+        /// </summary>
+        Win32Error = UInt32 + (EventSourceFieldFormat.Win32Error << 8),
+
+        /// <summary>
+        /// Formatted type.
+        /// Encoding assumes 32-bit value.
+        /// Decoding treats as NTSTATUS.
+        /// </summary>
+        NTStatus = UInt32 + (EventSourceFieldFormat.NTStatus << 8),
+#endif
         /// <summary>
         /// Formatted type.
         /// Encoding assumes 32-bit value.
