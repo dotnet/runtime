@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using System.Threading.Tests;
 using Xunit;
@@ -20,10 +21,42 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void ConstructorTest()
         {
-            var t = new Thread(() => { });
-            t = new Thread(() => { }, 0);
-            t = new Thread(state => { });
-            t = new Thread(state => { }, 0);
+            Exception backgroundEx = null;
+            Action<Thread> startThreadAndJoin =
+                t =>
+                {
+                    backgroundEx = null;
+                    t.IsBackground = true;
+                    t.Start();
+                    Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
+                    if (backgroundEx != null)
+                    {
+                        throw new AggregateException(backgroundEx);
+                    }
+                };
+            ThreadStart verifyStackSize =
+                () =>
+                {
+                    try
+                    {
+                        Assert.Null(backgroundEx);
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
+                    }
+                    catch (Exception ex)
+                    {
+                        backgroundEx = ex;
+                    }
+                };
+            ParameterizedThreadStart parameterizedVerifyStackSize = state => verifyStackSize();
+
+            startThreadAndJoin(new Thread(verifyStackSize));
+            startThreadAndJoin(new Thread(verifyStackSize, 0));
+            startThreadAndJoin(new Thread(verifyStackSize, 1));
+            startThreadAndJoin(new Thread(verifyStackSize, 16 << 20));
+            startThreadAndJoin(new Thread(parameterizedVerifyStackSize));
+            startThreadAndJoin(new Thread(parameterizedVerifyStackSize, 0));
+            startThreadAndJoin(new Thread(parameterizedVerifyStackSize, 1));
+            startThreadAndJoin(new Thread(parameterizedVerifyStackSize, 16 << 20));
 
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null, 0));
@@ -153,7 +186,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.MTA)); // cannot be changed more than once
             Assert.Equal(ApartmentState.STA, getApartmentState(t));
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.Equal(ApartmentState.STA, apartmentStateInThread);
         }
 
@@ -269,7 +302,7 @@ namespace System.Threading.Threads.Tests
             var t = new Thread(() => otherThread = Thread.CurrentThread);
             t.IsBackground = true;
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
 
             Assert.Equal(t, otherThread);
 
@@ -296,7 +329,7 @@ namespace System.Threading.Threads.Tests
 
             Assert.False(t.IsAlive);
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.True(isAliveWhenRunning);
             Assert.False(t.IsAlive);
         }
@@ -309,7 +342,7 @@ namespace System.Threading.Threads.Tests
             t.IsBackground = true;
             Assert.True(t.IsBackground);
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
 
             // Cannot use this property after the thread is dead
             Assert.Throws<ThreadStateException>(() => t.IsBackground);
@@ -332,7 +365,7 @@ namespace System.Threading.Threads.Tests
             Assert.False(t.IsThreadPoolThread);
 
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.False(isThreadPoolThread);
 
             var e = new ManualResetEvent(false);
