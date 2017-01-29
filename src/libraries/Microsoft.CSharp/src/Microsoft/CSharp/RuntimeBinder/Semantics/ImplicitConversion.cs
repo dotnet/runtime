@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // BindImplicitConversion
         // ----------------------------------------------------------------------------
 
-        private class ImplicitConversion
+        private sealed class ImplicitConversion
         {
             public ImplicitConversion(ExpressionBinder binder, EXPR exprSrc, CType typeSrc, EXPRTYPEORNAMESPACE typeDest, bool needsExprDest, CONVERTTYPE flags)
             {

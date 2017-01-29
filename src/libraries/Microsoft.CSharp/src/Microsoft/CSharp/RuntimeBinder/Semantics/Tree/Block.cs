@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRBLOCK : EXPRSTMT
+    internal sealed class EXPRBLOCK : EXPRSTMT
     {
         private EXPRSTMT _OptionalStatements;
         public EXPRSTMT GetOptionalStatements() { return _OptionalStatements; }

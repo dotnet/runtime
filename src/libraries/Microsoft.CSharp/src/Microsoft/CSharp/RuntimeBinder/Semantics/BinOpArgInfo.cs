@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed partial class ExpressionBinder
     {
-        private class BinOpArgInfo
+        private sealed class BinOpArgInfo
         {
             public BinOpArgInfo(EXPR op1, EXPR op2)
             {

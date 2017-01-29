@@ -352,7 +352,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return WhichConversionIsBetter(argType, p1, p2);
         }
 
-        public BetterType WhichConversionIsBetter(CType argType,
+        private BetterType WhichConversionIsBetter(CType argType,
             CType p1, CType p2)
         {
             // 7.4.2.4 Better conversion from type

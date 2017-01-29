@@ -14,7 +14,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
-    internal class SymbolTable
+    internal sealed class SymbolTable
     {
         /////////////////////////////////////////////////////////////////////////////////
         // Members
@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal void ClearCache()
+        private void ClearCache()
         {
             _typesWithConversionsLoaded = new HashSet<Type>();
             _namesLoadedForEachType = new HashSet<NameHashKey>();

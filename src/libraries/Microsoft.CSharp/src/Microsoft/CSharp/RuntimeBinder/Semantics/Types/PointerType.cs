@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class PointerType : CType
+    internal sealed class PointerType : CType
     {
         public CType GetReferentType() { return _pReferentType; }
         public void SetReferentType(CType pType) { _pReferentType = pType; }

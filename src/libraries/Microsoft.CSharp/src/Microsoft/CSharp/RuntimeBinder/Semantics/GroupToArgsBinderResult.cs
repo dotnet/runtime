@@ -13,17 +13,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // to the best applicable method in the group.
         // ----------------------------------------------------------------------------
 
-        internal class GroupToArgsBinderResult
+        internal sealed class GroupToArgsBinderResult
         {
             public MethPropWithInst BestResult;
             public MethPropWithInst GetBestResult() { return BestResult; }
             public MethPropWithInst AmbiguousResult;
             public MethPropWithInst GetAmbiguousResult() { return AmbiguousResult; }
-            public MethPropWithInst InaccessibleResult;
+            private MethPropWithInst InaccessibleResult;
             public MethPropWithInst GetInaccessibleResult() { return InaccessibleResult; }
-            public MethPropWithInst UninferableResult;
+            private MethPropWithInst UninferableResult;
             public MethPropWithInst GetUninferableResult() { return UninferableResult; }
-            public MethPropWithInst InconvertibleResult;
+            private MethPropWithInst InconvertibleResult;
             public GroupToArgsBinderResult()
             {
                 BestResult = new MethPropWithInst();

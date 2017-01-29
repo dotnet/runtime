@@ -196,7 +196,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     }
 
     // A description of a method the compiler uses while compiling.
-    internal class PredefinedMethodInfo
+    internal sealed class PredefinedMethodInfo
     {
         public PREDEFMETH method;
         public PredefinedType type;
@@ -220,7 +220,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
     // A description of a method the compiler uses while compiling.
-    internal class PredefinedPropertyInfo
+    internal sealed class PredefinedPropertyInfo
     {
         public PREDEFPROP property;
         public PredefinedName name;
@@ -238,9 +238,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     // Loads and caches predefined members.
     // Also finds constructors on delegate types.
-    internal class PredefinedMembers
+    internal sealed class PredefinedMembers
     {
-        protected static void RETAILVERIFY(bool f)
+        private static void RETAILVERIFY(bool f)
         {
             if (!f)
                 Debug.Assert(false, "panic!");
@@ -560,7 +560,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        public MethodSymbol GetOptionalMethod(PREDEFMETH method)
+        private MethodSymbol GetOptionalMethod(PREDEFMETH method)
         {
             return EnsureMethod(method);
         }
@@ -712,7 +712,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new PredefinedPropertyInfo(   PREDEFPROP.PP_G_OPTIONAL_VALUE,                                MethodRequiredEnum.Optional,   PredefinedName.PN_CAP_VALUE,               PREDEFMETH.PM_G_OPTIONAL_GETVALUE,                             PREDEFMETH.PM_COUNT  ),
         };
 
-        public static PredefinedPropertyInfo GetPropInfo(PREDEFPROP property)
+        private static PredefinedPropertyInfo GetPropInfo(PREDEFPROP property)
         {
             RETAILVERIFY(property > PREDEFPROP.PP_FIRST && property < PREDEFPROP.PP_COUNT);
             RETAILVERIFY(s_predefinedProperties[(int)property].property == property);
@@ -720,7 +720,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return s_predefinedProperties[(int)property];
         }
 
-        public static PredefinedMethodInfo GetMethInfo(PREDEFMETH method)
+        private static PredefinedMethodInfo GetMethInfo(PREDEFMETH method)
         {
             RETAILVERIFY(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
             RETAILVERIFY(s_predefinedMethods[(int)method].method == method);
