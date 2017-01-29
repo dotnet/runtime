@@ -1,4 +1,4 @@
-﻿# Test Plan
+# Test Plan
 
 The goal is to write automated tests for the System.Security.Cryptography.Xml
 namespace such that it can be incorporated into the .Net core libraries. 
@@ -20,23 +20,25 @@ manage the overall contribution process.
 ## Methodology
 
 To run tests:
-1. Build [CoreFx on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md).
-2. Load the solution file 
-   `src\System.Security.Cryptography.Xml\System.Security.Cryptography.Xml.sln`
-   in Visual Studio 2015 SP 1 or later, set the 
-   System.Security.Cryptograpy.Xml.Tests project as the startup project and 
-   hit F5.
+
+ 1. Build [CoreFx on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md).
+ 2. Load the solution file 
+    `src\System.Security.Cryptography.Xml\System.Security.Cryptography.Xml.sln`
+    in Visual Studio 2015 SP 1 or later, set the 
+    System.Security.Cryptograpy.Xml.Tests project as the startup project and 
+    hit F5.
 
 Tests:
-1. must be written using xUnit, as per the standard for .Net core.
-2. must follow the C# 
-   [Coding style](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/coding-style.md) 
-   guidelines. 
-3. should follow the behavior of the existing 
-   System.Security.Cryptography.Xml namespace. If this is not possible,
-   such as from missing dependencies or platform differences, please 
-   raise this for further discussion.
-4. must pass.
+
+ 1. must be written using xUnit, as per the standard for .Net core.
+ 2. must follow the C# 
+    [Coding style](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/coding-style.md) 
+    guidelines. 
+ 3. should follow the behavior of the existing 
+    System.Security.Cryptography.Xml namespace. If this is not possible,
+    such as from missing dependencies or platform differences, please 
+    raise this for further discussion.
+ 4. must pass.
 
 This file will be deleted before merging into master.
 
@@ -52,7 +54,7 @@ The following table lists the public classes exposed by the
 System.Security.Cryptography.Xml namespace.
 
 Done | Class                                        | Who
-----------------------------------------------------|--------------------
+-----|----------------------------------------------|--------------------
  [ ] | CipherData                                   |
  [ ] | DataObject                                   |
  [ ] | EncryptedType                                |
