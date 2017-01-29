@@ -70,7 +70,6 @@ namespace System
                     case CorElementType.U8:
                         return (*(ulong*)pValue).ToString("X16", null);
                     default:
-                        Debug.Assert(false, "Invalid Object type in Format");
                         throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
                 }
             }
@@ -105,7 +104,6 @@ namespace System
                     return ((UInt64)(Int64)value).ToString("X16", null);
                 // All unsigned types will be directly cast
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
         }
@@ -244,7 +242,6 @@ namespace System
                     break;
                 // All unsigned types will be directly cast
                 default:
-                    Debug.Assert(false, "Invalid Object type in ToUInt64");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
 
@@ -899,8 +896,8 @@ namespace System
         public int CompareTo(Object target)
         {
             const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
-            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported unerlying type
-            
+            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported underlying type
+
             if (this == null)
                 throw new NullReferenceException();
             Contract.EndContractBlock();
@@ -978,61 +975,31 @@ namespace System
         #region IConvertable
         public TypeCode GetTypeCode()
         {
-            Type enumType = this.GetType();
-            Type underlyingType = GetUnderlyingType(enumType);
-
-            if (underlyingType == typeof(Int32))
+            switch (InternalGetCorElementType())
             {
-                return TypeCode.Int32;
+                case CorElementType.I1:
+                    return TypeCode.SByte;
+                case CorElementType.U1:
+                    return TypeCode.Byte;
+                case CorElementType.Boolean:
+                    return TypeCode.Boolean;
+                case CorElementType.I2:
+                    return TypeCode.Int16;
+                case CorElementType.U2:
+                    return TypeCode.UInt16;
+                case CorElementType.Char:
+                    return TypeCode.Char;
+                case CorElementType.I4:
+                    return TypeCode.Int32;
+                case CorElementType.U4:
+                    return TypeCode.UInt32;
+                case CorElementType.I8:
+                    return TypeCode.Int64;
+                case CorElementType.U8:
+                    return TypeCode.UInt64;
+                default:
+                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
-
-            if (underlyingType == typeof(sbyte))
-            {
-                return TypeCode.SByte;
-            }
-
-            if (underlyingType == typeof(Int16))
-            {
-                return TypeCode.Int16;
-            }
-
-            if (underlyingType == typeof(Int64))
-            {
-                return TypeCode.Int64;
-            }
-
-            if (underlyingType == typeof(UInt32))
-            {
-                return TypeCode.UInt32;
-            }
-
-            if (underlyingType == typeof(byte))
-            {
-                return TypeCode.Byte;
-            }
-
-            if (underlyingType == typeof(UInt16))
-            {
-                return TypeCode.UInt16;
-            }
-
-            if (underlyingType == typeof(UInt64))
-            {
-                return TypeCode.UInt64;
-            }
-
-            if (underlyingType == typeof(Boolean))
-            {
-                return TypeCode.Boolean;
-            }
-
-            if (underlyingType == typeof(Char))
-            {
-                return TypeCode.Char;
-            }
-
-            Debug.Assert(false, "Unknown underlying type.");
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
         }
 
         /// <internalonly/>
