@@ -6,9 +6,13 @@
     <ProjectGuid>{3C32659A-6DB9-410A-8E24-BE91BFF4C024}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DsaKeyValueTests.cs" />
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
     <Compile Include="KeyInfoTests.cs" />
     <Compile Include="SignedXmlTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PublicClassTestPlan.md" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
