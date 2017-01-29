@@ -29,9 +29,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class BSYMMGR
+    internal sealed class BSYMMGR
     {
-        internal HashSet<KAID> bsetGlobalAssemblies; // Assemblies in the global alias.
+        private HashSet<KAID> bsetGlobalAssemblies; // Assemblies in the global alias.
 
         // Special nullable members.
         public PropertySymbol propNubValue;
@@ -43,14 +43,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
 
         // Map from aids to INFILESYMs and EXTERNALIASSYMs
-        protected List<AidContainer> ssetAssembly;
+        private List<AidContainer> ssetAssembly;
         // Map from aids to MODULESYMs and OUTFILESYMs
 
-        protected NameManager m_nameTable;
-        protected SYMTBL tableGlobal;
+        private NameManager m_nameTable;
+        private SYMTBL tableGlobal;
 
         // The hash table for type arrays.
-        protected Dictionary<TypeArrayKey, TypeArray> tableTypeArrays;
+        private Dictionary<TypeArrayKey, TypeArray> tableTypeArrays;
 
         private const int LOG2_SYMTBL_INITIAL_BUCKET_CNT = 13;    // Initial local size: 8192 buckets.
 
@@ -291,7 +291,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public AssemblyQualifiedNamespaceSymbol GetNsAid(NamespaceSymbol ns, KAID aid)
+        private AssemblyQualifiedNamespaceSymbol GetNsAid(NamespaceSymbol ns, KAID aid)
         {
             Name name = GetNameFromPtrs(aid, 0);
             Debug.Assert(name != null);
@@ -317,7 +317,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // 2) Make it so parameter lists can be compared by a simple pointer comparison
         // 3) Allow us to associate a token with each signature for faster metadata emit
 
-        protected struct TypeArrayKey : IEquatable<TypeArrayKey>
+        private struct TypeArrayKey : IEquatable<TypeArrayKey>
         {
             private readonly CType[] _types;
             private readonly int _hashCode;
@@ -394,7 +394,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return result;
         }
 
-        public TypeArray ConcatParams(CType[] prgtype1, CType[] prgtype2)
+        private TypeArray ConcatParams(CType[] prgtype1, CType[] prgtype2)
         {
             CType[] combined = new CType[prgtype1.Length + prgtype2.Length];
             Array.Copy(prgtype1, 0, combined, 0, prgtype1.Length);

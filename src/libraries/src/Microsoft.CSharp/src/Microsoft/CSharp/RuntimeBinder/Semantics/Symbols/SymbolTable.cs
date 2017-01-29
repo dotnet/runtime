@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // A symbol table is a helper class used by the symbol manager. There are
     // two symbol tables; a global and a local.
 
-    internal class SYMTBL
+    internal sealed class SYMTBL
     {
         /////////////////////////////////////////////////////////////////////////////////
         // Public

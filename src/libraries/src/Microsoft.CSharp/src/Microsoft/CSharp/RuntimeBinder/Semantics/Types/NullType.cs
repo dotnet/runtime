@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // NullType - represents the null type -- the type of the "null constant".
     // ----------------------------------------------------------------------------
 
-    internal class NullType : CType
+    internal sealed class NullType : CType
     {
     }
 }

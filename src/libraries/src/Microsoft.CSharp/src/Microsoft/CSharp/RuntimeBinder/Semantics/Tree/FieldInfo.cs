@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRFIELDINFO : EXPR
+    internal sealed class EXPRFIELDINFO : EXPR
     {
         public FieldSymbol Field()
         {

@@ -8,7 +8,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class LangCompiler :
+    internal sealed class LangCompiler :
          CSemanticChecker,
          IErrorSink
     {
@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _symbolLoader = new SymbolLoader(globalSymbolContext, null, _errorContext);
         }
 
-        public new ErrorHandling GetErrorContext()
+        private new ErrorHandling GetErrorContext()
         {
             return _errorContext;
         }

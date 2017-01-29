@@ -8,7 +8,7 @@ using mdAssemblyRef = Microsoft.CSharp.RuntimeBinder.Semantics.mdToken;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class MiscSymFactory : SymFactoryBase
+    internal sealed class MiscSymFactory : SymFactoryBase
     {
         // Constructor.
 

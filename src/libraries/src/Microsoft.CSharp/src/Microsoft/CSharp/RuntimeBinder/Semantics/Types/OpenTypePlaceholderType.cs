@@ -9,6 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // types. There is exactly one of these.
     // ----------------------------------------------------------------------------
 
-    internal class OpenTypePlaceholderType : CType
+    internal sealed class OpenTypePlaceholderType : CType
     { }
 }

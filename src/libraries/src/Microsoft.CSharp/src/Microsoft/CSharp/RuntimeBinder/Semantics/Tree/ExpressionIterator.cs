@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     //     int n = ExpressionIterator::Count(list);
 
-    internal class ExpressionIterator
+    internal sealed class ExpressionIterator
     {
         public ExpressionIterator(EXPR pExpr) { Init(pExpr); }
 

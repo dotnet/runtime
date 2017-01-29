@@ -30,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public UnaOpFuncKind fnkind;
         }
 
-        private class UnaOpFullSig : UnaOpSig
+        private sealed class UnaOpFullSig : UnaOpSig
         {
             private readonly LiftFlags _grflt;
             private readonly CType _type;

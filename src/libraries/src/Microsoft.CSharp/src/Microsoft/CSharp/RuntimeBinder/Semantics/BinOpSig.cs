@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         private class BinOpSig
         {
-            public BinOpSig()
+            protected BinOpSig()
             {
             }
 
@@ -50,7 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private class BinOpFullSig : BinOpSig
+        private sealed class BinOpFullSig : BinOpSig
         {
             private readonly LiftFlags _grflt;
             private readonly CType _type1;

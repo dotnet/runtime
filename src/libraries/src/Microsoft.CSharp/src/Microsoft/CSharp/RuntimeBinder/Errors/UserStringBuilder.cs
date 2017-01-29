@@ -11,12 +11,12 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    internal class UserStringBuilder
+    internal sealed class UserStringBuilder
     {
-        protected bool fHadUndisplayableStringInError;
-        protected bool m_buildingInProgress;
-        protected GlobalSymbolContext m_globalSymbols;
-        protected StringBuilder m_strBuilder;
+        private bool fHadUndisplayableStringInError;
+        private bool m_buildingInProgress;
+        private GlobalSymbolContext m_globalSymbols;
+        private StringBuilder m_strBuilder;
 
         public UserStringBuilder(
             GlobalSymbolContext globalSymbols)
@@ -27,13 +27,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             m_globalSymbols = globalSymbols;
         }
 
-        protected void BeginString()
+        private void BeginString()
         {
             Debug.Assert(!m_buildingInProgress);
             m_buildingInProgress = true;
             m_strBuilder = new StringBuilder();
         }
-        protected void EndString(out string s)
+
+        private void EndString(out string s)
         {
             Debug.Assert(m_buildingInProgress);
             m_buildingInProgress = false;
@@ -52,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             fHadUndisplayableStringInError = false;
         }
 
-        protected void ErrSK(out string psz, SYMKIND sk)
+        private void ErrSK(out string psz, SYMKIND sk)
         {
             MessageID id;
             switch (sk)
@@ -97,7 +98,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
          * Create a fill-in string describing a parameter list.
          * Does NOT include ()
          */
-        protected void ErrAppendParamList(TypeArray @params, bool isVarargs, bool isParamArray)
+
+        private void ErrAppendParamList(TypeArray @params, bool isVarargs, bool isParamArray)
         {
             if (null == @params)
                 return;
@@ -129,20 +131,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        public void ErrAppendString(string str)
+        private void ErrAppendString(string str)
         {
             m_strBuilder.Append(str);
         }
-        public void ErrAppendChar(char ch)
+
+        private void ErrAppendChar(char ch)
         {
             m_strBuilder.Append(ch);
         }
 
-        public void ErrAppendPrintf(string format, params object[] args)
+        private void ErrAppendPrintf(string format, params object[] args)
         {
             ErrAppendString(String.Format(CultureInfo.InvariantCulture, format, args));
         }
-        public void ErrAppendName(Name name)
+        private void ErrAppendName(Name name)
         {
             CheckDisplayableName(name);
 
@@ -156,17 +159,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        protected void ErrAppendMethodParentSym(MethodSymbol sym, SubstContext pcxt, out TypeArray substMethTyParams)
+        private void ErrAppendMethodParentSym(MethodSymbol sym, SubstContext pcxt, out TypeArray substMethTyParams)
         {
             substMethTyParams = null;
             ErrAppendParentSym(sym, pcxt);
         }
 
-        protected void ErrAppendParentSym(Symbol sym, SubstContext pctx)
+        private void ErrAppendParentSym(Symbol sym, SubstContext pctx)
         {
             ErrAppendParentCore(sym.parent, pctx);
         }
-        protected void ErrAppendParentType(CType pType, SubstContext pctx)
+
+        private void ErrAppendParentType(CType pType, SubstContext pctx)
         {
             if (pType.IsErrorType())
             {
@@ -190,7 +194,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendChar('.');
             }
         }
-        protected void ErrAppendParentCore(Symbol parent, SubstContext pctx)
+
+        private void ErrAppendParentCore(Symbol parent, SubstContext pctx)
         {
             if (null == parent)
                 return;
@@ -209,7 +214,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
             ErrAppendChar('.');
         }
-        protected void ErrAppendTypeParameters(TypeArray @params, SubstContext pctx, bool forClass)
+
+        private void ErrAppendTypeParameters(TypeArray @params, SubstContext pctx, bool forClass)
         {
             if (@params != null && @params.size != 0)
             {
@@ -223,7 +229,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendChar('>');
             }
         }
-        protected void ErrAppendMethod(MethodSymbol meth, SubstContext pctx, bool fArgs)
+
+        private void ErrAppendMethod(MethodSymbol meth, SubstContext pctx, bool fArgs)
         {
             if (meth.IsExpImpl() && meth.swtSlot)
             {
@@ -364,13 +371,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendChar(')');
             }
         }
-        protected void ErrAppendIndexer(IndexerSymbol indexer, SubstContext pctx)
+        private void ErrAppendIndexer(IndexerSymbol indexer, SubstContext pctx)
         {
             ErrAppendString("this[");
             ErrAppendParamList(GetTypeManager().SubstTypeArray(indexer.Params, pctx), false, indexer.isParamArray);
             ErrAppendChar(']');
         }
-        protected void ErrAppendProperty(PropertySymbol prop, SubstContext pctx)
+        private void ErrAppendProperty(PropertySymbol prop, SubstContext pctx)
         {
             ErrAppendParentSym(prop, pctx);
             if (prop.IsExpImpl() && prop.swtSlot.Sym != null)
@@ -397,10 +404,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendName(prop.name);
             }
         }
-        protected void ErrAppendEvent(EventSymbol @event, SubstContext pctx)
+
+        private void ErrAppendEvent(EventSymbol @event, SubstContext pctx)
         {
         }
-        public void ErrAppendId(MessageID id)
+
+        private void ErrAppendId(MessageID id)
         {
             string str;
             ErrId(out str, id);
@@ -410,11 +419,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         /*
          * Create a fill-in string describing a symbol.
          */
-        public void ErrAppendSym(Symbol sym, SubstContext pctx)
+        private void ErrAppendSym(Symbol sym, SubstContext pctx)
         {
             ErrAppendSym(sym, pctx, true);
         }
-        public void ErrAppendSym(Symbol sym, SubstContext pctx, bool fArgs)
+
+        private void ErrAppendSym(Symbol sym, SubstContext pctx, bool fArgs)
         {
             switch (sym.getKind())
             {
@@ -514,12 +524,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        public void ErrAppendType(CType pType, SubstContext pCtx)
+        private void ErrAppendType(CType pType, SubstContext pCtx)
         {
             ErrAppendType(pType, pCtx, true);
         }
 
-        public void ErrAppendType(CType pType, SubstContext pctx, bool fArgs)
+        private void ErrAppendType(CType pType, SubstContext pctx, bool fArgs)
         {
             if (pctx != null)
             {
@@ -775,11 +785,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
             return result;
         }
-        protected bool IsDisplayableName(Name name)
+
+        private bool IsDisplayableName(Name name)
         {
             return name != GetNameManager().GetPredefName(PredefinedName.PN_MISSING);
         }
-        protected void CheckDisplayableName(Name name)
+
+        private void CheckDisplayableName(Name name)
         {
             if (!IsDisplayableName(name))
             {
@@ -787,23 +799,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        protected NameManager GetNameManager()
+        private NameManager GetNameManager()
         {
             return m_globalSymbols.GetNameManager();
         }
-        protected TypeManager GetTypeManager()
+
+        private TypeManager GetTypeManager()
         {
             return m_globalSymbols.GetTypes();
         }
-        protected BSYMMGR getBSymmgr()
+
+        private BSYMMGR getBSymmgr()
         {
             return m_globalSymbols.GetGlobalSymbols();
         }
-        protected int GetTypeID(CType type)
+
+        private int GetTypeID(CType type)
         {
             return 0;
         }
-        public void ErrId(out string s, MessageID id)
+
+        private void ErrId(out string s, MessageID id)
         {
             s = ErrorFacts.GetMessage(id);
         }

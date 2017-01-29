@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // consumed by the StatementBinder.
     // ----------------------------------------------------------------------------
 
-    internal class OutputContext
+    internal sealed class OutputContext
     {
         public LocalVariableSymbol m_pThisPointer;
         public MethodSymbol m_pCurrentMethodSymbol;
@@ -56,7 +56,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bInRefactoring,
                 aidLookupContext);
         }
-        protected BindingContext(
+
+        private BindingContext(
             CSemanticChecker pSemanticChecker,
             ExprFactory exprFactory,
             OutputContext outputContext,
@@ -239,17 +240,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return m_UnsafeState;
         }
 
-        public KAID m_aidExternAliasLookupContext { get; }
+        private KAID m_aidExternAliasLookupContext { get; }
 
         // Members.
 
-        protected ExprFactory m_ExprFactory;
-        protected OutputContext m_outputContext;
-        protected NameGenerator m_pNameGenerator;
+        private ExprFactory m_ExprFactory;
+        private OutputContext m_outputContext;
+        private NameGenerator m_pNameGenerator;
 
         // Methods.
 
-        protected InputFile m_pInputFile;
+        private InputFile m_pInputFile;
 
         // symbols.
 
@@ -260,27 +261,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // are used, because the using clauses in effect may be different and 
         // unsafe state may be different.  
 
-        protected AggregateSymbol m_pContainingAgg;
-        protected CType m_pCurrentSwitchType;
-        protected FieldSymbol m_pOriginalConstantField;
-        protected FieldSymbol m_pCurrentFieldSymbol;
+        private AggregateSymbol m_pContainingAgg;
+        private CType m_pCurrentSwitchType;
+        private FieldSymbol m_pOriginalConstantField;
+        private FieldSymbol m_pCurrentFieldSymbol;
 
         // If we are in a context where we are binding the right hand side of a declaration
         // like var y = (y=5), we need to keep track of what local we are attempting to
         // infer the type of, so that we can give an error if that local is used on the
         // right hand side.
-        protected LocalVariableSymbol m_pImplicitlyTypedLocal;
+        private LocalVariableSymbol m_pImplicitlyTypedLocal;
 
         // Scopes.
 
-        protected Scope m_pOuterScope;
-        protected Scope m_pFinallyScope; // innermost finally, or pOuterScope if none...
-        protected Scope m_pTryScope;     // innermost try, or pOuterScope if none...
-        protected Scope m_pCatchScope;   // innermost catch, or null if none
-        protected Scope m_pCurrentScope; // current scope
-        protected Scope m_pSwitchScope;  // innermost switch, or null if none
+        private Scope m_pOuterScope;
+        private Scope m_pFinallyScope; // innermost finally, or pOuterScope if none...
+        private Scope m_pTryScope;     // innermost try, or pOuterScope if none...
+        private Scope m_pCatchScope;   // innermost catch, or null if none
+        private Scope m_pCurrentScope; // current scope
+        private Scope m_pSwitchScope;  // innermost switch, or null if none
 
-        protected EXPRBLOCK m_pCurrentBlock;
+        private EXPRBLOCK m_pCurrentBlock;
 
         // m_ppamis points to the list of child anonymous methods of the current context.
         // That is, m_ppamis is where we will add an anonymous method should we find a
@@ -289,38 +290,38 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // anonymous method then it points to m_pamiCurrent.pamis.  If we are presently
         // in a context in which anonymous methods cannot occur (eg, binding an attribute)
         // then it is null.
-        protected List<EXPRBOUNDLAMBDA> m_ppamis;
+        private List<EXPRBOUNDLAMBDA> m_ppamis;
         // If we are presently binding an anonymous method body then m_pamiCurrent points
         // to the anon meth info.  If we are binding either a method body or some other
         // statement context (eg, binding an attribute, etc) then m_pamiCurrent is null.
-        protected EXPRBOUNDLAMBDA m_pamiCurrent;
+        private EXPRBOUNDLAMBDA m_pamiCurrent;
 
         // Unsafe states.
 
-        protected UNSAFESTATES m_UnsafeState;
+        private UNSAFESTATES m_UnsafeState;
 
         // Variable Counters.
 
-        protected int m_FinallyNestingCount;
+        private int m_FinallyNestingCount;
 
         // The rest of the members.
 
-        protected bool m_bInsideTryOfCatch;
-        protected bool m_bInFieldInitializer;
-        protected bool m_bInBaseConstructorCall;
-        protected bool m_bAllowUnsafeBlocks;
-        protected bool m_bIsOptimizingSwitchAndArrayInit;
-        protected bool m_bShowReachability;
-        protected bool m_bWrapNonExceptionThrows;
-        protected bool m_bInRefactoring;
-        protected bool m_bInAttribute;
+        private bool m_bInsideTryOfCatch;
+        private bool m_bInFieldInitializer;
+        private bool m_bInBaseConstructorCall;
+        private bool m_bAllowUnsafeBlocks;
+        private bool m_bIsOptimizingSwitchAndArrayInit;
+        private bool m_bShowReachability;
+        private bool m_bWrapNonExceptionThrows;
+        private bool m_bInRefactoring;
+        private bool m_bInAttribute;
 
-        protected bool m_bflushLocalVariableTypesForEachStatement;
-        protected bool m_bRespectSemanticsAndReportErrors; // False if we're in the EE.
+        private bool m_bflushLocalVariableTypesForEachStatement;
+        private bool m_bRespectSemanticsAndReportErrors; // False if we're in the EE.
 
-        protected CType m_pInitType;
+        private CType m_pInitType;
 
-        protected IErrorSink m_returnErrorSink;
+        private IErrorSink m_returnErrorSink;
 
         public CSemanticChecker SemanticChecker { get; }
 

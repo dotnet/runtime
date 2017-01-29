@@ -14,7 +14,7 @@ using System.Reflection;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
-    internal class RuntimeBinder
+    internal sealed class RuntimeBinder
     {
         #region Singleton Implementation
 
@@ -64,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // value's type because unless the static time type was dynamic, we want to use the
         // static time type. Also, we may have null values, in which case we would not be 
         // able to get the type.
-        private class ArgumentObject
+        private sealed class ArgumentObject
         {
             internal Type Type;
             internal object Value;
@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // Methods
 
         #region BookKeeping
-        public RuntimeBinder()
+        private RuntimeBinder()
         {
             Reset();
         }
