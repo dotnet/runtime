@@ -30,6 +30,7 @@
     <Compile Include="AssemblyResolver.cs" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Xml" />
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
