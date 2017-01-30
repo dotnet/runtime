@@ -245,6 +245,7 @@ public:
 
     int m_num_members;
     TypeMember* members;
+    TypeInfoBase* m_parent;
 };
 
 class TypeMember: public DwarfDumpable
