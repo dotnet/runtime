@@ -18,6 +18,9 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
 #include "shmfilelockmgr.hpp"
@@ -25,7 +28,6 @@ Abstract:
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/filetime.h"
 #include "pal/utils.h"
@@ -41,8 +43,6 @@ Abstract:
 #include <limits.h>
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(FILE);
 
 int MaxWCharToAcpLengthFactor = 3;
 

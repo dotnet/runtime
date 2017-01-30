@@ -18,6 +18,9 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so do this first
+
 #include "pal/procobj.hpp"
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
@@ -29,7 +32,6 @@ Abstract:
 #include "pal/init.h"
 #include "pal/critsect.h"
 #include "pal/debug.h"
-#include "pal/dbgmsg.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
 #include "pal/virtual.h"
@@ -66,8 +68,6 @@ Abstract:
 #endif
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(PROCESS);
 
 CObjectType CorUnix::otProcess(
                 otiProcess,

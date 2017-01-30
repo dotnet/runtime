@@ -3060,7 +3060,16 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     DWORD dwCreationFlags = CREATE_SUSPENDED;
 
 #ifdef FEATURE_CORECLR
-    dwCreationFlags |=  STACK_SIZE_PARAM_IS_A_RESERVATION;
+    dwCreationFlags |= STACK_SIZE_PARAM_IS_A_RESERVATION;
+
+#ifndef FEATURE_PAL // the PAL does its own adjustments as necessary
+    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= OS_PAGE_SIZE)
+    {
+        // On Windows, passing a value that is <= one page size bizarrely causes the OS to use the default stack size instead of
+        // a minimum, which is undesirable. This adjustment fixes that issue to use a minimum stack size (typically 64 KB).
+        sizeToCommitOrReserve = OS_PAGE_SIZE + 1;
+    }
+#endif // !FEATURE_PAL
 #else
     if(sizeToCommitOrReserve != 0)
     {
@@ -7316,11 +7325,25 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             return FALSE;
         }
 
-        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. The limit
-        // is currently set at 50% of the stack, which should be sufficient to allow the average Framework
-        // function to run, and to allow us to throw and dispatch an exception up a reasonable call chain.
-        m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase) - 
-            (reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) / 2;
+        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
+        // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
+        // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
+        // among other things.
+#ifdef BIT64
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !BIT64
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // BIT64
+        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
+        if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
+            MinExecutionStackSize)
+        {
+            m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + MinExecutionStackSize;
+        }
+        else
+        {
+            m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase);
+        }
     }
 
     // Ensure that we've setup the stack guarantee properly before we cache the stack limits
