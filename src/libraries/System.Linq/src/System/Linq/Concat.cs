@@ -45,8 +45,6 @@ namespace System.Linq
                 _second = second;
             }
 
-            internal override bool HasOnlyCollections => _first is ICollection<TSource> && _second is ICollection<TSource>;
-
             public override Iterator<TSource> Clone() => new Concat2Iterator<TSource>(_first, _second);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
@@ -55,8 +53,36 @@ namespace System.Linq
                 // We employ an optimization where if all of the enumerables being concatenated are ICollections,
                 // we set the flag on the next iterator. This allows us to determine in O(1) time whether we can
                 // preallocate for ToArray and ToList, and whether we can get the count of the iterator cheaply.
-                bool hasOnlyCollections = HasOnlyCollections && next is ICollection<TSource>;
+                bool hasOnlyCollections = _first is ICollection<TSource> &&
+                                          _second is ICollection<TSource> &&
+                                          next is ICollection<TSource>;
                 return new ConcatNIterator<TSource>(sources, 2, hasOnlyCollections);
+            }
+
+            public override int GetCount(bool onlyIfCheap)
+            {
+                int firstCount, secondCount;
+                if (!EnumerableHelpers.TryGetCount(_first, out firstCount))
+                {
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
+                    firstCount = _first.Count();
+                }
+
+                if (!EnumerableHelpers.TryGetCount(_second, out secondCount))
+                {
+                    if (onlyIfCheap)
+                    {
+                        return -1;
+                    }
+
+                    secondCount = _second.Count();
+                }
+
+                return checked(firstCount + secondCount);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
@@ -69,6 +95,80 @@ namespace System.Linq
                     case 1: return _second;
                     default: return null;
                 }
+            }
+
+            public override TSource[] ToArray()
+            {
+                ICollection<TSource> first = _first as ICollection<TSource>;
+                ICollection<TSource> second = _second as ICollection<TSource>;
+
+                if (first != null & second != null)
+                {
+                    return PreallocatingToArray(first, second);
+                }
+                
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+
+                int? firstCount = first?.Count;
+                if (firstCount > 0)
+                {
+                    builder.Reserve(firstCount.GetValueOrDefault());
+                }
+                else if (firstCount == null)
+                {
+                    builder.AddRange(_first);
+                }
+
+                int? secondCount = second?.Count;
+                if (secondCount > 0)
+                {
+                    builder.Reserve(secondCount.GetValueOrDefault());
+                }
+                else if (secondCount == null)
+                {
+                    builder.AddRange(_second);
+                }
+
+                TSource[] array = builder.ToArray();
+
+                if (first != null | second != null)
+                {
+                    ICollection<TSource> collection = first != null ? first : second;
+                    int arrayIndex = builder.Markers.Single().Index;
+                    collection.CopyTo(array, arrayIndex);
+                }
+
+                return array;
+            }
+
+            private static TSource[] PreallocatingToArray(ICollection<TSource> first, ICollection<TSource> second)
+            {
+                Debug.Assert(first != null);
+                Debug.Assert(second != null);
+
+                int firstCount = first.Count; // Cache one interface call.
+                int count = checked(firstCount + second.Count);
+
+                if (count == 0)
+                {
+                    return Array.Empty<TSource>();
+                }
+
+                var array = new TSource[count];
+                first.CopyTo(array, 0);
+                second.CopyTo(array, firstCount);
+
+                return array;
+            }
+
+            public override List<TSource> ToList()
+            {
+                int count = GetCount(onlyIfCheap: true);
+                var list = count >= 0 ? new List<TSource>(count) : new List<TSource>();
+
+                list.AddRange(_first);
+                list.AddRange(_second);
+                return list;
             }
         }
 
@@ -109,8 +209,6 @@ namespace System.Linq
                 _hasOnlyCollections = hasOnlyCollections;
             }
             
-            internal override bool HasOnlyCollections => _hasOnlyCollections;
-
             public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_sources, _headIndex, _hasOnlyCollections);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
@@ -129,7 +227,131 @@ namespace System.Linq
                 return new ConcatNIterator<TSource>(_sources.Add(next), _headIndex + 1, hasOnlyCollections);
             }
 
+            public override int GetCount(bool onlyIfCheap)
+            {
+                if (onlyIfCheap && !_hasOnlyCollections)
+                {
+                    return -1;
+                }
+
+                int count = 0;
+                for (SingleLinkedNode<IEnumerable<TSource>> node = _sources; node != null; node = node.Linked)
+                {
+                    IEnumerable<TSource> source = node.Item;
+                    Debug.Assert(!_hasOnlyCollections || source is ICollection<TSource>);
+                    checked
+                    {
+                        count += source.Count();
+                    }
+                }
+
+                return count;
+            }
+
             internal override IEnumerable<TSource> GetEnumerable(int index) => index > _headIndex ? null : _sources.GetNode(_headIndex - index).Item;
+
+            public override TSource[] ToArray() => _hasOnlyCollections ? PreallocatingToArray() : LazyToArray();
+
+            private TSource[] LazyToArray()
+            {
+                Debug.Assert(!_hasOnlyCollections);
+
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                var deferredCopies = new ArrayBuilder<IEnumerable<TSource>>();
+
+                for (int i = 0; ; i++)
+                {
+                    // Unfortunately, we can't escape re-walking the linked list for each source, which has
+                    // quadratic behavior, because we need to add the sources in order.
+                    // On the bright side, the bottleneck will usually be iterating, buffering, and copying
+                    // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    int count;
+                    if (EnumerableHelpers.TryGetCount(source, out count))
+                    {
+                        if (count > 0)
+                        {
+                            builder.Reserve(count);
+                            deferredCopies.Add(source);
+                        }
+                        continue;
+                    }
+
+                    builder.AddRange(source);
+                }
+
+                TSource[] array = builder.ToArray();
+
+                ArrayBuilder<Marker> markers = builder.Markers;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    Marker marker = markers[i];
+                    IEnumerable<TSource> source = deferredCopies[i];
+                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
+                }
+
+                return array;
+            }
+
+            private TSource[] PreallocatingToArray()
+            {
+                // If there are only ICollections in this iterator, then we can just get the count, preallocate the
+                // array, and then copy them as we go. This has better time complexity than continuously re-walking
+                // the linked list via GetEnumerable, and better memory usage than buffering the collections.
+                Debug.Assert(_hasOnlyCollections);
+
+                int count = GetCount(onlyIfCheap: true);
+                Debug.Assert(count >= 0);
+
+                if (count == 0)
+                {
+                    return Array.Empty<TSource>();
+                }
+
+                var array = new TSource[count];
+                int arrayIndex = array.Length;
+
+                for (SingleLinkedNode<IEnumerable<TSource>> node = _sources; node != null; node = node.Linked)
+                {
+                    ICollection<TSource> source = (ICollection<TSource>)node.Item;
+                    int sourceCount = source.Count;
+                    if (sourceCount > 0)
+                    {
+                        checked
+                        {
+                            arrayIndex -= sourceCount;
+                        }
+                        source.CopyTo(array, arrayIndex);
+                    }
+                }
+
+                Debug.Assert(arrayIndex == 0);
+                return array;
+            }
+
+            public override List<TSource> ToList()
+            {
+                int count = GetCount(onlyIfCheap: true);
+                var list = count >= 0 ? new List<TSource>(count) : new List<TSource>();
+
+                for (int i = 0; ; i++)
+                {
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    list.AddRange(source);
+                }
+
+                return list;
+            }
         }
 
         /// <summary>
@@ -142,11 +364,6 @@ namespace System.Linq
             /// The enumerator of the current source, if <see cref="MoveNext"/> has been called.
             /// </summary>
             private IEnumerator<TSource> _enumerator;
-
-            /// <summary>
-            /// Gets a value in constant time indicating whether all sources of this iterator implement <see cref="ICollection{TSource}"/>.
-            /// </summary>
-            internal abstract bool HasOnlyCollections { get; }
 
             public override void Dispose()
             {
@@ -206,90 +423,11 @@ namespace System.Linq
                 return false;
             }
 
-            public TSource[] ToArray()
-            {
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
-                var deferredCopies = new ArrayBuilder<IEnumerable<TSource>>();
+            public abstract int GetCount(bool onlyIfCheap);
 
-                for (int i = 0; ; i++)
-                {
-                    IEnumerable<TSource> source = GetEnumerable(i);
-                    if (source == null)
-                    {
-                        break;
-                    }
+            public abstract TSource[] ToArray();
 
-                    int count;
-                    if (EnumerableHelpers.TryGetCount(source, out count))
-                    {
-                        if (count > 0)
-                        {
-                            builder.Reserve(count);
-                            deferredCopies.Add(source);
-                        }
-                        continue;
-                    }
-
-                    builder.AddRange(source);
-                }
-
-                TSource[] array = builder.ToArray();
-
-                ArrayBuilder<Marker> markers = builder.Markers;
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    Marker marker = markers[i];
-                    IEnumerable<TSource> source = deferredCopies[i];
-                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
-                }
-
-                return array;
-            }
-
-            public List<TSource> ToList()
-            {
-                int count = GetCount(onlyIfCheap: true);
-                var list = count != -1 ? new List<TSource>(count) : new List<TSource>();
-
-                for (int i = 0; ; i++)
-                {
-                    IEnumerable<TSource> source = GetEnumerable(i);
-                    if (source == null)
-                    {
-                        break;
-                    }
-
-                    list.AddRange(source);
-                }
-
-                return list;
-            }
-
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap && !HasOnlyCollections)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-                for (int i = 0; ; i++)
-                {
-                    IEnumerable<TSource> source = GetEnumerable(i);
-                    if (source == null)
-                    {
-                        break;
-                    }
-
-                    Debug.Assert(!HasOnlyCollections || source is ICollection<TSource>);
-                    checked
-                    {
-                        count += source.Count();
-                    }
-                }
-
-                return count;
-            }
+            public abstract List<TSource> ToList();
         }
     }
 }
