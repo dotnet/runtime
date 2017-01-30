@@ -250,6 +250,8 @@
     <RefRootPath>$(BinDir)ref/</RefRootPath>
     <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
     <RefPath>$(RefRootPath)$(TargetGroup)/</RefPath>
+    <!-- tests don't yet set appropriate configurations -->
+    <RefPath Condition="'$(IsTestProject)' == 'true'">$(BuildConfigurationRefPath)</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 
