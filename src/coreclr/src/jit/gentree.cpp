@@ -16323,8 +16323,15 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_ASG:
                 structHnd = gtGetStructHandleIfPresent(tree->gtGetOp1());
                 break;
-            case GT_LCL_VAR:
             case GT_LCL_FLD:
+#ifdef FEATURE_SIMD
+                if (varTypeIsSIMD(tree))
+                {
+                    structHnd = gtGetStructHandleForSIMD(tree->gtType, TYP_FLOAT);
+                }
+#endif
+                break;
+            case GT_LCL_VAR:
                 structHnd = lvaTable[tree->AsLclVarCommon()->gtLclNum].lvVerTypeInfo.GetClassHandle();
                 break;
             case GT_RETURN:
