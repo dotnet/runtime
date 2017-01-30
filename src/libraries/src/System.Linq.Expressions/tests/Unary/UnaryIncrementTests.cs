@@ -39,6 +39,7 @@ namespace System.Linq.Expressions.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 VerifyIncrementInt(values[i], useInterpreter);
+                VerifyIncrementIntMakeUnary(values[i], useInterpreter);
             }
         }
 
@@ -179,6 +180,15 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal((int)(++value), f());
         }
 
+        private static void VerifyIncrementIntMakeUnary(int value, bool useInterpreter)
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.MakeUnary(ExpressionType.Increment, Expression.Constant(value), null),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile(useInterpreter);
+            Assert.Equal(++value, f());
+        }
         private static void VerifyIncrementUInt(uint value, bool useInterpreter)
         {
             Expression<Func<uint>> e =

@@ -982,9 +982,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
-        internal static Exception UnhandledUnary(object p0)
+        internal static Exception UnhandledUnary(object p0, string paramName)
         {
-            return new ArgumentException(Strings.UnhandledUnary(p0));
+            return new ArgumentException(Strings.UnhandledUnary(p0), paramName);
         }
         /// <summary>
         /// ArgumentException with message like "Unknown binding type"
