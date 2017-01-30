@@ -375,6 +375,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        case GT_ROR:
             genCodeForShift(treeNode);
             // genCodeForShift() calls genProduceReg()
             break;
@@ -1197,6 +1198,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             break;
         case GT_XOR:
             ins = INS_XOR;
+            break;
+        case GT_ROR:
+            ins = INS_ror;
             break;
         default:
             unreached();
