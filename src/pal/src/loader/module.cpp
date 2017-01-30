@@ -18,11 +18,13 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
 #include "pal/module.h"
 #include "pal/cs.hpp"
 #include "pal/process.h"
@@ -59,8 +61,6 @@ Abstract:
 #endif
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(LOADER);
 
 // In safemath.h, Template SafeInt uses macro _ASSERTE, which need to use variable
 // defdbgchan defined by SET_DEFAULT_DEBUG_CHANNEL. Therefore, the include statement
