@@ -595,6 +595,11 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
     {
         NYI_ARM("float reg varargs");
     }
+
+    if (call->NeedsNullCheck())
+    {
+        info->internalIntCount++;
+    }
 }
 
 //------------------------------------------------------------------------
