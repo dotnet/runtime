@@ -231,12 +231,12 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 4bd06266-8ef7-4172-bec6-d3149fde7859 */
-    0x4bd06266,
-    0x8ef7,
-    0x4172,
-    {0xbe, 0xc6, 0xd3, 0x14, 0x9f, 0xde, 0x78, 0x59}
-};
+SELECTANY const GUID JITEEVersionIdentifier = { /* cda334f7-0020-4622-a4a5-8b8ac71ee5cf */
+    0xcda334f7,
+    0x0020,
+    0x4622,
+    {0xa4, 0xa5, 0x8b, 0x8a, 0xc7, 0x1e, 0xe5, 0xcf}
+  };
 
 #else
 
@@ -2115,6 +2115,15 @@ public:
             unsigned*                   offsetOfIndirection,    /* OUT */
             unsigned*                   offsetAfterIndirection  /* OUT */
             ) = 0;
+
+#if COR_JIT_EE_VERSION > 460
+    // Find the virtual method in implementingClass that overrides virtualMethod.
+    // Return null if devirtualization is not possible.
+    virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
+        CORINFO_METHOD_HANDLE virtualMethod,        /* IN */
+        CORINFO_CLASS_HANDLE implementingClass      /* IN */
+        ) = 0;
+#endif
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
