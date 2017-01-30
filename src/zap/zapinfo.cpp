@@ -3727,6 +3727,14 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     m_pEEJitInfo->getMethodVTableOffset(method, pOffsetOfIndirection, pOffsetAfterIndirection);
 }
 
+CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass
+        )
+{
+    return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass);
+}
+
 CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                           bool * pMustExpand)
 {
