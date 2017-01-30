@@ -4,9 +4,12 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.OpenSsl.cs" />
-
     <!-- ApiCompat requires an object reference to determine the core assembly. -->
     <AssemblyInfoSource Include="internal class ObjectMarker { }" />
   </ItemGroup>
