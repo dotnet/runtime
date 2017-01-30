@@ -513,45 +513,103 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_STORE_LCL_FLD:
         {
-            NYI_IF(targetType == TYP_STRUCT, "GT_STORE_LCL_FLD: struct store local field not supported");
-            noway_assert(!treeNode->InReg());
+            noway_assert(targetType != TYP_STRUCT);
 
-            GenTreePtr op1 = treeNode->gtOp.gtOp1->gtEffectiveVal();
-            genConsumeIfReg(op1);
-            emit->emitInsBinary(ins_Store(targetType), emitTypeSize(treeNode), treeNode, op1);
+            // record the offset
+            unsigned offset = treeNode->gtLclFld.gtLclOffs;
+
+            // We must have a stack store with GT_STORE_LCL_FLD
+            noway_assert(!treeNode->InReg());
+            noway_assert(targetReg == REG_NA);
+
+            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
+            unsigned             varNum  = varNode->gtLclNum;
+            assert(varNum < compiler->lvaCount);
+            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+
+            // Ensure that lclVar nodes are typed correctly.
+            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+            GenTreePtr  data = treeNode->gtOp.gtOp1->gtEffectiveVal();
+            instruction ins  = ins_Store(targetType);
+            emitAttr    attr = emitTypeSize(targetType);
+            if (data->isContainedIntOrIImmed())
+            {
+                assert(data->IsIntegralConst(0));
+                NYI_ARM("st.lclFld contained operand");
+            }
+            else
+            {
+                assert(!data->isContained());
+                genConsumeReg(data);
+                emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
+            }
+
+            genUpdateLife(varNode);
+            varDsc->lvRegNum = REG_STK;
         }
         break;
 
         case GT_STORE_LCL_VAR:
         {
-            NYI_IF(targetType == TYP_STRUCT, "struct store local not supported");
+            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
 
-            GenTreePtr op1 = treeNode->gtOp.gtOp1->gtEffectiveVal();
-            genConsumeIfReg(op1);
-            if (treeNode->gtRegNum == REG_NA)
+            unsigned varNum = varNode->gtLclNum;
+            assert(varNum < compiler->lvaCount);
+            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+            unsigned   offset = 0;
+
+            // Ensure that lclVar nodes are typed correctly.
+            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+            GenTreePtr data = treeNode->gtOp.gtOp1->gtEffectiveVal();
+
+            // var = call, where call returns a multi-reg return value
+            // case is handled separately.
+            if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
             {
-                // stack store
-                emit->emitInsMov(ins_Store(targetType), emitTypeSize(treeNode), treeNode);
-                compiler->lvaTable[treeNode->AsLclVarCommon()->gtLclNum].lvRegNum = REG_STK;
+                NYI_ARM("st.lclVar multi-reg value");
             }
-            else if (op1->isContained())
+            else
             {
-                // Currently, we assume that the contained source of a GT_STORE_LCL_VAR writing to a register
-                // must be a constant. However, in the future we might want to support a contained memory op.
-                // This is a bit tricky because we have to decide it's contained before register allocation,
-                // and this would be a case where, once that's done, we need to mark that node as always
-                // requiring a register - which we always assume now anyway, but once we "optimize" that
-                // we'll have to take cases like this into account.
-                assert((op1->gtRegNum == REG_NA) && op1->OperIsConst());
-                genSetRegToConst(treeNode->gtRegNum, targetType, op1);
+                genConsumeRegs(data);
+
+                regNumber dataReg = REG_NA;
+                if (data->isContainedIntOrIImmed())
+                {
+                    assert(data->IsIntegralConst(0));
+                    NYI_ARM("st.lclVar contained operand");
+                }
+                else
+                {
+                    assert(!data->isContained());
+                    dataReg = data->gtRegNum;
+                }
+                assert(dataReg != REG_NA);
+
+                if (targetReg == REG_NA) // store into stack based LclVar
+                {
+                    inst_set_SV_var(varNode);
+
+                    instruction ins  = ins_Store(targetType);
+                    emitAttr    attr = emitTypeSize(targetType);
+
+                    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
+
+                    genUpdateLife(varNode);
+
+                    varDsc->lvRegNum = REG_STK;
+                }
+                else // store into register (i.e move into register)
+                {
+                    if (dataReg != targetReg)
+                    {
+                        // Assign into targetReg when dataReg (from op1) is not the same register
+                        inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
+                    }
+                    genProduceReg(treeNode);
+                }
             }
-            else if (op1->gtRegNum != treeNode->gtRegNum)
-            {
-                assert(op1->gtRegNum != REG_NA);
-                emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(treeNode), treeNode, op1);
-            }
-            if (treeNode->gtRegNum != REG_NA)
-                genProduceReg(treeNode);
         }
         break;
 
@@ -601,7 +659,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_IND:
             genConsumeAddress(treeNode->AsIndir()->Addr());
-            emit->emitInsMov(ins_Load(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode);
+            emit->emitInsLoadStoreOp(ins_Load(targetType), emitTypeSize(treeNode), targetReg, treeNode->AsIndir());
             genProduceReg(treeNode);
             break;
 
@@ -818,7 +876,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     genConsumeAddress(addr);
                 }
 
-                emit->emitInsMov(ins_Store(data->TypeGet()), emitTypeSize(storeInd), storeInd);
+                emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(storeInd), data->gtRegNum,
+                                         treeNode->AsIndir());
             }
         }
         break;

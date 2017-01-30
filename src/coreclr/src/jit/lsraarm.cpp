@@ -271,6 +271,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     if (index != nullptr && !modifiedSources)
     {
         info->srcCount++;
+        info->internalIntCount++;
     }
 }
 
