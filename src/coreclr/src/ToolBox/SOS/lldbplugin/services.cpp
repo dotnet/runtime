@@ -171,6 +171,10 @@ LLDBServices::VirtualUnwind(
     DWORD spToFind = dtcontext->Esp;
 #elif DBG_TARGET_ARM
     DWORD spToFind = dtcontext->Sp;
+#elif DBG_TARGET_ARM64
+    DWORD64 spToFind = dtcontext->Sp;
+#else
+#error "spToFind undefined for this platform"
 #endif
     
     int numFrames = thread.GetNumFrames();
