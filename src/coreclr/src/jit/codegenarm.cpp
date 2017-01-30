@@ -985,6 +985,14 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genProduceReg(treeNode);
             break;
 
+        case GT_JMPTABLE:
+            genJumpTable(treeNode);
+            break;
+
+        case GT_SWITCH_TABLE:
+            genTableBasedSwitch(treeNode);
+            break;
+
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
@@ -1013,6 +1021,54 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     NYI("genLockedInstructions");
+}
+
+//------------------------------------------------------------------------
+// genTableBasedSwitch: generate code for a switch statement based on a table of ip-relative offsets
+//
+void CodeGen::genTableBasedSwitch(GenTree* treeNode)
+{
+    genConsumeOperands(treeNode->AsOp());
+    regNumber idxReg  = treeNode->gtOp.gtOp1->gtRegNum;
+    regNumber baseReg = treeNode->gtOp.gtOp2->gtRegNum;
+
+    regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+
+    getEmitter()->emitIns_R_ARX(INS_ldr, EA_4BYTE, REG_PC, baseReg, idxReg, TARGET_POINTER_SIZE, 0);
+}
+
+//------------------------------------------------------------------------
+// genJumpTable: emits the table and an instruction to get the address of the first element
+//
+void CodeGen::genJumpTable(GenTree* treeNode)
+{
+    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jmpTabBase;
+
+    jmpTabBase = getEmitter()->emitBBTableDataGenBeg(jumpCount, false);
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", Compiler::s_compMethodsCount, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = *jumpTable++;
+        noway_assert(target->bbFlags & BBF_JMP_TARGET);
+
+        JITDUMP("            DD      L_M%03u_BB%02u\n", Compiler::s_compMethodsCount, target->bbNum);
+
+        getEmitter()->emitDataGenData(i, target);
+    }
+
+    getEmitter()->emitDataGenEnd();
+
+    getEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, jmpTabBase, treeNode->gtRegNum);
+    getEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, jmpTabBase, treeNode->gtRegNum);
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
