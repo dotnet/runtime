@@ -1,5 +1,9 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   
+  <PropertyGroup>
+    <__BuildType>$(ConfigurationGroup)</__BuildType>
+  </PropertyGroup>
+
   <Import Project="..\dir.props" />
   <Import Project="$(ToolsDir)CloudTest.targets" Condition="Exists('$(ToolsDir)CloudTest.targets')" />
 
