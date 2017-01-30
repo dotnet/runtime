@@ -22703,6 +22703,7 @@ void Compiler::fgRemoveEmptyFinally()
     if (emptyCount > 0)
     {
         JITDUMP("fgRemoveEmptyFinally() removed %u try-finally clauses from %u finallys\n", emptyCount, finallyCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
@@ -23010,6 +23011,7 @@ void Compiler::fgRemoveEmptyTry()
     if (emptyCount > 0)
     {
         JITDUMP("fgRemoveEmptyTry() optimized %u empty-try try-finally clauses\n", emptyCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
@@ -23575,6 +23577,7 @@ void Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
+        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
@@ -23796,7 +23799,11 @@ void Compiler::fgDebugCheckTryFinallyExits()
 //    a callfinally/always pair.
 //
 //    Used by finally cloning, empty try removal, and empty
-//    finally removal. Resets flags and removes finally artifacts.
+//    finally removal.
+//
+//    BBF_FINALLY_TARGET bbFlag is left unchanged by this method
+//    since it cannot be incrementally updated. Proper updates happen
+//    when fgUpdateFinallyTargetFlags runs after all finally optimizations.
 
 void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 {
@@ -23804,11 +23811,6 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // It is now a normal block, so clear the special keep
     // always flag.
     continuation->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
-
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-    // Also, clear the finally target bit for arm
-    fgClearFinallyTargetBit(continuation);
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
 
 #if !FEATURE_EH_FUNCLETS
     // Remove the GT_END_LFIN from the continuation,
@@ -23826,4 +23828,48 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     }
     assert(foundEndLFin);
 #endif // !FEATURE_EH_FUNCLETS
+}
+
+//------------------------------------------------------------------------
+// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits for all blocks
+// after finally optimizations have run.
+
+void Compiler::fgUpdateFinallyTargetFlags()
+{
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
+    // Any fixup required?
+    if (!fgOptimizedFinally)
+    {
+        JITDUMP("In fgUpdateFinallyTargetFlags - no finally opts, no fixup required\n");
+        return;
+    }
+
+    JITDUMP("In fgUpdateFinallyTargetFlags, updating finally target flag bits\n");
+
+    // Walk all blocks, and reset the target bits.
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        block->bbFlags &= ~BBF_FINALLY_TARGET;
+    }
+
+    // Walk all blocks again, and set the target bits.
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->isBBCallAlwaysPair())
+        {
+            BasicBlock* const leave        = block->bbNext;
+            BasicBlock* const continuation = leave->bbJumpDest;
+
+            if ((continuation->bbFlags & BBF_FINALLY_TARGET) == 0)
+            {
+                JITDUMP("Found callfinally BB%02u; setting finally target bit on BB%02u\n", block->bbNum,
+                        continuation->bbNum);
+
+                continuation->bbFlags |= BBF_FINALLY_TARGET;
+            }
+        }
+    }
+
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
 }

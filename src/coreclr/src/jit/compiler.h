@@ -3425,6 +3425,7 @@ public:
     bool fgComputePredsDone; // Have we computed the bbPreds list
     bool fgCheapPredsValid;  // Is the bbCheapPreds list valid?
     bool fgDomsComputed;     // Have we computed the dominator sets?
+    bool fgOptimizedFinally; // Did we optimize any try-finallys?
 
     bool     fgHasSwitch;  // any BBJ_SWITCH jumps?
     bool     fgHasPostfix; // any postfix ++/-- found?
@@ -3502,6 +3503,8 @@ public:
     void fgCloneFinally();
 
     void fgCleanupContinuation(BasicBlock* continuation);
+
+    void fgUpdateFinallyTargetFlags();
 
     GenTreePtr fgGetCritSectOfStaticMethod();
 
