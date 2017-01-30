@@ -8,7 +8,6 @@
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
     <NoWarn>1685</NoWarn>
-    <NoTargetingPackReferences>true</NoTargetingPackReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
@@ -25,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeTests.cs" />
-    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'=='netstandard'" />
+    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="DebugTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
