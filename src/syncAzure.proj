@@ -6,6 +6,7 @@
     <ContainerNamePrefix Condition="'$(ContainerNamePrefix)' == ''">coreclr-$(PreReleaseLabel)</ContainerNamePrefix>
     <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
     <ContainerName Condition="'$(__Container)' != ''">$(__Container)</ContainerName>
+    <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins</DownloadDirectory>
   </PropertyGroup>
