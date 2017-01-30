@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -182,5 +184,60 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        public static IEnumerable<object[]> Int32OnesComplements()
+        {
+            yield return new object[] { 0, ~0 };
+            yield return new object[] { 1, ~1 };
+            yield return new object[] { -1, ~-1 };
+            yield return new object[] { int.MinValue, ~int.MinValue };
+            yield return new object[] { int.MaxValue, ~int.MaxValue };
+        }
+
+        [Theory, PerCompilationType(nameof(Int32OnesComplements))]
+        public static void MakeUnaryOnesComplement(int value, int expected, bool useInterpreter)
+        {
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(
+                Expression.MakeUnary(ExpressionType.OnesComplement, Expression.Constant(value), null));
+            Func<int> func = lambda.Compile(useInterpreter);
+            Assert.Equal(expected, func());
+        }
+
+        [Fact]
+        public static void OnesComplementNonIntegral()
+        {
+            Expression operand = Expression.Constant(2.0);
+            Assert.Throws<InvalidOperationException>(() => Expression.OnesComplement(operand));
+        }
+
+        private class Complementary
+        {
+            public int Value { get; set; }
+
+            public static Complementary operator ~(Complementary c) => new Complementary {Value = ~c.Value};
+
+            public static Complementary OnesComplement(Complementary c) => new Complementary { Value = ~c.Value };
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomOperatorOnesComplement(bool useInterpreter)
+        {
+            Complementary value = new Complementary {Value = 43};
+            Expression<Func<Complementary>> lambda = Expression.Lambda<Func<Complementary>>(
+                Expression.OnesComplement(Expression.Constant(value)));
+            Func<Complementary> func = lambda.Compile(useInterpreter);
+            Assert.Equal(~43, func().Value);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ExplicitOperatorOnesComplement(bool useInterpreter)
+        {
+            Complementary value = new Complementary {Value = 43};
+            MethodInfo method = typeof(Complementary).GetMethod(nameof(Complementary.OnesComplement));
+            Expression<Func<Complementary>> lambda = Expression.Lambda<Func<Complementary>>(
+                Expression.OnesComplement(Expression.Constant(value), method));
+            Func<Complementary> func = lambda.Compile(useInterpreter);
+            Assert.Equal(~43, func().Value);
+        }
     }
 }
