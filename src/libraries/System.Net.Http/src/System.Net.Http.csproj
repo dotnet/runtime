@@ -8,6 +8,8 @@
     <WindowsRID>win</WindowsRID>
     <!-- Suppress warnings for type conflicts between SR in partial facade and mscorlib -->
     <NoWarn>$(NoWarn);0436</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101-Windows_NT-Debug|AnyCPU'" />
@@ -142,9 +144,6 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap101' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
-    <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-  </PropertyGroup>
   <!-- Compile the WinHttpHandler implementation into the System.Net.Http.dll binary.  This is a
          temporary solution to remove the cycle dependency between HttpClient and WinHttpHandler.
          As part of that, we need to define HTTP_DLL in order to compile the 'protected' SendAsync()
@@ -275,6 +274,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs">
       <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
+      <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
       <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
