@@ -427,8 +427,7 @@ namespace System.Threading {
 
         private void SetStartHelper(Delegate start, int maxStackSize)
         {
-            // We only support default stacks in CoreCLR
-            Debug.Assert(maxStackSize == 0);
+            Debug.Assert(maxStackSize >= 0);
 
             ThreadHelper threadStartCallBack = new ThreadHelper(start);
             if(start is ThreadStart)
