@@ -137,6 +137,14 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
                     info->members[1].m_member_type = arrayTypeInfo;
                 }
             }
+            // Ignore inheritance from System.Object and System.ValueType classes.
+            if (!typeHandle.IsValueType() &&
+                pMT->GetParentMethodTable() && pMT->GetParentMethodTable()->GetParentMethodTable())
+            {
+                static_cast<ClassTypeInfo*>(typeInfo)->m_parent =
+                    GetTypeInfoFromTypeHandle(typeHandle.GetParent(), pTypeMap);
+            }
+
             if (refTypeInfo)
                 return refTypeInfo;
             else
@@ -767,6 +775,9 @@ const unsigned char AbbrevTable[] = {
 #endif
         0, 0,
 
+    18, DW_TAG_inheritance, DW_CHILDREN_no, DW_AT_type, DW_FORM_ref4, DW_AT_data_member_location, DW_FORM_data1,
+        0, 0,
+
     0
 };
 
@@ -909,6 +920,13 @@ struct __attribute__((packed)) DebugInfoClassType
     uint8_t m_type_abbrev;
     uint32_t m_type_name;
     uint8_t m_byte_size;
+};
+
+struct __attribute__((packed)) DebugInfoInheritance
+{
+    uint8_t m_abbrev;
+    uint32_t m_type;
+    uint8_t m_data_member_location;
 };
 
 struct __attribute__((packed)) DebugInfoClassMember
@@ -1054,7 +1072,8 @@ void PrimitiveTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members)
         : TypeInfoBase(typeHandle),
           m_num_members(num_members),
-          members(new TypeMember[num_members])
+          members(new TypeMember[num_members]),
+          m_parent(nullptr)
 {
 }
 
@@ -1394,6 +1413,11 @@ void ClassTypeInfo::DumpStrings(char* ptr, int& offset)
     {
         members[i].DumpStrings(ptr, offset);
     }
+
+    if (m_parent != nullptr)
+    {
+        m_parent->DumpStrings(ptr, offset);
+    }
 }
 
 void RefTypeInfo::DumpStrings(char* ptr, int& offset)
@@ -1430,6 +1454,20 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
     {
         return;
     }
+
+    if (m_parent != nullptr)
+    {
+        if (m_parent->m_type_offset == 0)
+        {
+            m_parent->DumpDebugInfo(ptr, offset);
+        }
+        else if (RefTypeInfo* m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+        {
+            if (m_p->m_value_type->m_type_offset == 0)
+                m_p->m_value_type->DumpDebugInfo(ptr, offset);
+        }
+    }
+
     // make sure that types of all members are dumped
     for (int i = 0; i < m_num_members; ++i)
     {
@@ -1465,6 +1503,22 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         }
     }
 
+    if (m_parent != nullptr)
+    {
+        if (ptr != nullptr)
+        {
+            DebugInfoInheritance buf;
+            buf.m_abbrev = 18;
+            if (RefTypeInfo *m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+                buf.m_type = m_p->m_value_type->m_type_offset;
+            else
+                buf.m_type = m_parent->m_type_offset;
+            buf.m_data_member_location = 0;
+            memcpy(ptr + offset, &buf, sizeof(DebugInfoInheritance));
+        }
+        offset += sizeof(DebugInfoInheritance);
+    }
+
     // members terminator
     if (ptr != nullptr)
     {
@@ -1477,7 +1531,6 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         if (members[i].m_static_member_address != 0)
             members[i].DumpStaticDebugInfo(ptr, offset);
     }
-
 }
 
 void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)
