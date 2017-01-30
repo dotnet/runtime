@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.Scripts
         private Lazy<string> _coreFxVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("COREFX_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/corefx/master/Latest_Packages.txt"));
         private Lazy<string> _coreClrVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("CORECLR_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/coreclr/master/Latest_Packages.txt"));
         private Lazy<string> _roslynVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("ROSLYN_VERSION_URL", "https://raw.githubusercontent.com/dotnet/versions/master/build-info/dotnet/roslyn/netcore1.0/Latest_Packages.txt"));
+        private Lazy<string> _standardVersionUrl = new Lazy<string>(() => GetEnvironmentVariable("STANDARD_VERSION_URL", string.Empty));
         private Lazy<string> _gitHubOriginOwner;
         private Lazy<string> _gitHubUpstreamOwner = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_UPSTREAM_OWNER", "dotnet"));
         private Lazy<string> _gitHubProject = new Lazy<string>(() => GetEnvironmentVariable("GITHUB_PROJECT", "core-setup"));
@@ -59,6 +60,7 @@ namespace Microsoft.DotNet.Scripts
         public string CoreFxVersionUrl => _coreFxVersionUrl.Value;
         public string CoreClrVersionUrl => _coreClrVersionUrl.Value;
         public string RoslynVersionUrl => _roslynVersionUrl.Value;
+        public string StandardVersionUrl => _standardVersionUrl.Value;
         public string GitHubOriginOwner => _gitHubOriginOwner.Value;
         public string GitHubUpstreamOwner => _gitHubUpstreamOwner.Value;
         public string GitHubProject => _gitHubProject.Value;
