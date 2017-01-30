@@ -912,6 +912,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             break;
 
+        case GT_ARR_BOUNDS_CHECK:
+            // Consumes arrLen and index. Has no result.
+            info->srcCount = 2;
+            info->dstCount = 0;
+            break;
+
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
