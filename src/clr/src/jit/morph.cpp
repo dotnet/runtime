@@ -16915,8 +16915,6 @@ void Compiler::fgMorph()
     fgDebugCheckBBlist(false, false);
 #endif // DEBUG
 
-// RemoveEmptyFinally is disabled on ARM due to github issue #9013
-#ifndef _TARGET_ARM_
     fgRemoveEmptyTry();
 
     EndPhase(PHASE_EMPTY_TRY);
@@ -16928,7 +16926,8 @@ void Compiler::fgMorph()
     fgCloneFinally();
 
     EndPhase(PHASE_CLONE_FINALLY);
-#endif // _TARGET_ARM_
+
+    fgUpdateFinallyTargetFlags();
 
     /* For x64 and ARM64 we need to mark irregular parameters early so that they don't get promoted */
     fgMarkImplicitByRefArgs();
