@@ -6,6 +6,8 @@
     <TargetExt>.winmd</TargetExt>
     <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

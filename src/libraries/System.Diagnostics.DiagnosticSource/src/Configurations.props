@@ -4,6 +4,8 @@
     <BuildConfigurations>
       netstandard1.1;
       netstandard1.3;
+      netstandard;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

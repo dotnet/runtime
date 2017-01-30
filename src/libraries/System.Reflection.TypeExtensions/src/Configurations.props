@@ -4,7 +4,8 @@
     <BuildConfigurations>
       net462-Windows_NT;
       uap101aot-Windows_NT;
-      netstandard1.5;
+      netcoreapp;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
