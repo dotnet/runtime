@@ -75,6 +75,15 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Gets the only item in this builder.
+        /// </summary>
+        public T Single()
+        {
+            Debug.Assert(_count == 1);
+            return _array[0];
+        }
+
+        /// <summary>
         /// Creates an array from the contents of this builder.
         /// </summary>
         /// <remarks>
