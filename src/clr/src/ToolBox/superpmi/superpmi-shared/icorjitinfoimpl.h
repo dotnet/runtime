@@ -125,6 +125,13 @@ public:
             unsigned*                   offsetAfterIndirection  /* OUT */
             );
 
+    // Find the virtual method in implementingClass that overrides virtualMethod.
+    // Return null if devirtualization is not possible.
+    CORINFO_METHOD_HANDLE resolveVirtualMethod(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass
+        );
+
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
     // *pMustExpand tells whether or not JIT must expand the intrinsic.

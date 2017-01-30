@@ -185,6 +185,18 @@ void MyICJI::getMethodVTableOffset (
     jitInstance->mc->repGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
 }
 
+// Find the virtual method in implementingClass that overrides virtualMethod.
+// Return null if devirtualization is not possible.
+CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(
+    CORINFO_METHOD_HANDLE virtualMethod,
+    CORINFO_CLASS_HANDLE implementingClass
+    )
+{
+    jitInstance->mc->cr->AddCall("resolveVirtualMethod");
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass);
+    return result;
+}
+
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
 // getIntrinsicID() returns the intrinsic ID.
 CorInfoIntrinsics MyICJI::getIntrinsicID(
