@@ -944,13 +944,17 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             info->dstCount = 1;
 
+            // On ARM we may need a single internal register
+            // (when both conditions are true then we still only need a single internal register)
             if ((index != nullptr) && (cns != 0))
             {
-                NYI_ARM("GT_LEA: index and cns are not nil");
+                // ARM does not support both Index and offset so we need an internal register
+                info->internalIntCount = 1;
             }
             else if (!emitter::emitIns_valid_imm_for_add(cns, INS_FLAGS_DONT_CARE))
             {
-                NYI_ARM("GT_LEA: invalid imm");
+                // This offset can't be contained in the add instruction, so we need an internal register
+                info->internalIntCount = 1;
             }
         }
         break;
