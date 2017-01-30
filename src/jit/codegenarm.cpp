@@ -52,7 +52,39 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    NYI("ARM genCallFinally");
+    BasicBlock* bbFinallyRet = nullptr;
+
+    // We don't have retless calls, since we use the BBJ_ALWAYS to point at a NOP pad where
+    // we would have otherwise created retless calls.
+    assert(block->isBBCallAlwaysPair());
+
+    assert(block->bbNext != NULL);
+    assert(block->bbNext->bbJumpKind == BBJ_ALWAYS);
+    assert(block->bbNext->bbJumpDest != NULL);
+    assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
+
+    bbFinallyRet = block->bbNext->bbJumpDest;
+    bbFinallyRet->bbFlags |= BBF_JMP_TARGET;
+
+    // Load the address where the finally funclet should return into LR.
+    // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
+    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
+    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
+
+    // Jump to the finally BB
+    inst_JMP(EJ_jmp, block->bbJumpDest);
+
+    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
+    // jump target using bbJumpDest - that is already used to point
+    // to the finally block. So just skip past the BBJ_ALWAYS unless the
+    // block is RETLESS.
+    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    {
+        assert(block->isBBCallAlwaysPair());
+
+        lblk  = block;
+        block = block->bbNext;
+    }
     return block;
 }
 
@@ -60,7 +92,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 // genEHCatchRet:
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI("ARM genEHCatchRet");
+    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_INTRET);
+    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_INTRET);
 }
 
 //---------------------------------------------------------------------

@@ -1075,7 +1075,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
 
     void* cookie;
 
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_) && defined(LEGACY_BACKEND)
     if (block->bbFlags & BBF_FINALLY_TARGET)
     {
         // Use the offset of the beginning of the NOP padding, not the main block.
