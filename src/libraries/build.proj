@@ -57,16 +57,16 @@
     <MSBuild Projects="@(ExternalProject)"
              ContinueOnError="ErrorAndContinue" />
   </Target>
-  
- <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
- <Target Name="ValidateVSConfigurations" DependsOnTargets="BuildCoreFxTools" Condition="'$(CheckProjectConfiguration)'=='true'">
-    <Message Importance="High" Text="Validating configurations for projects ..." />
+
+  <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
+    <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
       <ProjectsToCheckHeaders Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
     </ItemGroup>
-    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" />
-    <Message Importance="High" Text="Validating configurations for projects ... Done." />
- </Target>
+    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" UpdateProjects="true" />
+    <Message Importance="High" Text="Updating configurations for projects ... Done." />
+  </Target>
 
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">
