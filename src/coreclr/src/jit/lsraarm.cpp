@@ -1051,6 +1051,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         default:
             NYI_ARM("TreeNodeInfoInit default case");
         case GT_LCL_FLD:
+        case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         {
@@ -1059,6 +1060,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             NYI_IF(varTypeIsStruct(varDsc), "lowering struct var");
             NYI_IF(varTypeIsLong(varDsc), "lowering long var");
         }
+        case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_CNS_INT:
