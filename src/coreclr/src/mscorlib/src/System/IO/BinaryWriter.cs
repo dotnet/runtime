@@ -185,7 +185,7 @@ namespace System.IO {
 
             Debug.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
             int numBytes = 0;
-            fixed(byte * pBytes = _buffer) {
+            fixed(byte * pBytes = &_buffer[0]) {
                 numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, flush: true);
             }
             OutStream.Write(_buffer, 0, numBytes);
@@ -382,7 +382,7 @@ namespace System.IO {
                         }
                         fixed (char* pChars = value)
                         {
-                            fixed (byte* pBytes = _largeByteBuffer)
+                            fixed (byte* pBytes = &_largeByteBuffer[0])
                             {
                                 byteLen = _encoder.GetBytes(pChars + charStart, charCount, pBytes, _largeByteBuffer.Length, charCount == numLeft);
                             }
