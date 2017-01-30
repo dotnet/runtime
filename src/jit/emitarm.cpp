@@ -7528,89 +7528,99 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 #ifndef LEGACY_BACKEND
 
-// this is very similar to emitInsBinary and probably could be folded in to same
-// except the requirements on the incoming parameter are different,
-// ex: the memory op in storeind case must NOT be contained
-void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
+void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
-    switch (node->OperGet())
+    GenTree* addr = indir->Addr();
+    GenTree* data = indir->gtOp.gtOp2;
+
+    if (addr->isContained())
     {
-        case GT_IND:
-        case GT_STOREIND:
+        assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+
+        int   offset = 0;
+        DWORD lsl    = 0;
+
+        if (addr->OperGet() == GT_LEA)
         {
-            GenTreeIndir* indir = node->AsIndir();
-            GenTree*      addr  = indir->Addr();
-            GenTree*      data  = indir->gtOp.gtOp2;
-
-            regNumber reg = (node->OperGet() == GT_IND) ? node->gtRegNum : data->gtRegNum;
-
-            if (addr->isContained())
+            offset = (int)addr->AsAddrMode()->gtOffset;
+            if (addr->AsAddrMode()->gtScale > 0)
             {
-                assert(addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA);
+                assert(isPow2(addr->AsAddrMode()->gtScale));
+                BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
+            }
+        }
 
-                int   offset = 0;
-                DWORD lsl    = 0;
+        GenTree* memBase = indir->Base();
 
-                if (addr->OperGet() == GT_LEA)
+        if (indir->HasIndex())
+        {
+            GenTree* index = indir->Index();
+
+            if (offset != 0)
+            {
+                regMaskTP tmpRegMask = indir->gtRsvdRegs;
+                regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
+                noway_assert(tmpReg != REG_NA);
+
+                if (emitIns_valid_imm_for_add(offset, INS_FLAGS_DONT_CARE))
                 {
-                    offset = (int)addr->AsAddrMode()->gtOffset;
-                    if (addr->AsAddrMode()->gtScale > 0)
+                    if (lsl > 0)
                     {
-                        assert(isPow2(addr->AsAddrMode()->gtScale));
-                        BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
+                        // Generate code to set tmpReg = base + index*scale
+                        emitIns_R_R_R_I(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl,
+                                        INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
                     }
-                }
+                    else // no scale
+                    {
+                        // Generate code to set tmpReg = base + index
+                        emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, memBase->gtRegNum, index->gtRegNum);
+                    }
 
-                GenTree* memBase = indir->Base();
+                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
 
-                if (indir->HasIndex())
-                {
-                    NYI_ARM("emitInsMov HasIndex");
+                    // Then load/store dataReg from/to [tmpReg + offset]
+                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset);
                 }
-                else
+                else // large offset
                 {
-                    // TODO check offset is valid for encoding
-                    emitIns_R_R_I(ins, attr, reg, memBase->gtRegNum, offset);
+                    // First load/store tmpReg with the large offset constant
+                    codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+                    // Then add the base register
+                    //      rd = rd + base
+                    emitIns_R_R_R(INS_add, EA_PTRSIZE, tmpReg, tmpReg, memBase->gtRegNum);
+
+                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+                    noway_assert(tmpReg != index->gtRegNum);
+
+                    // Then load/store dataReg from/to [tmpReg + index*scale]
+                    emitIns_R_R_R_I(ins, attr, dataReg, tmpReg, index->gtRegNum, lsl, INS_FLAGS_DONT_CARE,
+                                    INS_OPTS_LSL);
                 }
             }
-            else
+            else // (offset == 0)
             {
-                if (addr->OperGet() == GT_CLS_VAR_ADDR)
+                if (lsl > 0)
                 {
-                    emitIns_C_R(ins, attr, addr->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                    // Then load/store dataReg from/to [memBase + index*scale]
+                    emitIns_R_R_R_I(ins, attr, dataReg, memBase->gtRegNum, index->gtRegNum, lsl, INS_FLAGS_DONT_CARE,
+                                    INS_OPTS_LSL);
                 }
-                else
+                else // no scale
                 {
-                    emitIns_R_R(ins, attr, reg, addr->gtRegNum);
+                    // Then load/store dataReg from/to [memBase + index]
+                    emitIns_R_R_R(ins, attr, dataReg, memBase->gtRegNum, index->gtRegNum);
                 }
             }
         }
-        break;
-
-        case GT_STORE_LCL_VAR:
+        else
         {
-            GenTreeLclVarCommon* varNode = node->AsLclVarCommon();
-
-            GenTree* data = node->gtOp.gtOp1->gtEffectiveVal();
-            codeGen->inst_set_SV_var(varNode);
-            assert(varNode->gtRegNum == REG_NA); // stack store
-
-            if (data->isContainedIntOrIImmed())
-            {
-                emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
-                codeGen->genUpdateLife(varNode);
-            }
-            else
-            {
-                assert(!data->isContained());
-                emitIns_S_R(ins, attr, data->gtRegNum, varNode->GetLclNum(), 0);
-                codeGen->genUpdateLife(varNode);
-            }
+            // TODO check offset is valid for encoding
+            emitIns_R_R_I(ins, attr, dataReg, memBase->gtRegNum, offset);
         }
-            return;
-
-        default:
-            unreached();
+    }
+    else
+    {
+        emitIns_R_R(ins, attr, dataReg, addr->gtRegNum);
     }
 }
 
