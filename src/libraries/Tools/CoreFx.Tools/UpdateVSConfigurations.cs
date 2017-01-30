@@ -9,12 +9,10 @@ using Microsoft.Build.Construction;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class ValidateVSConfigurations : BuildTask
+    public class UpdateVSConfigurations : BuildTask
     {
         [Required]
         public ITaskItem[] ProjectsToValidate { get; set; }
-
-        public bool UpdateProjects { get; set; }
 
         private const string ConfigurationPropsFilename = "Configurations.props";
         private static Regex s_configurationConditionRegex = new Regex(@"'\$\(Configuration\)\|\$\(Platform\)' ?== ?'(?<config>.*)'");
@@ -38,15 +36,8 @@ namespace Microsoft.DotNet.Build.Tasks
 
                     if (!actualConfigurations.SequenceEqual(expectedConfigurations))
                     {
-                        if (!UpdateProjects)
-                        {
-                            Log.LogError($"{item} configurations does not match it's Configurations.props.");
-                        }
-                        else
-                        {
-                            ReplaceConfigurationPropertyGroups(project, propertyGroups, expectedConfigurations);
-                            project.Save();
-                        }
+                        ReplaceConfigurationPropertyGroups(project, propertyGroups, expectedConfigurations);
+                        project.Save();
                     }
                 }
             }

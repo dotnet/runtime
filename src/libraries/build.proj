@@ -58,13 +58,13 @@
              ContinueOnError="ErrorAndContinue" />
   </Target>
 
-  <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
   <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
-      <ProjectsToCheckHeaders Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
     </ItemGroup>
-    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" UpdateProjects="true" />
+    <UpdateVSConfigurations ProjectsToValidate="@(_projectsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />
   </Target>
 
