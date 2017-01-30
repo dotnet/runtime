@@ -1049,7 +1049,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         default:
+#ifdef DEBUG
+            char message[256];
+            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+                        GenTree::NodeName(tree->OperGet()));
+            NYIRAW(message);
+#else
             NYI_ARM("TreeNodeInfoInit default case");
+#endif
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR:
