@@ -72,21 +72,6 @@ namespace System {
 
             // Is this thread currently doing infinite resource lookups?
             private int infinitelyRecursingCount;
-
-            // Data representing one individual resource lookup on a thread.
-            internal class GetResourceStringUserData
-            {
-                public ResourceHelper m_resourceHelper;
-                public String m_key;
-                public String m_retVal;
-                public bool m_lockWasTaken;
-
-                public GetResourceStringUserData(ResourceHelper resourceHelper, String key)
-                {
-                    m_resourceHelper = resourceHelper;
-                    m_key = key;
-                }
-            }
             
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             internal String GetResourceString(String key)  {
@@ -114,104 +99,79 @@ namespace System {
                 // returning, we're going into an infinite loop and we should 
                 // return a bogus string.  
 
-                GetResourceStringUserData userData = new GetResourceStringUserData(this, key);
-
-                RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(GetResourceStringCode);
-                RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(GetResourceStringBackoutCode);
-
-                RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(tryCode, cleanupCode, userData);
-                return userData.m_retVal;
-            }
-
-            private void GetResourceStringCode(Object userDataIn)
-            {
-                GetResourceStringUserData userData = (GetResourceStringUserData) userDataIn;
-                ResourceHelper rh = userData.m_resourceHelper;
-                String key = userData.m_key;
-
-                Monitor.Enter(rh, ref userData.m_lockWasTaken);
-
-                // Are we recursively looking up the same resource?  Note - our backout code will set
-                // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
-                if (rh.currentlyLoading != null && rh.currentlyLoading.Count > 0 && rh.currentlyLoading.LastIndexOf(key) != -1) {
-                    // We can start infinitely recursing for one resource lookup,
-                    // then during our failure reporting, start infinitely recursing again.
-                    // avoid that.
-                    if (rh.infinitelyRecursingCount > 0) {
-                        userData.m_retVal = "[Resource lookup failed - infinite recursion or critical failure detected.]";
-                        return;
-                    }
-                    rh.infinitelyRecursingCount++;
-
-                    // Note: our infrastructure for reporting this exception will again cause resource lookup.
-                    // This is the most direct way of dealing with that problem.
-                    String message = "Infinite recursion during resource lookup within "+System.CoreLib.Name+".  This may be a bug in "+System.CoreLib.Name+", or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: " + key;
-                    Assert.Fail("[Recursive resource lookup bug]", message, Assert.COR_E_FAILFAST, System.Diagnostics.StackTrace.TraceFormat.NoResourceLookup);
-                    Environment.FailFast(message);
-                }
-                if (rh.currentlyLoading == null)
-                    rh.currentlyLoading = new List<string>();
-
-                // Call class constructors preemptively, so that we cannot get into an infinite
-                // loop constructing a TypeInitializationException.  If this were omitted,
-                // we could get the Infinite recursion assert above by failing type initialization
-                // between the Push and Pop calls below.
-        
-                if (!rh.resourceManagerInited)
+                bool lockTaken = false;
+                try
                 {
-                    // process-critical code here.  No ThreadAbortExceptions
-                    // can be thrown here.  Other exceptions percolate as normal.
-                    RuntimeHelpers.PrepareConstrainedRegions();
-                    try {
+                    Monitor.Enter(this, ref lockTaken);
+
+                    // Are we recursively looking up the same resource?  Note - our backout code will set
+                    // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
+                    if (currentlyLoading != null && currentlyLoading.Count > 0 && currentlyLoading.LastIndexOf(key) != -1)
+                    {
+                        // We can start infinitely recursing for one resource lookup,
+                        // then during our failure reporting, start infinitely recursing again.
+                        // avoid that.
+                        if (infinitelyRecursingCount > 0)
+                        {
+                            return "[Resource lookup failed - infinite recursion or critical failure detected.]";
+                        }
+                        infinitelyRecursingCount++;
+
+                        // Note: our infrastructure for reporting this exception will again cause resource lookup.
+                        // This is the most direct way of dealing with that problem.
+                        string message = $"Infinite recursion during resource lookup within {System.CoreLib.Name}.  This may be a bug in {System.CoreLib.Name}, or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: {key}";
+                        Assert.Fail("[Recursive resource lookup bug]", message, Assert.COR_E_FAILFAST, System.Diagnostics.StackTrace.TraceFormat.NoResourceLookup);
+                        Environment.FailFast(message);
                     }
-                    finally {
+                    if (currentlyLoading == null)
+                        currentlyLoading = new List<string>();
+
+                    // Call class constructors preemptively, so that we cannot get into an infinite
+                    // loop constructing a TypeInitializationException.  If this were omitted,
+                    // we could get the Infinite recursion assert above by failing type initialization
+                    // between the Push and Pop calls below.
+                    if (!resourceManagerInited)
+                    {
                         RuntimeHelpers.RunClassConstructor(typeof(ResourceManager).TypeHandle);
                         RuntimeHelpers.RunClassConstructor(typeof(ResourceReader).TypeHandle);
                         RuntimeHelpers.RunClassConstructor(typeof(RuntimeResourceSet).TypeHandle);
                         RuntimeHelpers.RunClassConstructor(typeof(BinaryReader).TypeHandle);
-                        rh.resourceManagerInited = true; 
+                        resourceManagerInited = true;
                     }
-            
-                } 
-        
-                rh.currentlyLoading.Add(key); // Push
 
-                if (rh.SystemResMgr == null) {
-                    rh.SystemResMgr = new ResourceManager(m_name, typeof(Object).Assembly);
+                    currentlyLoading.Add(key); // Push
+
+                    if (SystemResMgr == null)
+                    {
+                        SystemResMgr = new ResourceManager(m_name, typeof(Object).Assembly);
+                    }
+                    string s = SystemResMgr.GetString(key, null);
+                    currentlyLoading.RemoveAt(currentlyLoading.Count - 1); // Pop
+
+                    Debug.Assert(s != null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \"" + key + "\"");
+                    return s;
                 }
-                String s = rh.SystemResMgr.GetString(key, null);
-                rh.currentlyLoading.RemoveAt(rh.currentlyLoading.Count - 1); // Pop
-
-                Debug.Assert(s!=null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \""+key+"\"");
-
-                userData.m_retVal = s;
-            }
-
-            [PrePrepareMethod]
-            private void GetResourceStringBackoutCode(Object userDataIn, bool exceptionThrown)
-            {
-                GetResourceStringUserData userData = (GetResourceStringUserData) userDataIn;
-                ResourceHelper rh = userData.m_resourceHelper;
-
-                if (exceptionThrown)
+                catch
                 {
-                    if (userData.m_lockWasTaken) 
+                    if (lockTaken)
                     {
                         // Backout code - throw away potentially corrupt state
-                        rh.SystemResMgr = null;
-                        rh.currentlyLoading = null;
+                        SystemResMgr = null;
+                        currentlyLoading = null;
+                    }
+                    throw;
+                }
+                finally
+                {
+                    if (lockTaken)
+                    {
+                        Monitor.Exit(this);
                     }
                 }
-                // Release the lock, if we took it.
-                if (userData.m_lockWasTaken)
-                {
-                    Monitor.Exit(rh);
-                }
             }
-        
         }
 
-              private static volatile ResourceHelper m_resHelper;  // Doesn't need to be initialized as they're zero-init.
+        private static volatile ResourceHelper m_resHelper;  // Doesn't need to be initialized as they're zero-init.
 
         private const  int    MaxMachineNameLength = 256;
 
