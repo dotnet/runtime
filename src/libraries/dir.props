@@ -249,10 +249,9 @@
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
     <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
-    <!-- RefPath should be based off Configuration, not BuildConfiguration
-         IE: $(RefRootPath)/$(TargetGroup)
-         but we cannot change this until we build ref folders for more than just the Building targetgroup -->
-    <RefPath>$(RefRootPath)$(_bc_TargetGroup)/</RefPath>
+    <RefPath>$(RefRootPath)$(TargetGroup)/</RefPath>
+    <!-- tests don't yet set appropriate configurations -->
+    <RefPath Condition="'$(IsTestProject)' == 'true'">$(BuildConfigurationRefPath)</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 

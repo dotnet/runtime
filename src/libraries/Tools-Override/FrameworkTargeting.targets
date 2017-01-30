@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <PropertyGroup Condition="'$(IncludeDefaultReferences)' == ''">
+    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</IncludeDefaultReferences>
+    <IncludeDefaultReferences Condition="'$(MSBuildProjectExtension)' == '.vbproj'">true</IncludeDefaultReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- netstandard is a default reference whenever building for NETStandard or building an implementation assembly -->
+    <DefaultReference Condition="$(NuGetTargetMoniker.StartsWith('.NETStandard')) OR '$(IsReferenceAssembly)' != 'true'"
+                      Include="netstandard" />
+  </ItemGroup>
+
   <ItemGroup>
     <TargetingPackDirs Include="$(RefPath)" />
     <AdditionalReferencePaths Include="@(TargetingPackDirs)" />
   </ItemGroup>
 
-  <PropertyGroup >
-    <!-- TODO: This will begin depending on a target once we start computing RefPath -->
+  <PropertyGroup>
     <ContractOutputPath>$(RefPath)</ContractOutputPath>
     <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
     <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
@@ -52,6 +62,15 @@
     <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
+  
+  <Target Name="AddDefaultReferences"
+          Condition="'$(IncludeDefaultReferences)' =='true'"
+          BeforeTargets="BeforeResolveReferences">
+    <ItemGroup>
+      <!-- Include default references when specified and they exist -->
+      <Reference Condition="Exists('$(RefPath)%(Identity).dll')" Include="@(DefaultReference)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
   <Target Name="AddDesignTimeFacadeReferences"

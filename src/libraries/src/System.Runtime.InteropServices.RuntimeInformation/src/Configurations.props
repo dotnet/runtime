@@ -9,6 +9,8 @@
       netcore50aot-Windows_NT;
       netstandard1.1-Unix;
       netstandard1.1-Windows_NT;
+      netcoreapp-Unix;
+      netcoreapp-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

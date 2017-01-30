@@ -5,6 +5,8 @@
       net46-Windows_NT;
       netstandard1.3-Windows_NT;
       netstandard1.3-Unix;
+      netstandard-Windows_NT;
+      netstandard-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

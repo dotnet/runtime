@@ -4,18 +4,18 @@
   <PropertyGroup>
     <AssemblyName>System.IO.Pipes.AccessControl</AssemblyName>
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
-    <AllowUnsafeBlocks Condition="'$(TargetGroup)'=='netstandard1.3'">true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks Condition="'$(TargetGroup)'=='netstandard'">true</AllowUnsafeBlocks>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Unix-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3' AND '$(TargetsWindows)'=='true'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'!='true' AND '$(TargetsWindows)'=='true'">
     <Compile Include="System\IO\PipeSecurity.cs" />
     <Compile Include="System\IO\PipeAccessRights.cs" />
     <Compile Include="System\IO\PipeAccessRule.cs" />
@@ -28,10 +28,6 @@
     <Compile Include="System\IO\PipesAclExtensions.net46.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.IO.Pipes" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
