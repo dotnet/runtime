@@ -1015,7 +1015,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         {
 #ifdef DEBUG
             char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s\n",
+            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
                         GenTree::NodeName(treeNode->OperGet()));
             NYIRAW(message);
 #else
