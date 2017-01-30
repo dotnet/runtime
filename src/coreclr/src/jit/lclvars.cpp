@@ -465,7 +465,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
             varDsc->lvArgReg       = genMapIntRegArgNumToRegNum(retBuffArgNum);
         }
 
-#if FEATURE_MULTIREG__ARGS
+#if FEATURE_MULTIREG_ARGS
         varDsc->lvOtherArgReg = REG_NA;
 #endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -1059,7 +1059,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL);
-#if FEATURE_MULTIREG__ARGS
+#if FEATURE_MULTIREG_ARGS
             varDsc->lvOtherArgReg = REG_NA;
 #endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
