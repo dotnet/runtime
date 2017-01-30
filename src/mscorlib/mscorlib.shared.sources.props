@@ -953,7 +953,6 @@
   </ItemGroup>
   <ItemGroup>
     <TextSources Include="$(BclSourcesRoot)\System\Text\ASCIIEncoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\CodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Decoder.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\DecoderBestFitFallback.cs" />
@@ -971,12 +970,9 @@
     <TextSources Include="$(BclSourcesRoot)\System\Text\EncodingInfo.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\EncodingNLS.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\EncodingProvider.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\ISCIIEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
-    <TextSources Include="$(BclSourcesRoot)\System\Text\MLangCodePageEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'"/>
-    <TextSources Include="$(BclSourcesRoot)\System\Text\SurrogateEncoder.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UnicodeEncoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
     <TextSources Include="$(BclSourcesRoot)\System\Text\UTF8Encoding.cs" />
