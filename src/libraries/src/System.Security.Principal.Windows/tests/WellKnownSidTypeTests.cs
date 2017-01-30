@@ -8,6 +8,7 @@ using Xunit;
 
 public class WellKnownSidTypeTests
 {
+    [ActiveIssue(15436)]
     [Theory]
     [InlineData(WellKnownSidType.NullSid)]
     [InlineData(WellKnownSidType.WorldSid)]
