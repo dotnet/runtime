@@ -3296,6 +3296,40 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method, unsig
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
+void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass, CORINFO_METHOD_HANDLE result)
+{
+    if (ResolveVirtualMethod == nullptr)
+    {
+        ResolveVirtualMethod = new LightWeightMap<DLDL, DWORDLONG>();
+    }
+
+    DLDL key;
+    key.A = (DWORDLONG)virtMethod;
+    key.B = (DWORDLONG)implClass;
+    ResolveVirtualMethod->Add(key, (DWORDLONG) result);
+    DEBUG_REC(dmpResolveVirtualMethod(key, result));
+}
+
+void MethodContext::dmpResolveVirtualMethod(DLDL key, DWORDLONG value)
+{
+    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, result-%016llX", key.A, key.B, value);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass)
+{
+    DLDL key;
+    key.A = (DWORDLONG)virtMethod;
+    key.B = (DWORDLONG)implClass;
+
+    AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC, "No ResolveVirtualMap map for %016llX-%016llX", key.A, key.B);
+    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx", key.A, key.B);
+    DWORDLONG result = ResolveVirtualMethod->Get(key);
+
+    DEBUG_REP(dmpResolveVirtualMethod(key, result));
+
+    return (CORINFO_METHOD_HANDLE)result;
+}
+
 void MethodContext::recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_CLASS_HANDLE result)
 {
     if (GetTokenTypeAsHandle == nullptr)
@@ -6165,7 +6199,7 @@ mdMethodDef MethodContext::repGetMethodDefFromMethod(CORINFO_METHOD_HANDLE hMeth
 
     int index = GetMethodDefFromMethod->GetIndex((DWORDLONG)hMethod);
     if (index < 0)
-        return (mdMethodDef)0x06000001;    
+        return (mdMethodDef)0x06000001;
 
     return (mdMethodDef)GetMethodDefFromMethod->Get((DWORDLONG)hMethod);
 }

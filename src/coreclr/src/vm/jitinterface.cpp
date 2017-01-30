@@ -8701,6 +8701,80 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
+                                                    CORINFO_CLASS_HANDLE derivedClass)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* method = GetMethod(methodHnd);
+
+    // Method better be from a fully loaded class
+    _ASSERTE(method->IsRestored() && method->GetMethodTable()->IsFullyLoaded());
+
+    // Method better be virtual
+    _ASSERTE(method->IsVirtual());
+
+    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!method->HasMethodInstantiation());
+
+    // Method's class better not be an interface
+    _ASSERTE(!method->GetMethodTable()->IsInterface());
+
+    // Method better be in the vtable
+    WORD slot = method->GetSlot();
+    _ASSERTE(slot < method->GetMethodTable()->GetNumVirtuals());
+
+    // TODO: Derived class should have base class as parent...
+    TypeHandle DerivedClsHnd(derivedClass);
+
+    // If derived class is _Canon, we can't devirtualize.
+    if (DerivedClsHnd != TypeHandle(g_pCanonMethodTableClass))
+    {
+        MethodTable* pMT = DerivedClsHnd.GetMethodTable();
+
+        // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
+        _ASSERTE(pMT->IsRestored() && pMT->IsFullyLoaded());
+
+        MethodDesc* pDevirtMD = pMT->GetMethodDescForSlot(slot);
+
+        _ASSERTE(pDevirtMD->IsRestored());
+
+        // Allow devirtialization if jitting, or if prejitting and the
+        // method being jitted, the devirtualized class, and the
+        // devirtualized method are all in the same versioning bubble.
+        bool allowDevirt = true;
+
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (IsReadyToRunCompilation())
+        {
+            Assembly * pCallerAssembly = m_pMethodBeingCompiled->GetModule()->GetAssembly();
+            allowDevirt =
+                IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
+                && IsInSameVersionBubble(pCallerAssembly , pMT->GetAssembly());
+        }
+#endif
+
+        if (allowDevirt)
+        {
+            result = (CORINFO_METHOD_HANDLE) pDevirtMD;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
                                     CORINFO_CONST_LOOKUP * pResult,
                                     CORINFO_ACCESS_FLAGS   accessFlags)

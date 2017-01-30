@@ -698,6 +698,10 @@ public:
     void dmpGetMethodVTableOffset(DWORDLONG key, DD value);
     void repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method, unsigned *offsetOfIndirection, unsigned* offsetAfterIndirection);
 
+    void recResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass, CORINFO_METHOD_HANDLE result);
+    void dmpResolveVirtualMethod(DLDL key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass);
+
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_CLASS_HANDLE result);
     void dmpGetTokenTypeAsHandle(const Agnostic_CORINFO_RESOLVED_TOKEN& key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken);
@@ -1016,7 +1020,7 @@ private:
 
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 159
+// Highest packet number: 160
 // *************************************************************************************
 enum mcPackets
 {
@@ -1151,6 +1155,7 @@ enum mcPackets
     Packet_MergeClasses = 107,
     Packet_PInvokeMarshalingRequired = 108,
     Packet_ResolveToken = 109,
+    Packet_ResolveVirtualMethod = 160, // Added 2/13/17
     Packet_TryResolveToken = 158, //Added 4/26/2016
     Packet_SatisfiesClassConstraints = 110,
     Packet_SatisfiesMethodConstraints = 111,

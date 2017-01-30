@@ -665,6 +665,11 @@ public:
                                unsigned * pOffsetOfIndirection,
                                unsigned * pOffsetAfterIndirection);
 
+    CORINFO_METHOD_HANDLE resolveVirtualMethod(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass
+        );
+
     CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                      bool * pMustExpand = NULL);
     bool isInSIMDModule(CORINFO_CLASS_HANDLE classHnd);
