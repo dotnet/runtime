@@ -24,12 +24,14 @@
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
+    const uint16_t DW_FORM_size = DW_FORM_data4;
 #define ADDRESS_SIZE 4    
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
     typedef Elf64_Sym   Elf_Sym;
-#define ADDRESS_SIZE 8    
+    const uint16_t DW_FORM_size = DW_FORM_data8;
+#define ADDRESS_SIZE 8
 #else
 #error "Target is not supported"
 #endif
@@ -469,6 +471,8 @@ public:
         m_sub_loc[0] = 1;
 #if defined(_TARGET_AMD64_)
         m_sub_loc[1] = DW_OP_reg6;
+#elif defined(_TARGET_X86_)
+        m_sub_loc[1] = DW_OP_reg5;
 #elif defined(_TARGET_ARM_)
         m_sub_loc[1] = DW_OP_reg11;
 #else

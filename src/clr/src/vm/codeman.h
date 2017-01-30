@@ -181,7 +181,7 @@ public:
         return phdrMDesc;
     }
 #if defined(FEATURE_GDBJIT)
-    PTR_BYTE                GetCalledMethods()
+    VOID*                GetCalledMethods()
     {
         SUPPORTS_DAC;
         return pCalledMethods;
