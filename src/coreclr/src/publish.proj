@@ -33,6 +33,7 @@
       <ContainerName Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'">coreclr-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(__DistroRid)-$(__BuildArch)</ContainerName>
       <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' != 'true'">$(__Container)</ContainerName>
       <ContainerName Condition="'$(__Container)' != '' and '$(PublishTestNativeBins)' == 'true'">$(__Container)-$(__DistroRid)-$(__BuildArch)</ContainerName>
+      <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
     </PropertyGroup>
   </Target>
 
