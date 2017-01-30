@@ -21,74 +21,201 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(second));
             }
 
-            var firstConcat = first as ConcatIterator<TSource>;
-            return firstConcat != null ?
-                firstConcat.Concat(second) :
-                new Concat2Iterator<TSource>(first, second);
+            Debug.Assert(!(first is ICollection<TSource> && first is ConcatIterator<TSource>), "Didn't expect enumerable to be both a collection and a concat iterator.");
+
+            var firstCollection = first as ICollection<TSource>;
+            if (firstCollection != null)
+            {
+                var secondCollection = second as ICollection<TSource>;
+                if (secondCollection != null)
+                {
+                    return new Concat2CollectionIterator<TSource>(firstCollection, secondCollection);
+                }
+            }
+            else
+            {
+                var firstConcat = first as ConcatIterator<TSource>;
+                if (firstConcat != null)
+                {
+                    return firstConcat.Concat(second);
+                }
+            }
+
+            return new Concat2EnumerableIterator<TSource>(first, second);
         }
 
         /// <summary>
         /// Represents the concatenation of two <see cref="IEnumerable{TSource}"/>.
         /// </summary>
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
-        private sealed class Concat2Iterator<TSource> : ConcatIterator<TSource>
+        private sealed class Concat2EnumerableIterator<TSource> : ConcatIterator<TSource>
         {
             private readonly IEnumerable<TSource> _first;
             private readonly IEnumerable<TSource> _second;
 
-            internal Concat2Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
+            internal Concat2EnumerableIterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
             {
-                Debug.Assert(first != null);
-                Debug.Assert(second != null);
-
+                Debug.Assert(first != null && second != null);
                 _first = first;
                 _second = second;
             }
 
-            public override Iterator<TSource> Clone() => new Concat2Iterator<TSource>(_first, _second);
+            public override Iterator<TSource> Clone()
+            {
+                return new Concat2EnumerableIterator<TSource>(_first, _second);
+            }
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                var sources = new SingleLinkedNode<IEnumerable<TSource>>(_first).Add(_second).Add(next);
-                // We employ an optimization where if all of the enumerables being concatenated are ICollections,
-                // we set the flag on the next iterator. This allows us to determine in O(1) time whether we can
-                // preallocate for ToArray and ToList, and whether we can get the count of the iterator cheaply.
-                bool hasOnlyCollections = _first is ICollection<TSource> &&
-                                          _second is ICollection<TSource> &&
-                                          next is ICollection<TSource>;
-                return new ConcatNIterator<TSource>(sources, 2, hasOnlyCollections);
-            }
-
-            public override int GetCount(bool onlyIfCheap)
-            {
-                int firstCount, secondCount;
-                if (!EnumerableHelpers.TryGetCount(_first, out firstCount))
-                {
-                    if (onlyIfCheap)
-                    {
-                        return -1;
-                    }
-
-                    firstCount = _first.Count();
-                }
-
-                if (!EnumerableHelpers.TryGetCount(_second, out secondCount))
-                {
-                    if (onlyIfCheap)
-                    {
-                        return -1;
-                    }
-
-                    secondCount = _second.Count();
-                }
-
-                return checked(firstCount + secondCount);
+                return new ConcatNEnumerableIterator<TSource>(this, next, 2);
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
             {
-                Debug.Assert(index >= 0 && index <= 2);
+                switch (index)
+                {
+                    case 0: return _first;
+                    case 1: return _second;
+                    default: return null;
+                }
+            }
+        }
 
+        // To handle chains of >= 3 sources, we chain the concat iterators together and allow
+        // GetEnumerable to fetch enumerables from the previous sources.  This means that rather
+        // than each MoveNext/Current calls having to traverse all of the previous sources, we
+        // only have to traverse all of the previous sources once per chained enumerable.  An
+        // alternative would be to use an array to store all of the enumerables, but this has
+        // a much better memory profile and without much additional run-time cost.
+
+        /// <summary>
+        /// Represents the concatenation of three or more <see cref="IEnumerable{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
+        private sealed class ConcatNEnumerableIterator<TSource> : ConcatIterator<TSource>
+        {
+            private readonly ConcatIterator<TSource> _previousConcat;
+            private readonly IEnumerable<TSource> _next;
+            private readonly int _nextIndex;
+
+            internal ConcatNEnumerableIterator(ConcatIterator<TSource> previousConcat, IEnumerable<TSource> next, int nextIndex)
+            {
+                Debug.Assert(previousConcat != null);
+                Debug.Assert(next != null);
+                Debug.Assert(nextIndex >= 2);
+                _previousConcat = previousConcat;
+                _next = next;
+                _nextIndex = nextIndex;
+            }
+
+            public override Iterator<TSource> Clone()
+            {
+                return new ConcatNEnumerableIterator<TSource>(_previousConcat, _next, _nextIndex);
+            }
+
+            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
+            {
+                if (_nextIndex == int.MaxValue - 2)
+                {
+                    // In the unlikely case of this many concatenations, if we produced a ConcatNEnumerableIterator
+                    // with int.MaxValue then state would overflow before it matched its index.
+                    // So we use the naïve approach of just having a left and right sequence.
+                    return new Concat2EnumerableIterator<TSource>(this, next);
+                }
+
+                return new ConcatNEnumerableIterator<TSource>(this, next, _nextIndex + 1);
+            }
+
+            internal override IEnumerable<TSource> GetEnumerable(int index)
+            {
+                if (index > _nextIndex)
+                {
+                    return null;
+                }
+
+                // Walk back through the chain of ConcatNIterators looking for the one
+                // that has its _nextIndex equal to index.  If we don't find one, then it
+                // must be prior to any of them, so call GetEnumerable on the previous
+                // Concat2Iterator.  This avoids a deep recursive call chain.
+                ConcatNEnumerableIterator<TSource> current = this;
+                while (true)
+                {
+                    if (index == current._nextIndex)
+                    {
+                        return current._next;
+                    }
+
+                    ConcatIterator<TSource> previous = current._previousConcat;
+
+                    var previousEnumerables = previous as ConcatNEnumerableIterator<TSource>;
+                    if (previousEnumerables != null)
+                    {
+                        current = previousEnumerables;
+                        continue;
+                    }
+
+                    var previousCollections = previous as ConcatNCollectionIterator<TSource>;
+                    if (previousCollections != null)
+                    {
+                        // Since ConcatNCollectionIterator.GetEnumerable does not call into this method,
+                        // it is safe to call GetEnumerable on it here. It also makes things faster, since
+                        // the above type-cast will only ever be run once per call of this method.
+                        return previousCollections.GetEnumerable(index);
+                    }
+
+                    // We've reached the tail of the linked list, which contains the first 2 enumerables.
+                    Debug.Assert(previous is Concat2EnumerableIterator<TSource> || previous is Concat2CollectionIterator<TSource>);
+                    Debug.Assert(index == 0 || index == 1);
+                    return previous.GetEnumerable(index);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Represents the concatenation of two <see cref="ICollection{TSource}"/>.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source collections.</typeparam>
+        private sealed class Concat2CollectionIterator<TSource> : ConcatIterator<TSource>
+        {
+            private readonly ICollection<TSource> _first;
+            private readonly ICollection<TSource> _second;
+
+            internal Concat2CollectionIterator(ICollection<TSource> first, ICollection<TSource> second)
+            {
+                Debug.Assert(first != null && second != null);
+                _first = first;
+                _second = second;
+            }
+
+            internal int Count => checked(_first.Count + _second.Count);
+
+            public override Iterator<TSource> Clone()
+            {
+                return new Concat2CollectionIterator<TSource>(_first, _second);
+            }
+
+            internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
+            {
+                var nextCollection = next as ICollection<TSource>;
+                if (nextCollection != null)
+                {
+                    return new ConcatNCollectionIterator<TSource>(this, nextCollection, 2);
+                }
+                return new ConcatNEnumerableIterator<TSource>(this, next, 2);
+            }
+
+            internal void CopyTo(TSource[] array, int arrayIndex)
+            {
+                Debug.Assert(array != null);
+                Debug.Assert(arrayIndex >= 0);
+                Debug.Assert(array.Length - arrayIndex >= Count);
+
+                _first.CopyTo(array, arrayIndex);
+                _second.CopyTo(array, checked(arrayIndex + _first.Count));
+            }
+
+            internal override IEnumerable<TSource> GetEnumerable(int index)
+            {
                 switch (index)
                 {
                     case 0: return _first;
@@ -99,259 +226,182 @@ namespace System.Linq
 
             public override TSource[] ToArray()
             {
-                ICollection<TSource> first = _first as ICollection<TSource>;
-                ICollection<TSource> second = _second as ICollection<TSource>;
+                int firstCount = _first.Count; // Cache an interface method call
+                int totalCount = checked(firstCount + _second.Count);
 
-                if (first != null & second != null)
-                {
-                    return PreallocatingToArray(first, second);
-                }
-                
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
-
-                int? firstCount = first?.Count;
-                if (firstCount > 0)
-                {
-                    builder.Reserve(firstCount.GetValueOrDefault());
-                }
-                else if (firstCount == null)
-                {
-                    builder.AddRange(_first);
-                }
-
-                int? secondCount = second?.Count;
-                if (secondCount > 0)
-                {
-                    builder.Reserve(secondCount.GetValueOrDefault());
-                }
-                else if (secondCount == null)
-                {
-                    builder.AddRange(_second);
-                }
-
-                TSource[] array = builder.ToArray();
-
-                if (first != null | second != null)
-                {
-                    ICollection<TSource> collection = first != null ? first : second;
-                    int arrayIndex = builder.Markers.Single().Index;
-                    collection.CopyTo(array, arrayIndex);
-                }
-
-                return array;
-            }
-
-            private static TSource[] PreallocatingToArray(ICollection<TSource> first, ICollection<TSource> second)
-            {
-                Debug.Assert(first != null);
-                Debug.Assert(second != null);
-
-                int firstCount = first.Count; // Cache one interface call.
-                int count = checked(firstCount + second.Count);
-
-                if (count == 0)
+                if (totalCount == 0)
                 {
                     return Array.Empty<TSource>();
                 }
 
-                var array = new TSource[count];
-                first.CopyTo(array, 0);
-                second.CopyTo(array, firstCount);
+                var result = new TSource[totalCount];
 
-                return array;
+                _first.CopyTo(result, 0);
+                _second.CopyTo(result, firstCount);
+
+                return result;
             }
 
-            public override List<TSource> ToList()
-            {
-                int count = GetCount(onlyIfCheap: true);
-                var list = count >= 0 ? new List<TSource>(count) : new List<TSource>();
-
-                list.AddRange(_first);
-                list.AddRange(_second);
-                return list;
-            }
+            public override int GetCount(bool onlyIfCheap) => Count; // Getting the count is always cheap.
         }
 
         /// <summary>
-        /// Represents the concatenation of three or more <see cref="IEnumerable{TSource}"/>.
+        /// Represents the concatenation of three or more <see cref="ICollection{TSource}"/>.
         /// </summary>
-        /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
-        /// <remarks>
-        /// To handle chains of >= 3 sources, we store each enumerable in a singly-linked list node.
-        /// Each iterator holds a reference to the head of the list, which contains the most recently
-        /// concatenated enumerable. When a new one is added, we allocate a new node that points to our
-        /// head and store it, then allocate a new iterator to wrap that node.
-        ///
-        /// This linked-list implementation means that rather than each MoveNext/Current call having to
-        /// traverse all of the previous sources, we only have to traverse all of the previous sources
-        /// once per chained enumerable.  An alternative would be to use an array to store all of the
-        /// enumerables, but this has a much better memory profile and without much additional run-time cost.
-        ///
-        /// At face value, using list nodes seems worse than chaining together the iterators directly and
-        /// letting the iterator itself hold a reference to the latest source. So why allocate a list node in
-        /// addition to each iterator? It lets the GC reclaim intermediary iterators in the chain which
-        /// have fields that are not relevant to later iterators, like <see cref="_enumerator"/> or
-        /// <see cref="_headIndex"/>. Only the nodes are kept alive, and those contain only the sources.
-        /// </remarks>
-        private sealed class ConcatNIterator<TSource> : ConcatIterator<TSource>
+        /// <typeparam name="TSource">The type of the source collections.</typeparam>
+        private sealed class ConcatNCollectionIterator<TSource> : ConcatIterator<TSource>
         {
-            private readonly SingleLinkedNode<IEnumerable<TSource>> _sources;
-            private readonly int _headIndex;
-            private readonly bool _hasOnlyCollections;
+            private readonly ConcatIterator<TSource> _previous;
+            private readonly ICollection<TSource> _next;
+            private readonly int _nextIndex;
 
-            internal ConcatNIterator(SingleLinkedNode<IEnumerable<TSource>> sources, int headIndex, bool hasOnlyCollections)
+            internal ConcatNCollectionIterator(ConcatIterator<TSource> previous, ICollection<TSource> next, int nextIndex)
             {
-                Debug.Assert(headIndex >= 2);
-                Debug.Assert(sources?.GetCount() == headIndex + 1);
+                Debug.Assert(previous != null);
+                Debug.Assert(previous is Concat2CollectionIterator<TSource> || previous is ConcatNCollectionIterator<TSource>);
+                Debug.Assert(next != null);
+                Debug.Assert(nextIndex >= 2);
 
-                _sources = sources;
-                _headIndex = headIndex;
-                _hasOnlyCollections = hasOnlyCollections;
+                _previous = previous;
+                _next = next;
+                _nextIndex = nextIndex;
             }
-            
-            public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_sources, _headIndex, _hasOnlyCollections);
+
+            private int Count
+            {
+                get
+                {
+                    // Walk the linked list of Concat{2,N}CollectionIterators and call .Count
+                    // on each of the collections.
+                    // Note that we start from the last collection and make our way to the first,
+                    // but the cumulative count will be the same either way.
+                    
+                    int totalCount = _next.Count;
+                    ConcatIterator<TSource> previous = _previous;
+
+                    ConcatNCollectionIterator<TSource> previousN;
+                    while ((previousN = previous as ConcatNCollectionIterator<TSource>) != null)
+                    {
+                        checked
+                        {
+                            totalCount += previousN._next.Count;
+                        }
+                        previous = previousN._previous;
+                    }
+
+                    var previous2 = (Concat2CollectionIterator<TSource>)previous;
+                    return checked(totalCount + previous2.Count);
+                }
+            }
+
+            public override Iterator<TSource> Clone()
+            {
+                return new ConcatNCollectionIterator<TSource>(_previous, _next, _nextIndex);
+            }
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                if (_headIndex == int.MaxValue - 2)
+                var nextCollection = next as ICollection<TSource>;
+                if (nextCollection != null)
                 {
-                    // In the unlikely case of this many concatenations, if we produced a ConcatNIterator
-                    // with int.MaxValue then state would overflow before it matched its index.
-                    // So we use the naïve approach of just having a left and right sequence.
-                    return new Concat2Iterator<TSource>(this, next);
-                }
+                    if (_nextIndex == int.MaxValue - 2)
+                    {
+                        // In the unlikely case of this many concatenations, if we produced a ConcatNCollectionIterator
+                        // with int.MaxValue then state would overflow before it matched its index.
+                        // So we use the naïve approach of just having a left and right sequence.
+                        return new Concat2EnumerableIterator<TSource>(this, next);
+                    }
 
-                // If the all of our sources are ICollections but the next enumerable isn't, update `_hasOnlyCollections` to indicate that
-                // we won't be able to employ certain optimizations in the next iterator.
-                bool hasOnlyCollections = _hasOnlyCollections && next is ICollection<TSource>;
-                return new ConcatNIterator<TSource>(_sources.Add(next), _headIndex + 1, hasOnlyCollections);
+                    return new ConcatNCollectionIterator<TSource>(this, nextCollection, _nextIndex + 1);
+                }
+                
+                // If we encounter a non-ICollection then getting .Count and performing .ToArray()
+                // will no longer be cheap, due to enumerables' lazy nature. So, fall back to using
+                // enumerable-based iterators for any further chaining.
+                return new ConcatNEnumerableIterator<TSource>(this, next, _nextIndex + 1);
             }
 
-            public override int GetCount(bool onlyIfCheap)
+            // Copy all of the elements in the iterator, finishing before indexAfterCopy.
+            // If indexAfterCopy is array.Length, we'll finish copying at the end of the array.
+            // The reason we take an ending index as opposed to a starting one is because
+            // we only hold a reference to the most recently concat'd collection. So to start
+            // copying at a certain index, we'd have to re-walk the linked list of iterators
+            // all the way back to the least recent one, and repeat that for all of the
+            // collections we hold.
+            private void CopyBefore(TSource[] array, int indexAfterCopy)
             {
-                if (onlyIfCheap && !_hasOnlyCollections)
-                {
-                    return -1;
-                }
+                Debug.Assert(array != null);
+                Debug.Assert(indexAfterCopy >= 0 && indexAfterCopy <= array.Length);
+                Debug.Assert(indexAfterCopy >= Count);
 
-                int count = 0;
-                for (SingleLinkedNode<IEnumerable<TSource>> node = _sources; node != null; node = node.Linked)
+                // Copy the items from this collection, which is the last
+                // one that was concatenated
+                int copied = _next.Count;
+                _next.CopyTo(array, indexAfterCopy - copied);
+
+                ConcatIterator<TSource> previous = _previous;
+
+                ConcatNCollectionIterator<TSource> previousN;
+                while ((previousN = previous as ConcatNCollectionIterator<TSource>) != null)
                 {
-                    IEnumerable<TSource> source = node.Item;
-                    Debug.Assert(!_hasOnlyCollections || source is ICollection<TSource>);
                     checked
                     {
-                        count += source.Count();
+                        copied += previousN._next.Count;
                     }
+                    previousN._next.CopyTo(array, indexAfterCopy - copied);
+                    previous = previousN._previous;
                 }
 
-                return count;
+                // We've reached the first 2 collections that were concatenated
+                var previous2 = (Concat2CollectionIterator<TSource>)previous;
+                copied += previous2.Count;
+                Debug.Assert(copied == Count); // We should have copied all the elements
+
+                previous2.CopyTo(array, indexAfterCopy - copied);
             }
 
-            internal override IEnumerable<TSource> GetEnumerable(int index) => index > _headIndex ? null : _sources.GetNode(_headIndex - index).Item;
-
-            public override TSource[] ToArray() => _hasOnlyCollections ? PreallocatingToArray() : LazyToArray();
-
-            private TSource[] LazyToArray()
+            internal override IEnumerable<TSource> GetEnumerable(int index)
             {
-                Debug.Assert(!_hasOnlyCollections);
-
-                var builder = new SparseArrayBuilder<TSource>(initialize: true);
-                var deferredCopies = new ArrayBuilder<IEnumerable<TSource>>();
-
-                for (int i = 0; ; i++)
+                if (index > _nextIndex)
                 {
-                    // Unfortunately, we can't escape re-walking the linked list for each source, which has
-                    // quadratic behavior, because we need to add the sources in order.
-                    // On the bright side, the bottleneck will usually be iterating, buffering, and copying
-                    // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
-                    IEnumerable<TSource> source = GetEnumerable(i);
-                    if (source == null)
+                    return null;
+                }
+
+                ConcatNCollectionIterator<TSource> current = this;
+                while (true)
+                {
+                    if (index == current._nextIndex)
                     {
-                        break;
+                        return current._next;
                     }
 
-                    int count;
-                    if (EnumerableHelpers.TryGetCount(source, out count))
+                    var previousN = current._previous as ConcatNCollectionIterator<TSource>;
+                    if (previousN != null)
                     {
-                        if (count > 0)
-                        {
-                            builder.Reserve(count);
-                            deferredCopies.Add(source);
-                        }
+                        current = previousN;
                         continue;
                     }
 
-                    builder.AddRange(source);
+                    var previous2 = (Concat2CollectionIterator<TSource>)current._previous;
+                    Debug.Assert(index == 0 || index == 1);
+                    return previous2.GetEnumerable(index);
                 }
-
-                TSource[] array = builder.ToArray();
-
-                ArrayBuilder<Marker> markers = builder.Markers;
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    Marker marker = markers[i];
-                    IEnumerable<TSource> source = deferredCopies[i];
-                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
-                }
-
-                return array;
             }
 
-            private TSource[] PreallocatingToArray()
+            public override TSource[] ToArray()
             {
-                // If there are only ICollections in this iterator, then we can just get the count, preallocate the
-                // array, and then copy them as we go. This has better time complexity than continuously re-walking
-                // the linked list via GetEnumerable, and better memory usage than buffering the collections.
-                Debug.Assert(_hasOnlyCollections);
-
-                int count = GetCount(onlyIfCheap: true);
-                Debug.Assert(count >= 0);
-
-                if (count == 0)
+                int totalCount = Count;
+                if (totalCount == 0)
                 {
                     return Array.Empty<TSource>();
                 }
 
-                var array = new TSource[count];
-                int arrayIndex = array.Length;
-
-                for (SingleLinkedNode<IEnumerable<TSource>> node = _sources; node != null; node = node.Linked)
-                {
-                    ICollection<TSource> source = (ICollection<TSource>)node.Item;
-                    int sourceCount = source.Count;
-                    if (sourceCount > 0)
-                    {
-                        checked
-                        {
-                            arrayIndex -= sourceCount;
-                        }
-                        source.CopyTo(array, arrayIndex);
-                    }
-                }
-
-                Debug.Assert(arrayIndex == 0);
-                return array;
+                var result = new TSource[totalCount];
+                CopyBefore(result, result.Length);
+                return result;
             }
 
-            public override List<TSource> ToList()
-            {
-                int count = GetCount(onlyIfCheap: true);
-                var list = count >= 0 ? new List<TSource>(count) : new List<TSource>();
-
-                for (int i = 0; ; i++)
-                {
-                    IEnumerable<TSource> source = GetEnumerable(i);
-                    if (source == null)
-                    {
-                        break;
-                    }
-
-                    list.AddRange(source);
-                }
-
-                return list;
-            }
+            public override int GetCount(bool onlyIfCheap) => Count; // Getting the count is always cheap relative to manually iterating.
         }
 
         /// <summary>
@@ -360,9 +410,6 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private abstract class ConcatIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
-            /// <summary>
-            /// The enumerator of the current source, if <see cref="MoveNext"/> has been called.
-            /// </summary>
             private IEnumerator<TSource> _enumerator;
 
             public override void Dispose()
@@ -376,17 +423,8 @@ namespace System.Linq
                 base.Dispose();
             }
 
-            /// <summary>
-            /// Gets the enumerable at a logical index in this iterator.
-            /// If the index is equal to the number of enumerables this iterator holds, <c>null</c> is returned.
-            /// </summary>
-            /// <param name="index">The logical index.</param>
             internal abstract IEnumerable<TSource> GetEnumerable(int index);
 
-            /// <summary>
-            /// Creates a new iterator that concatenates this iterator with an enumerable.
-            /// </summary>
-            /// <param name="next">The next enumerable.</param>
             internal abstract ConcatIterator<TSource> Concat(IEnumerable<TSource> next);
 
             public override bool MoveNext()
@@ -423,11 +461,90 @@ namespace System.Linq
                 return false;
             }
 
-            public abstract int GetCount(bool onlyIfCheap);
+            public virtual TSource[] ToArray()
+            {
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                var deferredCopies = new ArrayBuilder<int>();
 
-            public abstract TSource[] ToArray();
+                for (int i = 0; ; i++)
+                {
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
 
-            public abstract List<TSource> ToList();
+                    int count;
+                    if (EnumerableHelpers.TryGetCount(source, out count))
+                    {
+                        if (count > 0)
+                        {
+                            builder.Reserve(count);
+                            deferredCopies.Add(i);
+                        }
+                        continue;
+                    }
+
+                    builder.AddRange(source);
+                }
+
+                TSource[] array = builder.ToArray();
+
+                ArrayBuilder<Marker> markers = builder.Markers;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    Marker marker = markers[i];
+                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i]);
+                    
+                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
+                }
+
+                return array;
+            }
+
+            public List<TSource> ToList()
+            {
+                int count = GetCount(onlyIfCheap: true);
+                var list = count != -1 ? new List<TSource>(count) : new List<TSource>();
+
+                for (int i = 0; ; i++)
+                {
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    list.AddRange(source);
+                }
+
+                return list;
+            }
+
+            public virtual int GetCount(bool onlyIfCheap)
+            {
+                if (onlyIfCheap)
+                {
+                    return -1;
+                }
+
+                int count = 0;
+                for (int i = 0; ; i++)
+                {
+                    IEnumerable<TSource> source = GetEnumerable(i);
+                    if (source == null)
+                    {
+                        break;
+                    }
+
+                    checked
+                    {
+                        count += source.Count();
+                    }
+                }
+
+                return count;
+            }
         }
     }
 }
