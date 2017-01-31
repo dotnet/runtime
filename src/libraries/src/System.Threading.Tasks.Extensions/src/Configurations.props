@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netstandard1.0;
       netcoreapp;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
