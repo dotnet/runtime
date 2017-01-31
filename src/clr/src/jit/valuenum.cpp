@@ -6883,6 +6883,24 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     }
     else
     {
+        auto getCurrentArg = [call, &args, useEntryPointAddrAsArg0](int currentIndex) {
+            GenTreePtr arg = args->Current();
+            if ((arg->gtFlags & GTF_LATE_ARG) != 0)
+            {
+                // This arg is a setup node that moves the arg into position.
+                // Value-numbering will have visited the separate late arg that
+                // holds the actual value, and propagated/computed the value number
+                // for this arg there.
+                if (useEntryPointAddrAsArg0)
+                {
+                    // The args in the fgArgInfo don't include the entry point, so
+                    // index into them using one less than the requested index.
+                    --currentIndex;
+                }
+                return call->fgArgInfo->GetLateArg(currentIndex);
+            }
+            return arg;
+        };
         // Has at least one argument.
         ValueNumPair vnp0;
         ValueNumPair vnp0x = ValueNumStore::VNPForEmptyExcSet();
@@ -6896,7 +6914,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 #endif
         {
             assert(!useEntryPointAddrAsArg0);
-            ValueNumPair vnp0wx = args->Current()->gtVNPair;
+            ValueNumPair vnp0wx = getCurrentArg(0)->gtVNPair;
             vnStore->VNPUnpackExc(vnp0wx, &vnp0, &vnp0x);
 
             // Also include in the argument exception sets
@@ -6918,7 +6936,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         else
         {
             // Has at least two arguments.
-            ValueNumPair vnp1wx = args->Current()->gtVNPair;
+            ValueNumPair vnp1wx = getCurrentArg(1)->gtVNPair;
             ValueNumPair vnp1;
             ValueNumPair vnp1x = ValueNumStore::VNPForEmptyExcSet();
             vnStore->VNPUnpackExc(vnp1wx, &vnp1, &vnp1x);
@@ -6938,7 +6956,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             }
             else
             {
-                ValueNumPair vnp2wx = args->Current()->gtVNPair;
+                ValueNumPair vnp2wx = getCurrentArg(2)->gtVNPair;
                 ValueNumPair vnp2;
                 ValueNumPair vnp2x = ValueNumStore::VNPForEmptyExcSet();
                 vnStore->VNPUnpackExc(vnp2wx, &vnp2, &vnp2x);
