@@ -488,6 +488,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
                 varDsc->lvType = TYP_I_IMPL;
             }
         }
+#ifdef FEATURE_SIMD
+        else if (featureSIMD && varTypeIsSIMD(info.compRetType))
+        {
+            varDsc->lvSIMDType = true;
+            varDsc->lvBaseType =
+                getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
+            assert(varDsc->lvBaseType != TYP_UNKNOWN);
+        }
+#endif // FEATURE_SIMD
+
         assert(isValidIntArgReg(varDsc->lvArgReg));
 
 #ifdef DEBUG
