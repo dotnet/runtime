@@ -41,6 +41,11 @@ namespace Microsoft.DotNet.Scripts
                 dependencyInfos.Add(CreateDependencyInfo("Standard", Config.Instance.StandardVersionUrl).Result);
             }
 
+            if (Config.Instance.LibuvVersionUrl != string.Empty)
+            {
+                dependencyInfos.Add(CreateDependencyInfo("Libuv", Config.Instance.LibuvVersionUrl).Result);
+            }
+
             return c.Success();
         }
 
