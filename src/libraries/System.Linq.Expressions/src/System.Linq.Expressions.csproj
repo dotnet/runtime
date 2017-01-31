@@ -145,7 +145,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <Compile Include="System\Linq\Expressions\DynamicExpressionVisitor.cs" />
     <Compile Include="System\Linq\Expressions\DynamicExpression.cs" />
     <Compile Include="System\Linq\Expressions\Expression.netstandard.cs" />

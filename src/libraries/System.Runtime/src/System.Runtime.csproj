@@ -43,11 +43,11 @@
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap101aot'" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
     <TargetingPackReference Include="System.Private.CoreLib" />

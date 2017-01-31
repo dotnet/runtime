@@ -15,7 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true'">
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
@@ -27,7 +27,7 @@
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='net463'">
+  <ItemGroup Condition="(('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='net463'">
     <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
@@ -39,7 +39,7 @@
       <Link>Common\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

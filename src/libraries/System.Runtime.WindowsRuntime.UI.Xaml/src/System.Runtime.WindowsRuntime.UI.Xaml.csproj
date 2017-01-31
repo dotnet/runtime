@@ -6,7 +6,6 @@
     <ProjectGuid>{263DA4F1-C3BC-4B43-98E7-9F38B419A131}</ProjectGuid>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -29,7 +28,11 @@
     <Compile Include="System\Windows\Media\Media3D\Matrix3D.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
+    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -21,7 +21,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Drawing\Point.cs" />
     <Compile Include="System\Drawing\PointF.cs" />
     <Compile Include="System\Drawing\Rectangle.cs" />

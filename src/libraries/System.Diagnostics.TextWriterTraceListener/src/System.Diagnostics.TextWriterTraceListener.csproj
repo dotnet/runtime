@@ -15,7 +15,7 @@
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Diagnostics\DelimitedListTraceListener.cs" />
     <Compile Include="System\Diagnostics\TextWriterTraceListener.cs" />
   </ItemGroup>
