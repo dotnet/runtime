@@ -2431,6 +2431,22 @@ void fgArgInfo::EvalArgsToTemps()
 #endif
 }
 
+// Get the late arg for arg at position argIndex.
+// argIndex - 0-based position to get late arg for.
+//            Caller must ensure this position has a late arg.
+GenTreePtr fgArgInfo::GetLateArg(unsigned argIndex)
+{
+    for (unsigned j = 0; j < this->ArgCount(); j++)
+    {
+        if (this->ArgTable()[j]->argNum == argIndex)
+        {
+            return this->ArgTable()[j]->node;
+        }
+    }
+    // Caller must ensure late arg exists.
+    unreached();
+}
+
 void fgArgInfo::RecordStkLevel(unsigned stkLvl)
 {
     assert(!IsUninitialized(stkLvl));

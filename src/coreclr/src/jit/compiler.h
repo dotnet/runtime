@@ -1342,6 +1342,9 @@ public:
     {
         return argsComplete;
     }
+
+    // Get the late arg for arg at position argIndex.  Caller must ensure this position has a late arg.
+    GenTreePtr GetLateArg(unsigned argIndex);
 };
 
 #ifdef DEBUG
