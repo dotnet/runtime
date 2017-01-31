@@ -1,9 +1,12 @@
+CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
-MCS = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
+TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME)
+
+MCS = $(TOOLS_RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
 
 if FULL_AOT_TESTS
-prereq: aot
+prereq: test/asm.dll$(PLATFORM_AOT_SUFFIX)
 else
 prereq: test/asm.dll
 endif
@@ -27,11 +30,11 @@ deps/TestBase.dll: TestBase.cs
 EXTRA_DIST = asm.cs Test.cs TestBase.cs
 
 clean:
-	rm -f deps/*.dll test/*.dll
+	rm -rf deps/ test/
 
-.PHONY: aot
-aot: test/asm.dll
+if FULL_AOT_TESTS
+test/asm.dll$(PLATFORM_AOT_SUFFIX): test/asm.dll
 	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) deps/test.dll
 	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) deps/TestBase.dll
 	MONO_PATH="deps:$(CLASS)" $(RUNTIME) $(AOT_BUILD_FLAGS) test/asm.dll
-
+endif
