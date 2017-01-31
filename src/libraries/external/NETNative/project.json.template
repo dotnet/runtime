@@ -2,7 +2,7 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24930-00"
+        "Microsoft.TargetingPack.Private.NETNative": "1.1.0-beta-24931-00"
       }
     }
   },
