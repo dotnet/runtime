@@ -18,54 +18,11 @@ sure to consult this document often.
 ## Setup the project
 
 1. Create a new project
-    - Creat a new folder for your app
+    - Create a new folder for your app
+    - Ensure you have a "2.0.0-*" CLI installed on your path. You can check with `dotnet --info`.
     - Create project file by running `dotnet new`
 
-2. Add the CoreFX MyGet feed to your NuGet configuration.
-    - You can do this globally but we recommend not doing this as this might
-      affect other projects on your machine and you probably don't want that.
-    - Instead, add a `nuget.config` that is local to your project. You can
-      just put it next to the `.csproj` file.
-      See the [NuGet docs](https://docs.nuget.org/ndocs/consume-packages/configuring-nuget-behavior)
-      for details.
-
-    ```xml
-    <configuration>
-      <packageSources>
-        <add key="CoreFX" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-      </packageSources>
-    </configuration>
-    ```
-
-3. Select the nightly build from our feed
-    - <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App>
-    - Presumably you want the latest version.
-
-In order to consume the latest build, you'll need to update your `.csproj`
-as follows:
-
-1. Update `TargetFramework`, add `RuntimeIdentifier` as below (ideally
-   `dotnet.exe` would infer your current architecture but it currently doesn't)
-2. Update package reference to match version selected above, as below
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
-
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-    <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-  </PropertyGroup>
-
-  <!-- Make sure to use Update, not Include! -->
-  <ItemGroup>
-    <PackageReference Update="Microsoft.NETCore.App" Version="2.0.0-beta-001386-00" />
-  </ItemGroup>
-
-</Project>
-```
-
-Restore packages so that you're ready to play:
+2. Restore packages so that you're ready to play:
 
 ```
 $ dotnet restore
@@ -73,7 +30,7 @@ $ dotnet restore
 
 ## Consume the new build
 
-Edit your `Program.cs` to consume the new APIs, for example:
+3. Edit your `Program.cs` to consume the new APIs, for example:
 
 ```CSharp
 using System;
@@ -90,7 +47,7 @@ class Program
 }
 ```
 
-Run the bits:
+4. Run the bits:
 
 ```
 $ dotnet run
