@@ -10,7 +10,7 @@
     <!-- Missing 4.6.3 targeting pack, use 462 for now -->
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.2</TargetingPackNugetPackageId>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <PropertyGroup Condition="!$(NuGetTargetMoniker.StartsWith('.NETFramework'))">
     <!-- For NETCoreApp we need the net461 targeting pack to generate facades -->
     <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>

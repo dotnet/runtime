@@ -6,7 +6,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'uap101'">true</EnableWinRT>
+    <EnableWinRT Condition="'$(TargetGroup)' == 'uap'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
@@ -16,8 +16,8 @@
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Linux-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Linux-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-OSX-Debug|AnyCPU'" />
@@ -381,10 +381,10 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101'">
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <!-- ToDo: remove once we have new packages https://github.com/dotnet/corefx/issues/12838 -->
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Reference Include="Windows" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Runtime.InteropServices.WindowsRuntime" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
