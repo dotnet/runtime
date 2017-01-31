@@ -62,7 +62,8 @@
   <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
-      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
+      <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/**/*.vcxproj" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions);@(_projectsToExcludeFromUpdate)" />
     </ItemGroup>
     <UpdateVSConfigurations ProjectsToValidate="@(_projectsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />

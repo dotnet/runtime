@@ -10,6 +10,7 @@
       net462;
       net463;
       netcoreapp;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

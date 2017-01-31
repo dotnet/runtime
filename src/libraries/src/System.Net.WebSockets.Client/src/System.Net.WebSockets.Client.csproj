@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
+    <EnableWinRT Condition="'$(TargetGroup)' == 'uap'">true</EnableWinRT>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <!-- // uncomment to use the managed "unix" implementation on Windows
@@ -19,8 +19,8 @@
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -116,8 +116,11 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Reference Include="Windows" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Runtime.InteropServices.WindowsRuntime" />
+    <Reference Include="System.Runtime.WindowsRuntime" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
