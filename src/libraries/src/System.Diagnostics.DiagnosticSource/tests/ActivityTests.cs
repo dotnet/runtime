@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -53,10 +54,25 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, tags.Count);
             Assert.Equal(tags[0].Key, "some tag");
             Assert.Equal(tags[0].Value, "value");
+        }
 
-            Assert.Equal(activity, activity.SetParentId("1"));
-            Assert.Equal(2, activity.Tags.ToList().Count);
-            Assert.Equal("1", activity.ParentId);
+        /// <summary>
+        /// Tests activity SetParentId
+        /// </summary>
+        [Fact]
+        public void SetParentId()
+        {
+            var parent = new Activity("parent");
+            Assert.Throws<ArgumentException>(() => parent.SetParentId(null));
+            Assert.Throws<ArgumentException>(() => parent.SetParentId(""));
+            parent.SetParentId("1");
+            Assert.Equal("1", parent.ParentId);
+            Assert.Throws<InvalidOperationException>(() => parent.SetParentId("2"));
+
+            parent.Start();
+            var child = new Activity("child");
+            child.Start();
+            Assert.Throws<InvalidOperationException>(() => child.SetParentId("3"));
         }
 
         /// <summary>
@@ -79,18 +95,60 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Tests Id generation
+        /// </summary>
+        [Fact]
+        public void IdGenerationInternalParent()
+        {
+            var parent = new Activity("parent");
+            parent.Start();
+            var child1 = new Activity("child1");
+            var child2 = new Activity("child2");
+            //start 2 children in different execution contexts
+            var t1 = Task.Run(() => child1.Start());
+            var t2 = Task.Run(() => child2.Start());
+            Task.WhenAll(t1, t2).Wait();
+            Assert.Equal(parent.Id + ".1", child1.Id);
+            Assert.Equal(parent.Id + ".2", child2.Id);
+            child1.Stop();
+            child2.Stop();
+            var child3 = new Activity("child3");
+            child3.Start();
+            Assert.Equal(parent.Id + ".3", child3.Id);
+        }
+
+        /// <summary>
+        /// Tests Id generation
+        /// </summary>
+        [Fact]
+        public void IdGenerationExternalParentId()
+        {
+            var child1 = new Activity("child1");
+            child1.SetParentId("123");
+            child1.Start();
+            child1.Stop();
+            var child2 = new Activity("child2");
+            child2.SetParentId("123");
+            child2.Start();
+            Assert.NotEqual(child2.Id, child1.Id);
+        }
+
+        /// <summary>
         /// Tests Activity Start and Stop with timestamp
         /// </summary>
         [Fact]
         public void StartStopWithTimestamp()
         {
+            var activity = new Activity("activity");
+            Assert.Throws<InvalidOperationException>(() => activity.SetStartTime(DateTime.Now));
+
             var startTime = DateTime.UtcNow.AddSeconds(-1);
-            var activity = new Activity("activity")
-                .SetStartTime(startTime);
+            activity.SetStartTime(startTime);
 
             activity.Start();
             Assert.Equal(startTime, activity.StartTimeUtc);
 
+            Assert.Throws<InvalidOperationException>(() => activity.SetEndTime(DateTime.Now));
             var stopTime = DateTime.UtcNow;
             activity.SetEndTime(stopTime);
             Assert.Equal(stopTime - startTime, activity.Duration);
@@ -129,6 +187,7 @@ namespace System.Diagnostics.Tests
                 .AddTag("tag1", "tag from parent");
 
             parent.Start();
+
             Assert.Equal(parent, Activity.Current);
 
             var child = new Activity("child");
@@ -141,8 +200,7 @@ namespace System.Diagnostics.Tests
 
             //no tags from parent
             var childTags = child.Tags.ToList();
-            Assert.Equal(1, childTags.Count);
-            Assert.Equal(child.ParentId, childTags[0].Value);
+            Assert.Equal(0, childTags.Count);
 
             child.Stop();
             Assert.Equal(parent, Activity.Current);
@@ -172,7 +230,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StartTwice()
         {
-            var activity = new Activity("");
+            var activity = new Activity("activity");
             activity.Start();
             Assert.Throws<InvalidOperationException>(() => activity.Start());
         }
@@ -183,7 +241,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StopNotStarted()
         {
-            Assert.Throws<InvalidOperationException>(() => new Activity("").Stop());
+            Assert.Throws<InvalidOperationException>(() => new Activity("activity").Stop());
         }
 
         /// <summary>

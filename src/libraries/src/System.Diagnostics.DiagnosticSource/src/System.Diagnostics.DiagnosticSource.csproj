@@ -52,7 +52,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />    
+    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

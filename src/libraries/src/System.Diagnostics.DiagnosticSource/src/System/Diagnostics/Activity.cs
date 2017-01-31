@@ -66,15 +66,13 @@ namespace System.Diagnostics
         {
             get
             {
-                if (ParentId != null)
-                    yield return new KeyValuePair<string, string>("ParentId", ParentId);
                 for (var tags = _tags; tags != null; tags = tags.Next)
                     yield return tags.keyValue;
             }
         }
 
         /// <summary>
-        /// Tags are string-string key-value pairs that represent information that will
+        /// Baggage is string-string key-value pairs that represent information that will
         /// be passed along to children of this activity.   Baggage is serialized 
         /// when requests leave the process (along with the ID).   Typically Baggage is
         /// used to do fine-grained control over logging of the activty and any children.  
@@ -112,6 +110,8 @@ namespace System.Diagnostics
         /// <param name="operationName">Operations name <see cref="OperationName"/></param>
         public Activity(string operationName)
         {
+            if (string.IsNullOrEmpty(operationName))
+                throw new ArgumentException($"{nameof(operationName)} must not be null or empty");
             OperationName = operationName;
         }
 
@@ -151,6 +151,17 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetParentId(string parentId)
         {
+            if (Parent != null)
+                throw new InvalidOperationException(
+                    $"Trying to set {nameof(ParentId)} on activity which has {nameof(Parent)}");
+
+            if (ParentId != null)
+                throw new InvalidOperationException(
+                    $"{nameof(ParentId)} is already set");
+
+            if (string.IsNullOrEmpty(parentId))
+                throw new ArgumentException($"{nameof(parentId)} must not be null or empty");
+
             ParentId = parentId;
             return this;
         }
@@ -162,6 +173,8 @@ namespace System.Diagnostics
         /// <returns>'this' for convinient chaining</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
+            if (startTimeUtc.Kind != DateTimeKind.Utc)
+                throw new InvalidOperationException($"{nameof(startTimeUtc)} is not UTC");
             StartTimeUtc = startTimeUtc;
             return this;
         }
@@ -174,6 +187,9 @@ namespace System.Diagnostics
         /// <returns>'this' for convinient chaining</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
+            if (endTimeUtc.Kind != DateTimeKind.Utc)
+                throw new InvalidOperationException($"{nameof(endTimeUtc)} is not UTC");
+
             Duration = endTimeUtc - StartTimeUtc;
             return this;
         }
@@ -249,39 +265,19 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-#if DEBUG
-                ret = Parent.Id + "/" + OperationName + "_" + Interlocked.Increment(ref Parent._currentChildId);
-#else           // To keep things short, we drop the operation name 
-                ret = Parent.Id + "/" + Interlocked.Increment(ref Parent._currentChildId);
-#endif
+                ret = $"{Parent.Id}.{Interlocked.Increment(ref Parent._currentChildId)}";
             }
             else if (ParentId != null)
             {
                 // Start from outside the process (e.g. incoming HTTP)
                 Debug.Assert(ParentId.Length != 0);
-#if DEBUG
-                ret = ParentId + "/" + OperationName + "_I_" + Interlocked.Increment(ref s_currentRootId);
-#else           // To keep things short, we drop the operation name 
-                ret = ParentId + "/I_" + Interlocked.Increment(ref s_currentRootId);
-#endif
+                ret = $"{ParentId}.{Interlocked.Increment(ref s_currentRootId)}";
             }
             else
             {
-                // A Root Activity (no parent).  
-                if (s_uniqPrefix == null)
-                {
-                    // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
-                    // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
-                    // as a unique random number (which is not bad, but loses randomness for startup scenarios).
-                    int uniqNum = (int)Stopwatch.GetTimestamp();
-                    string uniqPrefix = $"//{uniqNum:x}_";
-                    Interlocked.CompareExchange(ref s_uniqPrefix, uniqPrefix, null);
-                }
-#if DEBUG
-                ret = s_uniqPrefix + OperationName + "_" + Interlocked.Increment(ref s_currentRootId);
-#else           // To keep things short, we drop the operation name 
-                ret = s_uniqPrefix + Interlocked.Increment(ref s_currentRootId);
-#endif
+                byte[] bytes = new byte[8];
+                s_random.Value.NextBytes(bytes);
+                ret = $"{BitConverter.ToUInt64(bytes, 0)}";
             }
             // Useful place to place a conditional breakpoint.  
             return ret;
@@ -290,8 +286,7 @@ namespace System.Diagnostics
         // Used to generate an ID 
         long _currentChildId;            // A unique number for all children of this activity.  
         static long s_currentRootId;      // A unique number inside the appdomain.
-        static string s_uniqPrefix;      // A unique prefix that represents the machine/process/appdomain
-
+        private static readonly Lazy<Random> s_random = new Lazy<Random>();
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
         /// </summary>

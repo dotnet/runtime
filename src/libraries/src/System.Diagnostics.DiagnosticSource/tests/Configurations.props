@@ -5,6 +5,7 @@
       net45-Windows_NT;
       netstandard;
       netstandard1.1;
+      netstandard1.3;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
