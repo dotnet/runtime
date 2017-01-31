@@ -237,7 +237,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(string.Format("unknown API_CancelWait of", _api));
+                    throw new ArgumentOutOfRangeException(string.Format("unknown API_CancelWait of {0}", _api));
             }
         }
 
