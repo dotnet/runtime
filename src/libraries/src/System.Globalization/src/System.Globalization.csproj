@@ -14,7 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net463'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap101aot'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uap101aot'" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

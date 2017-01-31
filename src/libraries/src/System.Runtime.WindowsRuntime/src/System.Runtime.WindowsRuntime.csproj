@@ -1,12 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <UseECMAKey>true</UseECMAKey>
-    <AssemblyName>System.Runtime.WindowsRuntime</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>true</ClsCompliant>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uap101aot'">true</IsPartialFacadeAssembly>
@@ -16,32 +12,27 @@
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uap101aot'">win8-aot</PackageTargetRuntime>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.7</NuGetTargetMoniker>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)'==''">
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'==''">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-    <ProjectReference Include="$(SourceDir)\mscorlib.WinRT-Facade\mscorlib.WinRT-Facade.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
-      <UndefineProperties>OSGroup;TargetGroup</UndefineProperties>
+    <Reference Include="System.Runtime.Extensions">
       <Aliases>System_Runtime_Extensions</Aliases>
-    </ProjectReference>
+    </Reference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
+    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
    </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <!-- We need to add this for now because these three types exist in System.Private.Interop.dll and Windows.winmd. -->
@@ -73,7 +64,7 @@
       <TargetGroup>uap101aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'==''">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
@@ -129,9 +120,6 @@
     <Compile Include="System\VoidTypeParameter.cs" />
     <Compile Include="System\Windows\TokenizerHelper.cs" />
     <Compile Include="System\Windows\UI\Color.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

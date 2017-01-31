@@ -22,7 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Debug.Public.cs" />
     <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
@@ -31,7 +31,7 @@
       <Link>System\Diagnostics\Debug.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap')">
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs">
       <Link>System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
@@ -90,7 +90,7 @@
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <TargetingPackReference Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup>

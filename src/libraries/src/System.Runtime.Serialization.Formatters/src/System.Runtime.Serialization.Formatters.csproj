@@ -6,7 +6,7 @@
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp11</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />

@@ -31,7 +31,7 @@
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap' Or '$(TargetGroup)'=='uap101aot'">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
   </ItemGroup>

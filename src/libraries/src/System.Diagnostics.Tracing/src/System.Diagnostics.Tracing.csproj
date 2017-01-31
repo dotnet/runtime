@@ -18,13 +18,13 @@
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
     <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net461'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)'=='uap'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Contracts" />

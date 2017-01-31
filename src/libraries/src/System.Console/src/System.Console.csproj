@@ -18,7 +18,7 @@
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
@@ -40,7 +40,7 @@
   </ItemGroup> 
   -->
   <!-- Windows : Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap')">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
       <Link>Common\System\Text\OSEncoding.Windows.cs</Link>

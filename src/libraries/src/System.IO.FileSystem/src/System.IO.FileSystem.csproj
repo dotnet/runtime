@@ -22,7 +22,7 @@
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -63,7 +63,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap')">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
     <Compile Include="System\IO\FileInfo.Windows.cs" />
@@ -190,7 +190,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true' and ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap')">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
