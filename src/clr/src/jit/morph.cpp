@@ -6074,8 +6074,8 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
     }
 
 #ifdef FEATURE_SIMD
-    // if this field belongs to simd struct, tranlate it to simd instrinsic.
-    if (mac == nullptr || mac->m_kind != MACK_Addr)
+    // if this field belongs to simd struct, translate it to simd instrinsic.
+    if (mac == nullptr)
     {
         GenTreePtr newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
         if (newTree != tree)
@@ -10472,12 +10472,12 @@ GenTreePtr Compiler::getSIMDStructFromField(GenTreePtr tree,
 }
 
 /*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the this
-*  operation to to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
+*  If a read operation tries to access simd struct field, then transform the
+*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
 *  Otherwise, return the old tree.
 *  Argument:
 *   tree - GenTreePtr. If this pointer points to simd struct which is used for simd
-*          intrinsic. We will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
 *  Return:
 *   A GenTreePtr which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
@@ -10491,7 +10491,6 @@ GenTreePtr Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTreePtr tree)
     GenTreePtr simdStructNode = getSIMDStructFromField(tree, &baseType, &index, &simdSize);
     if (simdStructNode != nullptr)
     {
-
         assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
         GenTree* op2 = gtNewIconNode(index);
         tree         = gtNewSIMDNode(baseType, simdStructNode, op2, SIMDIntrinsicGetItem, baseType, simdSize);
@@ -10504,11 +10503,11 @@ GenTreePtr Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTreePtr tree)
 
 /*****************************************************************************
 *  Transform an assignment of a SIMD struct field to SIMD intrinsic
-*  SIMDIntrinsicGetItem, and return a new tree. If If it is not such an assignment,
+*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
 *  then return the old tree.
 *  Argument:
 *   tree - GenTreePtr. If this pointer points to simd struct which is used for simd
-*          intrinsic. We will morph it as simd intrinsic set.
+*          intrinsic, we will morph it as simd intrinsic set.
 *  Return:
 *   A GenTreePtr which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
@@ -10561,7 +10560,8 @@ GenTreePtr Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTreePtr tree)
     return tree;
 }
 
-#endif
+#endif // FEATURE_SIMD
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
