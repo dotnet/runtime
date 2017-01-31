@@ -70,6 +70,12 @@
     <ClCompile Include="..\support\minizip\ioapi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\support\fcntl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\support\sys-stat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\support\crc32.h">
