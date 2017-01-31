@@ -6975,16 +6975,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         if (arg->OperGet() == GT_ARGPLACE)
         {
             // Find the corresponding late arg.
-            GenTreePtr lateArg = nullptr;
-            for (unsigned j = 0; j < call->fgArgInfo->ArgCount(); j++)
-            {
-                if (call->fgArgInfo->ArgTable()[j]->argNum == i)
-                {
-                    lateArg = call->fgArgInfo->ArgTable()[j]->node;
-                    break;
-                }
-            }
-            assert(lateArg != nullptr);
+            GenTreePtr lateArg = call->fgArgInfo->GetLateArg(i);
             assert(lateArg->gtVNPair.BothDefined());
             arg->gtVNPair   = lateArg->gtVNPair;
             updatedArgPlace = true;
