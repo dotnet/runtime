@@ -452,8 +452,9 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 
 	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
 	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
-	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (mgreg_t) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
+
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 0), sizeof (mgreg_t) * MONO_MAX_IREGS);
+	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 0), sizeof (double) * MONO_MAX_FREGS);
 }
 
 void
@@ -461,10 +462,12 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 	os_ucontext *uc = sigctx;
 
+	memcpy (&UCONTEXT_REG_Rn(uc, 0), &mctx->regs, sizeof (mgreg_t) * MONO_MAX_IREGS);
+	memcpy (&UCONTEXT_REG_FPRn(uc, 0), &mctx->fregs, sizeof (double) * MONO_MAX_FREGS);
+
+	/* The valid values for pc and sp are stored here and not in regs array */
 	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
 	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
-	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
-	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 #endif /* #if defined(__i386__) */

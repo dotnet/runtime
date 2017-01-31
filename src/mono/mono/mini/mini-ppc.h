@@ -19,6 +19,9 @@
 #define MONO_SAVED_GREGS 19
 #define MONO_SAVED_FREGS 18
 
+#define MONO_PPC_FIRST_SAVED_GREG ppc_r13
+#define MONO_PPC_FIRST_SAVED_FREG ppc_f14
+
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
