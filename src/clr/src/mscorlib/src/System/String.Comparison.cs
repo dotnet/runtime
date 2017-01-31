@@ -780,7 +780,7 @@ namespace System
         }
 
         [Pure]
-        public Boolean EndsWith(char value) {
+        public bool EndsWith(char value) {
             int thisLen = this.Length;
             return thisLen != 0 && this[thisLen - 1] == value;
         }
@@ -1133,6 +1133,6 @@ namespace System
         }
 
         [Pure]
-        public Boolean StartsWith(char value) => Length != 0 && m_firstChar == value;
+        public bool StartsWith(char value) => Length != 0 && m_firstChar == value;
     }
 }
