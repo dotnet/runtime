@@ -183,7 +183,22 @@ namespace System.Threading
         /// </exception>
         public void TryEnter(ref bool lockTaken)
         {
-            TryEnter(0, ref lockTaken);
+            int observedOwner = m_owner;
+            if (((observedOwner & LOCK_ID_DISABLE_MASK) == 0) | lockTaken)
+            {
+                // Thread tracking enabled or invalid arg. Take slow path.
+                ContinueTryEnter(0, ref lockTaken);
+            }
+            else if ((observedOwner & LOCK_ANONYMOUS_OWNED) != 0)
+            {
+                // Lock already held by someone
+                lockTaken = false;
+            }
+            else
+            {
+                // Lock wasn't held; try to acquire it.
+                Interlocked.CompareExchange(ref m_owner, observedOwner | LOCK_ANONYMOUS_OWNED, observedOwner, ref lockTaken);
+            }
         }
 
         /// <summary>
@@ -522,10 +537,10 @@ namespace System.Threading
         {
             // This is the fast path for the thread tracking is diabled and not to use memory barrier, otherwise go to the slow path
             // The reason not to add else statement if the usememorybarrier is that it will add more barnching in the code and will prevent
-            // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true
-            if ((m_owner & LOCK_ID_DISABLE_MASK) != 0 && !useMemoryBarrier)
+            // method inlining, so this is optimized for useMemoryBarrier=false and Exit() overload optimized for useMemoryBarrier=true.
+            int tmpOwner = m_owner;
+            if ((tmpOwner & LOCK_ID_DISABLE_MASK) != 0 & !useMemoryBarrier)
             {
-                int tmpOwner = m_owner;
                 m_owner = tmpOwner & (~LOCK_ANONYMOUS_OWNED);
             }
             else
