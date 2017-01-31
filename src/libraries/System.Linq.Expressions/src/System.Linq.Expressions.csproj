@@ -16,11 +16,13 @@
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net461'">None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <!-- netcore50 project.json fork is shared for both netcore50 and netcore50aot. This redirects netcore50aot. -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <ProjectJson>netcore50/project.json</ProjectJson>
     <ProjectLockJson>netcore50/project.lock.json</ProjectLockJson>
