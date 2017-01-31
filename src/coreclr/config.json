@@ -466,6 +466,12 @@
             "__Container": "default"
           }
         },
+        "runtimeId": {
+          "description": "Runtime ID of the binaries in the specified container.",
+          "settings": {
+            "RuntimeId": "default"
+          }
+        },
         "verbose": {
           "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
           "settings": {

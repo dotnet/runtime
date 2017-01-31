@@ -224,8 +224,8 @@ if defined __RuntimeId (
     )
 
     call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\runtest.proj -CreateNonWindowsTestOverlay -RuntimeId="%__RuntimeId%"  -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
-    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId% %%f in (*.so) do copy %%f %Core_Overlay%
-    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId% %%f in (*.dylib) do copy %%f %Core_Overlay%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.so) do copy %%f %Core_Overlay%
+    for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.dylib) do copy %%f %Core_Overlay%
 
     echo %__MsgPrefix% Created the runtime layout for %__RuntimeId% in %CORE_OVERLAY%
 )
