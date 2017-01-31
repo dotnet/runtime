@@ -168,9 +168,34 @@ fi
 __build_arch_lowcase=$(echo "$__build_arch" | tr '[:upper:]' '[:lower:]')
 __base_rid=$__rid_plat-$__build_arch_lowcase
 
+# Set up the environment to be used for building with clang.
+if which "clang-3.5" > /dev/null 2>&1; then
+    export CC="$(which clang-3.5)"
+    export CXX="$(which clang++-3.5)"
+elif which "clang-3.6" > /dev/null 2>&1; then
+    export CC="$(which clang-3.6)"
+    export CXX="$(which clang++-3.6)"
+elif which clang > /dev/null 2>&1; then
+    export CC="$(which clang)"
+    export CXX="$(which clang++)"
+else
+    echo "Unable to find Clang Compiler"
+    echo "Install clang-3.5 or clang3.6"
+    exit 1
+fi
+
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
+    # clang-3.6 is default compiler for cross compilation
+    if which "clang-3.6" > /dev/null 2>&1; then
+        export CC="$(which clang-3.6)"
+        export CXX="$(which clang++-3.6)"
+    else
+        echo "Unable to find Clang 3.6 Compiler"
+        echo "Install clang-3.6 for cross compilation"
+        exit 1
+    fi
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
 else
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
