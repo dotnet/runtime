@@ -21,7 +21,7 @@
     </TargetGroups>
     <TargetGroups Include="uap101">
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      <Imports>netcore50aot</Imports>
+      <Imports>netcore50</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap">

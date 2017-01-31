@@ -9,8 +9,8 @@
     <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">wpa81</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uap'">uap</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">uap;uapaot</DefineConstants>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='NOTAREALTARGETGROUP'">true</GeneratePlatformNotSupportedAssembly>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
@@ -20,10 +20,10 @@
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -57,7 +57,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
