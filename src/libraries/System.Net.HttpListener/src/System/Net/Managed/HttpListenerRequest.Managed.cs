@@ -447,6 +447,9 @@ namespace System.Net
         {
             get
             {
+                if (_isChunked)
+                    _contentLength = -1;
+
                 return _contentLength;
             }
         }
