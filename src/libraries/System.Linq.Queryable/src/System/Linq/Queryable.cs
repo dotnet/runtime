@@ -1633,5 +1633,29 @@ namespace System.Linq
                     source.Expression, Expression.Constant(count)
                     ));
         }
+
+        public static IQueryable<TSource> Append<TSource>(this IQueryable<TSource> source, TSource element)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Append_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(element)
+                    ));
+        }
+
+        public static IQueryable<TSource> Prepend<TSource>(this IQueryable<TSource> source, TSource element)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Prepend_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(element)
+                    ));
+        }
     }
 }
