@@ -8484,7 +8484,7 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
     // The SIMD type in question could be Vector2f which is 8-bytes in size.
     // The below check is to make sure that we don't turn that copyblk
     // into a assignment, since rationalizer logic will transform the
-    // copyblk apropriately. Otherwise, the transormation made in this
+    // copyblk appropriately. Otherwise, the transformation made in this
     // routine will prevent rationalizer logic and we might end up with
     // GT_ADDR(GT_SIMD) node post rationalization, leading to a noway assert
     // in codegen.
@@ -11323,12 +11323,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         // comma list.  The left arg (op1) gets a fresh context.
                         subMac1 = nullptr;
                         break;
-                    case GT_ASG:
-                        if (tree->OperIsBlkOp())
-                        {
-                            subMac1 = &subIndMac1;
-                        }
-                        break;
                     case GT_OBJ:
                     case GT_BLK:
                     case GT_DYN_BLK:
@@ -11464,12 +11458,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         {
                             mac->m_allConstantOffsets = false;
                         }
-                    }
-                    break;
-                case GT_ASG:
-                    if (tree->OperIsBlkOp())
-                    {
-                        mac = &subIndMac2;
                     }
                     break;
                 default:
