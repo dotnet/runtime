@@ -20,7 +20,6 @@
     <PropertyGroup>
       <_NETStandardPackageId>NETStandard.Library</_NETStandardPackageId>
       <_NETStandardPackageVersion>2.0.0-$(StandardExpectedPrerelease)</_NETStandardPackageVersion>
-      <_NETStandardTFMFolder>netstandard2.0</_NETStandardTFMFolder>
       <_NETStandardRefFolder>$(PackagesDir)$(_NETStandardPackageId)\$(_NETStandardPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
     <ItemGroup>

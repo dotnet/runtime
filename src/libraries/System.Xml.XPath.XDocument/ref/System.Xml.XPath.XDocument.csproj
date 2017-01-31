@@ -9,7 +9,12 @@
     <Compile Include="System.Xml.XPath.XDocument.cs" />
     <Compile Include="System.Xml.XPath.XDocument.Manual.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Xml.XDocument\ref\System.Xml.XDocument.csproj" />
     <ProjectReference Include="..\..\System.Xml.XPath\ref\System.Xml.XPath.csproj" />

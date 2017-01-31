@@ -6,7 +6,7 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">wpa81</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">uap</DefineConstants>
@@ -18,8 +18,8 @@
     <ValidPinvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_win8-wpa81-APIs.txt</ValidPinvokeMappings>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
@@ -57,7 +57,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='uap')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
@@ -81,6 +81,10 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Debug" />

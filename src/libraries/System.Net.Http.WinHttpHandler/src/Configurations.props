@@ -7,6 +7,7 @@
       netstandard-Windows_NT;
       netstandard-Unix;
       net46-Windows_NT;
+      netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

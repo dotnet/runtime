@@ -20,11 +20,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Release|AnyCPU'" />
   <Import Project="System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <!-- Need to compile it here since the NET46 target here is building against System.Runtime whereas the
          the list of other files in System.Net.Http.WinHttpHandler.msbuild is also used by System.Net.Http
          library and the NET46 target there uses framework assembly references instead. -->
-    <CompileItem Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
   </ItemGroup>
   <!--  For source files to be shown within the visual tree in Solution Explorer, the items must be
@@ -42,6 +41,12 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
     <Reference Include="Microsoft.Win32.Primitives" />
