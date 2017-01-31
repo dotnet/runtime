@@ -129,22 +129,6 @@ done
 # Set nuget package cache under the repo
 export NUGET_PACKAGES="$REPOROOT/.nuget/packages"
 
-# Set up the environment to be used for building with clang.
-if which "clang-3.5" > /dev/null 2>&1; then
-    export CC="$(which clang-3.5)"
-    export CXX="$(which clang++-3.5)"
-elif which "clang-3.6" > /dev/null 2>&1; then
-    export CC="$(which clang-3.6)"
-    export CXX="$(which clang++-3.6)"
-elif which clang > /dev/null 2>&1; then
-    export CC="$(which clang)"
-    export CXX="$(which clang++)"
-else
-    error "Unable to find Clang Compiler"
-    error "Install clang-3.5 or clang3.6"
-    exit 1
-fi
-
 # Load Branch Info
 while read line; do
     if [[ $line != \#* ]]; then
