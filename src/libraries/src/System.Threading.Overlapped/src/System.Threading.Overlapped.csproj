@@ -9,8 +9,8 @@
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net463-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -29,20 +29,19 @@
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="(('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='net463'">
+  <ItemGroup Condition="(('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='netfx'">
     <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net463'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' AND '$(TargetsWindows)' != 'true'">

@@ -5,6 +5,7 @@
       win8-Windows_NT;
       wpa81-Windows_NT;
       net45-Windows_NT;
+      netfx-Windows_NT;
       uap-Windows_NT;
       uapaot-Windows_NT;
       netstandard1.1-Unix;

@@ -6,11 +6,11 @@
     <RootNamespace>System.IO.Packaging</RootNamespace>
     <AssemblyName>System.IO.Packaging</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
@@ -57,9 +57,9 @@
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="WindowsBase" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
