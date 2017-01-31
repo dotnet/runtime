@@ -270,6 +270,7 @@ virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo) = 0;
 
+#ifndef CROSSGEN_COMPILE
 /*
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
@@ -277,6 +278,7 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
                                CodeManState  * pState) = 0;
+#endif
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -538,6 +540,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 #endif // WIN64EXCEPTIONS && !CROSSGEN_COMPILE
 
+#ifndef CROSSGEN_COMPILE
 /*
     Returns the offset of the GuardStack cookie if it exists.
     Returns NULL if there is no cookie.
@@ -546,6 +549,7 @@ virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
                        CodeManState  * pState);
+#endif
 
 
 #ifndef USE_GC_INFO_DECODER
