@@ -42,6 +42,8 @@
     <Copy SourceFiles="$(CORE_ROOT)\xunit.console.netcore.exe"
           DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)"
     />
+    <Message Text="Deleting '.requires_signing' files to avoid file name lengths exceeding MAX_PATH" Importance="Low" />
+    <Delete Files="$(DiscoveryDirectory)\**\*.requires_signing" />
     <MSBuild Projects="helixprep.proj"
              Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename);BuildArchiveDir=$(TestWorkingDir)archive\tests\"
              Targets="ArchiveBuild" />
