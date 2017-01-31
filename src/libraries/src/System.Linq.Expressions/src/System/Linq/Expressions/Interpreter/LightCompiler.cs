@@ -2261,7 +2261,7 @@ namespace System.Linq.Expressions.Interpreter
                                 objTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Object.Type), _instructions.Count);
                                 EmitThisForMethodCall(indexNode.Object);
                                 _instructions.EmitDup();
-                                _instructions.EmitStoreLocal(objTmp.Value.Index);
+                                _instructions.EmitStoreLocal(objTmp.GetValueOrDefault().Index);
                             }
 
                             int count = indexNode.ArgumentCount;
@@ -2299,7 +2299,7 @@ namespace System.Linq.Expressions.Interpreter
                             memberTemp = _locals.DefineLocal(Expression.Parameter(member.Expression.Type, "member"), _instructions.Count);
                             EmitThisForMethodCall(member.Expression);
                             _instructions.EmitDup();
-                            _instructions.EmitStoreLocal(memberTemp.Value.Index);
+                            _instructions.EmitStoreLocal(memberTemp.GetValueOrDefault().Index);
                         }
 
                         var field = member.Member as FieldInfo;
@@ -3162,7 +3162,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object value)
         {
-            object obj = _object == null ? null : frame.Data[_object.Value.Index];
+            object obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
             _field.SetValue(obj, value);
         }
 
@@ -3170,7 +3170,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (_object != null)
             {
-                locals.UndefineLocal(_object.Value, instructions.Count);
+                locals.UndefineLocal(_object.GetValueOrDefault(), instructions.Count);
             }
         }
     }
@@ -3189,7 +3189,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object value)
         {
-            object obj = _object == null ? null : frame.Data[_object.Value.Index];
+            object obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
 
             try
             {
@@ -3206,7 +3206,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (_object != null)
             {
-                locals.UndefineLocal(_object.Value, instructions.Count);
+                locals.UndefineLocal(_object.GetValueOrDefault(), instructions.Count);
             }
         }
     }
@@ -3234,7 +3234,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             args[args.Length - 1] = value;
 
-            object instance = _obj == null ? null : frame.Data[_obj.Value.Index];
+            object instance = _obj == null ? null : frame.Data[_obj.GetValueOrDefault().Index];
 
             try
             {
@@ -3251,7 +3251,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (_obj != null)
             {
-                locals.UndefineLocal(_obj.Value, instructions.Count);
+                locals.UndefineLocal(_obj.GetValueOrDefault(), instructions.Count);
             }
 
             for (int i = 0; i < _args.Length; i++)
