@@ -13,7 +13,7 @@ sure to consult this document often.
 1. Install CLI 2.0.0-alpha SDK
     - [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe)
     - [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.pkg)
-    - [Others](https://github.com/dotnet/cli/blob/master/README.md)
+    - [Others](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries)
 
 ## Setup the project
 
@@ -30,7 +30,7 @@ $ dotnet restore
 
 ## Consume the new build
 
-3. Edit your `Program.cs` to consume the new APIs, for example:
+Edit your `Program.cs` to consume the new APIs, for example:
 
 ```CSharp
 using System;
@@ -47,7 +47,7 @@ class Program
 }
 ```
 
-4. Run the bits:
+Run the bits:
 
 ```
 $ dotnet run
