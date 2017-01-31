@@ -192,6 +192,7 @@ private:
         }
     }
 #endif // defined(_TARGET_XARCH_)
+    void TreeNodeInfoInitStoreLoc(GenTree* tree);
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
     void TreeNodeInfoInitCall(GenTreeCall* call);
@@ -201,17 +202,26 @@ private:
     void TreeNodeInfoInitLogicalOp(GenTree* tree);
     void TreeNodeInfoInitModDiv(GenTree* tree);
     void TreeNodeInfoInitIntrinsic(GenTree* tree);
+    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree);
+    void TreeNodeInfoInitIndir(GenTree* indirTree);
+    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree);
+#if !CPU_LOAD_STORE_ARCH
+    bool TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd);
+#endif
 #ifdef FEATURE_SIMD
     void TreeNodeInfoInitSIMD(GenTree* tree);
 #endif // FEATURE_SIMD
     void TreeNodeInfoInitCast(GenTree* tree);
 #ifdef _TARGET_ARM64_
+    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
 #ifdef _TARGET_ARM_
+    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
 #endif // _TARGET_ARM64_
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
+    void LowerPutArgStk(GenTreePutArgStk* tree);
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* tree);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     void TreeNodeInfoInitLclHeap(GenTree* tree);
@@ -232,7 +242,7 @@ private:
     void LowerCast(GenTree* node);
 
 #if defined(_TARGET_XARCH_)
-    void SetMulOpCounts(GenTreePtr tree);
+    void TreeNodeInfoInitMul(GenTreePtr tree);
     void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
 #endif // defined(_TARGET_XARCH_)
 
@@ -240,11 +250,8 @@ private:
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);
     bool IsBinOpInRMWStoreInd(GenTreePtr tree);
     bool IsRMWMemOpRootedAtStoreInd(GenTreePtr storeIndTree, GenTreePtr* indirCandidate, GenTreePtr* indirOpSource);
-    bool SetStoreIndOpCountsIfRMWMemOp(GenTreePtr storeInd);
 #endif
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    void SetIndirAddrOpCounts(GenTree* indirTree);
-    void LowerGCWriteBarrier(GenTree* tree);
     GenTree* LowerArrElem(GenTree* node);
     void LowerRotate(GenTree* tree);
 
