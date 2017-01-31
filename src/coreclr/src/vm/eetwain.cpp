@@ -5432,6 +5432,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 #endif // WIN64EXCEPTIONS / CROSSGEN_COMPILE
 
+#ifndef CROSSGEN_COMPILE
 /*****************************************************************************/
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
@@ -5478,7 +5479,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
         return PVOID(SIZE_T(pContext->SP + argSize + info->gsCookieOffset));
     }
 
-#elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#elif defined(USE_GC_INFO_DECODER)
     if (pCodeInfo->IsFunclet())
     {
         return NULL;
@@ -5506,6 +5507,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     return NULL;
 #endif
 }
+#endif
 
 #ifndef USE_GC_INFO_DECODER
 /*****************************************************************************
