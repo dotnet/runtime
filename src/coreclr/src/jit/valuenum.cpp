@@ -6549,9 +6549,6 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
 
                 case GT_JTRUE:
                 case GT_LIST:
-#ifndef LEGACY_BACKEND
-                case GT_FIELD_LIST:
-#endif // !LEGACY_BACKEND
                     // These nodes never need to have a ValueNumber
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                     break;
