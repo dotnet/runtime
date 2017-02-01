@@ -5,6 +5,7 @@
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
       uap-Windows_NT;
+      uapaot-Windows_NT;
       netcoreapp1.2corert-Unix;
       netcoreapp1.2corert-Windows_NT;
     </BuildConfigurations>

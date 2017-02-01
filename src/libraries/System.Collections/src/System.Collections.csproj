@@ -18,8 +18,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp1.2corert-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
@@ -29,15 +29,15 @@
       <TargetGroup>netcoreapp1.2corert</TargetGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
-      <TargetGroup>uap101aot</TargetGroup>
+      <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">
-      <TargetGroup>uap101aot</TargetGroup>
+      <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\Collections\BitArray.cs" />
     <Compile Include="System\Collections\Generic\BitHelper.cs" />
     <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
@@ -69,7 +69,7 @@
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\Collections\Generic\Dictionary.cs" />
   </ItemGroup>
   <ItemGroup>

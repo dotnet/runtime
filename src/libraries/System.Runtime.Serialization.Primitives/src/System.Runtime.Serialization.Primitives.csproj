@@ -20,8 +20,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)'!='netfx'">
     <Compile Include="System\Runtime\Serialization\CollectionDataContractAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\ContractNamespaceAttribute.cs" />
@@ -33,7 +33,7 @@
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap' Or '$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap' Or '$(TargetGroup)'=='uapaot'">
     <Compile Include="System\Runtime\Serialization\InvalidDataContractException.Serialization.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
   </ItemGroup>
