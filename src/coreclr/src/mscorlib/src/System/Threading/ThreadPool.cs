@@ -350,24 +350,17 @@ namespace System.Threading
                 }
             }
 
-            public bool TrySteal(out IThreadPoolWorkItem obj, ref bool missedSteal)
+            public IThreadPoolWorkItem TrySteal(ref bool missedSteal)
             {
-                return TrySteal(out obj, ref missedSteal, 0); // no blocking by default.
-            }
-
-            private bool TrySteal(out IThreadPoolWorkItem obj, ref bool missedSteal, int millisecondsTimeout)
-            {
-                obj = null;
-
                 while (true)
                 {
                     if (m_headIndex >= m_tailIndex)
-                        return false;
+                        return null;
 
                     bool taken = false;
                     try
                     {
-                        m_foreignLock.TryEnter(millisecondsTimeout, ref taken);
+                        m_foreignLock.TryEnter(ref taken);
                         if (taken)
                         {
                             // Increment head, and ensure read of tail doesn't move before it (fence).
@@ -377,25 +370,19 @@ namespace System.Threading
                             if (head < m_tailIndex)
                             {
                                 int idx = head & m_mask;
-                                obj = Volatile.Read(ref m_array[idx]);
+                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                                 // Check for nulls in the array.
                                 if (obj == null) continue;
 
                                 m_array[idx] = null;
-                                return true;
+                                return obj;
                             }
                             else
                             {
                                 // Failed, restore head.
                                 m_headIndex = head;
-                                obj = null;
-                                missedSteal = true;
                             }
-                        }
-                        else
-                        {
-                            missedSteal = true;
                         }
                     }
                     finally
@@ -404,7 +391,8 @@ namespace System.Threading
                             m_foreignLock.Exit(false);
                     }
 
-                    return false;
+                    missedSteal = true;
+                    return null;
                 }
             }
         }
@@ -525,12 +513,13 @@ namespace System.Threading
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
                     WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i]);
-                    if (otherQueue != null &&
-                        otherQueue != wsq &&
-                        otherQueue.TrySteal(out callback, ref missedSteal))
+                    if (otherQueue != null && otherQueue != wsq)
                     {
-                        Debug.Assert(null != callback);
-                        break;
+                        callback = otherQueue.TrySteal(ref missedSteal);
+                        if (callback != null)
+                        {
+                            break;
+                        }
                     }
                     c--;
                 }
