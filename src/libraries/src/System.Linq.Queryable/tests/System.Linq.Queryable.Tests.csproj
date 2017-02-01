@@ -11,6 +11,7 @@
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
     <Compile Include="AnyTests.cs" />
+    <Compile Include="AppendPrependTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
     <Compile Include="ConcatTests.cs" />
