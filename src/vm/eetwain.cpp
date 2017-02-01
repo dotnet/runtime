@@ -3072,13 +3072,9 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, StackwalkCache
         {
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
             *(pRD->pCallerContext) = *(pRD->pCurrentContext);
-            
-            NOT_X86(*(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers));
+            *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
 
-            T_KNONVOLATILE_CONTEXT_POINTERS *pCallerContextPointers = NULL;
-            NOT_X86(pCallerContextPointers = pRD->pCallerContextPointers);
-
-            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pCallerContextPointers, pCodeInfo);
+            Thread::VirtualUnwindCallFrame(pRD->pCallerContext, pRD->pCallerContextPointers, pCodeInfo);
         }
 
         pRD->IsCallerContextValid = TRUE;
