@@ -737,7 +737,6 @@
   </ItemGroup>
   <ItemGroup>
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.cs" />
-    <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.NetStandard17.cs" />
     <FileStreamSources Include="$(CoreFxSourcesRoot)\System\IO\Error.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

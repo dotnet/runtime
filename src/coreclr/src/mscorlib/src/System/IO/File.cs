@@ -88,7 +88,7 @@ namespace System.IO
         {
             byte[] bytes;
             using(FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 
-                FileStream.DefaultBufferSize, FileOptions.None, Path.GetFileName(path), false, false)) {
+                FileStream.DefaultBufferSize, FileOptions.None)) {
                 // Do a blocking read
                 int index = 0;
                 long fileLength = fs.Length;

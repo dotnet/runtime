@@ -3,14 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Globalization
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public partial class CultureNotFoundException : ArgumentException, ISerializable
+    public class CultureNotFoundException : ArgumentException, ISerializable
     {
         private string _invalidCultureName; // unrecognized culture name
         private int? _invalidCultureId;     // unrecognized culture Lcid
@@ -66,14 +65,8 @@ namespace System.Globalization
             _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
             base.GetObjectData(info, context);
             info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
             info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));

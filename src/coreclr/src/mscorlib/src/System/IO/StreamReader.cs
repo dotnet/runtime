@@ -188,7 +188,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false);
         }
         
