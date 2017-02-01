@@ -112,18 +112,11 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoadFrom(String assemblyFile)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            return RuntimeAssembly.InternalLoadFrom(
-                assemblyFile,
-                null, //securityEvidence
-                null, //hashValue
-                AssemblyHashAlgorithm.None,
-                true,  //forIntrospection
-                false, //suppressSecurityChecks
-                ref stackMark);
+            if (assemblyFile == null)
+                throw new ArgumentNullException(nameof(assemblyFile));
+            if (assemblyFile.Length == 0)
+                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
 
         // Evidence is protected in Assembly.Load()
@@ -229,10 +222,11 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoad(String assemblyString)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoad(assemblyString, null,  ref stackMark, true /*forIntrospection*/);
+            if (assemblyString == null)
+                throw new ArgumentNullException(nameof(assemblyString));
+            if (assemblyString.Length == 0)
+                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
     
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
@@ -319,18 +313,9 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            AppDomain.CheckReflectionOnlyLoadSupported();
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.nLoadImage(
-                rawAssembly,
-                null, // symbol store
-                null, // evidence
-                ref stackMark,
-                true,  // fIntrospection
-                SecurityContextSource.CurrentAssembly);
+            if (rawAssembly == null)
+                throw new ArgumentNullException(nameof(rawAssembly));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
 
         // Loads the assembly with a COFF based IMAGE containing

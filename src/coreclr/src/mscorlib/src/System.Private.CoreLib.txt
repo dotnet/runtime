@@ -1389,6 +1389,8 @@ NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not support
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
+NotSupported_ReflectionOnlyLoad = Assembly.ReflectionOnlyLoad is not supported.
+NotSupported_ReflectionOnlyGetType = Type.ReflectionOnlyGetType is not supported.
 
 ; TypeLoadException
 TypeLoad_ResolveType = Could not resolve type '{0}'.
