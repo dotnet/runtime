@@ -413,6 +413,8 @@ LLDBServices::GetExecutingProcessorType(
     *type = IMAGE_FILE_MACHINE_ARMNT;
 #elif DBG_TARGET_ARM64
     *type = IMAGE_FILE_MACHINE_ARM64;
+#elif DBG_TARGET_X86
+    *type = IMAGE_FILE_MACHINE_I386;
 #else
 #error "Unsupported target"
 #endif
