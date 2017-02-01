@@ -37,7 +37,8 @@
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'=='' and '$(ProjectDir)'!=''">$(ProjectDir)Tools/</ToolRuntimePath>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(MSBuildThisFileDirectory)</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
-    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
+    <OverrideToolHost Condition="'$(RunningOnUnix)' == 'true'">$(DotnetCliPath)dotnet</OverrideToolHost>
+    <OverrideToolHost Condition="'$(RunningOnUnix)' != 'true'">$(DotnetCliPath)dotnet.exe</OverrideToolHost>
     <BuildToolsTaskDir Condition="'$(RunningOnCore)'!='true'">$(ToolsDir)net45/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(RunningOnCore)'=='true'">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(RunningOnUnix)'=='true'">false</UseRoslynCompilers>
