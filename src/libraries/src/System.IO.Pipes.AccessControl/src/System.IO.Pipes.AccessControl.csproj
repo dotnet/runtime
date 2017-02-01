@@ -6,11 +6,11 @@
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
     <AllowUnsafeBlocks Condition="'$(TargetGroup)'=='netstandard'">true</AllowUnsafeBlocks>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net46-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
@@ -22,12 +22,12 @@
     <Compile Include="System\IO\PipeAuditRule.cs" />
     <Compile Include="System\IO\PipesAclExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46' AND '$(TargetsWindows)'=='true'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System.Core" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.Core" />
     <Compile Include="System\IO\PipesAclExtensions.net46.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netfx'">
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>

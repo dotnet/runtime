@@ -6,14 +6,21 @@
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <OutputPath>$(RefRootPath)/$(TargetGroup)</OutputPath>
     <ProjectJsonTemplate Condition="$(NuGetTargetMoniker.Contains('Version=v1.'))">$(MSBuildProjectDirectory)\netstandard1.x\project.json.template</ProjectJsonTemplate>
+    <_NETStandardTFMFolder Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">netstandard2.0</_NETStandardTFMFolder>
+    <_NETStandardTFMFolder Condition="$(NuGetTargetMoniker.StartsWith('.NETFramework'))">net461</_NETStandardTFMFolder>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- on desktop facades are used at runtime as well -->
+    <AdditionalOutputDirectory Condition="$(NuGetTargetMoniker.StartsWith('.NETFramework'))" Include="$(RuntimePath)" />
+  </ItemGroup>
   
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"
-          Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">
+          Condition="'$(_NETStandardTFMFolder)' != ''">
     <PropertyGroup>
       <_NETStandardPackageId>NETStandard.Library</_NETStandardPackageId>
       <_NETStandardPackageVersion>2.0.0-$(StandardExpectedPrerelease)</_NETStandardPackageVersion>
-      <_NETStandardRefFolder>$(PackagesDir)$(_NETStandardPackageId)\$(_NETStandardPackageVersion)\build\netstandard2.0\ref</_NETStandardRefFolder>
+      <_NETStandardRefFolder>$(PackagesDir)$(_NETStandardPackageId)\$(_NETStandardPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
     <ItemGroup>
       <Reference Include="$(_NETStandardRefFolder)\*.dll">
@@ -22,6 +29,27 @@
         <NuGetPackageVersion>$(_NETStandardPackageVersion)</NuGetPackageVersion>
       </Reference>
     </ItemGroup>
+  </Target>
+
+  <Target Name="CopyToAdditionalOutputDirectories" 
+          Inputs="%(AdditionalOutputDirectory.Identity)"
+          Outputs="unused"
+          AfterTargets="CopyFilesToOutputDirectory">
+    <PropertyGroup>
+      <_additionalOutDir>%(AdditionalOutputDirectory.Identity)</_additionalOutDir>
+    </PropertyGroup>
+    <Copy
+        SourceFiles = "@(_SourceItemsToCopyToOutputDirectory)"
+        DestinationFiles = "@(_SourceItemsToCopyToOutputDirectory->'$(_additionalOutDir)%(TargetPath)')"
+        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+        Retries="$(CopyRetryCount)"
+        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+        UseHardlinksIfPossible="$(CreateHardLinksForAdditionalFilesIfPossible)"
+            >
+
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+
+    </Copy>
   </Target>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

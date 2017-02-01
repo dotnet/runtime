@@ -11,8 +11,6 @@
     <NoWarn>436</NoWarn>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -24,7 +22,7 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+  <ItemGroup>
     <Compile Include="System\LocalDataStoreSlot.cs" />
     <Compile Include="System\Threading\CompressedStack.cs" />
     <Compile Include="System\Threading\Thread.cs" />
@@ -45,17 +43,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

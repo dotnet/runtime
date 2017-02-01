@@ -20,7 +20,7 @@
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="System.Private.Interop" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Collections" />

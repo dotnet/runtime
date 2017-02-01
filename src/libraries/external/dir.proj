@@ -1,6 +1,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="../dir.props" />
 
+  <PropertyGroup>
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
+  </PropertyGroup>
+
   <!-- Build for all configurations -->
   <ItemGroup>
     <Project Include="coreclr/coreclr.depproj" />
