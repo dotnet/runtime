@@ -69,8 +69,6 @@ namespace System.Net
         private bool _isChunked;
         private bool _kaSet;
         private bool _keepAlive;
-        private delegate X509Certificate2 GCCDelegate();
-        private GCCDelegate _gccDelegate;
 
         private static byte[] s_100continue = Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n");
 
@@ -607,9 +605,10 @@ namespace System.Net
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            if (_gccDelegate == null)
-                _gccDelegate = new GCCDelegate(GetClientCertificate);
-            return _gccDelegate.BeginInvoke(requestCallback, state);
+            ListenerClientCertAsyncResult result = new ListenerClientCertAsyncResult(GetClientCertificate(), requestCallback, state);
+            result.Complete();
+
+            return result;
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
@@ -617,10 +616,8 @@ namespace System.Net
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (_gccDelegate == null)
-                throw new InvalidOperationException();
-
-            return _gccDelegate.EndInvoke(asyncResult);
+            ListenerClientCertAsyncResult result = asyncResult as ListenerClientCertAsyncResult;
+            return result.Certificate;
         }
 
         public X509Certificate2 GetClientCertificate()
