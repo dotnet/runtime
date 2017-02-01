@@ -30,6 +30,15 @@ An issue need not be addressed in its entirety.  We happily accept contributions
 
 Code coverage runs are performed by Jenkins approximately twice a day.  The results of these runs are all available from the site linked to by the code coverage badge on the home page.
 
+## PR Code Coverage Runs
+
+Jenkins can create a coverage report using your PR. Ask for it using `@dotnet-bot test code coverage please`.
+
+After it's done the report can be found in the build log, it looks like eg
+`https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows_prtest/16/artifact/bin/tests/coverage`
+then add index.htm on the end:
+`https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows_prtest/16/artifact/bin/tests/coverage/index.htm`
+
 ## Local Code Coverage Runs
 
 You can perform code coverage runs locally on your own machine.  Normally to build your entire CoreFX repo, from the root of your repo you'd run:
