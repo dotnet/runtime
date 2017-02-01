@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Performance.Tests
@@ -16,8 +17,6 @@ namespace System.Net.Sockets.Performance.Tests
     {
         protected readonly ITestOutputHelper _log;
 
-        protected string _server;
-        protected int _port;
         protected EndPoint _endpoint;
 
         protected Socket _s;
@@ -36,28 +35,24 @@ namespace System.Net.Sockets.Performance.Tests
         private const string _format = "{0, -20}, {1, -25}, {2, 15}, {3, 15}, {4, 15}, {5, 15}, {6, 15}, {7, 15}, {8, 15}";
         private int _bufferLen;
 
-        private int _send_iterations = 0;
-        private int _receive_iterations = 0;
+        private int _current_bytes;
 
         private Stopwatch _timeConnect = new Stopwatch();
         private Stopwatch _timeSendRecv = new Stopwatch();
         private Stopwatch _timeClose = new Stopwatch();
 
-        private TaskCompletionSource<long> _tcs = new TaskCompletionSource<long>();
+        private Random _random = new Random();
 
         public SocketTestClient(
             ITestOutputHelper log,
-            string server,
-            int port,
+            EndPoint endpoint,
             int iterations,
             string message,
             Stopwatch timeProgramStart)
         {
             _log = log;
 
-            _server = server;
-            _port = port;
-            _endpoint = new DnsEndPoint(server, _port);
+            _endpoint = endpoint;
 
             _sendString = message;
             _sendBuffer = Encoding.UTF8.GetBytes(_sendString);
@@ -67,21 +62,13 @@ namespace System.Net.Sockets.Performance.Tests
 
             _timeProgramStart = timeProgramStart;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // on Unix, socket will be created in Socket.ConnectAsync
-            {
-                _timeInit.Start();
-                _s = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                _timeInit.Stop();
-            }
-
             _iterations = iterations;
         }
 
         public static SocketTestClient SocketTestClientFactory(
             ITestOutputHelper log,
             SocketImplementationType type,
-            string server,
-            int port,
+            EndPoint endpoint,
             int iterations,
             string message,
             Stopwatch timeProgramStart)
@@ -89,11 +76,11 @@ namespace System.Net.Sockets.Performance.Tests
             switch (type)
             {
                 case SocketImplementationType.APM:
-                    var socketAPM = new SocketTestClientAPM(log, server, port, iterations, message, timeProgramStart);
+                    var socketAPM = new SocketTestClientAPM(log, endpoint, iterations, message, timeProgramStart);
                     log.WriteLine(socketAPM.GetHashCode() + " SocketTestClientAPM(..)");
                     return socketAPM;
                 case SocketImplementationType.Async:
-                    var socketAsync = new SocketTestClientAsync(log, server, port, iterations, message, timeProgramStart);
+                    var socketAsync = new SocketTestClientAsync(log, endpoint, iterations, message, timeProgramStart);
                     log.WriteLine(socketAsync.GetHashCode() + " SocketTestClientAsync(..)");
                     return socketAsync;
 
@@ -104,58 +91,156 @@ namespace System.Net.Sockets.Performance.Tests
 
         public abstract void Connect(Action<SocketError> onConnectCallback);
 
-        private void OnConnect(SocketError error)
+        private Task ConnectHelper()
         {
-            _timeConnect.Stop();
-            _log.WriteLine(this.GetHashCode() + " OnConnect({0}) _timeConnect={1}", error, _timeConnect.ElapsedMilliseconds);
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
 
-            // TODO: an error should fail the test.
-            if (error != SocketError.Success)
+            Connect(socketError => {
+                if (socketError == SocketError.Success)
+                {
+                    tcs.SetResult(true);
+                }
+                else
+                {
+                    tcs.SetException(new SocketException((int)socketError));
+                }
+            });
+
+            return tcs.Task;
+        }
+
+        public async Task RunTest()
+        {
+            int connectionAttempts = 0;
+            while (true)
             {
-                _timeClose.Start();
-                Close(OnClose);
-                return;
+                try 
+                {
+                    await ConnectHelper();
+
+                    // Success, break out of loop
+                    break;
+                }
+                catch (SocketException e)
+                {
+                    // If we got ConnectionRefused, we want to fall through and retry
+                    // Otherwise, rethrow
+                    if (e.SocketErrorCode != SocketError.ConnectionRefused)
+                    {
+                        throw;
+                    }
+
+                    // Limit connection attempts
+                    if (connectionAttempts == 3)
+                    {
+                        throw;
+                    }
+                }
+
+                // Connection was refused.  
+                // The server may be temporarily overloaded, and the server OS is rejecting connections.
+                // Wait a bit and then retry.
+                await Task.Delay(200);
+
+                connectionAttempts++;
             }
 
             _timeSendRecv.Start();
 
-            // TODO: It might be more efficient to have more than one outstanding Send/Receive.
-
-            // IMPORTANT: The code currently assumes one outstanding Send and one Receive. Interlocked operations
-            //            are required to handle re-entrancy.
-
-            int bytesTransferred;
-            SocketError socketError;
-
-            if (!Send(out bytesTransferred, out socketError, OnSend))
+            // Loop over iterations, doing sends and receives
+            for (int i = 0; i < _iterations; i++)
             {
-                OnSend(bytesTransferred, socketError);
+                // Kick off another iteration.
+                // First, we pick a random # of Sends to perform.
+
+                // Generate a random floating point number between 0 and 10
+                double d = ((double)_random.Next()) / int.MaxValue * 10;
+
+                // Use this as the base 2 exponent to determine # of Sends to do.
+                // In other words, this scales exponentially from 1 (2^0) to 1024 (2^10),
+                // with a median of 32 (2^5).
+                int sends = (int) Math.Floor(Math.Pow(2.0, d));
+
+                // We actually track bytes overall, since the receives are not
+                // necessarily always on buffer length boundaries.
+                _current_bytes = sends * _bufferLen;
+
+                // 
+                // TODO: It might be more efficient to have more than one outstanding Send/Receive.
+
+                // IMPORTANT: The code currently assumes one outstanding Send and one Receive. Interlocked operations
+                //            are required to handle re-entrancy.
+
+                Task t1 = Task.Run(() => DoSend());
+                Task t2 = Task.Run(() => DoReceive());
+
+                await t1;
+                await t2;
             }
 
-            if (!Receive(out bytesTransferred, out socketError, OnReceive))
-            {
-                OnReceive(bytesTransferred, socketError);
-            }
+            await CloseHelper();
         }
 
         public abstract bool Send(out int bytesTransferred, out SocketError socketError, Action<int, SocketError> onSendCallback);
 
-        // Called when the entire _sendBuffer has been sent.
-        private void OnSend(int bytesSent, SocketError error)
+        private Task<int> SendHelper()
         {
-            // Keep sending until pending
-            bool pending;
-            do
-            {
-                _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", bytesSent, error);
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
 
-                // TODO: an error should fail the test.
-                if (error != SocketError.Success)
+            Action<int, SocketError> onSend = (bytesTransferred, socketError) => {
+                if (socketError == SocketError.Success)
                 {
-                    _timeClose.Start();
-                    Close(OnClose);
-                    return;
+                    tcs.SetResult(bytesTransferred);
                 }
+                else
+                {
+                    tcs.SetException(new SocketException((int)socketError));
+                }
+            };
+
+            int bytes;
+            SocketError error;
+            bool pending = Send(out bytes, out error, onSend);
+            if (!pending)
+            {
+                onSend(bytes, error);
+            }
+
+            return tcs.Task;
+        }
+
+        private Task<int> ReceiveHelper()
+        {
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+
+            Action<int, SocketError> onReceive = (bytesTransferred, socketError) => {
+                if (socketError == SocketError.Success)
+                {
+                    tcs.SetResult(bytesTransferred);
+                }
+                else
+                {
+                    tcs.SetException(new SocketException((int)socketError));
+                }
+            };
+
+            int bytes;
+            SocketError error;
+            bool pending = Receive(out bytes, out error, onReceive);
+            if (!pending)
+            {
+                onReceive(bytes, error);
+            }
+
+            return tcs.Task;
+        }
+
+        private async Task DoSend()
+        {
+            int total_bytes_sent = 0;
+            while (total_bytes_sent < _current_bytes)
+            {
+                int bytesSent = await SendHelper();
 
                 if (bytesSent != _sendBuffer.Length)
                 {
@@ -163,118 +248,59 @@ namespace System.Net.Sockets.Performance.Tests
                         "OnSend: Unexpected bytesSent={0}, expected {1}",
                         bytesSent,
                         _sendBuffer.Length);
-                    return;
+                    throw new Exception("Unexpected bytesSent");
                 }
 
-                _send_iterations++;
-                _log.WriteLine(this.GetHashCode() + " OnSendMessage() _send_iterations={0}", _send_iterations);
-
-                if (_send_iterations == _iterations)
-                {
-                    //TODO: _s.Shutdown(SocketShutdown.Send);
-                    return;
-                }
-
-                pending = Send(out bytesSent, out error, OnSend);
-            } while (!pending);
+                total_bytes_sent += bytesSent;
+                Assert.True(total_bytes_sent <= _current_bytes);
+            }
         }
 
         public abstract bool Receive(out int bytesTransferred, out SocketError socketError, Action<int, SocketError> onSendCallback);
 
-        // Called when the entire _recvBuffer has been received.
-        private void OnReceive(int receivedBytes, SocketError error)
+        private async Task DoReceive()
         {
-            bool pending;
-            do
+            int total_bytes_received = 0;
+            while (total_bytes_received < _current_bytes)
             {
-                _log.WriteLine(this.GetHashCode() + " OnSend({0}, {1})", receivedBytes, error);
-                _recvBufferIndex += receivedBytes;
-
-                // TODO: an error should fail the test.
-                if (error != SocketError.Success)
+                int receivedBytes = await ReceiveHelper();
+                if (receivedBytes == 0)
                 {
-                    _timeClose.Start();
-                    Close(OnClose);
-                    return;
+                    _log.WriteLine("Socket unexpectedly closed.");
+                    throw new Exception("Socket unexpectedly closed");
                 }
 
-                if (_recvBufferIndex == _recvBuffer.Length)
-                {
-                    _receive_iterations++;
-                    _log.WriteLine(this.GetHashCode() + " OnReceiveMessage() _receive_iterations={0}", _receive_iterations);
+                total_bytes_received += receivedBytes;
+                Assert.True(total_bytes_received <= _current_bytes);
 
+                _recvBufferIndex += receivedBytes;
+                Assert.True(_recvBufferIndex <= _bufferLen);
+                if (_recvBufferIndex == _bufferLen)
+                {
                     _recvBufferIndex = 0;
 
-                    // Expect echo server.
+                    // Compare the bytes we sent to the bytes we received;
+                    // They should be the same since the server is an echo server.
                     if (!SocketTestMemcmp.Compare(_sendBuffer, _recvBuffer))
                     {
                         _log.WriteLine("Received different data from echo server");
+                        throw new Exception("Received different data from echo server");
                     }
 
-                    if (_receive_iterations >= _iterations)
-                    {
-                        _timeSendRecv.Stop();
-                        _timeClose.Start();
-                        Close(OnClose);
-                        return;
-                    }
-                    else
-                    {
-                        Array.Clear(_recvBuffer, 0, _recvBuffer.Length);
-                        pending = Receive(out receivedBytes, out error, OnReceive);
-                    }
+                    Array.Clear(_recvBuffer, 0, _bufferLen);
                 }
-                else if (receivedBytes == 0)
-                {
-                    _log.WriteLine("Socket unexpectedly closed.");
-                    return;
-                }
-                else
-                {
-                    pending = Receive(out receivedBytes, out error, OnReceive);
-                }
-            } while (!pending);
+            }
         }
 
         public abstract void Close(Action onCloseCallback);
 
-        private void OnClose()
+        private Task CloseHelper()
         {
-            _timeClose.Stop();
-            _log.WriteLine(this.GetHashCode() + " OnClose() _timeClose={0}", _timeClose.ElapsedMilliseconds);
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
 
-            try
-            {
-                _log.WriteLine(
-                    _format,
-                    "Socket",
-                    ImplementationName(),
-                    _bufferLen,
-                    _receive_iterations,
-                    _timeInit.ElapsedMilliseconds, // only relevant on Windows
-                    _timeConnect.ElapsedMilliseconds, // on Unix this includes socket creation time
-                    _timeSendRecv.ElapsedMilliseconds,
-                    _timeClose.ElapsedMilliseconds,
-                    _timeProgramStart.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                _log.WriteLine("Exception while writing the report: {0}", ex);
-            }
+            Close(() => { tcs.SetResult(true); });
 
-            _log.WriteLine(
-                this.GetHashCode() + " OnClose() setting tcs result : {0}",
-                _timeSendRecv.ElapsedMilliseconds);
-
-            _tcs.TrySetResult(_timeSendRecv.ElapsedMilliseconds);
-        }
-
-        public Task<long> RunTest()
-        {
-            _timeConnect.Start();
-            Connect(OnConnect);
-
-            return _tcs.Task;
+            return tcs.Task;
         }
 
         protected abstract string ImplementationName();
