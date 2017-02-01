@@ -96,6 +96,18 @@ doc_free (gpointer key)
 	g_free (info);
 }
 
+static MonoPPDBFile*
+create_ppdb_file (MonoImage *ppdb_image)
+{
+	MonoPPDBFile *ppdb;
+
+	ppdb = g_new0 (MonoPPDBFile, 1);
+	ppdb->image = ppdb_image;
+	ppdb->doc_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) doc_free);
+	ppdb->method_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) g_free);
+	return ppdb;
+}
+
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 {
@@ -106,7 +118,12 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	guint8 pe_guid [16];
 	gint32 pe_age;
 	gint32 pe_timestamp;
-	MonoPPDBFile *ppdb;
+
+	if (image->tables [MONO_TABLE_DOCUMENT].rows) {
+		/* Embedded ppdb */
+		mono_image_addref (image);
+		return create_ppdb_file (image);
+	}
 
 	if (!get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp))
 		return NULL;
@@ -150,12 +167,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-	ppdb = g_new0 (MonoPPDBFile, 1);
-	ppdb->image = ppdb_image;
-	ppdb->doc_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) doc_free);
-	ppdb->method_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) g_free);
-
-	return ppdb;
+	return create_ppdb_file (ppdb_image);
 }
 
 void
