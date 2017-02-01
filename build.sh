@@ -24,20 +24,17 @@ if [ -z "$HOME" ]; then
     mkdir -p $HOME
 fi
 
-args=( "$@" )
-
 while [[ $# > 0 ]]; do
     lowerI="$(echo $1 | awk '{print tolower($0)}')"
     case $lowerI in
         --docker)
             export BUILD_IN_DOCKER=1
             export DOCKER_IMAGENAME=$2
-            # remove docker args
-            args=( "${args[@]/$1}" )
-            args=( "${args[@]/$2}" )
             shift
             ;;
         *)
+            args+=( $1 )
+            ;;
     esac
     shift
 done
