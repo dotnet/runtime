@@ -4,7 +4,7 @@
     <BuildConfigurations>
       net46-Windows_NT;
       netcoreapp;
-      uap;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

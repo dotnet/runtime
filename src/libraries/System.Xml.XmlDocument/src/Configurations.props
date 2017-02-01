@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net463-Windows_NT;
+      uap-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
     </BuildConfigurations>

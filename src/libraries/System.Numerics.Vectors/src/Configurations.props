@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       net46-Windows_NT;
+      uap-Windows_NT;
       netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
