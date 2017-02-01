@@ -594,23 +594,6 @@ load_tables (MonoImage *image)
 	/* They must be the same */
 	g_assert ((const void *) image->tables_base == (const void *) rows);
 
-	if (image->heap_pdb.size) {
-		/*
-		 * Obtain token sizes from the pdb stream.
-		 */
-		/* 24 = guid + entry point */
-		int pos = 24;
-		image->referenced_tables = read64 (image->heap_pdb.data + pos);
-		pos += 8;
-		image->referenced_table_rows = g_new0 (int, 64);
-		for (int i = 0; i < 64; ++i) {
-			if (image->referenced_tables & (1UL << i)) {
-				image->referenced_table_rows [i] = read32 (image->heap_pdb.data + pos);
-				pos += 4;
-			}
-		}
-	}
-
 	mono_metadata_compute_table_bases (image);
 	return TRUE;
 }
