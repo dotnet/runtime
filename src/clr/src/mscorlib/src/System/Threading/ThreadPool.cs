@@ -476,31 +476,18 @@ namespace System.Threading
         internal bool LocalFindAndPop(IThreadPoolWorkItem callback)
         {
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
-            if (null == tl)
-                return false;
-
-            return tl.workStealingQueue.LocalFindAndPop(callback);
+            return tl != null && tl.workStealingQueue.LocalFindAndPop(callback);
         }
 
-        public void Dequeue(ThreadPoolWorkQueueThreadLocals tl, out IThreadPoolWorkItem callback, out bool missedSteal)
+        public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            callback = null;
-            missedSteal = false;
             WorkStealingQueue wsq = tl.workStealingQueue;
+            IThreadPoolWorkItem callback;
 
-            if (wsq.LocalPop(out callback))
-                Debug.Assert(null != callback);
-
-            if (null == callback)
+            if (!wsq.LocalPop(out callback) && // first try the local queue
+                !workItems.TryDequeue(out callback)) // then try the global queue
             {
-                if (workItems.TryDequeue(out callback))
-                {
-                    Debug.Assert(null != callback);
-                }
-            }
-
-            if (null == callback)
-            {
+                // finally try to steal from another thread's local queue
                 WorkStealingQueue[] otherQueues = allThreadQueues.Current;
                 int c = otherQueues.Length;
                 int maxIndex = c - 1;
@@ -520,6 +507,8 @@ namespace System.Threading
                     c--;
                 }
             }
+
+            return callback;
         }
 
         static internal bool Dispatch()
@@ -570,7 +559,7 @@ namespace System.Threading
                     finally
                     {
                         bool missedSteal = false;
-                        workQueue.Dequeue(tl, out workItem, out missedSteal);
+                        workItem = workQueue.Dequeue(tl, ref missedSteal);
 
                         if (workItem == null)
                         {
