@@ -126,8 +126,8 @@ namespace System.Net.Sockets.Performance.Tests
                 // IMPORTANT: The code currently assumes one outstanding Send and one Receive. Interlocked operations
                 //            are required to handle re-entrancy.
 
-                Task t1 = Task.Run(async () => { await DoSend(); });
-                Task t2 = Task.Run(async () => { await DoReceive(); });
+                Task t1 = Task.Run(() => DoSend());
+                Task t2 = Task.Run(() => DoReceive());
 
                 await t1;
                 await t2;
