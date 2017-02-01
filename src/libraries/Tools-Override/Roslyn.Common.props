@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RoslynPropsFile Condition="'$(RoslynPropsFile)' == '' and '$(RunningOnCore)' != 'true'">$(ToolRuntimePath)/net45/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
+    <RoslynPropsFile Condition="'$(RoslynPropsFile)' == '' and '$(RunningOnUnix)' != 'true'">$(BuildToolsTaskDir)/roslyn/build/Microsoft.Net.Compilers.props</RoslynPropsFile>
   </PropertyGroup>
 
   <!--

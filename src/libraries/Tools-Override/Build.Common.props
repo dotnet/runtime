@@ -39,7 +39,7 @@
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
     <OverrideToolHost Condition="'$(RunningOnUnix)' == 'true'">$(DotnetCliPath)dotnet</OverrideToolHost>
     <OverrideToolHost Condition="'$(RunningOnUnix)' != 'true'">$(DotnetCliPath)dotnet.exe</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(RunningOnCore)'!='true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(RunningOnCore)'!='true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(RunningOnCore)'=='true'">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(RunningOnUnix)'=='true'">false</UseRoslynCompilers>
     <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(RunningOnUnix)' != 'true' and '$(UseRoslynCompilers)' != 'false'">true</UseSharedCompilation>
