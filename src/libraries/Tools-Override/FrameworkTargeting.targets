@@ -72,6 +72,16 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="MarkReferencePrivateFalse"
+          BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to outpu -->
+      <Reference Condition="'%(Reference.Extension)' != '.dll'">
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+  </Target>
+
   <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
   <Target Name="AddDesignTimeFacadeReferences"
       Condition="'$(TargetingDefaultPlatform)' == 'true' AND '$(IsReferenceAssembly)' != 'true' AND '$(ExcludeMscorlibFacade)' != 'true'"

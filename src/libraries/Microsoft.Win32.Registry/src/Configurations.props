@@ -4,7 +4,7 @@
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
-      net463-AnyOS;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
