@@ -1330,7 +1330,7 @@ namespace System.Threading
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(WaitCallback));
+                throw new ArgumentNullException(nameof(callBack));
             }
 
             //The thread pool maintains a per-appdomain managed work queue.
