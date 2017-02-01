@@ -143,31 +143,6 @@ namespace System.Net
             if (start_host == colon)
                 throw new ArgumentException(SR.net_listener_host);
 
-            int root;
-            if (colon > 0)
-            {
-                root = uri.IndexOf('/', colon, length - colon);
-                if (root == -1)
-                    throw new ArgumentException(SR.net_invalid_path);
-
-                try
-                {
-                    int p = int.Parse(uri.Substring(colon + 1, root - colon - 1));
-                    if (p <= 0 || p >= 65536)
-                        throw new ArgumentException(SR.net_invalid_port);
-                }
-                catch
-                {
-                    throw new ArgumentException(SR.net_invalid_port);
-                }
-            }
-            else
-            {
-                root = uri.IndexOf('/', start_host, length - start_host);
-                if (root == -1)
-                    throw new ArgumentException(SR.net_invalid_path);
-            }
-
             if (uri[uri.Length - 1] != '/')
                 throw new ArgumentException(SR.net_listener_slash);
         }
