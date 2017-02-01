@@ -16,6 +16,7 @@
   <ItemGroup>
     <TestCmds Include="$(DiscoveryDirectory)\**\*.cmd" ></TestCmds>
     <XunitDlls Include="$(DiscoveryDirectory)\*\*.XUnitWrapper.dll" ></XunitDlls>
+    <RequiresSigningFilesToDelete Include="$(DiscoveryDirectory)\**\*.requires_signing" />
   </ItemGroup>
 
   <!-- Build the platform-specific wrapper to run an individual xunit wrapper -->
@@ -43,7 +44,7 @@
           DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)"
     />
     <Message Text="Deleting '.requires_signing' files to avoid file name lengths exceeding MAX_PATH" Importance="Low" />
-    <Delete Files="$(DiscoveryDirectory)\**\*.requires_signing" />
+    <Delete Files="@(RequiresSigningFilesToDelete)" />
     <MSBuild Projects="helixprep.proj"
              Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename);BuildArchiveDir=$(TestWorkingDir)archive\tests\"
              Targets="ArchiveBuild" />
