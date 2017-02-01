@@ -7,7 +7,7 @@
 // the rest are obsolete or not valid on Linux
 
 namespace System.Globalization
-{    
+{
     [Serializable]
     [Flags]
     public enum CultureTypes
@@ -25,4 +25,4 @@ namespace System.Globalization
         [Obsolete("This value has been deprecated.  Please use other values in CultureTypes.")]
         FrameworkCultures           = 0x0040,               // will return only the v2 cultures marked as Framework culture.
     }
-}    
+}

@@ -620,4 +620,9 @@ internal static class SR
     {
         get { return Environment.GetResourceString("SpinLock_IsHeldByCurrentThread"); }
     }
+
+    internal static string ObjectDisposed_StreamIsClosed
+    {
+        get { return Environment.GetResourceString("ObjectDisposed_StreamIsClosed"); }
+    }
 }
