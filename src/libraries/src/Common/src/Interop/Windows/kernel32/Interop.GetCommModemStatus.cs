@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal BOOL bInheritHandle;
-        }
+        [DllImport(Libraries.Kernel32, SetLastError=true, CharSet=CharSet.Auto)]
+        internal static extern bool GetCommModemStatus(
+            SafeFileHandle hFile,
+            ref int lpModemStat);
     }
 }
