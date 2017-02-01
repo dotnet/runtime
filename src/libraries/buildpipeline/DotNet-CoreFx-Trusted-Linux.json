@@ -442,7 +442,7 @@
       "value": null,
       "isSecret": true
     },
-    "PB_VsoRepoName": {
+    "PB_VsoRepositoryName": {
       "value": "DotNet-CoreFX-Trusted",
       "allowOverride": true
     },
