@@ -22,19 +22,17 @@
           
     <ItemGroup>
       <!-- This will only copy over the related file -->
-      <HostFxrFile Condition="'$(OS)'=='Windows_NT'" Include="$(RuntimePath)hostfxr.dll" />
-      <HostFxrFile Condition="'$(OS)'=='Unix'" Include="$(RuntimePath)libhostfxr.so" />
-      <HostFxrFile Condition="'$(OS)'=='Unix'" Include="$(RuntimePath)libhostfxr.dylib" />
-      <DotnetExe Condition="'$(OS)'=='Windows_NT'" Include="$(RuntimePath)dotnet.exe" />
-      <DotnetExe Condition="'$(OS)'!='Windows_NT'" Include="$(RuntimePath)dotnet" />
+      <HostFxrFile Condition="'$(OSGroup)'=='Windows_NT'" Include="$(RuntimePath)hostfxr.dll" />
+      <HostFxrFile Condition="'$(OSGroup)'=='Linux'" Include="$(RuntimePath)libhostfxr.so" />
+      <HostFxrFile Condition="'$(OSGroup)'=='OSX'" Include="$(RuntimePath)libhostfxr.dylib" />
+      <DotnetExe Condition="'$(RunningOnUnix)'!='true'" Include="$(RuntimePath)dotnet.exe" />
+      <DotnetExe Condition="'$(RunningOnUnix)'=='true'" Include="$(RuntimePath)dotnet" />
     </ItemGroup>
     <MakeDir Directories="$(TestSharedFxPathHostFxr)" />
     <Copy SourceFiles="@(HostFxrFile)" 
-          DestinationFolder="$(TestSharedFxPathHostFxr)" 
-          Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
+          DestinationFolder="$(TestSharedFxPathHostFxr)" />
     <Copy SourceFiles="@(DotnetExe)" 
-          DestinationFolder="$(TestSharedFxDir)" 
-          Condition="Exists('%(RootDir)%(Directory)%(Filename)%(Extension)')" />
+          DestinationFolder="$(TestSharedFxDir)" />
     <ItemGroup>
       <LiveDotNetCliComponents Include="$(RuntimePath)\*.*" Exclude="$(RuntimePath)\xunit.console.netcore.exe" />
     </ItemGroup>
