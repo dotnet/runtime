@@ -4020,14 +4020,41 @@ send_type_load (MonoClass *klass)
 static void
 send_types_for_domain (MonoDomain *domain, void *user_data)
 {
+	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
 	info = get_agent_domain_info (domain);
 	g_assert (info);
+
+	old_domain = mono_domain_get ();
+
+	mono_domain_set (domain, TRUE);
 	
 	mono_loader_lock ();
 	g_hash_table_foreach (info->loaded_classes, emit_type_load, NULL);
 	mono_loader_unlock ();
+
+	mono_domain_set (old_domain, TRUE);
+}
+
+static void
+send_assemblies_for_domain (MonoDomain *domain, void *user_data)
+{
+	GSList *tmp;
+	MonoDomain* old_domain;
+
+	old_domain = mono_domain_get ();
+
+	mono_domain_set (domain, TRUE);
+
+	mono_domain_assemblies_lock (domain);
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly* ass = (MonoAssembly *)tmp->data;
+		emit_assembly_load (ass, NULL);
+	}
+	mono_domain_assemblies_unlock (domain);
+
+	mono_domain_set (old_domain, TRUE);
 }
 
 static void
@@ -7822,7 +7849,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */
-				mono_assembly_foreach (emit_assembly_load, NULL);
+				mono_domain_foreach (send_assemblies_for_domain, NULL);
 				break;
 			case EVENT_KIND_THREAD_START:
 				/* Emit start events for currently started threads */
