@@ -3,11 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(DistroRid)' != ''">$(DistroRid)</RuntimeOS>
+    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(OS)' == 'OSX'">osx.10.10</RuntimeOS>
+    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
+
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Linux</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <ArchGroup Condition="'$(Platform)' != ''">$(Platform)</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">$(BuildArch)</ArchGroup>
+
+
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
     <_isSupportedOSGroup>true</_isSupportedOSGroup>
