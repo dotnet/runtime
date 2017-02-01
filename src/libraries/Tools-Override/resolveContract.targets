@@ -4,7 +4,8 @@
   <PropertyGroup Condition="'$(ResolveMatchingContract)' == 'true'">
     <ResolveReferencesDependsOn>
       ResolveMatchingContract;
-      $(ResolveReferencesDependsOn)
+      $(ResolveReferencesDependsOn);
+      VerifyMatchingContract
     </ResolveReferencesDependsOn>
     <CleanDependsOn>
       ResolveMatchingContract;
@@ -14,13 +15,20 @@
 
   <Target Name="ResolveMatchingContract">
     <PropertyGroup>
-      <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(SourceDir)/$(AssemblyName)/ref')">true</HasMatchingContract>
+      <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(AssemblyName)/ref/$(AssemblyName).csproj</ContractProject>
+      <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
-      <ResolvedMatchingContract Include="$(ContractOutputPath)/$(MSBuildProjectName).dll" />
+      <!-- add contract project as project reference to get target path -->
+      <ProjectReference Include="$(ContractProject)">
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <OutputItemType>ResolvedMatchingContract</OutputItemType>
+      </ProjectReference>
     </ItemGroup>
+  </Target>
 
+  <Target Name="VerifyMatchingContract">
     <Error Condition="'$(HasMatchingContract)' == 'true' and !Exists('%(ResolvedMatchingContract.Identity)')" Text="ResolveMatchingContract could not find a matching contract '%(ResolvedMatchingContract.Identity)' not found." />
   </Target>
 </Project>
