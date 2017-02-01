@@ -9,8 +9,6 @@
     <NoWarn>CA2002</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -20,13 +18,9 @@
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net461'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)'=='uap'" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Contracts" />

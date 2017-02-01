@@ -23,7 +23,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.netfx.cs" />
-    <TargetingPackReference Include="mscorlib" />
+    <Reference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Registry" />
