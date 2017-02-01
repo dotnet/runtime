@@ -22,17 +22,18 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run build.sh in Docker container",
+      "displayName": "Run build in Docker container",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "docker",
-        "arguments": "run -t --rm --sig-proxy=true --name $(DockerContainerName) -v $(Build.SourcesDirectory):/opt/code -w /opt/code -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB chcosta/dotnetcore:rhel7_prereqs /bin/bash -c \"git clean -X -d -f; ./build.sh $(BuildArguments)\"",
-        "workingFolder": "",
+        "scriptPath": "scripts/dockerrun-as-current-user.sh",
+        "args": "-t --rm --sig-proxy=true --name $(DockerContainerName) -v $(Build.SourcesDirectory):/opt/code -w /opt/code -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB chcosta/dotnetcore:rhel7_prereqs /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh $(BuildArguments)\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
         "failOnStandardError": "false"
       }
     }
