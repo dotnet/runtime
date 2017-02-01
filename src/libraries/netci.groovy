@@ -42,7 +42,8 @@ def osShortName = ['Windows 10': 'win10',
                    'OpenSUSE42.1' : 'opensuse42.1',
                    'Fedora23' : 'fedora23',
                    'Fedora24' : 'fedora24',
-                   'RHEL7.2' : 'rhel7.2']
+                   'RHEL7.2' : 'rhel7.2',
+                   'PortableLinux' : 'portablelinux']
 
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
@@ -207,8 +208,14 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX', 'PortableLinux'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
+
+            def osForMachineAffinity = osName
+            if (osForMachineAffinity == 'PortableLinux') {
+                // Portable Linux builds happen on RHEL7.2
+                osForMachineAffinity = "RHEL7.2"
+            }
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
@@ -223,7 +230,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                         shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                        def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                 }
@@ -231,12 +239,12 @@ def buildArchConfiguration = ['Debug': 'x86',
 
             // Set the affinity.  OS name matches the machine affinity.
             if (osName == 'Windows_NT' || osName == 'OSX') {
-                Utilities.setMachineAffinity(newJob, osName, "latest-or-auto-elevated")
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
             }
             else if (osGroupMap[osName] == 'Linux') {
-                Utilities.setMachineAffinity(newJob, osName, 'outer-latest-or-auto')
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'outer-latest-or-auto')
             } else {
-                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto');
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto');
             }
 
             // Set up standard options.
