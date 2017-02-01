@@ -4530,7 +4530,6 @@ private:
     static MorphAddrContext s_CopyBlockMAC;
 
 #ifdef FEATURE_SIMD
-    GenTreePtr fgCopySIMDNode(GenTreeSIMD* simdNode);
     GenTreePtr getSIMDStructFromField(GenTreePtr tree,
                                       var_types* baseTypeOut,
                                       unsigned*  indexOut,
