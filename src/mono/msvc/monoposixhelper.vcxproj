@@ -210,6 +210,7 @@
     <ClCompile Include="..\support\crc32.c" />
     <ClCompile Include="..\support\deflate.c" />
     <ClCompile Include="..\support\errno.c" />
+    <ClCompile Include="..\support\fcntl.c" />
     <ClCompile Include="..\support\infback.c" />
     <ClCompile Include="..\support\inffast.c" />
     <ClCompile Include="..\support\inflate.c" />
@@ -224,6 +225,7 @@
     <ClCompile Include="..\support\stdio.c" />
     <ClCompile Include="..\support\stdlib.c" />
     <ClCompile Include="..\support\string.c" />
+    <ClCompile Include="..\support\sys-stat.c" />
     <ClCompile Include="..\support\trees.c" />
     <ClCompile Include="..\support\uncompr.c" />
     <ClCompile Include="..\support\zlib-helper.c" />
