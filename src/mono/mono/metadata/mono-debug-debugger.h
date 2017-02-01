@@ -1,9 +1,3 @@
-/*
- * This is a private header file.
- * The API in here is undocumented and may only be used by the JIT to
- * communicate with the debugger.
- */
-
 #ifndef __MONO_DEBUG_DEBUGGER_H__
 #define __MONO_DEBUG_DEBUGGER_H__
 
