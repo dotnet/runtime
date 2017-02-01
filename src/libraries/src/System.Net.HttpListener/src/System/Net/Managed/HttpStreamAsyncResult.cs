@@ -64,7 +64,7 @@ namespace System.Net
                     _handle.Set();
 
                 if (_callback != null)
-                    _callback.BeginInvoke(this, null, null);
+                    _callback(this);
             }
         }
 
