@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcore50-Windows_NT;
+      uapaot-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

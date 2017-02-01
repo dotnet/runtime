@@ -4,6 +4,7 @@
     <BuildConfigurations>
       netcoreapp;
       uap;
+      uapaot;
     </BuildConfigurations>
   </PropertyGroup>
 

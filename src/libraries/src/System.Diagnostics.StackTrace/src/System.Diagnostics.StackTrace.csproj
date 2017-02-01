@@ -18,15 +18,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
-    <ReferenceFromRuntime Include="System.Private.Reflection" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolBinder.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocument.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolMethod.cs" />
@@ -56,13 +53,13 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreRT.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)'=='uapaot'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
