@@ -663,11 +663,10 @@ namespace System.Globalization
         {
             get { throw new NotImplementedException(); }
         }
-        
+
         internal bool IsReplacementCulture
         {
             get { throw new NotImplementedException(); }
         }
-        
     }
 }

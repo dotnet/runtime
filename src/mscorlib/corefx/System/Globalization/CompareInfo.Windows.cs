@@ -351,7 +351,7 @@ namespace System.Globalization
 
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
-            if (source==null) { throw new ArgumentNullException(nameof(source)); }
+            if (source == null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
             if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
@@ -362,7 +362,7 @@ namespace System.Globalization
             throw new NotImplementedException();
         }
 
-        private static unsafe bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char* text, int length)
         {
             // CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
             // return (InternalIsSortable(c.m_dataHandle, c.m_handleOrigin, c.m_sortName, text, text.Length));

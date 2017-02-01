@@ -33,7 +33,7 @@ namespace System.Globalization
             // Look in the registry key and see if we can find any ranges
             int iFoundEras = 0;
             EraInfo[] registryEraRanges = null;
-            
+
             try
             {
                 // Need to access registry
@@ -59,7 +59,7 @@ namespace System.Globalization
 
                         // Remember we found one.
                         registryEraRanges[iFoundEras] = era;
-                        iFoundEras++;                        
+                        iFoundEras++;
                     }
                 }
             }
@@ -109,7 +109,7 @@ namespace System.Globalization
                 else
                 {
                     // Rest are until the next era (remember most recent era is first in array)
-                    registryEraRanges[i].maxEraYear = registryEraRanges[i-1].yearOffset + 1 - registryEraRanges[i].yearOffset;
+                    registryEraRanges[i].maxEraYear = registryEraRanges[i - 1].yearOffset + 1 - registryEraRanges[i].yearOffset;
                 }
             }
 
@@ -147,7 +147,7 @@ namespace System.Globalization
         {
             // Need inputs
             if (value == null || data == null) return null;
-            
+
             //
             // Get Date
             //
@@ -159,9 +159,9 @@ namespace System.Globalization
             int month;
             int day;
 
-            if (!Int32.TryParse(value.Substring(0,4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
-                !Int32.TryParse(value.Substring(5,2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
-                !Int32.TryParse(value.Substring(8,2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
+            if (!Int32.TryParse(value.Substring(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
+                !Int32.TryParse(value.Substring(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
+                !Int32.TryParse(value.Substring(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
             {
                 // Couldn't convert integer, fail
                 return null;
@@ -171,7 +171,7 @@ namespace System.Globalization
             // Get Strings
             //
             // Needs to be a certain length e_a_E_A at least (7 chars, exactly 4 groups)
-            String[] names = data.Split(new char[] {'_'});
+            String[] names = data.Split('_');
 
             // Should have exactly 4 parts
             // 0 - Era Name
@@ -192,18 +192,18 @@ namespace System.Globalization
             // Note that the era # and max era year need cleaned up after sorting
             // Don't use the full English Era Name (names[2])
             //
-            return new EraInfo( 0, year, month, day, year - 1, 1, 0, 
+            return new EraInfo(0, year, month, day, year - 1, 1, 0,
                                 names[0], names[1], names[3]);
         }
 
         // PAL Layer ends here
 
-        private static string[] JapaneseErasEnglishNames = new String[] { "M", "T", "S", "H" };
+        private static string[] s_japaneseErasEnglishNames = new String[] { "M", "T", "S", "H" };
 
         private static string GetJapaneseEnglishEraName(int era)
         {
             Debug.Assert(era > 0);
-            return era <= JapaneseErasEnglishNames.Length ? JapaneseErasEnglishNames[era - 1] : " ";
+            return era <= s_japaneseErasEnglishNames.Length ? s_japaneseErasEnglishNames[era - 1] : " ";
         }
     }
 }

@@ -42,7 +42,6 @@ namespace System.Globalization
         internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
         internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -52,7 +51,6 @@ namespace System.Globalization
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -318,9 +316,9 @@ namespace System.Globalization
             }
         }
 
-        internal override int GetYearInfo(int LunarYear, int Index)
+        internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
             {
                 throw new ArgumentOutOfRangeException(
                             "year",
@@ -330,7 +328,7 @@ namespace System.Globalization
             }
             Contract.EndContractBlock();
 
-            return s_yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
         }
 
         internal override int GetYear(int year, DateTime time)
@@ -362,7 +360,6 @@ namespace System.Globalization
         {
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetEra(DateTime time)
         {
             CheckTicksRange(time.Ticks);
@@ -387,7 +384,6 @@ namespace System.Globalization
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int[] Eras
         {
             get
