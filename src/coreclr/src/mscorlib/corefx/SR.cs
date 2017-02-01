@@ -595,4 +595,29 @@ internal static class SR
     {
         get { return Environment.GetResourceString("ArgumentException_ValueTupleLastArgumentNotATuple"); }
     }
+
+    internal static string SpinLock_TryEnter_ArgumentOutOfRange
+    {
+        get { return Environment.GetResourceString("SpinLock_TryEnter_ArgumentOutOfRange"); }
+    }
+
+    internal static string SpinLock_TryReliableEnter_ArgumentException
+    {
+        get { return Environment.GetResourceString("SpinLock_TryReliableEnter_ArgumentException"); }
+    }
+
+    internal static string SpinLock_TryEnter_LockRecursionException
+    {
+        get { return Environment.GetResourceString("SpinLock_TryEnter_LockRecursionException"); }
+    }
+
+    internal static string SpinLock_Exit_SynchronizationLockException
+    {
+        get { return Environment.GetResourceString("SpinLock_Exit_SynchronizationLockException"); }
+    }
+
+    internal static string SpinLock_IsHeldByCurrentThread
+    {
+        get { return Environment.GetResourceString("SpinLock_IsHeldByCurrentThread"); }
+    }
 }
