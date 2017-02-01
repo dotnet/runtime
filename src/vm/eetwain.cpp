@@ -5465,7 +5465,15 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     
     if  (info->ebpFrame)
     {
-        return PVOID(SIZE_T((DWORD(*pContext->pEbp) - info->gsCookieOffset)));
+        DWORD curEBP;
+
+#ifdef WIN64EXCEPTIONS
+        curEBP = GetCallerSp(pContext) - 2 * 4;
+#else
+        curEBP = *pContext->pEbp;
+#endif
+
+        return PVOID(SIZE_T(curEBP - info->gsCookieOffset));
     }
     else
     {
