@@ -81,6 +81,7 @@ extern "C" {
 #define IMAGE_FILE_MACHINE_I386              0x014c  // Intel 386.
 #define IMAGE_FILE_MACHINE_ARMNT             0x01c4  // ARM Thumb-2 Little-Endian
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
+#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 
 // Execution status codes used for waiting,
 // for returning current status and for
