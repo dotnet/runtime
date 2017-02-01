@@ -3,13 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <RuntimeOS Condition="'$(RuntimeOS)' == '' and '$(__DistroRid)' != ''">$(__DistroRid)</RuntimeOS>
-    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
+    <!-- Distro rid is passed as runtimeos-arch-->
+    <OSRid>win10</OSRid>
+    <_distroRidIndex>$(__DistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <OSRid Condition="'$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString($(_distroRidIndex) + 1))</ArchGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Linux</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
-    <ArchGroup Condition="'$(Platform)' != ''">$(Platform)</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(Platform)' != ''">$(Platform)</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">$(BuildArch)</ArchGroup>
 
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
