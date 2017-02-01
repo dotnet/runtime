@@ -56,10 +56,6 @@ namespace System.Threading
         public static bool enableWorkerTracking;
 
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
-
-        static ThreadPoolGlobals()
-        {
-        }
     }
 
     internal sealed class ThreadPoolWorkQueue
@@ -969,8 +965,6 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
     {
-        static QueueUserWorkItemCallback() {}
-
         private WaitCallback callback;
         private ExecutionContext context;
         private Object state;
@@ -1041,8 +1035,6 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
     {
-        static QueueUserWorkItemCallbackDefaultContext() { }
-
         private WaitCallback callback;
         private Object state;
 
@@ -1102,8 +1094,6 @@ namespace System.Threading
 
     internal class _ThreadPoolWaitOrTimerCallback
     {
-        static _ThreadPoolWaitOrTimerCallback() {}
-
         WaitOrTimerCallback _waitOrTimerCallback;
         ExecutionContext _executionContext;
         Object _state;
