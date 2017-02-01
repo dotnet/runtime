@@ -18,4 +18,5 @@
 
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
+  <Target Name="Dump" />
 </Project>
