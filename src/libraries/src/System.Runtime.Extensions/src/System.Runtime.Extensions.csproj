@@ -12,8 +12,6 @@
     <TargetsWindowsUap Condition="'$(TargetGroup)'=='uap101aot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net461-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -30,12 +28,7 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <ContractProject Include="..\ref\System.Runtime.Extensions.csproj">
-      <TargetGroup>netcoreapp</TargetGroup>
-    </ContractProject>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+  <ItemGroup>
     <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
@@ -111,7 +104,7 @@
     <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net461'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Environment.Windows.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
@@ -165,11 +158,11 @@
     </Compile>
   </ItemGroup>
   <!-- Win32 or Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'uap101aot')">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap101aot')">
     <Compile Include="System\Environment.Win32.Unix.cs" />
   </ItemGroup>
   <!-- WINDOWS: Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net461' and '$(TargetGroup)' != 'uap101aot'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap101aot'">
     <Compile Include="System\Environment.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnvironmentVariables.cs</Link>
@@ -331,14 +324,6 @@
       <Aliases>System_Security_Principal</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetsWindowsUap)' == 'true'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />

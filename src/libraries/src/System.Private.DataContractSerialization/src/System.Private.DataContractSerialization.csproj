@@ -162,7 +162,7 @@
     <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib.Augments" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib.Augments" />
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
