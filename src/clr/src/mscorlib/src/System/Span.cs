@@ -217,7 +217,8 @@ namespace System
         // TODO: https://github.com/dotnet/corefx/issues/13681
         //   Until we get over the hurdle of C# 7 tooling, this temporary method will simulate the intended "ref T" indexer for those
         //   who need bypass the workaround for performance.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894 
         public ref T GetItem(int index)
         {
             if ((uint)index >= ((uint)_length))
@@ -396,7 +397,7 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
     }
 
-    public static class SpanExtensions
+    public static class Span
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
@@ -484,6 +485,61 @@ namespace System
             return new ReadOnlySpan<TTo>(
                 ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        public static ReadOnlySpan<char> Slice(this string text)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+
+            return new ReadOnlySpan<char>(ref text.GetFirstCharRef(), text.Length);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at 'start'.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        public static ReadOnlySpan<char> Slice(this string text, int start)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), text.Length - start);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at <paramref name="start"/>, of given <paramref name="length"/>.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="length">The number of items in the span.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// </exception>
+        public static ReadOnlySpan<char> Slice(this string text, int start, int length)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
         }
     }
 
