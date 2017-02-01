@@ -18,9 +18,12 @@ External dependency Activity Id is passed along with the request, so the depende
 Activities may be created and started/stopped by platform code or frameworks; applications need to be notified about activities events and need to have access to current activity being processed.
 Therefore code which creates activity also writes corresponding event to `DiagnosticSource`:
 - DO - create new `DiagnosticListener` for specific Activity type to allow filtering by activity. E.g Incoming and Outgoing Http Requests should be different DiagnosticListeners. Follow [DiagnosticSource User Guilde](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md) to peek a name.
-- DO - Guard Activity creation and start with call to `DiagnosticSource.IsEnabled` to avoid creating activities if no one listens to them and enable event name-based filtering.
-- DO - Use `DiagnosticSource.Start(Actvity)` and `DiagnosticSource.Stop(Actvity)` (extension) methods instead of Activity methods to ensure Activity events are always written to `DiagnosticSource`.
+- DO - Guard Activity creation and start with call to `DiagnosticSource.IsEnabled` to avoid creating activities if no one listens to them and enable event name-based filtering or sampling.
+- DO - Use `DiagnosticSource.StartActivity(Actvity)` and `DiagnosticSource.StopActivity(Actvity)` methods instead of Activity methods to ensure Activity events are always written to `DiagnosticSource`.
 - DO - pass necessary context to `DiagnosticListener`, so application may enrich Activity. In case of HTTP incoming request, application needs `HttpContext` to add custom tags (method, path, user-agent, etc)
+- CONSIDER - keeping baggage as small as possible
+- DO NOT - add sensitive information to baggage, since it may be propagated out of the process boundaries
+- DO - write activity [Id](#id) with every telemetry event, ParentId, Tags and Baggage should be written at least once per operation and could be found by Id. Note that tags and baggage could be changed through the lifetime of activity, and it makes sense to write them when activity stops. Duration should only be logged when activity stops.
 
 Current Activity is exposed as statis variable and flows with async calls so in every Start/Stop event callback it is accurate and may be used to log these events.
 
@@ -36,11 +39,10 @@ Activity can be created with operation name. This is an coarse name that is usef
 
 After Activity is created you can add additional details: [Start time](#starttimeutc), [Tags](#tags) and [Baggage](#baggage)
 ```C#
-   activity.WithStartTime(highPrecisionStartTime)
-           .WithTag("Path", request.Path)
-           .WithBaggage("CorrelationId", request.Headers["x-ms-correlation-id"]);
+   activity.SetStartTime(GetHighPrecisionTimestamp())
+           .AddTag("Path", request.Path)
+           .AddBaggage("CorrelationId", request.Headers["x-ms-correlation-id"]);
 ```
-
 When activity is built, it's time to start it and continue with request processing.
 
 ## Starting and Stoping Activity
@@ -54,24 +56,29 @@ When activity is started, it assigned with an [Id](id) and [Parent](parent).
        if (httpListener.IsEnabled("Http_In"))
        {
            Activity activity = new Activity("Http_In");           
+		   activity.SetStartTime(GetHighPrecisionTimestamp())
            //add tags, baggage, etc..           
-           activity.WithParentId(context.Request.headers["x-ms-request-id"])
+           activity.SetParentId(context.Request.headers["x-ms-request-id"])
            foreach (var header in context.Request.Headers)
              if (header.Key.StartsWith("x-baggage-")
-                 activity.WithBaggage(header.Key, header.Value);
+                 activity.AddBaggage(header.Key, header.Value);
                  
-           httpListener.Start(activity, httpContext);               
+           httpListener.StartActivity(activity, httpContext);               
            try {
                //process request ...
            } finally {
+		   	   activity.SetEndTime(GetHighPrecisionTimestamp());
                //stop activity
-               httpListener.Stop(activity, highPrecisionStopTime);
+               httpListener.StopActivity(activity, highPrecisionStopTime);
            }       
        }
    }
 ```
-Note that instead of Activity.Start() and Stop() methods, in above example we call `DiagnosticSource.Start()` and `Stop()` (extension) methods that fire events to be consumed with DiagnosticListener.
-Note that Activities creation is guarded with `DiagnosticSource.IsEnabled` and will only happen if someone listens to this `DiagnosticSource` thus eliminating any unnecessary performance impact.
+**Note** 
+- instead of Activity.Start() and Stop() methods, in above example we call `DiagnosticSource.StartActivity()` and `StopActivity()` methods that write events to DiagnosticSource.
+- Activities creation is guarded with `DiagnosticSource.IsEnabled` and will only happen if someone listens to this `DiagnosticSource` thus eliminating any unnecessary performance impact.
+- DateTime.UtcNow in practice is [precise to 16 milliseconds](https://blogs.msdn.microsoft.com/ericlippert/2010/04/08/precision-and-accuracy-of-datetime/). If you are interested in better preceision, call [SetStartTime](#setstarttime) and [SetEndTime](#setendtime) with high precesion timestamp, which you may achieve with combination of DateTime and Stopwatch
+
 
 ## Creating child Activities
 When application calls external web-service, new activity is created to represent external operation. This activity may have Parent (if this request is part of incoming request processing), assigned to it during Start().
@@ -82,7 +89,7 @@ When application calls external web-service, new activity is created to represen
         if (httpListener.IsEnabled(request.RequestUri.ToString()))
         {
             var activity = new Activity("Http_Out");
-            httpListener.Start(activity, request);
+            httpListener.StartActivity(activity, request);
 
             request.Headers.Add("x-ms-request-id", activity.Id);
             foreach (var baggage in activity.Baggage)
@@ -90,8 +97,9 @@ When application calls external web-service, new activity is created to represen
             try {
                //process request ...
             } finally {
+		   	    activity.SetEndTime(GetHighPrecisionTimestamp());
                 //stop activity
-                httpListener.Stop(activity, value.Value, DateTimeStopwatch.GetTime(timestamp));
+                httpListener.StopActivity(activity, value.Value, DateTimeStopwatch.GetTime(timestamp));
             }       
         }   
     }
@@ -108,6 +116,76 @@ This follows normal [DiagnosticListener conventions](https://github.com/dotnet/c
 
 Application may also add tags and baggage to current activity when processing Activity start callback.
 Note in the [Incoming Request Sample](#starting-and-stoping-activity), we pass `HttpContext` to DiagnosticSource, so application may access request properties to enrich current activity.
+
+### Subscribe to DiagnosticSource
+```
+    DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+    {
+        if (listener.Name == "MyActivitySource")
+        {
+            listener.Subscribe(delegate (KeyValuePair<string, object> value)
+            {
+                if (value.Key.EndsWith("Start"))
+                    LogActivityStart();
+                else if (value.Key.EndsWith("Stop"))
+                    LogActivityStop();
+            });
+        }
+	}
+```
+
+### Log Events
+
+```
+	public void LogActivityStart()
+	{
+		var document = new Dictionary<string,object>
+		{
+			["Message"] = $"Activity {activity.OperationName} was started",
+			["LogLevel"] = LogLevel.Info,
+			["Id"] = activity.Id,
+			["ParentId"] = activity.ParentId,
+			["StartTime"] = activity.StartTimeUtc,
+		}
+		//log tags and baggage if needed
+		...// send document to log storage	   
+	}
+
+	public void LogActivityStop()
+	{
+		var document = new Dictionary<string,object>
+		{
+			["Message"] = $"Activity {activity.OperationName} is being stopped",
+			["LogLevel"] = LogLevel.Info,
+			["Id"] = activity.Id,
+			["ParentId"] = activity.ParentId,
+			["Duration"] = activity.Duration
+		};
+        foreach (var kv in activity.Tags)
+            document[kv.Key] = kv.Value;
+        foreach (var kv in activity.Baggage)
+            document[kv.Key] = kv.Value;
+		...// send document to log storage
+	}
+
+	public void Log(LogLevel level, string message)
+	{
+		var document = new Dictionary<string,object>
+		{
+			["Message"] = message,
+			["LogLevel"] = logLevel,
+		};
+
+	    if (Activity.Current != null)
+	    {
+			document["Id"] = activity.Id;
+			//add tags, baggage and ParentId if needed
+		}
+		...// send document to log storage
+	}
+```
+
+It's crucial that Activity Id is logged along with every event. ParentId, Tags and Baggage must be logged at least once for every activity and may be logged with every telemetry event to simplify querying and aggregation. Duration is only available after SetEndTime is called and should be logged when Activity Stop event is received.
 
 # Reference
 ## Activity
@@ -135,37 +213,39 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 
 ### ParentId
 `string ParentId { get; private set; }` - Activity may have either in-process [Parent](#parent) or Id of external Parent if it was deserialized from request. ParentId together with Id represent parent-child relationship in logs and allows to uniquely map outgoing and incoming requests.
-ParentId is implemented as a tag (see [Tags](#tags)).
 
 ### Current
 `static Activity Current { get; }` - Returns current Activity which flows across async calls
 
 ### Parent
-`public Activity Parent { get; private set; }` - If activity was created from another activity in the same process, you can get that Activity with the Parent accessor. However this can be null if the Activity is root activity or parent is from outside the process.
+`Activity Parent { get; private set; }` - If activity was created from another activity in the same process, you can get that Activity with the Parent accessor. However this can be null if the Activity is root activity or parent is from outside the process.
 
 ### Start()
-`static Activity Start(Activity activity)` - Starts Activity: sets Activity.Current and Parent for the activity.
+`Activity Start()` - Starts Activity: sets Activity.Current and Parent for the activity.
 
 ### Stop()
-`static void Stop(Activity activity, DateTime stopTimeUtc = default(DateTime))` - Stops Activity: sets Activity.Current and Diration for the activity. Uses DateTime.UtcNow by default as stopTimeUtc if not provided.
+`void Stop()` - Stops Activity: sets Activity.Current and Duration for the activity. Uses timestamp provided in [SetEndTime](#setendtime) or DateTime.UtcNow.
 
-### WithBaggage()
-`Activity WithBaggage(string key, string value)` - adds baggage item, see [Baggage](#baggage)
+### AddBaggage()
+`Activity AddBaggage(string key, string value)` - adds baggage item, see [Baggage](#baggage)
 
 ### GetBaggageItem()
 `string GetBaggageItem(string key)` - returns value of [Baggage](#baggage) key-value pair with given key, null if key does not exist
 
-### WithTag()
-`Activity WithTag(string key, string value)` - adds tag, see [Tags](#tags)
+### AddTag()
+`Activity AddTag(string key, string value)` - adds tag, see [Tags](#tags)
 
-### WithParentId()
-`Activity WithParentId(string key, string value)` - sets parent Id, see [ParentId](#parentid)
+### SetParentId()
+`Activity SetParentId(string key, string value)` - sets parent Id, see [ParentId](#parentid)
 
-### WithStartTime()
-`Activity WithStartTime(DateTime startTimeUtc)` - sets parent Id, see [StartTimeUtc](#starttimeutc)
+### SetStartTime
+`Activity SetStartTime(DateTime startTimeUtc)` - sets start time, see [StartTimeUtc](#starttimeutc)
+
+### SetEndTime
+`Activity SetEndTime(DateTime endTimeUtc)` - sets [Duration](#duration) as a difference between endTimeUtc and [StartTimeUtc](#starttimeutc)
 
 ##DiagnosticSource
-### Start
-`static Activity Start(this DiagnosticSource self, Activity activity, object args)` - Starts activity and writes DiagnosticSource event
-### Stop
-`static Activity Start(this DiagnosticSource self, string activityName, object args)` - Stops activity and writes DiagnosticSource event
+### StartActivity
+`static Activity StartActivity(Activity activity, object args)` - Starts activity and writes DiagnosticSource event message OperationName.Start with args payload
+### StopActivity
+`static Activity StopActivity(Activity activity, object args)` - Stops activity and writes DiagnosticSource event OperationName.Stop with args payload
