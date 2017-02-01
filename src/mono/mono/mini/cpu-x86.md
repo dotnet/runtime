@@ -66,7 +66,7 @@ break: len:1
 call: dest:a clob:c len:17
 tailcall: len:120 clob:c
 br: len:5
-seq_point: len:24 clob:c
+seq_point: len:26 clob:c
 il_seq_point: len:0
 
 int_beq: len:6

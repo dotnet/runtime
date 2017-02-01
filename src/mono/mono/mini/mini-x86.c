@@ -2646,9 +2646,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Load ss_tramp_var */
 				/* This is equal to &ss_trampoline */
 				x86_mov_reg_membase (code, X86_ECX, var->inst_basereg, var->inst_offset, sizeof (mgreg_t));
-				x86_alu_membase_imm (code, X86_CMP, X86_ECX, 0, 0);
+				x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof (mgreg_t));
+				x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 				br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-				x86_call_membase (code, X86_ECX, 0);
+				x86_call_reg (code, X86_ECX);
 				x86_patch (br [0], code);
 			}
 
