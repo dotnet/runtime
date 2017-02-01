@@ -11,7 +11,7 @@
     <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
   </PropertyGroup>
   
-  <ItemGroup>
+  <ItemGroup Condition="'@(BinplaceConfiguration)' == ''">
     <BinplaceConfiguration Include="$(BuildConfiguration)">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
@@ -31,20 +31,26 @@
     <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
   </Target>
 
-  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs">
+  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
     <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(TargetingPackDir.Identity)" >
+    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" >
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
-  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs">
-    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)">
+  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
+    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
-    <Copy Condition="'@(RuntimeDir)' != '' And Exists($(TargetPath.Replace('.dll', '.pdb')))" SourceFiles="$(TargetPath.Replace('.dll', '.pdb'))" DestinationFolder="%(RuntimeDir.Identity)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
+  </Target>
+
+  <Target Name="GetBinplaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <BinplaceItem Condition="Exists('$(TargetPath)')" Include="$(TargetPath)" />
+      <BinplaceItem Condition="Exists('$(TargetDir)$(TargetName).pdb')" Include="$(TargetDir)$(TargetName).pdb" />
+      <BinplaceItem Condition="'$(BinplaceReferenceCopyLocalPaths)' != 'false'" Include="@(ReferenceCopyLocalPaths)" />
+      <BinplaceItem Condition="'$(BinplaceCopyToOutputDirectoryItems)' != 'false'" Include="@(AllItemsFullPathWithTargetPath)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="GetBinplaceDirs" DependsOnTargets="GetBuildConfigurations">

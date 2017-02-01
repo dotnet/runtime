@@ -1,10 +1,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
   <PropertyGroup>
-    <!-- HACK to work around binplacing issue right now for depproj's -->
-    <IsRuntimeAssembly>false</IsRuntimeAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
     <IntermediateOutputPath>$(IntermediateOutputPath)$(ArchGroup)/</IntermediateOutputPath>
     <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
   </PropertyGroup>

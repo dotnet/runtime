@@ -2,9 +2,9 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <IsReferenceAssembly>true</IsReferenceAssembly>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
-    <OutputPath>$(RefRootPath)/$(TargetGroup)</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(NuGetTargetMoniker)' == '.NETFramework,Version=v4.6.3'">
     <!-- Missing 4.6.3 targeting pack, use 462 for now -->
@@ -14,9 +14,15 @@
     <!-- For things not .NETFramework we need the net461 targeting pack to generate facades -->
     <NuGetTargetMoniker>.NETFramework,Version=v4.6.1</NuGetTargetMoniker>
     <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.6.1</TargetingPackNugetPackageId>
-    <OutputPath>$(NetFxRefPath)</OutputPath>
     <ForShims>true</ForShims>
   </PropertyGroup>
+  <ItemGroup>
+    <BinplaceConfiguration Include="$(Configuration)">
+      <RefPath Condition="'$(ForShims)' != 'true'">$(RefPath)</RefPath>
+      <RefPath Condition="'$(ForShims)' == 'true'">$(NetFxRefPath)</RefPath>
+    </BinplaceConfiguration>
+  </ItemGroup>
+
   <!-- Filter the targeting pack to just these assemblies which we need netcoreapp shims for -->
   <ItemGroup>
     <TargetingPackReference Include="mscorlib" />
