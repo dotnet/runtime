@@ -48,7 +48,7 @@ usage()
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
     echo "buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
-
+    echo "msbuildonunsupportedplatform"
     exit 1
 }
 
@@ -304,42 +304,46 @@ isMSBuildOnNETCoreSupported()
 
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
-            case "$__HostDistroRid" in
-                "centos.7-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "debian.8-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.23-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.24-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "opensuse.13.2-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "opensuse.42.1-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "rhel.7"*"-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.14.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.10-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "alpine.3.4.3-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                *)
-            esac
+            if [ "$__msbuildonunsupportedplatform" == "1" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            else
+                case "$__HostDistroRid" in
+                    "centos.7-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "debian.8-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "fedora.23-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "fedora.24-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "opensuse.13.2-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "opensuse.42.1-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "rhel.7"*"-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "ubuntu.14.04-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "ubuntu.16.04-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "ubuntu.16.10-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    "alpine.3.4.3-x64")
+                        __isMSBuildOnNETCoreSupported=1
+                        ;;
+                    *)
+                esac
+            fi
         elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
@@ -558,6 +562,7 @@ __cmakeargs=""
 __SkipGenerateVersion=0
 __DoCrossArchBuild=0
 __PortableLinux=0
+__msbuildonunsupportedplatform=0
 
 while :; do
     if [ $# -le 0 ]; then
@@ -727,6 +732,9 @@ while :; do
             ;;
         buildstandalonegc)
             __cmakeargs="-DFEATURE_STANDALONE_GC=1"
+            ;;
+        msbuildonunsupportedplatform)
+            __msbuildonunsupportedplatform=1
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
