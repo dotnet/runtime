@@ -135,8 +135,11 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Type ReflectionOnlyGetType(String typeName, bool throwIfNotFound, bool ignoreCase) 
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwIfNotFound, ignoreCase, true /*reflectionOnly*/, ref stackMark);
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
+            if (typeName.Length == 0 && throwIfNotFound)
+                throw new TypeLoadException(Environment.GetResourceString("Arg_TypeLoadNullStr"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyGetType"));
         }
 
         public virtual Type MakePointerType() { throw new NotSupportedException(); }
