@@ -346,14 +346,17 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult BuildProjectsForNuGetPackages(BuildTargetContext c)
         {
-            if (CurrentPlatform.IsWindows)
-            {
-                var configuration = c.BuildContext.Get<string>("Configuration");
+            var configuration = c.BuildContext.Get<string>("Configuration");
 
-                // build projects for nuget packages
-                var packagingOutputDir = Path.Combine(Dirs.Intermediate, "forPackaging");
-                Mkdirp(packagingOutputDir);
-                foreach (var project in PackageTargets.ProjectsToPack)
+            // build projects for nuget packages
+            var packagingOutputDir = Path.Combine(Dirs.Intermediate, "forPackaging");
+            Mkdirp(packagingOutputDir);
+
+            foreach (var project in PackageTargets.ProjectsToPack)
+            {
+                var pathToProjectRoot = Path.Combine(c.BuildContext.BuildDirectory, "src", project);
+
+                foreach (var framework in FilterToBuildableFrameworks(GetFrameworksFromProjectJson(Path.Combine(pathToProjectRoot, "project.json"))))
                 {
                     // Just build them, we'll pack later
                     var packBuildResult = DotNetCli.Stage0.Build(
@@ -361,10 +364,12 @@ namespace Microsoft.DotNet.Host.Build
                         packagingOutputDir,
                         "--configuration",
                         configuration,
-                        Path.Combine(c.BuildContext.BuildDirectory, "src", project))
+                        "--framework",
+                        framework,
+                        pathToProjectRoot)
                         .Execute();
 
-                    packBuildResult.EnsureSuccessful();
+                        packBuildResult.EnsureSuccessful();
                 }
             }
 
@@ -520,6 +525,33 @@ namespace Microsoft.DotNet.Host.Build
             sharedFrameworkPublisher.CopyHostFxrToVersionedDirectory(outputDir, hostFxrVersion);
 
             return c.Success();
+        }
+
+        private static IEnumerable<string> FilterToBuildableFrameworks(IEnumerable<string> frameworks)
+        {
+            if (CurrentPlatform.IsWindows)
+            {
+                return frameworks;
+            }
+
+            // On non windows platforms, we can not depend on reference assemblies for net4X projects being around, just build netstandard and netcoreapp configurations.
+            return frameworks.Where(f => f.StartsWith("netstandard", StringComparison.Ordinal) || f.StartsWith("netcoreapp", StringComparison.Ordinal));
+        }
+
+        private static IEnumerable<string> GetFrameworksFromProjectJson(string projectJsonPath)
+        {
+            using (TextReader projectFileReader = File.OpenText(projectJsonPath))
+            {
+                var projectJsonReader = new JsonTextReader(projectFileReader);
+                var serializer = new JsonSerializer();
+                var project = serializer.Deserialize<JObject>(projectJsonReader);
+
+                var frameworksSection = project.Value<JObject>("frameworks");
+                foreach (var framework in frameworksSection.Properties())
+                {
+                    yield return framework.Name;
+                }
+            }
         }
     }
 }
