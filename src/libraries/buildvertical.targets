@@ -12,7 +12,7 @@
 
   <!-- Runs during traversal when BuildAllConfigurations is set to expand each project
        to a seperate instance for each of its BuildConfigurations -->
-  <Target Name="ExpandAllBuildConfigurations" 
+  <Target Name="ExpandAllBuildConfigurations"
           Condition="'$(BuildAllConfigurations)' == 'true'">
     <MSBuild Targets="GetBuildConfigurations"
              Projects="@(Project)"
@@ -34,7 +34,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- Runs during traversal to select which projects and configurations of those projects to build 
+  <!-- Runs during traversal to select which projects and configurations of those projects to build
        Batches over the projects because we need to treat BuildConfigurations as a Property
        as well as copy the Project based on results of FindBestConfigurations. -->
   <Target Name="FilterBuildConfiguration"
@@ -88,6 +88,15 @@
              Projects="@(ProjectReference)">
       <Output TaskParameter="TargetOutputs" PropertyName="_projectReferenceBuildConfigurations" />
     </MSBuild>
+
+    <PropertyGroup>
+      <!--
+        When building in VS or using the solution file Configuration for some projects is set to Debug/Release
+        in such cases we should treat it as an empty configuration and set it to be $BuildConfiguration for the
+        purposes of annotating project references.
+      -->
+      <Configuration Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">$(BuildConfiguration)</Configuration>
+    </PropertyGroup>
 
     <!-- Find the best configuration for the current Project's Configuration -->
     <FindBestConfigurations Properties="@(Property)"
