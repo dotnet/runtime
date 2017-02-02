@@ -164,9 +164,10 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
 		ppc_ldptr (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
-		ppc_load_multiple_regs (code, ppc_r13, G_STRUCT_OFFSET (MonoContext, regs), ctx_reg);	\
-		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
-			ppc_lfd (code, (14 + reg),	\
+		ppc_load_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG,	\
+			G_STRUCT_OFFSET (MonoContext, regs) + MONO_PPC_FIRST_SAVED_GREG * sizeof (gpointer), ctx_reg);	\
+		for (reg = MONO_PPC_FIRST_SAVED_FREG; reg < MONO_MAX_FREGS; ++reg) {	\
+			ppc_lfd (code, reg,	\
 				G_STRUCT_OFFSET(MonoContext, fregs) + reg * sizeof (gdouble), ctx_reg);	\
 		}	\
 	} while (0)
@@ -226,7 +227,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
-#define SAVED_REGS_LENGTH		(sizeof (gdouble) * MONO_SAVED_FREGS + sizeof (gpointer) * MONO_SAVED_GREGS)
+#define SAVED_REGS_LENGTH		(sizeof (gdouble) * MONO_MAX_FREGS + sizeof (gpointer) * MONO_MAX_IREGS)
 #define ALIGN_STACK_FRAME_SIZE(s)	(((s) + MONO_ARCH_FRAME_ALIGNMENT - 1) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1))
 /* The 64 bytes here are for outgoing arguments and a bit of spare.
    We don't use it all, but it doesn't hurt. */
@@ -237,12 +238,13 @@ emit_save_saved_regs (guint8 *code, int pos)
 {
 	int i;
 
-	for (i = 31; i >= 14; --i) {
+	for (i = MONO_MAX_FREGS - 1; i >= MONO_PPC_FIRST_SAVED_FREG; --i) {
 		pos -= sizeof (gdouble);
 		ppc_stfd (code, i, pos, ppc_sp);
 	}
+	pos -= (MONO_MAX_FREGS - MONO_SAVED_FREGS) * sizeof (gdouble);
 	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
-	ppc_store_multiple_regs (code, ppc_r13, pos, ppc_sp);
+	ppc_store_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG, pos, ppc_sp);
 
 	return code;
 }
@@ -295,12 +297,13 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	/* restore all the regs from the stack */
 	pos = alloc_size;
-	for (i = 31; i >= 14; --i) {
+	for (i = MONO_MAX_FREGS - 1; i >= MONO_PPC_FIRST_SAVED_FREG; --i) {
 		pos -= sizeof (gdouble);
 		ppc_lfd (code, i, pos, ppc_sp);
 	}
+	pos -= (MONO_MAX_FREGS - MONO_SAVED_FREGS) * sizeof (gdouble);
 	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
-	ppc_load_multiple_regs (code, ppc_r13, pos, ppc_sp);
+	ppc_load_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG, pos, ppc_sp);
 
 	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
 	ppc_blr (code);
@@ -329,8 +332,8 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
-	memcpy (&ctx.regs, int_regs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
-	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&ctx.regs, int_regs, sizeof (mgreg_t) * MONO_MAX_IREGS);
+	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_MAX_FREGS);
 
 	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -412,10 +415,10 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
 	/* pointer to the saved fp regs */
-	pos = alloc_size - sizeof (gdouble) * MONO_SAVED_FREGS;
+	pos = alloc_size - sizeof (gdouble) * MONO_MAX_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);
 	/* pointer to the saved int regs */
-	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
+	pos -= sizeof (gpointer) * MONO_MAX_IREGS;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
 
@@ -546,8 +549,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (!ji->is_trampoline && jinfo_get_method (ji)->save_lmf) {
 			/* sframe->sp points just past the end of the LMF */
 			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
-			memcpy (&new_ctx->fregs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
-			memcpy (&new_ctx->regs, lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (mgreg_t) * MONO_SAVED_GREGS);
+			memcpy (&new_ctx->fregs [MONO_PPC_FIRST_SAVED_FREG], lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);
+			memcpy (&new_ctx->regs [MONO_PPC_FIRST_SAVED_GREG], lmf_addr + G_STRUCT_OFFSET (MonoLMF, iregs), sizeof (mgreg_t) * MONO_SAVED_GREGS);
 			/* the calling IP is in the parent frame */
 			sframe = (MonoPPCStackFrame*)sframe->sp;
 			/* we substract 4, so that the IP points into the call instruction */
@@ -555,8 +558,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		} else {
 			regs [ppc_lr] = ctx->sc_ir;
 			regs [ppc_sp] = ctx->sc_sp;
-			for (i = 0; i < MONO_SAVED_GREGS; ++i)
-				regs [ppc_r13 + i] = ctx->regs [i];
+			for (i = MONO_PPC_FIRST_SAVED_GREG; i < MONO_MAX_IREGS; ++i)
+				regs [i] = ctx->regs [i];
 
 			mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 							   (guint8*)ji->code_start + ji->code_size,
@@ -567,8 +570,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			MONO_CONTEXT_SET_IP (new_ctx, regs [ppc_lr] - 4);
 			MONO_CONTEXT_SET_BP (new_ctx, cfa);
 
-			for (i = 0; i < MONO_SAVED_GREGS; ++i)
-				new_ctx->regs [i] = regs [ppc_r13 + i];
+			for (i = MONO_PPC_FIRST_SAVED_GREG; i < MONO_MAX_IREGS; ++i)
+				new_ctx->regs [i] = regs [i];
 		}
 
 		return TRUE;
@@ -588,8 +591,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);*/
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
-		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
-		memcpy (&new_ctx->fregs, (*lmf)->fregs, sizeof (double) * MONO_SAVED_FREGS);
+		memcpy (&new_ctx->regs [MONO_PPC_FIRST_SAVED_GREG], (*lmf)->iregs, sizeof (mgreg_t) * MONO_SAVED_GREGS);
+		memcpy (&new_ctx->fregs [MONO_PPC_FIRST_SAVED_FREG], (*lmf)->fregs, sizeof (double) * MONO_SAVED_FREGS);
 
 		frame->ji = ji;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;

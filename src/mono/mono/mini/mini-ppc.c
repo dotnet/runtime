@@ -5810,9 +5810,7 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	if (reg == ppc_r1)
 		return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 
-	g_assert (reg >= ppc_r13);
-
-	return ctx->regs [reg - ppc_r13];
+	return ctx->regs [reg];
 }
 
 guint32
