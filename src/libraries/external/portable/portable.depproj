@@ -13,5 +13,4 @@
     </BinplaceConfiguration>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Target Name="FilterTargetingPackResolvedNugetPackages" />
 </Project>
