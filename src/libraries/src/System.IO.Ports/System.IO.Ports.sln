@@ -1,67 +1,50 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26127.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Ports", "src\System.IO.Ports.csproj", "{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{CFF63FA4-95A1-4048-B1CE-74F3F38361D2}"
-	ProjectSection(SolutionItems) = preProject
-		ref\Configurations.props = ref\Configurations.props
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2DE17EC6-726E-4CF1-A0AE-7B2C35B8FCF8}"
-	ProjectSection(SolutionItems) = preProject
-		src\Configurations.props = src\Configurations.props
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8A2DC1F0-EC43-4B84-88DF-5D2FBF3EADC8}"
-	ProjectSection(SolutionItems) = preProject
-		tests\Configurations.props = tests\Configurations.props
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Ports", "ref\System.IO.Ports.csproj", "{16BA89AC-D2BC-452B-845B-7B2BF2344111}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Ports.Tests", "tests\System.IO.Ports.Tests.csproj", "{4259DCE9-3480-40BB-B08A-64A2D446264B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{73710F6E-9783-475F-B240-17E2BDC34985}"
-	ProjectSection(SolutionItems) = preProject
-		pkg\System.IO.Ports.builds = pkg\System.IO.Ports.builds
-		pkg\System.IO.Ports.pkgproj = pkg\System.IO.Ports.pkgproj
+	ProjectSection(ProjectDependencies) = postProject
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E} = {187503F4-BEF9-4369-A1B2-E3DC5D564E4E}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Ports", "src\System.IO.Ports.csproj", "{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC} = {75DE4259-43BB-4067-9F30-3AC920D51AEC}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Ports", "ref\System.IO.Ports.csproj", "{75DE4259-43BB-4067-9F30-3AC920D51AEC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		netstandard-Debug|Any CPU = netstandard-Debug|Any CPU
-		netstandard-Release|Any CPU = netstandard-Release|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.netstandard-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.netstandard-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.netstandard-Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111}.netstandard-Release|Any CPU.Build.0 = Debug|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{4259DCE9-3480-40BB-B08A-64A2D446264B}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{4259DCE9-3480-40BB-B08A-64A2D446264B}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E} = {2DE17EC6-726E-4CF1-A0AE-7B2C35B8FCF8}
-		{16BA89AC-D2BC-452B-845B-7B2BF2344111} = {CFF63FA4-95A1-4048-B1CE-74F3F38361D2}
-		{4259DCE9-3480-40BB-B08A-64A2D446264B} = {8A2DC1F0-EC43-4B84-88DF-5D2FBF3EADC8}
+		{4259DCE9-3480-40BB-B08A-64A2D446264B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{187503F4-BEF9-4369-A1B2-E3DC5D564E4E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{75DE4259-43BB-4067-9F30-3AC920D51AEC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal
