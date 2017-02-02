@@ -11,23 +11,23 @@
 **
 =============================================================================*/
 
-namespace System {
-[Serializable]
-    [AttributeUsage (AttributeTargets.All, Inherited=true, AllowMultiple=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class CLSCompliantAttribute : Attribute 
+namespace System
+{
+    [Serializable]
+    [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
+    public sealed class CLSCompliantAttribute : Attribute
     {
-        private bool m_compliant;
+        private bool _compliant;
 
-        public CLSCompliantAttribute (bool isCompliant)
+        public CLSCompliantAttribute(bool isCompliant)
         {
-            m_compliant = isCompliant;
+            _compliant = isCompliant;
         }
-        public bool IsCompliant 
+        public bool IsCompliant
         {
-            get 
+            get
             {
-                return m_compliant;
+                return _compliant;
             }
         }
     }

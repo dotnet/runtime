@@ -9,31 +9,31 @@
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System.Runtime.Serialization;
+
+namespace System
+{
     [Serializable]
-    public class MethodAccessException : MemberAccessException {
-        public MethodAccessException() 
-            : base(Environment.GetResourceString("Arg_MethodAccessException")) {
-            SetErrorCode(__HResults.COR_E_METHODACCESS);
-        }
-    
-        public MethodAccessException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_METHODACCESS);
-        }
-    
-        public MethodAccessException(String message, Exception inner) 
-            : base(message, inner) {
-            SetErrorCode(__HResults.COR_E_METHODACCESS);
+    public class MethodAccessException : MemberAccessException
+    {
+        public MethodAccessException()
+            : base(SR.Arg_MethodAccessException)
+        {
+            HResult = __HResults.COR_E_METHODACCESS;
         }
 
-        protected MethodAccessException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public MethodAccessException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_METHODACCESS;
         }
 
+        public MethodAccessException(String message, Exception inner)
+            : base(message, inner)
+        {
+            HResult = __HResults.COR_E_METHODACCESS;
+        }
+
+        protected MethodAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }
