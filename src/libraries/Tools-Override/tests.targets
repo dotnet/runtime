@@ -246,10 +246,8 @@
   </Target>
 
   <Target Name="CheckTestPlatforms">
-    <GetTargetMachineInfo Condition="'$(TargetOS)' == ''">
-      <Output TaskParameter="TargetOS" PropertyName="TargetOS" />
-    </GetTargetMachineInfo>
     <PropertyGroup>
+      <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
       <TestDisabled Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)' Or '$(ConfigurationErrorMsg)' != ''">true</TestDisabled>
     </PropertyGroup>
     <Message Text="CheckTestPlatforms found TargetOS of [$(TargetOS)]." Importance="Low" />

@@ -263,10 +263,10 @@
     </ItemGroup>
     <!-- Windows Exec command requires DOS escaping for the percent sign since it secretly runs the process in a shell instead of calling createprocess. -->
     <PropertyGroup>
-      <LatestDateCommand Condition="'$(OsEnvironment)'=='Windows_NT'">git show -s --format=^%25%25cd --date=short HEAD</LatestDateCommand>
-      <LatestDateCommand Condition="'$(OsEnvironment)'!='Windows_NT'">git show -s --format=%25cd --date=short HEAD</LatestDateCommand>
+      <LatestDateCommand Condition="'$(RunningOnUnix)'!='true'">git show -s --format=^%25%25cd --date=short HEAD</LatestDateCommand>
+      <LatestDateCommand Condition="'$(RunningOnUnix)'=='true'">git show -s --format=%25cd --date=short HEAD</LatestDateCommand>
     </PropertyGroup>
-      
+
     <Exec Command="$(LatestDateCommand)" StandardOutputImportance="Low" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="VersionSeedDate" />
       <Output TaskParameter="ExitCode" PropertyName="LatestDateCommandExitCode" />
