@@ -8220,6 +8220,19 @@
     </Type>
     <Type Name="System.Threading.IOCompletionCallback">
     </Type>
+    <Type Name="System.Threading.PreAllocatedOverlapped">
+      <Member Name="#ctor(System.Threading.IOCompletionCallback,System.Object,System.Object)" />
+      <Member Name="Dispose" />
+    </Type>
+    <Type Name="System.Threading.ThreadPoolBoundHandle">
+      <Member Name="get_Handle" />
+      <Member Name="AllocateNativeOverlapped(System.Threading.IOCompletionCallback,System.Object,System.Object)" />
+      <Member Name="AllocateNativeOverlapped(System.Threading.PreAllocatedOverlapped)" />
+      <Member Name="BindHandle(System.Runtime.InteropServices.SafeHandle)" />
+      <Member Name="Dispose" />
+      <Member Name="FreeNativeOverlapped(System.Threading.NativeOverlapped*)" />
+      <Member Name="GetNativeOverlappedState(System.Threading.NativeOverlapped*)" />
+    </Type>
     <Type Name="System.Threading.RegisteredWaitHandle">
       <Member Name="Unregister(System.Threading.WaitHandle)" />
       <Member Status="ImplRoot" Name="SetHandle(System.IntPtr)" />
