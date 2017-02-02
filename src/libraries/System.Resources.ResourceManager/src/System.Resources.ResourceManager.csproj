@@ -3,19 +3,19 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'uap101aot'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'uap101aot'">None</ResourcesSourceOutputDirectory>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
-    <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'uap101aot'">true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'uapaot'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'uapaot'">None</ResourcesSourceOutputDirectory>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uapaot'">true</SkipCommonResourcesIncludes>
+    <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'uapaot'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101aot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\Resources\MissingManifestResourceException.cs" />
     <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" />
     <Compile Include="System\Resources\ResourceManager.cs" />
@@ -26,10 +26,13 @@
     <Compile Include="$(CommonPath)\System\SR.Core.cs">
       <Link>Common\System\SR.Core.cs</Link>
     </Compile>
-    <ReferenceFromRuntime Include="System.Private.CoreLib.WinRTInterop" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
+    <Reference Include="System.Resources.Reader" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Reference Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
