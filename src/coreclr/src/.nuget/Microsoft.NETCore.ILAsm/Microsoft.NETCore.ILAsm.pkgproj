@@ -4,11 +4,14 @@
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>  
-    <IsLineupPackage>true</IsLineupPackage>
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <ProjectReference Include="..\Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.pkgproj" />
+  <ItemGroup Condition="'$(IsLineupPackage)' == 'true'">
+    <ProjectReference Include="..\Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.pkgproj" >
+      <!-- we should look at moving this into packaging.targets instead of having to carry this around for every pkgproj project reference -->
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);IsLineupPackage=false</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
   
   <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
