@@ -73,12 +73,17 @@
   </Target>
 
   <Target Name="MarkReferencePrivateFalse"
-          BeforeTargets="ResolveAssemblyReferences">
+          BeforeTargets="ResolveAssemblyReferences;AssignProjectConfiguration">
     <ItemGroup>
-      <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to outpu -->
+      <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to output -->
       <Reference Condition="'%(Reference.Extension)' != '.dll'">
         <Private>false</Private>
       </Reference>
+
+      <!-- Project references for non-test assemblies should never be copied to the output. -->
+      <ProjectReference Condition="'$(IsTestProject)' != 'true'">
+        <Private>false</Private>
+      </ProjectReference>
     </ItemGroup>
   </Target>
 
