@@ -150,7 +150,7 @@
       See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
     -->
     <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(OSEnvironment)</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
