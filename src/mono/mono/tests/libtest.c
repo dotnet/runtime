@@ -34,7 +34,7 @@ typedef int (STDCALL *SimpleDelegate) (int a);
 #if defined(WIN32) && defined (_MSC_VER)
 #define LIBTEST_API __declspec(dllexport)
 #elif defined(__GNUC__)
-#define LIBTEST_API  __attribute__ ((visibility ("default")))
+#define LIBTEST_API  __attribute__ ((__visibility__ ("default")))
 #else
 #define LIBTEST_API
 #endif
@@ -3577,7 +3577,7 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
  */
 
 #if defined(__GNUC__) && ((defined(__i386__) && (defined(__linux__) || defined (__APPLE__)) || defined (__FreeBSD__) || defined(__OpenBSD__)) || (defined(__ppc__) && defined(__APPLE__)))
-#define ALIGN(size) __attribute__ ((aligned(size)))
+#define ALIGN(size) __attribute__ ((__aligned__(size)))
 #else
 #define ALIGN(size)
 #endif

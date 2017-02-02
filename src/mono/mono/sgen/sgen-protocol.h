@@ -83,7 +83,7 @@ enum {
 #define PROTOCOL_PACK_STRUCTS
 
 #if defined(__GNUC__)
-#define PROTOCOL_STRUCT_ATTR __attribute__ ((packed))
+#define PROTOCOL_STRUCT_ATTR __attribute__ ((__packed__))
 #else
 #define PROTOCOL_STRUCT_ATTR
 #endif

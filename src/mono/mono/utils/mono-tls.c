@@ -58,7 +58,7 @@
 #if defined(PIC)
 
 #ifdef PIC_INITIAL_EXEC
-#define MONO_TLS_FAST __attribute__((tls_model("initial-exec")))
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("initial-exec")))
 #else
 #if defined (__powerpc__)
 /* local dynamic requires a call to __tls_get_addr to look up the
@@ -70,13 +70,13 @@
    For now we will disable this. */
 #define MONO_TLS_FAST
 #else
-#define MONO_TLS_FAST __attribute__((tls_model("local-dynamic")))
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("local-dynamic")))
 #endif
 #endif
 
 #else
 
-#define MONO_TLS_FAST __attribute__((tls_model("local-exec")))
+#define MONO_TLS_FAST __attribute__ ((__tls_model__("local-exec")))
 
 #endif
 

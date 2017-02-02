@@ -41,7 +41,7 @@
 #ifdef KRAIT_IT_BUG_WORKAROUND
 #define MONO_SIGNAL_HANDLER_FUNC(access, name, arglist)		\
 	static void __krait_ ## name arglist;	\
-	__attribute__ ((naked)) access void				\
+	__attribute__ ((__naked__)) access void				\
 	name arglist							\
 	{								\
 		asm volatile (						\
@@ -52,7 +52,7 @@
 				  "b __krait_" # name			\
 				  "\n\t");						\
 	}	\
-	static __attribute__((used)) void __krait_ ## name arglist
+	static __attribute__ ((__used__)) void __krait_ ## name arglist
 #endif
 
 /* Don't use this */

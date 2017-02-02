@@ -268,7 +268,7 @@ typedef struct {
 	char	xx : 4;
 	char	r3 : 4;
 	char	r4 : 4;
-} __attribute__ ((packed)) RRD_Format;
+} __attribute__ ((__packed__)) RRD_Format;
 
 typedef struct {
 	short	op;
@@ -346,7 +346,7 @@ typedef struct {
 	int 	b2 : 4;
 	int	d2 : 20;
 	char	op2;
-} __attribute__ ((packed)) RXY_Format;
+} __attribute__ ((__packed__)) RXY_Format;
 
 typedef struct {
 	char 	op;
@@ -381,7 +381,7 @@ typedef struct {
 	short	dl2 : 12;
 	char	dh2;
 	char 	op2;
-} __attribute__ ((packed)) RSY_Format_1;
+} __attribute__ ((__packed__)) RSY_Format_1;
 
 typedef struct {
 	char 	op1;
@@ -391,7 +391,7 @@ typedef struct {
 	short	dl2 : 12;
 	char	dh2;
 	char 	op2;
-} __attribute__ ((packed)) RSY_Format_2;
+} __attribute__ ((__packed__)) RSY_Format_2;
 
 typedef struct {
 	char 	op1;
@@ -401,21 +401,21 @@ typedef struct {
 	short	d1 : 12;
 	char	yy;
 	char 	op2;
-} __attribute__ ((packed)) RSL_Format;
+} __attribute__ ((__packed__)) RSL_Format;
 
 typedef struct {
 	char 	op;
 	char	r1 : 4;
 	char	r3 : 4;
 	short	i2;
-} __attribute__ ((packed)) RSI_Format;
+} __attribute__ ((__packed__)) RSI_Format;
 
 typedef struct {
 	char 	op1;
 	char	m1 : 4;
 	char	op2 : 4;
 	short	i2;
-} __attribute__ ((packed)) RI_Format;
+} __attribute__ ((__packed__)) RI_Format;
 
 typedef struct {
 	char 	op1;
@@ -424,7 +424,7 @@ typedef struct {
 	short	i2;
 	char	xx;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_1;
+} __attribute__ ((__packed__)) RIE_Format_1;
 
 typedef struct {
 	char 	op1;
@@ -434,7 +434,7 @@ typedef struct {
 	char	m2 : 4;
 	char    xx : 4;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_2;
+} __attribute__ ((__packed__)) RIE_Format_2;
 
 typedef struct {
 	char 	op1;
@@ -443,7 +443,7 @@ typedef struct {
 	short	d;
 	char	i;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_3;
+} __attribute__ ((__packed__)) RIE_Format_3;
 
 typedef struct {
 	char 	op1;
@@ -453,7 +453,7 @@ typedef struct {
 	char	m3 : 4;
 	char	xx : 4;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_4;
+} __attribute__ ((__packed__)) RIE_Format_4;
 
 typedef struct {
 	char 	op1;
@@ -462,7 +462,7 @@ typedef struct {
 	short	ri2;
 	char	xx;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_5;
+} __attribute__ ((__packed__)) RIE_Format_5;
 
 typedef struct {
 	char 	op1;
@@ -472,7 +472,7 @@ typedef struct {
 	char	i4;
 	char	i5;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_6;
+} __attribute__ ((__packed__)) RIE_Format_6;
 
 typedef struct {
 	char 	op1;
@@ -481,7 +481,7 @@ typedef struct {
 	short	i2;
 	char	xx;
 	char	op2;
-} __attribute__ ((packed)) RIE_Format_7;
+} __attribute__ ((__packed__)) RIE_Format_7;
 
 typedef struct {
 	char	op1;
@@ -491,21 +491,21 @@ typedef struct {
 	int	d4 : 12;
 	char	i2;
 	char	op2;
-} __attribute__ ((packed)) RIS_Format;
+} __attribute__ ((__packed__)) RIS_Format;
 
 typedef struct {
 	char 	op1;
 	char	r1 : 4;
 	char	op2 : 4;
 	int	i2;
-} __attribute__ ((packed)) RIL_Format_1;
+} __attribute__ ((__packed__)) RIL_Format_1;
 
 typedef struct {
 	char 	op1;
 	char	m1 : 4;
 	char	op2 : 4;
 	int	i2;
-} __attribute__ ((packed)) RIL_Format_2;
+} __attribute__ ((__packed__)) RIL_Format_2;
 
 typedef struct {
 	short	op1;
@@ -516,21 +516,21 @@ typedef struct {
 	char	m3 : 4;
 	char	xx : 4;
 	char	op2;
-} __attribute__ ((packed)) RXE_Format;
+} __attribute__ ((__packed__)) RXE_Format;
 
 typedef struct {
 	char	op;
 	char	i2;
 	short	b1 : 4;
 	short	d1 : 12;
-} __attribute__ ((packed)) SI_Format;
+} __attribute__ ((__packed__)) SI_Format;
 
 typedef struct {
 	short	op;
 	char	b1 : 4;
 	short	d1 : 12;
 	short	i2;
-} __attribute__ ((packed)) SIL_Format;
+} __attribute__ ((__packed__)) SIL_Format;
 
 typedef struct {
 	char	op1;
@@ -538,7 +538,7 @@ typedef struct {
 	char	b1 : 4;
 	int	d1 : 20;
 	char	op2;
-} __attribute__ ((packed)) SIY_Format;
+} __attribute__ ((__packed__)) SIY_Format;
 
 typedef struct {
 	char	op1;
@@ -547,13 +547,13 @@ typedef struct {
 	short	b3 : 4;
 	short	d3 : 12;
 	short	ri2;
-} __attribute__ ((packed)) SMI_Format;
+} __attribute__ ((__packed__)) SMI_Format;
 
 typedef struct {
 	short	op;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) S_Format;
+} __attribute__ ((__packed__)) S_Format;
 
 typedef struct {
 	char	op;
@@ -562,7 +562,7 @@ typedef struct {
 	short	d1 : 12;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) SS_Format_1;
+} __attribute__ ((__packed__)) SS_Format_1;
 
 typedef struct {
 	char	op;
@@ -572,7 +572,7 @@ typedef struct {
 	short	d1 : 12;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) SS_Format_2;
+} __attribute__ ((__packed__)) SS_Format_2;
 
 typedef struct {
 	char	op;
@@ -582,7 +582,7 @@ typedef struct {
 	short	d1 : 12;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) SS_Format_3;	
+} __attribute__ ((__packed__)) SS_Format_3;	
 
 typedef struct {
 	char	op;
@@ -592,7 +592,7 @@ typedef struct {
 	short	d2 : 12;
 	short	b4 : 4;
 	short	d4 : 12;
-} __attribute__ ((packed)) SS_Format_4;	
+} __attribute__ ((__packed__)) SS_Format_4;	
 
 typedef struct {
 	short	op;
@@ -600,7 +600,7 @@ typedef struct {
 	short	d1 : 12;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) SSE_Format;
+} __attribute__ ((__packed__)) SSE_Format;
 
 typedef struct {
 	short	op;
@@ -610,7 +610,7 @@ typedef struct {
 	short	d1 : 12;
 	short	b2 : 4;
 	short	d2 : 12;
-} __attribute__ ((packed)) SSF_Format;
+} __attribute__ ((__packed__)) SSF_Format;
 
 typedef struct {
 	short	op1;
@@ -620,7 +620,7 @@ typedef struct {
 	char	m3 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRIa_Format;
+} __attribute__ ((__packed__)) VRIa_Format;
 
 typedef struct {
 	short	op1;
@@ -631,7 +631,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRIb_Format;
+} __attribute__ ((__packed__)) VRIb_Format;
 
 typedef struct {
 	short	op1;
@@ -641,7 +641,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRIc_Format;
+} __attribute__ ((__packed__)) VRIc_Format;
 
 typedef struct {
 	short	op1;
@@ -653,7 +653,7 @@ typedef struct {
 	char	m5 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRId_Format;
+} __attribute__ ((__packed__)) VRId_Format;
 
 typedef struct {
 	short	op1;
@@ -664,7 +664,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRIe_Format;
+} __attribute__ ((__packed__)) VRIe_Format;
 
 typedef struct {
 	short	op1;
@@ -676,7 +676,7 @@ typedef struct {
 	char	m3 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRa_Format;
+} __attribute__ ((__packed__)) VRRa_Format;
 
 typedef struct {
 	short	op1;
@@ -689,7 +689,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRb_Format;
+} __attribute__ ((__packed__)) VRRb_Format;
 
 typedef struct {
 	short	op1;
@@ -702,7 +702,7 @@ typedef struct {
 	char	m3 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRc_Format;
+} __attribute__ ((__packed__)) VRRc_Format;
 
 typedef struct {
 	short	op1;
@@ -715,7 +715,7 @@ typedef struct {
 	char	v4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRd_Format;
+} __attribute__ ((__packed__)) VRRd_Format;
 
 typedef struct {
 	short	op1;
@@ -728,7 +728,7 @@ typedef struct {
 	char	v4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRe_Format;
+} __attribute__ ((__packed__)) VRRe_Format;
 
 typedef struct {
 	short	op1;
@@ -738,7 +738,7 @@ typedef struct {
 	short	xx;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRRf_Format;
+} __attribute__ ((__packed__)) VRRf_Format;
 
 typedef struct {
 	short	op1;
@@ -749,7 +749,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRSa_Format;
+} __attribute__ ((__packed__)) VRSa_Format;
 
 typedef struct {
 	short	op1;
@@ -760,7 +760,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRSb_Format;
+} __attribute__ ((__packed__)) VRSb_Format;
 
 typedef struct {
 	short	op1;
@@ -771,7 +771,7 @@ typedef struct {
 	char	m4 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRSc_Format;
+} __attribute__ ((__packed__)) VRSc_Format;
 
 typedef struct {
 	short	op1;
@@ -782,7 +782,7 @@ typedef struct {
 	char	m3 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRV_Format;
+} __attribute__ ((__packed__)) VRV_Format;
 
 typedef struct {
 	short	op1;
@@ -793,7 +793,7 @@ typedef struct {
 	char	m3 : 4;
 	char	rxb : 4;
 	char	op2;
-} __attribute__ ((packed)) VRX_Format;
+} __attribute__ ((__packed__)) VRX_Format;
 
 #define s390_emit16(c, x) do 			\
 {						\

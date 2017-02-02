@@ -22,7 +22,7 @@
 #else
 
 #ifdef __GNUC__
-#define MONO_API __attribute__ ((visibility ("default")))
+#define MONO_API __attribute__ ((__visibility__ ("default")))
 #else
 #define MONO_API
 #endif

@@ -242,7 +242,7 @@ mono_pmip (void *ip)
  */
 #ifdef __GNUC__
 /* Prevent the linker from optimizing this away in embedding setups to help debugging */
- __attribute__((used))
+ __attribute__ ((__used__))
 #endif
 void
 mono_print_method_from_ip (void *ip)

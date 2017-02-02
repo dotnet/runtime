@@ -352,7 +352,7 @@ typedef struct {
 typedef struct {
 	gint64	gr[5];		/* R2-R6			    */
 	gdouble fp[3];		/* F0-F2			    */
-} __attribute__ ((packed)) RegParm;
+} __attribute__ ((__packed__)) RegParm;
 
 typedef struct {
 	RR_Format  basr;
@@ -360,7 +360,7 @@ typedef struct {
 	void	   *pTrigger;
 	RXY_Format lg;
 	RXY_Format trigger;
-} __attribute__ ((packed)) breakpoint_t;
+} __attribute__ ((__packed__)) breakpoint_t;
 
 /*========================= End of Typedefs ========================*/
 

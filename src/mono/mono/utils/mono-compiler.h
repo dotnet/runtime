@@ -8,13 +8,13 @@
 #include <config.h>
 
 #ifdef __GNUC__
-#define MONO_ATTR_USED __attribute__ ((used))
+#define MONO_ATTR_USED __attribute__ ((__used__))
 #else
 #define MONO_ATTR_USED
 #endif
 
 #ifdef __GNUC__
-#define MONO_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos) __attribute__((format(printf,fmt_pos,arg_pos)))
+#define MONO_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos) __attribute__ ((__format__(__printf__,fmt_pos,arg_pos)))
 #else
 #define MONO_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos)
 #endif
@@ -84,7 +84,7 @@ typedef SSIZE_T ssize_t;
 #define MONO_PROFILER_API MONO_API
 
 #ifdef __GNUC__
-#define MONO_ALWAYS_INLINE __attribute__((always_inline))
+#define MONO_ALWAYS_INLINE __attribute__ ((__always_inline__))
 #elif defined(_MSC_VER)
 #define MONO_ALWAYS_INLINE __forceinline
 #else
@@ -92,7 +92,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #ifdef __GNUC__
-#define MONO_NEVER_INLINE __attribute__((noinline))
+#define MONO_NEVER_INLINE __attribute__ ((__noinline__))
 #elif defined(_MSC_VER)
 #define MONO_NEVER_INLINE __declspec(noinline)
 #else
@@ -100,7 +100,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #ifdef __GNUC__
-#define MONO_COLD __attribute__((cold))
+#define MONO_COLD __attribute__ ((__cold__))
 #else
 #define MONO_COLD
 #endif

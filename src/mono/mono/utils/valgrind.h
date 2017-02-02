@@ -6214,7 +6214,7 @@ typedef
 /* Modern GCC will optimize the static routine out if unused,
    and unused attribute will shut down warnings about it.  */
 static int VALGRIND_PRINTF(const char *format, ...)
-   __attribute__((format(__printf__, 1, 2), __unused__));
+   __attribute__ ((__format__(__printf__, 1, 2), __unused__));
 #endif
 static int
 #if defined(_MSC_VER)
@@ -6252,7 +6252,7 @@ VALGRIND_PRINTF(const char *format, ...)
 
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) && !defined(_MSC_VER)
 static int VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
-   __attribute__((format(__printf__, 1, 2), __unused__));
+   __attribute__ ((__format__(__printf__, 1, 2), __unused__));
 #endif
 static int
 #if defined(_MSC_VER)

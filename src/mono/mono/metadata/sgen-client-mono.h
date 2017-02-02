@@ -112,7 +112,7 @@ sgen_mono_array_size (GCVTable vtable, MonoArray *array, mword *bounds_size, mwo
 #define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
 #define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
 
-static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
+static mword /*__attribute__ ((__noinline__)) not sure if this hint is a good idea*/
 sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
 {
 	MonoClass *klass = ((MonoVTable*)vtable)->klass;

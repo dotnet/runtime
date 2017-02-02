@@ -45,7 +45,7 @@ typedef unsigned __int64	uint64_t;
 #include <stdint.h>
 
 #ifdef __GNUC__
-#define MONO_API_EXPORT __attribute__ ((visibility ("default")))
+#define MONO_API_EXPORT __attribute__ ((__visibility__ ("default")))
 #else
 #define MONO_API_EXPORT
 #endif
@@ -105,9 +105,9 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 #if defined (MONO_INSIDE_RUNTIME)
 
 #if defined (__clang__)
-#define MONO_RT_EXTERNAL_ONLY __attribute__ ((unavailable("The mono runtime must not call this function")))
+#define MONO_RT_EXTERNAL_ONLY __attribute__ ((__unavailable__ ("The mono runtime must not call this function")))
 #elif defined (__GNUC__)
-#define MONO_RT_EXTERNAL_ONLY __attribute__ ((error("The mono runtime must not call this function")))
+#define MONO_RT_EXTERNAL_ONLY __attribute__ ((__error__ ("The mono runtime must not call this function")))
 #else
 #define MONO_RT_EXTERNAL_ONLY
 #endif /* __clang__ */
@@ -117,7 +117,7 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 #endif /* MONO_INSIDE_RUNTIME */
 
 #ifdef __GNUC__
-#define _MONO_DEPRECATED __attribute__ ((deprecated))
+#define _MONO_DEPRECATED __attribute__ ((__deprecated__))
 #elif defined (_MSC_VER)
 #define _MONO_DEPRECATED __declspec (deprecated)
 #else
