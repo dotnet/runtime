@@ -7,7 +7,7 @@
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
-    <IsLineupPackage>true</IsLineupPackage>
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
 
   <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
