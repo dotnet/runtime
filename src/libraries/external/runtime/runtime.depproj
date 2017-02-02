@@ -2,11 +2,14 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <OutputPath>$(RuntimePath)</OutputPath>
-    <DisableReferenceCopyLocal>true</DisableReferenceCopyLocal>
+    <!-- WORKAROUND: Force external packages to be restored for x64 until arm packages are fully broughtup-->
+    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'arm'">$(RuntimeOS)-x64</NugetRuntimeIdentifier>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.Augments" />
     <TargetingPackReference Include="System.Private.CoreLib.DynamicDelegate" />
