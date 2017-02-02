@@ -2273,7 +2273,7 @@ mono_codegen (MonoCompile *cfg)
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
-	unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
+	unwindlen = mono_arch_unwindinfo_init_method_unwind_info (cfg);
 #endif
 
 	if (cfg->method->dynamic) {
@@ -2394,7 +2394,7 @@ mono_codegen (MonoCompile *cfg)
 	mono_debug_close_method (cfg);
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
-	mono_arch_unwindinfo_install_unwind_info (&cfg->arch.unwindinfo, cfg->native_code, cfg->code_len);
+	mono_arch_unwindinfo_install_method_unwind_info (&cfg->arch.unwindinfo, cfg->native_code, cfg->code_len);
 #endif
 }
 

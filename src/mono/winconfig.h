@@ -26,6 +26,32 @@
 #error "Mono requires Windows Vista or later"
 #endif /* _WIN32_WINNT < 0x0600 */
 
+#ifndef HAVE_WINAPI_FAMILY_SUPPORT
+
+#define HAVE_WINAPI_FAMILY_SUPPORT
+
+/* WIN API Family support */
+#include <winapifamily.h>
+
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 1
+#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
+	#error Unsupported WINAPI family
+#endif
+#else
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
+	#error Unsupported WINAPI family
+#endif
+#endif
+
+#endif
+
 /*
  * Features that are not required in the Windows port
  */
@@ -101,7 +127,10 @@
 #define HAVE_COMPLEX_H 1
 
 /* Define to 1 if you have the `system' function. */
+#if HAVE_WINAPI_FAMILY_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #define HAVE_SYSTEM 1
+#endif
+
 
 /* Have /dev/random */
 #define HAVE_CRYPT_RNG 1
@@ -643,30 +672,4 @@
 
 /* Version number of package */
 #define VERSION "#MONO_VERSION#"
-
-#ifndef HAVE_WINAPI_FAMILY_SUPPORT
-
-#define HAVE_WINAPI_FAMILY_SUPPORT
-
-/* WIN API Family support */
-#include <winapifamily.h>
-
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
-	#define HAVE_UWP_WINAPI_SUPPORT 0
-#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 1
-#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
-	#error Unsupported WINAPI family
-#endif
-#else
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 0
-#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
-	#error Unsupported WINAPI family
-#endif
-#endif
-
-#endif
 #endif

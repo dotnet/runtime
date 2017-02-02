@@ -5,6 +5,32 @@
 #include "cygconfig.h"
 #else
 
+#ifndef HAVE_WINAPI_FAMILY_SUPPORT
+
+#define HAVE_WINAPI_FAMILY_SUPPORT
+
+/* WIN API Family support */
+#include <winapifamily.h>
+
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 1
+#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
+	#error Unsupported WINAPI family
+#endif
+#else
+	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
+	#define HAVE_UWP_WINAPI_SUPPORT 0
+#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
+	#error Unsupported WINAPI family
+#endif
+#endif
+
+#endif
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
 
@@ -78,30 +104,4 @@
 #define VERSION "0.1"
 
 #define HAVE_STRTOK_R 1
-
-#ifndef HAVE_WINAPI_FAMILY_SUPPORT
-
-#define HAVE_WINAPI_FAMILY_SUPPORT
-
-/* WIN API Family support */
-#include <winapifamily.h>
-
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
-	#define HAVE_UWP_WINAPI_SUPPORT 0
-#elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 1
-#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
-	#error Unsupported WINAPI family
-#endif
-#else
-	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 0
-#ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
-	#error Unsupported WINAPI family
-#endif
-#endif
-
-#endif
 #endif

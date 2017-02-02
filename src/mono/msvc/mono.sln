@@ -210,6 +210,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mono-nunit-test", "mono-nun
 		{92AE7622-5F58-4234-9A26-9EC71876B3F4} = {92AE7622-5F58-4234-9A26-9EC71876B3F4}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmonodac", "libmonodac.vcxproj", "{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -432,6 +434,12 @@ Global
 		{0046B994-40A8-4C64-AC9D-429DC9177B54}.Release|Win32.Build.0 = Release|Win32
 		{0046B994-40A8-4C64-AC9D-429DC9177B54}.Release|x64.ActiveCfg = Release|x64
 		{0046B994-40A8-4C64-AC9D-429DC9177B54}.Release|x64.Build.0 = Release|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Debug|Win32.ActiveCfg = Debug|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Debug|x64.ActiveCfg = Debug|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Debug|x64.Build.0 = Debug|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Release|Win32.ActiveCfg = Release|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Release|x64.ActiveCfg = Release|x64
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -468,11 +476,12 @@ Global
 		{6C64262B-077B-4E12-AF91-9409ECCB75F6} = {BACF489E-EAEB-42BF-9E0A-C54D7CF455B4}
 		{7BECCFA0-28A0-4995-9856-558560F720E6} = {A0068765-334B-414C-8E21-8376CD2EC9F6}
 		{0046B994-40A8-4C64-AC9D-429DC9177B54} = {A0068765-334B-414C-8E21-8376CD2EC9F6}
+		{DC50997D-8A0D-4EB6-849B-9D7FBC39CE53} = {DE3617B4-17A8-4E5F-A00F-BA43D956881F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		AMDCaPersistentConfig = Debug|Win32
-		AMDCaPersistentStartup = mono
 		AMDCaProjectFile = C:\Users\Owner\Development\monogit\mono\msvc\CodeAnalyst\mono.caw
+		AMDCaPersistentStartup = mono
+		AMDCaPersistentConfig = Debug|Win32
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}
