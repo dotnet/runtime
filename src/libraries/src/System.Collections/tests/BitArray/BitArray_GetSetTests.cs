@@ -320,7 +320,14 @@ namespace System.Collections.Tests
             ICollection bitArray = new BitArray(bits);
             T[] array = (T[])Array.CreateInstance(typeof(T), arraySize);
             Assert.Throws<ArgumentOutOfRangeException>("index", () => bitArray.CopyTo(array, -1));
-            Assert.Throws<ArgumentException>(def is int ? string.Empty : null, () => bitArray.CopyTo(array, index));
+            if (def is int)
+            {
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => bitArray.CopyTo(array, index));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(array, index));
+            }
         }
 
         [Fact]

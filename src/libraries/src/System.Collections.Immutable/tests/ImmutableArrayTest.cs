@@ -1555,20 +1555,20 @@ namespace System.Collections.Immutable.Tests
             // ImmutableArray<T>.CopyTo defers to Array.Copy for argument validation, so
             // the parameter names here come from Array.Copy.
 
-            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(null));
-            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(null, 0));
-            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(0, null, 0, 0));
-            Assert.Throws<ArgumentNullException>("dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(0, null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => array.CopyTo(-1, null, -1, -1)); // The destination should be validated first.
 
             Assert.Throws<ArgumentOutOfRangeException>("length", () => array.CopyTo(-1, new int[0], -1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("srcIndex", () => array.CopyTo(-1, new int[0], -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => array.CopyTo(0, new int[0], -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => array.CopyTo(-1, new int[0], -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => array.CopyTo(0, new int[0], -1, 0));
 
-            Assert.Throws<ArgumentException>(() => array.CopyTo(array.Length, new int[1], 0, 1)); // Not enough room in the source.
+            AssertExtensions.Throws<ArgumentException>("sourceArray", string.Empty, () => array.CopyTo(array.Length, new int[1], 0, 1)); // Not enough room in the source.
 
             if (array.Length > 0)
             {
-                Assert.Throws<ArgumentException>(() => array.CopyTo(array.Length - 1, new int[1], 1, 1)); // Not enough room in the destination.
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => array.CopyTo(array.Length - 1, new int[1], 1, 1)); // Not enough room in the destination.
             }
         }
 
