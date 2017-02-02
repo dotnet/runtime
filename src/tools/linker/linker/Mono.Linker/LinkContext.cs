@@ -43,6 +43,7 @@ namespace Mono.Linker {
 		string _outputDirectory;
 		Hashtable _parameters;
 		bool _linkSymbols;
+		bool _keepTypeForwarderOnlyAssemblies;
 
 		AssemblyResolver _resolver;
 
@@ -73,6 +74,12 @@ namespace Mono.Linker {
 		public bool LinkSymbols {
 			get { return _linkSymbols; }
 			set { _linkSymbols = value; }
+		}
+
+		public bool KeepTypeForwarderOnlyAssemblies
+		{
+			get { return _keepTypeForwarderOnlyAssemblies; }
+			set { _keepTypeForwarderOnlyAssemblies = value; }
 		}
 
 		public IDictionary Actions {
