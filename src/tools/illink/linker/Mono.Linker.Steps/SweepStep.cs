@@ -51,13 +51,14 @@ namespace Mono.Linker.Steps {
 			assemblies = Context.GetAssemblies ();
 			foreach (var assembly in assemblies) {
 				SweepAssembly (assembly);
-				if (Annotations.GetAction (assembly) == AssemblyAction.Copy) {
-					// Copy assemblies can still contain Type references with
-					// type forwarders from Delete assemblies
-					// thus try to resolve all the type references and see
-					// if some changed the scope. if yes change the action to Save
-					if (ResolveAllTypeReferences (assembly))
-						Annotations.SetAction (assembly, AssemblyAction.Save);
+				if ((Annotations.GetAction (assembly) == AssemblyAction.Copy) &&
+					!Context.KeepTypeForwarderOnlyAssemblies) {
+						// Copy assemblies can still contain Type references with
+						// type forwarders from Delete assemblies
+						// thus try to resolve all the type references and see
+						// if some changed the scope. if yes change the action to Save
+						if (ResolveAllTypeReferences (assembly))
+							Annotations.SetAction (assembly, AssemblyAction.Save);
 				}
 
 				AssemblyAction currentAction = Annotations.GetAction(assembly);
@@ -138,12 +139,16 @@ namespace Mono.Linker.Steps {
 					// Copy means even if "unlinked" we still want that assembly to be saved back 
 					// to disk (OutputStep) without the (removed) reference
 					Annotations.SetAction (assembly, AssemblyAction.Save);
-					ResolveAllTypeReferences (assembly);
+					if (!Context.KeepTypeForwarderOnlyAssemblies) {
+						ResolveAllTypeReferences (assembly);
+					}
 					break;
 
 				case AssemblyAction.Save:
 				case AssemblyAction.Link:
-					ResolveAllTypeReferences (assembly);
+					if (!Context.KeepTypeForwarderOnlyAssemblies) {
+						ResolveAllTypeReferences (assembly);
+					}
 					break;
 				}
 				return;

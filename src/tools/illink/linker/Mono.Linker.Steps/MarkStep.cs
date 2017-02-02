@@ -135,7 +135,9 @@ namespace Mono.Linker.Steps {
 					if (!Annotations.IsMarked (type))
 						continue;
 					Annotations.Mark (exported);
-					Annotations.Mark (assembly.MainModule);
+					if (_context.KeepTypeForwarderOnlyAssemblies) {
+						Annotations.Mark (assembly.MainModule);
+					}
 				}
 			}
 		}

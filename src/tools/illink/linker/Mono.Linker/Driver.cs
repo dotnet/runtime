@@ -124,6 +124,9 @@ namespace Mono.Linker {
 				case 's':
 					custom_steps.Add (GetParam ());
 					break;
+				case 't':
+					context.KeepTypeForwarderOnlyAssemblies = true;
+					break;
 				case 'x':
 					foreach (string file in GetFiles (GetParam ()))
 						p.PrependStep (new ResolveFromXmlStep (new XPathDocument (file)));
@@ -274,6 +277,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   -c          Action on the core assemblies, skip, copy or link, default to skip");
 			Console.WriteLine ("   -p          Action per assembly");
 			Console.WriteLine ("   -s          Add a new step to the pipeline.");
+			Console.WriteLine ("   -t          Keep assemblies in which only type forwarders are referenced.");
 			Console.WriteLine ("   -d          Add a directory where the linker will look for assemblies");
 			Console.WriteLine ("   -b          Generate debug symbols for each linked module (true or false)");
 			Console.WriteLine ("   -g          Generate a new unique guid for each linked module (true or false)");

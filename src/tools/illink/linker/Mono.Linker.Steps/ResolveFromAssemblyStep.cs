@@ -84,6 +84,27 @@ namespace Mono.Linker.Steps {
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MarkType (context, type);
 
+			if (assembly.MainModule.HasExportedTypes) {
+				foreach (var exported in assembly.MainModule.ExportedTypes) {
+					bool isForwarder = exported.IsForwarder;
+					var declaringType = exported.DeclaringType;
+					while (!isForwarder && (declaringType != null)) {
+						isForwarder = declaringType.IsForwarder;
+						declaringType = declaringType.DeclaringType;
+					}
+
+					if (!isForwarder)
+						continue;
+					var resolvedExportedType = exported.Resolve ();
+					var resolvedTypeAssembly = context.Resolve (resolvedExportedType.Scope);
+					MarkType (context, resolvedExportedType);
+					context.Annotations.Mark (exported);
+					if (context.KeepTypeForwarderOnlyAssemblies) {
+						context.Annotations.Mark (assembly.MainModule);
+					}
+				}
+			}
+
 			context.Annotations.Pop ();
 		}
 
