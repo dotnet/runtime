@@ -2,21 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: Event-based implementation of IProgress<T>.
-**
-**
-===========================================================*/
-
 using System;
 using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -34,22 +22,20 @@ namespace System
     public class Progress<T> : IProgress<T>
     {
         /// <summary>The synchronization context captured upon construction.  This will never be null.</summary>
-        private readonly SynchronizationContext m_synchronizationContext;
+        private readonly SynchronizationContext _synchronizationContext;
         /// <summary>The handler specified to the constructor.  This may be null.</summary>
-        private readonly Action<T> m_handler;
+        private readonly Action<T> _handler;
         /// <summary>A cached delegate used to post invocation to the synchronization context.</summary>
-        private readonly SendOrPostCallback m_invokeHandlers;
+        private readonly SendOrPostCallback _invokeHandlers;
 
         /// <summary>Initializes the <see cref="Progress{T}"/>.</summary>
         public Progress()
         {
-            // Capture the current synchronization context.  "current" is determined by CurrentNoFlow,
-            // which doesn't consider the sync ctx flown with an ExecutionContext, avoiding
-            // sync ctx reference identity issues where the sync ctx for one thread could be Current on another.
+            // Capture the current synchronization context.
             // If there is no current context, we use a default instance targeting the ThreadPool.
-            m_synchronizationContext = SynchronizationContext.CurrentNoFlow ?? ProgressStatics.DefaultContext;
-            Debug.Assert(m_synchronizationContext != null);
-            m_invokeHandlers = new SendOrPostCallback(InvokeHandlers);
+            _synchronizationContext = SynchronizationContext.Current ?? ProgressStatics.DefaultContext;
+            Debug.Assert(_synchronizationContext != null);
+            _invokeHandlers = new SendOrPostCallback(InvokeHandlers);
         }
 
         /// <summary>Initializes the <see cref="Progress{T}"/> with the specified callback.</summary>
@@ -64,7 +50,7 @@ namespace System
         public Progress(Action<T> handler) : this()
         {
             if (handler == null) throw new ArgumentNullException(nameof(handler));
-            m_handler = handler;
+            _handler = handler;
         }
 
         /// <summary>Raised for each reported progress value.</summary>
@@ -81,13 +67,13 @@ namespace System
             // If there's no handler, don't bother going through the sync context.
             // Inside the callback, we'll need to check again, in case 
             // an event handler is removed between now and then.
-            Action<T> handler = m_handler;
+            Action<T> handler = _handler;
             EventHandler<T> changedEvent = ProgressChanged;
             if (handler != null || changedEvent != null)
             {
                 // Post the processing to the sync context.
                 // (If T is a value type, it will get boxed here.)
-                m_synchronizationContext.Post(m_invokeHandlers, value);
+                _synchronizationContext.Post(_invokeHandlers, value);
             }
         }
 
@@ -101,7 +87,7 @@ namespace System
         {
             T value = (T)state;
 
-            Action<T> handler = m_handler;
+            Action<T> handler = _handler;
             EventHandler<T> changedEvent = ProgressChanged;
 
             if (handler != null) handler(value);

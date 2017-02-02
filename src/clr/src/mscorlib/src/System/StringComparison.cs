@@ -13,11 +13,12 @@
 **
 ** 
 ===========================================================*/
-namespace System{
-    
+
+namespace System
+{
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public enum StringComparison {
+    public enum StringComparison
+    {
         CurrentCulture = 0,
         CurrentCultureIgnoreCase = 1,
         InvariantCulture = 2,

@@ -10,13 +10,12 @@
 **
 **
 =============================================================================*/
+
 namespace System
 {
-//This class contains only static members and does not need to be serializable 
-   [AttributeUsage (AttributeTargets.Parameter, Inherited=true, AllowMultiple=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
-   public sealed class ParamArrayAttribute : Attribute
-   {
-      public ParamArrayAttribute () {}  
-   }
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    public sealed class ParamArrayAttribute : Attribute
+    {
+        public ParamArrayAttribute() { }
+    }
 }

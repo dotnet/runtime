@@ -6,8 +6,6 @@ namespace System
 {
     public delegate void Action<in T>(T obj); 
 
-    // Action/Func delegates first shipped with .NET Framework 3.5 in System.Core.dll as part of LINQ
-    // These were type forwarded to mscorlib.dll in .NET Framework 4.0 and in Silverlight 5.0
     public delegate void Action();
     public delegate void Action<in T1,in T2>(T1 arg1, T2 arg2);
     public delegate void Action<in T1,in T2,in T3>(T1 arg1, T2 arg2, T3 arg3);
@@ -32,8 +30,6 @@ namespace System
     public delegate int Comparison<in T>(T x, T y);
 
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input); 
-    
+
     public delegate bool Predicate<in T>(T obj); 
-
 }
-

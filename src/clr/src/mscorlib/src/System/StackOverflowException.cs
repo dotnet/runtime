@@ -11,30 +11,31 @@
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System.Runtime.Serialization;
+
+namespace System
+{
     [Serializable]
-    public sealed class StackOverflowException : SystemException {
-        public StackOverflowException() 
-            : base(Environment.GetResourceString("Arg_StackOverflowException")) {
-            SetErrorCode(__HResults.COR_E_STACKOVERFLOW);
-        }
-    
-        public StackOverflowException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_STACKOVERFLOW);
-        }
-        
-        public StackOverflowException(String message, Exception innerException) 
-            : base(message, innerException) {
-            SetErrorCode(__HResults.COR_E_STACKOVERFLOW);
+    public sealed class StackOverflowException : SystemException
+    {
+        public StackOverflowException()
+            : base(SR.Arg_StackOverflowException)
+        {
+            HResult = __HResults.COR_E_STACKOVERFLOW;
         }
 
-        internal StackOverflowException(SerializationInfo info, StreamingContext context) : base (info, context) {
+        public StackOverflowException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_STACKOVERFLOW;
         }
-        
+
+        public StackOverflowException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+            HResult = __HResults.COR_E_STACKOVERFLOW;
+        }
+
+        internal StackOverflowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-
-    using System.Diagnostics.Contracts;
-    using System.Threading;
-
+namespace System
+{
     // The IConvertible interface represents an object that contains a value. This
     // interface is implemented by the following types in the System namespace:
     // Boolean, Char, SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64,
-    // Single, Double, Decimal, DateTime, TimeSpan, and String. The interface may
+    // Single, Double, Decimal, DateTime, and String. The interface may
     // be implemented by other types that are to be considered values. For example,
     // a library of nullable database types could implement IConvertible.
     //
@@ -23,7 +20,6 @@ namespace System {
     // IConvertible implementation should simply throw an InvalidCastException.
 
     [CLSCompliant(false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IConvertible
     {
         // Returns the type code of this object. An implementation of this method
