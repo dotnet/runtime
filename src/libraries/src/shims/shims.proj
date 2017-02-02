@@ -73,7 +73,7 @@
     <ItemGroup>
       <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/ref" />
       <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/lib" />
-      <PackageOutputPaths Include="$(BuildConfigurationRefPath)" />
+      <PackageOutputPaths Include="$(RefPath)" />
       <PackageOutputPaths Include="$(RuntimePath)" />
       <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
       <FileWrites Include="@(ProducedFacades)" />
