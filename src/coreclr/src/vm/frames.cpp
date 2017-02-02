@@ -2006,8 +2006,8 @@ BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
 #if defined(_TARGET_X86_)
     // At this point the counter hasn't been incremented yet.
-    delegateCount = *regs->pEdi + 1;
-    pbDel = *(BYTE **)( (size_t)*(regs->pEsi) + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
+    delegateCount = *regs->GetEdiLocation() + 1;
+    pbDel = *(BYTE **)( (size_t)*regs->GetEsiLocation() + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
 #elif defined(_TARGET_AMD64_)
     // At this point the counter hasn't been incremented yet.
     delegateCount = (int)regs->pCurrentContext->Rdi + 1;
