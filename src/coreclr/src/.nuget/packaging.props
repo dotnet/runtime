@@ -6,8 +6,9 @@
     <!-- Distro rid is passed as runtimeos-arch-->
     <OSRid>win10</OSRid>
     <_distroRidIndex>$(__DistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString($(_distroRidIndex) + 1))</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(__DistroRid.SubString($(_archRidIndex)))</ArchGroup>
   </PropertyGroup>
   <PropertyGroup>
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
