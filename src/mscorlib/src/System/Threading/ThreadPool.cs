@@ -1267,64 +1267,40 @@ namespace System.Threading
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,false);
         }
-            
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable    
-        public static bool QueueUserWorkItem(           
-             WaitCallback           callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object                 state
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,state,ref stackMark,true);
-        }
-        
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static bool QueueUserWorkItem(           
-             WaitCallback           callBack     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,null,ref stackMark,true);
-        }
-    
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static bool UnsafeQueueUserWorkItem(
-             WaitCallback           callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object                 state
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,state,ref stackMark,false);
-        }
 
-        //ThreadPool has per-appdomain managed queue of work-items. The VM is
-        //responsible for just scheduling threads into appdomains. After that
-        //work-items are dispatched from the managed queue.
-        private static bool QueueUserWorkItemHelper(WaitCallback callBack, Object state, ref StackCrawlMark stackMark, bool compressStack)
+        public static bool QueueUserWorkItem(WaitCallback callBack) =>
+            QueueUserWorkItem(callBack, null);
+
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
-
-            //The thread pool maintains a per-appdomain managed work queue.
-            //New thread pool entries are added in the managed queue.
-            //The VM is responsible for the actual growing/shrinking of 
-            //threads. 
 
             EnsureVMInitialized();
 
-            //
-            // If we are able to create the workitem, we need to get it in the queue without being interrupted
-            // by a ThreadAbortException.
-            //
-            ExecutionContext context = compressStack && !ExecutionContext.IsFlowSuppressed() ?
-                ExecutionContext.Capture(ref stackMark, ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase) :
-                null;
+            ExecutionContext context = ExecutionContext.Capture();
 
             IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
-                         new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
-                         (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+                new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
+        }
+
+        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, Object state)
+        {
+            if (callBack == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
+            }
+
+            EnsureVMInitialized();
+
+            IThreadPoolWorkItem tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
 
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
 
@@ -1335,10 +1311,6 @@ namespace System.Threading
         {
             Debug.Assert(null != workItem);
             EnsureVMInitialized();
-
-            //
-            // Enqueue needs to be protected from ThreadAbort
-            //
             ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
         }
 
@@ -1437,6 +1409,10 @@ namespace System.Threading
         unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
+        // The thread pool maintains a per-appdomain managed work queue.
+        // New thread pool entries are added in the managed queue.
+        // The VM is responsible for the actual growing/shrinking of 
+        // threads. 
         private static void EnsureVMInitialized()
         {
             if (!ThreadPoolGlobals.vmTpInitialized)
