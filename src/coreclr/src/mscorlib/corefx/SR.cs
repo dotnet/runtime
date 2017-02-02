@@ -625,4 +625,194 @@ internal static class SR
     {
         get { return Environment.GetResourceString("ObjectDisposed_StreamIsClosed"); }
     }
+
+    internal static string Arg_SystemException
+    {
+        get { return Environment.GetResourceString("Arg_SystemException"); }
+    }
+
+    internal static string Arg_StackOverflowException
+    {
+        get { return Environment.GetResourceString("Arg_StackOverflowException"); }
+    }
+
+    internal static string Arg_DataMisalignedException
+    {
+        get { return Environment.GetResourceString("Arg_DataMisalignedException"); }
+    }
+
+    internal static string Arg_ExecutionEngineException
+    {
+        get { return Environment.GetResourceString("Arg_ExecutionEngineException"); }
+    }
+
+    internal static string Arg_AccessException
+    {
+        get { return Environment.GetResourceString("Arg_AccessException"); }
+    }
+
+    internal static string Arg_AccessViolationException
+    {
+        get { return Environment.GetResourceString("Arg_AccessViolationException"); }
+    }
+
+    internal static string Arg_ApplicationException
+    {
+        get { return Environment.GetResourceString("Arg_ApplicationException"); }
+    }
+
+    internal static string Arg_ArgumentException
+    {
+        get { return Environment.GetResourceString("Arg_ArgumentException"); }
+    }
+
+    internal static string Arg_ParamName_Name
+    {
+        get { return Environment.GetResourceString("Arg_ParamName_Name"); }
+    }
+
+    internal static string ArgumentNull_Generic
+    {
+        get { return Environment.GetResourceString("ArgumentNull_Generic"); }
+    }
+
+    internal static string Arg_ArithmeticException
+    {
+        get { return Environment.GetResourceString("Arg_ArithmeticException"); }
+    }
+
+    internal static string Arg_ArrayTypeMismatchException
+    {
+        get { return Environment.GetResourceString("Arg_ArrayTypeMismatchException"); }
+    }
+
+    internal static string Arg_DivideByZero
+    {
+        get { return Environment.GetResourceString("Arg_DivideByZero"); }
+    }
+
+    internal static string Arg_DuplicateWaitObjectException
+    {
+        get { return Environment.GetResourceString("Arg_DuplicateWaitObjectException"); }
+    }
+
+    internal static string Arg_EntryPointNotFoundException
+    {
+        get { return Environment.GetResourceString("Arg_EntryPointNotFoundException"); }
+    }
+
+    internal static string Arg_FieldAccessException
+    {
+        get { return Environment.GetResourceString("Arg_FieldAccessException"); }
+    }
+
+    internal static string Arg_FormatException
+    {
+        get { return Environment.GetResourceString("Arg_FormatException"); }
+    }
+
+    internal static string Arg_IndexOutOfRangeException
+    {
+        get { return Environment.GetResourceString("Arg_IndexOutOfRangeException"); }
+    }
+
+    internal static string Arg_InsufficientExecutionStackException
+    {
+        get { return Environment.GetResourceString("Arg_InsufficientExecutionStackException"); }
+    }
+
+    internal static string Arg_InvalidCastException
+    {
+        get { return Environment.GetResourceString("Arg_InvalidCastException"); }
+    }
+
+    internal static string Arg_InvalidOperationException
+    {
+        get { return Environment.GetResourceString("Arg_InvalidOperationException"); }
+    }
+
+    internal static string InvalidProgram_Default
+    {
+        get { return Environment.GetResourceString("InvalidProgram_Default"); }
+    }
+
+    internal static string Arg_MethodAccessException
+    {
+        get { return Environment.GetResourceString("Arg_MethodAccessException"); }
+    }
+
+    internal static string Arg_MulticastNotSupportedException
+    {
+        get { return Environment.GetResourceString("Arg_MulticastNotSupportedException"); }
+    }
+
+    internal static string Arg_NotFiniteNumberException
+    {
+        get { return Environment.GetResourceString("Arg_NotFiniteNumberException"); }
+    }
+
+    internal static string Arg_NotImplementedException
+    {
+        get { return Environment.GetResourceString("Arg_NotImplementedException"); }
+    }
+
+    internal static string Arg_NotSupportedException
+    {
+        get { return Environment.GetResourceString("Arg_NotSupportedException"); }
+    }
+
+    internal static string Arg_NullReferenceException
+    {
+        get { return Environment.GetResourceString("Arg_NullReferenceException"); }
+    }
+
+    internal static string ObjectDisposed_Generic
+    {
+        get { return Environment.GetResourceString("ObjectDisposed_Generic"); }
+    }
+
+    internal static string ObjectDisposed_ObjectName_Name
+    {
+        get { return Environment.GetResourceString("ObjectDisposed_ObjectName_Name"); }
+    }
+
+    internal static string Arg_OverflowException
+    {
+        get { return Environment.GetResourceString("Arg_OverflowException"); }
+    }
+
+    internal static string Arg_PlatformNotSupported
+    {
+        get { return Environment.GetResourceString("Arg_PlatformNotSupported"); }
+    }
+
+    internal static string Arg_RankException
+    {
+        get { return Environment.GetResourceString("Arg_RankException"); }
+    }
+
+    internal static string Arg_TimeoutException
+    {
+        get { return Environment.GetResourceString("Arg_TimeoutException"); }
+    }
+
+    internal static string Arg_TypeAccessException
+    {
+        get { return Environment.GetResourceString("Arg_TypeAccessException"); }
+    }
+
+    internal static string TypeInitialization_Default
+    {
+        get { return Environment.GetResourceString("TypeInitialization_Default"); }
+    }
+
+    internal static string TypeInitialization_Type
+    {
+        get { return Environment.GetResourceString("TypeInitialization_Type"); }
+    }
+
+    internal static string Arg_UnauthorizedAccessException
+    {
+        get { return Environment.GetResourceString("Arg_UnauthorizedAccessException"); }
+    }
 }

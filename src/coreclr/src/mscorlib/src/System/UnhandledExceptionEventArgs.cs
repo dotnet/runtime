@@ -2,28 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-    
-    using System;
-    using System.Runtime.ConstrainedExecution;
-    
+namespace System
+{
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public class UnhandledExceptionEventArgs : EventArgs {
-        private Object _Exception;
-        private bool _IsTerminating;
+    public class UnhandledExceptionEventArgs : EventArgs
+    {
+        private Object _exception;
+        private bool _isTerminating;
 
-        public UnhandledExceptionEventArgs(Object exception, bool isTerminating) {
-            _Exception = exception;
-            _IsTerminating = isTerminating;
+        public UnhandledExceptionEventArgs(Object exception, bool isTerminating)
+        {
+            _exception = exception;
+            _isTerminating = isTerminating;
         }
-        public Object ExceptionObject { 
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-            get { return _Exception; }
+
+        public Object ExceptionObject
+        {
+            get { return _exception; }
         }
-        public bool IsTerminating {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-            get { return _IsTerminating; }
+
+        public bool IsTerminating
+        {
+            get { return _isTerminating; }
         }
     }
 }

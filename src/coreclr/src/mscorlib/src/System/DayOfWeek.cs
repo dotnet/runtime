@@ -10,11 +10,12 @@
 **
 **
 ============================================================*/
-namespace System {
 
+namespace System
+{
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public enum DayOfWeek {
+    public enum DayOfWeek
+    {
         Sunday = 0,
         Monday = 1,
         Tuesday = 2,

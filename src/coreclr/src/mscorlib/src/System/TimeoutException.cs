@@ -11,35 +11,31 @@
 **
 =============================================================================*/
 
-namespace System 
-{
-    using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
+namespace System
+{
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class TimeoutException : SystemException {
-        
-        public TimeoutException() 
-            : base(Environment.GetResourceString("Arg_TimeoutException")) {
-            SetErrorCode(__HResults.COR_E_TIMEOUT);
+    public class TimeoutException : SystemException
+    {
+        public TimeoutException()
+            : base(SR.Arg_TimeoutException)
+        {
+            HResult = __HResults.COR_E_TIMEOUT;
         }
-    
-        public TimeoutException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_TIMEOUT);
+
+        public TimeoutException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_TIMEOUT;
         }
-        
+
         public TimeoutException(String message, Exception innerException)
-            : base(message, innerException) {
-            SetErrorCode(__HResults.COR_E_TIMEOUT);
+            : base(message, innerException)
+        {
+            HResult = __HResults.COR_E_TIMEOUT;
         }
-    
-        //
-        //This constructor is required for serialization.
-        //
-        protected TimeoutException(SerializationInfo info, StreamingContext context) 
-            : base(info, context) {
-        }
+
+        protected TimeoutException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
-
