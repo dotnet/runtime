@@ -44,61 +44,66 @@ namespace System.Threading
 
     internal sealed class ThreadPoolWorkQueue
     {
-        // Simple sparsely populated array to allow lock-free reading.
-        internal sealed class SparseArray<T> where T : class
+        internal static class WorkStealingQueueList
         {
-            private volatile T[] m_array;
+            private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 
-            internal SparseArray(int initialSize)
+            public static WorkStealingQueue[] Queues => _queues;
+
+            public static void Add(WorkStealingQueue queue)
             {
-                m_array = new T[initialSize];
-            }
-
-            internal T[] Current => m_array;
-
-            internal int Add(T e)
-            {
+                Debug.Assert(queue != null);
                 while (true)
                 {
-                    T[] array = m_array;
-                    lock (array)
-                    {
-                        for (int i = 0; i < array.Length; i++)
-                        {
-                            if (array[i] == null)
-                            {
-                                Volatile.Write(ref array[i], e);
-                                return i;
-                            }
-                            else if (i == array.Length - 1)
-                            {
-                                // Must resize. If there was a race condition, we start over again.
-                                if (array != m_array)
-                                    continue;
+                    WorkStealingQueue[] oldQueues = _queues;
+                    Debug.Assert(Array.IndexOf(oldQueues, queue) == -1);
 
-                                T[] newArray = new T[array.Length * 2];
-                                Array.Copy(array, 0, newArray, 0, i + 1);
-                                newArray[i + 1] = e;
-                                m_array = newArray;
-                                return i + 1;
-                            }
-                        }
+                    var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
+                    Array.Copy(oldQueues, 0, newQueues, 0, oldQueues.Length);
+                    newQueues[newQueues.Length - 1] = queue;
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
 
-            internal void Remove(T e)
+            public static void Remove(WorkStealingQueue queue)
             {
-                T[] array = m_array;
-                lock (array)
+                Debug.Assert(queue != null);
+                while (true)
                 {
-                    for (int i = 0; i < m_array.Length; i++)
+                    WorkStealingQueue[] oldQueues = _queues;
+                    if (oldQueues.Length == 0)
                     {
-                        if (m_array[i] == e)
-                        {
-                            Volatile.Write(ref m_array[i], null);
-                            break;
-                        }
+                        return;
+                    }
+
+                    int pos = Array.IndexOf(oldQueues, queue);
+                    if (pos == -1)
+                    {
+                        Debug.Fail("Should have found the queue");
+                        return;
+                    }
+
+                    var newQueues = new WorkStealingQueue[oldQueues.Length - 1];
+                    if (pos == 0)
+                    {
+                        Array.Copy(oldQueues, 1, newQueues, 0, newQueues.Length);
+                    }
+                    else if (pos == oldQueues.Length - 1)
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, newQueues.Length);
+                    }
+                    else
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, pos);
+                        Array.Copy(oldQueues, pos + 1, newQueues, pos, newQueues.Length - pos);
+                    }
+
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
@@ -377,8 +382,6 @@ namespace System.Threading
         internal bool loggingEnabled;
         internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
 
-        internal static readonly SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16);
-
         private volatile int numOutstandingThreadRequests = 0;
       
         public ThreadPoolWorkQueue()
@@ -466,15 +469,15 @@ namespace System.Threading
                 !workItems.TryDequeue(out callback)) // then try the global queue
             {
                 // finally try to steal from another thread's local queue
-                WorkStealingQueue[] otherQueues = allThreadQueues.Current;
+                WorkStealingQueue[] otherQueues = WorkStealingQueueList.Queues;
                 int c = otherQueues.Length;
                 int maxIndex = c - 1;
                 int i = tl.random.Next(c);
                 while (c > 0)
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
-                    WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i]);
-                    if (otherQueue != null && otherQueue != wsq)
+                    WorkStealingQueue otherQueue = otherQueues[i];
+                    if (otherQueue != wsq)
                     {
                         callback = otherQueue.TrySteal(ref missedSteal);
                         if (callback != null)
@@ -657,7 +660,7 @@ namespace System.Threading
         {
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
-            ThreadPoolWorkQueue.allThreadQueues.Add(workStealingQueue);
+            ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
         }
 
         private void CleanUp()
@@ -687,7 +690,7 @@ namespace System.Threading
                     }
                 }
 
-                ThreadPoolWorkQueue.allThreadQueues.Remove(workStealingQueue);
+                ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
 
@@ -1393,7 +1396,7 @@ namespace System.Threading
             }
 
             // Enumerate each local queue
-            foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in ThreadPoolWorkQueue.allThreadQueues.Current)
+            foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in ThreadPoolWorkQueue.WorkStealingQueueList.Queues)
             {
                 if (wsq != null && wsq.m_array != null)
                 {
