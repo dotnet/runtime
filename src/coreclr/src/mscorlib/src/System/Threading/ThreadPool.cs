@@ -1435,9 +1435,14 @@ namespace System.Threading
         {
             if (!ThreadPoolGlobals.vmTpInitialized)
             {
-                ThreadPool.InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
-                ThreadPoolGlobals.vmTpInitialized = true;
+                EnsureVMInitializedCore(); // separate out to help with inlining
             }
+        }
+        
+        private static void EnsureVMInitializedCore()
+        {
+            ThreadPool.InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
+            ThreadPoolGlobals.vmTpInitialized = true;
         }
 
         // Native methods: 
