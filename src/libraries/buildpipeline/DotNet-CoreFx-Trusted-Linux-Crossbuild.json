@@ -49,7 +49,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --name $(DockerContainerName) $(DockerImageName) git clone $(GitHubRepo) $(GitHubDirectory)",
+        "arguments": "run --name $(PB_DockerContainerName) $(PB_DockerImageName) git clone $(PB_VsoCorefxGitUrl) $(PB_GitDirectory)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -85,7 +85,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -103,7 +103,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitHubDirectory)/clean.sh",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/clean.sh",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -139,7 +139,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -157,7 +157,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) git checkout $(Build.SourceVersion)",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) git checkout $(Build.SourceVersion)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -175,7 +175,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -193,7 +193,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -211,7 +211,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitHubDirectory)/sync.sh -p -- /p:ArchGroup=$(PB_Architecture)",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/sync.sh -p -- /p:ArchGroup=$(PB_Architecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -229,7 +229,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -247,7 +247,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -265,7 +265,7 @@
       },
       "inputs": {
         "filename": "sudo",
-        "arguments": "docker run --privileged -w=$(GitHubDirectory) --name $(DockerContainerName) $(DockerContainerName) $(GitHubDirectory)/cross/build-rootfs.sh $(PB_Architecture) $(CrossToolsetVersion) $(SkipUnmount)",
+        "arguments": "docker run --privileged -w=$(PB_GitDirectory) --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/cross/build-rootfs.sh $(PB_Architecture) $(CrossToolsetVersion) $(SkipUnmount)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -283,7 +283,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -301,7 +301,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -319,7 +319,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitHubDirectory)/build.sh -buildArch=$(PB_Architecture) -$(PB_ConfigurationGroup)",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -buildArch=$(PB_Architecture) -$(PB_ConfigurationGroup)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -337,7 +337,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -355,7 +355,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -373,7 +373,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --privileged -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) git clean -xdf $(GitHubDirectory)/cross/",
+        "arguments": "run --privileged -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) git clean -xdf $(PB_GitDirectory)/cross/",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -391,7 +391,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "commit $(DockerContainerName) $(DockerContainerName)",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -409,7 +409,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -427,7 +427,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitHubDirectory)\" --name $(DockerContainerName) $(DockerContainerName) $(GitHubDirectory)/publish-packages.sh -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(Label) -- /p:OverwriteOnPublish=true",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -436,7 +436,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Delete files from $(DockerCopyDest)",
+      "displayName": "Delete files from $(PB_DockerCopyDest)",
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
@@ -444,7 +444,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SourceFolder": "$(DockerCopyDest)",
+        "SourceFolder": "$(PB_DockerCopyDest)",
         "Contents": "*"
       }
     },
@@ -461,7 +461,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "cp $(DockerContainerName):$(GitHubDirectory) $(DockerCopyDest)",
+        "arguments": "cp $(PB_DockerContainerName):$(PB_GitDirectory) $(PB_DockerCopyDest)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -479,7 +479,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(DockerContainerName)",
+        "arguments": "rm $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -514,7 +514,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "$(DockerCopyDest)/coreclr",
+        "CopyRoot": "$(PB_DockerCopyDest)/corefx",
         "Contents": "**/*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
@@ -564,25 +564,26 @@
     "PB_ConfigurationGroup": {
       "value": "Release"
     },
-    "GitHubRepo": {
+    "PB_VsoCorefxGitUrl": {
       "value": "http://github.com/dotnet/corefx.git"
     },
-    "GitHubDirectory": {
+    "PB_GitDirectory": {
       "value": "/root/corefx"
     },
-    "DockerContainerName": {
+    "PB_DockerContainerName": {
       "value": "$(Build.BuildId)"
     },
-    "DockerImageName": {
-      "value": "$(DockerRepository):$(PB_DockerTag)"
+    "PB_DockerImageName": {
+      "value": "$(PB_DockerRepository):$(PB_DockerTag)"
     },
-    "DockerRepository": {
+    "PB_DockerRepository": {
       "value": "chcosta/dotnetcore"
     },
     "PB_DockerTag": {
-      "value": "ubuntu1404_cross_prereqs_v1"
+      "value": "ubuntu1404_cross_prereqs_v1",
+      "allowOverride": true
     },
-    "CloudDropAccountName": {
+    "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
     "CloudDropAccessToken": {
@@ -592,27 +593,20 @@
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)"
     },
-    "Label": {
+    "PB_Label": {
       "value": "$(Build.BuildNumber)"
     },
     "GitHubBranch": {
       "value": "sni_plus_latestbuildtools"
     },
-    "Priority": {
-      "value": "0"
-    },
-    "RepoAccessToken": {
-      "value": null,
-      "isSecret": true
-    },
     "PB_Architecture": {
       "value": "arm"
     },
-    "CommitToCheckout": {
+    "SourceVersion": {
       "value": "HEAD",
       "allowOverride": true
     },
-    "DockerCopyDest": {
+    "PB_DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_repo"
     },
     "portableLinux": {
