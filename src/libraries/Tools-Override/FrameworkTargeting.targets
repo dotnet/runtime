@@ -62,7 +62,7 @@
     <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
     <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">.NETCoreApp,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
-  
+
   <Target Name="AddDefaultReferences"
           Condition="'$(IncludeDefaultReferences)' =='true'"
           BeforeTargets="BeforeResolveReferences">
@@ -103,6 +103,11 @@
                      Condition="'$(_resolvedMscorlib)' != 'true' and '%(PossibleTargetFrameworks.Identity)' != '' and Exists('%(PossibleTargetFrameworks.Identity)mscorlib.dll')" />
     </ItemGroup>
   </Target>
+
+  <PropertyGroup>
+    <!-- Disable WindowsAppContainer property to prevent importing AppX targets which we don't need -->
+    <WindowsAppContainer Condition="'$(WindowsAppContainer)'==''">false</WindowsAppContainer>
+  </PropertyGroup>
 
   <Import Project="depProj.targets"
           Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
@@ -172,7 +177,7 @@
     <!-- list each append as a seperate item to force re-evaluation of AdditionalProperties metadata -->
     <ItemGroup>
 
-     <!-- Configuration property shortcuts --> 
+     <!-- Configuration property shortcuts -->
      <ProjectReference>
        <AdditionalProperties Condition="'%(ProjectReference.Configuration)' != ''">Configuration=%(ProjectReference.Configuration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
      </ProjectReference>
