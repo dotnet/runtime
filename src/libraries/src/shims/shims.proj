@@ -75,8 +75,8 @@
 
   <PropertyGroup>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
-    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netfx461.txt</ApiCompatBaselineFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard20.txt</ApiCompatNSBaselineFile>
+    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
+    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
   </PropertyGroup>
 
   <!-- Run ApiCompat -->

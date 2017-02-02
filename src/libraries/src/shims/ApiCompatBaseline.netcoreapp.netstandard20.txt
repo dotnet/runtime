@@ -2,7 +2,7 @@ DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Comp
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Data'.
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.Compression.FileSystem'.
 DEFAULT_APPNAME Warning: 0 : Found 'System.Transactions' with PublicKeyToken 'b03f5f7f11d50a3a' instead of 'b77a5c561934e089'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=, Version=0.0.-1.-1, Culture=neutral, PublicKeyToken=null)' referenced by the implementation assembly 'Assembly(Name=Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, Location=/Users/ericstj/src/corefx/bin/ref/netcoreapp/Windows.winmd, ContentType=WindowsRuntime)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=, Version=0.0.-1.-1, Culture=neutral, PublicKeyToken=null)' referenced by the implementation assembly 'Assembly(Name=Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, Location=F:\git\corefx\bin/ref/netcoreapp/Windows.winmd, ContentType=WindowsRuntime)'.
 Compat issues with assembly mscorlib:
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.SafeProcessHandle' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
