@@ -62,7 +62,7 @@ typedef struct {
 } size_data;	
 
 /*========================= End of Typedefs ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- add_general                                       */
@@ -95,7 +95,7 @@ add_general (guint *gr, size_data *sz, gboolean simple)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- calculate_sizes                                   */
@@ -299,7 +299,7 @@ enum_retvalue:
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- emit_prolog                                       */
@@ -337,7 +337,7 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- emit_save_parameters                              */
@@ -534,7 +534,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- alloc_code_memory				    */
@@ -562,7 +562,7 @@ alloc_code_memory (guint code_size)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- emit_call_and_store_retval			    */
@@ -664,7 +664,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- emit_epilog                                       */
@@ -687,7 +687,7 @@ emit_epilog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- mono_arch_create_trampoline.			    */
@@ -726,7 +726,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 }
 
 /*========================= End of Function ========================*/
-
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- mono_arch_create_method_pointer		    */

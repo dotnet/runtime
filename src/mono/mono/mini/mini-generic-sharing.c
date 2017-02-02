@@ -2673,7 +2673,7 @@ mini_method_is_open (MonoMethod *method)
 }
 
 /* Lazy class loading functions */
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (iasync_state_machine, System.Runtime.CompilerServices, IAsyncStateMachine)
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (iasync_state_machine, System.Runtime.CompilerServices, "IAsyncStateMachine")
 
 static G_GNUC_UNUSED gboolean
 is_async_state_machine_class (MonoClass *klass)

@@ -104,15 +104,15 @@ static mono_mutex_t cominterop_mutex;
 #define STDCALL
 #endif
 
-GENERATE_GET_CLASS_WITH_CACHE (interop_proxy, Mono.Interop, ComInteropProxy)
-GENERATE_GET_CLASS_WITH_CACHE (idispatch,     Mono.Interop, IDispatch)
-GENERATE_GET_CLASS_WITH_CACHE (iunknown,      Mono.Interop, IUnknown)
+GENERATE_GET_CLASS_WITH_CACHE (interop_proxy, Mono.Interop, "ComInteropProxy")
+GENERATE_GET_CLASS_WITH_CACHE (idispatch,     Mono.Interop, "IDispatch")
+GENERATE_GET_CLASS_WITH_CACHE (iunknown,      Mono.Interop, "IUnknown")
 
-GENERATE_GET_CLASS_WITH_CACHE (com_object, System, __ComObject)
-GENERATE_GET_CLASS_WITH_CACHE (variant,    System, Variant)
+GENERATE_GET_CLASS_WITH_CACHE (com_object, System, "__ComObject")
+GENERATE_GET_CLASS_WITH_CACHE (variant,    System, "Variant")
 
-static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, System.Runtime.InteropServices, InterfaceTypeAttribute)
-static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, System.Runtime.InteropServices, GuidAttribute)
+static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, System.Runtime.InteropServices, "InterfaceTypeAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, System.Runtime.InteropServices, "GuidAttribute")
 
 /* Upon creation of a CCW, only allocate a weak handle and set the
  * reference count to 0. If the unmanaged client code decides to addref and

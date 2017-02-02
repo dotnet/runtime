@@ -52,20 +52,20 @@ static void get_default_param_value_blobs (MonoMethod *method, char **blobs, gui
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error);
 
 /* Class lazy loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (mono_assembly, System.Reflection, MonoAssembly)
-static GENERATE_GET_CLASS_WITH_CACHE (mono_module, System.Reflection, MonoModule)
-static GENERATE_GET_CLASS_WITH_CACHE (mono_method, System.Reflection, MonoMethod);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_cmethod, System.Reflection, MonoCMethod);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_field, System.Reflection, MonoField);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_event, System.Reflection, MonoEvent);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_property, System.Reflection, MonoProperty);
-static GENERATE_GET_CLASS_WITH_CACHE (mono_parameter_info, System.Reflection, MonoParameterInfo);
-static GENERATE_GET_CLASS_WITH_CACHE (missing, System.Reflection, Missing);
-static GENERATE_GET_CLASS_WITH_CACHE (method_body, System.Reflection, MethodBody);
-static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, System.Reflection, LocalVariableInfo);
-static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, System.Reflection, ExceptionHandlingClause);
-static GENERATE_GET_CLASS_WITH_CACHE (type_builder, System.Reflection.Emit, TypeBuilder);
-static GENERATE_GET_CLASS_WITH_CACHE (dbnull, System, DBNull);
+static GENERATE_GET_CLASS_WITH_CACHE (mono_assembly, System.Reflection, "MonoAssembly")
+static GENERATE_GET_CLASS_WITH_CACHE (mono_module, System.Reflection, "MonoModule")
+static GENERATE_GET_CLASS_WITH_CACHE (mono_method, System.Reflection, "MonoMethod");
+static GENERATE_GET_CLASS_WITH_CACHE (mono_cmethod, System.Reflection, "MonoCMethod");
+static GENERATE_GET_CLASS_WITH_CACHE (mono_field, System.Reflection, "MonoField");
+static GENERATE_GET_CLASS_WITH_CACHE (mono_event, System.Reflection, "MonoEvent");
+static GENERATE_GET_CLASS_WITH_CACHE (mono_property, System.Reflection, "MonoProperty");
+static GENERATE_GET_CLASS_WITH_CACHE (mono_parameter_info, System.Reflection, "MonoParameterInfo");
+static GENERATE_GET_CLASS_WITH_CACHE (missing, System.Reflection, "Missing");
+static GENERATE_GET_CLASS_WITH_CACHE (method_body, System.Reflection, "MethodBody");
+static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, System.Reflection, "LocalVariableInfo");
+static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, System.Reflection, "ExceptionHandlingClause");
+static GENERATE_GET_CLASS_WITH_CACHE (type_builder, System.Reflection.Emit, "TypeBuilder");
+static GENERATE_GET_CLASS_WITH_CACHE (dbnull, System, "DBNull");
 
 
 static int class_ref_info_handle_count;

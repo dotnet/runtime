@@ -1136,7 +1136,7 @@ mono_class_get_##shortname##_class (void)	\
 	static MonoClass *tmp_class;	\
 	MonoClass *klass = tmp_class;	\
 	if (!klass) {	\
-		klass = mono_class_load_from_name (mono_defaults.corlib, #namespace, #name);	\
+		klass = mono_class_load_from_name (mono_defaults.corlib, #namespace, name);	\
 		mono_memory_barrier ();	\
 		tmp_class = klass;	\
 	}	\
@@ -1152,7 +1152,7 @@ mono_class_try_get_##shortname##_class (void)	\
 	MonoClass *klass = (MonoClass *)tmp_class;	\
 	mono_memory_barrier ();	\
 	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_defaults.corlib, #namespace, #name);	\
+		klass = mono_class_try_load_from_name (mono_defaults.corlib, #namespace, name);	\
 		tmp_class = klass;	\
 		mono_memory_barrier ();	\
 		inited = TRUE;	\

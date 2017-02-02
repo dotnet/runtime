@@ -56,7 +56,7 @@ static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 static const RegionInfoEntry* region_info_entry_from_lcid (int lcid);
 
 /* Lazy class loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (culture_info, System.Globalization, CultureInfo)
+static GENERATE_GET_CLASS_WITH_CACHE (culture_info, System.Globalization, "CultureInfo")
 
 static int
 culture_lcid_locator (const void *a, const void *b)

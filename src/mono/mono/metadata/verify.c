@@ -2080,10 +2080,10 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 		code->stack->stype |= BOXED_MASK;
 }
 /* Class lazy loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (ienumerable, System.Collections.Generic, IEnumerable`1)
-static GENERATE_GET_CLASS_WITH_CACHE (icollection, System.Collections.Generic, ICollection`1)
-static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_list, System.Collections.Generic, IReadOnlyList`1)
-static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_collection, System.Collections.Generic, IReadOnlyCollection`1)
+static GENERATE_GET_CLASS_WITH_CACHE (ienumerable, System.Collections.Generic, "IEnumerable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (icollection, System.Collections.Generic, "ICollection`1")
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_list, System.Collections.Generic, "IReadOnlyList`1")
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_collection, System.Collections.Generic, "IReadOnlyCollection`1")
 
 
 static MonoClass*

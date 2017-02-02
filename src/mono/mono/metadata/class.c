@@ -10593,7 +10593,7 @@ mono_class_full_name (MonoClass *klass)
 }
 
 /* Declare all shared lazy type lookup functions */
-GENERATE_TRY_GET_CLASS_WITH_CACHE (safehandle, System.Runtime.InteropServices, SafeHandle)
+GENERATE_TRY_GET_CLASS_WITH_CACHE (safehandle, System.Runtime.InteropServices, "SafeHandle")
 
 /**
  * mono_method_get_base_method:
