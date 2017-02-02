@@ -536,81 +536,66 @@ namespace System.Threading
                     // Dequeue and EnsureThreadRequested must be protected from ThreadAbortException.  
                     // These are fast, so this will not delay aborts/AD-unloads for very long.
                     //
-                    try { }
-                    finally
-                    {
-                        bool missedSteal = false;
-                        workItem = workQueue.Dequeue(tl, ref missedSteal);
-
-                        if (workItem == null)
-                        {
-                            //
-                            // No work.  We're going to return to the VM once we leave this protected region.
-                            // If we missed a steal, though, there may be more work in the queue.
-                            // Instead of looping around and trying again, we'll just request another thread.  This way
-                            // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
-                            // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
-                            // which will be more efficient than this thread doing it anyway.
-                            //
-                            needAnotherThread = missedSteal;
-                        }
-                        else
-                        {
-                            //
-                            // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
-                            // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                            //
-                            workQueue.EnsureThreadRequested();
-                        }
-                    }
+                    bool missedSteal = false;
+                    workItem = workQueue.Dequeue(tl, ref missedSteal);
 
                     if (workItem == null)
                     {
+                        //
+                        // No work.  We're going to return to the VM once we leave this protected region.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  This way
+                        // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        needAnotherThread = missedSteal;
+
                         // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
                         return true;
                     }
+
+                    if (workQueue.loggingEnabled)
+                        System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
+
+                    //
+                    // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
+                    // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
+                    //
+                    workQueue.EnsureThreadRequested();
+
+                    //
+                    // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
+                    //
+                    if (ThreadPoolGlobals.enableWorkerTracking)
+                    {
+                        bool reportedStatus = false;
+                        try
+                        {
+                            ThreadPool.ReportThreadStatus(isWorking: true);
+                            reportedStatus = true;
+                            workItem.ExecuteWorkItem();
+                        }
+                        finally
+                        {
+                            if (reportedStatus)
+                                ThreadPool.ReportThreadStatus(isWorking: false);
+                        }
+                    }
                     else
                     {
-                        if (workQueue.loggingEnabled)
-                            System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
-
-                        //
-                        // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
-                        //
-                        if (ThreadPoolGlobals.enableWorkerTracking)
-                        {
-                            bool reportedStatus = false;
-                            try
-                            {
-                                try { }
-                                finally
-                                {
-                                    ThreadPool.ReportThreadStatus(isWorking:true);
-                                    reportedStatus = true;
-                                }
-                                workItem.ExecuteWorkItem();
-                                workItem = null;
-                            }
-                            finally
-                            {
-                                if (reportedStatus)
-                                    ThreadPool.ReportThreadStatus(isWorking:false);
-                            }
-                        }
-                        else
-                        {
-                            workItem.ExecuteWorkItem();
-                            workItem = null;
-                        }
-
-                        // 
-                        // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
-                        // us to return the thread to the pool or not.
-                        //
-                        if (!ThreadPool.NotifyWorkItemComplete())
-                            return false;
+                        workItem.ExecuteWorkItem();
                     }
+                    workItem = null;
+
+                    // 
+                    // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
+                    // us to return the thread to the pool or not.
+                    //
+                    if (!ThreadPool.NotifyWorkItemComplete())
+                        return false;
                 }
+
                 // If we get here, it's because our quantum expired.  Tell the VM we're returning normally.
                 return true;
             }
@@ -669,24 +654,11 @@ namespace System.Threading
             {
                 if (null != workQueue)
                 {
-                    bool done = false;
-                    while (!done)
+                    IThreadPoolWorkItem cb;
+                    while (workStealingQueue.LocalPop(out cb))
                     {
-                        // Ensure that we won't be aborted between LocalPop and Enqueue.
-                        try { }
-                        finally
-                        {
-                            IThreadPoolWorkItem cb;
-                            if (workStealingQueue.LocalPop(out cb))
-                            {
-                                Debug.Assert(null != cb);
-                                workQueue.Enqueue(cb, forceGlobal:true);
-                            }
-                            else
-                            {
-                                done = true;
-                            }
-                        }
+                        Debug.Assert(null != cb);
+                        workQueue.Enqueue(cb, forceGlobal: true);
                     }
                 }
 
@@ -1346,19 +1318,16 @@ namespace System.Threading
             // If we are able to create the workitem, we need to get it in the queue without being interrupted
             // by a ThreadAbortException.
             //
-            try { }
-            finally
-            {
-                ExecutionContext context = compressStack && !ExecutionContext.IsFlowSuppressed() ?
-                    ExecutionContext.Capture(ref stackMark, ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase) :
-                    null;
+            ExecutionContext context = compressStack && !ExecutionContext.IsFlowSuppressed() ?
+                ExecutionContext.Capture(ref stackMark, ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase) :
+                null;
 
-                IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
-                             new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
-                             (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
+                         new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                         (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 
-                ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal:true);
-            }
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
             return true;
         }
 
@@ -1370,11 +1339,7 @@ namespace System.Threading
             //
             // Enqueue needs to be protected from ThreadAbort
             //
-            try { }
-            finally
-            {
-                ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
-            }
+            ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
         }
 
         // This method tries to take the target callback out of the current thread's queue.
