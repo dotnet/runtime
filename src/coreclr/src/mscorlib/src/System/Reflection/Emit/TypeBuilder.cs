@@ -35,10 +35,7 @@ namespace System.Reflection.Emit {
         Size128                     = 128,
     }
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_TypeBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeBuilder : TypeInfo, _TypeBuilder
+    public sealed class TypeBuilder : TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
             if(typeInfo==null) return false;            

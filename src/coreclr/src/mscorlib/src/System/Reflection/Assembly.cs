@@ -40,15 +40,11 @@ namespace System.Reflection
     using System.Runtime.Loader;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate Module ModuleResolveEventHandler(Object sender, ResolveEventArgs e);
 
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Assembly))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Assembly : _Assembly, IEvidenceFactory, ICustomAttributeProvider, ISerializable
+    public abstract class Assembly : IEvidenceFactory, ICustomAttributeProvider, ISerializable
     {
         protected Assembly() {}
 
@@ -664,9 +660,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public virtual bool ReflectionOnly
         {
             get
@@ -816,9 +809,6 @@ namespace System.Reflection
             }
         }
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public virtual String ImageRuntimeVersion
         {
             get
@@ -1402,9 +1392,6 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsReflectionOnly(RuntimeAssembly assembly);
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public override bool ReflectionOnly
         {
             get
@@ -1583,9 +1570,6 @@ namespace System.Reflection
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetImageRuntimeVersion(RuntimeAssembly assembly, StringHandleOnStack retString);
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public override String ImageRuntimeVersion
         {
             get{

@@ -20,10 +20,7 @@ namespace System.Reflection
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_PropertyInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class PropertyInfo : MemberInfo, _PropertyInfo
+    public abstract class PropertyInfo : MemberInfo
     {
         #region Constructor
         protected PropertyInfo() { }

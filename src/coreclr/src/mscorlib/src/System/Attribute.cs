@@ -17,10 +17,7 @@ namespace System {
 
     [Serializable]
     [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple=false)] 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Attribute))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Attribute : _Attribute
+    public abstract class Attribute
     {
         #region Private Statics
 

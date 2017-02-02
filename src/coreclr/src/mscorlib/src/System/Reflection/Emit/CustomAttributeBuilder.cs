@@ -25,10 +25,7 @@ namespace System.Reflection.Emit {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_CustomAttributeBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class CustomAttributeBuilder : _CustomAttributeBuilder
+    public class CustomAttributeBuilder
     {
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.

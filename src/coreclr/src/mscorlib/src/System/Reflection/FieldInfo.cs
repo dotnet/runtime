@@ -21,10 +21,7 @@ namespace System.Reflection
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_FieldInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class FieldInfo : MemberInfo, _FieldInfo
+    public abstract class FieldInfo : MemberInfo
     {
         #region Static Members
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle)

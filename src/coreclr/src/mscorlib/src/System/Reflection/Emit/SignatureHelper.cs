@@ -16,10 +16,7 @@ namespace System.Reflection.Emit
     using System.Runtime.Versioning;
     using System.Security.Permissions;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_SignatureHelper))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SignatureHelper : _SignatureHelper
+    public sealed class SignatureHelper
     {
         #region Consts Fields
         private const int NO_SIZE_IN_SIG = -1;

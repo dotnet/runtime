@@ -27,10 +27,7 @@ namespace System.Reflection {
     using System.Text;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_AssemblyName))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AssemblyName : _AssemblyName, ICloneable, ISerializable, IDeserializationCallback
+    public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
     {
         //
         // READ ME
