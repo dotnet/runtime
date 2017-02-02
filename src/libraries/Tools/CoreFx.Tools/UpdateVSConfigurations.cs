@@ -12,33 +12,39 @@ namespace Microsoft.DotNet.Build.Tasks
     public class UpdateVSConfigurations : BuildTask
     {
         [Required]
-        public ITaskItem[] ProjectsToValidate { get; set; }
+        public ITaskItem[] ProjectsToUpdate { get; set; }
 
         private const string ConfigurationPropsFilename = "Configurations.props";
         private static Regex s_configurationConditionRegex = new Regex(@"'\$\(Configuration\)\|\$\(Platform\)' ?== ?'(?<config>.*)'");
-        private static string[] s_configurationSuffixes = new [] { "-Debug|AnyCPU", "-Release|AnyCPU" };
+        private static string[] s_configurationSuffixes = new [] { "Debug|AnyCPU", "Release|AnyCPU" };
 
         public override bool Execute()
         {
-            foreach (var item in ProjectsToValidate)
+            foreach (var item in ProjectsToUpdate)
             {
                 string projectFile = item.ItemSpec;
                 string projectConfigurationPropsFile = Path.Combine(Path.GetDirectoryName(projectFile), ConfigurationPropsFilename);
 
+                string[] expectedConfigurations = s_configurationSuffixes;
                 if (File.Exists(projectConfigurationPropsFile))
                 {
-                    var expectedConfigurations = GetConfigurationStrings(projectConfigurationPropsFile);
+                    expectedConfigurations = GetConfigurationStrings(projectConfigurationPropsFile);
+                }
 
-                    var project = ProjectRootElement.Open(projectFile);
+                var project = ProjectRootElement.Open(projectFile);
+                ICollection<ProjectPropertyGroupElement> propertyGroups;
+                var actualConfigurations = GetConfigurationFromPropertyGroups(project, out propertyGroups);
 
-                    ICollection<ProjectPropertyGroupElement> propertyGroups;
-                    var actualConfigurations = GetConfigurationFromPropertyGroups(project, out propertyGroups);
+                bool addedGuid = EnsureProjectGuid(project);
 
-                    if (!actualConfigurations.SequenceEqual(expectedConfigurations))
-                    {
-                        ReplaceConfigurationPropertyGroups(project, propertyGroups, expectedConfigurations);
-                        project.Save();
-                    }
+                if (!actualConfigurations.SequenceEqual(expectedConfigurations))
+                {
+                    ReplaceConfigurationPropertyGroups(project, propertyGroups, expectedConfigurations);
+                }
+
+                if (addedGuid || !actualConfigurations.SequenceEqual(expectedConfigurations))
+                {
+                    project.Save();
                 }
             }
 
@@ -62,7 +68,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                       .Split(';')
                                       .Select(c => c.Trim())
                                       .Where(c => !String.IsNullOrEmpty(c))
-                                      .SelectMany(c => s_configurationSuffixes.Select(s => c + s))
+                                      .SelectMany(c => s_configurationSuffixes.Select(s => c + "-" + s))
                                       .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
                                       .ToArray();
         }
@@ -158,6 +164,27 @@ namespace Microsoft.DotNet.Build.Tasks
                 insertBefore = null;
                 insertAfter = newPropertyGroup;
             }
+        }
+
+        private static bool EnsureProjectGuid(ProjectRootElement project)
+        {
+            ProjectPropertyElement projectGuid = project.Properties.FirstOrDefault(p => p.Name == "ProjectGuid");
+
+            if (projectGuid != null)
+                return false;
+
+            string guid = Guid.NewGuid().ToString("B").ToUpper();
+
+            var propertyGroup = project.Imports.FirstOrDefault()?.NextSibling as ProjectPropertyGroupElement;
+
+            if (propertyGroup == null || !string.IsNullOrEmpty(propertyGroup.Condition))
+            {
+                propertyGroup = project.CreatePropertyGroupElement();
+                project.InsertAfterChild(propertyGroup, project.Imports.First());
+            }
+
+            propertyGroup.AddProperty("ProjectGuid", guid);
+            return true;
         }
     }
 }

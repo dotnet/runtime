@@ -63,9 +63,9 @@
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
       <_projectsToExcludeFromUpdate Include="$(MSBuildThisFileDirectory)src/**/*.vcxproj" />
-      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions);@(_projectsToExcludeFromUpdate)" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(ProjectExclusions);@(_projectsToExcludeFromUpdate)" />
     </ItemGroup>
-    <UpdateVSConfigurations ProjectsToValidate="@(_projectsToUpdate)" />
+    <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />
   </Target>
 
