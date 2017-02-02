@@ -49,23 +49,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Handles" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ThreadPoolIO.cs">
-      <Link>Common\Interop\Interop.ThreadPoolIO.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs</Link>
-    </Compile>
-    <Compile Include="System\Threading\IOCompletionCallback.cs" />
-    <Compile Include="System\Threading\NativeOverlapped.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
