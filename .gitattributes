@@ -71,4 +71,6 @@ tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regexdna/regexdna-input25.t
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/regexdna/regexdna-input25000.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/revcomp/revcomp-input25.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/revcomp/revcomp-input25000.txt text eol=lf
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input.txt text eol=lf
+tests/src/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input-big.txt text eol=lf
 
