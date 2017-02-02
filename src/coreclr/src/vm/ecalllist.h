@@ -373,10 +373,8 @@ FCFuncEnd()
 
 FCFuncStart(gTypedReferenceFuncs)
     FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
-#ifndef FEATURE_CORECLR
     FCFuncElement("InternalSetTypedReference", ReflectionInvocation::SetTypedReference)
     FCFuncElement("InternalMakeTypedReference", ReflectionInvocation::MakeTypedReference)
-#endif
 FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
@@ -568,12 +566,8 @@ FCFuncEnd()
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetValue", RuntimeFieldHandle::GetValue)
     FCFuncElement("SetValue", RuntimeFieldHandle::SetValue)
-#ifndef FEATURE_CORECLR
     FCFuncElement("GetValueDirect", RuntimeFieldHandle::GetValueDirect)
-#endif
-#ifdef FEATURE_SERIALIZATION
     FCFuncElement("SetValueDirect", RuntimeFieldHandle::SetValueDirect)
-#endif
     FCFuncElement("GetName", RuntimeFieldHandle::GetName)
     FCFuncElement("_GetUtf8Name", RuntimeFieldHandle::GetUtf8Name)
     FCFuncElement("MatchesNameHash", RuntimeFieldHandle::MatchesNameHash)
@@ -1812,13 +1806,11 @@ FCFuncEnd()
 
 FCFuncStart(gVarArgFuncs)
     FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_PtrVoid_RetVoid, VarArgsNative::Init2)
-#ifndef FEATURE_CORECLR
     FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_RetVoid, VarArgsNative::Init)
     FCFuncElement("GetRemainingCount", VarArgsNative::GetRemainingCount)
     FCFuncElement("_GetNextArgType", VarArgsNative::GetNextArgType)
     FCFuncElement("FCallGetNextArg", VarArgsNative::DoGetNextArg)
     FCFuncElement("InternalGetNextArg", VarArgsNative::GetNextArg2)
-#endif // FEATURE_CORECLR
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)
