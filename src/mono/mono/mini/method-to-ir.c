@@ -60,7 +60,6 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/debug-mono-symfile.h>
-#include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/mono-basic-block.h>

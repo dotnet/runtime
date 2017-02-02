@@ -24,8 +24,6 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 #include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <pwd.h>

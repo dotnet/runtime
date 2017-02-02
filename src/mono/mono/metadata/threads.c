@@ -41,7 +41,6 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
-#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-threads-debug.h>
@@ -49,7 +48,6 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32mutex.h>
 
-#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/w32error.h>

@@ -43,14 +43,10 @@
 #include "jit.h"
 #include "cfgdump.h"
 
-#include "mono/metadata/class-internals.h"
-#include "mono/metadata/domain-internals.h"
-#include "mono/metadata/object.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
-#include "mono/utils/mono-compiler.h"
 
 #ifdef __native_client_codegen__
 #include <nacl/nacl_dyncode.h>

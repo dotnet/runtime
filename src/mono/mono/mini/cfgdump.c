@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <arpa/inet.h>
-#include <errno.h>
 
 #if 0
 #define CFG_DEBUG

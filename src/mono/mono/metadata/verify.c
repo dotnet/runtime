@@ -28,7 +28,6 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/attrdefs.h>
-#include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/monobitset.h>
 #include <string.h>

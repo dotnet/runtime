@@ -28,7 +28,6 @@
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
-#include "sgen/sgen-thread-pool.h"
 #include "utils/mono-threads.h"
 #include "metadata/w32handle.h"
 

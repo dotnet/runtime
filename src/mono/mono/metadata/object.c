@@ -31,14 +31,12 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
-#include "mono/metadata/marshal.h"
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/mono-debug-debugger.h"
-#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>

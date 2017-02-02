@@ -182,7 +182,6 @@
 #include "mono/sgen/sgen-protocol.h"
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-hash-table.h"
-#include "mono/sgen/sgen-cardtable.h"
 #include "mono/sgen/sgen-pinning.h"
 #include "mono/sgen/sgen-workers.h"
 #include "mono/sgen/sgen-client.h"

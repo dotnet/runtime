@@ -44,7 +44,6 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>

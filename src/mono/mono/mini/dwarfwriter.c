@@ -23,7 +23,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mono-debug-debugger.h>
-#include <mono/utils/mono-compiler.h>
 
 #ifndef HOST_WIN32
 #include <mono/utils/freebsd-elf32.h>
