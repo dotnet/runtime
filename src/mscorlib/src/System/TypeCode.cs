@@ -20,10 +20,12 @@
 // These types of values are instead represented as classes. When the type code
 // of an object is TypeCode.Object, a further instance-of check can be used to
 // determine if the object is one of these values.
-namespace System {
+
+namespace System
+{
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public enum TypeCode {
+    public enum TypeCode
+    {
         Empty = 0,          // Null reference
         Object = 1,         // Instance that isn't a value
         DBNull = 2,         // Database null value
@@ -44,5 +46,3 @@ namespace System {
         String = 18,        // Unicode character string
     }
 }
-
-

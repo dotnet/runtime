@@ -10,11 +10,11 @@
 **
 **
 ============================================================*/
-namespace System {
-    
-    using System;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System;
+
+namespace System
+{
     public interface IFormatProvider
     {
         // Interface does not need to be marked with the serializable attribute

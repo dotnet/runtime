@@ -2,17 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: Interface for providing progress updates.
-**
-**
-===========================================================*/
-
 namespace System
 {
     /// <summary>Defines a provider for progress updates.</summary>
