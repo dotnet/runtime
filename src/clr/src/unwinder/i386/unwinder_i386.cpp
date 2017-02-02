@@ -67,7 +67,6 @@ OOPStackUnwinderX86::VirtualUnwind(
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine
     )
 {
-    *EstablisherFrame = ContextRecord->Esp;
     if (HandlerRoutine != NULL)
     {
         *HandlerRoutine = NULL;
@@ -108,6 +107,10 @@ OOPStackUnwinderX86::VirtualUnwind(
     ContextRecord->Esp = rd.SP;
     ContextRecord->Eip = rd.ControlPC;
 
+    // For x86, the value of Establisher Frame Pointer is Caller SP
+    //
+    // (Please refers to CLR ABI for details)
+    *EstablisherFrame = ContextRecord->Esp;
     return S_OK;
 }
 
