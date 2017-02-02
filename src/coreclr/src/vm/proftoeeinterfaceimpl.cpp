@@ -7411,7 +7411,7 @@ Loop:
                 REGDISPLAY rd;
                 ZeroMemory(&rd, sizeof(rd));
 
-                rd.pEbp = &ctxCur.Ebp;
+                rd.SetEbpLocation(&ctxCur.Ebp);
                 rd.SP = ctxCur.Esp;
                 rd.ControlPC = ctxCur.Eip;
 
@@ -7422,7 +7422,7 @@ Loop:
                     &codeManState, 
                     NULL);
 
-                ctxCur.Ebp = *(rd.pEbp);
+                ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;
                 ctxCur.Eip = rd.ControlPC;
             }
