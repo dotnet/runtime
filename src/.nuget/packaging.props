@@ -4,10 +4,10 @@
 
   <PropertyGroup>
     <!-- Distro rid is passed as runtimeos-arch-->
-    <OSRid>win10</OSRid>
     <_distroRidIndex>$(__DistroRid.IndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
-    <OSRid Condition="'$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
+    <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
+    <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(__DistroRid.SubString($(_archRidIndex)))</ArchGroup>
   </PropertyGroup>
   <PropertyGroup>
@@ -26,9 +26,10 @@
 
   <!-- derive an OS Group based on the OS Family -->
   <PropertyGroup Condition="'$(_runtimeOSFamily)' != ''">
-    <_derivedPackageTargetOSGroup>Linux</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(__BuildOS)' != ''">$(__BuildOS)</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
 
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
   </PropertyGroup>
