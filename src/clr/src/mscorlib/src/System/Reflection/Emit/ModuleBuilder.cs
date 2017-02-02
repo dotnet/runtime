@@ -50,10 +50,7 @@ namespace System.Reflection.Emit
     }
 
     // deliberately not [serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ModuleBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class ModuleBuilder : Module, _ModuleBuilder
+    public class ModuleBuilder : Module
     {
         #region FCalls
 
