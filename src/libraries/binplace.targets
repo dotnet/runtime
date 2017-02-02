@@ -7,8 +7,18 @@
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
-    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
-    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+
+    <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
+
+    <!-- if building desktop facade, we don't bin place the refs -->
+    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRuntime Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">true</BinPlaceRuntime>
+
+    <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
+    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
+
+    <BinPlaceStuffDependsOn Condition="'$(BinPlaceRef)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
+    <BinPlaceStuffDependsOn Condition="'$(BinPlaceRuntime)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
   </PropertyGroup>
   
   <ItemGroup>
