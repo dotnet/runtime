@@ -18,10 +18,7 @@ namespace System.Reflection
     using MdToken = System.Reflection.MetadataToken;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ParameterInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class ParameterInfo : _ParameterInfo, ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
     {
         #region Legacy Protected Members
         protected String NameImpl; 

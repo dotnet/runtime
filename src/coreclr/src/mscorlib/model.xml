@@ -80,10 +80,6 @@
       <Member Name="CreateInstanceFrom(System.String,System.String)" />
       <Member Name="CreateInstanceFrom(System.String,System.String,System.Boolean,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo,System.Object[])" />
       <Member Name="CreateInstanceFrom(System.String,System.String,System.Object[])" />
-      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetIDsOfNames(System.Guid@,System.IntPtr,System.UInt32,System.UInt32,System.IntPtr)" />
-      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetTypeInfo(System.UInt32,System.UInt32,System.IntPtr)" />
-      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.GetTypeInfoCount(System.UInt32@)" />
-      <Member Status="ImplRoot" Name="System.Runtime.InteropServices._Activator.Invoke(System.UInt32,System.Guid@,System.UInt32,System.Int16,System.IntPtr,System.IntPtr,System.IntPtr,System.IntPtr)" />
     </Type>
     <Type Status="ImplRoot" Name="System.AppDomain">
       <Member Status="ImplRoot" Name="get_CurrentDomain" />

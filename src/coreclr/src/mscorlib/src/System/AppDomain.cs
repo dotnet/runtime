@@ -176,11 +176,7 @@ namespace System
     }
 
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(System._AppDomain))]
-    [ComVisible(true)]
-    public sealed class AppDomain :
-        _AppDomain, IEvidenceFactory
+    public sealed class AppDomain : IEvidenceFactory
     {
         // Domain security information
         // These fields initialized from the other side only. (NOTE: order 

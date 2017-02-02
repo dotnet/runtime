@@ -13,10 +13,7 @@ namespace System.Reflection.Emit
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_FieldBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class FieldBuilder : FieldInfo, _FieldBuilder
+    public sealed class FieldBuilder : FieldInfo
     {
         #region Private Data Members
         private int m_fieldTok;

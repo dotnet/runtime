@@ -156,10 +156,7 @@ namespace System.Reflection.Emit
 
     // AssemblyBuilder class.
     // deliberately not [serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_AssemblyBuilder))]
-    [ComVisible(true)]
-    public sealed class AssemblyBuilder : Assembly, _AssemblyBuilder
+    public sealed class AssemblyBuilder : Assembly
     {
         #region FCALL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

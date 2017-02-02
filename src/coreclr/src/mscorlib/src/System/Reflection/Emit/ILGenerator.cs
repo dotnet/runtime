@@ -15,10 +15,7 @@ namespace System.Reflection.Emit
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ILGenerator))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class ILGenerator : _ILGenerator
+    public class ILGenerator
     {
         #region Const Members
         private const int defaultSize = 16;

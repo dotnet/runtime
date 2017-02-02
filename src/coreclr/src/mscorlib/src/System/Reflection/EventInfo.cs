@@ -17,10 +17,7 @@ namespace System.Reflection
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_EventInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class EventInfo : MemberInfo, _EventInfo
+    public abstract class EventInfo : MemberInfo
     {
         #region Constructor
         protected EventInfo() { }

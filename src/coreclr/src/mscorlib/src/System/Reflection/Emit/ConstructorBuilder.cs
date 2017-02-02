@@ -16,10 +16,7 @@ namespace System.Reflection.Emit
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ConstructorBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ConstructorBuilder : ConstructorInfo, _ConstructorBuilder
+    public sealed class ConstructorBuilder : ConstructorInfo
     { 
         private readonly MethodBuilder m_methodBuilder;
         internal bool m_isDefaultConstructor;

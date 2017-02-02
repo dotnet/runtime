@@ -29,10 +29,7 @@ namespace System
     using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Type))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Type : MemberInfo, _Type, IReflect
+    public abstract class Type : MemberInfo, IReflect
     {
         //
         // System.Type is appdomain agile type. Appdomain agile types cannot have precise static constructors. Make
@@ -300,7 +297,6 @@ namespace System
 
 
         // Module Property associated with a class.
-        // _Type.Module
         public new abstract Module Module { get; }
 
         // Assembly Property associated with a class.
@@ -1749,7 +1745,6 @@ namespace System
             return Equals(o as Type);
         }
 
-        // _Type.Equals(Type)
         [Pure]
         public virtual bool Equals(Type o)
         {
@@ -1787,7 +1782,6 @@ namespace System
         }
 
         // this method is required so Object.GetType is not made virtual by the compiler 
-        // _Type.GetType()
         public new Type GetType()
         {
             return base.GetType();

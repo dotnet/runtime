@@ -23,10 +23,7 @@ namespace System.Reflection
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ConstructorInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class ConstructorInfo : MethodBase, _ConstructorInfo
+    public abstract class ConstructorInfo : MethodBase
     {
         #region Static Members
         [System.Runtime.InteropServices.ComVisible(true)]

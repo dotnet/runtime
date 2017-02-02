@@ -103,11 +103,7 @@ namespace System.Threading {
         }
     }
 
-    // deliberately not [serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Thread))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Thread : RuntimeThread, _Thread
+    public sealed class Thread : RuntimeThread
     {
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in

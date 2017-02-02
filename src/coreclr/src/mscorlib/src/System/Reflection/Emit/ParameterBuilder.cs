@@ -19,10 +19,7 @@ namespace System.Reflection.Emit {
     using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ParameterBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public class ParameterBuilder : _ParameterBuilder
+    public class ParameterBuilder
     {
         // set ParamMarshal
         [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
