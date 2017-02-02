@@ -23,6 +23,12 @@ mono_btls_error_get_error (void);
 void
 mono_btls_error_clear_error (void);
 
+int
+mono_btls_error_peek_error_line (const char **file, int *line);
+
+int
+mono_btls_error_get_error_line (const char **file, int *line);
+
 void
 mono_btls_error_get_error_string_n (int error, char *buf, int len);
 

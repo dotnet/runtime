@@ -22,6 +22,18 @@ mono_btls_error_get_error (void)
 	return ERR_get_error ();
 }
 
+MONO_API int
+mono_btls_error_peek_error_line (const char **file, int *line)
+{
+	return ERR_peek_error_line (file, line);
+}
+
+MONO_API int
+mono_btls_error_get_error_line (const char **file, int *line)
+{
+	return ERR_get_error_line (file, line);
+}
+
 MONO_API void
 mono_btls_error_clear_error (void)
 {
