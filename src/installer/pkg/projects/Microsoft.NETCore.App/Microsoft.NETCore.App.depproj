@@ -23,9 +23,14 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
+    <ItemGroup  Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <_runtimeCLR Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'coreclr' OR '%(ReferenceCopyLocalPaths.FileName)' == 'libcoreclr'" />
+    </ItemGroup>
     <!-- start with all the files resolved -->
-    <PropertyGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
-      <_runtimePackagePath Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'coreclr' OR '%(ReferenceCopyLocalPaths.FileName)' == 'libcoreclr'">$(PackagesDir)%(ReferenceCopyLocalPaths.NuGetPackageId)/%(ReferenceCopyLocalPaths.NuGetPackageVersion)</_runtimePackagePath>
+    <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
+      <_runtimePackageId>%(_runtimeCLR.NuGetPackageId)</_runtimePackageId>
+      <_runtimePackageVersion>%(_runtimeCLR.NuGetPackageVersion)</_runtimePackageVersion>
+      <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId)/$(_runtimePackageVersion)</_runtimePackagePath>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
@@ -39,9 +44,10 @@
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
       </_FilesToPackage>
-      <_FileToPackage Include="$(_runtimePackagePath)/tools/*.*">
+      <_FilesToPackage Include="$(_runtimePackagePath)/tools/*.*">
+        <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
         <TargetPath>tools</TargetPath>
-      </_FileToPackage>
+      </_FilesToPackage>
     </ItemGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
