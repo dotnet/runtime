@@ -7,6 +7,7 @@
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'uapaot'">None</ResourcesSourceOutputDirectory>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uapaot'">true</SkipCommonResourcesIncludes>
     <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'uapaot'">true</AllowUnsafeBlocks>
+    <ProjectGuid>{3E7810B2-2802-4867-B223-30427F3F2D5B}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />

@@ -5,7 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
-    <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
+    <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">wpa81</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>

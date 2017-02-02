@@ -5,6 +5,7 @@
     <AssemblyName>System.Reflection.Emit.ILGeneration</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesArgs Condition="'$(TargetGroup)'=='uapaot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <ProjectGuid>{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />

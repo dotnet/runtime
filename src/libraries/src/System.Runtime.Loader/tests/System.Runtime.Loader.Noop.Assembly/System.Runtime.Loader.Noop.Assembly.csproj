@@ -7,6 +7,8 @@
     <SkipSigning>true</SkipSigning>
     <NoWarn>0436</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="TestClass.cs" />
   </ItemGroup>

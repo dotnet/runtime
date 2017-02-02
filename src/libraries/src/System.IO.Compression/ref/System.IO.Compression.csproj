@@ -4,6 +4,7 @@
   <PropertyGroup>
     <UseECMAKey>true</UseECMAKey>
     <NoWarn Condition="'$(TargetGroup)' == 'netfx'">0436</NoWarn>
+    <ProjectGuid>{4ADD9456-A929-4254-B8A2-16FC628ABFDA}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />

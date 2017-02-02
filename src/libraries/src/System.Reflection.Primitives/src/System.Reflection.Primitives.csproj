@@ -4,6 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.Primitives</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ProjectGuid>{CCE47F37-2C51-44EB-8F54-0474D7831515}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
