@@ -6,6 +6,7 @@
     <AssemblyName>System.Threading</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <GenFacadesArgs Condition="'$(TargetGroup)'=='uapaot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -14,12 +15,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Threading\Helpers.CoreCLR.cs" />
-    <Compile Include="System\Threading\Barrier.cs" />
-    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
+    <Compile Include="System\Threading\Barrier.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
+    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="System\Threading\HostExecutionContext.cs" />
     <Compile Include="System\Threading\HostExecutionContextManager.cs" />
     <Compile Include="System\Threading\LockCookie.cs" />
@@ -34,6 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
