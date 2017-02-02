@@ -30,8 +30,21 @@
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
       <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
+    <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">
       <RefPath>$(RefRootPath)netstandard</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netcoreapp'" 
+                           Include="netcoreapp-$(OSGroup)">
+      <RefPath>$(RefRootPath)netcoreapp</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'uap'" 
+                           Include="uap-$(OSGroup)">
+      <RefPath>$(RefRootPath)uap</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netfx'" 
+                           Include="netfx-$(OSGroup)">
+      <RefPath>$(RefRootPath)netfx</RefPath>
     </BinplaceConfiguration>
   </ItemGroup>
 
@@ -43,13 +56,13 @@
 
   <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
     <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" >
+    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" SkipUnchangedFiles="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
   <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
-    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)">
+    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)" SkipUnchangedFiles="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
