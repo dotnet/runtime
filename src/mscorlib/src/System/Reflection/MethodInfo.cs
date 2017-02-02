@@ -24,10 +24,7 @@ namespace System.Reflection
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MethodInfo : MethodBase, _MethodInfo
+    public abstract class MethodInfo : MethodBase
     {
         #region Constructor
         protected MethodInfo() { }

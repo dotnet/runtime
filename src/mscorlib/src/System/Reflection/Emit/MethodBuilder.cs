@@ -19,10 +19,7 @@ namespace System.Reflection.Emit
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class MethodBuilder : MethodInfo, _MethodBuilder
+    public sealed class MethodBuilder : MethodInfo
     {
         #region Private Data Members
         // Identity

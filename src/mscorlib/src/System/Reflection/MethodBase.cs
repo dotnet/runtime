@@ -48,10 +48,7 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodBase))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MethodBase : MemberInfo, _MethodBase
+    public abstract class MethodBase : MemberInfo
     {
         #region Static Members
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle)

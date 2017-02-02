@@ -263,7 +263,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\IAppDomain.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ApplicationId.cs" />
@@ -288,7 +287,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\CfgParser.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CLSCompliantAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\cominterfaces.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
@@ -437,7 +435,6 @@
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\Binder.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\BindingFlags.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\CallingConventions.cs" />
-    <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\ComInterfaces.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\DefaultMemberAttribute.cs" />
@@ -493,7 +490,6 @@
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderAccess.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
-    <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ComInterfaces.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />

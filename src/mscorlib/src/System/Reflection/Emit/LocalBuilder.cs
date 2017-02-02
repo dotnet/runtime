@@ -9,10 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit 
 {
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_LocalBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class LocalBuilder : LocalVariableInfo, _LocalBuilder
+    public sealed class LocalBuilder : LocalVariableInfo
     { 
         #region Private Data Members
         private int m_localIndex;
