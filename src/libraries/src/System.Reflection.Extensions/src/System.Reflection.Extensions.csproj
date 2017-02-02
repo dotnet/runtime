@@ -6,6 +6,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- all targets but netcore50aot are pure facades. Exclude resources for pure facades -->
     <ExcludeResourcesImport Condition="'$(TargetGroup)'!='netcore50aot'">true</ExcludeResourcesImport>
+    <ProjectGuid>{26699AB1-DBAC-4819-A1C0-185AB37CF127}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />

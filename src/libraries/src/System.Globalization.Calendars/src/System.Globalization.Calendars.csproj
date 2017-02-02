@@ -4,6 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.Globalization.Calendars</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ProjectGuid>{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />

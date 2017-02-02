@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
+    <ProjectGuid>{2C58640B-5BED-4E83-9554-CD2B9762643F}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

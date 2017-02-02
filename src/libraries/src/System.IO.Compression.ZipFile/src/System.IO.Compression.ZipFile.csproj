@@ -4,7 +4,7 @@
   <PropertyGroup>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <AssemblyName>System.IO.Compression.ZipFile</AssemblyName>
-    <ProjectGuid>{D5FF747F-7A0B-9003-885A-FE9A63E755E5}</ProjectGuid>
+    <ProjectGuid>{ACF967ED-7FC9-435C-B2C9-306626B7B6C6}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
