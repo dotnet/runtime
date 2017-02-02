@@ -469,14 +469,15 @@ namespace System.Threading
                 !workItems.TryDequeue(out callback)) // then try the global queue
             {
                 // finally try to steal from another thread's local queue
-                WorkStealingQueue[] otherQueues = WorkStealingQueueList.Queues;
-                int c = otherQueues.Length;
+                WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                int c = queues.Length;
+                Debug.Assert(c > 0, "There must at least be a queue for this thread.");
                 int maxIndex = c - 1;
                 int i = tl.random.Next(c);
                 while (c > 0)
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
-                    WorkStealingQueue otherQueue = otherQueues[i];
+                    WorkStealingQueue otherQueue = queues[i];
                     if (otherQueue != wsq)
                     {
                         callback = otherQueue.TrySteal(ref missedSteal);
@@ -532,10 +533,6 @@ namespace System.Threading
                 //
                 while ((Environment.TickCount - quantumStartTime) < ThreadPoolGlobals.TP_QUANTUM)
                 {
-                    //
-                    // Dequeue and EnsureThreadRequested must be protected from ThreadAbortException.  
-                    // These are fast, so this will not delay aborts/AD-unloads for very long.
-                    //
                     bool missedSteal = false;
                     workItem = workQueue.Dequeue(tl, ref missedSteal);
 
@@ -632,20 +629,27 @@ namespace System.Threading
     }
 
     // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
-    internal sealed class FastRandom // xorshift prng
+    internal struct FastRandom // xorshift prng
     {
-        private uint _x, _w = 88675123, _y = 362436069, _z = 521288629;
+        private uint _w, _x, _y, _z;
 
-        public FastRandom(int seed) { _x = (uint)seed; }
+        public FastRandom(int seed)
+        {
+            _x = (uint)seed;
+            _w = 88675123;
+            _y = 362436069;
+            _z = 521288629;
+        }
 
         public int Next(int maxValue)
         {
+            Debug.Assert(maxValue > 0);
+
             uint t = _x ^ (_x << 11);
             _x = _y; _y = _z; _z = _w;
             _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
 
-            int r = (int)_w & int.MaxValue;
-            return (int)(r * (1.0 / ((double)int.MaxValue + 1)) * maxValue);
+            return (int)(_w % (uint)maxValue);
         }
     }
 
@@ -657,7 +661,7 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
-        public readonly FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId);
+        public FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
