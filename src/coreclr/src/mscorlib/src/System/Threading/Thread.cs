@@ -145,18 +145,6 @@ namespace System.Threading {
         private bool m_ForbidExecutionContextMutation;
 #endif
 
-        /*=========================================================================
-        ** This manager is responsible for storing the global data that is
-        ** shared amongst all the thread local stores.
-        =========================================================================*/
-        static private LocalDataStoreMgr s_LocalDataStoreMgr;
-
-        /*=========================================================================
-        ** Thread-local data store
-        =========================================================================*/
-        [ThreadStatic]
-        static private LocalDataStoreHolder s_LocalDataStore;
-
         // Do not move! Order of above fields needs to be preserved for alignment
         // with native code
         // See code:#threadCultureInfo
@@ -498,78 +486,6 @@ namespace System.Threading {
         private extern void StartupSetApartmentStateInternal();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-        /*=========================================================================
-        ** Allocates an un-named data slot. The slot is allocated on ALL the
-        ** threads.
-        =========================================================================*/
-        public static LocalDataStoreSlot AllocateDataSlot()
-        {
-            return LocalDataStoreManager.AllocateDataSlot();
-        }
-
-        /*=========================================================================
-        ** Allocates a named data slot. The slot is allocated on ALL the
-        ** threads.  Named data slots are "public" and can be manipulated by
-        ** anyone.
-        =========================================================================*/
-        public static LocalDataStoreSlot AllocateNamedDataSlot(String name)
-        {
-            return LocalDataStoreManager.AllocateNamedDataSlot(name);
-        }
-
-        /*=========================================================================
-        ** Looks up a named data slot. If the name has not been used, a new slot is
-        ** allocated.  Named data slots are "public" and can be manipulated by
-        ** anyone.
-        =========================================================================*/
-        public static LocalDataStoreSlot GetNamedDataSlot(String name)
-        {
-            return LocalDataStoreManager.GetNamedDataSlot(name);
-        }
-
-        /*=========================================================================
-        ** Frees a named data slot. The slot is allocated on ALL the
-        ** threads.  Named data slots are "public" and can be manipulated by
-        ** anyone.
-        =========================================================================*/
-        public static void FreeNamedDataSlot(String name)
-        {
-            LocalDataStoreManager.FreeNamedDataSlot(name);
-        }
-
-        /*=========================================================================
-        ** Retrieves the value from the specified slot on the current thread, for that thread's current domain.
-        =========================================================================*/
-        public static Object GetData(LocalDataStoreSlot slot)
-        {
-            LocalDataStoreHolder dls = s_LocalDataStore;
-            if (dls == null)
-            {
-                // Make sure to validate the slot even if we take the quick path
-                LocalDataStoreManager.ValidateSlot(slot);
-                return null;
-            }
-
-            return dls.Store.GetData(slot);
-        }
-
-        /*=========================================================================
-        ** Sets the data in the specified slot on the currently running thread, for that thread's current domain.
-        =========================================================================*/
-        public static void SetData(LocalDataStoreSlot slot, Object data)
-        {
-            LocalDataStoreHolder dls = s_LocalDataStore;
-
-            // Create new DLS if one hasn't been created for this domain for this thread
-            if (dls == null) {
-                dls = LocalDataStoreManager.CreateLocalDataStore();
-                s_LocalDataStore = dls;
-            }
-
-            dls.Store.SetData(slot, data);
-        }
-
-
         // #threadCultureInfo
         //
         // Background:
@@ -820,19 +736,6 @@ namespace System.Threading {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
-
-        private static LocalDataStoreMgr LocalDataStoreManager
-        {
-            get 
-            {
-                if (s_LocalDataStoreMgr == null)
-                {
-                    Interlocked.CompareExchange(ref s_LocalDataStoreMgr, new LocalDataStoreMgr(), null);    
-                }
-
-                return s_LocalDataStoreMgr;
-            }
-        }
 
         // Helper function to set the AbortReason for a thread abort.
         //  Checks that they're not alredy set, and then atomically updates

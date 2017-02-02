@@ -338,8 +338,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\InvalidTimeZoneException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\IConvertible.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\IServiceObjectProvider.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\_LocalDataStore.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\_LocalDataStoreMgr.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\MarshalByRefObject.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Math.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\MathF.cs" />
