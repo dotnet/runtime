@@ -28,18 +28,12 @@ namespace System.DirectoryServices.AccountManagement
         private PrincipalContext _owningContext = null;
         internal PrincipalContext OwningContext
         {
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Field: owningContext" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningContext;
             }
 
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Field: owningContext" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -321,10 +315,6 @@ namespace System.DirectoryServices.AccountManagement
             PropertyNames.ComputerServicePrincipalNames
         };
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetChangeStatusForProperty(System.String):System.Boolean" />
-        // <ReferencesCritical Name="Method: BuildFilterSet(Principal, String[], QbeFilterDescription):Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         protected QbeFilterDescription BuildQbeFilterDescription(Principal p)
         {
@@ -370,11 +360,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Applies to supplied propertySet to the supplied Principal, and adds any resulting filters
         // to qbeFilterDescription.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetChangeStatusForProperty(System.String):System.Boolean" />
-        // <SatisfiesLinkDemand Name="Principal.GetValueForProperty(System.String):System.Object" />
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>.get_Inserted():System.Collections.Generic.List`1<System.String>" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private void BuildFilterSet(Principal p, string[] propertySet, QbeFilterDescription qbeFilterDescription)
         {

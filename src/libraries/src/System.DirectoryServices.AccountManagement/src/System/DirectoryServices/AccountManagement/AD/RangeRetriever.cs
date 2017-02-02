@@ -16,9 +16,6 @@ namespace System.DirectoryServices.AccountManagement
     /// if disposeDirEntry parameter is set to true in its constructor.
     /// </summary>
     /// 
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618

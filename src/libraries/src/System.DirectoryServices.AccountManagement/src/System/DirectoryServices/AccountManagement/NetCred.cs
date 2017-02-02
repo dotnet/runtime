@@ -31,9 +31,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string ParsedUserName
         {
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Method: SplitUsername(String, String&, String&):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -48,9 +45,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string Domain
         {
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Method: SplitUsername(String, String&, String&):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -63,9 +57,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CredUIParseUserName(System.String,System.Text.StringBuilder,System.UInt32,System.Text.StringBuilder,System.UInt32):System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private void SplitUsername(string username, ref string parsedUserName, ref string parsedDomainName)
         {

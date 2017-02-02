@@ -18,9 +18,6 @@ namespace System.DirectoryServices.AccountManagement
 
     internal static class GlobalDebug
     {
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Debug.get_Listeners():System.Diagnostics.TraceListenerCollection" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         static GlobalDebug()
         {
@@ -63,9 +60,6 @@ namespace System.DirectoryServices.AccountManagement
             get { return DebugLevel.Info >= GlobalDebug.s_debugLevel; }
         }
 
-        // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="SafeNativeMethods.GetCurrentThreadId():System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         [ConditionalAttribute("DEBUG")]
         static public void WriteLineIf(bool f, string category, string message, params object[] args)
@@ -81,9 +75,6 @@ namespace System.DirectoryServices.AccountManagement
                             category);
         }
 
-        // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="SafeNativeMethods.GetCurrentThreadId():System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         [ConditionalAttribute("DEBUG")]
         static public void WriteLineIf(bool f, string category, string message)
