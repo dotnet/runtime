@@ -62,7 +62,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     PCONTEXT pContextForUnwind; // scratch context for unwinding
                                 // used to preserve context saved in the frame that
                                 // could be otherwise wiped by the unwinding
-#endif // !WIN64EXCEPTIONS
 
     DWORD * pEdi;
     DWORD * pEsi;
@@ -72,6 +71,33 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     DWORD * pEax;
 
     DWORD * pEbp;
+#endif // !WIN64EXCEPTIONS
+
+#ifndef WIN64EXCEPTIONS
+
+#define REG_METHODS(reg) \
+    inline PDWORD Get##reg##Location(void) { return p##reg;  } \
+    inline void   Set##reg##Location(PDWORD p##reg) { this->p##reg = p##reg; }
+
+#else // !WIN64EXCEPTIONS
+
+#define REG_METHODS(reg) \
+    inline PDWORD Get##reg##Location(void) { return pCurrentContextPointers->reg; } \
+    inline void   Set##reg##Location(PDWORD p##reg) { pCurrentContextPointers->reg = p##reg; }
+
+#endif // WIN64EXCEPTIONS
+
+    REG_METHODS(Eax)
+    REG_METHODS(Ecx)
+    REG_METHODS(Edx)
+
+    REG_METHODS(Ebx)
+    REG_METHODS(Esi)
+    REG_METHODS(Edi)
+    REG_METHODS(Ebp)
+
+#undef REG_METHODS
+
     TADDR   PCTAddr;
 };
 
@@ -90,13 +116,13 @@ inline void SetRegdisplaySP(REGDISPLAY *display, LPVOID sp ) {
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (TADDR)*(display->pEbp);
+    return (TADDR)*display->GetEbpLocation();
 }
 
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
     
-    return (LPVOID)display->pEbp;
+    return (LPVOID)display->GetEbpLocation();
 }
 
 inline PCODE GetControlPC(REGDISPLAY *display) {
@@ -393,10 +419,10 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     pRD->ctxPtrsOne.Lr = &pctx->Lr;
 #elif defined(_TARGET_X86_) // _TARGET_ARM_
-    pRD->ctxPtrsOne.Ebx = &pctx->Ebx;
-    pRD->ctxPtrsOne.Esi = &pctx->Esi;
-    pRD->ctxPtrsOne.Edi = &pctx->Edi;
-    pRD->ctxPtrsOne.Ebp = &pctx->Ebp;
+    for (int i = 0; i < 7; i++)
+    {
+        *(&pRD->ctxPtrsOne.Esi + i) = (&pctx->Esi + i);
+    }
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("FillRegDisplay");
 #endif // _TARGET_???_ (ELSE)
