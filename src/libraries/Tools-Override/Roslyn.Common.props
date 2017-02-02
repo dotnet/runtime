@@ -3,6 +3,7 @@
   <PropertyGroup>
     <RoslynVersion>2.0.0-beta3</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
+    <RoslynTargetsPath>$(ToolRuntimePath)</RoslynTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup>
