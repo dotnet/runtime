@@ -48,7 +48,7 @@ usage()
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
     echo "buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
-    echo "msbuildonunsupportedplatform"
+    echo "msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
     exit 1
 }
 
