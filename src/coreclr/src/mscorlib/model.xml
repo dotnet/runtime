@@ -5551,6 +5551,7 @@
       <Member Name="GetFieldFromHandle(System.RuntimeFieldHandle)" />
       <Member Name="GetFieldFromHandle(System.RuntimeFieldHandle,System.RuntimeTypeHandle)" />
       <Member Name="GetValue(System.Object)" />
+      <Member Name="GetValueDirect(System.TypedReference)" />
       <Member Name="GetOptionalCustomModifiers" />
       <Member Name="GetRequiredCustomModifiers" />
       <Member Name="GetRawConstantValue" />
@@ -5558,6 +5559,7 @@
       <Member Name="GetHashCode" />
       <Member Name="SetValue(System.Object,System.Object)" />
       <Member Name="SetValue(System.Object,System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Globalization.CultureInfo)" />
+      <Member Name="SetValueDirect(System.TypedReference,System.Object)" />
       <Member MemberType="Property" Name="Attributes" />
       <Member MemberType="Property" Name="FieldHandle" />
       <Member MemberType="Property" Name="FieldType" />
@@ -7285,6 +7287,7 @@
       <Member Name="Concat(System.Object)" />
       <Member Name="Concat(System.Object,System.Object)" />
       <Member Name="Concat(System.Object,System.Object,System.Object)" />
+      <Member Name="Concat(System.Object,System.Object,System.Object,System.Object,__arglist)" />
       <Member Name="Concat(System.Object[])" />
       <Member Name="Concat(System.String,System.String)" />
       <Member Name="Concat(System.String,System.String,System.String)" />
@@ -9043,7 +9046,15 @@
       <Member Name="get_TypeName" />
       <Member MemberType="Property" Name="TypeName" />
     </Type>
-    <Type Name="System.TypedReference" />
+    <Type Name="System.TypedReference">
+      <Member Name="Equals(System.Object)" />
+      <Member Name="GetHashCode" />
+      <Member Name="GetTargetType(System.TypedReference)" />
+      <Member Name="MakeTypedReference(System.Object,System.Reflection.FieldInfo[])" />
+      <Member Name="SetTypedReference(System.TypedReference,System.Object)" />
+      <Member Name="TargetTypeToken(System.TypedReference)" />
+      <Member Name="ToObject(System.TypedReference)" />
+    </Type>
     <Type Name="System.TypeLoadException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -11112,7 +11123,15 @@
     </Type>
     <Type Status="ImplRoot" Name="System.Runtime.InteropServices.PInvokeMap" />
     <Type Name="System.ArgIterator">  <!-- for MC++ -->
-      <Member Status="ImplRoot" Name="#ctor(System.RuntimeArgumentHandle,System.Void*)" /> <!-- EE - il stubs -->
+      <Member Name="#ctor(System.RuntimeArgumentHandle)" />
+      <Member Name="#ctor(System.RuntimeArgumentHandle,System.Void*)" />
+      <Member Name="End" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="GetHashCode" />
+      <Member Name="GetNextArg" />
+      <Member Name="GetNextArg(System.RuntimeTypeHandle)" />
+      <Member Name="GetNextArgType" />
+      <Member Name="GetRemainingCount" />
     </Type>
         <Type Name="System.Runtime.InteropServices.BestFitMappingAttribute">
       <Member MemberType="Field" Name="ThrowOnUnmappableChar" />
