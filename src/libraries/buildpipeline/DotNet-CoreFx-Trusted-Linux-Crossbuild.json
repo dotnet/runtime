@@ -202,6 +202,60 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Run build-managed.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run -w=\"$(PB_GitDirectory)\" --name $(PB_DockerContainerName) $(PB_DockerContainerName) $(PB_GitDirectory)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Commit changes",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "commit $(PB_DockerContainerName) $(PB_DockerContainerName)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Remove container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "rm $(PB_DockerContainerName)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Run sync.sh",
       "timeoutInMinutes": 0,
       "task": {
