@@ -3505,9 +3505,6 @@
       <Member Name="get_Value"/>
       <Member Status="ImplRoot" Name="OnSerializing(System.Runtime.Serialization.StreamingContext)" />
     </Type>
-    <Type Name="System.LocalDataStoreSlot">
-      <Member Status="ImplRoot" Name="Finalize" />
-    </Type>
     <Type Name="System.MarshalByRefObject">
       <Member Name="#ctor" />
       <Member Name="GetLifetimeService" />
