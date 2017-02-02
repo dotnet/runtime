@@ -2414,12 +2414,6 @@ namespace System
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class LocalDataStoreSlot
-    {
-        internal LocalDataStoreSlot() { }
-        ~LocalDataStoreSlot() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
