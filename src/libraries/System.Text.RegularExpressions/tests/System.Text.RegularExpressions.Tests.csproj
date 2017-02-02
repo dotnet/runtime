@@ -27,6 +27,9 @@
     <Compile Include="Regex.Split.Tests.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
