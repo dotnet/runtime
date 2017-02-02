@@ -64,7 +64,7 @@
   "frameworks": {
     "netcoreapp1.1": {
       "dependencies": {
-        "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25001-07"
+        "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25002-03"
       }
     }
   },
