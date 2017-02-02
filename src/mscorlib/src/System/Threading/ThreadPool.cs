@@ -631,6 +631,24 @@ namespace System.Threading
         }
     }
 
+    // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
+    internal sealed class FastRandom // xorshift prng
+    {
+        private uint _x, _w = 88675123, _y = 362436069, _z = 521288629;
+
+        public FastRandom(int seed) { _x = (uint)seed; }
+
+        public int Next(int maxValue)
+        {
+            uint t = _x ^ (_x << 11);
+            _x = _y; _y = _z; _z = _w;
+            _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
+
+            int r = (int)_w & int.MaxValue;
+            return (int)(r * (1.0 / ((double)int.MaxValue + 1)) * maxValue);
+        }
+    }
+
     // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
@@ -639,7 +657,7 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
-        public readonly Random random = new Random(Thread.CurrentThread.ManagedThreadId);
+        public readonly FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId);
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
