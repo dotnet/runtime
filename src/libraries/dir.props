@@ -255,6 +255,9 @@
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 
+    <!-- project file to use when resolving ReferenceFromRuntime items -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(ProjectDir)\external\runtime\runtime.depproj</RuntimeProjectFile>
+    
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(BinDir)netcoreapp\pkg\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(BinDir)netcoreapp\pkg\lib</NETCoreAppPackageRuntimePath>

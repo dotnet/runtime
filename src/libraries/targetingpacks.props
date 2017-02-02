@@ -25,8 +25,6 @@
       <Reference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)"> <!-- TODO: System.Private.CoreLib shouldn't even be in the targeting pack. -->
         <Private>false</Private>
       </Reference>
-      <ReferencePath Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" />
     </ItemGroup>
   </Target>
-
 </Project>
