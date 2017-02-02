@@ -20,6 +20,10 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
+#ifdef WIN64EXCEPTIONS
+#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
+#endif
+
 #ifdef _DEBUG
 void* forceFrame;   // Variable used to force a local variable to the frame
 #endif
@@ -1343,7 +1347,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     {
         TADDR curSP = GetRegdisplaySP(m_crawl.pRD);
 
-#if !defined(_TARGET_X86_)
+#ifdef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         if (m_crawl.IsFrameless())
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame 
@@ -1351,7 +1355,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
             EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL);
             curSP = GetSP(m_crawl.pRD->pCallerContext);
         }
-#endif // !_TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
 #if defined(_TARGET_X86_)
         // special processing on x86; see below for more information
@@ -2368,7 +2372,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         }
         else
         {
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // On x86, we process a managed stack frame before processing any explicit frames contained in it.
             // So when we are done with the skipped explicit frame, we have already processed the managed
             // stack frame, and it is time to move onto the next stack frame.
@@ -2377,7 +2381,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             {
                 goto Cleanup;
             }
-#else // _TARGET_X86_
+#else // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // We are done handling the skipped explicit frame at this point.  So move on to the 
             // managed stack frame.
             m_crawl.isFrameless = true;
@@ -2387,7 +2391,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             PreProcessingForManagedFrames();
             goto Cleanup;
-#endif // _TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         }
     }
     else if (m_frameState == SFITER_FRAMELESS_METHOD)
@@ -2572,14 +2576,14 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         m_crawl.hasFaulted    = FALSE;
         m_crawl.isIPadjusted  = FALSE;
 
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         // remember, x86 handles the managed stack frame before the explicit frames contained in it
         if (CheckForSkippedFrames())
         {
             _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);
             goto Cleanup;
         }
-#endif // _TARGET_X86_
+#endif // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
         PostProcessingForManagedFrames();
         if (m_frameState == SFITER_NATIVE_MARKER_FRAME)
@@ -2966,7 +2970,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;
 
-#if !defined(_TARGET_X86_)
+#ifdef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // On non-X86, we want to process the skipped explicit frames before the managed stack frame
             // containing them.
             if (CheckForSkippedFrames())
@@ -2974,7 +2978,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);
             }
             else
-#endif // !_TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             {
                 PreProcessingForManagedFrames();
                 _ASSERTE(m_frameState == SFITER_FRAMELESS_METHOD);
@@ -3021,9 +3025,9 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
     pvReferenceSP = GetRegdisplaySP(m_crawl.pRD);
-#else // _TARGET_X86_
+#else // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
@@ -3031,7 +3035,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry(), &m_cachedCodeInfo);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
-#endif // _TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) && 
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
