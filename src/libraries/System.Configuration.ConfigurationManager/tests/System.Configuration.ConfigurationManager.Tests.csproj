@@ -80,6 +80,7 @@
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
     <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />
+    <Compile Include="System\Configuration\ConnectionStringsTests.cs" />
     <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
     <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
     <Compile Include="System\Configuration\KeyValueConfigurationCollectionTests.cs" />
