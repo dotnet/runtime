@@ -852,10 +852,9 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 static void
 mono_analyze_liveness2 (MonoCompile *cfg)
 {
-	int bnum, idx, i, j, nins, max, max_vars, block_from, block_to, pos, reverse_len;
+	int bnum, idx, i, j, nins, max, max_vars, block_from, block_to, pos;
 	gint32 *last_use;
 	static guint32 disabled = -1;
-	MonoInst **reverse;
 
 	if (disabled == -1)
 		disabled = g_getenv ("DISABLED") != NULL;
@@ -889,9 +888,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 	max_vars = cfg->num_varinfo;
 	last_use = g_new0 (gint32, max_vars);
-
-	reverse_len = 1024;
-	reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
 
 	for (idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
@@ -940,25 +936,13 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		if (cfg->ret)
 			last_use [cfg->ret->inst_c0] = block_to;
 
-		for (nins = 0, pos = block_from, ins = bb->code; ins; ins = ins->next, ++nins, ++pos) {
-			if (nins >= reverse_len) {
-				int new_reverse_len = reverse_len * 2;
-				MonoInst **new_reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * new_reverse_len);
-				memcpy (new_reverse, reverse, sizeof (MonoInst*) * reverse_len);
-				reverse = new_reverse;
-				reverse_len = new_reverse_len;
-			}
-
-			reverse [nins] = ins;
-		}
+		pos = block_from + 1;
+		MONO_BB_FOR_EACH_INS (bb, ins) pos++;
 
 		/* Process instructions backwards */
-		for (i = nins - 1; i >= 0; --i) {
-			MonoInst *ins = (MonoInst*)reverse [i];
-
- 			update_liveness2 (cfg, ins, FALSE, pos, last_use);
-
-			pos --;
+		MONO_BB_FOR_EACH_INS_REVERSE (bb, ins) {
+			update_liveness2 (cfg, ins, FALSE, pos, last_use);
+			pos--;
 		}
 
 		for (idx = 0; idx < max_vars; ++idx) {
