@@ -212,13 +212,9 @@ namespace System.Threading
                 // Fast path: check the tail. If equal, we can skip the lock.
                 if (m_array[(m_tailIndex - 1) & m_mask] == obj)
                 {
-                    IThreadPoolWorkItem unused;
-                    if (LocalPop(out unused))
-                    {
-                        Debug.Assert(unused == obj);
-                        return true;
-                    }
-                    return false;
+                    IThreadPoolWorkItem unused = LocalPop();
+                    Debug.Assert(unused == null || unused == obj);
+                    return unused != null;
                 }
 
                 // Else, do an O(N) search for the work item. The theory of work stealing and our
@@ -267,19 +263,20 @@ namespace System.Threading
                 return false;
             }
 
+            public IThreadPoolWorkItem LocalPop() => m_headIndex < m_tailIndex ? LocalPopCore() : null;
+
             [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
-            public bool LocalPop(out IThreadPoolWorkItem obj)
+            private IThreadPoolWorkItem LocalPopCore()
             {
                 while (true)
                 {
-                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     int tail = m_tailIndex;
                     if (m_headIndex >= tail)
                     {
-                        obj = null;
-                        return false;
+                        return null;
                     }
 
+                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     tail -= 1;
                     Interlocked.Exchange(ref m_tailIndex, tail);
 
@@ -287,13 +284,13 @@ namespace System.Threading
                     if (m_headIndex <= tail)
                     {
                         int idx = tail & m_mask;
-                        obj = Volatile.Read(ref m_array[idx]);
+                        IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                         // Check for nulls in the array.
                         if (obj == null) continue;
 
                         m_array[idx] = null;
-                        return true;
+                        return obj;
                     }
                     else
                     {
@@ -307,20 +304,19 @@ namespace System.Threading
                             {
                                 // Element still available. Take it.
                                 int idx = tail & m_mask;
-                                obj = Volatile.Read(ref m_array[idx]);
+                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                                 // Check for nulls in the array.
                                 if (obj == null) continue;
 
                                 m_array[idx] = null;
-                                return true;
+                                return obj;
                             }
                             else
                             {
                                 // If we encountered a race condition and element was stolen, restore the tail.
                                 m_tailIndex = tail + 1;
-                                obj = null;
-                                return false;
+                                return null;
                             }
                         }
                         finally
@@ -468,7 +464,7 @@ namespace System.Threading
             WorkStealingQueue localWsq = tl.workStealingQueue;
             IThreadPoolWorkItem callback;
 
-            if (!localWsq.LocalPop(out callback) && // first try the local queue
+            if ((callback = localWsq.LocalPop()) == null && // first try the local queue
                 !workItems.TryDequeue(out callback)) // then try the global queue
             {
                 // finally try to steal from another thread's local queue
@@ -680,7 +676,7 @@ namespace System.Threading
                 if (null != workQueue)
                 {
                     IThreadPoolWorkItem cb;
-                    while (workStealingQueue.LocalPop(out cb))
+                    while ((cb = workStealingQueue.LocalPop()) != null)
                     {
                         Debug.Assert(null != cb);
                         workQueue.Enqueue(cb, forceGlobal: true);
