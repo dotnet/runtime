@@ -2,31 +2,11 @@ DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Comp
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Data'.
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.Compression.FileSystem'.
 DEFAULT_APPNAME Warning: 0 : Found 'System.Transactions' with PublicKeyToken 'b03f5f7f11d50a3a' instead of 'b77a5c561934e089'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=, Version=0.0.-1.-1, Culture=neutral, PublicKeyToken=null)' referenced by the implementation assembly 'Assembly(Name=Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, Location=F:\git\corefx\bin/ref/netcoreapp/Windows.winmd, ContentType=WindowsRuntime)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=, Version=0.0.-1.-1, Culture=neutral, PublicKeyToken=null)' referenced by the implementation assembly 'Assembly(Name=Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, Location=D:\repos\corefx\bin/ref/netcoreapp/Windows.winmd, ContentType=WindowsRuntime)'.
 Compat issues with assembly mscorlib:
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.SafeProcessHandle' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly netstandard:
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ComponentModel.Composition:
 TypesMustExist : Type 'System.Lazy<T, TMetadata>' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Console:
-MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Data:
 TypesMustExist : Type 'System.Data.AcceptRejectRule' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.CommandBehavior' does not exist in the implementation but it does exist in the contract.
@@ -182,11 +162,6 @@ TypesMustExist : Type 'System.Data.SqlTypes.StorageState' does not exist in the 
 Compat issues with assembly System.IO.Compression.FileSystem:
 TypesMustExist : Type 'System.IO.Compression.ZipFile' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.ZipFileExtensions' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Reflection:
-MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Runtime:
-MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly Windows:
 CannotRemoveBaseTypeOrInterface : Type 'Windows.ApplicationModel.AppDisplayInfo' does not inherit from base type 'System.Object' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Windows.ApplicationModel.AppInfo' does not inherit from base type 'System.Object' in the implementation but it does in the contract.
@@ -4350,4 +4325,4 @@ CannotRemoveBaseTypeOrInterface : Type 'Windows.Web.Syndication.SyndicationPerso
 CannotRemoveBaseTypeOrInterface : Type 'Windows.Web.Syndication.SyndicationText' does not inherit from base type 'System.Object' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Windows.Web.Syndication.SyndicationTextType' does not inherit from base type 'System.Enum' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Windows.Web.Syndication.TransferProgress' does not inherit from base type 'System.ValueType' in the implementation but it does in the contract.
-Total Issues: 4338
+Total Issues: 4317

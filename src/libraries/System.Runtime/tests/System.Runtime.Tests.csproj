@@ -130,6 +130,7 @@
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
+    <Compile Include="System\TypedReferenceTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />

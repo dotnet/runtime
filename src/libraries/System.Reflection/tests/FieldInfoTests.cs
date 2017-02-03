@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class FieldInfoTests
+    public partial class FieldInfoTests
     {
         [Theory]
         [InlineData(nameof(FieldInfoTests.ConstIntField), 222)]

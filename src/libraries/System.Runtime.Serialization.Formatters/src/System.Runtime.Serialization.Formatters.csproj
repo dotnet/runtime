@@ -16,7 +16,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
-    <Compile Include="System\TemporaryStubs.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />
     <Compile Include="System\Runtime\Serialization\Formatter.cs" />
     <Compile Include="System\Runtime\Serialization\FormatterConverter.cs" />
