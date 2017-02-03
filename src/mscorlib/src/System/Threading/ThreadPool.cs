@@ -332,48 +332,51 @@ namespace System.Threading
                 }
             }
 
+            public bool CanSteal => m_headIndex < m_tailIndex;
+
             public IThreadPoolWorkItem TrySteal(ref bool missedSteal)
             {
                 while (true)
                 {
-                    if (m_headIndex >= m_tailIndex)
-                        return null;
-
-                    bool taken = false;
-                    try
+                    if (CanSteal)
                     {
-                        m_foreignLock.TryEnter(ref taken);
-                        if (taken)
+                        bool taken = false;
+                        try
                         {
-                            // Increment head, and ensure read of tail doesn't move before it (fence).
-                            int head = m_headIndex;
-                            Interlocked.Exchange(ref m_headIndex, head + 1);
-
-                            if (head < m_tailIndex)
+                            m_foreignLock.TryEnter(ref taken);
+                            if (taken)
                             {
-                                int idx = head & m_mask;
-                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
+                                // Increment head, and ensure read of tail doesn't move before it (fence).
+                                int head = m_headIndex;
+                                Interlocked.Exchange(ref m_headIndex, head + 1);
 
-                                // Check for nulls in the array.
-                                if (obj == null) continue;
+                                if (head < m_tailIndex)
+                                {
+                                    int idx = head & m_mask;
+                                    IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
-                                m_array[idx] = null;
-                                return obj;
-                            }
-                            else
-                            {
-                                // Failed, restore head.
-                                m_headIndex = head;
+                                    // Check for nulls in the array.
+                                    if (obj == null) continue;
+
+                                    m_array[idx] = null;
+                                    return obj;
+                                }
+                                else
+                                {
+                                    // Failed, restore head.
+                                    m_headIndex = head;
+                                }
                             }
                         }
-                    }
-                    finally
-                    {
-                        if (taken)
-                            m_foreignLock.Exit(useMemoryBarrier:false);
+                        finally
+                        {
+                            if (taken)
+                                m_foreignLock.Exit(useMemoryBarrier:false);
+                        }
+
+                        missedSteal = true;
                     }
 
-                    missedSteal = true;
                     return null;
                 }
             }
@@ -462,10 +465,10 @@ namespace System.Threading
 
         public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            WorkStealingQueue wsq = tl.workStealingQueue;
+            WorkStealingQueue localWsq = tl.workStealingQueue;
             IThreadPoolWorkItem callback;
 
-            if (!wsq.LocalPop(out callback) && // first try the local queue
+            if (!localWsq.LocalPop(out callback) && // first try the local queue
                 !workItems.TryDequeue(out callback)) // then try the global queue
             {
                 // finally try to steal from another thread's local queue
@@ -478,7 +481,7 @@ namespace System.Threading
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
                     WorkStealingQueue otherQueue = queues[i];
-                    if (otherQueue != wsq)
+                    if (otherQueue != localWsq && otherQueue.CanSteal)
                     {
                         callback = otherQueue.TrySteal(ref missedSteal);
                         if (callback != null)
