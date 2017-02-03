@@ -73,6 +73,11 @@ public:
         errors->clear();
         return true;
     }
+
+    void setup_shared_package_probes(
+        const hostpolicy_init_t& init,
+        const arguments_t& args);
+
     void setup_probe_config(
         const hostpolicy_init_t& init,
         const arguments_t& args);
@@ -133,19 +138,6 @@ private:
     bool probe_deps_entry(
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
-        pal::string_t* candidate);
-
-    // Probe entry in probe configurations.
-    bool probe_entry_in_configs(
-        const deps_entry_t& entry,
-        pal::string_t* candidate);
-
-    // Try auto roll forward, if not return entry in probe dir.
-    bool try_roll_forward(
-        const deps_entry_t& entry,
-        const pal::string_t& probe_dir,
-        bool patch_roll_fwd,
-        bool prerelease_roll_fwd,
         pal::string_t* candidate);
 
     // Framework deps file.
