@@ -21,6 +21,7 @@ public:
     const pal::string_t& get_gc_server() const;
     const pal::string_t& get_fx_version() const;
     const pal::string_t& get_fx_name() const;
+    const pal::string_t& get_tfm() const;
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_patch_roll_fwd() const;
     bool get_prerelease_roll_fwd() const;
@@ -36,6 +37,7 @@ private:
     std::vector<std::string> m_prop_keys;
     std::vector<std::string> m_prop_values;
     std::list<pal::string_t> m_probe_paths;
+    pal::string_t m_tfm;
     pal::string_t m_fx_name;
     pal::string_t m_fx_ver;
     bool m_patch_roll_fwd;
