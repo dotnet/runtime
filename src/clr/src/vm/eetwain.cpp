@@ -5468,6 +5468,13 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned       relOffset = pCodeInfo->GetRelOffset();
 
+#ifdef WIN64EXCEPTIONS
+    if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
 #if defined(_TARGET_X86_)
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
     
@@ -5507,11 +5514,6 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
 
 #elif defined(USE_GC_INFO_DECODER)
-    if (pCodeInfo->IsFunclet())
-    {
-        return NULL;
-    }
-
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
             DECODE_GS_COOKIE
