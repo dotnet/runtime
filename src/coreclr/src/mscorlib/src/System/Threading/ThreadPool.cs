@@ -11,19 +11,18 @@
 **
 =============================================================================*/
 
-using System.Security;
-using System.Security.Permissions;
-using System;
-using Microsoft.Win32;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Permissions;
+using Microsoft.Win32;
 
 namespace System.Threading
 {
@@ -45,61 +44,66 @@ namespace System.Threading
 
     internal sealed class ThreadPoolWorkQueue
     {
-        // Simple sparsely populated array to allow lock-free reading.
-        internal sealed class SparseArray<T> where T : class
+        internal static class WorkStealingQueueList
         {
-            private volatile T[] m_array;
+            private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 
-            internal SparseArray(int initialSize)
+            public static WorkStealingQueue[] Queues => _queues;
+
+            public static void Add(WorkStealingQueue queue)
             {
-                m_array = new T[initialSize];
-            }
-
-            internal T[] Current => m_array;
-
-            internal int Add(T e)
-            {
+                Debug.Assert(queue != null);
                 while (true)
                 {
-                    T[] array = m_array;
-                    lock (array)
-                    {
-                        for (int i = 0; i < array.Length; i++)
-                        {
-                            if (array[i] == null)
-                            {
-                                Volatile.Write(ref array[i], e);
-                                return i;
-                            }
-                            else if (i == array.Length - 1)
-                            {
-                                // Must resize. If there was a race condition, we start over again.
-                                if (array != m_array)
-                                    continue;
+                    WorkStealingQueue[] oldQueues = _queues;
+                    Debug.Assert(Array.IndexOf(oldQueues, queue) == -1);
 
-                                T[] newArray = new T[array.Length * 2];
-                                Array.Copy(array, 0, newArray, 0, i + 1);
-                                newArray[i + 1] = e;
-                                m_array = newArray;
-                                return i + 1;
-                            }
-                        }
+                    var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
+                    Array.Copy(oldQueues, 0, newQueues, 0, oldQueues.Length);
+                    newQueues[newQueues.Length - 1] = queue;
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
 
-            internal void Remove(T e)
+            public static void Remove(WorkStealingQueue queue)
             {
-                T[] array = m_array;
-                lock (array)
+                Debug.Assert(queue != null);
+                while (true)
                 {
-                    for (int i = 0; i < m_array.Length; i++)
+                    WorkStealingQueue[] oldQueues = _queues;
+                    if (oldQueues.Length == 0)
                     {
-                        if (m_array[i] == e)
-                        {
-                            Volatile.Write(ref m_array[i], null);
-                            break;
-                        }
+                        return;
+                    }
+
+                    int pos = Array.IndexOf(oldQueues, queue);
+                    if (pos == -1)
+                    {
+                        Debug.Fail("Should have found the queue");
+                        return;
+                    }
+
+                    var newQueues = new WorkStealingQueue[oldQueues.Length - 1];
+                    if (pos == 0)
+                    {
+                        Array.Copy(oldQueues, 1, newQueues, 0, newQueues.Length);
+                    }
+                    else if (pos == oldQueues.Length - 1)
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, newQueues.Length);
+                    }
+                    else
+                    {
+                        Array.Copy(oldQueues, 0, newQueues, 0, pos);
+                        Array.Copy(oldQueues, pos + 1, newQueues, pos, newQueues.Length - pos);
+                    }
+
+                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    {
+                        break;
                     }
                 }
             }
@@ -208,13 +212,9 @@ namespace System.Threading
                 // Fast path: check the tail. If equal, we can skip the lock.
                 if (m_array[(m_tailIndex - 1) & m_mask] == obj)
                 {
-                    IThreadPoolWorkItem unused;
-                    if (LocalPop(out unused))
-                    {
-                        Debug.Assert(unused == obj);
-                        return true;
-                    }
-                    return false;
+                    IThreadPoolWorkItem unused = LocalPop();
+                    Debug.Assert(unused == null || unused == obj);
+                    return unused != null;
                 }
 
                 // Else, do an O(N) search for the work item. The theory of work stealing and our
@@ -263,19 +263,20 @@ namespace System.Threading
                 return false;
             }
 
+            public IThreadPoolWorkItem LocalPop() => m_headIndex < m_tailIndex ? LocalPopCore() : null;
+
             [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
-            public bool LocalPop(out IThreadPoolWorkItem obj)
+            private IThreadPoolWorkItem LocalPopCore()
             {
                 while (true)
                 {
-                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     int tail = m_tailIndex;
                     if (m_headIndex >= tail)
                     {
-                        obj = null;
-                        return false;
+                        return null;
                     }
 
+                    // Decrement the tail using a fence to ensure subsequent read doesn't come before.
                     tail -= 1;
                     Interlocked.Exchange(ref m_tailIndex, tail);
 
@@ -283,13 +284,13 @@ namespace System.Threading
                     if (m_headIndex <= tail)
                     {
                         int idx = tail & m_mask;
-                        obj = Volatile.Read(ref m_array[idx]);
+                        IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                         // Check for nulls in the array.
                         if (obj == null) continue;
 
                         m_array[idx] = null;
-                        return true;
+                        return obj;
                     }
                     else
                     {
@@ -303,20 +304,19 @@ namespace System.Threading
                             {
                                 // Element still available. Take it.
                                 int idx = tail & m_mask;
-                                obj = Volatile.Read(ref m_array[idx]);
+                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
                                 // Check for nulls in the array.
                                 if (obj == null) continue;
 
                                 m_array[idx] = null;
-                                return true;
+                                return obj;
                             }
                             else
                             {
                                 // If we encountered a race condition and element was stolen, restore the tail.
                                 m_tailIndex = tail + 1;
-                                obj = null;
-                                return false;
+                                return null;
                             }
                         }
                         finally
@@ -328,48 +328,51 @@ namespace System.Threading
                 }
             }
 
+            public bool CanSteal => m_headIndex < m_tailIndex;
+
             public IThreadPoolWorkItem TrySteal(ref bool missedSteal)
             {
                 while (true)
                 {
-                    if (m_headIndex >= m_tailIndex)
-                        return null;
-
-                    bool taken = false;
-                    try
+                    if (CanSteal)
                     {
-                        m_foreignLock.TryEnter(ref taken);
-                        if (taken)
+                        bool taken = false;
+                        try
                         {
-                            // Increment head, and ensure read of tail doesn't move before it (fence).
-                            int head = m_headIndex;
-                            Interlocked.Exchange(ref m_headIndex, head + 1);
-
-                            if (head < m_tailIndex)
+                            m_foreignLock.TryEnter(ref taken);
+                            if (taken)
                             {
-                                int idx = head & m_mask;
-                                IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
+                                // Increment head, and ensure read of tail doesn't move before it (fence).
+                                int head = m_headIndex;
+                                Interlocked.Exchange(ref m_headIndex, head + 1);
 
-                                // Check for nulls in the array.
-                                if (obj == null) continue;
+                                if (head < m_tailIndex)
+                                {
+                                    int idx = head & m_mask;
+                                    IThreadPoolWorkItem obj = Volatile.Read(ref m_array[idx]);
 
-                                m_array[idx] = null;
-                                return obj;
-                            }
-                            else
-                            {
-                                // Failed, restore head.
-                                m_headIndex = head;
+                                    // Check for nulls in the array.
+                                    if (obj == null) continue;
+
+                                    m_array[idx] = null;
+                                    return obj;
+                                }
+                                else
+                                {
+                                    // Failed, restore head.
+                                    m_headIndex = head;
+                                }
                             }
                         }
-                    }
-                    finally
-                    {
-                        if (taken)
-                            m_foreignLock.Exit(useMemoryBarrier:false);
+                        finally
+                        {
+                            if (taken)
+                                m_foreignLock.Exit(useMemoryBarrier:false);
+                        }
+
+                        missedSteal = true;
                     }
 
-                    missedSteal = true;
                     return null;
                 }
             }
@@ -377,8 +380,6 @@ namespace System.Threading
 
         internal bool loggingEnabled;
         internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
-
-        internal static readonly SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16);
 
         private volatile int numOutstandingThreadRequests = 0;
       
@@ -460,22 +461,23 @@ namespace System.Threading
 
         public IThreadPoolWorkItem Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            WorkStealingQueue wsq = tl.workStealingQueue;
+            WorkStealingQueue localWsq = tl.workStealingQueue;
             IThreadPoolWorkItem callback;
 
-            if (!wsq.LocalPop(out callback) && // first try the local queue
+            if ((callback = localWsq.LocalPop()) == null && // first try the local queue
                 !workItems.TryDequeue(out callback)) // then try the global queue
             {
                 // finally try to steal from another thread's local queue
-                WorkStealingQueue[] otherQueues = allThreadQueues.Current;
-                int c = otherQueues.Length;
+                WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                int c = queues.Length;
+                Debug.Assert(c > 0, "There must at least be a queue for this thread.");
                 int maxIndex = c - 1;
                 int i = tl.random.Next(c);
                 while (c > 0)
                 {
                     i = (i < maxIndex) ? i + 1 : 0;
-                    WorkStealingQueue otherQueue = Volatile.Read(ref otherQueues[i]);
-                    if (otherQueue != null && otherQueue != wsq)
+                    WorkStealingQueue otherQueue = queues[i];
+                    if (otherQueue != localWsq && otherQueue.CanSteal)
                     {
                         callback = otherQueue.TrySteal(ref missedSteal);
                         if (callback != null)
@@ -530,85 +532,66 @@ namespace System.Threading
                 //
                 while ((Environment.TickCount - quantumStartTime) < ThreadPoolGlobals.TP_QUANTUM)
                 {
-                    //
-                    // Dequeue and EnsureThreadRequested must be protected from ThreadAbortException.  
-                    // These are fast, so this will not delay aborts/AD-unloads for very long.
-                    //
-                    try { }
-                    finally
-                    {
-                        bool missedSteal = false;
-                        workItem = workQueue.Dequeue(tl, ref missedSteal);
-
-                        if (workItem == null)
-                        {
-                            //
-                            // No work.  We're going to return to the VM once we leave this protected region.
-                            // If we missed a steal, though, there may be more work in the queue.
-                            // Instead of looping around and trying again, we'll just request another thread.  This way
-                            // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
-                            // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
-                            // which will be more efficient than this thread doing it anyway.
-                            //
-                            needAnotherThread = missedSteal;
-                        }
-                        else
-                        {
-                            //
-                            // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
-                            // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
-                            //
-                            workQueue.EnsureThreadRequested();
-                        }
-                    }
+                    bool missedSteal = false;
+                    workItem = workQueue.Dequeue(tl, ref missedSteal);
 
                     if (workItem == null)
                     {
+                        //
+                        // No work.  We're going to return to the VM once we leave this protected region.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  This way
+                        // we won't starve other AppDomains while we spin trying to get locks, and hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime, 
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        needAnotherThread = missedSteal;
+
                         // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
                         return true;
                     }
+
+                    if (workQueue.loggingEnabled)
+                        System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
+
+                    //
+                    // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
+                    // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
+                    //
+                    workQueue.EnsureThreadRequested();
+
+                    //
+                    // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
+                    //
+                    if (ThreadPoolGlobals.enableWorkerTracking)
+                    {
+                        bool reportedStatus = false;
+                        try
+                        {
+                            ThreadPool.ReportThreadStatus(isWorking: true);
+                            reportedStatus = true;
+                            workItem.ExecuteWorkItem();
+                        }
+                        finally
+                        {
+                            if (reportedStatus)
+                                ThreadPool.ReportThreadStatus(isWorking: false);
+                        }
+                    }
                     else
                     {
-                        if (workQueue.loggingEnabled)
-                            System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
-
-                        //
-                        // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
-                        //
-                        if (ThreadPoolGlobals.enableWorkerTracking)
-                        {
-                            bool reportedStatus = false;
-                            try
-                            {
-                                try { }
-                                finally
-                                {
-                                    ThreadPool.ReportThreadStatus(isWorking:true);
-                                    reportedStatus = true;
-                                }
-                                workItem.ExecuteWorkItem();
-                                workItem = null;
-                            }
-                            finally
-                            {
-                                if (reportedStatus)
-                                    ThreadPool.ReportThreadStatus(isWorking:false);
-                            }
-                        }
-                        else
-                        {
-                            workItem.ExecuteWorkItem();
-                            workItem = null;
-                        }
-
-                        // 
-                        // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
-                        // us to return the thread to the pool or not.
-                        //
-                        if (!ThreadPool.NotifyWorkItemComplete())
-                            return false;
+                        workItem.ExecuteWorkItem();
                     }
+                    workItem = null;
+
+                    // 
+                    // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
+                    // us to return the thread to the pool or not.
+                    //
+                    if (!ThreadPool.NotifyWorkItemComplete())
+                        return false;
                 }
+
                 // If we get here, it's because our quantum expired.  Tell the VM we're returning normally.
                 return true;
             }
@@ -644,6 +627,31 @@ namespace System.Threading
         }
     }
 
+    // Simple random number generator. We don't need great randomness, we just need a little and for it to be fast.
+    internal struct FastRandom // xorshift prng
+    {
+        private uint _w, _x, _y, _z;
+
+        public FastRandom(int seed)
+        {
+            _x = (uint)seed;
+            _w = 88675123;
+            _y = 362436069;
+            _z = 521288629;
+        }
+
+        public int Next(int maxValue)
+        {
+            Debug.Assert(maxValue > 0);
+
+            uint t = _x ^ (_x << 11);
+            _x = _y; _y = _z; _z = _w;
+            _w = _w ^ (_w >> 19) ^ (t ^ (t >> 8));
+
+            return (int)(_w % (uint)maxValue);
+        }
+    }
+
     // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
@@ -652,13 +660,13 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
-        public readonly Random random = new Random(Thread.CurrentThread.ManagedThreadId);
+        public FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
-            ThreadPoolWorkQueue.allThreadQueues.Add(workStealingQueue);
+            ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
         }
 
         private void CleanUp()
@@ -667,28 +675,15 @@ namespace System.Threading
             {
                 if (null != workQueue)
                 {
-                    bool done = false;
-                    while (!done)
+                    IThreadPoolWorkItem cb;
+                    while ((cb = workStealingQueue.LocalPop()) != null)
                     {
-                        // Ensure that we won't be aborted between LocalPop and Enqueue.
-                        try { }
-                        finally
-                        {
-                            IThreadPoolWorkItem cb;
-                            if (workStealingQueue.LocalPop(out cb))
-                            {
-                                Debug.Assert(null != cb);
-                                workQueue.Enqueue(cb, forceGlobal:true);
-                            }
-                            else
-                            {
-                                done = true;
-                            }
-                        }
+                        Debug.Assert(null != cb);
+                        workQueue.Enqueue(cb, forceGlobal: true);
                     }
                 }
 
-                ThreadPoolWorkQueue.allThreadQueues.Remove(workStealingQueue);
+                ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
 
@@ -1293,70 +1288,43 @@ namespace System.Threading
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,false);
         }
-            
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable    
-        public static bool QueueUserWorkItem(           
-             WaitCallback           callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object                 state
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,state,ref stackMark,true);
-        }
-        
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static bool QueueUserWorkItem(           
-             WaitCallback           callBack     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,null,ref stackMark,true);
-        }
-    
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static bool UnsafeQueueUserWorkItem(
-             WaitCallback           callBack,     // NOTE: we do not expose options that allow the callback to be queued as an APC
-             Object                 state
-             )
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return QueueUserWorkItemHelper(callBack,state,ref stackMark,false);
-        }
 
-        //ThreadPool has per-appdomain managed queue of work-items. The VM is
-        //responsible for just scheduling threads into appdomains. After that
-        //work-items are dispatched from the managed queue.
-        private static bool QueueUserWorkItemHelper(WaitCallback callBack, Object state, ref StackCrawlMark stackMark, bool compressStack)
+        public static bool QueueUserWorkItem(WaitCallback callBack) =>
+            QueueUserWorkItem(callBack, null);
+
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {
-                throw new ArgumentNullException(nameof(callBack));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
-
-            //The thread pool maintains a per-appdomain managed work queue.
-            //New thread pool entries are added in the managed queue.
-            //The VM is responsible for the actual growing/shrinking of 
-            //threads. 
 
             EnsureVMInitialized();
 
-            //
-            // If we are able to create the workitem, we need to get it in the queue without being interrupted
-            // by a ThreadAbortException.
-            //
-            try { }
-            finally
+            ExecutionContext context = ExecutionContext.Capture();
+
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
+                new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
+        }
+
+        public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, Object state)
+        {
+            if (callBack == null)
             {
-                ExecutionContext context = compressStack && !ExecutionContext.IsFlowSuppressed() ?
-                    ExecutionContext.Capture(ref stackMark, ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase) :
-                    null;
-
-                IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
-                             new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
-                             (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
-
-                ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal:true);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
+
+            EnsureVMInitialized();
+
+            IThreadPoolWorkItem tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
             return true;
         }
 
@@ -1364,15 +1332,7 @@ namespace System.Threading
         {
             Debug.Assert(null != workItem);
             EnsureVMInitialized();
-
-            //
-            // Enqueue needs to be protected from ThreadAbort
-            //
-            try { }
-            finally
-            {
-                ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
-            }
+            ThreadPoolGlobals.workQueue.Enqueue(workItem, forceGlobal);
         }
 
         // This method tries to take the target callback out of the current thread's queue.
@@ -1394,7 +1354,7 @@ namespace System.Threading
             }
 
             // Enumerate each local queue
-            foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in ThreadPoolWorkQueue.allThreadQueues.Current)
+            foreach (ThreadPoolWorkQueue.WorkStealingQueue wsq in ThreadPoolWorkQueue.WorkStealingQueueList.Queues)
             {
                 if (wsq != null && wsq.m_array != null)
                 {
@@ -1470,13 +1430,22 @@ namespace System.Threading
         unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
+        // The thread pool maintains a per-appdomain managed work queue.
+        // New thread pool entries are added in the managed queue.
+        // The VM is responsible for the actual growing/shrinking of 
+        // threads. 
         private static void EnsureVMInitialized()
         {
             if (!ThreadPoolGlobals.vmTpInitialized)
             {
-                ThreadPool.InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
-                ThreadPoolGlobals.vmTpInitialized = true;
+                EnsureVMInitializedCore(); // separate out to help with inlining
             }
+        }
+        
+        private static void EnsureVMInitializedCore()
+        {
+            ThreadPool.InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
+            ThreadPoolGlobals.vmTpInitialized = true;
         }
 
         // Native methods: 
