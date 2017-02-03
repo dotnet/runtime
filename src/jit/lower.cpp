@@ -167,8 +167,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(node->AsBlk());
-            break;
+        {
+            // TODO-Cleanup: Consider moving this code to LowerBlockStore, which is currently
+            // called from TreeNodeInfoInitBlockStore, and calling that method here.
+            GenTreeBlk* blkNode = node->AsBlk();
+            TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
+        }
+        break;
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -4198,12 +4203,6 @@ void Lowering::LowerStoreInd(GenTree* node)
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
     node->AsStoreInd()->SetRMWStatusDefault();
-}
-
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    GenTree* src = blkNode->Data();
-    TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
 }
 
 //------------------------------------------------------------------------

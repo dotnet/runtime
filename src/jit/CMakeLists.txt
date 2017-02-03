@@ -81,6 +81,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     codegenxarch.cpp
     emitxarch.cpp
     lowerxarch.cpp
+    lsraxarch.cpp
     simd.cpp
     simdcodegenxarch.cpp
     targetamd64.cpp
@@ -92,6 +93,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     decomposelongs.cpp
     emitarm.cpp
     lowerarm.cpp
+    lsraarm.cpp
     targetarm.cpp
     unwindarm.cpp
   )
@@ -101,6 +103,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     decomposelongs.cpp
     emitxarch.cpp
     lowerxarch.cpp
+    lsraxarch.cpp
     simd.cpp
     simdcodegenxarch.cpp
     targetx86.cpp
@@ -111,6 +114,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     codegenarm64.cpp
     emitarm64.cpp
     lowerarm64.cpp
+    lsraarm64.cpp
     targetarm64.cpp
     unwindarm.cpp
     unwindarm64.cpp
