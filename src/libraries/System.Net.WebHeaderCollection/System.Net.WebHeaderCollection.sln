@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection.Tests", "tests/System.Net.WebHeaderCollection.Tests.csproj", "{F8C21EE8-B271-4014-B9D9-B2C31520AF3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection.Tests", "tests\System.Net.WebHeaderCollection.Tests.csproj", "{F8C21EE8-B271-4014-B9D9-B2C31520AF3F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C7DB0DF2-9CF2-42FB-89A7-450550B52C48} = {C7DB0DF2-9CF2-42FB-89A7-450550B52C48}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection", "src/System.Net.WebHeaderCollection.csproj", "{C7DB0DF2-9CF2-42FB-89A7-450550B52C48}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection", "src\System.Net.WebHeaderCollection.csproj", "{C7DB0DF2-9CF2-42FB-89A7-450550B52C48}"
 	ProjectSection(ProjectDependencies) = postProject
 		{99180E9D-F72D-4EF5-8F0E-79C6B29C3FA2} = {99180E9D-F72D-4EF5-8F0E-79C6B29C3FA2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection", "ref/System.Net.WebHeaderCollection.csproj", "{99180E9D-F72D-4EF5-8F0E-79C6B29C3FA2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebHeaderCollection", "ref\System.Net.WebHeaderCollection.csproj", "{99180E9D-F72D-4EF5-8F0E-79C6B29C3FA2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Tests", "tests/System.Collections.Tests.csproj", "{F5EB9630-AD29-4880-963F-F2D39C684D8A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Tests", "tests\System.Collections.Tests.csproj", "{F5EB9630-AD29-4880-963F-F2D39C684D8A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5} = {D5FF747F-7A0B-9003-885A-FE9A63E755E5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Performance.Tests", "tests/Performance/System.Collections.Performance.Tests.csproj", "{16568C86-E97E-42C6-B683-65A1B5AF2EC8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Performance.Tests", "tests\Performance\System.Collections.Performance.Tests.csproj", "{16568C86-E97E-42C6-B683-65A1B5AF2EC8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D5FF747F-7A0B-9003-885A-FE9A63E755E5} = {D5FF747F-7A0B-9003-885A-FE9A63E755E5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "src/System.Collections.csproj", "{D5FF747F-7A0B-9003-885A-FE9A63E755E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "src\System.Collections.csproj", "{D5FF747F-7A0B-9003-885A-FE9A63E755E5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C746D448-E7C3-4850-9CA7-D3F1FA49742F} = {C746D448-E7C3-4850-9CA7-D3F1FA49742F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "ref/System.Collections.csproj", "{C746D448-E7C3-4850-9CA7-D3F1FA49742F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "ref\System.Collections.csproj", "{C746D448-E7C3-4850-9CA7-D3F1FA49742F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

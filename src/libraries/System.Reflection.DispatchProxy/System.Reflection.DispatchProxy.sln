@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy.Tests", "tests/System.Reflection.DispatchProxy.Tests.csproj", "{089444FE-8FF5-4D8F-A51B-32D026425F6B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy.Tests", "tests\System.Reflection.DispatchProxy.Tests.csproj", "{089444FE-8FF5-4D8F-A51B-32D026425F6B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1E689C1B-690C-4799-BDE9-6E7990585894} = {1E689C1B-690C-4799-BDE9-6E7990585894}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy", "src/System.Reflection.DispatchProxy.csproj", "{1E689C1B-690C-4799-BDE9-6E7990585894}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy", "src\System.Reflection.DispatchProxy.csproj", "{1E689C1B-690C-4799-BDE9-6E7990585894}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DF3C428-AAD6-41C7-98E6-6CACFD5C391E} = {7DF3C428-AAD6-41C7-98E6-6CACFD5C391E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy", "ref/System.Reflection.DispatchProxy.csproj", "{7DF3C428-AAD6-41C7-98E6-6CACFD5C391E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.DispatchProxy", "ref\System.Reflection.DispatchProxy.csproj", "{7DF3C428-AAD6-41C7-98E6-6CACFD5C391E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

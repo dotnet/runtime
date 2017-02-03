@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "src/System.Runtime.WindowsRuntime.csproj", "{844A2A0B-4169-49C3-B367-AFDC4894E487}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "src\System.Runtime.WindowsRuntime.csproj", "{844A2A0B-4169-49C3-B367-AFDC4894E487}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA} = {FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "ref/System.Runtime.WindowsRuntime.csproj", "{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "ref\System.Runtime.WindowsRuntime.csproj", "{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject

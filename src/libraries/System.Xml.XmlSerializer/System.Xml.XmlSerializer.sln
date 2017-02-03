@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "src/System.Xml.XmlSerializer.csproj", "{D62A6082-5229-4845-8BE9-75753E08C65A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "src\System.Xml.XmlSerializer.csproj", "{D62A6082-5229-4845-8BE9-75753E08C65A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3F7C5D50-7CDA-44EF-BB05-912D496BAA46} = {3F7C5D50-7CDA-44EF-BB05-912D496BAA46}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "ref/System.Xml.XmlSerializer.csproj", "{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", "ref\System.Xml.XmlSerializer.csproj", "{3F7C5D50-7CDA-44EF-BB05-912D496BAA46}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

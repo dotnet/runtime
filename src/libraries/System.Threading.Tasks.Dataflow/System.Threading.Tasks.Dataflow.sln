@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Dataflow.Tests", "tests/System.Threading.Tasks.Dataflow.Tests.csproj", "{72E21903-0FBA-444E-9855-3B4F05DFC1F9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Dataflow.Tests", "tests\System.Threading.Tasks.Dataflow.Tests.csproj", "{72E21903-0FBA-444E-9855-3B4F05DFC1F9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D} = {2E2F7224-7C72-4A81-9625-A5241F8D836D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Dataflow", "src/System.Threading.Tasks.Dataflow.csproj", "{2E2F7224-7C72-4A81-9625-A5241F8D836D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Dataflow", "src\System.Threading.Tasks.Dataflow.csproj", "{2E2F7224-7C72-4A81-9625-A5241F8D836D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
