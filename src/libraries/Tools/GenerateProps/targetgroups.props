@@ -133,9 +133,11 @@
     </TargetGroups>
     <TargetGroups Include="win8">
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
+      <CompatibleWith>netstandard1.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="wpa81">
       <NuGetTargetMoniker>WindowsPhoneApp,Version=v8.1</NuGetTargetMoniker>
+      <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="portable_net45+win8+sl5">
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
