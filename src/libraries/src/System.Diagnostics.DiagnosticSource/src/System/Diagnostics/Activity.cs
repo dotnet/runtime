@@ -265,27 +265,60 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = $"{Parent.Id}.{Interlocked.Increment(ref Parent._currentChildId)}";
+                ret = appendSuffix(Parent.Id, $"{Interlocked.Increment(ref Parent._currentChildId)}");
             }
             else if (ParentId != null)
             {
                 // Start from outside the process (e.g. incoming HTTP)
                 Debug.Assert(ParentId.Length != 0);
-                ret = $"{ParentId}.{Interlocked.Increment(ref s_currentRootId)}";
+                ret = appendSuffix(ParentId, $"{Interlocked.Increment(ref s_currentRootId):x}");
             }
             else
             {
-                byte[] bytes = new byte[8];
-                s_random.Value.NextBytes(bytes);
-                ret = $"{BitConverter.ToUInt64(bytes, 0)}";
+                ret = generateRootId();
             }
+
             // Useful place to place a conditional breakpoint.  
             return ret;
         }
 
+        private string appendSuffix(string parentId, string suffix)
+        {
+            if (parentId.Length + suffix.Length <= 127)
+                return $"{parentId}.{suffix}";
+
+            //Id overflow:
+            //find position in RequestId to trim
+            int trimPosition = parentId.Length - 1;
+            while (trimPosition > 0)
+            {
+                if ((parentId[trimPosition] == '.' || parentId[trimPosition] == '#')
+                    && trimPosition <= 119) //overflow suffix length is 8 + 1 for #.
+                    break;
+                trimPosition--;
+            }
+
+            //ParentId is not valid Request-Id, let's generate proper one.
+            if (trimPosition == 0)
+                return generateRootId();
+
+            //generate overflow suffix
+            byte[] bytes = new byte[4];
+            s_random.Value.NextBytes(bytes);
+
+            return $"{parentId.Substring(0, trimPosition)}#{BitConverter.ToUInt32(bytes, 0):x8}";
+        }
+
+        private string generateRootId()
+        {
+            byte[] bytes = new byte[8];
+            s_random.Value.NextBytes(bytes);
+            return $"/{BitConverter.ToUInt64(bytes, 0):x}";
+        }
+
         // Used to generate an ID 
-        long _currentChildId;            // A unique number for all children of this activity.  
-        static long s_currentRootId;      // A unique number inside the appdomain.
+        int _currentChildId;            // A unique number for all children of this activity.  
+        static int s_currentRootId;      // A unique number inside the appdomain.
         private static readonly Lazy<Random> s_random = new Lazy<Random>();
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  

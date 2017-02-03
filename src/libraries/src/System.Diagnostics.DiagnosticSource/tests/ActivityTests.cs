@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -73,6 +74,43 @@ namespace System.Diagnostics.Tests
             var child = new Activity("child");
             child.Start();
             Assert.Throws<InvalidOperationException>(() => child.SetParentId("3"));
+        }
+
+        /// <summary>
+        /// Tests activity SetParentId
+        /// </summary>
+        [Fact]
+        public void ActivityIdOverflow()
+        {
+            //check parentId /abc.1.1...1.1.1.1.1 (126 bytes) and check last .1.1.1.1 is replaced with #overflow_suffix 8 bytes long
+            var parentId = new StringBuilder("/abc");
+            while (parentId.Length < 126)
+                parentId.Append(".1");
+
+            var activity = new Activity("activity")
+                .SetParentId(parentId.ToString())
+                .Start();
+
+            Assert.Equal(
+                parentId.ToString().Substring(0, parentId.Length - 8),
+                activity.Id.Substring(0, activity.Id.Length - 9));
+            Assert.Equal('#', activity.Id[activity.Id.Length - 9]);
+
+            //check parentId /abc.1.1...1.012345678 (128 bytes) and check last .012345678 is replaced with #overflow_suffix 8 bytes long
+            parentId = new StringBuilder("/abc");
+            while (parentId.Length < 118)
+                parentId.Append(".1");
+            parentId.Append(".012345678");
+
+            activity = new Activity("activity")
+                .SetParentId(parentId.ToString())
+                .Start();
+
+            //last .012345678 will be replaced with #overflow_suffix 8 bytes long
+            Assert.Equal(
+                parentId.ToString().Substring(0, parentId.Length - 10),
+                activity.Id.Substring(0, activity.Id.Length - 9));
+            Assert.Equal('#', activity.Id[activity.Id.Length - 9]);
         }
 
         /// <summary>
