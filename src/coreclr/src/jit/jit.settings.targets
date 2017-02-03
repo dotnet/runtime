@@ -99,6 +99,7 @@
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\stackfp.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\DecomposeLongs.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerXArch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\lsraxarch.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenXArch.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMD.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMDCodeGenXArch.cpp" />
@@ -108,6 +109,7 @@
         <CppCompile Include="..\emitXArch.cpp" />
         <CppCompile Include="..\TargetAmd64.cpp" />
         <CppCompile Include="..\LowerXArch.cpp" />
+        <CppCompile Include="..\lsraxarch.cpp" />
         <CppCompile Include="..\CodeGenXArch.cpp" />
         <CppCompile Include="..\SIMD.cpp" />
         <CppCompile Include="..\SIMDCodeGenXArch.cpp" />
@@ -119,6 +121,7 @@
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\registerfp.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\DecomposeLongs.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerArm.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\lsraarm.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenArm.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
     </ItemGroup>
@@ -127,6 +130,7 @@
         <CppCompile Include="..\emitarm64.cpp" />
         <CppCompile Include="..\TargetArm64.cpp" />
         <CppCompile Include="..\LowerArm64.cpp" />
+        <CppCompile Include="..\lsraarm64.cpp" />
         <CppCompile Include="..\CodeGenArm64.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
         <CppCompile Include="..\unwindArm64.cpp" />
