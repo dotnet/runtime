@@ -391,8 +391,7 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-#ifdef _TARGET_X86_
-    // UNIXTODO: Disable JIT_EndCatch after revising the jitter not to use this (for x86/Linux)
+#ifndef WIN64EXCEPTIONS
     void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
 #endif // _TARGET_X86_
 

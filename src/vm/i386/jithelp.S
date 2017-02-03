@@ -720,34 +720,3 @@ LEAF_END JIT_PatchedCodeLast, _TEXT
 LEAF_ENTRY JIT_PatchedCodeEnd, _TEXT
     ret
 LEAF_END JIT_PatchedCodeEnd, _TEXT
-
-// Note that the debugger skips this entirely when doing SetIP,
-// since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
-// asserts that to be true.  If this ends up doing more work, then the
-// debugger may need additional support.
-// void __stdcall JIT_EndCatch();
-NESTED_ENTRY JIT_EndCatch, _TEXT, NoHandler
-#ifndef WIN64EXCEPTIONS
-    // make temp storage for return address, and push the address of that
-    // as the last arg to COMPlusEndCatch
-    mov     ecx, [esp]
-    push    ecx
-    push    esp
-
-    // push the rest of COMPlusEndCatch's args, right-to-left
-    push    esi
-    push    edi
-    push    ebx
-    push    ebp
-
-    // returns old esp value in eax, stores jump address
-    call    C_FUNC(COMPlusEndCatch)
-    // now eax = new esp, [esp] = new eip
-
-    pop     edx         // edx = new eip
-    mov     esp, eax    // esp = new esp
-    jmp     edx         // eip = new eip
-#else
-    int3
-#endif
-NESTED_END JIT_EndCatch, _TEXT
