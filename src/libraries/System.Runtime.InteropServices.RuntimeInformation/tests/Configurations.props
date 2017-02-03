@@ -4,6 +4,8 @@
     <BuildConfigurations>
       netstandard1.3-Unix;
       netstandard1.3-Windows_NT;
+      netstandard-Unix;
+      netstandard-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
