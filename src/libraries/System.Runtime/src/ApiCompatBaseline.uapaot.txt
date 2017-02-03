@@ -6,6 +6,7 @@ CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleMi
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeWaitHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Array.CreateInstance(System.Type, System.Int64[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Array.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64)' does not exist in the implementation but it does exist in the contract.
@@ -61,16 +62,6 @@ MembersMustExist : Member 'System.Delegate..ctor(System.Object, System.String)' 
 MembersMustExist : Member 'System.Delegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Delegate.Clone()' is non-virtual in the implementation but is virtual in the contract.
 MembersMustExist : Member 'System.Delegate.CombineImpl(System.Delegate)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.Reflection.MethodInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Object, System.String, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Reflection.MethodInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.CreateDelegate(System.Type, System.Type, System.String, System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Delegate.DynamicInvokeImpl(System.Object[])' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Delegate.Equals(System.Object)' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Delegate.GetHashCode()' is non-virtual in the implementation but is virtual in the contract.
@@ -130,6 +121,7 @@ CannotSealType : Type 'System.MulticastDelegate' is sealed in the implementation
 MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.MulticastDelegate.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' is non-virtual in the implementation but is virtual in the contract.
+TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.RuntimeFieldHandle' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.RuntimeFieldHandle.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.RuntimeFieldHandle.Value.get()' does not exist in the implementation but it does exist in the contract.
@@ -153,6 +145,7 @@ MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, Sy
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
@@ -168,6 +161,7 @@ MembersMustExist : Member 'System.StringComparison System.StringComparison.Invar
 MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TimeZone' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.TimeZoneInfo.HasSameRules(System.TimeZoneInfo)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TypeUnloadedException' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.UInt16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.UInt16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
@@ -207,6 +201,8 @@ MembersMustExist : Member 'System.IO.Stream.Synchronized(System.IO.Stream)' does
 MembersMustExist : Member 'System.Reflection.Assembly.GetFile(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.GetFiles()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Assembly.GetFiles(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscateAssemblyAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.ObfuscationAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.StrongNameKeyPair..ctor(System.IO.FileStream)' does not exist in the implementation but it does exist in the contract.
@@ -296,4 +292,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 297
+Total Issues: 293
