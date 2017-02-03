@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.Tests", "tests\System.Reflection.TypeExtensions.Tests.csproj", "{EC8FFAA7-CA1E-4631-A375-D54B1FC764F6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.Tests", "tests/System.Reflection.TypeExtensions.Tests.csproj", "{EC8FFAA7-CA1E-4631-A375-D54B1FC764F6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB} = {A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.TypeExtensions.CoreCLR.Tests.csproj", "{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.CoreCLR.Tests", "tests/CoreCLR/System.Reflection.TypeExtensions.CoreCLR.Tests.csproj", "{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB} = {A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "src\System.Reflection.TypeExtensions.csproj", "{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "src/System.Reflection.TypeExtensions.csproj", "{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB} = {C303A051-8D54-4460-8BFD-DE10F0473BDB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "ref\System.Reflection.TypeExtensions.csproj", "{C303A051-8D54-4460-8BFD-DE10F0473BDB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "ref/System.Reflection.TypeExtensions.csproj", "{C303A051-8D54-4460-8BFD-DE10F0473BDB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -39,10 +39,10 @@ Global
 		{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU

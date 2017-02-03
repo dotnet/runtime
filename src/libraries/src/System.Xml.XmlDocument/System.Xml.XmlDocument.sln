@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "src\System.Xml.XmlDocument.csproj", "{EC0F9F33-3D4E-470A-90E6-AE9D005F023A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "src/System.Xml.XmlDocument.csproj", "{EC0F9F33-3D4E-470A-90E6-AE9D005F023A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E} = {DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "ref\System.Xml.XmlDocument.csproj", "{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "ref/System.Xml.XmlDocument.csproj", "{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

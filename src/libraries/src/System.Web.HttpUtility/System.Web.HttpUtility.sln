@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility.Tests", "tests\System.Web.HttpUtility.Tests.csproj", "{914279EE-58B1-4B27-BA18-66D988C8DFFA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility.Tests", "tests/System.Web.HttpUtility.Tests.csproj", "{914279EE-58B1-4B27-BA18-66D988C8DFFA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CE959FC9-5E04-4F29-96B5-454BF3E76306} = {CE959FC9-5E04-4F29-96B5-454BF3E76306}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility", "src\System.Web.HttpUtility.csproj", "{CE959FC9-5E04-4F29-96B5-454BF3E76306}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility", "src/System.Web.HttpUtility.csproj", "{CE959FC9-5E04-4F29-96B5-454BF3E76306}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CB57F978-2BA8-4BF3-A755-A032030974A0} = {CB57F978-2BA8-4BF3-A755-A032030974A0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility", "ref\System.Web.HttpUtility.csproj", "{CB57F978-2BA8-4BF3-A755-A032030974A0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.HttpUtility", "ref/System.Web.HttpUtility.csproj", "{CB57F978-2BA8-4BF3-A755-A032030974A0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

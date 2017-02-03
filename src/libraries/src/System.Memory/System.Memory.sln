@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Tests", "tests\System.Memory.Tests.csproj", "{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Tests", "tests/System.Memory.Tests.csproj", "{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Performance.Tests", "tests\Performance\System.Memory.Performance.Tests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Performance.Tests", "tests/Performance/System.Memory.Performance.Tests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "src\System.Memory.csproj", "{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "src/System.Memory.csproj", "{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E883935B-D8FD-4FC9-A189-9D9E7F7EF550} = {E883935B-D8FD-4FC9-A189-9D9E7F7EF550}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "ref\System.Memory.csproj", "{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "ref/System.Memory.csproj", "{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows.Tests", "tests\System.Security.Principal.Windows.Tests.csproj", "{6C36F3AC-54A1-4021-9F5D-CDEFF7347277}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows.Tests", "tests/System.Security.Principal.Windows.Tests.csproj", "{6C36F3AC-54A1-4021-9F5D-CDEFF7347277}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F9E9894E-2513-4085-9046-311AD49D8AE6} = {F9E9894E-2513-4085-9046-311AD49D8AE6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows", "src\System.Security.Principal.Windows.csproj", "{F9E9894E-2513-4085-9046-311AD49D8AE6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows", "src/System.Security.Principal.Windows.csproj", "{F9E9894E-2513-4085-9046-311AD49D8AE6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{25A02E40-D12C-4184-B599-E4F954D142DB} = {25A02E40-D12C-4184-B599-E4F954D142DB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows", "ref\System.Security.Principal.Windows.csproj", "{25A02E40-D12C-4184-B599-E4F954D142DB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Principal.Windows", "ref/System.Security.Principal.Windows.csproj", "{25A02E40-D12C-4184-B599-E4F954D142DB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
