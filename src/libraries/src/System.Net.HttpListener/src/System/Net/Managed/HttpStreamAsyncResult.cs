@@ -29,6 +29,7 @@
 //
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -64,7 +65,7 @@ namespace System.Net
                     _handle.Set();
 
                 if (_callback != null)
-                    _callback(this);
+                    Task.Run(() => _callback(this));
             }
         }
 
