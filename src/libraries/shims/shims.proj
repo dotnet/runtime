@@ -18,7 +18,10 @@
     <NetFxReference Include="mscorlib" />
     <NetFxReference Include="System" />
     <NetFxReference Include="System.Core" />
+    <NetFxReference Include="System.ComponentModel.Composition" />
+    <NetFxReference Include="System.Data" />
     <NetFxReference Include="System.Drawing" />
+    <NetFxReference Include="System.IO.Compression.FileSystem" />
     <NetFxReference Include="System.Numerics" />
     <NetFxReference Include="System.Runtime.Serialization" />
     <NetFxReference Include="System.Web" />
@@ -107,7 +110,7 @@
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetFxRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxContracts)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
