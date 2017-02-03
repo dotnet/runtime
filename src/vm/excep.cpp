@@ -1644,6 +1644,7 @@ const char *TCFStringFromConst(TRY_CATCH_FINALLY tcf)
 }
 #endif //LOGGING
 
+#ifndef WIN64EXCEPTIONS
 // We're unwinding if we'll return to the EE's code.  Otherwise
 // we'll return to someplace in the current code.  Anywhere outside
 // this function is "EE code".
@@ -1675,7 +1676,6 @@ bool FinallyIsUnwinding(EHRangeTreeNode *pNode,
         return false;
 }
 
-#ifndef WIN64EXCEPTIONS
 BOOL LeaveCatch(ICodeManager* pEECM,
                 Thread *pThread,
                 CONTEXT *pCtx,
@@ -1690,7 +1690,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
     // We can assert these things here, and skip a call
     // to COMPlusCheckForAbort later.
 
@@ -1708,10 +1707,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
 
     SetSP(pCtx, (UINT_PTR)esp);
     return TRUE;
-#else // FEATURE_PAL
-    PORTABILITY_ASSERT("LeaveCatch");
-    return FALSE;
-#endif
 }
 #endif // WIN64EXCEPTIONS
 
@@ -1926,7 +1921,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                 case TCF_NONE:
                 case TCF_TRY:
                 {
-#if !defined(WIN64EXCEPTIONS)
+#ifndef WIN64EXCEPTIONS
                     if (!FinallyIsUnwinding(pNode, pEECM, pReg, addrStart))
                     {
                         CONTEXT *pFilterCtx = pThread->GetFilterContext();
@@ -1946,14 +1941,14 @@ HRESULT IsLegalTransition(Thread *pThread,
                     {
                         return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY;
                     }
-#else  // _WIN64
+#else // !WIN64EXCEPTIONS
                     // <NOTE>
                     // Setting IP out of a non-unwinding finally clause is not supported on WIN64EXCEPTIONS because of funclets.
                     // This scenario is disabled with approval from VS because it's not considered to be a common user
                     // scenario.
                     // </NOTE>
                     return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64;
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
                     break;
                 }
