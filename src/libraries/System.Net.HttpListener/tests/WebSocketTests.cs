@@ -14,13 +14,11 @@ namespace System.Net.Tests
     {
         private HttpListenerFactory _factory;
         private HttpListener _listener;
-        private string _url;
 
         public WebSocketTests()
         {
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
-            _url = _factory.ListeningUrl;
         }
 
         public void Dispose() => _factory.Dispose();
@@ -35,7 +33,7 @@ namespace System.Net.Tests
                 return;
             }
 
-            UriBuilder uriBuilder = new UriBuilder(_url);
+            UriBuilder uriBuilder = new UriBuilder(_factory.ListeningUrl);
             uriBuilder.Scheme = "ws";
 
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
