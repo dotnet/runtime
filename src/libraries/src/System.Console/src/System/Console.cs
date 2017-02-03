@@ -728,31 +728,34 @@ namespace System
             Out.Write(value);
         }
 
-        // TODO: Uncomment when ArgIterator and friends are available in System.Runtime.dll
-        //
-        //[CLSCompliant(false)]
-        //[MethodImplAttribute(MethodImplOptions.NoInlining)]
-        //public static void WriteLine(string format, object arg0, object arg1, object arg2, object arg3, __arglist)
-        //{
-        //    Out.WriteLine(format, ToObjectArgs(arg0, arg1, arg2, arg3, new ArgIterator(__arglist));
-        //}
-        //
-        //[CLSCompliant(false)]
-        //[MethodImplAttribute(MethodImplOptions.NoInlining)]
-        //public static void Write(string format, object arg0, object arg1, object arg2, object arg3, __arglist)
-        //{
-        //    Out.Write(format, ToObjectArgs(arg0, arg1, arg2, arg3, new ArgIterator(__arglist));
-        //}
-        //
-        //private static object[] ToObjectArgs(object arg0, object arg1, object arg2, object arg3, ArgIterator args)
-        //{
-        //    var objArgs = new object[4 + args.GetRemainingCount()] { arg0, arg1, arg2, arg3 };
-        //    for (int i = 4; i < objArgs.Length; i++)
-        //    {
-        //        objArgs[i] = TypedReference.ToObject(args.GetNextArg());
-        //    }
-        //    return objArgs;
-        //}
+        [CLSCompliant(false)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine(string format, object arg0, object arg1, object arg2, object arg3, __arglist)
+        {
+           Out.WriteLine(format, ToObjectArgs(arg0, arg1, arg2, arg3, new ArgIterator(__arglist)));
+        }
+        
+        [CLSCompliant(false)]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write(string format, object arg0, object arg1, object arg2, object arg3, __arglist)
+        {
+           Out.Write(format, ToObjectArgs(arg0, arg1, arg2, arg3, new ArgIterator(__arglist)));
+        }
+        
+        private static object[] ToObjectArgs(object arg0, object arg1, object arg2, object arg3, ArgIterator args)
+        {
+           var objArgs = new object[4 + args.GetRemainingCount()];
+           objArgs[0] = arg0;
+           objArgs[1] = arg1;
+           objArgs[2] = arg2;
+           objArgs[3] = arg3;
+           
+           for (int i = 4; i < objArgs.Length; i++)
+           {
+               objArgs[i] = TypedReference.ToObject(args.GetNextArg());
+           }
+           return objArgs;
+        }
 
         private sealed class ControlCDelegateData
         {

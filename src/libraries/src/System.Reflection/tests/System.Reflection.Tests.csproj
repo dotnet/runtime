@@ -27,6 +27,9 @@
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="FieldInfoTests.netstandard.cs" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
       <LogicalName>EmbeddedImage.png</LogicalName>
