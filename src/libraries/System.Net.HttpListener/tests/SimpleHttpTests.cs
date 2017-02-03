@@ -41,7 +41,7 @@ namespace System.Net.Tests
             }
             finally
             {
-                listener?.Close();
+                listener.Close();
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Net.Tests
             }
             finally
             {
-                listener?.Close();
+                listener.Close();
             }
         }
 
@@ -73,7 +73,7 @@ namespace System.Net.Tests
             }
             finally
             {
-                listener?.Close();
+                listener.Close();
             }
         }
 
@@ -136,6 +136,11 @@ namespace System.Net.Tests
                 Assert.Equal(1, context.Request.InputStream.Read(buffer, 0, buffer.Length));
                 Assert.Equal((byte)'Z', buffer[0]);
                 context.Response.Close();
+
+                using (HttpResponseMessage response = await clientTask)
+                {
+                    Assert.Equal(200, (int)response.StatusCode);
+                }
             }
         }
 
@@ -155,12 +160,20 @@ namespace System.Net.Tests
                     requestMessage.Headers.Add($"custom{i}", i.ToString());
                 }
 
-                Task<HttpResponseMessage> responseMessage = client.SendAsync(requestMessage);
+                Task<HttpResponseMessage> clientTask = client.SendAsync(requestMessage);
                 HttpListenerContext context = await server;
+                
+                for (int i = 0; i < 1000; i++)
+                {
+                    Assert.Equal(i.ToString(), context.Request.Headers[$"custom{i}"]);
+                }
 
-                Assert.Contains("999", context.Request.Headers["custom999"]);
-                Assert.Equal(200, context.Response.StatusCode);
                 context.Response.Close();
+
+                using (HttpResponseMessage response = await clientTask)
+                {
+                    Assert.Equal(200, (int)response.StatusCode);
+                }
             }
         }
         

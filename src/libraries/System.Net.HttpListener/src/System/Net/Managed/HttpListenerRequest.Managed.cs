@@ -605,19 +605,16 @@ namespace System.Net
 
         public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
         {
-            ListenerClientCertAsyncResult result = new ListenerClientCertAsyncResult(GetClientCertificate(), requestCallback, state);
-            result.Complete();
-
-            return result;
+            Task<X509Certificate2> getClientCertificate = new Task<X509Certificate2>(() => GetClientCertificate());
+            return TaskToApm.Begin(getClientCertificate, requestCallback, state);
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-
-            ListenerClientCertAsyncResult result = asyncResult as ListenerClientCertAsyncResult;
-            return result.Certificate;
+            
+            return TaskToApm.End<X509Certificate2>(asyncResult);
         }
 
         public X509Certificate2 GetClientCertificate()
