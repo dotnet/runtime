@@ -6,7 +6,7 @@
     <ProjectGuid>{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsWindows)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
     <GenFacadesArgs Condition="'$(TargetGroup)'=='uapaot'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -20,37 +20,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='uapaot') AND '$(TargetsWindows)' == 'true'">
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
-      <Name>System.Diagnostics.Debug</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
     <Compile Include="System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="(('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)' == 'true') OR '$(TargetGroup)'=='netfx'">
     <Compile Include="System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\NotImplemented.cs</Link>
-    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='uapaot') AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' and '$(TargetsWindows)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' AND '$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Handles" />
