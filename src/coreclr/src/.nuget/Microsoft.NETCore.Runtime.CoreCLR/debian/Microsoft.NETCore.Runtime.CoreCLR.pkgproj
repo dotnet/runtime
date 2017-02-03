@@ -17,9 +17,7 @@
     <NativeSplittableBinary Include="$(BinDir)libsosplugin.so" />
     <NativeSplittableBinary Include="$(BinDir)System.Globalization.Native.so" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt" />
-    <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)System.Private.CoreLib.ni.dll" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
