@@ -47,15 +47,11 @@
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
-  <PropertyGroup>
-    <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-  </PropertyGroup>
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <PropertyGroup>
-    <BuildToolsTargetsDesktop Condition="'$(OS)'=='Windows_NT'">true</BuildToolsTargetsDesktop>
+    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)targetingpacks.props" />

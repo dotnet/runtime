@@ -43,6 +43,7 @@
     <BuildToolsTaskDir Condition="'$(RunningOnCore)'=='true'">$(ToolsDir)</BuildToolsTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(RunningOnUnix)'=='true'">false</UseRoslynCompilers>
     <UseSharedCompilation Condition="'$(UseSharedCompilation)' == '' and '$(RunningOnUnix)' != 'true' and '$(UseRoslynCompilers)' != 'false'">true</UseSharedCompilation>
+    <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
   </PropertyGroup>
   
   <!-- Setting IsTestProject prior to Build.Common.targets -->
