@@ -25,7 +25,7 @@ function print_usage {
     echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. coreclr/bin/Product/Linux.x64.Debug).'
     echo '  --mscorlibDir=<path>             : Directory containing the built mscorlib.dll. If not specified, it is expected to be'
     echo '                                       in the directory specified by --coreClrBinDir.'
-    echo '  --coreFxBinDir="<path>"          : The path to the unpacled runtime folder that is produced as part of a CoreFX build'
+    echo '  --coreFxBinDir="<path>"          : The path to the unpacked runtime folder that is produced as part of a CoreFX build'
 	echo '  --uploadToBenchview              : Specify this flag in order to have the results of the run uploaded to Benchview.'
 	echo '                                     This also requires that the os flag and runtype flag to be set.  Lastly you must'
 	echo '                                     also have the BV_UPLOAD_SAS_TOKEN set to a SAS token for the Benchview upload container'
