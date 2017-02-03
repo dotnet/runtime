@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\Microsoft.VisualBasic.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\Microsoft.VisualBasic.builds" />
+    <ProjectReference Include="..\src\Microsoft.VisualBasic.vbproj" />
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>

@@ -9,7 +9,7 @@
       <TargetGroup>net46</TargetGroup>
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.Http.builds" />
+    <ProjectReference Include="..\src\System.Net.Http.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="monoandroid10">

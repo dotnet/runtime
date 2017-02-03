@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\System.Net.Http.Rtc.csproj">
       <SupportedFramework>netcore45</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.Http.Rtc.builds" />
+    <ProjectReference Include="..\src\System.Net.Http.Rtc.csproj" />
     <InboxOnTargetFramework Include="win8" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
