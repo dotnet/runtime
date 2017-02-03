@@ -494,6 +494,18 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\finalizertest\finalizertest.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\largeexceptiontest\largeexceptiontest.cmd">
+            <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\gettotalmemory\gettotalmemory.cmd">
+            <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\keepalive\keepalive.cmd">
+            <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\suppressfinalize\suppressfinalize.cmd">
+            <Issue>3392</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\dev10bugs\536168\536168\536168.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
