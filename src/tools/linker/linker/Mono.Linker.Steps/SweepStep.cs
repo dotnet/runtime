@@ -175,6 +175,7 @@ namespace Mono.Linker.Steps {
 					if ((td != null) && Annotations.IsMarked (td)) {
 						scope = assembly.MainModule.ImportReference (td).Scope;
 						hash.Add (td, scope);
+						et.Scope = scope;
 					}
 				}
 			}
