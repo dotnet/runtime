@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable.Tests", "tests/System.Linq.Queryable.Tests.csproj", "{7B88D79B-B799-4116-A7D0-AED572540CD4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable.Tests", "tests\System.Linq.Queryable.Tests.csproj", "{7B88D79B-B799-4116-A7D0-AED572540CD4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BE12B753-C130-4B68-86E3-877F1AEE52C0} = {BE12B753-C130-4B68-86E3-877F1AEE52C0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "src/System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "src\System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB} = {61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "ref/System.Linq.Queryable.csproj", "{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "ref\System.Linq.Queryable.csproj", "{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer.Tests", "tests/System.Resources.Writer.Tests.csproj", "{EFA745C2-3741-4D54-B2A1-1979E43354E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer.Tests", "tests\System.Resources.Writer.Tests.csproj", "{EFA745C2-3741-4D54-B2A1-1979E43354E4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{98CA9A7F-AD5C-418B-BC22-735AC2BE21A6} = {98CA9A7F-AD5C-418B-BC22-735AC2BE21A6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer", "src/System.Resources.Writer.csproj", "{98CA9A7F-AD5C-418B-BC22-735AC2BE21A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer", "src\System.Resources.Writer.csproj", "{98CA9A7F-AD5C-418B-BC22-735AC2BE21A6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7A1466AF-8BBA-4CB5-8D98-1DFE06853ED3} = {7A1466AF-8BBA-4CB5-8D98-1DFE06853ED3}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer", "ref/System.Resources.Writer.csproj", "{7A1466AF-8BBA-4CB5-8D98-1DFE06853ED3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Writer", "ref\System.Resources.Writer.csproj", "{7A1466AF-8BBA-4CB5-8D98-1DFE06853ED3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

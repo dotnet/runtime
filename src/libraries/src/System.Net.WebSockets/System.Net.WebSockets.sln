@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.Tests", "tests/System.Net.WebSockets.Tests.csproj", "{0887C5AD-1BE1-4898-94CD-FE2104E04A4A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{0887C5AD-1BE1-4898-94CD-FE2104E04A4A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1} = {B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src/System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A2F08695-A550-4AA2-806D-E5E7D86D8F25} = {A2F08695-A550-4AA2-806D-E5E7D86D8F25}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "ref/System.Net.WebSockets.csproj", "{A2F08695-A550-4AA2-806D-E5E7D86D8F25}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "ref\System.Net.WebSockets.csproj", "{A2F08695-A550-4AA2-806D-E5E7D86D8F25}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

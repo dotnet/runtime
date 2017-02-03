@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent.Tests", "tests/System.Collections.Concurrent.Tests.csproj", "{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent.Tests", "tests\System.Collections.Concurrent.Tests.csproj", "{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89} = {EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent", "src/System.Collections.Concurrent.csproj", "{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent", "src\System.Collections.Concurrent.csproj", "{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}"
 	ProjectSection(ProjectDependencies) = postProject
 		{772CB0A7-3D45-4D3A-B975-671A1937C761} = {772CB0A7-3D45-4D3A-B975-671A1937C761}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent", "ref/System.Collections.Concurrent.csproj", "{772CB0A7-3D45-4D3A-B975-671A1937C761}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Concurrent", "ref\System.Collections.Concurrent.csproj", "{772CB0A7-3D45-4D3A-B975-671A1937C761}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

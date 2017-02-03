@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation.WinRT.Unit.Tests", "tests/UnitTests/System.Net.NetworkInformation.WinRT.Unit.Tests.csproj", "{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation.Functional.Tests", "tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj", "{DCBB8805-4658-44BF-B5E8-B6714EC8936B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31} = {3CA89D6C-F8D1-4813-9775-F8D249686E31}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation.Functional.Tests", "tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj", "{DCBB8805-4658-44BF-B5E8-B6714EC8936B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation.WinRT.Unit.Tests", "tests\UnitTests\System.Net.NetworkInformation.WinRT.Unit.Tests.csproj", "{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31} = {3CA89D6C-F8D1-4813-9775-F8D249686E31}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "src/System.Net.NetworkInformation.csproj", "{3CA89D6C-F8D1-4813-9775-F8D249686E31}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "src\System.Net.NetworkInformation.csproj", "{3CA89D6C-F8D1-4813-9775-F8D249686E31}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B897C3BE-7162-44BB-8B81-7A2464C082A7} = {B897C3BE-7162-44BB-8B81-7A2464C082A7}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "ref/System.Net.NetworkInformation.csproj", "{B897C3BE-7162-44BB-8B81-7A2464C082A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "ref\System.Net.NetworkInformation.csproj", "{B897C3BE-7162-44BB-8B81-7A2464C082A7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -31,14 +31,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -52,8 +52,8 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{2194D6A2-1A35-46B5-8233-AEEBCBD31EF9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{B897C3BE-7162-44BB-8B81-7A2464C082A7} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
