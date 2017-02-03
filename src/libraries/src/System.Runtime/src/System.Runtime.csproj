@@ -5,7 +5,7 @@
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesArgs Condition="'$(TargetGroup)' == 'uapaot' Or '$(TargetGroup)' == 'netcoreapp1.2corert'">$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot' Or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
