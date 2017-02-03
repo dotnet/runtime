@@ -3594,22 +3594,28 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     unsigned slots = cpObjNode->gtSlots;
     emitter* emit  = getEmitter();
 
+    BYTE* gcPtrs = cpObjNode->gtGcPtrs;
+
     // If we can prove it's on the stack we don't need to use the write barrier.
     if (dstOnStack)
     {
         // TODO-ARM64-CQ: Consider using LDP/STP to save codesize.
-        while (slots > 0)
+        for (unsigned i = 0; i < slots; ++i)
         {
-            emit->emitIns_R_R_I(INS_ldr, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+            emitAttr attr = EA_8BYTE;
+            if (gcPtrs[i] == GCT_GCREF)
+                attr = EA_GCREF;
+            else if (gcPtrs[i] == GCT_BYREF)
+                attr = EA_BYREF;
+
+            emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
                                 INS_OPTS_POST_INDEX);
-            emit->emitIns_R_R_I(INS_str, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+            emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
                                 INS_OPTS_POST_INDEX);
-            slots--;
         }
     }
     else
     {
-        BYTE*    gcPtrs     = cpObjNode->gtGcPtrs;
         unsigned gcPtrCount = cpObjNode->gtGcPtrCount;
 
         unsigned i = 0;
