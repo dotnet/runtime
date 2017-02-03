@@ -5757,9 +5757,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // the xor ensures that only one of the two is setup, not both
             assert((varNode != nullptr) ^ (addrNode != nullptr));
 
-            BYTE     gcPtrs[MAX_ARG_REG_COUNT] = {};         // TYPE_GC_NONE = 0
-            BYTE*    structGcLayout            = &gcPtrs[0]; // The GC layout for the struct
-            unsigned gcPtrCount;                             // The count of GC pointers in the struct
+            BYTE     gcPtrs[MAX_ARG_REG_COUNT] = {}; // TYPE_GC_NONE = 0
+            unsigned gcPtrCount;                     // The count of GC pointers in the struct
             int      structSize;
             bool     isHfa;
 
@@ -5776,9 +5775,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
                                                // as that is how much stack is allocated for this LclVar
-                isHfa          = varDsc->lvIsHfa();
-                gcPtrCount     = varDsc->lvStructGcCount;
-                structGcLayout = varDsc->lvGcLayout;
+                isHfa      = varDsc->lvIsHfa();
+                gcPtrCount = varDsc->lvStructGcCount;
+                for (unsigned i = 0; i < gcPtrCount; ++i)
+                    gcPtrs[i]   = varDsc->lvGcLayout[i];
             }
             else // addrNode is used
             {
