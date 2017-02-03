@@ -4687,7 +4687,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     throw std::move(ex);
 }
 
-#ifdef _AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 
 /*++
 Function :
@@ -4704,8 +4704,29 @@ Return value :
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
+#if defined(_TARGET_AMD64_)
     _ASSERTE(index < 16);
     return &((&pContext->Rax)[index]);
+#elif defined(_TARGET_X86_)
+    _ASSERTE(index < 8);
+
+    static const SIZE_T OFFSET_OF_REGISTERS[] =
+    {
+        offsetof(CONTEXT, Eax),
+        offsetof(CONTEXT, Ecx),
+        offsetof(CONTEXT, Edx),
+        offsetof(CONTEXT, Ebx),
+        offsetof(CONTEXT, Esp),
+        offsetof(CONTEXT, Ebp),
+        offsetof(CONTEXT, Esi),
+        offsetof(CONTEXT, Edi),
+    };
+
+    return (VOID*)(PBYTE(pContext) + OFFSET_OF_REGISTERS[index]);
+#else
+    PORTABILITY_ASSERT("GetRegisterAddressByIndex");
+    return NULL;
+#endif
 }
 
 /*++
@@ -4977,7 +4998,7 @@ Return value :
 --*/
 bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 {
-    BYTE * ip = (BYTE*)pContext->Rip;
+    BYTE * ip = (BYTE *)GetIP(pContext);
     BYTE rex = 0;
     bool hasOpSizePrefix = false;
 
@@ -5009,7 +5030,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     // must have been an overflow.
     return divisor != 0;
 }
-#endif //_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
 
 BOOL IsSafeToCallExecutionManager()
 {
@@ -5056,7 +5077,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             return TRUE;
         }
 
-#ifdef _AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
         // It is possible that an overflow was mapped to a divide-by-zero exception. 
         // This happens when we try to divide the maximum negative value of a
         // signed integer with -1. 
@@ -5069,7 +5090,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             // The exception was an integer overflow, so augment the exception code.
             ex->GetExceptionRecord()->ExceptionCode = EXCEPTION_INT_OVERFLOW;
         }
-#endif //_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
 
         // Create frame necessary for the exception handling
         FrameWithCookie<FaultingExceptionFrame> fef;
