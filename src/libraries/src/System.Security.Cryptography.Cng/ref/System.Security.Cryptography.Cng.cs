@@ -266,8 +266,10 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
+#if !netfx // types missing from netfx targeting pack
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+#endif
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }

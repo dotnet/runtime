@@ -26,6 +26,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
