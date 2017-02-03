@@ -5026,6 +5026,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
 #endif // _TARGET_X86_
 
+#ifdef _TARGET_X86_
 /*****************************************************************************
  *
  *  Return the address of the local security object reference
@@ -5036,18 +5037,15 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 OBJECTREF* EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(PREGDISPLAY pRD, StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo)
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef _TARGET_X86_
     size_t securityObjectOffset = stackwalkCacheUnwindInfo->securityObjectOffset;
+
     _ASSERTE(securityObjectOffset != 0);
     // We pretend that filters are ESP-based methods in UnwindEbpDoubleAlignFrame().
     // Hence we cannot enforce this assert.
     // _ASSERTE(stackwalkCacheUnwindInfo->fUseEbpAsFrameReg);
     return (OBJECTREF *) (size_t) (*pRD->GetEbpLocation() - (securityObjectOffset * sizeof(void*)));
-#else
-    PORTABILITY_ASSERT("EECodeManager::GetAddrOfSecurityObjectFromContext is not implemented on this platform.");
-    return NULL;
-#endif
 }
+#endif // _TARGET_X86_
 
 #ifndef DACCESS_COMPILE
 OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
