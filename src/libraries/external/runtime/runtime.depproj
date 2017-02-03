@@ -2,6 +2,9 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT' AND '$(OSEnvironment)' != 'Windows_NT'">win7-x64</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(OSEnvironment)' == 'Windows_NT'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
     <!-- WORKAROUND: Force external packages to be restored for x64 until arm packages are fully broughtup-->
     <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'arm'">$(RuntimeOS)-x64</NugetRuntimeIdentifier>
   </PropertyGroup>
