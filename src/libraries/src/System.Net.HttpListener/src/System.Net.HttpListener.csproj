@@ -335,6 +335,9 @@
     <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
       <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Threading.ThreadPool" />
