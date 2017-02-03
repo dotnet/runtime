@@ -6,7 +6,7 @@
     <MinClientVersion>2.8.6</MinClientVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.builds">
+    <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj">
       <SupportedFramework>net45;netcore45;wp8;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>

@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Threading.AccessControl.csproj">
       <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Threading.AccessControl.builds" />
+    <ProjectReference Include="..\src\System.Threading.AccessControl.csproj" />
     <NotSupportedOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>
