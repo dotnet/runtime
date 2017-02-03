@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration.Tests", "tests\System.Reflection.Emit.ILGeneration.Tests.csproj", "{FB037640-0591-4DF4-A331-0BEFE50A200B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration.Tests", "tests/System.Reflection.Emit.ILGeneration.Tests.csproj", "{FB037640-0591-4DF4-A331-0BEFE50A200B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1} = {8F05FFD6-6697-41CA-B733-709F5A6D3BF1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration", "src\System.Reflection.Emit.ILGeneration.csproj", "{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration", "src/System.Reflection.Emit.ILGeneration.csproj", "{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D8763A34-58C6-4229-AD75-6980EF382294} = {D8763A34-58C6-4229-AD75-6980EF382294}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration", "ref\System.Reflection.Emit.ILGeneration.csproj", "{D8763A34-58C6-4229-AD75-6980EF382294}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Emit.ILGeneration", "ref/System.Reflection.Emit.ILGeneration.csproj", "{D8763A34-58C6-4229-AD75-6980EF382294}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -30,10 +30,10 @@ Global
 		{FB037640-0591-4DF4-A331-0BEFE50A200B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{FB037640-0591-4DF4-A331-0BEFE50A200B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{FB037640-0591-4DF4-A331-0BEFE50A200B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{8F05FFD6-6697-41CA-B733-709F5A6D3BF1}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{D8763A34-58C6-4229-AD75-6980EF382294}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{D8763A34-58C6-4229-AD75-6980EF382294}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{D8763A34-58C6-4229-AD75-6980EF382294}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU

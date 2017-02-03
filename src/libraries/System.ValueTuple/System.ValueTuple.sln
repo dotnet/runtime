@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple.Tests", "tests\System.ValueTuple.Tests.csproj", "{CBD5AE8D-8595-48E2-848F-1A3492A28FDB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple.Tests", "tests/System.ValueTuple.Tests.csproj", "{CBD5AE8D-8595-48E2-848F-1A3492A28FDB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29} = {4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple", "src\System.ValueTuple.csproj", "{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple", "src/System.ValueTuple.csproj", "{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}"
 	ProjectSection(ProjectDependencies) = postProject
 		{11AE73F7-3532-47B9-8FF6-B4F22D76456D} = {11AE73F7-3532-47B9-8FF6-B4F22D76456D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple", "ref\System.ValueTuple.csproj", "{11AE73F7-3532-47B9-8FF6-B4F22D76456D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ValueTuple", "ref/System.ValueTuple.csproj", "{11AE73F7-3532-47B9-8FF6-B4F22D76456D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

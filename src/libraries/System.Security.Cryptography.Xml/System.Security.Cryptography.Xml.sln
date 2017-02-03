@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml.Tests", "tests\System.Security.Cryptography.Xml.Tests.csproj", "{4A85232C-E914-4E06-8542-26DAF4B22D60}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml.Tests", "tests/System.Security.Cryptography.Xml.Tests.csproj", "{4A85232C-E914-4E06-8542-26DAF4B22D60}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A} = {0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "src\System.Security.Cryptography.Xml.csproj", "{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "src/System.Security.Cryptography.Xml.csproj", "{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C7266957-DB20-4250-9C2E-E1FF83EDBD71} = {C7266957-DB20-4250-9C2E-E1FF83EDBD71}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "ref\System.Security.Cryptography.Xml.csproj", "{C7266957-DB20-4250-9C2E-E1FF83EDBD71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Xml", "ref/System.Security.Cryptography.Xml.csproj", "{C7266957-DB20-4250-9C2E-E1FF83EDBD71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

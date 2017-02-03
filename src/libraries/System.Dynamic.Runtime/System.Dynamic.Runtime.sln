@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime.Tests", "tests\System.Dynamic.Runtime.Tests.csproj", "{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime.Tests", "tests/System.Dynamic.Runtime.Tests.csproj", "{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39} = {C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "src\System.Dynamic.Runtime.csproj", "{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "src/System.Dynamic.Runtime.csproj", "{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4E604291-4118-4CD6-B790-BA5F4F8C1A18} = {4E604291-4118-4CD6-B790-BA5F4F8C1A18}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "ref\System.Dynamic.Runtime.csproj", "{4E604291-4118-4CD6-B790-BA5F4F8C1A18}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Dynamic.Runtime", "ref/System.Dynamic.Runtime.csproj", "{4E604291-4118-4CD6-B790-BA5F4F8C1A18}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
