@@ -39,8 +39,8 @@
 
 static gboolean type_is_reference (MonoType *type);
 
-static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, System.Reflection, "CustomAttributeTypedArgument");
-static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, System.Reflection, "CustomAttributeNamedArgument");
+static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.Reflection", "CustomAttributeTypedArgument");
+static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.Reflection", "CustomAttributeNamedArgument");
 
 /*
  * LOCKING: Acquires the loader lock. 

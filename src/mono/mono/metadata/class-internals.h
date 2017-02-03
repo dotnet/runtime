@@ -1129,21 +1129,21 @@ MonoClass* mono_class_get_##shortname##_class (void);
 #define GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_try_get_##shortname##_class (void);
 
-#define GENERATE_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+#define GENERATE_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
 mono_class_get_##shortname##_class (void)	\
 {	\
 	static MonoClass *tmp_class;	\
 	MonoClass *klass = tmp_class;	\
 	if (!klass) {	\
-		klass = mono_class_load_from_name (mono_defaults.corlib, #namespace, name);	\
+		klass = mono_class_load_from_name (mono_defaults.corlib, name_space, name);	\
 		mono_memory_barrier ();	\
 		tmp_class = klass;	\
 	}	\
 	return klass;	\
 }
 
-#define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+#define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
 mono_class_try_get_##shortname##_class (void)	\
 {	\
@@ -1152,7 +1152,7 @@ mono_class_try_get_##shortname##_class (void)	\
 	MonoClass *klass = (MonoClass *)tmp_class;	\
 	mono_memory_barrier ();	\
 	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_defaults.corlib, #namespace, name);	\
+		klass = mono_class_try_load_from_name (mono_defaults.corlib, name_space, name);	\
 		tmp_class = klass;	\
 		mono_memory_barrier ();	\
 		inited = TRUE;	\

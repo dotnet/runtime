@@ -124,8 +124,8 @@ mono_security_core_clr_is_platform_image (MonoImage *image)
 #ifndef DISABLE_SECURITY
 
 /* Class lazy loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (security_critical, System.Security, "SecurityCriticalAttribute")
-static GENERATE_GET_CLASS_WITH_CACHE (security_safe_critical, System.Security, "SecuritySafeCriticalAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (security_critical, "System.Security", "SecurityCriticalAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (security_safe_critical, "System.Security", "SecuritySafeCriticalAttribute")
 
 static MonoClass*
 security_critical_attribute (void)

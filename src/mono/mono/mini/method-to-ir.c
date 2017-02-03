@@ -163,8 +163,8 @@ static MonoMethodSignature *helper_sig_get_tls_tramp;
 static MonoMethodSignature *helper_sig_set_tls_tramp;
 
 /* type loading helpers */
-static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, "RuntimeHelpers")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, System.Diagnostics, "DebuggableAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
 
 /*
  * Instruction metadata
