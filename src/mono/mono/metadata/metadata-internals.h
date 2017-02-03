@@ -248,6 +248,10 @@ struct _MonoImage {
 			    
 	const char          *tables_base;
 
+	/* For PPDB files */
+	guint64 referenced_tables;
+	int *referenced_table_rows;
+
 	/**/
 	MonoTableInfo        tables [MONO_TABLE_NUM];
 

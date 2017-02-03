@@ -555,13 +555,19 @@ inverse of this mapping.
 static inline int
 idx_size (MonoImage *meta, int tableidx)
 {
-	return meta->tables [tableidx].rows < 65536 ? 2 : 4;
+	if (meta->referenced_tables && (meta->referenced_tables & ((guint64)1 << tableidx)))
+		return meta->referenced_table_rows [tableidx] < 65536 ? 2 : 4;
+	else
+		return meta->tables [tableidx].rows < 65536 ? 2 : 4;
 }
 
 static inline int
 get_nrows (MonoImage *meta, int tableidx)
 {
-	return meta->tables [tableidx].rows;
+	if (meta->referenced_tables && (meta->referenced_tables & ((guint64)1 << tableidx)))
+		return meta->referenced_table_rows [tableidx];
+	else
+		return meta->tables [tableidx].rows;
 }
 
 /* Reference: Partition II - 23.2.6 */
