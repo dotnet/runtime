@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{FAF5D1E4-BA43-4663-8429-C069066D75CB}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU

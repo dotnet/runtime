@@ -4,8 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{458E445C-DF3C-4E4D-8E1D-F2FAC365BB40}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="MutexSecurityTests.cs" />
     <Compile Include="ThreadingAclExtensionsTests.cs" />
