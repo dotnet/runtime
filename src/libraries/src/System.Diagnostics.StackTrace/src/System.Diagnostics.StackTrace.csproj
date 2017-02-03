@@ -45,8 +45,7 @@
     <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
     <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
@@ -59,7 +58,7 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.CoreRT.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)'=='uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
