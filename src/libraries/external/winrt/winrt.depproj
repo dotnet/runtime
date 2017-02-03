@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>Windows</AssemblyName>
     <TargetExt>.winmd</TargetExt>
-    <IsReferenceAssembly>true</IsReferenceAssembly>
+    <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
   </PropertyGroup>

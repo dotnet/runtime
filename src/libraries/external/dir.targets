@@ -43,6 +43,4 @@
           DependsOnTargets="Compile;GetBinplaceItems" 
           Returns="@(BinplaceItem)" />
 
-  <!-- Don't do any filtering of Targeting pack packages -->
-  <Target Name="FilterTargetingPackResolvedNugetPackages" />
 </Project>
