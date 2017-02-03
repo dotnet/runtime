@@ -163,38 +163,25 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
         }
 
-        [Fact]
         public static void AssemblyReflectionOnlyLoadFromString()
         {
             AssemblyName an = typeof(AssemblyTests).Assembly.GetName();
-
-            Assembly a1 = Assembly.ReflectionOnlyLoad(an.FullName);
-            Assert.NotNull(a1);
-            Assert.Equal(an.FullName, a1.GetName().FullName);
+            Assert.Throws<NotSupportedException>(() => Assembly.ReflectionOnlyLoad(an.FullName));
         }
 
-        [Fact]
         public static void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
             byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
-
-            Assembly a1 = Assembly.ReflectionOnlyLoad(aBytes);
-            Assert.NotNull(a1);
-            Assert.Equal(assembly.FullName, a1.GetName().FullName);
+            Assert.Throws<NotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
         }
 
-        [Fact]
         public static void AssemblyReflectionOnlyLoadFromNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((string)null));
             Assert.Throws<ArgumentException>(() => Assembly.ReflectionOnlyLoad(string.Empty));
 
-            string emptyCName = new string('\0', 1);
-            Assert.Throws<ArgumentException>(() => Assembly.ReflectionOnlyLoad(emptyCName));
-
             Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
-            Assert.Throws<BadImageFormatException>(() => Assembly.ReflectionOnlyLoad(new byte[0]));
         }
 
         public static IEnumerable<object[]> GetModules_TestData()
