@@ -252,3 +252,46 @@ bool skip_utf8_bom(pal::ifstream_t* stream)
 
     return true;
 }
+
+bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
+{
+    pal::string_t path;
+    if (!pal::getenv(_X("DOTNET_SHARED_PACKAGES"), &path))
+    {
+        return false;
+    }
+
+    pal::string_t tok;
+    pal::stringstream_t ss(path);
+    while (std::getline(ss, tok, PATH_SEPARATOR))
+    {
+        if (pal::realpath(&tok))
+        {
+            append_path(&tok, arch.c_str());
+            append_path(&tok, tfm.c_str());
+            dirs->push_back(tok);
+        }
+    }
+    return true;
+}
+
+bool get_global_shared_package_dir(pal::string_t* dir)
+{
+    if (!pal::get_global_dotnet_dir(dir))
+    {
+        return false;
+    }
+    append_path(dir, _X("packages"));
+    return true;
+}
+
+bool get_local_shared_package_dir(pal::string_t* dir)
+{
+    if (!pal::get_local_dotnet_dir(dir))
+    {
+        return false;
+    }
+
+    append_path(dir, _X("packages"));
+    return true;
+}

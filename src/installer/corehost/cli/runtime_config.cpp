@@ -71,6 +71,12 @@ bool runtime_config_t::parse_opts(const json_value& opts)
         m_prerelease_roll_fwd = prerelease_roll_fwd->second.as_bool();
     }
 
+    auto tfm = opts_obj.find(_X("tfm"));
+    if (tfm != opts_obj.end())
+    {
+        m_tfm = tfm->second.as_string();
+    }
+
     auto framework =  opts_obj.find(_X("framework"));
     if (framework == opts_obj.end())
     {
@@ -174,6 +180,12 @@ bool runtime_config_t::ensure_parsed()
         return false;
     }
     return true;
+}
+
+const pal::string_t& runtime_config_t::get_tfm() const
+{
+    assert(m_valid);
+    return m_tfm;
 }
 
 const pal::string_t& runtime_config_t::get_fx_name() const
