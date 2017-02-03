@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer.Tests", "tests\System.Threading.Timer.Tests.csproj", "{ac20a28f-fda8-45e8-8728-058ead16e44c}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer.Tests", "tests/System.Threading.Timer.Tests.csproj", "{ac20a28f-fda8-45e8-8728-058ead16e44c}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0F8B87B4-0E61-4DC6-9E90-CD4863025272} = {0F8B87B4-0E61-4DC6-9E90-CD4863025272}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "src\System.Threading.Timer.csproj", "{0F8B87B4-0E61-4DC6-9E90-CD4863025272}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "src/System.Threading.Timer.csproj", "{0F8B87B4-0E61-4DC6-9E90-CD4863025272}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC} = {DC78B562-4F74-49C2-9766-3B65CD610CCC}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "ref\System.Threading.Timer.csproj", "{DC78B562-4F74-49C2-9766-3B65CD610CCC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "ref/System.Threading.Timer.csproj", "{DC78B562-4F74-49C2-9766-3B65CD610CCC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -30,10 +30,10 @@ Global
 		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{ac20a28f-fda8-45e8-8728-058ead16e44c}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{0F8B87B4-0E61-4DC6-9E90-CD4863025272}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU

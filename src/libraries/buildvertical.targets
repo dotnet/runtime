@@ -22,15 +22,19 @@
     </MSBuild>
 
     <ItemGroup>
+      <!-- assign configuration as a seperate step to prevent batching during the transform which can reorder the list.
+           order or projects matters here since this applies to traversal projects which build projects serially. -->
+      <_projectBuildConfigurations>
+        <AdditionalProperties>Configuration=%(Identity);%(_projectBuildConfigurations.AdditionalProperties)</AdditionalProperties>
+      </_projectBuildConfigurations>
+      
       <!-- transform back to project -->
-      <_ProjectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')">
-        <AdditionalProperties>Configuration=%(Identity);%(_ProjectBestConfigurations.AdditionalProperties)</AdditionalProperties>
-      </_ProjectWithConfiguration>
+      <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
 
     <ItemGroup>
       <Project Remove="@(Project)" />
-      <Project Include="@(_ProjectWithConfiguration)" />
+      <Project Include="@(_projectWithConfiguration)" />
     </ItemGroup>
   </Target>
 

@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "src\System.DirectoryServices.Protocols.csproj", "{135980AC-4583-44EC-894E-CB3B1A481920}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "src/System.DirectoryServices.Protocols.csproj", "{135980AC-4583-44EC-894E-CB3B1A481920}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7DEA4539-9A0D-4801-B229-3824710EBCEE} = {7DEA4539-9A0D-4801-B229-3824710EBCEE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "ref\System.DirectoryServices.Protocols.csproj", "{7DEA4539-9A0D-4801-B229-3824710EBCEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols", "ref/System.DirectoryServices.Protocols.csproj", "{7DEA4539-9A0D-4801-B229-3824710EBCEE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject

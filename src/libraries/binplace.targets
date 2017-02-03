@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(BinPlaceRef)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
@@ -11,8 +11,8 @@
     <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
 
     <!-- if building desktop facade, we don't bin place the refs -->
-    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
-    <BinPlaceRuntime Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">true</BinPlaceRuntime>
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And '$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
 
     <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
     <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
@@ -30,8 +30,21 @@
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
       <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
+    <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">
       <RefPath>$(RefRootPath)netstandard</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netcoreapp'" 
+                           Include="netcoreapp-$(OSGroup)">
+      <RefPath>$(RefRootPath)netcoreapp</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'uap'" 
+                           Include="uap-$(OSGroup)">
+      <RefPath>$(RefRootPath)uap</RefPath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netfx'" 
+                           Include="netfx-$(OSGroup)">
+      <RefPath>$(RefRootPath)netfx</RefPath>
     </BinplaceConfiguration>
   </ItemGroup>
 
@@ -43,13 +56,13 @@
 
   <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
     <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" >
+    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" SkipUnchangedFiles="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
   <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
-    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)">
+    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)" SkipUnchangedFiles="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>

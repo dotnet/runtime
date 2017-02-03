@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher.Tests", "tests\System.IO.FileSystem.Watcher.Tests.csproj", "{20411A66-C7A4-4941-8FA2-66308365FD22}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher.Tests", "tests/System.IO.FileSystem.Watcher.Tests.csproj", "{20411A66-C7A4-4941-8FA2-66308365FD22}"
 	ProjectSection(ProjectDependencies) = postProject
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED} = {77E702D9-C6D8-4CE4-9941-D3056C3CCBED}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "src\System.IO.FileSystem.Watcher.csproj", "{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "src/System.IO.FileSystem.Watcher.csproj", "{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}"
 	ProjectSection(ProjectDependencies) = postProject
 		{34E2C0E2-6C09-427D-BB75-702B3388CFC5} = {34E2C0E2-6C09-427D-BB75-702B3388CFC5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "ref\System.IO.FileSystem.Watcher.csproj", "{34E2C0E2-6C09-427D-BB75-702B3388CFC5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "ref/System.IO.FileSystem.Watcher.csproj", "{34E2C0E2-6C09-427D-BB75-702B3388CFC5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

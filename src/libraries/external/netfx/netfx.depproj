@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <IsReferenceAssembly>true</IsReferenceAssembly>
+    <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
   </PropertyGroup>
@@ -21,27 +21,9 @@
       <RefPath Condition="'$(ForShims)' != 'true'">$(RefPath)</RefPath>
       <RefPath Condition="'$(ForShims)' == 'true'">$(NetFxRefPath)</RefPath>
     </BinplaceConfiguration>
-  </ItemGroup>
-
-  <!-- Filter the targeting pack to just these assemblies which we need netcoreapp shims for -->
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Drawing" />
-    <TargetingPackReference Include="System.Numerics" />
-    <TargetingPackReference Include="System.Runtime.Serialization" />
-    <TargetingPackReference Include="System.Web" />
-    <TargetingPackReference Include="System.Xml" />
-    <TargetingPackReference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(ForShims)' != 'true'">
-    <TargetingPackReference Include="System.ComponentModel.DataAnnotations" />
-    <TargetingPackReference Include="System.Data" />
-    <TargetingPackReference Include="System.Security" />
-    <TargetingPackReference Include="System.ServiceProcess" />
-    <TargetingPackReference Include="System.Transactions" />
-    <TargetingPackReference Include="WindowsBase" />
+    
+    <FileToExclude Include="System.EnterpriseServices.Thunk" />
+    <FileToExclude Include="System.EnterpriseServices.Wrapper" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

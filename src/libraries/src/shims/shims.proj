@@ -14,10 +14,23 @@
     <NetCoreAppRefPath>$(RefPath)</NetCoreAppRefPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <NetFxReference Include="mscorlib" />
+    <NetFxReference Include="System" />
+    <NetFxReference Include="System.Core" />
+    <NetFxReference Include="System.Drawing" />
+    <NetFxReference Include="System.Numerics" />
+    <NetFxReference Include="System.Runtime.Serialization" />
+    <NetFxReference Include="System.Web" />
+    <NetFxReference Include="System.Xml" />
+    <NetFxReference Include="System.Xml.Linq" />
+  </ItemGroup>
+
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
-      <GenFacadesContracts Include="$(NetFxRefPath)*.dll" />
-      <GenFacadesContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" />
+      <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
       <GenFacadesSeeds Include="$(NetCoreAppRefPath)*.dll" Exclude="$(NetCoreAppRefPath)System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
@@ -51,16 +64,16 @@
       <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
     </PropertyGroup>
 
-    <Exec Command="$(GenFacadesCmd) -contracts:&quot;$(NetFxRefPath)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
-    <Exec Command="$(GenFacadesCmd) -contracts:$(NetStandardRefPath)netstandard.dll @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
     <!-- Copy the facades to the package ref and lib folders to be included in the packages -->
     <!-- TODO: replace with BinPlacing targets -->
     <ItemGroup>
       <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/ref" />
       <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/lib" />
-      <PackageOutputPaths Include="$(BuildConfigurationRefPath)" />
+      <PackageOutputPaths Include="$(RefPath)" />
       <PackageOutputPaths Include="$(RuntimePath)" />
       <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
       <FileWrites Include="@(ProducedFacades)" />

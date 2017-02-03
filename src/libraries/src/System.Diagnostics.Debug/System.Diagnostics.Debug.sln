@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug.Tests", "tests\System.Diagnostics.Debug.Tests.csproj", "{56F67E92-E606-435E-A00F-003CBFB26945}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug.Tests", "tests/System.Diagnostics.Debug.Tests.csproj", "{56F67E92-E606-435E-A00F-003CBFB26945}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8} = {E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug", "src\System.Diagnostics.Debug.csproj", "{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug", "src/System.Diagnostics.Debug.csproj", "{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2CBC7A79-EDF5-4552-B25D-8E32E367571E} = {2CBC7A79-EDF5-4552-B25D-8E32E367571E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug", "ref\System.Diagnostics.Debug.csproj", "{2CBC7A79-EDF5-4552-B25D-8E32E367571E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Debug", "ref/System.Diagnostics.Debug.csproj", "{2CBC7A79-EDF5-4552-B25D-8E32E367571E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

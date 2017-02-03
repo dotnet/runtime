@@ -5,7 +5,7 @@
     <IsNetFx Condition="$(NuGetTargetMoniker.StartsWith('.NETFramework,'))">true</IsNetFx>
     <IsNetFxVertical Condition="'$(_bc_TargetGroup)' == 'netfx' OR $(_bc_TargetGroup.StartsWith('net4'))">true</IsNetFxVertical>
     <IsNETStandard1x Condition="$(NuGetTargetMoniker.StartsWith('.NETStandard,Version=v1.'))">true</IsNETStandard1x>
-    <IsReferenceAssembly>true</IsReferenceAssembly>
+    <BinPlaceRef>true</BinPlaceRef>
     <!-- when building for any NetFx vertical, also place facades in runtime folder -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsNetFx)' == 'true' AND '$(IsNetFxVertical)' == 'true'">true</IsRuntimeAndReferenceAssembly>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
