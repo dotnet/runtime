@@ -2464,7 +2464,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
              DBG_ADDR(GetRegdisplaySP(m_crawl.pRD)), 
              DBG_ADDR(GetControlPC(m_crawl.pRD))));
 
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && defined(HAS_QUICKUNWIND)
         StackwalkCacheEntry *pCacheEntry = m_crawl.GetStackwalkCacheEntry();
         if (pCacheEntry != NULL)
         {
@@ -2474,7 +2474,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             EECodeManager::QuickUnwindStackFrame(m_crawl.pRD, pCacheEntry, EECodeManager::UnwindCurrentStackFrame);
         }
         else
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && HAS_QUICKUNWIND
         {
 #if !defined(DACCESS_COMPILE)
             // non-optimized stack unwind schema, doesn't use StackwalkCache

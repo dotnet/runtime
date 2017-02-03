@@ -36,6 +36,9 @@
 #define USE_GC_INFO_DECODER
 #endif
 
+#if (defined(_TARGET_X86_) && !defined(FEATURE_PAL)) || defined(_TARGET_AMD64_)
+#define HAS_QUICKUNWIND
+#endif
 
 #if CHECK_APP_DOMAIN_LEAKS
 #define CHECK_APP_DOMAIN    GC_CALL_CHECK_APP_DOMAIN
@@ -434,6 +437,7 @@ bool UnwindStackFrame(
                 StackwalkCacheUnwindInfo  *pUnwindInfo);
 #endif // CROSSGEN_COMPILE
 
+#ifdef HAS_QUICKUNWIND
 enum QuickUnwindFlag
 {
     UnwindCurrentStackFrame,
@@ -450,6 +454,7 @@ void QuickUnwindStackFrame(
              PREGDISPLAY pRD,
              StackwalkCacheEntry *pCacheEntry,
              QuickUnwindFlag flag);
+#endif // HAS_QUICKUNWIND
 
 /*
     Is the function currently at a "GC safe point" ?
