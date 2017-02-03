@@ -141,7 +141,9 @@
                                        ValidationPatterns="@(ValidationPattern)" />
   </Target>
 
-  <Target Name="FilterTargetingPackResolvedNugetPackages" AfterTargets="ResolveNuGetPackages" >
+  <Target Name="FilterTargetingPackResolvedNugetPackages" 
+          Condition="'$(SkipFilterTargetingPackResolvedNugetPackages)' != 'true'" 
+          AfterTargets="ResolveNuGetPackages" >
     <PropertyGroup>
       <_TargetingPackPrefix>Microsoft.TargetingPack</_TargetingPackPrefix>
       <TargetingPackReferenceCoreAssembly Condition="'$(TargetingPackReferenceCoreAssembly)' == '' and '%(TargetingPackReference.Identity)' == 'System.Private.CoreLib'">System.Private.CoreLib</TargetingPackReferenceCoreAssembly>
