@@ -84,14 +84,9 @@
     <ItemGroup>
       <!-- Exclude shims from the closure verification -->
       <ExcludeFromClosure Include="mscorlib" />
-      <ExcludeFromClosure Include="System.Core" />
       <ExcludeFromClosure Include="System" />
-      <ExcludeFromClosure Include="System.Drawing" />
-      <ExcludeFromClosure Include="System.Numerics" />
-      <ExcludeFromClosure Include="System.Runtime.Serialization" />
-      <ExcludeFromClosure Include="System.Web" />
-      <ExcludeFromClosure Include="System.Xml" />
-      <ExcludeFromClosure Include="System.Xml.Linq" />
+      <ExcludeFromClosure Include="System.Core" />
+      <ExcludeFromClosure Include="System.Data" />
     </ItemGroup>
 
     <ItemGroup>
