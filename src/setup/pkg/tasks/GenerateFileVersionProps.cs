@@ -47,10 +47,9 @@ namespace Microsoft.DotNet.Build.Tasks
                     continue;
                 }
 
-                var filePath = file.GetMetadata("FullPath");
-                var fileName = Path.GetFileName(filePath);
+                var fileName = Path.GetFileName(file.ItemSpec);
 
-                var current = GetFileVersionData(filePath);
+                var current = GetFileVersionData(file);
 
                 FileVersionData existing;
 
@@ -112,13 +111,39 @@ namespace Microsoft.DotNet.Build.Tasks
             return !Log.HasLoggedErrors;
         }
 
-        FileVersionData GetFileVersionData(string filePath)
+        FileVersionData GetFileVersionData(ITaskItem file)
         {
-            return new FileVersionData()
+            var filePath = file.GetMetadata("FullPath");
+
+            if (File.Exists(filePath))
             {
-                AssemblyVersion = FileUtilities.TryGetAssemblyVersion(filePath),
-                FileVersion = FileUtilities.GetFileVersion(filePath)
-            };
+                return new FileVersionData()
+                {
+                    AssemblyVersion = FileUtilities.TryGetAssemblyVersion(filePath),
+                    FileVersion = FileUtilities.GetFileVersion(filePath)
+                };
+            }
+            else
+            {
+                // allow for the item to specify version directly
+                Version assemblyVersion, fileVersion;
+
+                Version.TryParse(file.GetMetadata("AssemblyVersion"), out assemblyVersion);
+                Version.TryParse(file.GetMetadata("FileVersion"), out fileVersion);
+
+                if (fileVersion == null)
+                {
+                    // FileVersionInfo will return 0.0.0.0 if a file doesn't have a version.
+                    // match that behavior
+                    fileVersion = new Version(0, 0, 0, 0);
+                }
+
+                return new FileVersionData()
+                {
+                    AssemblyVersion = assemblyVersion,
+                    FileVersion = fileVersion
+                };
+            }
         }
 
         class FileVersionData
