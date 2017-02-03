@@ -496,6 +496,7 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
+#ifdef _TARGET_X86_
 /*
    Return the address of the local security object reference
    using data that was previously cached before in UnwindStackFrame
@@ -504,6 +505,7 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
 static OBJECTREF* GetAddrOfSecurityObjectFromCachedInfo(
         PREGDISPLAY pRD,
         StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo);
+#endif // _TARGET_X86_
 
 virtual
 OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) DAC_UNEXPECTED();
