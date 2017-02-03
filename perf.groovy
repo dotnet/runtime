@@ -27,8 +27,8 @@ def static getOSGroup(def os) {
 // Setup perflab tests runs
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
-		['x64'].each { architecture ->
-			def newJob = job(Utilities.getFullJobName(project, "perf_perflab_${os}", isPR)) {
+		['x64', 'x86'].each { architecture ->
+			def newJob = job(Utilities.getFullJobName(project, "perf_perflab_${os}_${architecture}", isPR)) {
 				// Set the label.
 				label('windows_clr_perf')
 				wrappers {
@@ -76,9 +76,9 @@ def static getOSGroup(def os) {
 
 			if (isPR) {
 				TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-				builder.setGithubContext("${os} CoreCLR Perf Tests")
+				builder.setGithubContext("${os} ${architecture} CoreCLR Perf Tests")
 				builder.triggerOnlyOnComment()
-				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+perf.*")
+				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}$_{architecture}\\W+perf.*")
 				builder.triggerForBranch(branch)
 				builder.emitTrigger(newJob)
 			}
