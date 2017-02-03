@@ -31,6 +31,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Mono.Cecil;
 using Mono.Collections.Generic;
+using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps {
 
@@ -38,6 +39,12 @@ namespace Mono.Linker.Steps {
 
 		AssemblyDefinition [] assemblies;
 		HashSet<AssemblyDefinition> resolvedTypeReferences;
+		readonly bool sweepSymbols;
+
+		public SweepStep (bool sweepSymbols = true)
+		{
+			this.sweepSymbols = sweepSymbols;
+		}
 
 		protected override void Process ()
 		{
@@ -197,7 +204,7 @@ namespace Mono.Linker.Steps {
 				SweepCollection (type.Fields);
 
 			if (type.HasMethods)
-				SweepCollection (type.Methods);
+				SweepMethods (type.Methods);
 
 			if (type.HasNestedTypes)
 				SweepNestedTypes (type);
@@ -211,6 +218,54 @@ namespace Mono.Linker.Steps {
 					SweepType (nested);
 				} else {
 					type.NestedTypes.RemoveAt (i--);
+				}
+			}
+		}
+
+		void SweepMethods (Collection<MethodDefinition> methods)
+		{
+			SweepCollection (methods);
+			if (sweepSymbols)
+				SweepDebugInfo (methods);
+		}
+
+		void SweepDebugInfo (Collection<MethodDefinition> methods)
+		{
+			List<ScopeDebugInformation> sweptScopes = null;
+			foreach (var m in methods) {
+				if (m.DebugInformation == null)
+					continue;
+
+				var scope = m.DebugInformation.Scope;
+				if (scope == null)
+					continue;
+
+				if (sweptScopes == null) {
+					sweptScopes = new List<ScopeDebugInformation> ();
+				} else if (sweptScopes.Contains (scope)) {
+					continue;
+				}
+
+				sweptScopes.Add (scope);
+
+				if (scope.HasConstants) {
+					var constants = scope.Constants;
+					for (int i = 0; i < constants.Count; ++i) {
+						if (!Annotations.IsMarked (constants [i].ConstantType))
+							constants.RemoveAt (i--);
+					}
+				}
+
+				var import = scope.Import;
+				if (import != null && import.HasTargets) {
+					var targets = import.Targets;
+					for (int i = 0; i < targets.Count; ++i) {
+						var ttype = targets [i].Type;
+						if (ttype != null && !Annotations.IsMarked (ttype))
+							targets.RemoveAt (i--);
+
+						// TODO: Clear also AssemblyReference and Namespace when not marked
+					}
 				}
 			}
 		}
