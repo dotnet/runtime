@@ -13,7 +13,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="Legacy\SerialPort\Close.cs" />
+    <Compile Include="Legacy\SerialPort\ctor.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str.cs" />
+    <Compile Include="Legacy\Support\LocalMachineSerialInfo.cs" />
+    <Compile Include="Legacy\Support\PortHelper.cs" />
+    <Compile Include="Legacy\Support\SerialPortConnection.cs" />
+    <Compile Include="Legacy\Support\SerialPortProperties.cs" />
+    <Compile Include="Legacy\Support\TCSupport.cs" />
+    <Compile Include="Legacy\Support\TestDelegate.cs" />
+    <Compile Include="PortsTest.cs" />
     <Compile Include="System\IO\Ports\SmokeTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
