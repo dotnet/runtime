@@ -322,6 +322,7 @@ virtual unsigned int GetFrameSize(GCInfoToken gcInfoToken) = 0;
 
 /* Debugger API */
 
+#ifndef WIN64EXCEPTIONS
 virtual const BYTE*     GetFinallyReturnAddr(PREGDISPLAY pReg)=0;
 
 virtual BOOL            IsInFilter(GCInfoToken gcInfoToken,
@@ -329,7 +330,6 @@ virtual BOOL            IsInFilter(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx,
                                    DWORD curNestLevel) = 0;
 
-#ifndef WIN64EXCEPTIONS
 virtual BOOL            LeaveFinally(GCInfoToken gcInfoToken,
                                      unsigned offset,
                                      PCONTEXT pCtx) = 0;
@@ -598,12 +598,12 @@ unsigned int GetFrameSize(GCInfoToken gcInfoToken);
 
 #ifndef DACCESS_COMPILE
 
+#ifndef WIN64EXCEPTIONS
 virtual const BYTE* GetFinallyReturnAddr(PREGDISPLAY pReg);
 virtual BOOL IsInFilter(GCInfoToken gcInfoToken,
                         unsigned offset,
                         PCONTEXT pCtx,
                           DWORD curNestLevel);
-#ifndef WIN64EXCEPTIONS
 virtual BOOL LeaveFinally(GCInfoToken gcInfoToken,
                           unsigned offset,
                           PCONTEXT pCtx);

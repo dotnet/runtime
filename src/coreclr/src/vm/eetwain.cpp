@@ -5699,16 +5699,12 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
 
 /*****************************************************************************/
 
+#ifndef WIN64EXCEPTIONS
 const BYTE* EECodeManager::GetFinallyReturnAddr(PREGDISPLAY pReg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_X86_
     return *(const BYTE**)(size_t)(GetRegdisplaySP(pReg));
-#else
-    PORTABILITY_ASSERT("EECodeManager::GetFinallyReturnAddr is not implemented on this platform.");
-    return NULL;
-#endif
 }
 
 BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
@@ -5720,8 +5716,6 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-
-#ifdef _TARGET_X86_
 
     /* Extract the necessary information from the info block header */
 
@@ -5747,15 +5741,9 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
 //    _ASSERTE(nestingLevel == curNestLevel);
 
     return frameType == FR_FILTER;
-
-#else
-    PORTABILITY_ASSERT("EECodeManager::IsInFilter is not implemented on this platform.");
-    return FALSE;
-#endif
 }
 
 
-#ifndef WIN64EXCEPTIONS
 BOOL EECodeManager::LeaveFinally(GCInfoToken gcInfoToken,
                                 unsigned offset,
                                 PCONTEXT pCtx)
