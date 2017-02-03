@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard;
+      netstandard1.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
