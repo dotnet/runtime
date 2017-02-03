@@ -23,10 +23,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Compile Include="Microsoft\Win32\RegistryAclExtensions.netfx.cs" />
+    <Compile Include="Microsoft\Win32\RegistryAclExtensions.net46.cs" />
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />

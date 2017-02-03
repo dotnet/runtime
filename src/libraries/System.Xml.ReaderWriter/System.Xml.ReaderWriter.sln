@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.ReaderWriter", "src\System.Xml.ReaderWriter.csproj", "{C559743A-762E-4D9D-B986-E77BDB97652E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.ReaderWriter", "src/System.Xml.ReaderWriter.csproj", "{C559743A-762E-4D9D-B986-E77BDB97652E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6F785D18-A969-4DB9-AB45-DD294839087D} = {6F785D18-A969-4DB9-AB45-DD294839087D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.ReaderWriter", "ref\System.Xml.ReaderWriter.csproj", "{6F785D18-A969-4DB9-AB45-DD294839087D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.ReaderWriter", "ref/System.Xml.ReaderWriter.csproj", "{6F785D18-A969-4DB9-AB45-DD294839087D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard-Windows_NT;
-      net463-AnyOS;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

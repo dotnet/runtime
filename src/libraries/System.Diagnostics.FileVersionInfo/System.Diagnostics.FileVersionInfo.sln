@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "tests\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.Tests", "tests/System.Diagnostics.FileVersionInfo.Tests/System.Diagnostics.FileVersionInfo.Tests.csproj", "{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.Tests", "tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj", "{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "tests/System.Diagnostics.FileVersionInfo.TestAssembly/System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "src\System.Diagnostics.FileVersionInfo.csproj", "{00EDA5FD-E802-40D3-92D5-56C27612D36D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "src/System.Diagnostics.FileVersionInfo.csproj", "{00EDA5FD-E802-40D3-92D5-56C27612D36D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F815A563-B6B8-49F3-9E90-1A134033B864} = {F815A563-B6B8-49F3-9E90-1A134033B864}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "ref\System.Diagnostics.FileVersionInfo.csproj", "{F815A563-B6B8-49F3-9E90-1A134033B864}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "ref/System.Diagnostics.FileVersionInfo.csproj", "{F815A563-B6B8-49F3-9E90-1A134033B864}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -31,14 +31,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -52,8 +52,8 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F815A563-B6B8-49F3-9E90-1A134033B864} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection

@@ -373,7 +373,7 @@
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />

@@ -62,18 +62,21 @@
   <ItemGroup>
     <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.0'">
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Collections.Concurrent" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Dynamic.Runtime" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
