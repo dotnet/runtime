@@ -505,7 +505,7 @@ sample_internal (MonoCounter *counter, void *buffer, int buffer_size)
 				size = 0;
 			} else {
 				size = counter->size;
-				strncpy ((char *) buffer, strval, size - 1);
+				memcpy ((char *) buffer, strval, size - 1);
 				((char*)buffer)[size - 1] = '\0';
 			}
 		}

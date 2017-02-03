@@ -240,8 +240,8 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	} else {
 		char n [63];
 
-		strncpy (n, name, 63);
-		n [62] = '\0';
+		memcpy (n, name, sizeof (n) - 1);
+		n [sizeof (n) - 1] = '\0';
 		pthread_setname_np (n);
 	}
 #elif defined (__NetBSD__)
@@ -250,8 +250,8 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	} else {
 		char n [PTHREAD_MAX_NAMELEN_NP];
 
-		strncpy (n, name, PTHREAD_MAX_NAMELEN_NP);
-		n [PTHREAD_MAX_NAMELEN_NP - 1] = '\0';
+		memcpy (n, name, sizeof (n) - 1);
+		n [sizeof (n) - 1] = '\0';
 		pthread_setname_np (tid, "%s", (void*)n);
 	}
 #elif defined (HAVE_PTHREAD_SETNAME_NP)
@@ -260,8 +260,8 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	} else {
 		char n [16];
 
-		strncpy (n, name, 16);
-		n [15] = '\0';
+		memcpy (n, name, sizeof (n) - 1);
+		n [sizeof (n) - 1] = '\0';
 		pthread_setname_np (tid, n);
 	}
 #endif

@@ -218,7 +218,7 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 		while (g_ascii_isspace (*s)) s++;
 		fclose (f);
 		len = strlen (s);
-		strncpy (rbuf, s, MIN (len, blen));
+		memcpy (rbuf, s, MIN (len, blen));
 		rbuf [MIN (len, blen) - 1] = 0;
 		if (error)
 			*error = MONO_PROCESS_ERROR_NONE;
@@ -289,7 +289,7 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	memset (buf, 0, len);
 
 	if (sysctl_kinfo_proc (pid, &processi))
-		strncpy (buf, processi.kinfo_name_member, len - 1);
+		memcpy (buf, processi.kinfo_name_member, len - 1);
 
 	return buf;
 #else

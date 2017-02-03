@@ -223,7 +223,8 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+	glong utf8_len = 0;
+	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
 
 	handle = mono_w32handle_namespace_search_handle (MONO_W32HANDLE_NAMEDEVENT, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -239,8 +240,9 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const guni
 		/* A new named event */
 		MonoW32HandleNamedEvent namedevent_handle;
 
-		strncpy (&namedevent_handle.sharedns.name [0], utf8_name, MAX_PATH);
-		namedevent_handle.sharedns.name [MAX_PATH] = '\0';
+		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
+		memcpy (&namedevent_handle.sharedns.name [0], utf8_name, len);
+		namedevent_handle.sharedns.name [len] = '\0';
 
 		handle = event_handle_create ((MonoW32HandleEvent*) &namedevent_handle, MONO_W32HANDLE_NAMEDEVENT, manual, initial);
 	}

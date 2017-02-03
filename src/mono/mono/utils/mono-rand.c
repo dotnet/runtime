@@ -59,7 +59,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 		err = errno;
 	} else {
 		egd_addr.sun_family = AF_UNIX;
-		strncpy (egd_addr.sun_path, path, sizeof (egd_addr.sun_path) - 1);
+		memcpy (egd_addr.sun_path, path, sizeof (egd_addr.sun_path) - 1);
 		egd_addr.sun_path [sizeof (egd_addr.sun_path) - 1] = '\0';
 		ret = connect (socket_fd, (struct sockaddr*) &egd_addr, sizeof (egd_addr));
 		err = errno;

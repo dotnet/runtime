@@ -314,7 +314,8 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+	glong utf8_len = 0;
+	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
 
 	handle = mono_w32handle_namespace_search_handle (MONO_W32HANDLE_NAMEDMUTEX, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -330,8 +331,9 @@ static gpointer namedmutex_create (gboolean owned, const gunichar2 *name)
 		/* A new named mutex */
 		MonoW32HandleNamedMutex namedmutex_handle;
 
-		strncpy (&namedmutex_handle.sharedns.name [0], utf8_name, MAX_PATH);
-		namedmutex_handle.sharedns.name [MAX_PATH] = '\0';
+		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
+		memcpy (&namedmutex_handle.sharedns.name [0], utf8_name, len);
+		namedmutex_handle.sharedns.name [len] = '\0';
 
 		handle = mutex_handle_create ((MonoW32HandleMutex*) &namedmutex_handle, MONO_W32HANDLE_NAMEDMUTEX, owned);
 	}

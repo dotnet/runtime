@@ -1132,7 +1132,7 @@ mono_test_marshal_stringbuilder (char *s, int n)
 
 	if (strcmp (s, "ABCD") != 0)
 		return 1;
-	strncpy(s, m, n);
+	memcpy(s, m, n);
 	s [n] = '\0';
 	return 0;
 }
@@ -1158,7 +1158,7 @@ mono_test_marshal_stringbuilder_default (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
 
-	strncpy(s, m, n);
+	memcpy(s, m, n);
 	s [n] = '\0';
 	return 0;
 }
@@ -7283,8 +7283,8 @@ build_return_string(const char* pReturn)
 
 	size_t strLength = strlen(pReturn);
 	ret = (char *)(marshal_alloc (sizeof(char)* (strLength + 1)));
-	memset(ret, '\0', strLength + 1);
-	strncpy(ret, pReturn, strLength);
+	memcpy(ret, pReturn, strLength);
+	ret [strLength] = '\0';
 	return ret;
 }
 

@@ -188,7 +188,8 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	utf8_name = g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+	glong utf8_len = 0;
+	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
 
@@ -206,8 +207,9 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 		/* A new named semaphore */
 		MonoW32HandleNamedSemaphore namedsem_handle;
 
-		strncpy (&namedsem_handle.sharedns.name [0], utf8_name, MAX_PATH);
-		namedsem_handle.sharedns.name [MAX_PATH] = '\0';
+		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
+		memcpy (&namedsem_handle.sharedns.name [0], utf8_name, len);
+		namedsem_handle.sharedns.name [len] = '\0';
 
 		handle = sem_handle_create ((MonoW32HandleSemaphore*) &namedsem_handle, MONO_W32HANDLE_NAMEDSEM, initial, max);
 	}

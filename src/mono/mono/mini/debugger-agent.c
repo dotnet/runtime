@@ -830,9 +830,10 @@ parse_address (char *address, char **host, int *port)
 	if (pos == NULL || pos == address)
 		return 1;
 
-	*host = (char *)g_malloc (pos - address + 1);
-	strncpy (*host, address, pos - address);
-	(*host) [pos - address] = '\0';
+	size_t len = pos - address;
+	*host = (char *)g_malloc (len + 1);
+	memcpy (*host, address, len);
+	(*host) [len] = '\0';
 
 	*port = atoi (pos + 1);
 
