@@ -1299,9 +1299,21 @@ mono_perform_abc_removal (MonoCompile *cfg)
 
 		for (ins = bb->code; ins; ins = ins->next) {
 			const char *spec = INS_INFO (ins->opcode);
+			gint32 idx, *reg;
 			
 			if (spec [MONO_INST_DEST] == ' ' || MONO_IS_STORE_MEMBASE (ins))
 				continue;
+
+			MONO_INS_FOR_EACH_REG (ins, idx, reg) {
+				MonoInst *var = get_vreg_to_inst (cfg, *reg);
+				if (var && (!MONO_VARINFO (cfg, var->inst_c0)->def))
+						break;
+			}
+			if (idx < MONO_INST_LEN) {
+				if (TRACE_ABC_REMOVAL)
+					printf ("Global register %d is not in the SSA form, skipping.\n", *reg);
+				continue;
+			}
 
 			if (spec [MONO_INST_DEST] == 'i') {
 				MonoIntegerValueKind effective_value_kind;
