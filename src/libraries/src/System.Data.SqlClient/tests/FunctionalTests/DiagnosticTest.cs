@@ -792,7 +792,7 @@ namespace System.Data.SqlClient.Tests
             
             if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0 
             {
-                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 1, "Divide by zero error encountered.");
+                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 11, "Divide by zero error encountered.");
                 TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken);
                 return new TDSMessageCollection(responseMessage);
             }
