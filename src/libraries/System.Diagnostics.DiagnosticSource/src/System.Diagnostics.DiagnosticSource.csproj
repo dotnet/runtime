@@ -27,6 +27,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
@@ -35,16 +37,22 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />    
+    <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'net45' And '$(TargetGroup)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.net46.cs" />
+    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == 'net45' ">
-    <Compile Include="System\Diagnostics\Activity.net45.cs" />
+    <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Runtime.Remoting" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.3' ">
+    <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.5' Or '$(TargetGroup)' == 'net45' Or '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />    
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
