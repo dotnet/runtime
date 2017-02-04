@@ -13410,15 +13410,10 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
 #endif
 
 #ifdef _TARGET_64BIT_
-            // we need to properly re-sign-extend or truncate as needed.
-            if (tree->gtFlags & GTF_UNSIGNED)
-            {
-                i1 = UINT32(i1);
-            }
-            else
-            {
-                i1 = INT32(i1);
-            }
+            // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
+            // need to be discarded. Since constant values are stored as ssize_t and the node
+            // has TYP_INT the result needs to be sign extended rather than zero extended.
+            i1 = INT32(i1);
 #endif // _TARGET_64BIT_
 
             /* Also all conditional folding jumps here since the node hanging from
