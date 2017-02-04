@@ -29,7 +29,6 @@
     <Compile Include="$(CommonPath)\System\SR.Core.cs">
       <Link>Common\System\SR.Core.cs</Link>
     </Compile>
-    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
     <Reference Include="System.Resources.Reader" />
