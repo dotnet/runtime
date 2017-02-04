@@ -3188,7 +3188,7 @@ namespace System.Xml.Xsl
                     dec.Sign = sign;
                     dec.MantissaSize = numDig;
 
-                    fixed (byte* pin = dec.Mantissa)
+                    fixed (byte* pin = &dec.Mantissa[0])
                     {
                         byte* mantissa = pin;
                         while (pchFirstDig < pch)

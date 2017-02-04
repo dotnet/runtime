@@ -514,7 +514,7 @@ namespace System.Net
                     case Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NEGOTIATION_INFO:
                         unsafe
                         {
-                            fixed (void* ptr = nativeBuffer)
+                            fixed (void* ptr = &nativeBuffer[0])
                             {
                                 attribute = new NegotiationInfoClass(sspiHandle, Marshal.ReadInt32(new IntPtr(ptr), SecPkgContext_NegotiationInfoW.NegotiationStateOffest));
                             }

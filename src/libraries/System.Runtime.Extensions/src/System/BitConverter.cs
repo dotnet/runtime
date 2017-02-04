@@ -51,7 +51,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 2);
 
             byte[] bytes = new byte[2];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((short*)b) = value;
             return bytes;
         }
@@ -65,7 +65,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 4);
 
             byte[] bytes = new byte[4];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((int*)b) = value;
             return bytes;
         }
@@ -79,7 +79,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 8);
 
             byte[] bytes = new byte[8];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((long*)b) = value;
             return bytes;
         }
@@ -374,7 +374,8 @@ namespace System
                 }
                 else
                 {
-                    fixed (char* chArrayPtr = new char[chArrayLength])
+                    char[] chArray = new char[chArrayLength];
+                    fixed (char* chArrayPtr = &chArray[0])
                         return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
                 }
             }
