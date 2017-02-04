@@ -79,4 +79,3 @@ Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/Generate
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/Generated682.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/Generated683.sh
 JIT/opt/perf/doublealign/Locals/Locals.sh
-JIT/Regression/JitBlue/DevDiv_377155/DevDiv_377155/DevDiv_377155.sh
