@@ -277,7 +277,7 @@ namespace Microsoft.DotNet.Build.Tasks
                 {
                     string projectName = Path.GetFileNameWithoutExtension(slnProject.ProjectPath);
                     // Normalize the directory separators to the windows version given these are projects for VS and only work on windows.
-                    string relativePathFromCurrentDirectory = slnProject.ProjectPath.Replace(solutionRootPath, "").Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    string relativePathFromCurrentDirectory = slnProject.ProjectPath.Replace(solutionRootPath, "").Replace("/", "\\");
 
                     slnBuilder.AppendLine($"Project(\"{slnProject.SolutionGuid}\") = \"{projectName}\", \"{relativePathFromCurrentDirectory}\", \"{slnProject.ProjectGuid}\"");
 
