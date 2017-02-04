@@ -427,7 +427,7 @@ namespace System.Net
                         {
                             flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
                         }
-                        fixed (void* pBuffer = s_chunkTerminator)
+                        fixed (void* pBuffer = &s_chunkTerminator[0])
                         {
                             Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                             if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)

@@ -199,7 +199,7 @@ internal static partial class Interop
                 // To make sure it isn't #2, when the result == size, increase the buffer and try again
                 processes = new int[(int)(numProcesses * 1.10)];
 
-                fixed (int* pBuffer = processes)
+                fixed (int* pBuffer = &processes[0])
                 {
                     numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
                     if (numProcesses <= 0)
@@ -371,7 +371,7 @@ internal static partial class Interop
             do
             {
                 threadIds = new ulong[size];
-                fixed (ulong* pBuffer = threadIds)
+                fixed (ulong* pBuffer = &threadIds[0])
                 {
                     result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, Marshal.SizeOf<ulong>() * threadIds.Length);
                 }

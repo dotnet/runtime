@@ -822,7 +822,7 @@ namespace System.Net
                 while (true)
                 {
                     byte[] clientCertInfoBlob = new byte[checked((int)size)];
-                    fixed (byte* pClientCertInfoBlob = clientCertInfoBlob)
+                    fixed (byte* pClientCertInfoBlob = &clientCertInfoBlob[0])
                     {
                         Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)pClientCertInfoBlob;
 

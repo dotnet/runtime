@@ -549,7 +549,7 @@ namespace System.Net
                 if (StatusDescription.Length > 0)
                 {
                     byte[] statusDescriptionBytes = new byte[WebHeaderEncoding.GetByteCount(StatusDescription)];
-                    fixed (byte* pStatusDescription = statusDescriptionBytes)
+                    fixed (byte* pStatusDescription = &statusDescriptionBytes[0])
                     {
                         _nativeResponse.ReasonLength = (ushort)statusDescriptionBytes.Length;
                         WebHeaderEncoding.GetBytes(StatusDescription, 0, statusDescriptionBytes.Length, statusDescriptionBytes, 0);

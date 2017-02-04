@@ -47,7 +47,7 @@ namespace System.Numerics
 
             uint[] bits = new uint[left.Length + 1];
 
-            fixed (uint* l = left, r = right, b = bits)
+            fixed (uint* l = left, r = right, b = &bits[0])
             {
                 Add(l, left.Length,
                     r, right.Length,
