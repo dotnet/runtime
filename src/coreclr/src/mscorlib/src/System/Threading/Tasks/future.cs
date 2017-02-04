@@ -341,16 +341,10 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The CancellationToken for the task.</param>
         /// <param name="creationOptions">Options to control the future's behavior.</param>
         /// <param name="internalOptions">Internal options to control the future's behavior.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="creationOptions"/> argument specifies
-        /// a SelfReplicating <see cref="Task{TResult}"/>, which is illegal."/>.</exception>
         internal Task(Func<TResult> valueSelector, Task parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler) :
             base(valueSelector, null, parent, cancellationToken, creationOptions, internalOptions, scheduler)
         {
-            if ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions, ExceptionResource.TaskT_ctor_SelfReplicating);
-            }
         }
 
         internal Task(
@@ -371,16 +365,10 @@ namespace System.Threading.Tasks
         /// <param name="scheduler">The task scheduler which will be used to execute the future.</param>
         /// <param name="creationOptions">Options to control the future's behavior.</param>
         /// <param name="internalOptions">Internal options to control the future's behavior.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">The <paramref name="creationOptions"/> argument specifies
-        /// a SelfReplicating <see cref="Task{TResult}"/>, which is illegal."/>.</exception>
         internal Task(Delegate valueSelector, object state, Task parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler) :
             base(valueSelector, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
         {
-            if ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions, ExceptionResource.TaskT_ctor_SelfReplicating);
-            }
         }
 
 
@@ -395,10 +383,6 @@ namespace System.Threading.Tasks
             if (scheduler == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
-            }
-            if ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions, ExceptionResource.TaskT_ctor_SelfReplicating);
             }
 
             // Create and schedule the future.
@@ -419,10 +403,6 @@ namespace System.Threading.Tasks
             if (scheduler == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
-            }
-            if ((internalOptions & InternalTaskOptions.SelfReplicating) != 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions, ExceptionResource.TaskT_ctor_SelfReplicating);
             }
 
             // Create and schedule the future.
