@@ -225,7 +225,7 @@ namespace System.Threading.Tasks
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.RunContinuationsAsynchronously)) != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(creationOptions));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions);
             }
             Contract.EndContractBlock();
         }
@@ -1597,7 +1597,7 @@ namespace System.Threading.Tasks
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.LongRunning)) != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(creationOptions));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.creationOptions);
             }
         }
 
