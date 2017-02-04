@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "src/System.DirectoryServices.csproj", "{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "src\System.DirectoryServices.csproj", "{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D} = {CBCDA53B-4C01-4267-B08C-413205FE4D8D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "ref/System.DirectoryServices.csproj", "{CBCDA53B-4C01-4267-B08C-413205FE4D8D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "ref\System.DirectoryServices.csproj", "{CBCDA53B-4C01-4267-B08C-413205FE4D8D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject

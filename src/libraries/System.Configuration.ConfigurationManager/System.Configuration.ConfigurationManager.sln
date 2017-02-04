@@ -2,17 +2,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager.Tests", "tests/System.Configuration.ConfigurationManager.Tests.csproj", "{7669C397-C21C-4C08-83F1-BE6691911E88}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager.Tests", "tests\System.Configuration.ConfigurationManager.Tests.csproj", "{7669C397-C21C-4C08-83F1-BE6691911E88}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B7697463-7C98-4462-BA09-67B7BF3842B6} = {B7697463-7C98-4462-BA09-67B7BF3842B6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "src/System.Configuration.ConfigurationManager.csproj", "{B7697463-7C98-4462-BA09-67B7BF3842B6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "src\System.Configuration.ConfigurationManager.csproj", "{B7697463-7C98-4462-BA09-67B7BF3842B6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FD6AA2B9-56DB-4BCC-85E0-7727506562B0} = {FD6AA2B9-56DB-4BCC-85E0-7727506562B0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "ref/System.Configuration.ConfigurationManager.csproj", "{FD6AA2B9-56DB-4BCC-85E0-7727506562B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Configuration.ConfigurationManager", "ref\System.Configuration.ConfigurationManager.csproj", "{FD6AA2B9-56DB-4BCC-85E0-7727506562B0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
