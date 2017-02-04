@@ -408,10 +408,6 @@ namespace System.Globalization {
                 calendar = (Calendar) GregorianCalendar.GetDefaultInstance().Clone();
                 calendar.SetReadOnlyState(m_isReadOnly);
             }
-            else
-            {
-                CultureInfo.CheckDomainSafetyObject(calendar, this);
-            }
             InitializeOverridableProperties(m_cultureData, calendar.ID);
 
             //
@@ -586,12 +582,6 @@ namespace System.Globalization {
                 if (value == calendar) {
                     return;
                 }
-
-                //
-                // Because the culture is agile object which can be attached to a thread and then thread can travel
-                // to another app domain then we prevent attaching any customized object to culture that we cannot contol.
-                //
-                CultureInfo.CheckDomainSafetyObject(value, this);
 
                 for (int i = 0; i < this.OptionalCalendars.Length; i++)
                 {
