@@ -2,12 +2,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "src/System.Reflection.Primitives.csproj", "{CCE47F37-2C51-44EB-8F54-0474D7831515}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "src\System.Reflection.Primitives.csproj", "{CCE47F37-2C51-44EB-8F54-0474D7831515}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F512184F-76E5-4AE5-8AB5-395AF9D18712} = {F512184F-76E5-4AE5-8AB5-395AF9D18712}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "ref/System.Reflection.Primitives.csproj", "{F512184F-76E5-4AE5-8AB5-395AF9D18712}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Primitives", "ref\System.Reflection.Primitives.csproj", "{F512184F-76E5-4AE5-8AB5-395AF9D18712}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject

@@ -226,7 +226,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private void UpdateSolution(ITaskItem solutionRootItem)
         {
-            string solutionRootPath = solutionRootItem.ItemSpec;
+            string solutionRootPath = Path.GetFullPath(solutionRootItem.ItemSpec);
             string projectExclude = solutionRootItem.GetMetadata("ExcludePattern");
             List<ProjectFolder> projectFolders = new List<ProjectFolder>();
 
@@ -276,7 +276,8 @@ namespace Microsoft.DotNet.Build.Tasks
                 foreach (var slnProject in projectFolder.Projects)
                 {
                     string projectName = Path.GetFileNameWithoutExtension(slnProject.ProjectPath);
-                    string relativePathFromCurrentDirectory = slnProject.ProjectPath.Replace(solutionRootPath, "");
+                    // Normalize the directory separators to the windows version given these are projects for VS and only work on windows.
+                    string relativePathFromCurrentDirectory = slnProject.ProjectPath.Replace(solutionRootPath, "").Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 
                     slnBuilder.AppendLine($"Project(\"{slnProject.SolutionGuid}\") = \"{projectName}\", \"{relativePathFromCurrentDirectory}\", \"{slnProject.ProjectGuid}\"");
 
@@ -360,9 +361,21 @@ namespace Microsoft.DotNet.Build.Tasks
 
             slnBuilder.AppendLine("EndGlobal");
 
-            string solutionName = new DirectoryInfo(solutionRootPath).Name;
+            string solutionName = GetNameForSolution(solutionRootPath);
             string slnFile = Path.Combine(solutionRootPath, solutionName + ".sln");
             File.WriteAllText(slnFile, slnBuilder.ToString());
+        }
+
+        private static string GetNameForSolution(string path)
+        {
+            if (path.Length < 0)
+                throw new ArgumentException("Invalid base bath for solution", nameof(path));
+
+            if (path[path.Length - 1] == Path.DirectorySeparatorChar || path[path.Length - 1] == Path.AltDirectorySeparatorChar)
+            {
+                return GetNameForSolution(path.Substring(0, path.Length - 1));
+            }
+            return Path.GetFileName(path);           
         }
 
         internal class ProjectFolder
@@ -390,11 +403,20 @@ namespace Microsoft.DotNet.Build.Tasks
                 {
                     SearchOption searchOption = searchRecursively ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
                     Regex excludePattern = string.IsNullOrEmpty(projectExcludePattern) ? null : new Regex(projectExcludePattern);
-                    foreach (string proj in Directory.EnumerateFiles(ProjectFolderPath, "*proj", searchOption))
+                    string primaryProjectPrefix = Path.Combine(ProjectFolderPath, GetNameForSolution(basePath) + "." + relPath);
+                    foreach (string proj in Directory.EnumerateFiles(ProjectFolderPath, "*proj", searchOption).OrderBy(p => p))
                     {
                         if (excludePattern == null || !excludePattern.IsMatch(proj))
                         {
-                            Projects.Add(new SolutionProject(proj));
+                            if (proj.StartsWith(primaryProjectPrefix, StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Always put the primary project first in the list
+                                Projects.Insert(0, new SolutionProject(proj));
+                            }
+                            else
+                            {
+                                Projects.Add(new SolutionProject(proj));
+                            }
                         }
                     }
                 }
