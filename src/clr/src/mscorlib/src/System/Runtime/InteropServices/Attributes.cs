@@ -148,19 +148,7 @@ namespace System.Runtime.InteropServices{
         public bool Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeLibImportClassAttribute : Attribute
-    {
-        internal String _importClassName;
-        public TypeLibImportClassAttribute(Type importClass)
-        {
-            _importClassName = importClass.ToString();
-        }
-        public String Value { get { return _importClassName; } }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class LCIDConversionAttribute : Attribute
     {
@@ -169,28 +157,10 @@ namespace System.Runtime.InteropServices{
         {
             _val = lcid;
         }
-        public int Value { get {return _val;} } 
+        public int Value { get {return _val;} }
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComRegisterFunctionAttribute : Attribute
-    {
-        public ComRegisterFunctionAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComUnregisterFunctionAttribute : Attribute
-    {
-        public ComUnregisterFunctionAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)] 
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ProgIdAttribute : Attribute
     {
@@ -199,46 +169,7 @@ namespace System.Runtime.InteropServices{
         {
             _val = progId;
         }
-        public String Value { get {return _val;} }  
-    }
-    
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ImportedFromTypeLibAttribute : Attribute
-    {
-        internal String _val;
-        public ImportedFromTypeLibAttribute(String tlbFile)
-        {
-            _val = tlbFile;
-        }
         public String Value { get {return _val;} }
-    }
-
-    [Obsolete("The IDispatchImplAttribute is deprecated.", false)]
-    [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public enum IDispatchImplType
-    {
-        SystemDefinedImpl   = 0,
-        InternalImpl        = 1,
-        CompatibleImpl      = 2,
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, Inherited = false)] 
-    [Obsolete("This attribute is deprecated and will be removed in a future version.", false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class IDispatchImplAttribute : Attribute
-    {
-        internal IDispatchImplType _val;
-        public IDispatchImplAttribute(IDispatchImplType implType)
-        {
-            _val = implType;
-        }
-        public IDispatchImplAttribute(short implType)
-        {
-            _val = (IDispatchImplType)implType;
-        }
-        public IDispatchImplType Value { get {return _val;} }   
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = true)] 
@@ -269,15 +200,6 @@ namespace System.Runtime.InteropServices{
         public String Value { get {return _val;} }  
     }    
 
-    [AttributeUsage(AttributeTargets.All, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComConversionLossAttribute : Attribute
-    {
-        public ComConversionLossAttribute()
-        {
-        }
-    }
-    
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum VarEnum
@@ -849,47 +771,6 @@ namespace System.Runtime.InteropServices{
         public int Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.ReturnValue, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComAliasNameAttribute : Attribute
-    {
-        internal String _val;
-        public ComAliasNameAttribute(String alias)
-        {
-            _val = alias;
-        }
-        public String Value { get {return _val;} }  
-    }    
-
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AutomationProxyAttribute : Attribute
-    {
-        internal bool _val;
-        public AutomationProxyAttribute(bool val)
-        {
-            _val = val;
-        }
-        public bool Value { get {return _val;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class PrimaryInteropAssemblyAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        
-        public PrimaryInteropAssemblyAttribute(int major, int minor)
-        {
-            _major = major;
-            _minor = minor;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-    }
-
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class CoClassAttribute : Attribute
@@ -902,63 +783,6 @@ namespace System.Runtime.InteropServices{
         }
 
         public Type CoClass { get { return _CoClass; } }
-    }
-
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComEventInterfaceAttribute : Attribute
-    {
-        internal Type _SourceInterface;
-        internal Type _EventProvider;
-        
-        public ComEventInterfaceAttribute(Type SourceInterface, Type EventProvider)
-        {
-            _SourceInterface = SourceInterface;
-            _EventProvider = EventProvider;
-        }
-
-        public Type SourceInterface { get {return _SourceInterface;} }       
-        public Type EventProvider { get {return _EventProvider;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeLibVersionAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        
-        public TypeLibVersionAttribute(int major, int minor)
-        {
-            _major = major;
-            _minor = minor;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComCompatibleVersionAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        internal int _build;
-        internal int _revision;
-        
-        public ComCompatibleVersionAttribute(int major, int minor, int build, int revision)
-        {
-            _major = major;
-            _minor = minor;
-            _build = build;
-            _revision = revision;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-        public int BuildNumber { get {return _build;} }
-        public int RevisionNumber { get {return _revision;} }
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
@@ -989,33 +813,5 @@ namespace System.Runtime.InteropServices{
 
         public CharSet CharSet { get { return _CharSet; } }
     }
-
-    [Obsolete("This attribute has been deprecated.  Application Domains no longer respect Activation Context boundaries in IDispatch calls.", false)]
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SetWin32ContextInIDispatchAttribute : Attribute
-    {
-        public SetWin32ContextInIDispatchAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(false)]
-    public sealed class ManagedToNativeComInteropStubAttribute : Attribute
-    {
-        internal Type _classType;
-        internal String _methodName;
-
-        public ManagedToNativeComInteropStubAttribute(Type classType, String methodName)
-        {
-            _classType = classType;
-            _methodName = methodName;
-        }
-
-        public Type ClassType { get { return _classType; } }
-        public String MethodName { get { return _methodName; } }
-    }    
-
 }
 
