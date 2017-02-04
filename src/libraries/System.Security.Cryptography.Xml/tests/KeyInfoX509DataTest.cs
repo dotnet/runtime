@@ -13,6 +13,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.Xml.Tests;
 using System.Xml;
 
 using NUnit.Framework;
