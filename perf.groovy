@@ -78,7 +78,7 @@ def static getOSGroup(def os) {
 				TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
 				builder.setGithubContext("${os} ${architecture} CoreCLR Perf Tests")
 				builder.triggerOnlyOnComment()
-				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}$_{architecture}\\W+perf.*")
+				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}_${architecture}\\W+perf.*")
 				builder.triggerForBranch(branch)
 				builder.emitTrigger(newJob)
 			}
