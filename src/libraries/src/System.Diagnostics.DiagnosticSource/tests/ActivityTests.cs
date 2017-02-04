@@ -146,13 +146,22 @@ namespace System.Diagnostics.Tests
             var t1 = Task.Run(() => child1.Start());
             var t2 = Task.Run(() => child2.Start());
             Task.WhenAll(t1, t2).Wait();
+#if DEBUG
+            Assert.Equal($"{parent.Id}.{child1.OperationName}_1", child1.Id);
+            Assert.Equal($"{parent.Id}.{child2.OperationName}_2", child2.Id);
+#else
             Assert.Equal(parent.Id + ".1", child1.Id);
             Assert.Equal(parent.Id + ".2", child2.Id);
+#endif
             child1.Stop();
             child2.Stop();
             var child3 = new Activity("child3");
             child3.Start();
+#if DEBUG
+            Assert.Equal($"{parent.Id}.{child3.OperationName}_3", child3.Id);
+#else
             Assert.Equal(parent.Id + ".3", child3.Id);
+#endif
         }
 
         /// <summary>

@@ -265,34 +265,38 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = appendSuffix(Parent.Id, $"{Interlocked.Increment(ref Parent._currentChildId)}");
+                ret = appendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString());
             }
             else if (ParentId != null)
             {
                 // Start from outside the process (e.g. incoming HTTP)
                 Debug.Assert(ParentId.Length != 0);
-                ret = appendSuffix(ParentId, $"{Interlocked.Increment(ref s_currentRootId):x}");
+                ret = appendSuffix(ParentId, "I_" + Interlocked.Increment(ref s_currentRootId));
             }
             else
             {
+                // A Root Activity (no parent).  
                 ret = generateRootId();
             }
-
             // Useful place to place a conditional breakpoint.  
             return ret;
         }
 
+
         private string appendSuffix(string parentId, string suffix)
         {
+#if DEBUG
+            suffix = OperationName + "_" + suffix;
+#endif
             if (parentId.Length + suffix.Length <= 127)
-                return $"{parentId}.{suffix}";
+                return parentId + s_idDelimiter +  suffix;
 
             //Id overflow:
             //find position in RequestId to trim
             int trimPosition = parentId.Length - 1;
             while (trimPosition > 0)
             {
-                if ((parentId[trimPosition] == '.' || parentId[trimPosition] == '#')
+                if ((parentId[trimPosition] == s_idDelimiter || parentId[trimPosition] == s_overflowDelimiter)
                     && trimPosition <= 119) //overflow suffix length is 8 + 1 for #.
                     break;
                 trimPosition--;
@@ -306,19 +310,38 @@ namespace System.Diagnostics
             byte[] bytes = new byte[4];
             s_random.Value.NextBytes(bytes);
 
-            return $"{parentId.Substring(0, trimPosition)}#{BitConverter.ToUInt32(bytes, 0):x8}";
+            return parentId.Substring(0, trimPosition) + 
+                s_overflowDelimiter +
+                BitConverter.ToUInt32(bytes, 0).ToString("x8");
         }
 
         private string generateRootId()
         {
-            byte[] bytes = new byte[8];
-            s_random.Value.NextBytes(bytes);
-            return $"/{BitConverter.ToUInt64(bytes, 0):x}";
+            if (s_uniqPrefix == null)
+            {
+                // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
+                // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
+                // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
+                Interlocked.CompareExchange(ref s_uniqPrefix, generateUniquePrefix(), null);
+            }
+
+#if DEBUG
+            string ret = s_uniqPrefix + OperationName + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
+#else           // To keep things short, we drop the operation name 
+            string ret = s_uniqPrefix + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
+#endif
+            return ret;
         }
 
         // Used to generate an ID 
-        int _currentChildId;            // A unique number for all children of this activity.  
-        static int s_currentRootId;      // A unique number inside the appdomain.
+        private int _currentChildId;            // A unique number for all children of this activity.  
+        private static int s_currentRootId;      // A unique number inside the appdomain.
+        private static string s_uniqPrefix;
+
+        private static char s_idDelimiter = '.';
+        private static char s_overflowDelimiter = '#';
+        private static char s_rootIdPrefix = '/';
+
         private static readonly Lazy<Random> s_random = new Lazy<Random>();
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
