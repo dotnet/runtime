@@ -1177,6 +1177,7 @@ namespace System.Linq.Expressions.Compiler
 
                 case TypeCode.Empty:
                 case TypeCode.String:
+                case TypeCode.DBNull:
                     il.Emit(OpCodes.Ldnull);
                     break;
 
