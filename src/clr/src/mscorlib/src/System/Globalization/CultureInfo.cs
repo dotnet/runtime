@@ -366,25 +366,6 @@ namespace System.Globalization {
         }
 #endif // FEATURE_USE_LCID
 
-        //
-        // CheckDomainSafetyObject throw if the object is customized object which cannot be attached to 
-        // other object (like CultureInfo or DateTimeFormatInfo).
-        //
-
-        internal static void CheckDomainSafetyObject(Object obj, Object container)
-        {
-            if (obj.GetType().Assembly != typeof(System.Globalization.CultureInfo).Assembly) {
-                
-                throw new InvalidOperationException(
-                            String.Format(
-                                CultureInfo.CurrentCulture, 
-                                Environment.GetResourceString("InvalidOperation_SubclassedObject"), 
-                                obj.GetType(),
-                                container.GetType()));
-            }
-            Contract.EndContractBlock();
-        }
-
 #region Serialization
         // We need to store the override from the culture data record.
         private bool    m_useUserOverride;
@@ -417,21 +398,6 @@ namespace System.Globalization {
             }
 #endif
             m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
-
-            // in case we have non customized CultureInfo object we shouldn't allow any customized object  
-            // to be attached to it for cross app domain safety.
-            if (this.GetType().Assembly == typeof(System.Globalization.CultureInfo).Assembly)
-            {
-                if (textInfo != null)
-                {
-                    CheckDomainSafetyObject(textInfo, this);
-                }
-                
-                if (compareInfo != null)
-                {
-                    CheckDomainSafetyObject(compareInfo, this);
-                }
-            }
         }
 
 #if FEATURE_USE_LCID
