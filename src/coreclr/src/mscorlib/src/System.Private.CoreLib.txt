@@ -1052,7 +1052,6 @@ InvalidOperation_CantCancelCtrlBreak = Applications may not prevent control-brea
 InvalidOperation_CalledTwice = The method cannot be called twice on the same instance.
 InvalidOperation_CollectionCorrupted = A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.
 InvalidOperation_CriticalTransparentAreMutuallyExclusive = SecurityTransparent and SecurityCritical attributes cannot be applied to the assembly scope at the same time.
-InvalidOperation_SubclassedObject = Cannot set sub-classed {0} object to {1} object.
 InvalidOperation_ExceptionStateCrossAppDomain = Thread.ExceptionState cannot access an ExceptionState from a different AppDomain.
 InvalidOperation_DebuggerLaunchFailed = Debugger unable to launch.
 InvalidOperation_ApartmentStateSwitchFailed = Failed to set the specified COM apartment state.
