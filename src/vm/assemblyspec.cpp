@@ -1256,6 +1256,15 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         
         // ICLRPrivAssembly implements ICLRPrivBinder and thus, "is a" binder in a manner of semantics.
         pParentAssemblyBinder = pParentPEAssembly->GetBindingContext();
+        if (pParentAssemblyBinder == NULL)
+        {
+            if (pParentPEAssembly->IsDynamic())
+            {
+                // If the parent assembly is dynamically generated, then use its fallback load context
+                // as the binder.
+                pParentAssemblyBinder = pParentPEAssembly->GetFallbackLoadContextBinder();
+            }
+        }
     }
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
