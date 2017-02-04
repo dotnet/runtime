@@ -904,7 +904,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			
 			current_context = father_context;
 			while (current_context != last_context) {
-				int index = father_context - area->contexts;
+				int index = current_context - area->contexts;
 				MonoRelationsEvaluationStatus *current_status = &(area->statuses [index]);
 				*current_status = (MonoRelationsEvaluationStatus)(*current_status | recursive_status);
 				current_context = current_context->father;
