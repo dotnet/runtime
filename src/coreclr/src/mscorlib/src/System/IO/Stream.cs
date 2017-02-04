@@ -617,7 +617,6 @@ namespace System.IO {
                 _buffer = null;
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             public ReadWriteTask(
                 bool isRead,
                 bool apm,
@@ -629,8 +628,6 @@ namespace System.IO {
                 Contract.Requires(stream != null);
                 Contract.Requires(buffer != null);
                 Contract.EndContractBlock();
-
-                StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
                 // Store the arguments
                 _isRead = isRead;
@@ -648,8 +645,7 @@ namespace System.IO {
                 if (callback != null)
                 {
                     _callback = callback;
-                    _context = ExecutionContext.Capture(ref stackMark, 
-                        ExecutionContext.CaptureOptions.OptimizeDefaultCase | ExecutionContext.CaptureOptions.IgnoreSyncCtx);
+                    _context = ExecutionContext.Capture();
                     base.AddCompletionAction(this);
                 }
             }
