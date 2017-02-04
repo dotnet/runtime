@@ -425,21 +425,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\convert\ConvertToInt32_4\ConvertToInt32_4.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\globalization\datetimeformatinfo\DateTimeFormatInfoGetAbbreviatedMonthName\DateTimeFormatInfoGetAbbreviatedMonthName.cmd">
-            <Issue>9289</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\globalization\datetimeformatinfo\DateTimeFormatInfoGetMonthName\DateTimeFormatInfoGetMonthName.cmd">
-            <Issue>9289</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact1\DateTimeParseExact1.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact2\DateTimeParseExact2.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\datetime\DateTimeParseExact3\DateTimeParseExact3.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\decimal\DecimalToInt32\DecimalToInt32.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
