@@ -1087,7 +1087,7 @@ namespace System.Linq.Expressions.Compiler
                                 il.Emit(OpCodes.Ldsfld, Decimal_MinusOne);
                                 return;
                             case 0:
-                                il.EmitDefault(typeof(decimal));
+                                il.EmitDefault(typeof(decimal), locals: null); // locals won't be used.
                                 return;
                             case 1:
                                 il.Emit(OpCodes.Ldsfld, Decimal_One);
@@ -1152,8 +1152,11 @@ namespace System.Linq.Expressions.Compiler
         {
             switch (type.GetTypeCode())
             {
-                case TypeCode.Object:
                 case TypeCode.DateTime:
+                    il.Emit(OpCodes.Ldsfld, DateTime_MinValue);
+                    break;
+
+                case TypeCode.Object:
                     if (type.GetTypeInfo().IsValueType)
                     {
                         // Type.GetTypeCode on an enum returns the underlying
@@ -1168,12 +1171,10 @@ namespace System.Linq.Expressions.Compiler
                         il.Emit(OpCodes.Initobj, type);
                         il.Emit(OpCodes.Ldloc, lb);
                         locals.FreeLocal(lb);
+                        break;
                     }
-                    else
-                    {
-                        il.Emit(OpCodes.Ldnull);
-                    }
-                    break;
+
+                    goto case TypeCode.Empty;
 
                 case TypeCode.Empty:
                 case TypeCode.String:
@@ -1207,8 +1208,7 @@ namespace System.Linq.Expressions.Compiler
                     break;
 
                 case TypeCode.Decimal:
-                    il.Emit(OpCodes.Ldc_I4_0);
-                    il.Emit(OpCodes.Newobj, Decimal_Ctor_Int32);
+                    il.Emit(OpCodes.Ldsfld, Decimal_Zero);
                     break;
 
                 default:
