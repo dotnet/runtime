@@ -5,6 +5,9 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{3C32659A-6DB9-410A-8E24-BE91BFF4C024}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
