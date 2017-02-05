@@ -590,19 +590,13 @@ namespace System.IO.Ports
         {
             int flags = NativeMethods.FILE_FLAG_OVERLAPPED;
 
-            // disable async on win9x
-            if (Environment.OSVersion.Platform == PlatformID.Win32Windows)
-            {
-                flags = NativeMethods.FILE_ATTRIBUTE_NORMAL;
-                _isAsync = false;
-            }
-
             if ((portName == null) || !portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
 
             // Error checking done in SerialPort.
 
-            SafeFileHandle tempHandle = Interop.Kernel32.CreateFileDefaultSecurity(@"\\\\?\\" + portName,
+            SafeFileHandle tempHandle = Interop.Kernel32.CreateFileDefaultSecurity(
+                @"\\?\" + portName,
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 0,              // comm devices must be opened w/exclusive-access
                 FileMode.Open,  // comm devices must use OPEN_EXISTING

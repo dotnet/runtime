@@ -19,7 +19,7 @@ namespace Legacy.Support
 
         public static string[] GetPorts()
         {
-            List<string> ports = new List<string>(); ;
+            List<string> ports = new List<string>();
             int returnSize = 0;
             int maxSize = 1000000;
             string allDevices = null;
