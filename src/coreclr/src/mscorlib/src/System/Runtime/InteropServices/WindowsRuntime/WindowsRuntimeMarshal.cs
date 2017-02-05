@@ -135,12 +135,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 restTokens = null;
             }
 
-            internal EventRegistrationTokenList(EventRegistrationTokenList list)
-            {
-                firstToken = list.firstToken;
-                restTokens = list.restTokens;
-            }
-
             // Push a new token into this list
             // Returns true if you need to copy back this list into the dictionary (so that you 
             // don't lose change outside the dictionary). false otherwise.

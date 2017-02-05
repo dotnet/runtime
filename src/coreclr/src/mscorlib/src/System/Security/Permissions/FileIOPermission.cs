@@ -20,7 +20,7 @@ namespace System.Security.Permissions
     [Serializable]
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public enum FileIOPermissionAccess
+    internal enum FileIOPermissionAccess
     {
         NoAccess = 0x00,
         Read = 0x01,
@@ -32,7 +32,7 @@ namespace System.Security.Permissions
 
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    sealed public class FileIOPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
+    internal sealed class FileIOPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
         private FileIOAccess m_read;
         private FileIOAccess m_write;
@@ -66,79 +66,6 @@ namespace System.Security.Permissions
         
             String[] pathList = new String[] { path };
             AddPathList( access, pathList, false, true, false );
-        }
-        
-        public FileIOPermission( FileIOPermissionAccess access, String[] pathList )
-        {
-            VerifyAccess( access );
-        
-            AddPathList( access, pathList, false, true, false );
-        }
-
-        internal FileIOPermission( FileIOPermissionAccess access, String[] pathList, bool checkForDuplicates, bool needFullPath )
-        {
-            VerifyAccess( access );
-        
-            AddPathList( access, pathList, checkForDuplicates, needFullPath, true );
-        }
-
-        public void SetPathList( FileIOPermissionAccess access, String path )
-        {
-            String[] pathList;
-            if(path == null)
-                pathList = new String[] {};
-            else
-                pathList = new String[] { path };
-            SetPathList( access, pathList, false );
-        }
-            
-        public void SetPathList( FileIOPermissionAccess access, String[] pathList )
-        {
-            SetPathList( access, pathList, true );
-        }
-
-        internal void SetPathList( FileIOPermissionAccess access, 
-            String[] pathList, bool checkForDuplicates )
-        {
-            SetPathList( access, AccessControlActions.None, pathList, checkForDuplicates );
-        }
-
-        internal void SetPathList( FileIOPermissionAccess access, AccessControlActions control, String[] pathList, bool checkForDuplicates )
-        {
-            VerifyAccess( access );
-            
-            if ((access & FileIOPermissionAccess.Read) != 0)
-                m_read = null;
-            
-            if ((access & FileIOPermissionAccess.Write) != 0)
-                m_write = null;
-    
-            if ((access & FileIOPermissionAccess.Append) != 0)
-                m_append = null;
-
-            if ((access & FileIOPermissionAccess.PathDiscovery) != 0)
-                m_pathDiscovery = null;
-
-            m_viewAcl = null;
-            m_changeAcl = null;
-            m_unrestricted = false;
-
-            AddPathList( access, pathList, checkForDuplicates, true, true );
-        }
-
-        public void AddPathList( FileIOPermissionAccess access, String path )
-        {
-            String[] pathList;
-            if(path == null)
-                pathList = new String[] {};
-            else
-                pathList = new String[] { path };
-            AddPathList( access, pathList, false, true, false );
-        }
-
-        public void AddPathList( FileIOPermissionAccess access, String[] pathList )
-        {
-            AddPathList( access, pathList, true, true, true );
         }
 
         internal void AddPathList( FileIOPermissionAccess access, String[] pathListOrig, bool checkForDuplicates, bool needFullPath, bool copyPathList )
@@ -217,141 +144,6 @@ namespace System.Security.Permissions
                     m_pathDiscovery = new FileIOAccess( true );
                 }
                 m_pathDiscovery.AddExpressions( pathArrayList, checkForDuplicates);
-            }
-        }
-
-        public String[] GetPathList( FileIOPermissionAccess access )
-        {
-            VerifyAccess( access );
-            ExclusiveAccess( access );
-    
-            if (AccessIsSet( access, FileIOPermissionAccess.Read ))
-            {
-                if (m_read == null)
-                {
-                    return null;
-                }
-                return m_read.ToStringArray();
-            }
-            
-            if (AccessIsSet( access, FileIOPermissionAccess.Write ))
-            {
-                if (m_write == null)
-                {
-                    return null;
-                }
-                return m_write.ToStringArray();
-            }
-    
-            if (AccessIsSet( access, FileIOPermissionAccess.Append ))
-            {
-                if (m_append == null)
-                {
-                    return null;
-                }
-                return m_append.ToStringArray();
-            }
-            
-            if (AccessIsSet( access, FileIOPermissionAccess.PathDiscovery ))
-            {
-                if (m_pathDiscovery == null)
-                {
-                    return null;
-                }
-                return m_pathDiscovery.ToStringArray();
-            }
-
-            // not reached
-            
-            return null;
-        }
-
-        public FileIOPermissionAccess AllLocalFiles
-        {
-            get
-            {
-                if (m_unrestricted)
-                    return FileIOPermissionAccess.AllAccess;
-            
-                FileIOPermissionAccess access = FileIOPermissionAccess.NoAccess;
-                
-                if (m_read != null && m_read.AllLocalFiles)
-                {
-                    access |= FileIOPermissionAccess.Read;
-                }
-                
-                if (m_write != null && m_write.AllLocalFiles)
-                {
-                    access |= FileIOPermissionAccess.Write;
-                }
-                
-                if (m_append != null && m_append.AllLocalFiles)
-                {
-                    access |= FileIOPermissionAccess.Append;
-                }
-
-                if (m_pathDiscovery != null && m_pathDiscovery.AllLocalFiles)
-                {
-                    access |= FileIOPermissionAccess.PathDiscovery;
-                }
-                
-                return access;
-            }
-            
-            set
-            {
-                if ((value & FileIOPermissionAccess.Read) != 0)
-                {
-                    if (m_read == null)
-                        m_read = new FileIOAccess();
-                        
-                    m_read.AllLocalFiles = true;
-                }
-                else
-                {
-                    if (m_read != null)
-                        m_read.AllLocalFiles = false;
-                }
-                
-                if ((value & FileIOPermissionAccess.Write) != 0)
-                {
-                    if (m_write == null)
-                        m_write = new FileIOAccess();
-                        
-                    m_write.AllLocalFiles = true;
-                }
-                else
-                {
-                    if (m_write != null)
-                        m_write.AllLocalFiles = false;
-                }
-                
-                if ((value & FileIOPermissionAccess.Append) != 0)
-                {
-                    if (m_append == null)
-                        m_append = new FileIOAccess();
-                        
-                    m_append.AllLocalFiles = true;
-                }
-                else
-                {
-                    if (m_append != null)
-                        m_append.AllLocalFiles = false;
-                }
-
-                if ((value & FileIOPermissionAccess.PathDiscovery) != 0)
-                {
-                    if (m_pathDiscovery == null)
-                        m_pathDiscovery = new FileIOAccess( true );
-                        
-                    m_pathDiscovery.AllLocalFiles = true;
-                }
-                else
-                {
-                    if (m_pathDiscovery != null)
-                        m_pathDiscovery.AllLocalFiles = false;
-                }
-
             }
         }
         
@@ -456,20 +248,6 @@ namespace System.Security.Permissions
             if ((access & ~FileIOPermissionAccess.AllAccess) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access));
         }
-        
-        [Pure]
-        private static void ExclusiveAccess( FileIOPermissionAccess access )
-        {
-            if (access == FileIOPermissionAccess.NoAccess)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") ); 
-            }
-    
-            if (((int) access & ((int)access-1)) != 0)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") ); 
-            }
-        }
 
         private static void CheckIllegalCharacters(String[] str, bool onlyCheckExtras)
         {
@@ -518,12 +296,8 @@ namespace System.Security.Permissions
             }
             return false;
         }
-#endif
 
-        private static bool AccessIsSet( FileIOPermissionAccess access, FileIOPermissionAccess question )
-        {
-            return (access & question) != 0;
-        }
+#endif
         
         private bool IsEmpty()
         {
@@ -795,72 +569,6 @@ namespace System.Security.Permissions
             // This implementation is only to silence a compiler warning.
             return base.GetHashCode();
         }
-
-        /// <summary>
-        /// Call this method if you don't need a the FileIOPermission for anything other than calling Demand() once.
-        /// 
-        /// This method tries to verify full access before allocating a FileIOPermission object.
-        /// If full access is there, then we still have to emulate the checks that creating the 
-        /// FileIOPermission object would have performed.
-        /// 
-        /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
-        /// </summary>
-        internal static void QuickDemand(FileIOPermissionAccess access, string fullPath, bool checkForDuplicates = false, bool needFullPath = false)
-        {
-            EmulateFileIOPermissionChecks(fullPath);
-        }
-
-        /// <summary>
-        /// Call this method if you don't need a the FileIOPermission for anything other than calling Demand() once.
-        /// 
-        /// This method tries to verify full access before allocating a FileIOPermission object.
-        /// If full access is there, then we still have to emulate the checks that creating the 
-        /// FileIOPermission object would have performed.
-        /// 
-        /// IMPORTANT: This method should only be used after calling GetFullPath on the path to verify
-        /// 
-        /// </summary>
-        internal static void QuickDemand(FileIOPermissionAccess access, string[] fullPathList, bool checkForDuplicates = false, bool needFullPath = true)
-        {
-            foreach (string fullPath in fullPathList)
-            {
-                EmulateFileIOPermissionChecks(fullPath);
-            }
-        }
-
-        internal static void QuickDemand(PermissionState state)
-        {
-            // Should be a no-op without CAS
-        }
-
-        /// <summary>
-        /// Perform the additional path checks that would normally happen when creating a FileIOPermission object.
-        /// </summary>
-        /// <param name="fullPath">A path that has already gone through GetFullPath or Normalize</param>
-        internal static void EmulateFileIOPermissionChecks(string fullPath)
-        {
-            // Callers should have already made checks for invalid path format via normalization. This method will only make the
-            // additional checks needed to throw the same exceptions that would normally throw when using FileIOPermission.
-            // These checks are done via CheckIllegalCharacters() and StringExpressionSet in AddPathList() above.
-
-#if !PLATFORM_UNIX
-            // Checking for colon / invalid characters on device paths blocks legitimate access to objects such as named pipes.
-            if (!PathInternal.IsDevice(fullPath))
-            {
-                // GetFullPath already checks normal invalid path characters. We need to just check additional (wildcard) characters here.
-                // (By calling the standard helper we can allow extended paths \\?\ through when the support is enabled.)
-                if (PathInternal.HasWildCardCharacters(fullPath))
-                {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
-                }
-
-                if (PathInternal.HasInvalidVolumeSeparator(fullPath))
-                {
-                    throw new NotSupportedException(Environment.GetResourceString("Argument_PathFormatNotSupported"));
-                }
-            }
-#endif // !PLATFORM_UNIX
-        }
     }
 
     [Serializable]
@@ -890,35 +598,6 @@ namespace System.Security.Permissions
             m_allFiles = false;
             m_allLocalFiles = false;
             m_pathDiscovery = pathDiscovery;
-        }
-
-        public FileIOAccess( String value )
-        {
-            if (value == null)
-            {
-                m_set = new StringExpressionSet( m_ignoreCase, true );
-                m_allFiles = false;
-                m_allLocalFiles = false;
-            }
-            else if (value.Length >= m_strAllFiles.Length && String.Compare( m_strAllFiles, value, StringComparison.Ordinal) == 0)
-            {
-                m_set = new StringExpressionSet( m_ignoreCase, true );
-                m_allFiles = true;
-                m_allLocalFiles = false;
-            }
-            else if (value.Length >= m_strAllLocalFiles.Length && String.Compare( m_strAllLocalFiles, 0, value, 0, m_strAllLocalFiles.Length, StringComparison.Ordinal) == 0)
-            {
-                m_set = new StringExpressionSet( m_ignoreCase, value.Substring( m_strAllLocalFiles.Length ), true );
-                m_allFiles = false;
-                m_allLocalFiles = true;
-            }
-            else
-            {
-                m_set = new StringExpressionSet( m_ignoreCase, value, true );
-                m_allFiles = false;
-                m_allLocalFiles = false;
-            }
-            m_pathDiscovery = false;
         }
 
         public FileIOAccess( bool allFiles, bool allLocalFiles, bool pathDiscovery )
@@ -962,27 +641,6 @@ namespace System.Security.Permissions
             set
             {
                 m_allFiles = value;
-            }
-        }
-
-        public bool AllLocalFiles
-        {
-            get
-            {
-                return m_allLocalFiles;
-            }
-            
-            set
-            {
-                m_allLocalFiles = value;
-            }
-        }
-
-        public bool PathDiscovery
-        {
-            set
-            {
-                m_pathDiscovery = value;
             }
         }
         
@@ -1164,13 +822,6 @@ namespace System.Security.Permissions
                     return m_set.UnsafeToString();
                 }
             }
-        }
-
-        public String[] ToStringArray()
-        {
-            // SafeCritical: all string expression sets are constructed with the throwOnRelative bit set, so
-            // we're only exposing out the same paths that we took as input.
-            return m_set.UnsafeToStringArray();
         }
         
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

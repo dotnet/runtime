@@ -20,7 +20,7 @@ namespace System.Collections {
     // GetHashCode() function on Objects, providing their own hash function.
     [Obsolete("Please use IEqualityComparer instead.")]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public interface IHashCodeProvider 
+    internal interface IHashCodeProvider 
     {
         // Interfaces are not serializable
         // Returns a hash code for the given object.  

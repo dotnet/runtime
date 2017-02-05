@@ -29,17 +29,10 @@ namespace System.Security
     using System.Diagnostics.Contracts;
 
     // This enum must be kept in sync with the SecurityContextSource enum in the VM
-    public enum SecurityContextSource
+    internal enum SecurityContextSource
     {
         CurrentAppDomain = 0,
         CurrentAssembly
-    }
-
-    internal enum SecurityContextDisableFlow
-    {
-        Nothing = 0,
-        WI = 0x1,
-        All = 0x3FFF
     }
 
 }

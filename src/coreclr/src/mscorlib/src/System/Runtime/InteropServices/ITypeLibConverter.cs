@@ -21,22 +21,4 @@ namespace System.Runtime.InteropServices {
     using System;
     using System.Reflection;
     using System.Reflection.Emit;
-
-    [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public enum ImporterEventKind
-    {
-        NOTIF_TYPECONVERTED = 0,
-        NOTIF_CONVERTWARNING = 1,
-        ERROR_REFTOINVALIDTYPELIB = 2,
-    }
-
-    [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public enum ExporterEventKind
-    {
-        NOTIF_TYPECONVERTED = 0,
-        NOTIF_CONVERTWARNING = 1,
-        ERROR_REFTOINVALIDASSEMBLY = 2
-    }
 }

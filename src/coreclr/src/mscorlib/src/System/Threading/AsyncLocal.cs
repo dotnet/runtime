@@ -127,8 +127,6 @@ namespace System.Threading
     {
         public static IAsyncLocalValueMap Empty { get; } = new EmptyAsyncLocalValueMap();
 
-        public static IAsyncLocalValueMap Create(IAsyncLocal key, object value) => new OneElementAsyncLocalValueMap(key, value);
-
         // Instance without any key/value pairs.  Used as a singleton/
         private sealed class EmptyAsyncLocalValueMap : IAsyncLocalValueMap
         {

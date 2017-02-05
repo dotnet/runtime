@@ -36,28 +36,4 @@ namespace System.Security.Permissions
         internal const int GacIdentityPermissionIndex = 5 + NUM_BUILTIN_UNRESTRICTED;
         internal const int KeyContainerPermissionIndex = 6 + NUM_BUILTIN_UNRESTRICTED;
     }
-
-    [Serializable]
-    internal enum BuiltInPermissionFlag
-    {
-        // Unrestricted permissions
-
-        EnvironmentPermission = 0x1,
-        FileDialogPermission = 0x2,
-        FileIOPermission = 0x4,
-        IsolatedStorageFilePermission = 0x8,
-        ReflectionPermission = 0x10,
-        RegistryPermission = 0x20,
-        SecurityPermission = 0x40,
-        UIPermission = 0x80,
-        PrincipalPermission = 0x100,
-
-        // Normal permissions
-        PublisherIdentityPermission = 0x200,
-        SiteIdentityPermission = 0x400,
-        StrongNameIdentityPermission = 0x800,
-        UrlIdentityPermission = 0x1000,
-        ZoneIdentityPermission = 0x2000,
-        KeyContainerPermission = 0x4000,
-    }
 }

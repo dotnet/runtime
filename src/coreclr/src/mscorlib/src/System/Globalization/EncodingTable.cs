@@ -203,10 +203,6 @@ namespace System.Globalization
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private unsafe static extern InternalCodePageDataItem* GetCodePageData();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe static extern byte* nativeCreateOpenFileMapping(
-            String inSectionName, int inBytesToAllocate, out IntPtr mappedFileHandle);   
     }
     
     /*=================================InternalEncodingDataItem==========================

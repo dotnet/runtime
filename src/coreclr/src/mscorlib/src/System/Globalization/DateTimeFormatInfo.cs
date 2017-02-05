@@ -378,8 +378,6 @@ namespace System.Globalization {
         private int    nDataItem;
         [OptionalField(VersionAdded = 2)]
         internal bool m_isDefaultCalendar;                // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
-        [OptionalField(VersionAdded = 2)]
-        private static volatile Hashtable s_calendarNativeNames;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
 
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
         // Now we always synthesize so its not helpful

@@ -14,7 +14,7 @@ namespace System.Security
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class NamedPermissionSet : PermissionSet
+    internal sealed class NamedPermissionSet : PermissionSet
     {
         internal static PermissionSet GetBuiltInSet(string name)
         {

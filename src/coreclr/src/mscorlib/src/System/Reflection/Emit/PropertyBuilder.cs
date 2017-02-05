@@ -81,14 +81,6 @@ namespace System.Reflection.Emit {
         {
             get {return m_prToken;}
         }
-
-        internal int MetadataTokenInternal
-        {
-            get 
-            {
-                return m_tkProperty;
-            }
-        }
         
         public override Module Module
         {

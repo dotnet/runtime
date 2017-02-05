@@ -12,7 +12,7 @@ namespace System.Security.Permissions {
     using System;
     [Serializable]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum PermissionState
+    internal enum PermissionState
     {
         Unrestricted = 1,
         None = 0,

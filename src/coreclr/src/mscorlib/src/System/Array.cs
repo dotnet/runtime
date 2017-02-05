@@ -224,21 +224,6 @@ namespace System {
             return CreateInstance(elementType, length);
         }
 
-        internal static Array UnsafeCreateInstance(Type elementType, int length1, int length2)
-        {
-            return CreateInstance(elementType, length1, length2);
-        }
-
-        internal static Array UnsafeCreateInstance(Type elementType, params int[] lengths)
-        {
-            return CreateInstance(elementType, lengths);
-        }
-
-        internal static Array UnsafeCreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            return CreateInstance(elementType, lengths, lowerBounds);
-        }
-
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
         //

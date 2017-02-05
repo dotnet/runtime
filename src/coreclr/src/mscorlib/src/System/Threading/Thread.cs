@@ -179,7 +179,7 @@ namespace System.Threading {
             SetStartHelper((Delegate)start,0);  //0 will setup Thread with default stackSize
         }
 
-        public Thread(ThreadStart start, int maxStackSize) {
+        internal Thread(ThreadStart start, int maxStackSize) {
             if (start == null) {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -196,7 +196,7 @@ namespace System.Threading {
             SetStartHelper((Delegate)start, 0);
         }
 
-        public Thread(ParameterizedThreadStart start, int maxStackSize) {
+        internal Thread(ParameterizedThreadStart start, int maxStackSize) {
             if (start == null) {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -313,40 +313,6 @@ namespace System.Threading {
         internal extern static IntPtr InternalGetCurrentThread();
 
         /*=========================================================================
-        ** Raises a ThreadAbortException in the thread, which usually
-        ** results in the thread's death. The ThreadAbortException is a special
-        ** exception that is not catchable. The finally clauses of all try
-        ** statements will be executed before the thread dies. This includes the
-        ** finally that a thread might be executing at the moment the Abort is raised.
-        ** The thread is not stopped immediately--you must Join on the
-        ** thread to guarantee it has stopped.
-        ** It is possible for a thread to do an unbounded amount of computation in
-        ** the finally's and thus indefinitely delay the threads death.
-        ** If Abort() is called on a thread that has not been started, the thread
-        ** will abort when Start() is called.
-        ** If Abort is called twice on the same thread, a DuplicateThreadAbort
-        ** exception is thrown.
-        =========================================================================*/
-        public void Abort()
-        {
-            AbortInternal();
-        }
-
-        // Internal helper (since we can't place security demands on
-        // ecalls/fcalls).
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void AbortInternal();
-
-        public bool Join(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long) Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-
-            return Join((int)tm);
-        }
-
-        /*=========================================================================
         ** Suspends the current thread for timeout milliseconds. If timeout == 0,
         ** forces the thread to give up the remainer of its timeslice.  If timeout
         ** == Timeout.Infinite, no timeout will occur.
@@ -394,7 +360,7 @@ namespace System.Threading {
         private static extern bool YieldInternal();
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public static new bool Yield()
+        internal static new bool Yield()
         {
             return YieldInternal();
         }
@@ -424,10 +390,6 @@ namespace System.Threading {
             }                
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern ulong GetProcessDefaultStackSize();
-
         /*=========================================================================
         ** PRIVATE Sets the IThreadable interface for the thread. Assumes that
         ** start != null.
@@ -450,33 +412,6 @@ namespace System.Threading {
         private extern void InternalFinalize();
 
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        /*=========================================================================
-        ** An unstarted thread can be marked to indicate that it will host a
-        ** single-threaded or multi-threaded apartment.
-        **
-        ** Exceptions: ArgumentException if state is not a valid apartment state
-        **             (ApartmentSTA or ApartmentMTA).
-        =========================================================================*/
-        [Obsolete("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
-        public ApartmentState ApartmentState
-        {
-            get
-            {
-                return (ApartmentState)GetApartmentStateNative();
-            }
-
-            set
-            {
-                SetApartmentStateNative((int)value, true);
-            }
-        }
-
-        public void SetApartmentState(ApartmentState state)
-        {
-            bool result = SetApartmentStateHelper(state, true);
-            if (!result)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ApartmentStateSwitchFailed"));
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void StartupSetApartmentStateInternal();
@@ -670,7 +605,7 @@ namespace System.Threading {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern AppDomain GetFastDomainInternal();
 
-        public static AppDomain GetDomain()
+        internal static AppDomain GetDomain()
         {
             Contract.Ensures(Contract.Result<AppDomain>() != null);
 
@@ -714,42 +649,8 @@ namespace System.Threading {
         [SuppressUnmanagedCodeSecurity]
         private static extern void InformThreadNameChange(ThreadHandle t, String name, int len);
 
-        internal Object AbortReason {
-            get {
-                object result = null;
-                try
-                {
-                    result = GetAbortReason();
-                }
-                catch (Exception e)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ExceptionStateCrossAppDomain"), e);
-                }
-                return result;
-            }
-            set { SetAbortReason(value); }
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
-
-        // Helper function to set the AbortReason for a thread abort.
-        //  Checks that they're not alredy set, and then atomically updates
-        //  the reason info (object + ADID).
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void SetAbortReason(Object o);
-    
-        // Helper function to retrieve the AbortReason from a thread
-        //  abort.  Will perform cross-AppDomain marshalling if the object
-        //  lives in a different AppDomain from the requester.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern Object GetAbortReason();
-    
-        // Helper function to clear the AbortReason.  Takes care of
-        //  AppDomain related cleanup if required.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void ClearAbortReason();
-
 
     } // End of class Thread
 

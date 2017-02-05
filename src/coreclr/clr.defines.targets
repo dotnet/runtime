@@ -7,7 +7,6 @@
         <CDefines Condition="'$(FeatureAppX)' == 'true'">$(CDefines);FEATURE_APPX</CDefines>
         <CDefines Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(CDefines);FEATURE_ARRAYSTUB_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureStubsAsIL)' == 'true'">$(CDefines);FEATURE_STUBS_AS_IL</CDefines>
-        <CDefines Condition="'$(FeatureCasPolicy)' == 'true'">$(CDefines);FEATURE_CAS_POLICY</CDefines>
         <CDefines Condition="'$(FeatureClassicCominterop)' == 'true'">$(CDefines);FEATURE_CLASSIC_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureClickonce)' == 'true'">$(CDefines);FEATURE_CLICKONCE</CDefines>
         <CDefines Condition="'$(FeatureTraceLogging)' == 'true'">$(CDefines);FEATURE_TRACELOGGING</CDefines>
@@ -97,7 +96,6 @@
         <DefineConstants Condition="'$(FeatureAppX)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCasPolicy)' == 'true'">$(DefineConstants);FEATURE_CAS_POLICY</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>

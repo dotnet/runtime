@@ -21,22 +21,6 @@ namespace System
 {
     internal sealed class PinnableBufferCache
     {
-        /// <summary>
-        /// Create a new cache for pinned byte[] buffers
-        /// </summary>
-        /// <param name="cacheName">A name used in diagnostic messages</param>
-        /// <param name="numberOfElements">The size of byte[] buffers in the cache (they are all the same size)</param>
-        public PinnableBufferCache(string cacheName, int numberOfElements) : this(cacheName, () => new byte[numberOfElements]) { }
-
-        /// <summary>
-        /// Get a buffer from the buffer manager.  If no buffers exist, allocate a new one.
-        /// </summary>
-        public byte[] AllocateBuffer() { return (byte[])Allocate(); }
-
-        /// <summary>
-        /// Return a buffer back to the buffer manager.
-        /// </summary>
-        public void FreeBuffer(byte[] buffer) { Free(buffer); }
 
         /// <summary>
         /// Create a PinnableBufferCache that works on any object (it is intended for OverlappedData)
@@ -537,9 +521,6 @@ namespace System
 
         public bool IsEnabled() { return false; }
         public void DebugMessage(string message) {}
-        public void DebugMessage1(string message, long value) {}
-        public void DebugMessage2(string message, long value1, long value2) {}
-        public void DebugMessage3(string message, long value1, long value2, long value3) {}
         public void Create(string cacheName) {}
         public void AllocateBuffer(string cacheName, ulong objectId, int objectHash, int objectGen, int freeCountAfter) {}
         public void AllocateBufferFromNotGen2(string cacheName, int notGen2CountAfter) {}
@@ -557,11 +538,6 @@ namespace System
         public void WalkFreeListResult(string cacheName, int freeListCount, int gen0BuffersInFreeList) {}
 
         static internal ulong AddressOf(object obj)
-        {
-            return 0;
-        }
-
-        static internal unsafe long AddressOfObject(byte[] array)
         {
             return 0;
         }

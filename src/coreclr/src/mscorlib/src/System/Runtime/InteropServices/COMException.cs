@@ -46,18 +46,6 @@ namespace System.Runtime.InteropServices {
             SetErrorCode(errorCode);
         }
 
-        internal COMException(int hresult)
-            : base(Win32Native.GetMessage(hresult))
-        {
-            SetErrorCode(hresult);
-        }
-        
-        internal COMException(String message, int hresult, Exception inner)
-            : base(message, inner)
-        {
-            SetErrorCode(hresult);
-        }
-
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context) {
         }
 

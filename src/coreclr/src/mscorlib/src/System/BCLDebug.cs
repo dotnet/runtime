@@ -54,7 +54,6 @@ namespace System {
 #if _DEBUG
         internal static volatile bool m_domainUnloadAdded;
 #endif
-        internal static volatile PermissionSet m_MakeConsoleErrorLoggingWork;
 
         static readonly SwitchStructure[] switches = {
             new SwitchStructure("NLS",  0x00000001),
@@ -263,40 +262,6 @@ namespace System {
             System.Diagnostics.Log.LogMessage((LoggingLevels)((int)level), logSwitch, StringBuilderCache.GetStringAndRelease(sb));
         }
 
-        // Note this overload doesn't take a format string.  You probably don't 
-        // want this one.
-        [Pure]
-        [Conditional("_LOGGING")]
-        public static void Trace(String switchName, params Object[]messages) {
-            if (m_loggingNotEnabled) {
-                return;
-            }
-
-            LogSwitch logSwitch;
-            if (!CheckEnabled(switchName, LogLevel.Trace, out logSwitch)) {
-                return;
-            }
-
-            StringBuilder sb = StringBuilderCache.Acquire();
-
-            for (int i=0; i<messages.Length; i++) {
-                String s;
-                try {
-                    if (messages[i]==null) {
-                        s = "<null>";
-                    } else {
-                        s = messages[i].ToString();
-                    }
-                } catch {
-                    s = "<unable to convert>";
-                }
-                sb.Append(s);
-            }
-            
-            sb.Append(Environment.NewLine);
-            System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, StringBuilderCache.GetStringAndRelease(sb));
-        }
-
         [Pure]
         [Conditional("_LOGGING")]
         public static void Trace(String switchName, String format, params Object[] messages) {
@@ -314,22 +279,6 @@ namespace System {
             sb.Append(Environment.NewLine);
 
             System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, StringBuilderCache.GetStringAndRelease(sb));
-        }
-
-        [Conditional("_LOGGING")]
-        public static void DumpStack(String switchName) {
-            LogSwitch logSwitch;
-
-            if (!m_registryChecked) {
-                CheckRegistry();
-            }
-
-            if (!CheckEnabled(switchName, LogLevel.Trace, out logSwitch)) {
-                return;
-            }
-            
-            StackTrace trace = new StackTrace();
-            System.Diagnostics.Log.LogMessage(LoggingLevels.TraceLevel0, logSwitch, trace.ToString());
         }
 
         // For perf-related asserts.  On a debug build, set the registry key
@@ -375,21 +324,6 @@ namespace System {
             }
             System.Diagnostics.Assert.Check(expr, "BCL Correctness Warning: Your program may not work because...", msg);
 #endif
-        }
-
-#if !BIT64 // 32
-#endif
-        internal static bool CorrectnessEnabled()
-        {
-#if BIT64
-            return false;
-#else // 32
-            if (AppDomain.CurrentDomain.IsUnloadingForcedFinalize())
-                return false;
-            if (!m_registryChecked)
-                CheckRegistry();
-            return m_correctnessWarnings;  
-#endif // BIT64
         }
 
         // Whether SafeHandles include a stack trace showing where they 

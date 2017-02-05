@@ -21,23 +21,6 @@ namespace System.Reflection.Emit {
 
     public class ParameterBuilder
     {
-        // set ParamMarshal
-        [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual void SetMarshal(UnmanagedMarshal unmanagedMarshal)
-        {
-            if (unmanagedMarshal == null)
-            {
-                throw new ArgumentNullException(nameof(unmanagedMarshal));
-            }
-            Contract.EndContractBlock();
-            
-            byte []        ubMarshal = unmanagedMarshal.InternalGetBytes();
-            TypeBuilder.SetFieldMarshal(
-                m_methodBuilder.GetModuleBuilder().GetNativeHandle(),
-                m_pdToken.Token, 
-                ubMarshal, 
-                ubMarshal.Length);
-        }
     
         // Set the default value of the parameter
         public virtual void SetConstant(Object defaultValue) 
@@ -108,8 +91,6 @@ namespace System.Reflection.Emit {
         {
             return m_pdToken;
         } 
-
-        internal int MetadataTokenInternal { get { return m_pdToken.Token; } }
         
         public virtual String Name {
             get {return m_strParamName;}
