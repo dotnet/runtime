@@ -61,12 +61,10 @@ If needed, copy mscorlib:
 # rsync -v -r  ~/mnt/matell3/d/git/coreclr/bin/Product/ ~/git/coreclr/bin/Product/
 ```
 
-Then, run the tests. We need to pass an explict path to the location of CoreCLR
-and mscorlib.dll.
+Then, run the tests. We need to pass an explict path to the location of CoreCLR.
 
 ```
-# ./run-test.sh --coreclr-bins ~/git/coreclr/bin/Product/Linux.x64.Release \
---mscorlib-bins ~/git/coreclr/bin/Product/Linux.x64.Release \
+# ./run-test.sh --coreclr-bins ~/git/coreclr/bin/Product/Linux.x64.Release
 ```
 
 run-test.sh should now invoke all the managed tests.
