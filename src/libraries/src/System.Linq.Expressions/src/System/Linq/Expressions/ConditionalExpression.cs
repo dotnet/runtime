@@ -135,9 +135,9 @@ namespace System.Linq.Expressions
         /// and <see cref="ConditionalExpression.IfFalse"/> properties set to the specified values.</returns>
         public static ConditionalExpression Condition(Expression test, Expression ifTrue, Expression ifFalse)
         {
-            RequiresCanRead(test, nameof(test));
-            RequiresCanRead(ifTrue, nameof(ifTrue));
-            RequiresCanRead(ifFalse, nameof(ifFalse));
+            ExpressionUtils.RequiresCanRead(test, nameof(test));
+            ExpressionUtils.RequiresCanRead(ifTrue, nameof(ifTrue));
+            ExpressionUtils.RequiresCanRead(ifFalse, nameof(ifFalse));
 
             if (test.Type != typeof(bool))
             {
@@ -166,9 +166,9 @@ namespace System.Linq.Expressions
         /// reference assignable to the result type. The <paramref name="type"/> is allowed to be <see cref="Void"/>.</remarks>
         public static ConditionalExpression Condition(Expression test, Expression ifTrue, Expression ifFalse, Type type)
         {
-            RequiresCanRead(test, nameof(test));
-            RequiresCanRead(ifTrue, nameof(ifTrue));
-            RequiresCanRead(ifFalse, nameof(ifFalse));
+            ExpressionUtils.RequiresCanRead(test, nameof(test));
+            ExpressionUtils.RequiresCanRead(ifTrue, nameof(ifTrue));
+            ExpressionUtils.RequiresCanRead(ifFalse, nameof(ifFalse));
             ContractUtils.RequiresNotNull(type, nameof(type));
 
             if (test.Type != typeof(bool))

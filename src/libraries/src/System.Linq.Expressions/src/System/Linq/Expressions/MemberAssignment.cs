@@ -55,7 +55,7 @@ namespace System.Linq.Expressions
         public static MemberAssignment Bind(MemberInfo member, Expression expression)
         {
             ContractUtils.RequiresNotNull(member, nameof(member));
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             Type memberType;
             ValidateSettableFieldOrPropertyMember(member, out memberType);
             if (!memberType.IsAssignableFrom(expression.Type))

@@ -135,7 +135,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(ref _arguments);
+            return ExpressionUtils.ReturnReadOnly(ref _arguments);
         }
 
         public override Expression GetArgument(int index) => _arguments[index];
@@ -191,14 +191,14 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         public override Expression GetArgument(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Invoke(lambda, arguments[0]);
             }
-            return Expression.Invoke(lambda, ReturnObject<Expression>(_arg0));
+            return Expression.Invoke(lambda, ExpressionUtils.ReturnObject<Expression>(_arg0));
         }
     }
 
@@ -232,14 +232,14 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         public override Expression GetArgument(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1]);
             }
-            return Expression.Invoke(lambda, ReturnObject<Expression>(_arg0), _arg1);
+            return Expression.Invoke(lambda, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1);
         }
     }
 
@@ -276,14 +276,14 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         public override Expression GetArgument(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
@@ -301,7 +301,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2]);
             }
-            return Expression.Invoke(lambda, ReturnObject<Expression>(_arg0), _arg1, _arg2);
+            return Expression.Invoke(lambda, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2);
         }
     }
 
@@ -323,14 +323,14 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         public override Expression GetArgument(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2], arguments[3]);
             }
-            return Expression.Invoke(lambda, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
+            return Expression.Invoke(lambda, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
         }
     }
 
@@ -373,14 +373,14 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         public override Expression GetArgument(int index)
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -400,7 +400,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4]);
             }
-            return Expression.Invoke(lambda, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
+            return Expression.Invoke(lambda, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
         }
     }
 
@@ -430,7 +430,7 @@ namespace System.Linq.Expressions
         {
             // COMPAT: This method is marked as non-public to avoid a gap between a 0-ary and 2-ary overload (see remark for the unary case below).
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -466,7 +466,7 @@ namespace System.Linq.Expressions
         {
             // COMPAT: This method is marked as non-public to ensure compile-time compatibility for Expression.Invoke(e, null).
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -506,7 +506,7 @@ namespace System.Linq.Expressions
         internal static InvocationExpression Invoke(Expression expression, Expression arg0, Expression arg1)
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -551,7 +551,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -600,7 +600,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -653,7 +653,7 @@ namespace System.Linq.Expressions
         {
             // NB: This method is marked as non-public to avoid public API additions at this point.
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             MethodInfo method = GetInvokeMethod(expression);
 
@@ -739,7 +739,7 @@ namespace System.Linq.Expressions
                     return Invoke(expression, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
             }
 
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
 
             ReadOnlyCollection<Expression> args = argumentList.ToReadOnly(); // Ensure is TrueReadOnlyCollection when count > 5. Returns fast if it already is.
             MethodInfo mi = GetInvokeMethod(expression);

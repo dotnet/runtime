@@ -177,7 +177,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="SwitchExpression"/>.</returns>
         public static SwitchExpression Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable<SwitchCase> cases)
         {
-            RequiresCanRead(switchValue, nameof(switchValue));
+            ExpressionUtils.RequiresCanRead(switchValue, nameof(switchValue));
             if (switchValue.Type == typeof(void)) throw Error.ArgumentCannotBeOfTypeVoid(nameof(switchValue));
 
             ReadOnlyCollection<SwitchCase> caseList = cases.ToReadOnly();
