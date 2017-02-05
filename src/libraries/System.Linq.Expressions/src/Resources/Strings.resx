@@ -150,9 +150,6 @@
   <data name="TypeMustNotBePointer" xml:space="preserve">
     <value>Type must not be a pointer type</value>
   </data>
-  <data name="TypeDoesNotHaveConstructorForTheSignature" xml:space="preserve">
-    <value>Type doesn't have constructor with a given signature</value>
-  </data>
   <data name="SetterMustBeVoid" xml:space="preserve">
     <value>Setter should have void type.</value>
   </data>

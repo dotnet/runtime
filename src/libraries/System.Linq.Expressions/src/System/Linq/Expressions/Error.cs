@@ -210,13 +210,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// ArgumentException with message like "Type doesn't have constructor with a given signature"
-        /// </summary>
-        internal static Exception TypeDoesNotHaveConstructorForTheSignature()
-        {
-            return new ArgumentException(Strings.TypeDoesNotHaveConstructorForTheSignature);
-        }
-        /// <summary>
         /// ArgumentException with message like "Setter should have void type."
         /// </summary>
         internal static Exception SetterMustBeVoid(string paramName)
