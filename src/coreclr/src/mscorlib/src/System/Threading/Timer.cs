@@ -435,19 +435,13 @@ namespace System.Threading
         volatile WaitHandle m_notifyWhenNoCallbacksRunning;
 
 
-        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, ref StackCrawlMark stackMark)
+        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period)
         {
             m_timerCallback = timerCallback;
             m_state = state;
             m_dueTime = Timeout.UnsignedInfinite;
             m_period = Timeout.UnsignedInfinite;
-
-            if (!ExecutionContext.IsFlowSuppressed())
-            {
-                m_executionContext = ExecutionContext.Capture(
-                    ref stackMark,
-                    ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase);
-            }
+            m_executionContext = ExecutionContext.Capture();
 
             //
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
@@ -601,29 +595,15 @@ namespace System.Threading
             }
             else
             {
-                using (ExecutionContext executionContext = 
-                    m_executionContext.IsPreAllocatedDefault ? m_executionContext : m_executionContext.CreateCopy())
-                {
-                    ContextCallback callback = s_callCallbackInContext;
-                    if (callback == null)
-                        s_callCallbackInContext = callback = new ContextCallback(CallCallbackInContext);
-                    
-                    ExecutionContext.Run(
-                        executionContext,
-                        callback,
-                        this,  // state
-                        true); // ignoreSyncCtx
-                }
+                ExecutionContext.Run(m_executionContext, s_callCallbackInContext, this);
             }
         }
 
-        private static ContextCallback s_callCallbackInContext;
-
-        private static void CallCallbackInContext(object state)
+        private static readonly ContextCallback s_callCallbackInContext = state =>
         {
             TimerQueueTimer t = (TimerQueueTimer)state;
             t.m_timerCallback(t.m_state);
-        }
+        };
     }
 
     //
@@ -686,7 +666,6 @@ namespace System.Threading
 
         private TimerHolder m_timer;
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
                      int           dueTime,
@@ -697,12 +676,10 @@ namespace System.Threading
             if (period < -1 )
                 throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
-            TimerSetup(callback,state,(UInt32)dueTime,(UInt32)period,ref stackMark);
+            TimerSetup(callback,state,(UInt32)dueTime,(UInt32)period);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
                      TimeSpan      dueTime,
@@ -720,22 +697,18 @@ namespace System.Threading
             if (periodTm > MAX_SUPPORTED_TIMEOUT)
                 throw new ArgumentOutOfRangeException(nameof(periodTm),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
 
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            TimerSetup(callback,state,(UInt32)dueTm,(UInt32)periodTm,ref stackMark);
+            TimerSetup(callback,state,(UInt32)dueTm,(UInt32)periodTm);
         }
 
         [CLSCompliant(false)]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback, 
                      Object        state,  
                      UInt32        dueTime,
                      UInt32        period)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            TimerSetup(callback,state,dueTime,period,ref stackMark);
+            TimerSetup(callback,state,dueTime,period);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable                                        
         public Timer(TimerCallback callback, 
                      Object        state,  
                      long          dueTime,
@@ -750,11 +723,9 @@ namespace System.Threading
             if (period > MAX_SUPPORTED_TIMEOUT)
                 throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
             Contract.EndContractBlock();
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            TimerSetup(callback,state,(UInt32) dueTime, (UInt32) period,ref stackMark);
+            TimerSetup(callback,state,(UInt32) dueTime, (UInt32) period);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public Timer(TimerCallback callback)
         {
             int dueTime = -1;    // we want timer to be registered, but not activated.  Requires caller to call
@@ -762,21 +733,19 @@ namespace System.Threading
                                 // for a timer to be fired before the returned value is assigned to the variable,
                                 // potentially causing the callback to reference a bogus value (if passing the timer to the callback). 
             
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            TimerSetup(callback, this, (UInt32)dueTime, (UInt32)period, ref stackMark);
+            TimerSetup(callback, this, (UInt32)dueTime, (UInt32)period);
         }
 
         private void TimerSetup(TimerCallback callback,
                                 Object state, 
                                 UInt32 dueTime,
-                                UInt32 period,
-                                ref StackCrawlMark stackMark)
+                                UInt32 period)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(TimerCallback));
             Contract.EndContractBlock();
 
-            m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, ref stackMark));
+            m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
         }
      
         public bool Change(int dueTime, int period)

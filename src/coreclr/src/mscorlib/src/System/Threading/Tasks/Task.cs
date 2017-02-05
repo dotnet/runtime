@@ -1633,7 +1633,7 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    return m_contingentProperties?.m_capturedContext ?? ExecutionContext.PreAllocatedDefault;
+                    return m_contingentProperties?.m_capturedContext ?? ExecutionContext.Default;
                 }
             }
             set
@@ -1643,27 +1643,12 @@ namespace System.Threading.Tasks
                 {
                     m_stateFlags |= TASK_STATE_EXECUTIONCONTEXT_IS_NULL;
                 }
-                else if (!value.IsPreAllocatedDefault) // not the default context, then inflate the contingent properties and set it
+                else if (value != ExecutionContext.Default) // not the default context, then inflate the contingent properties and set it
                 {
                     EnsureContingentPropertiesInitializedUnsafe().m_capturedContext = value;
                 }
                 //else do nothing, this is the default context
             }
-        }
-
-        /// <summary>
-        /// Static helper function to copy specific ExecutionContext
-        /// </summary>
-        /// <param name="capturedContext">The captured context</param>
-        /// <returns>The copied context, null if the capturedContext is null</returns>
-        private static ExecutionContext CopyExecutionContext(ExecutionContext capturedContext)
-        {
-            if (capturedContext == null)
-                return null;
-            if (capturedContext.IsPreAllocatedDefault)
-                return ExecutionContext.PreAllocatedDefault;
-
-            return capturedContext.CreateCopy();
         }
 
         /////////////
@@ -2465,10 +2450,7 @@ namespace System.Threading.Tasks
                     // Run the task.  We need a simple shim that converts the
                     // object back into a Task object, so that we can Execute it.
 
-                    // Lazily initialize the callback delegate; benign race condition
-                    var callback = s_ecCallback;
-                    if (callback == null) s_ecCallback = callback = new ContextCallback(ExecutionContextCallback);
-                    ExecutionContext.Run(ec, callback, this, true);
+                    ExecutionContext.Run(ec, s_ecCallback, this);
                 }
 
                 if (AsyncCausalityTracer.LoggingOn)
@@ -2495,16 +2477,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        // Cached callback delegate that's lazily initialized due to ContextCallback being SecurityCritical
-        private static ContextCallback s_ecCallback;
-
-        private static void ExecutionContextCallback(object obj)
-        {
-            Task task = obj as Task;
-            Debug.Assert(task != null, "expected a task object");
-            task.Execute();
-        }
-
+        private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).Execute();
 
         /// <summary>
         /// The actual code which invokes the body of the task. This can be overriden in derived types.

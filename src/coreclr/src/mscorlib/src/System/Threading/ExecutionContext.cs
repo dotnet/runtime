@@ -55,7 +55,7 @@ namespace System.Threading
     [Serializable]
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
-        private static readonly ExecutionContext Default = new ExecutionContext();
+        internal static readonly ExecutionContext Default = new ExecutionContext();
 
         private readonly IAsyncLocalValueMap m_localValues;
         private readonly IAsyncLocal[] m_localChangeNotifications;
@@ -93,16 +93,10 @@ namespace System.Threading
         public static ExecutionContext Capture()
         {
             ExecutionContext executionContext = Thread.CurrentThread.ExecutionContext;
-            if (executionContext == null)
-            {
-                return Default;
-            }
-            if (executionContext.m_isFlowSuppressed)
-            {
-                // Prevent ExecutionContext.Run on a suppressed-flow context for desktop framework compatibility
-                return null;
-            }
-            return executionContext;
+            return
+                executionContext == null ? Default :
+                executionContext.m_isFlowSuppressed ? null :
+                executionContext;
         }
 
         private ExecutionContext ShallowClone(bool isFlowSuppressed)
@@ -301,21 +295,6 @@ namespace System.Threading
             }
         }
 
-    #region Wrappers for CLR compat, to avoid ifdefs all over the BCL
-
-        [Flags]
-        internal enum CaptureOptions
-        {
-            None = 0x00,
-            IgnoreSyncCtx = 0x01,
-            OptimizeDefaultCase = 0x02,
-        }
-
-        internal static ExecutionContext Capture(ref StackCrawlMark stackMark, CaptureOptions captureOptions)
-        {
-            return Capture();
-        }
-
         [FriendAccessAllowed]
         internal static ExecutionContext FastCapture()
         {
@@ -328,11 +307,6 @@ namespace System.Threading
             Run(executionContext, callback, state);
         }
 
-        internal bool IsDefaultFTContext(bool ignoreSyncCtx)
-        {
-            return this == Default;
-        }
-
         public ExecutionContext CreateCopy()
         {
             return this; // since CoreCLR's ExecutionContext is immutable, we don't need to create copies.
@@ -342,18 +316,6 @@ namespace System.Threading
         {
             // For CLR compat only
         }
-
-        internal static ExecutionContext PreAllocatedDefault
-        {
-            get { return ExecutionContext.Default; }
-        }
-
-        internal bool IsPreAllocatedDefault
-        {
-            get { return this == ExecutionContext.Default; }
-        }
-
-    #endregion
     }
 
     public struct AsyncFlowControl : IDisposable
