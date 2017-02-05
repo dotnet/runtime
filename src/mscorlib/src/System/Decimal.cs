@@ -346,9 +346,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallAddSub(ref Decimal d1, ref Decimal d2, byte bSign);
         
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallAddSubOverflowed(ref Decimal d1, ref Decimal d2, byte bSign, ref bool overflowed);
-        
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards positive infinity.
         public static Decimal Ceiling(Decimal d) {
@@ -402,9 +399,6 @@ namespace System {
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallDivide(ref Decimal d1, ref Decimal d2);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallDivideOverflowed(ref Decimal d1, ref Decimal d2, ref bool overflowed);
 
     
         // Checks if this Decimal is equal to a given object. Returns true
@@ -696,9 +690,6 @@ namespace System {
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallMultiply(ref Decimal d1, ref Decimal d2);
-    
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallMultiplyOverflowed(ref Decimal d1, ref Decimal d2, ref bool overflowed);
     
         // Returns the negated value of the given Decimal. If d is non-zero,
         // the result is -d. If d is zero, the result is zero.

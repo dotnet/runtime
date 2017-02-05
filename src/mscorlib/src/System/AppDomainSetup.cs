@@ -28,7 +28,7 @@ namespace System
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AppDomainSetup
+    internal sealed class AppDomainSetup
     {
         [Serializable]
         internal enum LoaderInformation
@@ -54,7 +54,7 @@ namespace System
             ConfigurationBytesValue       = 15, // LOADER_CONFIGURATION_BYTES
             LoaderMaximum                 = 18  // LOADER_MAXIMUM
         }
-
+        
         // Constants from fusionsetup.h.
         private const string LOADER_OPTIMIZATION = "LOADER_OPTIMIZATION";
         private const string CONFIGURATION_EXTENSION = ".config";

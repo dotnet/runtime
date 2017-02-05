@@ -13,18 +13,6 @@ namespace System.Diagnostics {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
-
-   // LogMessageEventHandlers are triggered when a message is generated which is
-   // "on" per its switch.
-   // 
-   // By default, the debugger (if attached) is the only event handler. 
-   // There is also a "built-in" console device which can be enabled
-   // programatically, by registry (specifics....) or environment
-   // variables.
-    [Serializable]
-    internal delegate void LogMessageEventHandler(LoggingLevels level, LogSwitch category, 
-                                                    String message, 
-                                                    StackTrace location);
     
     
    // LogSwitchLevelHandlers are triggered when the level of a LogSwitch is modified
@@ -49,7 +37,6 @@ namespace System.Diagnostics {
         // desired events are actually reported to the debugger.  
         internal static Hashtable m_Hashtable;
         private static volatile bool m_fConsoleDeviceEnabled;
-        private static LogMessageEventHandler   _LogMessageEventHandler;
         private static volatile LogSwitchLevelHandler   _LogSwitchLevelHandler;
         private static Object locker;
     
@@ -72,35 +59,6 @@ namespace System.Diagnostics {
             GlobalSwitch.MinimumLevel = LoggingLevels.ErrorLevel;
         }
     
-        public static void AddOnLogMessage(LogMessageEventHandler handler)
-        {
-            lock (locker)
-                _LogMessageEventHandler = 
-                    (LogMessageEventHandler) MulticastDelegate.Combine(_LogMessageEventHandler, handler);
-        }
-    
-        public static void RemoveOnLogMessage(LogMessageEventHandler handler)
-        {
-    
-            lock (locker)
-                _LogMessageEventHandler = 
-                    (LogMessageEventHandler) MulticastDelegate.Remove(_LogMessageEventHandler, handler);
-        }
-    
-        public static void AddOnLogSwitchLevel(LogSwitchLevelHandler handler)
-        {
-            lock (locker)
-                _LogSwitchLevelHandler = 
-                    (LogSwitchLevelHandler) MulticastDelegate.Combine(_LogSwitchLevelHandler, handler);
-        }
-    
-        public static void RemoveOnLogSwitchLevel(LogSwitchLevelHandler handler)
-        {
-            lock (locker)
-                _LogSwitchLevelHandler = 
-                    (LogSwitchLevelHandler) MulticastDelegate.Remove(_LogSwitchLevelHandler, handler);
-        }
-    
         internal static void InvokeLogSwitchLevelHandlers (LogSwitch ls, LoggingLevels newLevel)
         {
             LogSwitchLevelHandler handler = _LogSwitchLevelHandler;
@@ -118,15 +76,6 @@ namespace System.Diagnostics {
         {
             get { return m_fConsoleDeviceEnabled; }
             set { m_fConsoleDeviceEnabled = value; }
-        }
-          
-        // Generates a log message. If its switch (or a parent switch) allows the 
-        // level for the message, it is "broadcast" to all of the log
-        // devices.
-        // 
-        public static void LogMessage(LoggingLevels level, String message)
-        {
-            LogMessage (level, GlobalSwitch, message);
         }
     
         // Generates a log message. If its switch (or a parent switch) allows the 
@@ -168,73 +117,9 @@ namespace System.Diagnostics {
             LogMessage (LoggingLevels.TraceLevel0, logswitch, message);
         }
     
-        public static void Trace(String switchname, String message)
-        {
-            LogSwitch ls;
-            ls = LogSwitch.GetSwitch (switchname);
-            LogMessage (LoggingLevels.TraceLevel0, ls, message);            
-        }
-    
         public static void Trace(String message)
         {
             LogMessage (LoggingLevels.TraceLevel0, GlobalSwitch, message);
-        }
-    
-        public static void Status(LogSwitch logswitch, String message)
-        {
-            LogMessage (LoggingLevels.StatusLevel0, logswitch, message);
-        }
-    
-        public static void Status(String switchname, String message)
-        {
-            LogSwitch ls;
-            ls = LogSwitch.GetSwitch (switchname);
-            LogMessage (LoggingLevels.StatusLevel0, ls, message);
-        }
-    
-        public static void Status(String message)
-        {
-            LogMessage (LoggingLevels.StatusLevel0, GlobalSwitch, message);
-        }
-    
-        public static void Warning(LogSwitch logswitch, String message)
-        {
-            LogMessage (LoggingLevels.WarningLevel, logswitch, message);
-        }
-    
-        public static void Warning(String switchname, String message)
-        {
-            LogSwitch ls;
-            ls = LogSwitch.GetSwitch (switchname);
-            LogMessage (LoggingLevels.WarningLevel, ls, message);
-        }
-    
-        public static void Warning(String message)
-        {
-            LogMessage (LoggingLevels.WarningLevel, GlobalSwitch, message);
-        }
-    
-        public static void Error(LogSwitch logswitch, String message)
-        {
-            LogMessage (LoggingLevels.ErrorLevel, logswitch, message);
-        }
-    
-        public static void Error(String switchname, String message)
-        {
-            LogSwitch ls;
-            ls = LogSwitch.GetSwitch (switchname);
-            LogMessage (LoggingLevels.ErrorLevel, ls, message);
-    
-        }
-
-        public static void Error(String message)
-        {
-            LogMessage (LoggingLevels.ErrorLevel, GlobalSwitch, message);
-        }
-    
-        public static void Panic(String message)
-        {
-            LogMessage (LoggingLevels.PanicLevel, GlobalSwitch, message);
         }
         
     

@@ -62,11 +62,6 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.GetTypeBuilder();
         }
-
-        internal ModuleBuilder GetModuleBuilder()
-        {
-            return GetTypeBuilder().GetModuleBuilder();
-        }
         #endregion
 
         #region Object Overrides
@@ -178,11 +173,6 @@ namespace System.Reflection.Emit
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
     
-        public void SetSymCustomAttribute(String name, byte[] data)
-        {
-            m_methodBuilder.SetSymCustomAttribute(name, data);
-        }
-    
         public ILGenerator GetILGenerator() 
         {
             if (m_isDefaultConstructor)
@@ -199,16 +189,6 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetILGenerator(streamSize);
         }
 
-        public void SetMethodBody(byte[] il, int maxStack, byte[] localSignature, IEnumerable<ExceptionHandler> exceptionHandlers, IEnumerable<int> tokenFixups)
-        {
-            if (m_isDefaultConstructor)
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_DefaultConstructorDefineBody"));
-            }
-
-            m_methodBuilder.SetMethodBody(il, maxStack, localSignature, exceptionHandlers, tokenFixups);
-        }
-
         public override CallingConventions CallingConvention 
         { 
             get 
@@ -223,13 +203,6 @@ namespace System.Reflection.Emit
         public Module GetModule()
         {
             return m_methodBuilder.GetModule();
-        }
-    
-    
-        [Obsolete("This property has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")] //It always returns null.
-        public Type ReturnType
-        {
-            get { return GetReturnType(); }
         }
         
         // This always returns null. Is that what we want?

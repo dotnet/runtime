@@ -218,11 +218,6 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetNativeHandle();
         }
 
-        internal Version GetVersion()
-        {
-            return InternalAssembly.GetVersion();
-        }
-
 #if FEATURE_APPX
         internal bool ProfileAPICheck
         {
@@ -554,19 +549,8 @@ namespace System.Reflection.Emit
 
             return dynModule;
         } // DefineDynamicModuleInternalNoLock
-        #endregion
 
-        private Assembly LoadISymWrapper()
-        {
-            if (m_assemblyData.m_ISymWrapperAssembly != null)
-                return m_assemblyData.m_ISymWrapperAssembly;
-
-            Assembly assem = Assembly.Load("ISymWrapper, Version=" + ThisAssembly.Version +
-                ", Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken);
-
-            m_assemblyData.m_ISymWrapperAssembly = assem;
-            return assem;
-        }
+#endregion
 
         internal void CheckContext(params Type[][] typess)
         {
@@ -834,46 +818,6 @@ namespace System.Reflection.Emit
             }
             return null;
         }
-    
-        /**********************************************
-        *
-        * Setting the entry point if the assembly builder is building
-        * an exe.
-        *
-        **********************************************/
-        public void SetEntryPoint(
-            MethodInfo  entryMethod) 
-        {
-            SetEntryPoint(entryMethod, PEFileKinds.ConsoleApplication);
-        }
-        public void SetEntryPoint(
-            MethodInfo  entryMethod,        // entry method for the assembly. We use this to determine the entry module
-            PEFileKinds fileKind)           // file kind for the assembly.
-        {
-            lock(SyncRoot)
-            {
-                SetEntryPointNoLock(entryMethod, fileKind);
-            }
-        }
-
-        private void SetEntryPointNoLock(
-            MethodInfo  entryMethod,        // entry method for the assembly. We use this to determine the entry module
-            PEFileKinds fileKind)           // file kind for the assembly.
-        {
-
-            if (entryMethod == null)
-                throw new ArgumentNullException(nameof(entryMethod));
-            Contract.EndContractBlock();
-
-            BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.SetEntryPoint");
-
-            Module tmpModule = entryMethod.Module;
-            if (tmpModule == null || !InternalAssembly.Equals(tmpModule.Assembly))
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EntryMethodNotDefinedInAssembly"));
-
-            m_assemblyData.m_entryPointMethod = entryMethod;
-            m_assemblyData.m_peFileKind = fileKind;
-        }
 
 
         /**********************************************
@@ -942,78 +886,6 @@ namespace System.Reflection.Emit
             }
         }
 
-
-        /**********************************************
-        *
-        * Saves the assembly to disk. Also saves all dynamic modules defined
-        * in this dynamic assembly. Assembly file name can be the same as one of 
-        * the module's name. If so, assembly info is stored within that module.
-        * Assembly file name can be different from all of the modules underneath. In
-        * this case, assembly is stored stand alone. 
-        *
-        **********************************************/
-
-        public void Save(String assemblyFileName)       // assembly file name
-        {
-            Save(assemblyFileName, System.Reflection.PortableExecutableKinds.ILOnly, System.Reflection.ImageFileMachine.I386);
-        }
-            
-        public void Save(String assemblyFileName, 
-            PortableExecutableKinds portableExecutableKind, ImageFileMachine imageFileMachine)
-        {
-            lock(SyncRoot)
-            {
-                SaveNoLock(assemblyFileName, portableExecutableKind, imageFileMachine);
-            }
-        }
-
-        private void SaveNoLock(String assemblyFileName, 
-            PortableExecutableKinds portableExecutableKind, ImageFileMachine imageFileMachine)
-        {
-            // AssemblyBuilderAccess.Save can never be set in CoreCLR
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CantSaveTransientAssembly"));
-        }
-
-        internal bool IsPersistable()
-        {
-            {
-                return false;
-            }
-        }
-    
-        /**********************************************
-        *
-        * Internal helper to walk the nested type hierachy
-        *
-        **********************************************/
-        private int DefineNestedComType(Type type, int tkResolutionScope, int tkTypeDef)
-        {
-            Type        enclosingType = type.DeclaringType;
-            if (enclosingType == null)
-            {
-                // Use full type name for non-nested types.
-                return AddExportedTypeOnDisk(GetNativeHandle(), type.FullName, tkResolutionScope, tkTypeDef, type.Attributes);
-            }
-
-            tkResolutionScope = DefineNestedComType(enclosingType, tkResolutionScope, tkTypeDef);
-            // Use simple name for nested types.
-            return AddExportedTypeOnDisk(GetNativeHandle(), type.Name, tkResolutionScope, tkTypeDef, type.Attributes);
-        }
-
-        internal int DefineExportedTypeInMemory(Type type, int tkResolutionScope, int tkTypeDef)
-        {
-            Type enclosingType = type.DeclaringType;
-            if (enclosingType == null)
-            {
-                // Use full type name for non-nested types.
-                return AddExportedTypeInMemory(GetNativeHandle(), type.FullName, tkResolutionScope, tkTypeDef, type.Attributes);
-            }
-
-            tkResolutionScope = DefineExportedTypeInMemory(enclosingType, tkResolutionScope, tkTypeDef);
-            // Use simple name for nested types.
-            return AddExportedTypeInMemory(GetNativeHandle(), type.Name, tkResolutionScope, tkTypeDef, type.Attributes);
-        }
-
         /**********************************************
          * 
          * Private methods
@@ -1025,105 +897,5 @@ namespace System.Reflection.Emit
          * @internonly
          **********************************************/
         private AssemblyBuilder() {}
-
-        // Create a new module in which to emit code. This module will not contain the manifest.
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void DefineDynamicModule(RuntimeAssembly containingAssembly,
-                                                       bool emitSymbolInfo,
-                                                       String name,
-                                                       String filename,
-                                                       StackCrawlMarkHandle stackMark,
-                                                       ref IntPtr pInternalSymWriter,
-                                                       ObjectHandleOnStack retModule,
-                                                       bool fIsTransient,
-                                                       out int tkFile);
-
-        private static Module DefineDynamicModule(RuntimeAssembly containingAssembly, 
-                                           bool emitSymbolInfo,
-                                           String name,
-                                           String filename,
-                                           ref StackCrawlMark stackMark,
-                                           ref IntPtr pInternalSymWriter,
-                                           bool fIsTransient,
-                                           out int tkFile)
-        {
-            RuntimeModule retModule = null;
-
-            DefineDynamicModule(containingAssembly.GetNativeHandle(),
-                                emitSymbolInfo,
-                                name,
-                                filename,
-                                JitHelpers.GetStackCrawlMarkHandle(ref stackMark),
-                                ref pInternalSymWriter,
-                                JitHelpers.GetObjectHandleOnStack(ref retModule),
-                                fIsTransient,
-                                out tkFile);
-
-            return retModule;
-        }
-
-        // The following functions are native helpers for creating on-disk manifest
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void PrepareForSavingManifestToDisk(RuntimeAssembly assembly, RuntimeModule assemblyModule);  // module to contain assembly information if assembly is embedded
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void SaveManifestToDisk(RuntimeAssembly assembly,
-                                                String strFileName, 
-                                                int entryPoint,
-                                                int fileKind,
-                                                int portableExecutableKind, 
-                                                int ImageFileMachine);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern int AddFile(RuntimeAssembly assembly, String strFileName);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void SetFileHashValue(RuntimeAssembly assembly,
-                                                    int tkFile, 
-                                                    String strFullFileName);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern int AddExportedTypeInMemory(RuntimeAssembly assembly,
-                                                          String strComTypeName,
-                                                          int tkAssemblyRef,
-                                                          int tkTypeDef,
-                                                          TypeAttributes flags);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern int AddExportedTypeOnDisk(RuntimeAssembly assembly, 
-                                                        String strComTypeName, 
-                                                        int tkAssemblyRef, 
-                                                        int tkTypeDef, 
-                                                        TypeAttributes flags);
-
-        // Add an entry to assembly's manifestResource table for a stand alone resource.
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void AddStandAloneResource(RuntimeAssembly assembly,
-                                                         String strName,
-                                                         String strFileName,
-                                                         String strFullFileName,
-                                                         int attribute);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-#pragma warning disable 618
-        static private extern void AddDeclarativeSecurity(RuntimeAssembly assembly, SecurityAction action, byte[] blob, int length);
-#pragma warning restore 618
-
-        // Functions for defining unmanaged resources.
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static private extern void CreateVersionInfoResource(String filename, String title, String iconFilename, String description,
-                                                             String copyright, String trademark, String company, String product,
-                                                             String productVersion, String fileVersion, int lcid, bool isDll,
-                                                             StringHandleOnStack retFileName);
     }
 }

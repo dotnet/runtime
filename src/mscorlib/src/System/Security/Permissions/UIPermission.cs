@@ -16,7 +16,7 @@ namespace System.Security.Permissions
     
     [Serializable]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum UIPermissionWindow
+    internal enum UIPermissionWindow
     {
         // No window use allowed at all.
         NoWindows = 0x0,
@@ -34,7 +34,7 @@ namespace System.Security.Permissions
     
     [Serializable]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum UIPermissionClipboard
+    internal enum UIPermissionClipboard
     {
         // No clipboard access is allowed.
         NoClipboard = 0x0,
@@ -50,7 +50,7 @@ namespace System.Security.Permissions
     
 [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    sealed public class UIPermission 
+    sealed internal class UIPermission 
            : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
         //------------------------------------------------------
@@ -92,57 +92,6 @@ namespace System.Security.Permissions
             
             m_windowFlag = windowFlag;
             m_clipboardFlag = clipboardFlag;
-        }
-    
-        public UIPermission(UIPermissionWindow windowFlag )
-        {
-            VerifyWindowFlag( windowFlag );
-            
-            m_windowFlag = windowFlag;
-        }
-    
-        public UIPermission(UIPermissionClipboard clipboardFlag )
-        {
-            VerifyClipboardFlag( clipboardFlag );
-            
-            m_clipboardFlag = clipboardFlag;
-        }
-        
-        
-        //------------------------------------------------------
-        //
-        // PUBLIC ACCESSOR METHODS
-        //
-        //------------------------------------------------------
-        
-        public UIPermissionWindow Window
-        {
-            set
-            {
-                VerifyWindowFlag(value);
-            
-                m_windowFlag = value;
-            }
-            
-            get
-            {
-                return m_windowFlag;
-            }
-        }
-        
-        public UIPermissionClipboard Clipboard
-        {
-            set
-            {
-                VerifyClipboardFlag(value);
-            
-                m_clipboardFlag = value;
-            }
-            
-            get
-            {
-                return m_clipboardFlag;
-            }
         }
     
         //------------------------------------------------------

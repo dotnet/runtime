@@ -337,9 +337,6 @@ namespace System.Reflection.Emit {
         {
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
-
-
-        internal int MetadataTokenInternal { get { return m_typeBuilder.MetadataTokenInternal; } }
     
         /*****************************************************
          * 

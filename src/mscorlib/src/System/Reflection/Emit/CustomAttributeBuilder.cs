@@ -553,18 +553,6 @@ namespace System.Reflection.Emit {
         }
 
         //*************************************************
-        // Upon saving to disk, we need to create the memberRef token for the custom attribute's type
-        // first of all. So when we snap the in-memory module for on disk, this token will be there.
-        // We also need to enforce the use of MemberRef. Because MemberDef token might move. 
-        // This function has to be called before we snap the in-memory module for on disk (i.e. Presave on
-        // ModuleBuilder.
-        //*************************************************
-        internal int PrepareCreateCustomAttributeToDisk(ModuleBuilder mod)
-        {
-            return mod.InternalGetConstructorToken(m_con, true).Token;
-        }
-
-        //*************************************************
         // Call this function with toDisk=1, after on disk module has been snapped.
         //*************************************************
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner, int tkAttrib, bool toDisk)

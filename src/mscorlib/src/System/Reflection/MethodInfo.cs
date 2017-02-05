@@ -130,14 +130,6 @@ namespace System.Reflection
 
             return false;
         }
-
-        internal override bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return !AppDomain.ProfileAPICheck || !IsNonW8PFrameworkAPI();
-            }
-        }
 #endif
 
         internal INVOCATION_FLAGS InvocationFlags
@@ -299,12 +291,6 @@ namespace System.Reflection
         }
 
         internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
-
-        // Differs from MethodHandle in that it will return a valid handle even for reflection only loaded types
-        internal RuntimeMethodHandle GetMethodHandle()
-        {
-            return new RuntimeMethodHandle(this);
-        }
 
         internal RuntimeMethodInfo GetParentDefinition()
         {
@@ -517,14 +503,6 @@ namespace System.Reflection
         public override MethodImplAttributes GetMethodImplementationFlags()
         {
             return RuntimeMethodHandle.GetImplAttributes(this);
-        }
-
-        internal bool IsOverloaded
-        {
-            get 
-            {
-                return m_reflectedTypeCache.GetMethodList(MemberListType.CaseSensitive, Name).Length > 1;
-            }
         }
 
         public override RuntimeMethodHandle MethodHandle 

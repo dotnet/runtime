@@ -25,7 +25,7 @@ namespace System.Security.Policy
     ///     EvidenceTypeDescriptor appropriately.
     /// </summary>
     [ComVisible(true)]
-    public sealed class Evidence
+    internal sealed class Evidence
     {
     }
 }

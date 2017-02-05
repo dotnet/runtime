@@ -126,7 +126,6 @@
     <!-- If you add new features to this list make sure that they are not affecting codegen or content of datastructures persisted in NGen image -->
     <EnCSupported>false</EnCSupported>
     <PerfcountersSupportedBuild>false</PerfcountersSupportedBuild>
-    <FeatureCasPolicy>false</FeatureCasPolicy>
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
     <FeatureIncludeAllInterfaces>false</FeatureIncludeAllInterfaces>
@@ -242,7 +241,6 @@
     <ResgenDefines Condition="'$(FeatureImpersonation)' == '1'">$(ResgenDefines) /define:FEATURE_IMPERSONATION</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIsostore)' == '1'">$(ResgenDefines) /define:FEATURE_ISOSTORE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureMacl)' == '1'">$(ResgenDefines) /define:FEATURE_MACL</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureCasPolicy)' == '1'">$(ResgenDefines) /define:FEATURE_CAS_POLICY</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureRemoting)' == '1'">$(ResgenDefines) /define:FEATURE_REMOTING</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureIdentityReference)' == '1'">$(ResgenDefines) /define:FEATURE_IDENTITY_REFERENCE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayCultureInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_CULTURE_INFO</ResgenDefines> 

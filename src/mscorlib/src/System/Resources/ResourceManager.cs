@@ -162,7 +162,7 @@ namespace System.Resources {
         // Sets is a many-to-one table of CultureInfos mapped to ResourceSets.
         // Don't synchronize ResourceSets - too fine-grained a lock to be effective
         [Obsolete("call InternalGetResourceSet instead")]
-        protected Hashtable ResourceSets;
+        internal Hashtable ResourceSets;
         
 
         // don't serialize the cache of ResourceSets

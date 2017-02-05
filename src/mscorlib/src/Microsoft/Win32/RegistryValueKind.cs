@@ -5,7 +5,7 @@
 
 namespace Microsoft.Win32 {
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum RegistryValueKind {
+    internal enum RegistryValueKind {
         String =        Win32Native.REG_SZ,
         ExpandString =  Win32Native.REG_EXPAND_SZ,
         Binary =        Win32Native.REG_BINARY,

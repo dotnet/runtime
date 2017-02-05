@@ -1,7 +1,6 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
-    <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblyAttributesGoHere.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
@@ -29,7 +28,6 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <CompilerServicesSources Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
-    <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecoratedNameAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
@@ -56,12 +54,10 @@
   <ItemGroup>
     <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
     <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
-    <RuntimeSources Include="$(BclSourcesRoot)\System\Runtime\ProfileOptimization.cs" />
   </ItemGroup>
   <ItemGroup>
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
-    <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\Stack.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
@@ -77,8 +73,6 @@
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\IEqualityComparer.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\IList.cs" />
-    <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\KeyValuePairs.cs" />
-    <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\SortedList.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\IStructuralEquatable.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\IStructuralComparable.cs" />
     <CollectionsSources Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
@@ -265,7 +259,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ApplicationId.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ArgumentException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ArgumentNullException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ArgumentOutOfRangeException.cs" />
@@ -281,15 +274,12 @@
     <SystemSources Include="$(BclSourcesRoot)\System\Boolean.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Buffer.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Byte.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\CannotUnloadAppDomainException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Char.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CharEnumerator.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\CfgParser.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CLSCompliantAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Convert.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Currency.cs" />
@@ -427,7 +417,6 @@
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\Assembly.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyAttributes.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.cs" />
-    <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyNameProxy.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyNameFlags.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <ReflectionSources Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeExtensions.cs" />
@@ -529,7 +518,6 @@
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeToken.cs" />
     <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
-    <ReflectionEmitSources Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReflectionMetadataSources Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
@@ -643,7 +631,6 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
-
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
@@ -674,8 +661,6 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ExecutionContext.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\IObjectHandle.cs" />
-    <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\LockCookie.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\LockRecursionException.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ManualResetEvent.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
@@ -770,8 +755,8 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />    
+    <IoSources Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />  
     <IoSources Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
@@ -782,7 +767,7 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
@@ -790,24 +775,18 @@
     <IoSources Include="$(BclSourcesRoot)\System\IO\SeekOrigin.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\Stream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\StreamHelpers.CopyValidation.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" />
-    <IoSources Include="$(BclSourcesRoot)\System\IO\TextReader.cs" />
+    <IoSources Include="$(BclSourcesRoot)\System\IO\TextReader.cs" Condition="'$(TargetsUnix)' == 'true'" />    
+    <IoSources Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStream.cs" />
     <IoSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\Attributes.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\BuiltInPermissionSets.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\CodeAccessPermission.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\CodeAccessSecurityEngine.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\IEvidenceFactory.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\IPermission.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\ISecurityEncodable.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\ISecurityPolicyEncodable.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\IStackWalk.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\FrameSecurityDescriptor.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\HostSecurityManager.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\NamedPermissionSet.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\PermissionSetEnumerator.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\PermissionSet.cs" />
@@ -817,22 +796,18 @@
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityContext.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityException.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityState.cs" />
-    <SecuritySources Include="$(BclSourcesRoot)\System\Security\HostProtectionException.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityManager.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityRuntime.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\SecurityZone.cs" />
     <SecuritySources Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\Config.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\Hex.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\sitestring.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\StringExpressionSet.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\TokenBasedSet.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\TokenBasedSetEnumerator.cs" />
     <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\URLString.cs" />
-    <SecUtilSources Include="$(BclSourcesRoot)\System\Security\Util\XMLUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <DiagnosticsSources Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
@@ -912,17 +887,11 @@
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IFormatter.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IFormatterConverter.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IObjectReference.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISerializable.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISerializationSurrogate.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISurrogateSelector.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\MemberHolder.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationAttributes.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationBinder.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationException.cs" />
-    <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationFieldInfo.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <SerializationSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
@@ -930,17 +899,13 @@
   </ItemGroup>
   <ItemGroup>
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
-    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkId.cs" />
-    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
+    <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" Condition="'$(TargetsUnix)' == 'true'" />   
     <VersioningSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\NonVersionableAttribute.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <ConfigurationAssembliesSources Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyHash.cs" />
     <ConfigurationAssembliesSources Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
     <ConfigurationAssembliesSources Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <RemotingSources Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
   </ItemGroup>
@@ -974,30 +939,20 @@
   <ItemGroup>
     <SecurityAclSources Include="$(BclSourcesRoot)\System\Security\AccessControl\Enums.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCasPolicy)' != 'true'">
+  <ItemGroup>
     <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\ApplicationTrust.cs" />
     <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\Evidence.cs" />
     <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\EvidenceBase.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\EvidenceTypeDescriptor.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\IDelayEvaluatedEvidence.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\IIdentityPermissionFactory.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\IRuntimeEvidenceFactory.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\PolicyException.cs" />
     <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\PolicyStatement.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\Site.cs" />
     <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\StrongName.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\URL.cs" />
-    <SecurityPolicySources Include="$(BclSourcesRoot)\System\Security\Policy\Zone.cs" />
   </ItemGroup>
   <ItemGroup>
-    <XmlSources Include="$(BclSourcesRoot)\System\Security\SecurityElement.cs" />
   </ItemGroup>
   <ItemGroup>
     <Win32Sources Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Win32Sources Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
     <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />
     <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryKey.cs" />
-    <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryOptions.cs" />
     <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryValueKind.cs" />
     <Win32Sources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryView.cs" />
     <Win32Sources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
@@ -1013,7 +968,6 @@
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\IResourceReader.cs" />
-    <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\IResourceWriter.cs" />
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\LooselyLinkedResourceReference.cs" />
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
     <ResourcesSources Include="$(BclSourcesRoot)\System\Resources\MissingManifestResourceException.cs" />
@@ -1034,21 +988,13 @@
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\FileIOPermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\HostProtectionPermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\IBuiltInPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\IsolatedStoragePermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\IsolatedStorageFilePermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\PermissionState.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\PermissionAttributes.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\ReflectionPermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\SecurityPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\SiteIdentityPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\StrongNameIdentityPermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\StrongNamePublicKeyBlob.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\UIPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\URLIdentityPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\ZoneIdentityPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\GACIdentityPermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\IUnrestrictedPermission.cs" />
-    <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\keycontainerpermission.cs" />
     <PermissionsSources Include="$(BclSourcesRoot)\System\Security\Permissions\RegistryPermission.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -1079,16 +1025,10 @@
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\IProducerConsumerCollection.cs" />
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentDictionary.cs" />
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentQueue.cs" />
-    <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\Partitioner.cs" />
-    <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\OrderablePartitioner.cs" />
-    <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\PartitionerStatic.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileMappingHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
-    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-    <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeViewOfFileHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <SafehandleSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
@@ -1138,11 +1078,9 @@
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Windows.cs" />
@@ -1153,11 +1091,9 @@
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
     <SecuritySources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <SecuritySources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Unix.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <WindowsInteropSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
     <UnixInteropSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Errors.cs" />

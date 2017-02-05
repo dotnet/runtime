@@ -68,7 +68,7 @@ namespace System.Collections {
     [DebuggerDisplay("Count = {Count}")]
     [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable {
+    internal class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable {
         /*
           Implementation Notes:
           The generic Dictionary was copied from Hashtable's source - any bug 
@@ -165,75 +165,6 @@ namespace System.Collections {
         private IEqualityComparer _keycomparer;
         private Object _syncRoot;
 
-        [Obsolete("Please use EqualityComparer property.")]
-        protected IHashCodeProvider hcp
-        {
-            get
-            {
-                if( _keycomparer is CompatibleComparer) {
-                    return ((CompatibleComparer)_keycomparer).HashCodeProvider;
-                }                
-                else if( _keycomparer == null) {
-                    return null;
-                }
-                else {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CannotMixComparisonInfrastructure"));
-                }                
-            }
-            set
-            {
-                if (_keycomparer is CompatibleComparer) {
-                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
-                    _keycomparer = new CompatibleComparer(keyComparer.Comparer, value);
-                }
-                else if( _keycomparer == null) {
-                    _keycomparer = new CompatibleComparer((IComparer)null, value);               
-                }
-                else {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CannotMixComparisonInfrastructure"));
-                }
-            }
-        }
-
-
-        [Obsolete("Please use KeyComparer properties.")]        
-        protected IComparer comparer
-        {
-            get
-            {
-                if( _keycomparer is CompatibleComparer) {
-                    return ((CompatibleComparer)_keycomparer).Comparer;
-                }    
-                else if( _keycomparer == null) {
-                    return null;
-                }                            
-                else {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CannotMixComparisonInfrastructure"));
-                }                
-            }
-            set
-            {
-                if (_keycomparer is CompatibleComparer) {
-                    CompatibleComparer keyComparer = (CompatibleComparer)_keycomparer;
-                    _keycomparer = new CompatibleComparer(value, keyComparer.HashCodeProvider);
-                }
-                else if( _keycomparer == null) {
-                    _keycomparer = new CompatibleComparer(value, (IHashCodeProvider)null);               
-                }                
-                else {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_CannotMixComparisonInfrastructure"));
-                }
-            }
-        }
-
-        protected IEqualityComparer EqualityComparer
-        {
-            get
-            {
-                return _keycomparer;
-            }
-        }
-
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
         internal Hashtable( bool trash )
@@ -290,126 +221,31 @@ namespace System.Collections {
             Debug.Assert( loadsize < hashsize, "Invalid hashtable loadsize!");
         }
     
-        // Constructs a new hashtable with the given initial capacity and load
-        // factor. The capacity argument serves as an indication of the
-        // number of entries the hashtable will contain. When this number (or an
-        // approximation) is known, specifying it in the constructor can eliminate
-        // a number of resizing operations that would otherwise be performed when
-        // elements are added to the hashtable. The loadFactor argument
-        // indicates the maximum ratio of hashtable entries to hashtable buckets.
-        // Smaller load factors cause faster average lookup times at the cost of
-        // increased memory consumption. A load factor of 1.0 generally provides
-        // the best balance between speed and size.  The hcp argument
-        // is used to specify an Object that will provide hash codes for all
-        // the Objects in the table.  Using this, you can in effect override
-        // GetHashCode() on each Object using your own hash function.  The 
-        // comparer argument will let you specify a custom function for
-        // comparing keys.  By specifying user-defined objects for hcp
-        // and comparer, users could make a hash table using strings
-        // as keys do case-insensitive lookups.
-        // 
-        [Obsolete("Please use Hashtable(int, float, IEqualityComparer) instead.")]
-        public Hashtable(int capacity, float loadFactor, IHashCodeProvider hcp, IComparer comparer) : this(capacity, loadFactor) {
-            if (hcp == null && comparer == null) {
-                this._keycomparer = null;
-            }
-            else {
-                this._keycomparer = new CompatibleComparer(comparer,hcp);
-            }
-        }
-    
         public Hashtable(int capacity, float loadFactor, IEqualityComparer equalityComparer) : this(capacity, loadFactor) {
             this._keycomparer = equalityComparer;
         }
-            
-        // Constructs a new hashtable using a custom hash function
-        // and a custom comparison function for keys.  This will enable scenarios
-        // such as doing lookups with case-insensitive strings.
-        // 
-        [Obsolete("Please use Hashtable(IEqualityComparer) instead.")]        
-        public Hashtable(IHashCodeProvider hcp, IComparer comparer) : this(0, 1.0f, hcp, comparer) {
-        }
 
         public Hashtable(IEqualityComparer equalityComparer) : this(0, 1.0f, equalityComparer) {
-        }
-        
-        // Constructs a new hashtable using a custom hash function
-        // and a custom comparison function for keys.  This will enable scenarios
-        // such as doing lookups with case-insensitive strings.
-        // 
-        [Obsolete("Please use Hashtable(int, IEqualityComparer) instead.")]        
-        public Hashtable(int capacity, IHashCodeProvider hcp, IComparer comparer)   
-            : this(capacity, 1.0f, hcp, comparer) {
         }
     
         public Hashtable(int capacity, IEqualityComparer equalityComparer)    
             : this(capacity, 1.0f, equalityComparer) {
         }
-    
-        // Constructs a new hashtable containing a copy of the entries in the given
-        // dictionary. The hashtable is created with a load factor of 1.0.
-        // 
-        public Hashtable(IDictionary d) : this(d, 1.0f) {
-        }
-        
-        // Constructs a new hashtable containing a copy of the entries in the given
-        // dictionary. The hashtable is created with the given load factor.
-        // 
-        public Hashtable(IDictionary d, float loadFactor) 
-            : this(d, loadFactor, (IEqualityComparer)null) {
-        }
 
-        [Obsolete("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
-        public Hashtable(IDictionary d, IHashCodeProvider hcp, IComparer comparer) 
-            : this(d, 1.0f, hcp, comparer)  {
-        }
-
-        public Hashtable(IDictionary d, IEqualityComparer equalityComparer) 
-            : this(d, 1.0f, equalityComparer)    {
-        }
-
-        [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
-        public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider hcp, IComparer comparer) 
-            : this((d != null ? d.Count : 0), loadFactor, hcp, comparer) {
-            if (d==null)
-                throw new ArgumentNullException(nameof(d), Environment.GetResourceString("ArgumentNull_Dictionary"));
-            Contract.EndContractBlock();
- 
-            IDictionaryEnumerator e = d.GetEnumerator();
-            while (e.MoveNext()) Add(e.Key, e.Value);
-        }
-        
-        public Hashtable(IDictionary d, float loadFactor, IEqualityComparer equalityComparer) 
-            : this((d != null ? d.Count : 0), loadFactor, equalityComparer) {
-            if (d==null)
-                throw new ArgumentNullException(nameof(d), Environment.GetResourceString("ArgumentNull_Dictionary"));
-            Contract.EndContractBlock();
-            
-            IDictionaryEnumerator e = d.GetEnumerator();
-            while (e.MoveNext()) Add(e.Key, e.Value);
-        }        
-        
-        protected Hashtable(SerializationInfo info, StreamingContext context) {
-            //We can't do anything with the keys and values until the entire graph has been deserialized
-            //and we have a reasonable estimate that GetHashCode is not going to fail.  For the time being,
-            //we'll just cache this.  The graph is not valid until OnDeserialization has been called.
-            HashHelpers.SerializationInfoTable.Add(this, info);
-        }
-
-        // ‘InitHash’ is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)  
+        // InitHash is basically an implementation of classic DoubleHashing (see http://en.wikipedia.org/wiki/Double_hashing)  
         //
-        // 1) The only ‘correctness’ requirement is that the ‘increment’ used to probe 
+        // 1) The only correctness requirement is that the increment used to probe 
         //    a. Be non-zero
-        //    b. Be relatively prime to the table size ‘hashSize’. (This is needed to insure you probe all entries in the table before you ‘wrap’ and visit entries already probed)
+        //    b. Be relatively prime to the table size hashSize. (This is needed to insure you probe all entries in the table before you wrap and visit entries already probed)
         // 2) Because we choose table sizes to be primes, we just need to insure that the increment is 0 < incr < hashSize
         //
         // Thus this function would work: Incr = 1 + (seed % (hashSize-1))
         // 
-        // While this works well for ‘uniformly distributed’ keys, in practice, non-uniformity is common. 
-        // In particular in practice we can see ‘mostly sequential’ where you get long clusters of keys that ‘pack’. 
-        // To avoid bad behavior you want it to be the case that the increment is ‘large’ even for ‘small’ values (because small 
-        // values tend to happen more in practice). Thus we multiply ‘seed’ by a number that will make these small values
-        // bigger (and not hurt large values). We picked HashPrime (101) because it was prime, and if ‘hashSize-1’ is not a multiple of HashPrime
+        // While this works well for uniformly distributed keys, in practice, non-uniformity is common.   
+        // In particular in practice we can see mostly sequential where you get long clusters of keys that pack. 
+        // To avoid bad behavior you want it to be the case that the increment is large even for small values (because small 
+        // values tend to happen more in practice). Thus we multiply seed by a number that will make these small values
+        // bigger (and not hurt large values). We picked HashPrime (101) because it was prime, and if hashSize-1 is not a multiple of HashPrime
         // (enforced in GetPrime), then incr has the potential of being every value from 1 to hashSize-1. The choice was largely arbitrary.
         // 
         // Computes the hash function:  H(key, i) = h1(key) + i*h2(key, hashSize).
@@ -517,29 +353,6 @@ namespace System.Collections {
             } while (b.hash_coll < 0 && ++ntry < lbuckets.Length);
             return false;
         }
-
-        // Checks if this hashtable contains an entry with the given value. The
-        // values of the entries of the hashtable are compared to the given value
-        // using the Object.Equals method. This method performs a linear
-        // search and is thus be substantially slower than the ContainsKey
-        // method.
-        // 
-        public virtual bool ContainsValue(Object value) {
-
-            if (value == null) {
-                for (int i = buckets.Length; --i >= 0;) {
-                    if (buckets[i].key != null && buckets[i].key != buckets && buckets[i].val == null)
-                        return true;
-                }
-            }
-            else {
-                for (int i = buckets.Length; --i >= 0;) {
-                  Object val = buckets[i].val;
-                  if (val!=null && val.Equals(value)) return true;
-                }
-            }
-            return false;
-        }
     
         // Copies the keys of this hashtable to a given array starting at a given
         // index. This method is used by the implementation of the CopyTo method in
@@ -588,25 +401,6 @@ namespace System.Collections {
                 throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
             Contract.EndContractBlock();
             CopyEntries(array, arrayIndex);
-        }
-
-        // Copies the values in this Hashtable to an KeyValuePairs array.
-        // KeyValuePairs is different from Dictionary Entry in that it has special
-        // debugger attributes on its fields.
-        
-        internal virtual KeyValuePairs[] ToKeyValuePairsArray() {
-
-            KeyValuePairs[] array = new KeyValuePairs[count];           
-            int index = 0;            
-            bucket[] lbuckets = buckets;
-            for (int i = lbuckets.Length; --i >= 0;) {
-                Object keyv = lbuckets[i].key;
-                if ((keyv != null) && (keyv != buckets)){
-                    array[index++] = new KeyValuePairs(keyv,lbuckets[i].val);
-                }
-            }
-            
-            return array;
         }
 
 
@@ -1293,13 +1087,6 @@ namespace System.Collections {
             internal SyncHashtable(Hashtable table) : base(false) {
                 _table = table;
             }
-
-            internal SyncHashtable(SerializationInfo info, StreamingContext context) : base (info, context) {
-                _table = (Hashtable)info.GetValue("ParentTable", typeof(Hashtable));
-                if (_table==null) {
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
-                }
-            }
     
 
             /*================================GetObjectData=================================
@@ -1379,12 +1166,6 @@ namespace System.Collections {
                 return _table.ContainsKey(key);
             }
     
-            public override bool ContainsValue(Object key) {
-                lock(_table.SyncRoot) {                
-                    return _table.ContainsValue(key);
-                }
-            }
-    
             public override void CopyTo(Array array, int arrayIndex) {
                 lock (_table.SyncRoot) {
                     _table.CopyTo(array, arrayIndex);
@@ -1437,10 +1218,6 @@ namespace System.Collections {
             ==============================================================================*/
             public override void OnDeserialization(Object sender) {
                 return;
-            }
-
-            internal override KeyValuePairs[] ToKeyValuePairsArray() {
-                return _table.ToKeyValuePairsArray();
             }
             
         }
@@ -1539,23 +1316,6 @@ namespace System.Collections {
         // internal debug view class for hashtable
         internal class HashtableDebugView {
             private Hashtable hashtable; 
-        
-            public HashtableDebugView( Hashtable hashtable) {
-                if( hashtable == null) {
-                    throw new ArgumentNullException(nameof(hashtable));
-                }
-                Contract.EndContractBlock();
-
-                this.hashtable = hashtable;
-            }
-
-
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items { 
-                get {
-                    return hashtable.ToKeyValuePairsArray();               
-                }
-            }
         }        
     }
 
@@ -1644,11 +1404,6 @@ namespace System.Collections {
             return min;
         }
 
-        public static int GetMinPrime() 
-        {
-            return primes[0];
-        }
-
         // Returns size of hashtable to grow to.
         public static int ExpandPrime(int oldSize)
         {
@@ -1670,33 +1425,6 @@ namespace System.Collections {
         public const int MaxPrimeArrayLength = 0x7FEFFFFD;
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
-        public static bool IsWellKnownEqualityComparer(object comparer)
-        {
-            return (comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer); 
-        }
-
-        public static IEqualityComparer GetRandomizedEqualityComparer(object comparer)
-        {
-            Debug.Assert(comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer); 
-
-            if(comparer == null) {
-                return new System.Collections.Generic.RandomizedObjectEqualityComparer();
-            } 
-
-            if(comparer == System.Collections.Generic.EqualityComparer<string>.Default) {
-                return new System.Collections.Generic.RandomizedStringEqualityComparer();
-            }
-
-            IWellKnownStringEqualityComparer cmp = comparer as IWellKnownStringEqualityComparer;
-
-            if(cmp != null) {
-                return cmp.GetRandomizedEqualityComparer();
-            }
-
-            Debug.Assert(false, "Missing case in GetRandomizedEqualityComparer!");
-
-            return null;
-        }
 
         public static object GetEqualityComparerForSerialization(object comparer)
         {
@@ -1716,33 +1444,8 @@ namespace System.Collections {
         }
 
         private const int bufferSize = 1024;
-        private static byte[] data;
         private static int currentIndex = bufferSize;
         private static readonly object lockObj = new Object();
-
-        internal static long GetEntropy() 
-        {
-            lock(lockObj) {
-                long ret;
-
-                if(currentIndex == bufferSize) 
-                {
-                    if(data == null)
-                    {
-                        data = new byte[bufferSize];
-                        Debug.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
-                    }
-
-                    Microsoft.Win32.Win32Native.Random(true, data, data.Length);
-                    currentIndex = 0;
-                }
-
-                ret = BitConverter.ToInt64(data, currentIndex);
-                currentIndex += 8;
-
-                return ret;
-            }
-        }
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
     }
 }

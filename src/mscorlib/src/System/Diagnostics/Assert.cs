@@ -36,14 +36,6 @@ namespace System.Diagnostics {
             }
         }
 
-        internal static void Check(bool condition, String conditionString, String message, int exitCode)
-        {
-            if (!condition)
-            {
-                Fail(conditionString, message, null, exitCode);
-            }
-        }
-
         internal static void Fail(String conditionString, String message)
         {
             Fail(conditionString, message, null, COR_E_FAILFAST);

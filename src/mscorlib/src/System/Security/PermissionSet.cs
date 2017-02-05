@@ -21,18 +21,8 @@ namespace System.Security {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [Serializable] 
-    internal enum SpecialPermissionSetFlag
-    {
-        // These also appear in clr/src/vm/permset.h
-        Regular = 0,
-        NoSet = 1,
-        EmptySet = 2,
-        SkipVerification = 3
-    }
-
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class PermissionSet : ISecurityEncodable, ICollection, IStackWalk
+    internal class PermissionSet : ICollection
     {
 #if _DEBUG
         internal static readonly bool debug;
@@ -44,22 +34,6 @@ namespace System.Security {
             if (debug) Console.WriteLine(str);
         #endif
          }
-
-        [System.Diagnostics.Conditional( "_DEBUG" )]
-        private static void DEBUG_COND_WRITE(bool exp, String str)
-        {
-        #if _DEBUG
-            if (debug && (exp)) Console.WriteLine(str);
-        #endif
-        }
-
-        [System.Diagnostics.Conditional( "_DEBUG" )]
-        private static void DEBUG_PRINTSTACK(Exception e)
-        {
-        #if _DEBUG
-            if (debug) Console.WriteLine((e).StackTrace);
-        #endif
-        }
     
         // These members are accessed from EE using their hardcoded offset.
         // Please update the PermissionSetObject in object.h if you make any changes 
@@ -185,13 +159,6 @@ namespace System.Security {
             {
                 array.SetValue(enumerator.Current , index++ );
             }
-        }
-        
-        
-        // private constructor that doesn't create any token based sets
-        private PermissionSet( Object trash, Object junk )
-        {
-            m_Unrestricted = false;
         }
            
         
@@ -500,12 +467,6 @@ namespace System.Security {
             return true;
         }
 
-        public bool IsSubsetOf(PermissionSet target)
-        {
-            IPermission perm;
-            return IsSubsetOfHelper(target, IsSubsetOfType.Normal, out perm, false);
-        }
-
         internal bool CheckDemand(PermissionSet target, out IPermission firstPermThatFailed)
         {
             return IsSubsetOfHelper(target, IsSubsetOfType.CheckDemand, out firstPermThatFailed, true);
@@ -702,97 +663,6 @@ namespace System.Security {
                 throw savedException;
         }
 
-        public PermissionSet Intersect(PermissionSet other)
-        {
-            if (other == null || other.FastIsEmpty() || this.FastIsEmpty())
-            {
-                return null;
-            }
-
-            int thisMax = this.m_permSet == null ? -1 : this.m_permSet.GetMaxUsedIndex();
-            int otherMax = other.m_permSet == null ? -1 : other.m_permSet.GetMaxUsedIndex();
-            int minMax = thisMax < otherMax ? thisMax : otherMax;
-
-            if (this.IsUnrestricted() && minMax < otherMax)
-            {
-                minMax = otherMax;
-                this.CheckSet();
-            }
-
-            if (other.IsUnrestricted() && minMax < thisMax)
-            {
-                minMax = thisMax;
-                other.CheckSet();
-            }
-
-            PermissionSet pset = new PermissionSet( false );
-
-            if (minMax > -1)
-            {
-                pset.m_permSet = new TokenBasedSet();
-            }
-
-            for (int i = 0; i <= minMax; ++i)
-            {
-                Object thisObj = this.m_permSet.GetItem( i );
-                IPermission thisPerm = thisObj as IPermission;
-                Object otherObj = other.m_permSet.GetItem( i );
-                IPermission otherPerm = otherObj as IPermission;
-
-                if (thisObj == null && otherObj == null)
-                    continue;
-
-                if (thisObj == null)
-                {
-                    if (this.m_Unrestricted)
-                    {
-                        if (otherPerm != null)
-                        {
-                            PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
-                            if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
-                            {
-                                pset.m_permSet.SetItem( i, otherPerm.Copy() );
-                                Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                            }
-                        }
-                    }
-                }
-                else if (otherObj == null)
-                {
-                    if (other.m_Unrestricted)
-                    {
-                        if (thisPerm != null)
-                        {
-                            PermissionToken token = (PermissionToken)PermissionToken.s_tokenSet.GetItem( i );
-                            if ((token.m_type & PermissionTokenType.IUnrestricted) != 0)
-                            {
-                                pset.m_permSet.SetItem( i, thisPerm.Copy() );
-                                Debug.Assert( PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    IPermission intersectPerm;
-                    if (thisPerm == null)
-                        intersectPerm = otherPerm;
-                    else if(otherPerm == null)
-                        intersectPerm = thisPerm;
-                    else
-                        intersectPerm = thisPerm.Intersect( otherPerm );
-                    pset.m_permSet.SetItem( i, intersectPerm );
-                    Debug.Assert( intersectPerm == null || PermissionToken.s_tokenSet.GetItem( i ) != null, "PermissionToken should already be assigned" );
-                }
-            }
-
-            pset.m_Unrestricted = this.m_Unrestricted && other.m_Unrestricted;
-            if (pset.FastIsEmpty())
-                return null;
-            else
-                return pset;
-        }
-
         internal void InplaceUnion( PermissionSet other )
         {
             // Unions the "other" PermissionSet into this one.  It can be optimized to do less copies than
@@ -962,45 +832,6 @@ namespace System.Security {
             return pset;
         }
 
-        // Treating the current permission set as a grant set, and the input set as
-        // a set of permissions to be denied, try to cancel out as many permissions
-        // from both sets as possible. For a first cut, any granted permission that
-        // is a safe subset of the corresponding denied permission can result in
-        // that permission being removed from both sides.
-
-        internal void MergeDeniedSet(PermissionSet denied)
-        {
-            if (denied == null || denied.FastIsEmpty() || this.FastIsEmpty())
-                return;
-
-            m_CheckedForNonCas = false;
-
-            // Check for the unrestricted case: FastIsEmpty() will return false if the PSet is unrestricted, but has no items
-            if (this.m_permSet == null || denied.m_permSet == null)
-                return; //nothing can be removed
-
-            int maxIndex = denied.m_permSet.GetMaxUsedIndex() > this.m_permSet.GetMaxUsedIndex() ? this.m_permSet.GetMaxUsedIndex() : denied.m_permSet.GetMaxUsedIndex();
-            for (int i = 0; i <= maxIndex; ++i) {
-                IPermission deniedPerm = denied.m_permSet.GetItem(i) as IPermission;
-                if (deniedPerm == null)
-                    continue;
-
-                IPermission thisPerm = this.m_permSet.GetItem(i) as IPermission;
-
-                if (thisPerm == null && !this.m_Unrestricted) {
-                    denied.m_permSet.SetItem(i, null);
-                    continue;
-                }
-
-                if (thisPerm != null && deniedPerm != null) {
-                    if (thisPerm.IsSubsetOf(deniedPerm)) {
-                        this.m_permSet.SetItem(i, null);
-                        denied.m_permSet.SetItem(i, null);
-                    }
-                }
-            }
-        }
-
         // Returns true if perm is contained in this
         internal bool Contains(IPermission perm)
         {
@@ -1152,29 +983,6 @@ namespace System.Security {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             SecurityRuntime.Assert(this, ref stackMark);
         }
-    
-        // Metadata for this method should be flaged with REQ_SQ so that
-        // EE can allocate space on the stack frame for FrameSecurityDescriptor
-    
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public void Deny()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.Deny(this, ref stackMark);
-        }
-    
-        // Metadata for this method should be flaged with REQ_SQ so that
-        // EE can allocate space on the stack frame for FrameSecurityDescriptor
-    
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public void PermitOnly()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.PermitOnly(this, ref stackMark);
-        }
 
         internal IPermission GetFirstPerm()
         {
@@ -1187,13 +995,6 @@ namespace System.Security {
         // Returns a deep copy
         public virtual PermissionSet Copy()
         {
-            return new PermissionSet(this);
-        }
-
-        internal PermissionSet CopyWithNoIdentityPermissions()
-        {
-            // Explicitly make a new PermissionSet, rather than copying, since we may have a
-            // ReadOnlyPermissionSet which cannot have identity permissions removed from it in a true copy.
             return new PermissionSet(this);
         }
 
@@ -1210,32 +1011,6 @@ namespace System.Security {
         internal PermissionSetEnumeratorInternal GetEnumeratorInternal()
         {
             return new PermissionSetEnumeratorInternal(this);
-        }
-
-        private void NormalizePermissionSet()
-        {
-            // This function guarantees that all the permissions are placed at
-            // the proper index within the token based sets.  This becomes necessary
-            // since these indices are dynamically allocated based on usage order.
-        
-            PermissionSet permSetTemp = new PermissionSet(false);
-            
-            permSetTemp.m_Unrestricted = this.m_Unrestricted;
-
-            // Move all the normal permissions to the new permission set
-
-            if (this.m_permSet != null)
-            {
-                for (int i = m_permSet.GetStartingIndex(); i <= this.m_permSet.GetMaxUsedIndex(); ++i)
-                {
-                    Object obj = this.m_permSet.GetItem(i);
-                    IPermission perm = obj as IPermission;
-                    if (perm != null)
-                        permSetTemp.SetPermission( perm );
-                }
-            }
-    
-            this.m_permSet = permSetTemp.m_permSet;
         }
 
         private void DecodeAllPermissions()
@@ -1449,70 +1224,6 @@ namespace System.Security {
             return null;
         }
 
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static void RevertAssert()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.RevertAssert(ref stackMark);
-        }
-
-        internal static PermissionSet RemoveRefusedPermissionSet(PermissionSet assertSet, PermissionSet refusedSet, out bool bFailedToCompress)
-        {
-            Debug.Assert((assertSet == null || !assertSet.IsUnrestricted()), "Cannot be unrestricted here");
-            PermissionSet retPs = null;
-            bFailedToCompress = false;
-            if (assertSet == null)
-                return null;
-            if (refusedSet != null)
-            {
-                if (refusedSet.IsUnrestricted())
-                    return null; // we're refusing everything...cannot assert anything now.
-
-                PermissionSetEnumeratorInternal enumerator = new PermissionSetEnumeratorInternal(refusedSet);
-                while (enumerator.MoveNext())
-                {
-                    CodeAccessPermission refusedPerm = (CodeAccessPermission)enumerator.Current;
-                    int i = enumerator.GetCurrentIndex();
-                    if (refusedPerm != null)
-                    {
-                        CodeAccessPermission perm
-                            = (CodeAccessPermission)assertSet.GetPermission(i);
-                        try
-                        {
-                            if (refusedPerm.Intersect(perm) != null)
-                            {
-                                if (refusedPerm.Equals(perm))
-                                {
-                                    if (retPs == null)
-                                        retPs = assertSet.Copy();
-                
-                                    retPs.RemovePermission(i);
-                                }
-                                else
-                                {
-                                    // Asserting a permission, part of which is already denied/refused
-                                    // cannot compress this assert
-                                    bFailedToCompress = true;
-                                    return assertSet;
-                                }
-                            }
-                        }
-                        catch (ArgumentException)
-                        {
-                            // Any exception during removing a refused set from assert set => we play it safe and not assert that perm
-                            if (retPs == null)
-                                retPs = assertSet.Copy();
-                            retPs.RemovePermission(i);
-                        }
-                    }
-                }
-            }
-            if (retPs != null)
-                return retPs;
-            return assertSet;
-        }  
-
         internal static void RemoveAssertedPermissionSet(PermissionSet demandSet, PermissionSet assertSet, out PermissionSet alteredDemandSet)
         {
             Debug.Assert(!assertSet.IsUnrestricted(), "Cannot call this function if assertSet is unrestricted");
@@ -1543,46 +1254,6 @@ namespace System.Security {
                 }
             }
             return;
-        }
-
-        internal static bool IsIntersectingAssertedPermissions(PermissionSet assertSet1, PermissionSet assertSet2)
-        {
-            bool isIntersecting = false;
-            if (assertSet1 != null && assertSet2 != null)
-            {
-                PermissionSetEnumeratorInternal enumerator = new PermissionSetEnumeratorInternal(assertSet2);
-                while (enumerator.MoveNext())
-                {
-                    CodeAccessPermission perm2 = (CodeAccessPermission)enumerator.Current;
-                    int i = enumerator.GetCurrentIndex();
-                    if (perm2 != null)
-                    {
-                        CodeAccessPermission perm1
-                            = (CodeAccessPermission)assertSet1.GetPermission(i);
-                        try
-                        {
-                            if (perm1 != null && !perm1.Equals(perm2))
-                            {
-                                isIntersecting = true; // Same type of permission, but with different flags or something - cannot union them
-                            }
-                        }
-                        catch (ArgumentException)
-                        {
-                            isIntersecting = true; //assume worst case
-                        }
-                    }
-                }
-            }
-            return isIntersecting;
-            
-        }
-
-        // This is a workaround so that SQL can operate under default policy without actually
-        // granting permissions in assemblies that they disallow. 
-
-        internal bool IgnoreTypeLoadFailures
-        {
-            set { m_ignoreTypeLoadFailures = value; }
         }
     }
 }

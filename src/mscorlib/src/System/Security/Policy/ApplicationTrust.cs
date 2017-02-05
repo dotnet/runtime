@@ -21,14 +21,8 @@ namespace System.Security.Policy
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public enum ApplicationVersionMatch {
-        MatchExactVersion,
-        MatchAllVersions
-    }
-
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public sealed class ApplicationTrust : EvidenceBase, ISecurityEncodable
+    internal sealed class ApplicationTrust : EvidenceBase 
     {
         private PolicyStatement m_psDefaultGrant;
         private IList<StrongName> m_fullTrustAssemblies;
@@ -56,25 +50,6 @@ namespace System.Security.Policy
             InitDefaultGrantSet(defaultGrantSet);
 
             m_fullTrustAssemblies = new List<StrongName>().AsReadOnly();
-        }
-
-        public ApplicationTrust(PermissionSet defaultGrantSet, IEnumerable<StrongName> fullTrustAssemblies) {
-            if (fullTrustAssemblies == null) {
-                throw new ArgumentNullException(nameof(fullTrustAssemblies));
-            }
-
-            InitDefaultGrantSet(defaultGrantSet);
-
-            List<StrongName> fullTrustList = new List<StrongName>();
-            foreach (StrongName strongName in fullTrustAssemblies) {
-                if (strongName == null) {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NullFullTrustAssembly"), nameof(fullTrustAssemblies));
-                }
-
-                fullTrustList.Add(new StrongName(strongName.PublicKey, strongName.Name, strongName.Version));
-            }
-
-            m_fullTrustAssemblies = fullTrustList.AsReadOnly();
         }
 
         // Sets up the default grant set for all constructors. Extracted to avoid the cost of
@@ -106,17 +81,6 @@ namespace System.Security.Policy
                     m_grantSetSpecialFlags = SecurityManager.GetSpecialFlags(m_psDefaultGrant.PermissionSet, null);
                 }
             }
-        }
-
-        public IList<StrongName> FullTrustAssemblies {
-            get {
-                return m_fullTrustAssemblies;
-            }
-        }
-
-        public override EvidenceBase Clone()
-        {
-            return base.Clone();
         }
     }
 }

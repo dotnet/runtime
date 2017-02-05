@@ -15,10 +15,10 @@
 
 namespace System.Security.AccessControl
 {
-    public class EventWaitHandleSecurity
+    internal class EventWaitHandleSecurity
     {
     }
-    public enum EventWaitHandleRights
+    internal enum EventWaitHandleRights
     {
     }
 }
@@ -89,7 +89,7 @@ namespace System.Threading
         {
         }
 
-        public unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
+        internal unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
         {
             if(name != null)
             {
@@ -146,7 +146,7 @@ namespace System.Threading
             return OpenExisting(name, (EventWaitHandleRights)0);
         }
 
-        public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
+        internal static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
         {
             EventWaitHandle result;
             switch (OpenExistingWorker(name, rights, out result))
@@ -169,11 +169,6 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, out EventWaitHandle result)
         {
             return OpenExistingWorker(name, (EventWaitHandleRights)0, out result) == OpenExistingResult.Success;
-        }
-
-        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle result)
-        {
-            return OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
         }
 
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle result)

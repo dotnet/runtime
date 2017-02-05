@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles {
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
 
-    public sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid {
+    internal sealed class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid {
         internal SafeRegistryHandle() : base(true) {}
 
         public SafeRegistryHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle) {

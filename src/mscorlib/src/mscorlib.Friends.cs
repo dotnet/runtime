@@ -10,14 +10,8 @@ using System.Runtime.CompilerServices;
 // AssemblyAttributes.cspp model for the other build types at a future point in time.
 
 // Depends on things like SuppressUnmanagedCodeAttribute and WindowsRuntimeImportAttribute
-[assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime, PublicKey=" + _InternalsVisibleToKeys.EcmaPublicKeyFull, AllInternalsVisible=false)]
+[assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime, PublicKey=00000000000000000400000000000000", AllInternalsVisible=false)]
 
 // Depends on WindowsRuntimeImportAttribute
-[assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime.UI.Xaml, PublicKey=" + _InternalsVisibleToKeys.EcmaPublicKeyFull, AllInternalsVisible=false)]
-
-internal class _InternalsVisibleToKeys
-{
-  // Token = b77a5c561934e089
-  internal const string EcmaPublicKeyFull = "00000000000000000400000000000000";
-}
+[assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime.UI.Xaml, PublicKey=00000000000000000400000000000000", AllInternalsVisible=false)]
 

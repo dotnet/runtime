@@ -14,18 +14,8 @@ namespace System.Security
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
 
-    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public enum PolicyLevelType
-    {
-        User = 0,
-        Machine = 1,
-        Enterprise = 2,
-        AppDomain = 3
-    }
-
-    [System.Runtime.InteropServices.ComVisible(true)]
-    static public class SecurityManager
+    static internal class SecurityManager
     {
         private static int[][] s_BuiltInPermissionIndexMap = {
             new int[] { BuiltInPermissionIndex.EnvironmentPermissionIndex, (int) PermissionType.EnvironmentPermission },
@@ -149,9 +139,5 @@ namespace System.Security
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool _SetThreadSecurity(bool bThreadSecurity);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern void GetGrantedPermissions(ObjectHandleOnStack retGranted, ObjectHandleOnStack retDenied, StackCrawlMarkHandle stackMark);
     }
 }

@@ -198,10 +198,6 @@ namespace System.Resources {
             // Unaligned, little endian format
             return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
         }
-
-        private void SkipInt32() {
-            _store.BaseStream.Seek(4, SeekOrigin.Current);
-        }
             
 
         private void SkipString() {

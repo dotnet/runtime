@@ -221,83 +221,6 @@ namespace System.Threading
 
         volatile int m_pauseTicks = 0; // Time when Pause was called
 
-        internal void Pause()
-        {
-            lock(this)
-            {
-                // Delete the native timer so that no timers are fired in the Pause zone
-                if(m_appDomainTimer != null && !m_appDomainTimer.IsInvalid)
-                {
-                    m_appDomainTimer.Dispose();
-                    m_appDomainTimer = null;
-                    m_isAppDomainTimerScheduled = false;
-                    m_pauseTicks = TickCount;
-                }
-            }
-        }
-
-        internal void Resume()
-        {
-            //
-            // Update timers to adjust their due-time to accomodate Pause/Resume
-            //
-            lock (this)
-            {
-                // prevent ThreadAbort while updating state
-                try { }
-                finally
-                {
-                    int pauseTicks = m_pauseTicks;
-                    m_pauseTicks = 0; // Set this to 0 so that now timers can be scheduled
-
-                    int resumedTicks = TickCount;
-                    int pauseDuration = resumedTicks - pauseTicks;
-
-                    bool haveTimerToSchedule = false;
-                    uint nextAppDomainTimerDuration = uint.MaxValue;      
-            
-                    TimerQueueTimer timer = m_timers;
-                    while (timer != null)
-                    {
-                        Debug.Assert(timer.m_dueTime != Timeout.UnsignedInfinite);
-                        Debug.Assert(resumedTicks >= timer.m_startTicks);
-
-                        uint elapsed; // How much of the timer dueTime has already elapsed
-
-                        // Timers started before the paused event has to be sufficiently delayed to accomodate 
-                        // for the Pause time. However, timers started after the Paused event shouldnt be adjusted. 
-                        // E.g. ones created by the app in its Activated event should fire when it was designated.
-                        // The Resumed event which is where this routine is executing is after this Activated and hence 
-                        // shouldn't delay this timer
-
-                        if(timer.m_startTicks <= pauseTicks)
-                            elapsed = (uint)(pauseTicks - timer.m_startTicks);
-                        else
-                            elapsed = (uint)(resumedTicks - timer.m_startTicks);
-
-                        // Handling the corner cases where a Timer was already due by the time Resume is happening,
-                        // We shouldn't delay those timers. 
-                        // Example is a timer started in App's Activated event with a very small duration
-                        timer.m_dueTime = (timer.m_dueTime > elapsed) ? timer.m_dueTime - elapsed : 0;;
-                        timer.m_startTicks = resumedTicks; // re-baseline
-
-                        if (timer.m_dueTime < nextAppDomainTimerDuration)
-                        {
-                            haveTimerToSchedule = true;
-                            nextAppDomainTimerDuration = timer.m_dueTime;
-                        }
-
-                        timer = timer.m_next;
-                    }
-                    
-                    if (haveTimerToSchedule)
-                    {
-                        EnsureAppDomainTimerFiresBy(nextAppDomainTimerDuration);
-                    }
-                }
-            }
-        }
-
 
         //
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
@@ -854,16 +777,6 @@ namespace System.Threading
             Contract.EndContractBlock();
 
             m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, ref stackMark));
-        }
-
-        internal static void Pause()
-        {
-            TimerQueue.Instance.Pause();
-        }
-
-        internal static void Resume()
-        {
-            TimerQueue.Instance.Resume();
         }
      
         public bool Change(int dueTime, int period)

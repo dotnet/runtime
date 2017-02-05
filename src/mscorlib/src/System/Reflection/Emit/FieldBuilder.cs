@@ -68,8 +68,6 @@ namespace System.Reflection.Emit
         {
             ModuleBuilder.SetFieldRVAContent(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), m_tkField.Token, data, size);
         }
-
-        internal TypeBuilder GetTypeBuilder() { return m_typeBuilder; }
         #endregion
 
         #region MemberInfo Overrides
@@ -180,20 +178,6 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();     
    
             TypeBuilder.SetFieldLayoutOffset(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, iOffset);
-        }
-
-        [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public void SetMarshal(UnmanagedMarshal unmanagedMarshal)
-        {
-            if (unmanagedMarshal == null)
-                throw new ArgumentNullException(nameof(unmanagedMarshal));
-            Contract.EndContractBlock();
-
-            m_typeBuilder.ThrowIfCreated();
-
-            byte[] ubMarshal = unmanagedMarshal.InternalGetBytes();
-
-            TypeBuilder.SetFieldMarshal(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, ubMarshal, ubMarshal.Length);
         }
 
         public void SetConstant(Object defaultValue) 

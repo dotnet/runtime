@@ -45,52 +45,6 @@ namespace System.Runtime.InteropServices {
                 get { return _d; }
                 set { _d = value; }
             }
-
-            public object Invoke(object[] args) {
-                if (_d == null)
-                    return null;
-
-                if (_once == false) {
-                    PreProcessSignature();
-                    _once = true;
-                }
-
-                if (_cachedTargetTypes != null && _expectedParamsCount == args.Length) {
-                    for (int i = 0; i < _expectedParamsCount; i++) {
-                        if (_cachedTargetTypes[i] != null) {
-                            args[i] = Enum.ToObject(_cachedTargetTypes[i], args[i]);
-                        }
-                    }
-                }
-
-                return _d.DynamicInvoke(args);
-            }
-
-            private void PreProcessSignature() {
-                ParameterInfo[] parameters = _d.Method.GetParameters();
-                _expectedParamsCount = parameters.Length;
-
-                Type[] enumTypes = new Type[_expectedParamsCount];
-
-                bool needToHandleCoercion = false;
-
-                for (int i = 0; i < _expectedParamsCount; i++) {
-                    ParameterInfo pi = parameters[i];
-                    // recognize only 'ref Enum' signatures and cache
-                    // both enum type and the underlying type.
-                    if (pi.ParameterType.IsByRef && 
-                        pi.ParameterType.HasElementType && 
-                        pi.ParameterType.GetElementType().IsEnum) {
-
-                        needToHandleCoercion = true;
-                        enumTypes[i] = pi.ParameterType.GetElementType();
-                    }
-                }
-
-                if (needToHandleCoercion == true) {
-                    _cachedTargetTypes = enumTypes;
-                }
-            }
         }
 
         #region private fields
@@ -145,15 +99,9 @@ namespace System.Runtime.InteropServices {
 
             return methods;
         }
- 
-        #endregion
 
-        
-        #region public properties / methods
-
-        internal int DispId {
-            get { return _dispid; }
-        }
+#endregion
+#region public properties / methods
 
         internal bool Empty {
             get { return _delegateWrappers == null || _delegateWrappers.Length == 0; }
@@ -223,22 +171,6 @@ namespace System.Runtime.InteropServices {
             }
 
             _delegateWrappers = newDelegateWrappers;
-        }
-
-        internal object Invoke(object[] args) {
-            BCLDebug.Assert(Empty == false, "event sink is executed but delegates list is empty");
-
-            // Issue: see code:ComEventsHelper#ComEventsRetValIssue
-            object result = null;
-            DelegateWrapper[] invocationList = _delegateWrappers;
-            foreach (DelegateWrapper wrapper in invocationList) {
-                if (wrapper == null || wrapper.Delegate == null)
-                    continue;
-
-                result = wrapper.Invoke(args);
-            }
-
-            return result;
         }
 
         #endregion

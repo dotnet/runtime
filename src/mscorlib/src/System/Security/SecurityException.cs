@@ -63,13 +63,6 @@ namespace System.Security
             SetErrorCode(System.__HResults.COR_E_SECURITY);
         }
 
-        internal SecurityException(PermissionSet grantedSetObj, PermissionSet refusedSetObj)
-            : this(){}
-#pragma warning disable 618
-        internal SecurityException(string message, AssemblyName assemblyName, PermissionSet grant, PermissionSet refused, MethodInfo method, SecurityAction action, Object demanded, IPermission permThatFailed, Evidence evidence)
-#pragma warning restore 618
-                    : this(){}
-
         internal SecurityException(string message, Object deny, Object permitOnly, MethodInfo method, Object demanded, IPermission permThatFailed)
                     : this(){}
 
@@ -83,22 +76,6 @@ namespace System.Security
         public override String ToString()
         {
             return base.ToString();
-        }
-
-        private bool CanAccessSensitiveInfo()
-        {
-            bool retVal = false;
-            try
-            {
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.ControlEvidence | SecurityPermissionFlag.ControlPolicy).Demand();
-#pragma warning restore 618
-                retVal = true;
-            }
-            catch (SecurityException)
-            {
-            }
-            return retVal;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

@@ -41,18 +41,6 @@ namespace System.Security {
         private bool                m_assertAllPossible;
 #pragma warning disable 169 
         private bool                m_declSecComputed; // set from the VM to indicate that the declarative A/PO/D on this frame has been populated
-#pragma warning restore 169
-
- 
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void IncrementOverridesCount();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void DecrementOverridesCount();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void IncrementAssertCount();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void DecrementAssertCount();
 
 
         // Default constructor.
@@ -60,165 +48,26 @@ namespace System.Security {
         {
             //m_flags = 0;
         }
-        //-----------------------------------------------------------+
-        // H E L P E R
-        //-----------------------------------------------------------+
-        
-        private PermissionSet CreateSingletonSet(IPermission perm)
-        {
-            PermissionSet permSet = new PermissionSet(false);
-            permSet.AddPermission(perm.Copy());
-            return permSet;
-        }
-    
-        //-----------------------------------------------------------+
-        // A S S E R T
-        //-----------------------------------------------------------+
-
-        internal bool HasImperativeAsserts() 
-        {
-            // we store declarative actions in both fields, so check if they are different
-            return (m_assertions != null);
-        }
-        internal bool HasImperativeDenials() 
-        {
-            // we store declarative actions in both fields, so check if they are different
-            return (m_denials != null);
-        }
-        internal bool HasImperativeRestrictions() 
-        {
-            // we store declarative actions in both fields, so check if they are different
-            return (m_restriction != null);
-        }
-        internal void SetAssert(IPermission perm)
-        {            
-            m_assertions = CreateSingletonSet(perm);
-            IncrementAssertCount();
-        }
-        
-        internal void SetAssert(PermissionSet permSet)
-        {            
-            m_assertions = permSet.Copy();
-            m_AssertFT = m_AssertFT || m_assertions.IsUnrestricted();
-            IncrementAssertCount();
-        }
         
         internal PermissionSet GetAssertions(bool fDeclarative)
         {
             return (fDeclarative) ? m_DeclarativeAssertions : m_assertions;
         }
 
-        internal void SetAssertAllPossible()
-        {
-            m_assertAllPossible = true;
-            IncrementAssertCount();
-        }
-
         internal bool GetAssertAllPossible()
         {
             return m_assertAllPossible;
-        }
-        
-        //-----------------------------------------------------------+
-        // D E N Y
-        //-----------------------------------------------------------+
-    
-        internal void SetDeny(IPermission perm)
-        {
-            m_denials = CreateSingletonSet(perm);
-            IncrementOverridesCount();
-        }
-        
-        internal void SetDeny(PermissionSet permSet)
-        {
-            m_denials = permSet.Copy();
-            IncrementOverridesCount();
         }
     
         internal PermissionSet GetDenials(bool fDeclarative)
         {
             return (fDeclarative) ? m_DeclarativeDenials: m_denials;
         }
-
-        //-----------------------------------------------------------+
-        // R E S T R I C T
-        //-----------------------------------------------------------+
-    
-        internal void SetPermitOnly(IPermission perm)
-        {
-            m_restriction  = CreateSingletonSet(perm);
-            IncrementOverridesCount();
-        }
-        
-        internal void SetPermitOnly(PermissionSet permSet)
-        {
-            // permSet must not be null
-            m_restriction  = permSet.Copy();
-            IncrementOverridesCount();
-        }
         
         internal PermissionSet GetPermitOnly(bool fDeclarative)
         {
             
             return (fDeclarative) ? m_DeclarativeRestrictions : m_restriction;
-        }
-
-        //-----------------------------------------------------------+
-        // R E V E R T
-        //-----------------------------------------------------------+
-    
-        internal void RevertAssert()
-        {
-            if (m_assertions != null)
-            {
-                m_assertions = null;
-                DecrementAssertCount();
-            }
-
-
-            if (m_DeclarativeAssertions != null)
-            {
-                m_AssertFT = m_DeclarativeAssertions.IsUnrestricted();
-            }
-            else
-            {
-                m_AssertFT = false;
-            }
-        }
-        
-        internal void RevertAssertAllPossible()
-        {
-            if (m_assertAllPossible)
-            {
-            m_assertAllPossible = false;
-                DecrementAssertCount();
-            }
-        }
-
-        internal void RevertDeny()
-        {
-            if (HasImperativeDenials())
-            {
-                DecrementOverridesCount();
-                m_denials = null;
-            }
-        }
-        
-        internal void RevertPermitOnly()
-        {
-            if (HasImperativeRestrictions())
-            {
-                DecrementOverridesCount();
-                m_restriction= null;;
-            }
-        }
-
-        internal void RevertAll()
-        {
-            RevertAssert();
-            RevertAssertAllPossible();
-            RevertDeny();
-            RevertPermitOnly();
         }
 
 
