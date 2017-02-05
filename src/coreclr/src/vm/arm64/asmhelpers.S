@@ -93,8 +93,8 @@ LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
     #endif
 
     // If machine state is invalid, then simply exit
-    ldr x1, [x0, #MachState__isValid]
-    cmp x1, #0
+    ldr w1, [x0, #MachState__isValid]
+    cmp w1, #0
     beq LOCAL_LABEL(Done)
 
     RestoreRegMS 19, X19
