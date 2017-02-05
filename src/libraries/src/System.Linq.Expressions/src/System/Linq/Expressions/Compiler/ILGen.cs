@@ -305,42 +305,21 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Ldsflda, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldflda, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Ldsflda : OpCodes.Ldflda, fi);
         }
 
         internal static void EmitFieldGet(this ILGenerator il, FieldInfo fi)
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Ldsfld, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldfld, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Ldsfld : OpCodes.Ldfld, fi);
         }
 
         internal static void EmitFieldSet(this ILGenerator il, FieldInfo fi)
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Stsfld, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Stfld, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
@@ -924,14 +903,7 @@ namespace System.Linq.Expressions.Compiler
                             il.Emit(OpCodes.Conv_U4);
                             break;
                         case TypeCode.Int64:
-                            if (isFromUnsigned)
-                            {
-                                il.Emit(OpCodes.Conv_U8);
-                            }
-                            else
-                            {
-                                il.Emit(OpCodes.Conv_I8);
-                            }
+                            il.Emit(isFromUnsigned ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
                             break;
                         case TypeCode.UInt64:
                             if (isFromUnsigned || isFromFloatingPoint)
