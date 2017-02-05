@@ -154,10 +154,6 @@
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Win32 or Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot')">
-    <Compile Include="System\Environment.Win32.Unix.cs" />
-  </ItemGroup>
   <!-- WINDOWS: Win32 -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uapaot'">
     <Compile Include="System\Environment.Win32.cs" />
