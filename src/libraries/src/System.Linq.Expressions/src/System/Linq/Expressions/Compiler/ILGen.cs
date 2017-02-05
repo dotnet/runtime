@@ -1062,25 +1062,68 @@ namespace System.Linq.Expressions.Compiler
 
         #region Support for emitting constants
 
-        internal static void EmitDecimal(this ILGenerator il, decimal value)
+        private static void EmitDecimal(this ILGenerator il, decimal value)
         {
             int[] bits = decimal.GetBits(value);
             int scale = (bits[3] & int.MaxValue) >> 16;
             if (scale == 0)
             {
-                if (int.MinValue <= value && value <= int.MaxValue)
+                if (int.MinValue <= value)
                 {
-                    int intValue = decimal.ToInt32(value);
-                    il.EmitPrimitive(intValue);
-                    il.EmitNew(Decimal_Ctor_Int32);
-                    return;
+                    if (value <= int.MaxValue)
+                    {
+                        int intValue = decimal.ToInt32(value);
+                        switch (intValue)
+                        {
+                            case -1:
+                                il.Emit(OpCodes.Ldsfld, Decimal_MinusOne);
+                                return;
+                            case 0:
+                                il.EmitDefault(typeof(decimal));
+                                return;
+                            case 1:
+                                il.Emit(OpCodes.Ldsfld, Decimal_One);
+                                return;
+                            default:
+                                il.EmitPrimitive(intValue);
+                                il.EmitNew(Decimal_Ctor_Int32);
+                                return;
+                        }
+                    }
+
+                    if (value <= uint.MaxValue)
+                    {
+                        il.EmitPrimitive(decimal.ToUInt32(value));
+                        il.EmitNew(Decimal_Ctor_UInt32);
+                        return;
+                    }
                 }
 
-                if (long.MinValue <= value && value <= long.MaxValue)
+                if (long.MinValue <= value)
                 {
-                    long longValue = decimal.ToInt64(value);
-                    il.EmitPrimitive(longValue);
-                    il.EmitNew(Decimal_Ctor_Int64);
+                    if (value <= long.MaxValue)
+                    {
+                        il.EmitPrimitive(decimal.ToInt64(value));
+                        il.EmitNew(Decimal_Ctor_Int64);
+                        return;
+                    }
+
+                    if (value <= ulong.MaxValue)
+                    {
+                        il.EmitPrimitive(decimal.ToUInt64(value));
+                        il.EmitNew(Decimal_Ctor_UInt64);
+                        return;
+                    }
+
+                    if (value == decimal.MaxValue)
+                    {
+                        il.Emit(OpCodes.Ldsfld, Decimal_MaxValue);
+                        return;
+                    }
+                }
+                else if (value == decimal.MinValue)
+                {
+                    il.Emit(OpCodes.Ldsfld, Decimal_MinValue);
                     return;
                 }
             }

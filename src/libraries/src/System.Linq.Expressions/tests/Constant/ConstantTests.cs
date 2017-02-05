@@ -60,7 +60,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckDecimalConstantTest(bool useInterpreter)
         {
-            foreach (decimal value in new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue, int.MinValue, int.MaxValue, int.MinValue - 1L, int.MaxValue + 1L, long.MinValue, long.MaxValue })
+            foreach (decimal value in new decimal[] { decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue, int.MinValue, int.MaxValue, int.MinValue - 1L, int.MaxValue + 1L, long.MinValue, long.MaxValue, long.MaxValue + 1m, ulong.MaxValue, ulong.MaxValue + 1m })
             {
                 VerifyDecimalConstant(value, useInterpreter);
             }
