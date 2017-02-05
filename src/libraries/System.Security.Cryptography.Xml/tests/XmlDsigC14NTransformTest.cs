@@ -495,6 +495,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDsigExcC14NTransform t = new XmlDsigExcC14NTransform();
             t.LoadInput(doc);
             t.PropagatedNamespaces.Add("f", "urn:foo");
+            t.PropagatedNamespaces.Add("f", "urn:foo");
+            t.PropagatedNamespaces.Add("f", "urn:foo");
             t.PropagatedNamespaces.Add("b", "urn:bar");
             Stream s = t.GetOutput() as Stream;
             Assert.Equal(new StreamReader(s, Encoding.UTF8).ReadToEnd(), "<f:foo xmlns:f=\"urn:foo\"><b:bar xmlns:b=\"urn:bar\"></b:bar></f:foo>");
