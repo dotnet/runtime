@@ -1,5 +1,5 @@
 //
-// SignatureTest.cs - NUnit Test Cases for SignedXml
+// SignatureTest.cs - Test Cases for SignedXml
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>

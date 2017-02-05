@@ -1,5 +1,5 @@
 //
-// DSAKeyValueTest.cs - NUnit Test Cases for DSAKeyValue
+// DSAKeyValueTest.cs - Test Cases for DSAKeyValue
 //
 // Author:
 //	Sebastien Pouliot (spouliot@motus.com)

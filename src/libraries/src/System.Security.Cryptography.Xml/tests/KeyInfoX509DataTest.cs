@@ -1,5 +1,5 @@
 //
-// KeyInfoX509DataTest.cs - NUnit Test Cases for KeyInfoX509Data
+// KeyInfoX509DataTest.cs - Test Cases for KeyInfoX509Data
 //
 // Author:
 //	Sebastien Pouliot  <sebastien@ximian.com>

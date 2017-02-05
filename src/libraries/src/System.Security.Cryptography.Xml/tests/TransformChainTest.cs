@@ -1,5 +1,5 @@
 //
-// TransformChainTest.cs - NUnit Test Cases for TransformChain
+// TransformChainTest.cs - Test Cases for TransformChain
 //
 // Author:
 //	Sebastien Pouliot (spouliot@motus.com)

@@ -1,5 +1,5 @@
 //
-// KeyInfoRetrievalMethodTest.cs - NUnit Test Cases for KeyInfoRetrievalMethod
+// KeyInfoRetrievalMethodTest.cs - Test Cases for KeyInfoRetrievalMethod
 //
 // Author:
 //	Sebastien Pouliot  <sebastien@ximian.com>
