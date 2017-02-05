@@ -8,15 +8,9 @@
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //
 
-using System;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
-using System.Security.Cryptography.Xml.Tests;
 using System.Xml;
 
-using NUnit.Framework;
-
-namespace MonoTests.System.Security.Cryptography.Xml {
+namespace System.Security.Cryptography.Xml.Tests {
 
 	[TestFixture]
 	public class KeyInfoRetrievalMethodTest {

@@ -20,15 +20,11 @@
 //
 
 
-using System;
 using System.IO;
-using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
 
-using NUnit.Framework;
-
-namespace MonoTests.System.Security.Cryptography.Xml {
+namespace System.Security.Cryptography.Xml.Tests {
 
 	// Note: GetInnerXml is protected in XmlDsigExcC14NTransform making it
 	// difficult to test properly. This class "open it up" :-)

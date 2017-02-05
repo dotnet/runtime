@@ -8,18 +8,13 @@
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 //
 
-using System;
 using System.Globalization;
 using System.IO;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
 
-using NUnit.Framework;
-
-namespace MonoTests.System.Security.Cryptography.Xml {
+namespace System.Security.Cryptography.Xml.Tests {
 
 	public class SignedXmlEx : SignedXml {
 

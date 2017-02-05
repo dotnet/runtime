@@ -9,18 +9,12 @@
 // (C) 2004 Novell (http://www.novell.com)
 //
 
-using System;
 using System.Collections;
 using System.IO;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Xml;
-using System.Xml.Xsl;
 
-using NUnit.Framework;
-
-namespace MonoTests.System.Security.Cryptography.Xml {
+namespace System.Security.Cryptography.Xml.Tests {
 
 	// Note: GetInnerXml is protected in XmlDsigXsltTransform making it
 	// difficult to test properly. This class "open it up" :-)
