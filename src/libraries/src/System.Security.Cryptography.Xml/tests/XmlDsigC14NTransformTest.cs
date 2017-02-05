@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         protected UnprotectedXmlDsigC14NTransform transform;
 
-        protected XmlDsigC14NTransformTest()
+        public XmlDsigC14NTransformTest()
         {
             transform = new UnprotectedXmlDsigC14NTransform();
         }
