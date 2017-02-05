@@ -97,6 +97,23 @@ namespace Microsoft.DotNet.Build.Tasks
             targetsSection.Add(runtimeTarget, targetValue);
             newDepsJson.Add("libraries", libraryValue);
 
+            // Delete mscorlib.dll references comming from CoreCLR package. They do not exist anymore.
+            var mscorlibProperties = new List<JProperty>();
+            foreach (var item in newDepsJson.Descendants())
+            {
+                var property = item as JProperty;
+                if (property == null)
+                    continue;
+
+                var name = property.Name;
+                if (name.EndsWith("/lib/netstandard1.0/mscorlib.dll") || name.EndsWith("/native/mscorlib.ni.dll"))
+                    mscorlibProperties.Add(property);
+            }
+            foreach (var item in mscorlibProperties)
+            {
+                item.Remove();
+            }
+
             if (!string.IsNullOrEmpty(OutputPath))
             {
                 File.WriteAllText(OutputPath, newDepsJson.ToString());
