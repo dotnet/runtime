@@ -6084,13 +6084,6 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             return newTree;
         }
     }
-    else if (objRef != nullptr && objRef->OperGet() == GT_ADDR && objRef->OperIsSIMD())
-    {
-        // We have a field of an SIMD intrinsic in an address-taken context.
-        // We need to copy the SIMD result to a temp, and take the field of that.
-        GenTree* copy      = fgCopySIMDNode(objRef->gtOp.gtOp1->AsSIMD());
-        objRef->gtOp.gtOp1 = copy;
-    }
 #endif
 
     /* Is this an instance data member? */
@@ -10345,50 +10338,6 @@ GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
 }
 
 #ifdef FEATURE_SIMD
-
-//--------------------------------------------------------------------------------------
-// fgCopySIMDNode: make a copy of a SIMD intrinsic node, e.g. so that a field can be accessed.
-//
-// Arguments:
-//    simdNode  - The GenTreeSIMD node to be copied
-//
-// Return Value:
-//    A comma node where op1 is the assignment of the simd node to a temp, and op2 is the temp lclVar.
-//
-GenTree* Compiler::fgCopySIMDNode(GenTreeSIMD* simdNode)
-{
-    // Copy the result of the SIMD intrinsic into a temp.
-    unsigned lclNum = lvaGrabTemp(true DEBUGARG("Copy of SIMD intrinsic with field access"));
-
-    CORINFO_CLASS_HANDLE simdHandle = NO_CLASS_HANDLE;
-    // We only have fields of the fixed float vectors.
-    noway_assert(simdNode->gtSIMDBaseType == TYP_FLOAT);
-    switch (simdNode->gtSIMDSize)
-    {
-        case 8:
-            simdHandle = SIMDVector2Handle;
-            break;
-        case 12:
-            simdHandle = SIMDVector3Handle;
-            break;
-        case 16:
-            simdHandle = SIMDVector4Handle;
-            break;
-        default:
-            noway_assert(!"field of unexpected SIMD type");
-            break;
-    }
-    assert(simdHandle != NO_CLASS_HANDLE);
-
-    lvaSetStruct(lclNum, simdHandle, false, true);
-    lvaTable[lclNum].lvFieldAccessed = true;
-
-    GenTree* asg           = gtNewTempAssign(lclNum, simdNode);
-    GenTree* newLclVarNode = new (this, GT_LCL_VAR) GenTreeLclVar(simdNode->TypeGet(), lclNum, BAD_IL_OFFSET);
-
-    GenTree* comma = gtNewOperNode(GT_COMMA, simdNode->TypeGet(), asg, newLclVarNode);
-    return comma;
-}
 
 //--------------------------------------------------------------------------------------------------------------
 // getSIMDStructFromField:
