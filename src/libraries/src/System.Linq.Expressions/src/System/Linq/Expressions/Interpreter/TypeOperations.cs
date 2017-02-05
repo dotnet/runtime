@@ -84,14 +84,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
-            if (_type.IsInstanceOfType(value))
-            {
-                frame.Push(value);
-            }
-            else
-            {
-                frame.Push(null);
-            }
+            frame.Push(_type.IsInstanceOfType(value) ? value : null);
             return 1;
         }
 
@@ -231,14 +224,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push("");
-                }
-                else
-                {
-                    frame.Push(obj.ToString());
-                }
+                frame.Push(obj == null ? "" : obj.ToString());
                 return 1;
             }
         }
@@ -248,14 +234,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(0);
-                }
-                else
-                {
-                    frame.Push(obj.GetHashCode());
-                }
+                frame.Push(obj?.GetHashCode() ?? 0);
                 return 1;
             }
         }
