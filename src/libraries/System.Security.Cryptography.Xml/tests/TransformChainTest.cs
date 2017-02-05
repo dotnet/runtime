@@ -6,55 +6,60 @@
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 //
+// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.Xml.Tests {
+using Xunit;
 
-	[TestFixture]
-	public class TransformChainTest {
+namespace System.Security.Cryptography.Xml.Tests
+{
 
-		[Test]
-		public void EmptyChain () 
-		{
-			TransformChain chain = new TransformChain ();
-			Assert.AreEqual (0, chain.Count, "empty count");
-			Assert.IsNotNull (chain.GetEnumerator (), "IEnumerator");
-			Assert.AreEqual ("System.Security.Cryptography.Xml.TransformChain", chain.ToString (), "ToString()");
-		}
+    public class TransformChainTest
+    {
 
-		[Test]
-		public void FullChain () 
-		{
-			TransformChain chain = new TransformChain ();
+        [Fact]
+        public void EmptyChain()
+        {
+            TransformChain chain = new TransformChain();
+            Assert.Equal(0, chain.Count);
+            Assert.NotNull(chain.GetEnumerator());
+            Assert.Equal("System.Security.Cryptography.Xml.TransformChain", chain.ToString());
+        }
 
-			XmlDsigBase64Transform base64 = new XmlDsigBase64Transform ();
-			chain.Add (base64);
-			Assert.AreEqual (base64, chain[0], "XmlDsigBase64Transform");
-			Assert.AreEqual (1, chain.Count, "count 1");
+        [Fact]
+        public void FullChain()
+        {
+            TransformChain chain = new TransformChain();
 
-			XmlDsigC14NTransform c14n = new XmlDsigC14NTransform ();
-			chain.Add (c14n);
-			Assert.AreEqual (c14n, chain[1], "XmlDsigC14NTransform");
-			Assert.AreEqual (2, chain.Count, "count 2");
+            XmlDsigBase64Transform base64 = new XmlDsigBase64Transform();
+            chain.Add(base64);
+            Assert.Equal(base64, chain[0]);
+            Assert.Equal(1, chain.Count);
 
-			XmlDsigC14NWithCommentsTransform c14nc = new XmlDsigC14NWithCommentsTransform ();
-			chain.Add (c14nc);
-			Assert.AreEqual (c14nc, chain[2], "XmlDsigC14NWithCommentsTransform");
-			Assert.AreEqual (3, chain.Count, "count 3");
+            XmlDsigC14NTransform c14n = new XmlDsigC14NTransform();
+            chain.Add(c14n);
+            Assert.Equal(c14n, chain[1]);
+            Assert.Equal(2, chain.Count);
 
-			XmlDsigEnvelopedSignatureTransform esign = new XmlDsigEnvelopedSignatureTransform ();
-			chain.Add (esign);
-			Assert.AreEqual (esign, chain[3], "XmlDsigEnvelopedSignatureTransform");
-			Assert.AreEqual (4, chain.Count, "count 4");
+            XmlDsigC14NWithCommentsTransform c14nc = new XmlDsigC14NWithCommentsTransform();
+            chain.Add(c14nc);
+            Assert.Equal(c14nc, chain[2]);
+            Assert.Equal(3, chain.Count);
 
-			XmlDsigXPathTransform xpath = new XmlDsigXPathTransform ();
-			chain.Add (xpath);
-			Assert.AreEqual (xpath, chain[4], "XmlDsigXPathTransform");
-			Assert.AreEqual (5, chain.Count, "count 5");
+            XmlDsigEnvelopedSignatureTransform esign = new XmlDsigEnvelopedSignatureTransform();
+            chain.Add(esign);
+            Assert.Equal(esign, chain[3]);
+            Assert.Equal(4, chain.Count);
 
-			XmlDsigXsltTransform xslt = new XmlDsigXsltTransform ();
-			chain.Add (xslt);
-			Assert.AreEqual (xslt, chain[5], "XmlDsigXsltTransform");
-			Assert.AreEqual (6, chain.Count, "count 6");
-		}
-	}
+            XmlDsigXPathTransform xpath = new XmlDsigXPathTransform();
+            chain.Add(xpath);
+            Assert.Equal(xpath, chain[4]);
+            Assert.Equal(5, chain.Count);
+
+            XmlDsigXsltTransform xslt = new XmlDsigXsltTransform();
+            chain.Add(xslt);
+            Assert.Equal(xslt, chain[5]);
+            Assert.Equal(6, chain.Count);
+        }
+    }
 }
