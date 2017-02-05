@@ -308,11 +308,16 @@ The CoreFX build and test suite is a work in progress, as are the [building and 
 
 ## Testing with private CoreCLR bits
 
-    1) Go to <root>\corefx\Tools\testdotnetcli\shared\Microsoft.NETCore.App\9.9.9
-    2) Copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*dll . 
-    3) Del *.ni.*   (don't delete xuNIt bits!)
-    4) Edit Microsoft.NETCore.App.deps.json to remove this line:
+    1) Go to your repo directory containing the shared runtime:
+          cd <root>\corefx\Tools\testdotnetcli\shared\Microsoft.NETCore.App\9.9.9
+    2) Copy your private runtime bits to this directory, overwriting the ones already there:
+          copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*.dll .
+    3) Copy the PDBs for your runtime (optional, but required for code coverage):
+          copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\PDB\*.pdb .
+    3) Delete the native images that were copied (optional, but required for code coverage):
+          del *.ni.*   (don't delete xuNIt bits!)
+    4) Edit Microsoft.NETCore.App.deps.json to remove this line (if and only if (3) is done):
           "runtimes/win7-x64/native/System.Private.CoreLib.ni.dll": {},
     5) Run the tests by any means you please - the binary shouldn't get overwritten.
 
-If you prefer you can use Debug Corelib but if you do you must have debug coreclr.dll. You probably don't want a debug runtime as it's so slow.
+If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a debug runtime will execute much more slowly than with Release runtime bits.
