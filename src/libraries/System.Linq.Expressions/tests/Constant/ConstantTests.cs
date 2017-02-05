@@ -953,6 +953,16 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(f.ToString(), e5.ToString());
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void DecimalConstantRetainsScaleAnd(bool useInterpreter)
+        {
+            var lambda = Expression.Lambda<Func<decimal>>(Expression.Constant(-0.000m));
+            var func = lambda.Compile(useInterpreter);
+            var bits = decimal.GetBits(func());
+            Assert.Equal(unchecked((int)0x80030000), bits[3]);
+        }
+
+
         class Bar
         {
             public int Foo = 41;
