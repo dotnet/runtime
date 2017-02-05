@@ -556,10 +556,8 @@ namespace System.Threading.Tasks
             }
             Contract.EndContractBlock();
 
-            // Keep a link to your parent if: (A) You are attached, or (B) you are self-replicating.
-            if (parent != null &&
-                ((creationOptions & TaskCreationOptions.AttachedToParent) != 0 ||
-                 (internalOptions & InternalTaskOptions.SelfReplicating) != 0))
+            // Keep a link to the parent if attached
+            if (parent != null && (creationOptions & TaskCreationOptions.AttachedToParent) != 0)
             {
                 EnsureContingentPropertiesInitializedUnsafe().m_parent = parent;
             }
@@ -601,21 +599,12 @@ namespace System.Threading.Tasks
             // Check the validity of internalOptions
             int illegalInternalOptions = 
                     (int) (internalOptions &
-                            ~(InternalTaskOptions.SelfReplicating |
-                              InternalTaskOptions.ChildReplica |
-                              InternalTaskOptions.PromiseTask |
+                            ~(InternalTaskOptions.PromiseTask |
                               InternalTaskOptions.ContinuationTask |
                               InternalTaskOptions.LazyCancellation |
                               InternalTaskOptions.QueuedByRuntime));
             Debug.Assert(illegalInternalOptions == 0, "TaskConstructorCore: Illegal internal options");
 #endif
-
-            // Throw exception if the user specifies both LongRunning and SelfReplicating
-            if (((creationOptions & TaskCreationOptions.LongRunning) != 0) &&
-                ((internalOptions & InternalTaskOptions.SelfReplicating) != 0))
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_ctor_LRandSR);
-            }
 
             // Assign options to m_stateAndOptionsFlag.
             Debug.Assert(m_stateFlags == 0, "TaskConstructorCore: non-zero m_stateFlags");
@@ -647,9 +636,7 @@ namespace System.Threading.Tasks
             // we need to do this as the very last thing in the construction path, because the CT registration could modify m_stateFlags
             if (cancellationToken.CanBeCanceled)
             {
-                Debug.Assert((internalOptions &
-                    (InternalTaskOptions.ChildReplica | InternalTaskOptions.SelfReplicating | InternalTaskOptions.ContinuationTask)) == 0,
-                    "TaskConstructorCore: Did not expect to see cancelable token for replica/replicating or continuation task.");
+                Debug.Assert((internalOptions & InternalTaskOptions.ContinuationTask) == 0, "TaskConstructorCore: Did not expect to see cancelable token for continuation task.");
 
                 AssignCancellationToken(cancellationToken, null, null);
             }
@@ -988,16 +975,14 @@ namespace System.Threading.Tasks
         /// </summary>
         internal void AddNewChild()
         {
-            Debug.Assert(Task.InternalCurrent == this || this.IsSelfReplicatingRoot, "Task.AddNewChild(): Called from an external context");
+            Debug.Assert(Task.InternalCurrent == this, "Task.AddNewChild(): Called from an external context");
 
             var props = EnsureContingentPropertiesInitialized();
 
-            if (props.m_completionCountdown == 1 && !IsSelfReplicatingRoot)
+            if (props.m_completionCountdown == 1)
             {
                 // A count of 1 indicates so far there was only the parent, and this is the first child task
                 // Single kid => no fuss about who else is accessing the count. Let's save ourselves 100 cycles
-                // We exclude self replicating root tasks from this optimization, because further child creation can take place on 
-                // other cores and with bad enough timing this write may not be visible to them.
                 props.m_completionCountdown++;
             }
             else
@@ -1649,26 +1634,6 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>
-        /// Determines whether this is the root task of a self replicating group.
-        /// </summary>
-        internal bool IsSelfReplicatingRoot
-        {
-            get
-            {
-                // Return true if self-replicating bit is set and child replica bit is not set
-                return (Options & (TaskCreationOptions)(InternalTaskOptions.SelfReplicating | InternalTaskOptions.ChildReplica))
-                    == (TaskCreationOptions)InternalTaskOptions.SelfReplicating;
-            }
-        }
-
-        /// <summary>
-        /// Determines whether the task is a replica itself.
-        /// </summary>
-        internal bool IsChildReplica
-        {
-            get { return (Options & (TaskCreationOptions)InternalTaskOptions.ChildReplica) != 0; }
-        }
 
         /// <summary>
         /// The property formerly known as IsFaulted.
@@ -1886,7 +1851,7 @@ namespace System.Threading.Tasks
             catch (ThreadAbortException tae)
             {
                 AddException(tae);
-                FinishThreadAbortedTask(true, false);
+                FinishThreadAbortedTask(delegateRan:false);
             }
             catch (Exception e)
             {
@@ -1896,10 +1861,10 @@ namespace System.Threading.Tasks
                 AddException(tse);
                 Finish(false);
 
-                // Now we need to mark ourselves as "handled" to avoid crashing the finalizer thread if we are called from StartNew()
-                // or from the self replicating logic, because in both cases the exception is either propagated outside directly, or added
-                // to an enclosing parent. However we won't do this for continuation tasks, because in that case we internally eat the exception
-                // and therefore we need to make sure the user does later observe it explicitly or see it on the finalizer.
+                // Now we need to mark ourselves as "handled" to avoid crashing the finalizer thread if we are called from StartNew(),
+                // because the exception is either propagated outside directly, or added to an enclosing parent. However we won't do this for
+                // continuation tasks, because in that case we internally eat the exception and therefore we need to make sure the user does
+                // later observe it explicitly or see it on the finalizer.
 
                 if ((Options & (TaskCreationOptions)InternalTaskOptions.ContinuationTask) == 0)
                 {
@@ -2158,11 +2123,9 @@ namespace System.Threading.Tasks
                 var props = Volatile.Read(ref m_contingentProperties);
 
                 if (props == null || // no contingent properties means no children, so it's safe to complete ourselves
-                    (props.m_completionCountdown == 1 && !IsSelfReplicatingRoot) ||
+                    (props.m_completionCountdown == 1) ||
                     // Count of 1 => either all children finished, or there were none. Safe to complete ourselves 
                     // without paying the price of an Interlocked.Decrement.
-                    // However we need to exclude self replicating root tasks from this optimization, because
-                    // they can have children joining in, or finishing even after the root task delegate is done.
                     Interlocked.Decrement(ref props.m_completionCountdown) == 0) // Reaching this sub clause means there may be remaining active children,
                 // and we could be racing with one of them to call FinishStageTwo().
                 // So whoever does the final Interlocked.Dec is responsible to finish.
@@ -2390,19 +2353,13 @@ namespace System.Threading.Tasks
         /// This makes a note in the state flags so that we avoid any costly synchronous operations in the finish codepath
         /// such as inlined continuations
         /// </summary>
-        /// <param name="bTAEAddedToExceptionHolder">
-        /// Indicates whether the ThreadAbortException was added to this task's exception holder. 
-        /// This should always be true except for the case of non-root self replicating task copies.
-        /// </param>
         /// <param name="delegateRan">Whether the delegate was executed.</param>
-        internal void FinishThreadAbortedTask(bool bTAEAddedToExceptionHolder, bool delegateRan)
+        internal void FinishThreadAbortedTask(bool delegateRan)
         {
-            Debug.Assert(!bTAEAddedToExceptionHolder || m_contingentProperties?.m_exceptionsHolder != null,
-                            "FinishThreadAbortedTask() called on a task whose exception holder wasn't initialized");
+            Debug.Assert(m_contingentProperties?.m_exceptionsHolder != null,
+                "FinishThreadAbortedTask() called on a task whose exception holder wasn't initialized");
 
-            // this will only be false for non-root self replicating task copies, because all of their exceptions go to the root task.
-            if (bTAEAddedToExceptionHolder)
-                m_contingentProperties.m_exceptionsHolder.MarkAsHandled(false);
+            m_contingentProperties.m_exceptionsHolder.MarkAsHandled(false);
 
             // If this method has already been called for this task, or if this task has already completed, then
             // return before actually calling Finish().
@@ -2413,220 +2370,33 @@ namespace System.Threading.Tasks
             }
 
             Finish(delegateRan);
-
         }
 
 
         /// <summary>
-        /// Executes the task. This method will only be called once, and handles bookeeping associated with
-        /// self-replicating tasks, in addition to performing necessary exception marshaling.
+        /// Executes the task. This method will only be called once, and handles any necessary exception marshaling.
         /// </summary>
         private void Execute()
         {
-            if (IsSelfReplicatingRoot)
+            try
             {
-                ExecuteSelfReplicating(this);
+                InnerInvoke();
             }
-            else
+            catch (ThreadAbortException tae)
             {
-                try
-                {
-                    InnerInvoke();
-                }
-                catch (ThreadAbortException tae)
-                {
-                    // Don't record the TAE or call FinishThreadAbortedTask for a child replica task --
-                    // it's already been done downstream.
-                    if (!IsChildReplica)
-                    {
-                        // Record this exception in the task's exception list
-                        HandleException(tae);
+                // Record this exception in the task's exception list
+                HandleException(tae);
 
-                        // This is a ThreadAbortException and it will be rethrown from this catch clause, causing us to 
-                        // skip the regular Finish codepath. In order not to leave the task unfinished, we now call 
-                        // FinishThreadAbortedTask here.
-                        FinishThreadAbortedTask(true, true);
-                    }
-                }
-                catch (Exception exn)
-                {
-                    // Record this exception in the task's exception list
-                    HandleException(exn);
-                }
+                // This is a ThreadAbortException and it will be rethrown from this catch clause, causing us to 
+                // skip the regular Finish codepath. In order not to leave the task unfinished, we now call 
+                // FinishThreadAbortedTask here.
+                FinishThreadAbortedTask(delegateRan: true);
             }
-        }
-
-        // Allows (internal) deriving classes to support limited replication.
-        // (By default, replication is basically unlimited).
-        internal virtual bool ShouldReplicate()
-        {
-            return true;
-        }
-
-        // Allows (internal) deriving classes to instantiate the task replica as a Task super class of their choice
-        // (By default, we create a regular Task instance)
-        internal virtual Task CreateReplicaTask(Action<object> taskReplicaDelegate, Object stateObject, Task parentTask, TaskScheduler taskScheduler,
-                                            TaskCreationOptions creationOptionsForReplica, InternalTaskOptions internalOptionsForReplica)
-        {
-            return new Task(taskReplicaDelegate, stateObject, parentTask, default(CancellationToken),
-                            creationOptionsForReplica, internalOptionsForReplica, parentTask.ExecutingTaskScheduler);
-        }
-
-        // Allows internal deriving classes to support replicas that exit prematurely and want to pass on state to the next replica
-        internal virtual Object SavedStateForNextReplica
-        {
-            get { return null; }
-
-            set { /*do nothing*/ }
-        }
-
-        // Allows internal deriving classes to support replicas that exit prematurely and want to pass on state to the next replica
-        internal virtual Object SavedStateFromPreviousReplica
-        {
-            get { return null; }
-
-            set { /*do nothing*/ }
-        }
-
-        // Allows internal deriving classes to support replicas that exit prematurely and want to hand over the child replica that they
-        // had queued, so that the replacement replica can work with that child task instead of queuing up yet another one
-        internal virtual Task HandedOverChildReplica
-        {
-            get { return null; }
-
-            set { /* do nothing*/ }
-        }
-
-        private static void ExecuteSelfReplicating(Task root)
-        {
-            TaskCreationOptions creationOptionsForReplicas = root.CreationOptions | TaskCreationOptions.AttachedToParent;
-            InternalTaskOptions internalOptionsForReplicas =
-                InternalTaskOptions.ChildReplica |  // child replica flag disables self replication for the replicas themselves.
-                InternalTaskOptions.SelfReplicating |  // we still want to identify this as part of a self replicating group
-                InternalTaskOptions.QueuedByRuntime;   // we queue and cancel these tasks internally, so don't allow CT registration to take place
-
-
-            // Important Note: The child replicas we launch from here will be attached the root replica (by virtue of the root.CreateReplicaTask call)
-            // because we need the root task to receive all their exceptions, and to block until all of them return
-
-
-            // This variable is captured in a closure and shared among all replicas.
-            bool replicasAreQuitting = false;
-
-            // Set up a delegate that will form the body of the root and all recursively created replicas.
-            Action<object> taskReplicaDelegate = null;
-            taskReplicaDelegate = delegate
+            catch (Exception exn)
             {
-                Task currentTask = Task.InternalCurrent;
-
-
-                // Check if a child task has been handed over by a prematurely quiting replica that we might be a replacement for.
-                Task childTask = currentTask.HandedOverChildReplica;
-
-                if (childTask == null)
-                {
-                    // Apparently we are not a replacement task. This means we need to queue up a child task for replication to progress
-
-                    // Down-counts a counter in the root task.
-                    if (!root.ShouldReplicate()) return;
-
-                    // If any of the replicas have quit, we will do so ourselves.
-                    if (Volatile.Read(ref replicasAreQuitting))
-                    {
-                        return;
-                    }
-
-                    // Propagate a copy of the context from the root task. It may be null if flow was suppressed.
-                    ExecutionContext creatorContext = root.CapturedContext;
-
-
-                    childTask = root.CreateReplicaTask(taskReplicaDelegate, root.m_stateObject, root, root.ExecutingTaskScheduler,
-                                                       creationOptionsForReplicas, internalOptionsForReplicas);
-
-                    childTask.CapturedContext = CopyExecutionContext(creatorContext);
-
-                    childTask.ScheduleAndStart(false);
-                }
-
-
-
-                // Finally invoke the meat of the task.
-                // Note that we are directly calling root.InnerInvoke() even though we are currently be in the action delegate of a child replica 
-                // This is because the actual work was passed down in that delegate, and the action delegate of the child replica simply contains this
-                // replication control logic.
-                try
-                {
-                    // passing in currentTask only so that the parallel debugger can find it
-                    root.InnerInvokeWithArg(currentTask);
-                }
-                catch (Exception exn)
-                {
-                    // Record this exception in the root task's exception list
-                    root.HandleException(exn);
-
-                    if (exn is ThreadAbortException)
-                    {
-                        // If this is a ThreadAbortException it will escape this catch clause, causing us to skip the regular Finish codepath
-                        // In order not to leave the task unfinished, we now call FinishThreadAbortedTask here
-                        currentTask.FinishThreadAbortedTask(false, true);
-                    }
-                }
-
-                Object savedState = currentTask.SavedStateForNextReplica;
-
-                // check for premature exit
-                if (savedState != null)
-                {
-                    // the replica decided to exit early
-                    // we need to queue up a replacement, attach the saved state, and yield the thread right away
-
-                    Task replacementReplica = root.CreateReplicaTask(taskReplicaDelegate, root.m_stateObject, root, root.ExecutingTaskScheduler,
-                                                                    creationOptionsForReplicas, internalOptionsForReplicas);
-
-                    // Propagate a copy of the context from the root task to the replacement task
-                    ExecutionContext creatorContext = root.CapturedContext;
-                    replacementReplica.CapturedContext = CopyExecutionContext(creatorContext);
-
-                    replacementReplica.HandedOverChildReplica = childTask;
-                    replacementReplica.SavedStateFromPreviousReplica = savedState;
-
-                    replacementReplica.ScheduleAndStart(false);
-                }
-                else
-                {
-                    // The replica finished normally, which means it can't find more work to grab. 
-                    // Time to mark replicas quitting
-
-                    replicasAreQuitting = true;
-
-                    // InternalCancel() could conceivably throw in the underlying scheduler's TryDequeue() method.
-                    // If it does, then make sure that we record it.
-                    try
-                    {
-                        childTask.InternalCancel(true);
-                    }
-                    catch (Exception e)
-                    {
-                        // Apparently TryDequeue threw an exception.  Before propagating that exception, InternalCancel should have
-                        // attempted an atomic state transition and a call to CancellationCleanupLogic() on this task. So we know
-                        // the task was properly cleaned up if it was possible. 
-                        //
-                        // Now all we need to do is to Record the exception in the root task.
-
-                        root.HandleException(e);
-                    }
-
-                    // No specific action needed if the child could not be canceled
-                    // because we attached it to the root task, which should therefore be receiving any exceptions from the child,
-                    // and root.wait will not return before this child finishes anyway.
-
-                }
-            };
-
-            //
-            // Now we execute as the root task
-            //
-            taskReplicaDelegate(null);
+                // Record this exception in the task's exception list
+                HandleException(exn);
+            }
         }
 
         /// <summary>
@@ -2649,7 +2419,7 @@ namespace System.Threading.Tasks
             if (!IsCompleted)
             {
                 HandleException(tae);
-                FinishThreadAbortedTask(true, false);
+                FinishThreadAbortedTask(delegateRan:false);
             }
         }
 
@@ -2659,10 +2429,10 @@ namespace System.Threading.Tasks
         /// 
         /// </summary>
         /// <param name="bPreventDoubleExecution"> Performs atomic updates to prevent double execution. Should only be set to true
-        /// in codepaths servicing user provided TaskSchedulers. The ConcRT or ThreadPool schedulers don't need this. </param>
+        /// in codepaths servicing user provided TaskSchedulers. The ThreadPool scheduler doesn't need this. </param>
         internal bool ExecuteEntry(bool bPreventDoubleExecution)
         {
-            if (bPreventDoubleExecution || ((Options & (TaskCreationOptions)InternalTaskOptions.SelfReplicating) != 0))
+            if (bPreventDoubleExecution)
             {
                 int previousState = 0;
 
@@ -2738,11 +2508,6 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    if (IsSelfReplicatingRoot || IsChildReplica)
-                    {
-                        CapturedContext = CopyExecutionContext(ec);
-                    }
-
                     // Run the task.  We need a simple shim that converts the
                     // object back into a Task object, so that we can Execute it.
 
@@ -2807,21 +2572,6 @@ namespace System.Threading.Tasks
                 return;
             }
             Debug.Assert(false, "Invalid m_action in Task");
-        }
-
-        /// <summary>
-        /// Alternate InnerInvoke prototype to be called from ExecuteSelfReplicating() so that
-        /// the Parallel Debugger can discover the actual task being invoked. 
-        /// Details: Here, InnerInvoke is actually being called on the rootTask object while we are actually executing the
-        /// childTask. And the debugger needs to discover the childTask, so we pass that down as an argument.
-        /// The NoOptimization and NoInlining flags ensure that the childTask pointer is retained, and that this
-        /// function appears on the callstack.
-        /// </summary>
-        /// <param name="childTask"></param>
-        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        internal void InnerInvokeWithArg(Task childTask)
-        {
-            InnerInvoke();
         }
 
         /// <summary>
@@ -3343,7 +3093,7 @@ namespace System.Threading.Tasks
                     }
                 }
 
-                bool bRequiresAtomicStartTransition = (ts != null && ts.RequiresAtomicStartTransition) || ((Options & (TaskCreationOptions)InternalTaskOptions.SelfReplicating) != 0);
+                bool bRequiresAtomicStartTransition = ts != null && ts.RequiresAtomicStartTransition;
 
                 if (!bPopSucceeded && bCancelNonExecutingOnly && bRequiresAtomicStartTransition)
                 {
@@ -6683,10 +6433,8 @@ namespace System.Threading.Tasks
         /// <summary>Used to filter out internal vs. public task creation options.</summary>
         InternalOptionsMask = 0x0000FF00,
 
-        ChildReplica = 0x0100,
         ContinuationTask = 0x0200,
         PromiseTask = 0x0400,
-        SelfReplicating = 0x0800,
 
         /// <summary>
         /// Store the presence of TaskContinuationOptions.LazyCancellation, since it does not directly
