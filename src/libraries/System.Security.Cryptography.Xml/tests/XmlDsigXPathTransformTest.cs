@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         protected UnprotectedXmlDsigXPathTransform transform;
 
-        protected XmlDsigXPathTransformTest()
+        public XmlDsigXPathTransformTest()
         {
             transform = new UnprotectedXmlDsigXPathTransform();
         }

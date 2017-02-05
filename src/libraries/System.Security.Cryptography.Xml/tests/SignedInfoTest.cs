@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         protected SignedInfo info;
 
-        protected SignedInfoTest()
+        public SignedInfoTest()
         {
             info = new SignedInfo();
         }
