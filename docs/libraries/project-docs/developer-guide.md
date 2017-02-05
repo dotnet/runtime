@@ -308,12 +308,11 @@ The CoreFX build and test suite is a work in progress, as are the [building and 
 
 ## Testing with private CoreCLR bits
 
-	1) Go to <root>\corefx\Tools\testdotnetcli\shared\Microsoft.NETCore.App\9.9.9
-	2) Copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*dll . 
+    1) Go to <root>\corefx\Tools\testdotnetcli\shared\Microsoft.NETCore.App\9.9.9
+    2) Copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*dll . 
     3) Del *.ni.*   (don't delete xuNIt bits!)
-	4) Edit Microsoft.NETCore.App.deps.json to remove these lines:
+    4) Edit Microsoft.NETCore.App.deps.json to remove this line:
           "runtimes/win7-x64/native/System.Private.CoreLib.ni.dll": {},
-          "runtimes/win7-x64/native/mscorlib.ni.dll": {},
     5) Run the tests by any means you please - the binary shouldn't get overwritten.
 
 If you prefer you can use Debug Corelib but if you do you must have debug coreclr.dll. You probably don't want a debug runtime as it's so slow.
