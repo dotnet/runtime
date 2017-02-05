@@ -235,7 +235,7 @@ comparand: null
             // this is called a lot, avoid allocating an enumerator if we can...
             for (int i = 0, n = items.Count; i < n; i++)
             {
-                RequiresCanRead(items[i], paramName, i);
+                ExpressionUtils.RequiresCanRead(items[i], paramName, i);
             }
         }
 

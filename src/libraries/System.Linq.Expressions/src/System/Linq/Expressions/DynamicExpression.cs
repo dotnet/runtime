@@ -551,7 +551,7 @@ namespace System.Linq.Expressions
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
                     en.MoveNext();
-                    return en.Current == ReturnObject<Expression>(_arg0);
+                    return en.Current == ExpressionUtils.ReturnObject<Expression>(_arg0);
                 }
             }
 

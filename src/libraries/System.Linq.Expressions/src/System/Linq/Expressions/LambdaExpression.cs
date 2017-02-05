@@ -350,7 +350,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<ParameterExpression>(_par0);
+                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
         }
@@ -362,14 +362,14 @@ namespace System.Linq.Expressions
                 using (IEnumerator<ParameterExpression> en = parameters.GetEnumerator())
                 {
                     en.MoveNext();
-                    return en.Current == ReturnObject<ParameterExpression>(_par0);
+                    return en.Current == ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
                 }
             }
 
             return false;
         }
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
         {
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
 
-            return Expression.Lambda<TDelegate>(body, ReturnObject<ParameterExpression>(_par0));
+            return Expression.Lambda<TDelegate>(body, ExpressionUtils.ReturnObject<ParameterExpression>(_par0));
         }
     }
 
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<ParameterExpression>(_par0);
+                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
                 case 1: return _par1;
                 default: throw Error.ArgumentOutOfRange(nameof(index));
             }
@@ -434,7 +434,7 @@ namespace System.Linq.Expressions
         }
 
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
         {
@@ -446,7 +446,7 @@ namespace System.Linq.Expressions
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
 
-            return Expression.Lambda<TDelegate>(body, ReturnObject<ParameterExpression>(_par0), _par1);
+            return Expression.Lambda<TDelegate>(body, ExpressionUtils.ReturnObject<ParameterExpression>(_par0), _par1);
         }
     }
 
@@ -470,7 +470,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<ParameterExpression>(_par0);
+                case 0: return ExpressionUtils.ReturnObject<ParameterExpression>(_par0);
                 case 1: return _par1;
                 case 2: return _par2;
                 default: throw Error.ArgumentOutOfRange(nameof(index));
@@ -505,7 +505,7 @@ namespace System.Linq.Expressions
             return false;
         }
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(this, ref _par0);
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
         {
@@ -517,7 +517,7 @@ namespace System.Linq.Expressions
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
 
-            return Expression.Lambda<TDelegate>(body, ReturnObject<ParameterExpression>(_par0), _par1, _par2);
+            return Expression.Lambda<TDelegate>(body, ExpressionUtils.ReturnObject<ParameterExpression>(_par0), _par1, _par2);
         }
     }
 
@@ -538,7 +538,7 @@ namespace System.Linq.Expressions
         internal override bool SameParameters(ICollection<ParameterExpression> parameters) =>
             ExpressionUtils.SameElements(parameters, _parameters);
 
-        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ReturnReadOnly(ref _parameters);
+        internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(ref _parameters);
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
         {
@@ -863,7 +863,7 @@ namespace System.Linq.Expressions
         private static void ValidateLambdaArgs(Type delegateType, ref Expression body, ReadOnlyCollection<ParameterExpression> parameters, string paramName)
         {
             ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            RequiresCanRead(body, nameof(body));
+            ExpressionUtils.RequiresCanRead(body, nameof(body));
 
             if (!typeof(MulticastDelegate).IsAssignableFrom(delegateType) || delegateType == typeof(MulticastDelegate))
             {
@@ -896,7 +896,7 @@ namespace System.Linq.Expressions
                 {
                     ParameterExpression pex = parameters[i];
                     ParameterInfo pi = pis[i];
-                    RequiresCanRead(pex, nameof(parameters), i);
+                    ExpressionUtils.RequiresCanRead(pex, nameof(parameters), i);
                     Type pType = pi.ParameterType;
                     if (pex.IsByRef)
                     {

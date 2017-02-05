@@ -154,10 +154,10 @@ namespace System.Linq.Expressions
             {
                 throw Error.VariableMustNotBeByRef(variable, variable.Type, nameof(variable));
             }
-            RequiresCanRead(body, nameof(body));
+            ExpressionUtils.RequiresCanRead(body, nameof(body));
             if (filter != null)
             {
-                RequiresCanRead(filter, nameof(filter));
+                ExpressionUtils.RequiresCanRead(filter, nameof(filter));
                 if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean(nameof(filter));
             }
 
