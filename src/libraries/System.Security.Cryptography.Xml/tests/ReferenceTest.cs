@@ -1,5 +1,5 @@
 //
-// ReferenceTest.cs - NUnit Test Cases for Reference
+// ReferenceTest.cs - Test Cases for Reference
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>
@@ -156,8 +156,6 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        // MS throws a NullReferenceException (reported as FDBK25886) but only when executed in NUnit
-        // http://lab.msdn.microsoft.com/ProductFeedback/viewfeedback.aspx?feedbackid=3596d1e3-362b-40bd-bca9-2e8be75261ff
         public void AddAllTransforms()
         {
             // adding an empty hash value

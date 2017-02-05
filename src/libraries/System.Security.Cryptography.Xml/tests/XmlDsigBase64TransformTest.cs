@@ -1,5 +1,5 @@
 //
-// XmlDsigBase64TransformTest.cs - NUnit Test Cases for XmlDsigBase64Transform
+// XmlDsigBase64TransformTest.cs - Test Cases for XmlDsigBase64Transform
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>

@@ -1,5 +1,5 @@
 //
-// XmlDsigC14NTransformTest.cs - NUnit Test Cases for XmlDsigC14NTransform
+// XmlDsigC14NTransformTest.cs - Test Cases for XmlDsigC14NTransform
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>

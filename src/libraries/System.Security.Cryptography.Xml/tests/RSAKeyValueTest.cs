@@ -1,5 +1,5 @@
 //
-// RSAKeyValueTest.cs - NUnit Test Cases for RSAKeyValue
+// RSAKeyValueTest.cs - Test Cases for RSAKeyValue
 //
 // Author:
 //	Sebastien Pouliot (spouliot@motus.com)

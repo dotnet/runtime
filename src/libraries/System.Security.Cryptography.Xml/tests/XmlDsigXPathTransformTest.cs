@@ -1,5 +1,5 @@
 //
-// XmlDsigXPathTransformTest.cs - NUnit Test Cases for XmlDsigXPathTransform
+// XmlDsigXPathTransformTest.cs - Test Cases for XmlDsigXPathTransform
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>

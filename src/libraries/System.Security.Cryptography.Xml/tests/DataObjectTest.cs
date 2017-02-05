@@ -1,5 +1,5 @@
 //
-// DataObjectTest.cs - NUnit Test Cases for DataObject
+// DataObjectTest.cs - Test Cases for DataObject
 //
 // Author:
 //	Sebastien Pouliot (spouliot@motus.com)

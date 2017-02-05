@@ -1,5 +1,5 @@
 //
-// KeyInfoNameTest.cs - NUnit Test Cases for KeyInfoName
+// KeyInfoNameTest.cs - Test Cases for KeyInfoName
 //
 // Author:
 //	Sebastien Pouliot (spouliot@motus.com)

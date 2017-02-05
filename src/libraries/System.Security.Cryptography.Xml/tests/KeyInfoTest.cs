@@ -1,5 +1,5 @@
 //
-// KeyInfoTest.cs - NUnit Test Cases for KeyInfo
+// KeyInfoTest.cs - Test Cases for KeyInfo
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>

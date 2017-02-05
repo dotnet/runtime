@@ -1,5 +1,5 @@
 //
-// XmlDsigExcC14NTransformTest.cs - NUnit Test Cases for XmlDsigExcC14NTransform
+// XmlDsigExcC14NTransformTest.cs - Test Cases for XmlDsigExcC14NTransform
 //
 // Author:
 //  original:

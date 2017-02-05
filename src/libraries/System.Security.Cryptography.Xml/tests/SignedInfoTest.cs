@@ -1,5 +1,5 @@
 //
-// SignedInfoTest.cs - NUnit Test Cases for SignedInfo
+// SignedInfoTest.cs - Test Cases for SignedInfo
 //
 // Author:
 //	Sebastien Pouliot <sebastien@ximian.com>
