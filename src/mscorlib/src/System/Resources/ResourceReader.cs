@@ -813,7 +813,7 @@ namespace System.Resources {
                 throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
             }
             BCLDebug.Log("RESMGRFILEFORMAT", "ReadResources: Expecting " + _numResources + " resources.");
-#if _DEBUG      
+#if RESOURCE_FILE_FORMAT_DEBUG
             if (ResourceManager.DEBUG >= 4)
                 Console.WriteLine("ResourceReader::ReadResources - Reading in "+_numResources+" resources");
 #endif
@@ -833,7 +833,7 @@ namespace System.Resources {
                 SkipString();
             }
 
-#if _DEBUG
+#if RESOURCE_FILE_FORMAT_DEBUG
                 if (ResourceManager.DEBUG >= 5)
                     Console.WriteLine("ResourceReader::ReadResources - Reading in "+numTypes+" type table entries");
 #endif
