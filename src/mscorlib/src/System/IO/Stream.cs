@@ -679,7 +679,7 @@ namespace System.IO {
                     var invokeAsyncCallback = s_invokeAsyncCallback;
                     if (invokeAsyncCallback == null) s_invokeAsyncCallback = invokeAsyncCallback = InvokeAsyncCallback; // benign race condition
 
-                    using(context) ExecutionContext.Run(context, invokeAsyncCallback, this, true);
+                    ExecutionContext.Run(context, invokeAsyncCallback, this);
                 }
             }
 
