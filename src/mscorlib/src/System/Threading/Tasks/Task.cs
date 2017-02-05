@@ -364,12 +364,9 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the Task.</param>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="action"/> argument is null.</exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action action)
             : this(action, null, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -382,12 +379,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action action, CancellationToken cancellationToken)
             : this(action, null, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -405,12 +399,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action action, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -432,12 +423,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(action, null, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
 
@@ -449,12 +437,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="action"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action<object> action, object state)
             : this(action, state, null, default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -469,12 +454,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action<object> action, object state, CancellationToken cancellationToken)
             : this(action, state, null, cancellationToken, TaskCreationOptions.None, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -493,12 +475,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="creationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskCreationOptions"/>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action<object> action, object state, TaskCreationOptions creationOptions)
             : this(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -521,19 +500,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions)
             : this(action, state, Task.InternalCurrentIfAttached(creationOptions), cancellationToken, creationOptions, InternalTaskOptions.None, null)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PossiblyCaptureContext(ref stackMark);
-        }
-
-        internal Task(Action<object> action, object state, Task parent, CancellationToken cancellationToken,
-            TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler, ref StackCrawlMark stackMark)
-            : this(action, state, parent, cancellationToken, creationOptions, internalOptions, scheduler)
-        {
-            PossiblyCaptureContext(ref stackMark);
         }
 
         /// <summary>
@@ -582,6 +551,10 @@ namespace System.Threading.Tasks
             m_action = action;
             m_stateObject = state;
             m_taskScheduler = scheduler;
+
+            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
+                "Captured an ExecutionContext when one was already captured.");
+            CapturedContext = ExecutionContext.Capture();
 
             // Check for validity of options
             if ((creationOptions &
@@ -741,24 +714,6 @@ namespace System.Threading.Tasks
                 Delegate d = m_action;
                 return d != null ? d.Method.ToString() : "{null}";
             }
-        }
-
-
-        /// <summary>
-        /// Captures the ExecutionContext so long as flow isn't suppressed.
-        /// </summary>
-        /// <param name="stackMark">A stack crawl mark pointing to the frame of the caller.</param>
-
-        internal void PossiblyCaptureContext(ref StackCrawlMark stackMark)
-        {
-            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
-                "Captured an ExecutionContext when one was already captured.");
-
-            // In the legacy .NET 3.5 build, we don't have the optimized overload of Capture()
-            // available, so we call the parameterless overload.
-            CapturedContext = ExecutionContext.Capture(
-                ref stackMark,
-                ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase);
         }
 
         // Internal property to process TaskCreationOptions access and mutation.
@@ -1248,7 +1203,7 @@ namespace System.Threading.Tasks
         // Implicitly converts action to object and handles the meat of the StartNew() logic.
         internal static Task InternalStartNew(
             Task creatingTask, Delegate action, object state, CancellationToken cancellationToken, TaskScheduler scheduler,
-            TaskCreationOptions options, InternalTaskOptions internalOptions, ref StackCrawlMark stackMark)
+            TaskCreationOptions options, InternalTaskOptions internalOptions)
         {
             // Validate arguments.
             if (scheduler == null)
@@ -1260,7 +1215,6 @@ namespace System.Threading.Tasks
             // Create and schedule the task. This throws an InvalidOperationException if already shut down.
             // Here we add the InternalTaskOptions.QueuedByRuntime to the internalOptions, so that TaskConstructorCore can skip the cancellation token registration
             Task t = new Task(action, state, creatingTask, cancellationToken, options, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler);
-            t.PossiblyCaptureContext(ref stackMark);
 
             t.ScheduleAndStart(false);
             return t;
@@ -1679,7 +1633,7 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    return m_contingentProperties?.m_capturedContext ?? ExecutionContext.PreAllocatedDefault;
+                    return m_contingentProperties?.m_capturedContext ?? ExecutionContext.Default;
                 }
             }
             set
@@ -1689,27 +1643,12 @@ namespace System.Threading.Tasks
                 {
                     m_stateFlags |= TASK_STATE_EXECUTIONCONTEXT_IS_NULL;
                 }
-                else if (!value.IsPreAllocatedDefault) // not the default context, then inflate the contingent properties and set it
+                else if (value != ExecutionContext.Default) // not the default context, then inflate the contingent properties and set it
                 {
                     EnsureContingentPropertiesInitializedUnsafe().m_capturedContext = value;
                 }
                 //else do nothing, this is the default context
             }
-        }
-
-        /// <summary>
-        /// Static helper function to copy specific ExecutionContext
-        /// </summary>
-        /// <param name="capturedContext">The captured context</param>
-        /// <returns>The copied context, null if the capturedContext is null</returns>
-        private static ExecutionContext CopyExecutionContext(ExecutionContext capturedContext)
-        {
-            if (capturedContext == null)
-                return null;
-            if (capturedContext.IsPreAllocatedDefault)
-                return ExecutionContext.PreAllocatedDefault;
-
-            return capturedContext.CreateCopy();
         }
 
         /////////////
@@ -2511,10 +2450,7 @@ namespace System.Threading.Tasks
                     // Run the task.  We need a simple shim that converts the
                     // object back into a Task object, so that we can Execute it.
 
-                    // Lazily initialize the callback delegate; benign race condition
-                    var callback = s_ecCallback;
-                    if (callback == null) s_ecCallback = callback = new ContextCallback(ExecutionContextCallback);
-                    ExecutionContext.Run(ec, callback, this, true);
+                    ExecutionContext.Run(ec, s_ecCallback, this);
                 }
 
                 if (AsyncCausalityTracer.LoggingOn)
@@ -2541,16 +2477,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        // Cached callback delegate that's lazily initialized due to ContextCallback being SecurityCritical
-        private static ContextCallback s_ecCallback;
-
-        private static void ExecutionContextCallback(object obj)
-        {
-            Task task = obj as Task;
-            Debug.Assert(task != null, "expected a task object");
-            task.Execute();
-        }
-
+        private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).Execute();
 
         /// <summary>
         /// The actual code which invokes the body of the task. This can be overriden in derived types.
@@ -2633,10 +2560,9 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
-        /// <param name="stackMark">A stack crawl mark tied to execution context.</param>
         /// <exception cref="System.InvalidOperationException">The awaiter was not properly initialized.</exception>
         internal void SetContinuationForAwait(
-            Action continuationAction, bool continueOnCapturedContext, bool flowExecutionContext, ref StackCrawlMark stackMark)
+            Action continuationAction, bool continueOnCapturedContext, bool flowExecutionContext)
         {
             Contract.Requires(continuationAction != null);
 
@@ -2657,7 +2583,7 @@ namespace System.Threading.Tasks
                 var syncCtx = SynchronizationContext.CurrentNoFlow;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext, ref stackMark);
+                    tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext);
                 }
                 else
                 {
@@ -2666,7 +2592,7 @@ namespace System.Threading.Tasks
                     var scheduler = TaskScheduler.InternalCurrent;
                     if (scheduler != null && scheduler != TaskScheduler.Default)
                     {
-                        tc = new TaskSchedulerAwaitTaskContinuation(scheduler, continuationAction, flowExecutionContext, ref stackMark);
+                        tc = new TaskSchedulerAwaitTaskContinuation(scheduler, continuationAction, flowExecutionContext);
                     }
                 }
             }
@@ -2678,7 +2604,7 @@ namespace System.Threading.Tasks
                 // ExecutionContext, we need to capture it and wrap it in an AwaitTaskContinuation.
                 // Otherwise, we're targeting the default scheduler and we don't need to flow ExecutionContext, so
                 // we don't actually need a continuation object.  We can just store/queue the action itself.
-                tc = new AwaitTaskContinuation(continuationAction, flowExecutionContext: true, stackMark: ref stackMark);
+                tc = new AwaitTaskContinuation(continuationAction, flowExecutionContext: true);
             }
 
             // Now register the continuation, and if we couldn't register it because the task is already completing,
@@ -3431,11 +3357,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task> continuationAction)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3458,11 +3382,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3487,11 +3409,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task> continuationAction, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, scheduler, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, scheduler, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3522,11 +3442,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task> continuationAction, TaskContinuationOptions continuationOptions)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), continuationOptions, ref stackMark);
+            return ContinueWith(continuationAction, TaskScheduler.Current, default(CancellationToken), continuationOptions);
         }
 
         /// <summary>
@@ -3567,17 +3485,15 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, scheduler, cancellationToken, continuationOptions, ref stackMark);
+            return ContinueWith(continuationAction, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark parameter.
         private Task ContinueWith(Action<Task> continuationAction, TaskScheduler scheduler,
-            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, ref StackCrawlMark stackMark)
+            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
             // Throw on continuation with null action
             if (continuationAction == null)
@@ -3598,8 +3514,7 @@ namespace System.Threading.Tasks
 
             Task continuationTask = new ContinuationTaskFromTask(
                 this, continuationAction, null,
-                creationOptions, internalOptions,
-                ref stackMark
+                creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
@@ -3629,11 +3544,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task, Object> continuationAction, Object state)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3657,11 +3570,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task, Object> continuationAction, Object state, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3687,11 +3598,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task, Object> continuationAction, Object state, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith(continuationAction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3723,11 +3632,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task ContinueWith(Action<Task, Object> continuationAction, Object state, TaskContinuationOptions continuationOptions)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions, ref stackMark);
+            return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions);
         }
 
         /// <summary>
@@ -3769,17 +3676,15 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public Task ContinueWith(Action<Task, Object> continuationAction, Object state, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith(continuationAction, state, scheduler, cancellationToken, continuationOptions, ref stackMark);
+            return ContinueWith(continuationAction, state, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark parameter.
         private Task ContinueWith(Action<Task, Object> continuationAction, Object state, TaskScheduler scheduler,
-            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, ref StackCrawlMark stackMark)
+            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
             // Throw on continuation with null action
             if (continuationAction == null)
@@ -3800,8 +3705,7 @@ namespace System.Threading.Tasks
 
             Task continuationTask = new ContinuationTaskFromTask(
                 this, continuationAction, state,
-                creationOptions, internalOptions,
-                ref stackMark
+                creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
@@ -3834,12 +3738,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return ContinueWith<TResult>(continuationFunction, TaskScheduler.Current, default(CancellationToken),
-                TaskContinuationOptions.None, ref stackMark);
+                TaskContinuationOptions.None);
         }
 
 
@@ -3866,11 +3768,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3898,11 +3798,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, scheduler, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, scheduler, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -3936,11 +3834,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction, TaskContinuationOptions continuationOptions)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, TaskScheduler.Current, default(CancellationToken), continuationOptions, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, TaskScheduler.Current, default(CancellationToken), continuationOptions);
         }
 
         /// <summary>
@@ -3984,17 +3880,15 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction, CancellationToken cancellationToken,
                                                    TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, scheduler, cancellationToken, continuationOptions, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark parameter.
         private Task<TResult> ContinueWith<TResult>(Func<Task, TResult> continuationFunction, TaskScheduler scheduler,
-            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, ref StackCrawlMark stackMark)
+            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
             // Throw on continuation with null function
             if (continuationFunction == null)
@@ -4015,8 +3909,7 @@ namespace System.Threading.Tasks
 
             Task<TResult> continuationTask = new ContinuationResultTaskFromTask<TResult>(
                 this, continuationFunction, null,
-                creationOptions, internalOptions,
-                ref stackMark
+                creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
@@ -4049,12 +3942,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="continuationFunction"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, default(CancellationToken),
-                TaskContinuationOptions.None, ref stackMark);
+                TaskContinuationOptions.None);
         }
 
 
@@ -4082,11 +3973,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -4115,11 +4004,9 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, state, scheduler, default(CancellationToken), TaskContinuationOptions.None);
         }
 
         /// <summary>
@@ -4154,11 +4041,9 @@ namespace System.Threading.Tasks
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state, TaskContinuationOptions continuationOptions)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions);
         }
 
         /// <summary>
@@ -4203,17 +4088,15 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state, CancellationToken cancellationToken,
                                                    TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return ContinueWith<TResult>(continuationFunction, state, scheduler, cancellationToken, continuationOptions, ref stackMark);
+            return ContinueWith<TResult>(continuationFunction, state, scheduler, cancellationToken, continuationOptions);
         }
 
         // Same as the above overload, just with a stack mark parameter.
         private Task<TResult> ContinueWith<TResult>(Func<Task, Object, TResult> continuationFunction, Object state, TaskScheduler scheduler,
-            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions, ref StackCrawlMark stackMark)
+            CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
             // Throw on continuation with null function
             if (continuationFunction == null)
@@ -4234,8 +4117,7 @@ namespace System.Threading.Tasks
 
             Task<TResult> continuationTask = new ContinuationResultTaskFromTask<TResult>(
                 this, continuationFunction, state,
-                creationOptions, internalOptions,
-                ref stackMark
+                creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
@@ -5255,12 +5137,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="action"/> parameter was null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public static Task Run(Action action)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Task.InternalStartNew(null, action, null, default(CancellationToken), TaskScheduler.Default,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, ref stackMark);
+                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None);
         }
 
         /// <summary>
@@ -5275,12 +5155,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">
         /// The <see cref="T:System.CancellationTokenSource"/> associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public static Task Run(Action action, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Task.InternalStartNew(null, action, null, cancellationToken, TaskScheduler.Default,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, ref stackMark);
+                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None);
         }
 
         /// <summary>
@@ -5291,12 +5169,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="function"/> parameter was null.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public static Task<TResult> Run<TResult>(Func<TResult> function)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Task<TResult>.StartNew(null, function, default(CancellationToken),
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default, ref stackMark);
+                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -5311,12 +5187,10 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">
         /// The <see cref="T:System.CancellationTokenSource"/> associated with <paramref name="cancellationToken"/> was disposed.
         /// </exception>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
         public static Task<TResult> Run<TResult>(Func<TResult> function, CancellationToken cancellationToken)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Task<TResult>.StartNew(null, function, cancellationToken,
-                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default, ref stackMark);
+                TaskCreationOptions.DenyChildAttach, InternalTaskOptions.None, TaskScheduler.Default);
         }
 
         /// <summary>
