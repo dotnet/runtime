@@ -10,7 +10,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
@@ -648,7 +647,6 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [Category("NotWorking")] // bug #79483
         public void DigestValue_CRLF()
         {
             XmlDocument doc = CreateSomeXml("\r\n");
@@ -818,7 +816,6 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [Category("NotWorking")] // bug #79483
         public void SignedXML_CRLF_Valid()
         {
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -1377,7 +1374,6 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [Category("NotDotNet")] // will fail until a fix is available
         public void VerifyHMAC_ZeroLength()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -1406,7 +1402,6 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [Category("NotDotNet")] // will fail until a fix is available
         public void VerifyHMAC_SmallerThanMinimumLength()
         {
             // 72 is a multiple of 8 but smaller than the minimum of 80 bits
@@ -1423,8 +1418,8 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = GetSignedXml(xml);
             Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
         }
+
         [Fact]
-        [Category("NotDotNet")] // will fail until a fix is available
         public void VerifyHMAC_SmallerHalfLength()
         {
             // 80bits is smaller than the half-size of HMACSHA256
@@ -1441,6 +1436,7 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = GetSignedXml(xml);
             Assert.True(sign.CheckSignature(new HMACSHA256(Encoding.ASCII.GetBytes("secret"))));
         }
+
         [Fact]
         public void VerifyHMAC_FullLength()
         {
