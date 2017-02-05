@@ -1064,39 +1064,32 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            if (decimal.Truncate(value) == value)
+            int[] bits = decimal.GetBits(value);
+            int scale = (bits[3] & int.MaxValue) >> 16;
+            if (scale == 0)
             {
                 if (int.MinValue <= value && value <= int.MaxValue)
                 {
                     int intValue = decimal.ToInt32(value);
                     il.EmitPrimitive(intValue);
                     il.EmitNew(Decimal_Ctor_Int32);
+                    return;
                 }
-                else if (long.MinValue <= value && value <= long.MaxValue)
+
+                if (long.MinValue <= value && value <= long.MaxValue)
                 {
                     long longValue = decimal.ToInt64(value);
                     il.EmitPrimitive(longValue);
                     il.EmitNew(Decimal_Ctor_Int64);
-                }
-                else
-                {
-                    il.EmitDecimalBits(value);
+                    return;
                 }
             }
-            else
-            {
-                il.EmitDecimalBits(value);
-            }
-        }
 
-        private static void EmitDecimalBits(this ILGenerator il, decimal value)
-        {
-            int[] bits = decimal.GetBits(value);
             il.EmitPrimitive(bits[0]);
             il.EmitPrimitive(bits[1]);
             il.EmitPrimitive(bits[2]);
             il.EmitPrimitive((bits[3] & 0x80000000) != 0);
-            il.EmitPrimitive(unchecked((byte)(bits[3] >> 16)));
+            il.EmitPrimitive(unchecked((byte)scale));
             il.EmitNew(Decimal_Ctor_Int32_Int32_Int32_Bool_Byte);
         }
 
