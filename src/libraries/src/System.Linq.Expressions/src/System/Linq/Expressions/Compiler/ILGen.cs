@@ -352,17 +352,6 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(OpCodes.Newobj, ci);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-        internal static void EmitNew(this ILGenerator il, Type type, Type[] paramTypes)
-        {
-            Debug.Assert(type != null);
-            Debug.Assert(paramTypes != null);
-
-            ConstructorInfo ci = type.GetConstructor(paramTypes);
-            if (ci == null) throw Error.TypeDoesNotHaveConstructorForTheSignature();
-            il.EmitNew(ci);
-        }
-
         #endregion
 
         #region Constants
@@ -1126,14 +1115,14 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                int rank = arrayType.GetArrayRank();
-
-                Type[] types = new Type[rank];
-                for (int i = 0; i < rank; i++)
+                Type[] types = new Type[arrayType.GetArrayRank()];
+                for (int i = 0; i < types.Length; i++)
                 {
                     types[i] = typeof(int);
                 }
-                il.EmitNew(arrayType, types);
+                ConstructorInfo ci = arrayType.GetConstructor(types);
+                Debug.Assert(ci != null);
+                il.EmitNew(ci);
             }
         }
 
