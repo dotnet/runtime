@@ -24,12 +24,12 @@ namespace Legacy.Support
         private static LocalMachineSerialInfo s_localMachineSerialInfo;
         private static SerialPortRequirements s_localMachineSerialPortRequirements;
 
-        public TCSupport()
+        static TCSupport()
         {
             InitializeSerialInfo();
         }
 
-        private void InitializeSerialInfo()
+        private static void InitializeSerialInfo()
         {
             GenerateSerialInfo();
 
@@ -45,7 +45,7 @@ namespace Legacy.Support
                 s_localMachineSerialPortRequirements = SerialPortRequirements.None;
         }
 
-        private void GenerateSerialInfo()
+        private static void GenerateSerialInfo()
         {
             string[] availablePortNames = PortHelper.GetPorts();
             Debug.WriteLine("total ports : " + availablePortNames.Length);
