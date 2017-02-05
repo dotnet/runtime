@@ -12588,7 +12588,7 @@
       <Member Name="get_TraceLevel" />
     </Type>
     <!--End of PFX types -->
-    <Type Name="System.Console">
+    <Type Name="System.LowLevelConsole">
       <Member Name="Write(System.String)" />
       <Member Name="WriteLine(System.String)" />
       <Member Name="WriteLine" />
