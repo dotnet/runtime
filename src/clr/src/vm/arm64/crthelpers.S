@@ -18,7 +18,7 @@
 //
 //void JIT_MemSet(void *dst, int val, SIZE_T count)
 //
-//    uintptr_t valEx = (char)val;
+//    uintptr_t valEx = (unsigned char)val;
 //    valEx = valEx | valEx << 8;
 //    valEx = valEx | valEx << 16;
 //    valEx = valEx | valEx << 32;
@@ -85,7 +85,7 @@
 // as C++ method.
 
 LEAF_ENTRY JIT_MemSet, _TEXT
-    sxtb        w8,w1
+    uxtb        w8,w1
     sxtw        x8,w8
     orr         x8,x8,x8, lsl #8
     orr         x8,x8,x8, lsl #0x10
