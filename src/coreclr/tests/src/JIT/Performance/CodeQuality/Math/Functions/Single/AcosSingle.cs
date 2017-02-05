@@ -38,7 +38,7 @@ namespace Functions
 
             var diff = MathF.Abs(acosSingleExpectedResult - result);
 
-            if (diff > floatEpsilon)
+            if (diff > singleEpsilon)
             {
                 throw new Exception($"Expected Result {acosSingleExpectedResult}; Actual Result {result}");
             }
