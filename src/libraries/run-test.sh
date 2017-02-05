@@ -22,9 +22,6 @@ usage()
     echo "    --coreclr-bins <location>         Location of root of the binaries directory"
     echo "                                      containing the FreeBSD, Linux, NetBSD or OSX coreclr build"
     echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<ConfigurationGroup>"
-    echo "    --mscorlib-bins <location>        Location of the root binaries directory containing"
-    echo "                                      the FreeBSD, Linux, NetBSD or OSX mscorlib.dll"
-    echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<ConfigurationGroup>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
     echo "                                      default: <repo_root>/bin/tests"
@@ -120,14 +117,6 @@ ensure_binaries_are_present()
 	exit 1
   fi
 
-  # Then the mscorlib from the upstream build.
-  # TODO When the mscorlib flavors get properly changed then
-  if [ ! -f $MscorlibBins/mscorlib.dll ]
-  then
-	echo "error: Mscorlib not found at $MscorlibBins"
-	exit 1
-  fi
-
   # Then the native CoreFX binaries
   if [ ! -d $CoreFxNativeBins ]
   then
@@ -142,14 +131,6 @@ copy_test_overlay()
 
   link_files_in_directory "$CoreClrBins" "$testDir"
   link_files_in_directory "$CoreFxNativeBins" "$testDir"
-
-  ln -f $MscorlibBins/mscorlib.dll $testDir/mscorlib.dll
-
-  # If we have a native image for mscorlib, copy it as well.
-  if [ -f $MscorlibBins/mscorlib.ni.dll ]
-  then
-      ln -f  $MscorlibBins/mscorlib.ni.dll $testDir/mscorlib.ni.dll
-  fi
 }
 
 # $1 is the source directory
@@ -316,9 +297,6 @@ do
         --coreclr-bins)
         CoreClrBins=$2
         ;;
-        --mscorlib-bins)
-        MscorlibBins=$2
-        ;;
         --corefx-tests)
         CoreFxTests=$2
         ;;
@@ -378,11 +356,6 @@ done
 if [ "$CoreClrBins" == "" ]
 then
     CoreClrBins="$ProjectRoot/bin/Product/$OS.x64.$ConfigurationGroup"
-fi
-
-if [ "$MscorlibBins" == "" ]
-then
-    MscorlibBins="$ProjectRoot/bin/Product/$OS.x64.$ConfigurationGroup"
 fi
 
 if [ "$CoreFxTests" == "" ]
