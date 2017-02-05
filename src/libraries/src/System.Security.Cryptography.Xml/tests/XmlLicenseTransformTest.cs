@@ -1,5 +1,5 @@
 //
-// XmlLicenseTransformTest.cs - NUnit Test Cases for XmlLicenseTransform
+// XmlLicenseTransformTest.cs - Test Cases for XmlLicenseTransform
 //
 // Author:
 //  original:
@@ -12,74 +12,77 @@
 // (C) 2004 Novell (http://www.novell.com)
 // (C) 2008 Gert Driesen
 //
-
+// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information.
 
 using System.Xml;
+using Xunit;
 
-namespace System.Security.Cryptography.Xml.Tests {
-	public class UnprotectedXmlLicenseTransform : XmlLicenseTransform {
-		public XmlNodeList UnprotectedGetInnerXml ()
-		{
-			return base.GetInnerXml ();
-		}
-	}
+namespace System.Security.Cryptography.Xml.Tests
+{
+    public class UnprotectedXmlLicenseTransform : XmlLicenseTransform
+    {
+        public XmlNodeList UnprotectedGetInnerXml()
+        {
+            return base.GetInnerXml();
+        }
+    }
 
-	[TestFixture]
-	public class XmlLicenseTransformTest {
-		private UnprotectedXmlLicenseTransform transform;
+    public class XmlLicenseTransformTest
+    {
+        private UnprotectedXmlLicenseTransform transform;
 
-		[SetUp]
-		public void SetUp ()
-		{
-			transform = new UnprotectedXmlLicenseTransform ();
-		}
+        public XmlLicenseTransformTest()
+        {
+            transform = new UnprotectedXmlLicenseTransform();
+        }
 
-		[Test] // ctor ()
-		public void Constructor1 ()
-		{
-			Assert.AreEqual ("urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform",
-				transform.Algorithm, "Algorithm");
-			Assert.IsNull (transform.Decryptor, "Decryptor");
+        [Fact] // ctor ()
+        public void Constructor1()
+        {
+            Assert.Equal("urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform",
+                transform.Algorithm);
+            Assert.Null(transform.Decryptor);
 
-			Type[] input = transform.InputTypes;
-			Assert.AreEqual (1, input.Length, "Input #");
-			Assert.AreEqual (typeof (XmlDocument), input [0], "Input Type");
+            Type[] input = transform.InputTypes;
+            Assert.Equal(1, input.Length);
+            Assert.Equal(typeof(XmlDocument), input[0]);
 
-			Type[] output = transform.OutputTypes;
-			Assert.AreEqual (1, output.Length, "Output #");
-			Assert.AreEqual (typeof (XmlDocument), output [0], "Output Type");
-		}
+            Type[] output = transform.OutputTypes;
+            Assert.Equal(1, output.Length);
+            Assert.Equal(typeof(XmlDocument), output[0]);
+        }
 
-		[Test]
-		public void InputTypes ()
-		{
-			// property does not return a clone
-			transform.InputTypes [0] = null;
-			Assert.IsNull (transform.InputTypes [0]);
+        [Fact]
+        public void InputTypes()
+        {
+            // property does not return a clone
+            transform.InputTypes[0] = null;
+            Assert.Null(transform.InputTypes[0]);
 
-			// it's not a static array
-			transform = new UnprotectedXmlLicenseTransform ();
-			Assert.IsNotNull (transform.InputTypes [0]);
-		}
+            // it's not a static array
+            transform = new UnprotectedXmlLicenseTransform();
+            Assert.NotNull(transform.InputTypes[0]);
+        }
 
-		[Test]
-		public void GetInnerXml ()
-		{
-			XmlNodeList xnl = transform.UnprotectedGetInnerXml ();
-			Assert.IsNull (xnl, "Default InnerXml");
-		}
+        [Fact]
+        public void GetInnerXml()
+        {
+            XmlNodeList xnl = transform.UnprotectedGetInnerXml();
+            Assert.Null(xnl);
+        }
 
-		[Test]
-		public void OutputTypes ()
-		{
-			// property does not return a clone
-			transform.OutputTypes [0] = null;
-			Assert.IsNull (transform.OutputTypes [0], "#1");
+        [Fact]
+        public void OutputTypes()
+        {
+            // property does not return a clone
+            transform.OutputTypes[0] = null;
+            Assert.Null(transform.OutputTypes[0]);
 
-			// it's not a static array
-			transform = new UnprotectedXmlLicenseTransform ();
-			Assert.IsNotNull (transform.OutputTypes [0], "#2");
-		}
-	}
+            // it's not a static array
+            transform = new UnprotectedXmlLicenseTransform();
+            Assert.NotNull(transform.OutputTypes[0]);
+        }
+    }
 }
 
