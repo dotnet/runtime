@@ -52,7 +52,7 @@
 //        }
 //    }
 //
-//    while(count > 8)
+//    while(count >= 8)
 //    {
 //        *(uintptr_t*)dst = valEx;
 //        dst = (uintptr_t*)dst + 1;
@@ -121,11 +121,9 @@ LOCAL_LABEL(JIT_MemSet_0x60):
     cbnz        x2,LOCAL_LABEL(JIT_MemSet_0x60)
 LOCAL_LABEL(JIT_MemSet_0x7c):
     cmp         x2,#8
-    bls         LOCAL_LABEL(JIT_MemSet_0xb8)
-    mov         x8,#-9
-    add         x8,x2,x8
-    lsr         x8,x8,#3
-    add         x11,x8,#1
+    blo         LOCAL_LABEL(JIT_MemSet_0xb8)
+    lsr         x8,x2,#3
+    mov         x11,x8
     mov         x10,x0
     add         x8,x10,x11, lsl #3
 LOCAL_LABEL(JIT_MemSet_0x9c):
@@ -188,7 +186,7 @@ LEAF_END_MARKED JIT_MemSet, _TEXT
 //        }
 //    }
 //
-//    while(count > 8)
+//    while(count >= 8)
 //    {
 //        *(uintptr_t*)dst = *(uintptr_t*)src;
 //        dst = (uintptr_t*)dst + 1;
@@ -257,11 +255,8 @@ LOCAL_LABEL(JIT_MemCpy_0x5c):
     cbnz        x2,LOCAL_LABEL(JIT_MemCpy_0x5c)
 LOCAL_LABEL(JIT_MemCpy_0x80):
     cmp         x2,#8
-    bls         LOCAL_LABEL(JIT_MemCpy_0xb4)
-    mov         x8,#-9
-    add         x8,x2,x8
-    lsr         x8,x8,#3
-    add         x9,x8,#1
+    blo         LOCAL_LABEL(JIT_MemCpy_0xb4)
+    lsr         x9,x2,#3
     mov         x8,#-8
     madd        x2,x9,x8,x2
 LOCAL_LABEL(JIT_MemCpy_0xa0):
