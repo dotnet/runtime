@@ -11,7 +11,7 @@
   <ItemGroup>
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
-    <Compile Include="DataObjectTest.cs" />
+    <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
     <Compile Include="DSAKeyValueTest.cs" />
     <Compile Include="DsaKeyValueTests.cs" />
