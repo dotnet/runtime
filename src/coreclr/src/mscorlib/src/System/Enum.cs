@@ -157,7 +157,7 @@ namespace System
             Debug.Assert(names.Length == values.Length);
 
             int index = values.Length - 1;
-            StringBuilder retval = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
             bool firstTime = true;
             ulong saveResult = result;
 
@@ -173,31 +173,40 @@ namespace System
                 {
                     result -= values[index];
                     if (!firstTime)
-                        retval.Insert(0, enumSeparatorString);
+                        sb.Insert(0, enumSeparatorString);
 
-                    retval.Insert(0, names[index]);
+                    sb.Insert(0, names[index]);
                     firstTime = false;
                 }
 
                 index--;
             }
 
-            // We were unable to represent this number as a bitwise or of valid flags
+            string returnString;
             if (result != 0)
-                return null; // return null so the caller knows to .ToString() the input
-
-            // For the case when we have zero
-            if (saveResult == 0)
             {
+                // We were unable to represent this number as a bitwise or of valid flags
+                returnString = null; // return null so the caller knows to .ToString() the input
+            }
+            else if (saveResult == 0)
+            {
+                // For the cases when we have zero
                 if (values.Length > 0 && values[0] == 0)
-                    return names[0]; // Zero was one of the enum values.
+                {
+                    returnString = names[0]; // Zero was one of the enum values.
+                }
                 else
-                    return "0";
+                {
+                    returnString = "0";
+                }
             }
             else
             {
-                return retval.ToString(); // Return the string representation
+                returnString = sb.ToString(); // Return the string representation
             }
+
+            StringBuilderCache.Release(sb);
+            return returnString;
         }
 
         internal static ulong ToUInt64(Object value)
