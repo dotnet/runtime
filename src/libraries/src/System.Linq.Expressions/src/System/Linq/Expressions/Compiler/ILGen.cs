@@ -193,10 +193,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 il.Emit(OpCodes.Ldelem_Ref);
             }
-            else if (type.GetTypeInfo().IsEnum)
-            {
-                il.Emit(OpCodes.Ldelem, type);
-            }
             else
             {
                 switch (type.GetTypeCode())
@@ -245,11 +241,6 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(type != null);
 
-            if (type.GetTypeInfo().IsEnum)
-            {
-                il.Emit(OpCodes.Stelem, type);
-                return;
-            }
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
