@@ -830,16 +830,11 @@ namespace System.Linq.Expressions.Interpreter
                             _instructions.EmitEqual(typeof(object));
                             _instructions.EmitBranchFalse(callMethod);
 
-                            if (node.NodeType == ExpressionType.Equal)
-                            {
-                                // right null, left not, false
-                                _instructions.EmitLoad(AstUtils.BoxedFalse, typeof(bool));
-                            }
-                            else
-                            {
-                                // right null, left not, true
-                                _instructions.EmitLoad(AstUtils.BoxedTrue, typeof(bool));
-                            }
+                            // right null, left not, false
+                            // right null, left not, true
+                            _instructions.EmitLoad(
+                                node.NodeType == ExpressionType.Equal ? AstUtils.BoxedFalse : AstUtils.BoxedTrue,
+                                typeof(bool));
                             _instructions.EmitBranch(end, hasResult: false, hasValue: true);
 
                             // both are not null
