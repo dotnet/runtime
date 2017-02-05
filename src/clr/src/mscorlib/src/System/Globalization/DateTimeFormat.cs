@@ -1124,14 +1124,6 @@ namespace System {
         // local DateTime with a format that will be interpreted as UTC.
         internal static void InvalidFormatForLocal(String format, DateTime dateTime) {
         }
-
-        // This is an MDA for cases when the user is using a local format with
-        // a Utc DateTime.
-        internal static void InvalidFormatForUtc(String format, DateTime dateTime) {
-#if MDA_SUPPORTED
-            Mda.DateTimeInvalidLocalFormat();
-#endif
-        }
         
         
     }

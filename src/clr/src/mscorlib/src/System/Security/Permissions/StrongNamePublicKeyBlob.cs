@@ -9,28 +9,13 @@ namespace System.Security.Permissions
     using System.Diagnostics.Contracts;
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] sealed public class StrongNamePublicKeyBlob
+    [Serializable] sealed internal class StrongNamePublicKeyBlob
     {
         internal byte[] PublicKey;
         
         internal StrongNamePublicKeyBlob()
         {
         }
-        
-        public StrongNamePublicKeyBlob( byte[] publicKey )
-        {
-            if (publicKey == null)
-                throw new ArgumentNullException( nameof(PublicKey) );
-            Contract.EndContractBlock();
-        
-            this.PublicKey = new byte[publicKey.Length];
-            Array.Copy( publicKey, 0, this.PublicKey, 0, publicKey.Length );
-        }
-        
-        internal StrongNamePublicKeyBlob( String publicKey )
-        {
-            this.PublicKey = Hex.DecodeHexString( publicKey );
-        }        
         
         private static bool CompareArrays( byte[] first, byte[] second )
         {

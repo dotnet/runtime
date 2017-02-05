@@ -226,9 +226,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void FailFast(String message, uint exitCode);
-
         // This overload of FailFast will allow you to specify the exception object
         // whose bucket details *could* be used when undergoing the failfast process.
         // To be specific:
@@ -252,7 +249,7 @@ namespace System {
         **Arguments: The current directory to which to switch to the setter.
         **Exceptions: 
         ==============================================================================*/
-        public static String CurrentDirectory
+        internal static String CurrentDirectory
         {
             get{
                 return Directory.GetCurrentDirectory();
@@ -264,7 +261,7 @@ namespace System {
         }
 
         // Returns the system directory (ie, C:\WinNT\System32).
-        public static String SystemDirectory {
+        internal static String SystemDirectory {
             get {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
@@ -272,20 +269,6 @@ namespace System {
                 if (r==0) __Error.WinIOError();
                 String path = sb.ToString();
 
-                return path;
-            }
-        }
-
-        // Returns the windows directory (ie, C:\WinNT).
-        // Used by NLS+ custom culures only at the moment.
-        internal static String InternalWindowsDirectory {
-            get {
-                StringBuilder sb = new StringBuilder(Path.MaxPath);
-                int r = Win32Native.GetWindowsDirectory(sb, Path.MaxPath);
-                Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r==0) __Error.WinIOError();
-                String path = sb.ToString();
-                
                 return path;
             }
         }
@@ -381,15 +364,6 @@ namespace System {
             }
         }
 
-        public static int SystemPageSize {
-            get {
-                (new EnvironmentPermission(PermissionState.Unrestricted)).Demand();
-                Win32Native.SYSTEM_INFO info = new Win32Native.SYSTEM_INFO();
-                Win32Native.GetSystemInfo(ref info);
-                return info.dwPageSize;
-            }
-        }
-
         /*==============================GetCommandLineArgs==============================
         **Action: Gets the command line and splits it appropriately to deal with whitespace,
         **        quotes, and escape characters.
@@ -474,38 +448,6 @@ namespace System {
 
             return block;
         }
-
-        /*===============================GetLogicalDrives===============================
-        **Action: Retrieves the names of the logical drives on this machine in the  form "C:\". 
-        **Arguments:   None.
-        **Exceptions:  IOException.
-        **Permissions: SystemInfo Permission.
-        ==============================================================================*/
-        public static String[] GetLogicalDrives() {
-            new EnvironmentPermission(PermissionState.Unrestricted).Demand();
-                                 
-            int drives = Win32Native.GetLogicalDrives();
-            if (drives==0)
-                __Error.WinIOError();
-            uint d = (uint)drives;
-            int count = 0;
-            while (d != 0) {
-                if (((int)d & 1) != 0) count++;
-                d >>= 1;
-            }
-            String[] result = new String[count];
-            char[] root = new char[] {'A', ':', '\\'};
-            d = (uint)drives;
-            count = 0;
-            while (d != 0) {
-                if (((int)d & 1) != 0) {
-                    result[count++] = new String(root);
-                }
-                d >>= 1;
-                root[0]++;
-            }
-            return result;
-        }
         
         /*===================================NewLine====================================
         **Action: A property which returns the appropriate newline string for the given
@@ -543,23 +485,6 @@ namespace System {
             }
         }
 
-        
-        /*==================================WorkingSet==================================
-        **Action:
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ==============================================================================*/
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern long GetWorkingSet();
-
-        public static long WorkingSet {
-            get {
-                new EnvironmentPermission(PermissionState.Unrestricted).Demand();
-                return GetWorkingSet();
-            }
-        }
-
 
         /*==================================OSVersion===================================
         **Action:
@@ -567,7 +492,7 @@ namespace System {
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        public static OperatingSystem OSVersion {
+        internal static OperatingSystem OSVersion {
             get {
                 Contract.Ensures(Contract.Result<OperatingSystem>() != null);
 
@@ -724,16 +649,6 @@ namespace System {
             return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3 });
         }
 
-        internal static string GetResourceString(string key, object val0, object val1, object val2, object val3, object val4)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3, val4 });
-        }
-
-        internal static string GetResourceString(string key, object val0, object val1, object val2, object val3, object val4, object val5)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3, val4, val5 });
-        }
-
         internal static String GetResourceString(string key, params object[] values)
         {
             return GetResourceStringFormatted(key, values);
@@ -747,83 +662,16 @@ namespace System {
             return String.Format(CultureInfo.CurrentCulture, rs, values);
         }
 
-        // The following two internal methods are not used anywhere within the framework,
-        // but are being kept around as external platforms built on top of us have taken 
-        // dependency by using private reflection on them for getting system resource strings 
-        private static String GetRuntimeResourceString(String key) {
-            return GetResourceString(key);
-        }
-
-        private static String GetRuntimeResourceString(String key, params Object[] values) {
-            return GetResourceStringFormatted(key,values);
-        }
-
-        public static bool Is64BitProcess {
-            get {
-#if BIT64
-                    return true;
-#else // 32
-                    return false;
-#endif
-            }
-        }
-
-        public static bool Is64BitOperatingSystem {
-            get {
-#if BIT64
-                    // 64-bit programs run only on 64-bit
-                    return true;
-#else // 32
-                    bool isWow64; // WinXP SP2+ and Win2k3 SP1+
-                    return Win32Native.DoesWin32MethodExist(Win32Native.KERNEL32, "IsWow64Process")
-                        && Win32Native.IsWow64Process(Win32Native.GetCurrentProcess(), out isWow64)
-                        && isWow64;
-#endif
-            }
-        }
-
         public static extern bool HasShutdownStarted {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
-        public static string UserName {
-            get {
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read,"UserName").Demand();
-
-                StringBuilder sb = new StringBuilder(256);
-                int size = sb.Capacity;
-                if (Win32Native.GetUserName(sb, ref size))
-                {
-                    return sb.ToString();
-                }
-                return String.Empty;
-            }
-        }
-
-        public static bool UserInteractive
+        internal static bool UserInteractive
         {
             get {
                 return true;
             }
-        }
-        
-        public static string GetFolderPath(SpecialFolder folder) {
-            if (!Enum.IsDefined(typeof(SpecialFolder), folder))
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)folder));
-            Contract.EndContractBlock();
-
-            return InternalGetFolderPath(folder, SpecialFolderOption.None);
-        }
-
-        public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option) {
-            if (!Enum.IsDefined(typeof(SpecialFolder),folder))
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)folder));
-            if (!Enum.IsDefined(typeof(SpecialFolderOption),option))
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)option));
-            Contract.EndContractBlock();
-
-            return InternalGetFolderPath(folder, option);
         }
 
         internal static string UnsafeGetFolderPath(SpecialFolder folder)
@@ -851,38 +699,7 @@ namespace System {
             }
         }
 
-        public static string UserDomainName
-        {
-            get {
-                new EnvironmentPermission(EnvironmentPermissionAccess.Read,"UserDomain").Demand();
-
-                byte[] sid = new byte[1024];
-                int sidLen = sid.Length;
-                StringBuilder domainName = new StringBuilder(1024);
-                uint domainNameLen = (uint) domainName.Capacity;
-                int peUse;
-
-                byte ret = Win32Native.GetUserNameEx(Win32Native.NameSamCompatible, domainName, ref domainNameLen);
-                    if (ret == 1) {                        
-                        string samName = domainName.ToString();
-                        int index = samName.IndexOf('\\');
-                        if( index != -1) {
-                            return samName.Substring(0, index);
-                        }
-                    }
-                    domainNameLen = (uint) domainName.Capacity;                    
-                    
-                bool success = Win32Native.LookupAccountName(null, UserName, sid, ref sidLen, domainName, ref domainNameLen, out peUse);
-                if (!success)  {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    throw new InvalidOperationException(Win32Native.GetMessage(errorCode));
-                }
-
-                return domainName.ToString();
-            }
-        }
-
-        public enum SpecialFolderOption {
+        internal enum SpecialFolderOption {
             None        = 0,
             Create      = Win32Native.CSIDL_FLAG_CREATE,
             DoNotVerify = Win32Native.CSIDL_FLAG_DONT_VERIFY,
@@ -894,7 +711,7 @@ namespace System {
 //////!!!!!! 2) ndp\clr\src\BCL\System\Environment.cs             !!!!!!////////
 //////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!////////
         [ComVisible(true)]
-        public enum SpecialFolder {
+        internal enum SpecialFolder {
             //  
             //      Represents the file system directory that serves as a common repository for
             //       application-specific data for the current, roaming user. 
@@ -1065,7 +882,7 @@ namespace System {
             return GetEnvironmentVariableCore(variable);
         }
 
-        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
+        internal static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target)
         {
             if (variable == null)
             {
@@ -1083,7 +900,7 @@ namespace System {
             return GetEnvironmentVariablesCore();
         }
 
-        public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
+        internal static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
         {
             ValidateTarget(target);
 
@@ -1098,7 +915,7 @@ namespace System {
             SetEnvironmentVariableCore(variable, value);
         }
 
-        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
+        internal static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target)
         {
             ValidateVariableAndValue(variable, ref value);
             ValidateTarget(target);

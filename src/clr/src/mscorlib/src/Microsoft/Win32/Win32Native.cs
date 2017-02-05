@@ -380,20 +380,6 @@ namespace Microsoft.Win32 {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-            internal struct SYSTEM_INFO {  
-            internal int dwOemId;    // This is a union of a DWORD and a struct containing 2 WORDs.
-            internal int dwPageSize;  
-            internal IntPtr lpMinimumApplicationAddress;  
-            internal IntPtr lpMaximumApplicationAddress;  
-            internal IntPtr dwActiveProcessorMask;  
-            internal int dwNumberOfProcessors;  
-            internal int dwProcessorType;  
-            internal int dwAllocationGranularity;  
-            internal short wProcessorLevel;  
-            internal short wProcessorRevision;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
         internal class SECURITY_ATTRIBUTES {
             internal int nLength = 0;
             // don't remove null, or this field will disappear in bcl.small
@@ -426,206 +412,6 @@ namespace Microsoft.Win32 {
                 fileSizeHigh = findData.nFileSizeHigh; 
                 fileSizeLow = findData.nFileSizeLow; 
             }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct FILE_TIME {
-            public FILE_TIME(long fileTime) {
-                ftTimeLow = (uint) fileTime;
-                ftTimeHigh = (uint) (fileTime >> 32);
-            }
-
-            public long ToTicks() {
-                return ((long) ftTimeHigh << 32) + ftTimeLow;
-            }
-
-            internal uint ftTimeLow;
-            internal uint ftTimeHigh;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct KERB_S4U_LOGON {
-            internal uint                   MessageType;
-            internal uint                   Flags;
-            internal UNICODE_INTPTR_STRING  ClientUpn;   // REQUIRED: UPN for client
-            internal UNICODE_INTPTR_STRING  ClientRealm; // Optional: Client Realm, if known
-        }
-
-        [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal struct LSA_OBJECT_ATTRIBUTES {
-            internal int Length;
-            internal IntPtr RootDirectory;
-            internal IntPtr ObjectName;
-            internal int Attributes;
-            internal IntPtr SecurityDescriptor;
-            internal IntPtr SecurityQualityOfService;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct UNICODE_STRING {
-            internal ushort Length;
-            internal ushort MaximumLength;
-            [MarshalAs(UnmanagedType.LPWStr)] internal string Buffer;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct UNICODE_INTPTR_STRING {
-            /// <remarks>
-            ///     Note - this constructor extracts the raw pointer from the safe handle, so any
-            ///     strings created with this version of the constructor will be unsafe to use after the buffer
-            ///     has been freed.
-            /// </remarks>
-            internal UNICODE_INTPTR_STRING (int stringBytes, SafeLocalAllocHandle buffer) {
-                BCLDebug.Assert(buffer == null || (stringBytes >= 0 && (ulong)stringBytes <= buffer.ByteLength),
-                                "buffer == null || (stringBytes >= 0 && stringBytes <= buffer.ByteLength)");
-
-                this.Length = (ushort) stringBytes;
-                this.MaxLength = (ushort) buffer.ByteLength;
-
-                // Marshaling with a SafePointer does not work correctly, so unfortunately we need to extract
-                // the raw handle here.
-                this.Buffer = buffer.DangerousGetHandle();
-            }
-
-            /// <remarks>
-            ///     This constructor should be used for constructing UNICODE_STRING structures with pointers
-            ///     into a block of memory managed by a SafeHandle or the GC.  It shouldn't be used to own
-            ///     any memory on its own.
-            /// </remarks>
-            internal UNICODE_INTPTR_STRING(int stringBytes, IntPtr buffer) {
-                BCLDebug.Assert((stringBytes == 0 && buffer == IntPtr.Zero) || (stringBytes > 0 && stringBytes <= UInt16.MaxValue && buffer != IntPtr.Zero),
-                                "(stringBytes == 0 && buffer == IntPtr.Zero) || (stringBytes > 0 && stringBytes <= UInt16.MaxValue && buffer != IntPtr.Zero)");
-
-                this.Length = (ushort)stringBytes;
-                this.MaxLength = (ushort)stringBytes;
-                this.Buffer = buffer;
-            }
-
-            internal ushort Length;
-            internal ushort MaxLength;
-            internal IntPtr Buffer;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct LSA_TRANSLATED_NAME {
-            internal int Use;
-            internal UNICODE_INTPTR_STRING Name;
-            internal int DomainIndex;
-        }
-
-        [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal struct LSA_TRANSLATED_SID {
-            internal int Use;
-            internal uint Rid;
-            internal int DomainIndex;
-        }
-
-        [StructLayoutAttribute(LayoutKind.Sequential)]
-        internal struct LSA_TRANSLATED_SID2 {
-            internal int Use;
-            internal IntPtr Sid;
-            internal int DomainIndex;
-            uint Flags;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct LSA_TRUST_INFORMATION {
-            internal UNICODE_INTPTR_STRING Name;
-            internal IntPtr Sid;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct LSA_REFERENCED_DOMAIN_LIST {
-            internal int Entries;
-            internal IntPtr Domains;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct LUID {
-            internal uint LowPart;
-            internal uint HighPart;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct LUID_AND_ATTRIBUTES {
-            internal LUID Luid;
-            internal uint Attributes;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct QUOTA_LIMITS {
-            internal IntPtr PagedPoolLimit;
-            internal IntPtr NonPagedPoolLimit;
-            internal IntPtr MinimumWorkingSetSize;
-            internal IntPtr MaximumWorkingSetSize;
-            internal IntPtr PagefileLimit;
-            internal IntPtr TimeLimit;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct SECURITY_LOGON_SESSION_DATA {
-            internal uint       Size;
-            internal LUID       LogonId;
-            internal UNICODE_INTPTR_STRING UserName;
-            internal UNICODE_INTPTR_STRING LogonDomain;
-            internal UNICODE_INTPTR_STRING AuthenticationPackage;
-            internal uint       LogonType;
-            internal uint       Session;
-            internal IntPtr     Sid;
-            internal long       LogonTime;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct SID_AND_ATTRIBUTES {
-            internal IntPtr Sid;
-            internal uint   Attributes;
-            internal static readonly long SizeOf = (long)Marshal.SizeOf(typeof(SID_AND_ATTRIBUTES));
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct TOKEN_GROUPS {
-            internal uint GroupCount;
-            internal SID_AND_ATTRIBUTES Groups; // SID_AND_ATTRIBUTES Groups[ANYSIZE_ARRAY];
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct TOKEN_PRIMARY_GROUP
-        {
-            internal IntPtr PrimaryGroup;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct TOKEN_PRIVILEGE {
-            internal uint                PrivilegeCount;
-            internal LUID_AND_ATTRIBUTES Privilege;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct TOKEN_SOURCE {
-            private const int TOKEN_SOURCE_LENGTH = 8;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=TOKEN_SOURCE_LENGTH)]
-            internal char[] Name;
-            internal LUID   SourceIdentifier;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct TOKEN_STATISTICS {
-            internal LUID   TokenId;
-            internal LUID   AuthenticationId;
-            internal long   ExpirationTime;
-            internal uint   TokenType;
-            internal uint   ImpersonationLevel;
-            internal uint   DynamicCharged;
-            internal uint   DynamicAvailable;
-            internal uint   GroupCount;
-            internal uint   PrivilegeCount;
-            internal LUID   ModifiedId;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
-        internal struct TOKEN_USER {
-            internal SID_AND_ATTRIBUTES User;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -676,9 +462,6 @@ namespace Microsoft.Win32 {
         // From WinBase.h
         internal const int SEM_FAILCRITICALERRORS = 1;
 
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
-
         [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=true)]
         internal static extern int FormatMessage(int dwFlags, IntPtr lpSource,
                     int dwMessageId, int dwLanguageId, [Out]StringBuilder lpBuffer,
@@ -703,12 +486,6 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, EntryPoint="LocalAlloc")]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal static extern IntPtr LocalAlloc_NoSafeHandle(int uFlags, UIntPtr sizetdwBytes);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true)]
-        internal static extern 
-        SafeLocalAllocHandle LocalAlloc(
-            [In] int uFlags, 
-            [In] UIntPtr sizetdwBytes);
 
         [DllImport(KERNEL32, SetLastError=true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
@@ -742,45 +519,6 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         unsafe internal static extern bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
 
-
-         
-        // Note - do NOT use this to call methods.  Use P/Invoke, which will
-        // do much better things w.r.t. marshaling, pinning memory, security 
-        // stuff, better interactions with thread aborts, etc.  This is used
-        // solely by DoesWin32MethodExist for avoiding try/catch EntryPointNotFoundException
-        // in scenarios where an OS Version check is insufficient
-        [DllImport(KERNEL32, CharSet=CharSet.Ansi, BestFitMapping=false, SetLastError=true, ExactSpelling=true)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, String methodName);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=false, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        private static extern IntPtr GetModuleHandle(String moduleName);
-
-        internal static bool DoesWin32MethodExist(String moduleName, String methodName)
-        {
-            // GetModuleHandle does not increment the module's ref count, so we don't need to call FreeLibrary.
-            IntPtr hModule = Win32Native.GetModuleHandle(moduleName);
-            if (hModule == IntPtr.Zero) {
-                BCLDebug.Assert(hModule != IntPtr.Zero, "GetModuleHandle failed.  Dll isn't loaded?");
-                return false;
-            }
-            IntPtr functionPointer = Win32Native.GetProcAddress(hModule, methodName);
-            return (functionPointer != IntPtr.Zero);       
-        }
-
-        // There is no need to call CloseProcess or to use a SafeHandle if you get the handle
-        // using GetCurrentProcess as it returns a pseudohandle
-        [DllImport(KERNEL32, SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool IsWow64Process(
-                   [In]
-                   IntPtr hSourceProcessHandle,
-                   [Out, MarshalAs(UnmanagedType.Bool)]
-                   out bool isWow64);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern uint GetTempPath(int bufferLen, [Out]StringBuilder buffer);
-
         [DllImport(KERNEL32, CharSet=CharSet.Ansi, ExactSpelling=true, EntryPoint="lstrlenA")]
         internal static extern int lstrlenA(IntPtr ptr);
 
@@ -807,10 +545,8 @@ namespace Microsoft.Win32 {
         [DllImport(Win32Native.OLEAUT32)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SysStringByteLen(IntPtr bstr);
-#endif
 
-        [DllImport(KERNEL32)]
-        internal static extern int GetACP();
+#endif
 
         [DllImport(KERNEL32, SetLastError=true)]
         internal static extern bool SetEvent(SafeWaitHandle handle);
@@ -835,118 +571,12 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]            
         internal static extern bool ReleaseMutex(SafeWaitHandle handle);
 
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal unsafe static extern int GetFullPathName(char* path, int numBufferChars, char* buffer, IntPtr mustBeZero);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal unsafe static extern int GetFullPathName(String path, int numBufferChars, [Out]StringBuilder buffer, IntPtr mustBeZero);
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal unsafe static extern int GetLongPathName(char* path, char* longPathBuffer, int bufferLength);
-
-        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
-        internal unsafe static extern uint GetFullPathNameW(char* path, uint numBufferChars, SafeHandle buffer, IntPtr mustBeZero);
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int GetLongPathName(String path, [Out]StringBuilder longPathBuffer, int bufferLength);
-
-        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
-        internal static extern uint GetLongPathNameW(SafeHandle lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern uint GetLongPathNameW(string lpszShortPath, SafeHandle lpszLongPath, uint cchBuffer);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern SafeFileMappingHandle CreateFileMapping(SafeFileHandle hFile, IntPtr lpAttributes, uint fProtect, uint dwMaximumSizeHigh, uint dwMaximumSizeLow, String lpName);
-
-        [DllImport(KERNEL32, SetLastError=true, ExactSpelling=true)]
-        internal static extern IntPtr MapViewOfFile(
-            SafeFileMappingHandle handle, uint dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow, UIntPtr dwNumerOfBytesToMap);
-
-        [DllImport(KERNEL32, ExactSpelling=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress );
-
         [DllImport(KERNEL32, SetLastError=true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool CloseHandle(IntPtr handle);
 
-        [DllImport(KERNEL32)]
-        internal static extern int GetFileType(SafeFileHandle handle);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern bool SetEndOfFile(SafeFileHandle hFile);
-
-        [DllImport(KERNEL32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool FlushFileBuffers(SafeFileHandle hFile);
-
-        [DllImport(KERNEL32, SetLastError=true, EntryPoint="SetFilePointer")]
-        private unsafe static extern int SetFilePointerWin32(SafeFileHandle handle, int lo, int * hi, int origin);
-        
-        internal unsafe static long SetFilePointer(SafeFileHandle handle, long offset, System.IO.SeekOrigin origin, out int hr) {
-            hr = 0;
-            int lo = (int) offset;
-            int hi = (int) (offset >> 32);
-            lo = SetFilePointerWin32(handle, lo, &hi, (int) origin);
-
-            if (lo == -1 && ((hr = Marshal.GetLastWin32Error()) != 0))
-                return -1;
-            return (long) (((ulong) ((uint) hi)) << 32) | ((uint) lo);
-        }
-
-        // Note there are two different ReadFile prototypes - this is to use 
-        // the type system to force you to not trip across a "feature" in 
-        // Win32's async IO support.  You can't do the following three things
-        // simultaneously: overlapped IO, free the memory for the overlapped 
-        // struct in a callback (or an EndRead method called by that callback), 
-        // and pass in an address for the numBytesRead parameter.  
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        unsafe internal static extern int ReadFile(SafeFileHandle handle, byte* bytes, int numBytesToRead, IntPtr numBytesRead_mustBeZero, NativeOverlapped* overlapped);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        unsafe internal static extern int ReadFile(SafeFileHandle handle, byte* bytes, int numBytesToRead, out int numBytesRead, IntPtr mustBeZero);
-        
-        // Note there are two different WriteFile prototypes - this is to use 
-        // the type system to force you to not trip across a "feature" in 
-        // Win32's async IO support.  You can't do the following three things
-        // simultaneously: overlapped IO, free the memory for the overlapped 
-        // struct in a callback (or an EndWrite method called by that callback),
-        // and pass in an address for the numBytesRead parameter.  
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static unsafe extern int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, IntPtr numBytesWritten_mustBeZero, NativeOverlapped* lpOverlapped);
-
         [DllImport(KERNEL32, SetLastError=true)]
         internal static unsafe extern int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
-
-        // This is only available on Vista or higher
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static unsafe extern bool CancelIoEx(SafeFileHandle handle, NativeOverlapped* lpOverlapped);
-
-        // NOTE: The out parameters are PULARGE_INTEGERs and may require
-        // some byte munging magic.
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern bool GetDiskFreeSpaceEx(String drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern int GetDriveType(String drive);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern bool GetVolumeInformation(String drive, [Out]StringBuilder volumeName, int volumeNameBufLen, out int volSerialNumber, out int maxFileNameLen, out int fileSystemFlags, [Out]StringBuilder fileSystemName, int fileSystemNameBufLen);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern bool SetVolumeLabel(String driveLetter, String volumeName);
-
-        // The following 4 methods are used by Microsoft.WlcProfile
-        [DllImport(KERNEL32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool QueryPerformanceCounter(out long value);
-
-        [DllImport(KERNEL32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool QueryPerformanceFrequency(out long value);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern SafeWaitHandle CreateSemaphore(SECURITY_ATTRIBUTES lpSecurityAttributes, int initialCount, int maximumCount, String name);
@@ -976,24 +606,8 @@ namespace Microsoft.Win32 {
         }
 
         [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern int GetWindowsDirectory([Out]StringBuilder sb, int length);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
         internal static extern int GetSystemDirectory([Out]StringBuilder sb, int length);
 
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal unsafe static extern bool SetFileTime(SafeFileHandle hFile, FILE_TIME* creationTime,
-                    FILE_TIME* lastAccessTime, FILE_TIME* lastWriteTime);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern int GetFileSize(SafeFileHandle hFile, out int highSize);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern bool LockFile(SafeFileHandle handle, int offsetLow, int offsetHigh, int countLow, int countHigh);
-        
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern bool UnlockFile(SafeFileHandle handle, int offsetLow, int offsetHigh, int countLow, int countHigh);
-  
         internal static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);  // WinBase.h
 
         // Note, these are #defines used to extract handles, and are NOT handles.
@@ -1142,36 +756,6 @@ namespace Microsoft.Win32 {
         }
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        private static extern bool CopyFileEx(String src,
-                                              String dst,
-                                              IntPtr progressRoutine,
-                                              IntPtr progressData,
-                                              ref uint cancel,
-                                              uint flags);
-
-        internal static bool CopyFile(String src, String dst, bool failIfExists)
-        {
-            uint cancel = 0;
-            return CopyFileEx(src, dst, IntPtr.Zero, IntPtr.Zero, ref cancel, failIfExists ? 1U : 0U);
-        }
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool CreateDirectory(
-                    String path, SECURITY_ATTRIBUTES lpSecurityAttributes);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool DeleteFile(String path);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool ReplaceFile(String replacedFileName, String replacementFileName, String backupFileName, int dwReplaceFlags, IntPtr lpExclude, IntPtr lpReserved);
-
-        [DllImport(ADVAPI32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool DecryptFile(String path, int reservedMustBeZero);
-
-        [DllImport(ADVAPI32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool EncryptFile(String path);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern SafeFindHandle FindFirstFile(String fileName, [In, Out] Win32Native.WIN32_FIND_DATA data);
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
@@ -1184,11 +768,6 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool FindClose(IntPtr handle);
 
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int GetCurrentDirectory(
-                  int nBufferLength,
-                  [Out]StringBuilder lpBuffer);
-
         [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
         internal static extern uint GetCurrentDirectoryW(uint nBufferLength, char[] lpBuffer);
 
@@ -1196,36 +775,10 @@ namespace Microsoft.Win32 {
         internal static extern bool GetFileAttributesEx(String name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool SetFileAttributes(String name, int attr);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        internal static extern int GetLogicalDrives();
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern uint GetTempFileName(String tmpPath, String prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        private static extern bool MoveFileEx(String src, String dst, uint flags);
-
-        internal static bool MoveFile(String src, String dst)
-        {
-            return MoveFileEx(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
-        }
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool DeleteVolumeMountPoint(String mountPoint);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern bool RemoveDirectory(String path);
-
-        [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern bool SetCurrentDirectory(String path);
 
         [DllImport(KERNEL32, SetLastError=false, EntryPoint="SetErrorMode", ExactSpelling=true)]
         private static extern int SetErrorMode_VistaAndOlder(int newMode);
-
-        [DllImport(KERNEL32, SetLastError=true, EntryPoint="SetThreadErrorMode")]
-        private static extern bool SetErrorMode_Win7AndNewer(int newMode, out int oldMode);
 
         // RTM versions of Win7 and Windows Server 2008 R2
         private static readonly Version ThreadErrorModeMinOsVersion = new Version(6, 1, 7600);
@@ -1241,13 +794,6 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32)]
         internal static extern unsafe int WideCharToMultiByte(uint cp, uint flags, char* pwzSource, int cchSource, byte* pbDestBuffer, int cbDestBuffer, IntPtr null1, IntPtr null2);
 
-        // A Win32 HandlerRoutine
-        internal delegate bool ConsoleCtrlHandlerRoutine(int controlType);
-
-        [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal static extern bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, bool addOrRemove);
-
         [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
         internal static extern bool SetEnvironmentVariable(string lpName, string lpValue);
         
@@ -1262,9 +808,6 @@ namespace Microsoft.Win32 {
 
         [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true)]
         internal static extern uint GetCurrentProcessId();
-
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto)]
-        internal static extern bool GetUserName([Out]StringBuilder lpBuffer, ref int nSize);
 
         [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal extern static int GetComputerName([Out]StringBuilder nameBuffer, ref int bufferSize);
@@ -1282,24 +825,6 @@ namespace Microsoft.Win32 {
         internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, UIntPtr cb);
 
 #if FEATURE_WIN32_REGISTRY
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegConnectRegistry(String machineName,
-                    SafeRegistryHandle key, out SafeRegistryHandle result);
-    
-        // Note: RegCreateKeyEx won't set the last error on failure - it returns
-        // an error code if it fails.
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegCreateKeyEx(SafeRegistryHandle hKey, String lpSubKey,
-                    int Reserved, String lpClass, int dwOptions,
-                    int samDesired, SECURITY_ATTRIBUTES lpSecurityAttributes,
-                    out SafeRegistryHandle hkResult, out int lpdwDisposition);
-    
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegDeleteKey(SafeRegistryHandle hKey, String lpSubKey);
-
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegDeleteKeyEx(SafeRegistryHandle hKey, String lpSubKey,
-                    int samDesired, int Reserved);
     
         [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern int RegDeleteValue(SafeRegistryHandle hKey, String lpValueName);
@@ -1316,16 +841,8 @@ namespace Microsoft.Win32 {
                     IntPtr lpReserved_MustBeZero, int[] lpType, byte[] lpData,
                     int[] lpcbData);
     
-
-        [DllImport(ADVAPI32)]
-        internal static extern int RegFlushKey(SafeRegistryHandle hKey);
-    
         [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern int RegOpenKeyEx(SafeRegistryHandle hKey, String lpSubKey,
-                    int ulOptions, int samDesired, out SafeRegistryHandle hkResult);
-
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegOpenKeyEx(IntPtr hKey, String lpSubKey,
                     int ulOptions, int samDesired, out SafeRegistryHandle hkResult);
     
         [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
@@ -1355,11 +872,6 @@ namespace Microsoft.Win32 {
         internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
                      int[] lpReserved, ref int lpType, [Out] char[] lpData, 
                      ref int lpcbData);
-    
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
-                    int[] lpReserved, ref int lpType, [Out]StringBuilder lpData,
-                    ref int lpcbData);
     
         [DllImport(ADVAPI32, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern int RegSetValueEx(SafeRegistryHandle hKey, String lpValueName,
@@ -1440,46 +952,10 @@ namespace Microsoft.Win32 {
         internal const int CSIDL_MYMUSIC                    = 0x000d;
         internal const int CSIDL_MYPICTURES                 = 0x0027;
 
-        [DllImport(SHELL32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        internal static extern int SHGetFolderPath(IntPtr hwndOwner, int nFolder, IntPtr hToken, int dwFlags, [Out]StringBuilder lpszPath);
-
         internal const int NameSamCompatible = 2;
-        
-        [DllImport(SECUR32, CharSet=CharSet.Unicode, SetLastError=true)]     
-        // Win32 return type is BOOLEAN (which is 1 byte and not BOOL which is 4bytes)
-        internal static extern byte GetUserNameEx(int format, [Out]StringBuilder domainName, ref uint domainNameLen);
-        
-        [DllImport(ADVAPI32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=false)]
-        internal static extern bool LookupAccountName(string machineName, string accountName, byte[] sid,
-                                 ref int sidLen, [Out]StringBuilder domainName, ref uint domainNameLen, out int peUse);
 
         [DllImport(USER32, SetLastError=true, BestFitMapping=false)]
         internal static extern IntPtr SendMessageTimeout(IntPtr hWnd, int Msg, IntPtr wParam, String lParam, uint fuFlags, uint uTimeout, IntPtr lpdwResult);
-
-        [DllImport(KERNEL32, CharSet=CharSet.Auto, SetLastError=true)]
-        internal static extern IntPtr GetCurrentProcess();
-
-        [DllImport(KERNEL32, CharSet=CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurityAttribute()]
-        internal  unsafe static extern int WideCharToMultiByte(
-            int     CodePage,
-            UInt32    dwFlags,
-            char*  lpWideCharStr,
-            int      cchWideChar,
-            byte*    lpMultiByteStr,
-            int      cchMultiByte,
-            char*   lpDefaultChar,
-            bool*   lpUsedDefaultChar);    
-
-        [DllImport(KERNEL32, CharSet=CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurityAttribute()]
-        internal unsafe static extern int MultiByteToWideChar(
-            int     CodePage,
-            UInt32    dwFlags,
-            byte*    lpMultiByteStr,
-            int      cchMultiByte,
-            char*  lpWideCharStr,
-            int      cchWideChar);
 
         [DllImport(KERNEL32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1491,25 +967,6 @@ namespace Microsoft.Win32 {
                            [Out, MarshalAs(UnmanagedType.LPArray)] byte[] buffer, int length);
 #else
         private const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
-
-        [DllImport("BCrypt.dll", CharSet = CharSet.Unicode)]
-        private static extern uint BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
-
-        internal static void Random(bool bStrong, byte[] buffer, int length)
-        {
-            uint status = BCryptGenRandom(IntPtr.Zero, buffer, length, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-            if (status != STATUS_SUCCESS)
-            {
-                if (status == STATUS_NO_MEMORY)
-                {
-                    throw new OutOfMemoryException();
-                }
-                else
-                {
-                    throw new InvalidOperationException();
-                }
-            }
-        }
 #endif
     }
 }

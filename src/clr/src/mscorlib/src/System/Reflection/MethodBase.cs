@@ -128,20 +128,6 @@ namespace System.Reflection
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
 #if FEATURE_APPX
-
-        // The C# dynamic and VB late bound binders need to call this API. Since we don't have time to make this
-        // public in Dev11, the C# and VB binders currently call this through a delegate. 
-        // When we make this API public (hopefully) in Dev12 we need to change the C# and VB binders to call this
-        // probably statically. The code is located in:
-        // C#: ndp\fx\src\CSharp\Microsoft\CSharp\SymbolTable.cs - Microsoft.CSharp.RuntimeBinder.SymbolTable..cctor
-        // VB: vb\runtime\msvbalib\helpers\Symbols.vb - Microsoft.VisualBasic.CompilerServices.Symbols..cctor
-        internal virtual bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return true;
-            }
-        }
 #endif
         #endregion
 

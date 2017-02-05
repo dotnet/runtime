@@ -68,21 +68,6 @@ namespace Microsoft.Win32
     using System.Diagnostics.CodeAnalysis;
 
     /**
-     * Registry hive values.  Useful only for GetRemoteBaseKey
-     */
-    [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public enum RegistryHive
-    {
-        ClassesRoot = unchecked((int)0x80000000),
-        CurrentUser = unchecked((int)0x80000001),
-        LocalMachine = unchecked((int)0x80000002),
-        Users = unchecked((int)0x80000003),
-        PerformanceData = unchecked((int)0x80000004),
-        CurrentConfig = unchecked((int)0x80000005),
-    }
-
-    /**
      * Registry encapsulation. To get an instance of a RegistryKey use the
      * Registry class's static members then call OpenSubKey.
      *
@@ -91,7 +76,7 @@ namespace Microsoft.Win32
      * @security(checkClassLinking=on)
      */
     [ComVisible(true)]
-    public sealed class RegistryKey : MarshalByRefObject, IDisposable 
+    internal sealed class RegistryKey : MarshalByRefObject, IDisposable 
     {
 
         // We could use const here, if C# supported ELEMENT_TYPE_I fully.
@@ -168,17 +153,6 @@ namespace Microsoft.Win32
          * Creates a RegistryKey.
          *
          * This key is bound to hkey, if writable is <b>false</b> then no write operations
-         * will be allowed.
-         */
-        private RegistryKey(SafeRegistryHandle  hkey, bool writable, RegistryView view)
-            : this(hkey, writable, false, false, false, view) {
-        }
-
-
-        /**
-         * Creates a RegistryKey.
-         *
-         * This key is bound to hkey, if writable is <b>false</b> then no write operations
          * will be allowed. If systemkey is set then the hkey won't be released
          * when the object is GC'ed.
          * The remoteKey flag when set to true indicates that we are dealing with registry entries
@@ -239,260 +213,9 @@ namespace Microsoft.Win32
             }
         }
 
-        public void Flush() {
-            if (hkey != null) {
-                 if (IsDirty()) {
-                     Win32Native.RegFlushKey(hkey);
-                }
-            }
-        }
-
         void IDisposable.Dispose()
         {
             Dispose(true);
-        }
-
-        /**
-         * Creates a new subkey, or opens an existing one.
-         *
-         * @param subkey Name or path to subkey to create or open.
-         *
-         * @return the subkey, or <b>null</b> if the operation failed.
-         */
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
-        public RegistryKey CreateSubKey(String subkey) {
-            return CreateSubKey(subkey, checkMode);
-        }
-
-        [ComVisible(false)]
-        public RegistryKey CreateSubKey(String subkey, RegistryKeyPermissionCheck permissionCheck) 
-        {
-            return CreateSubKeyInternal(subkey, permissionCheck, null, RegistryOptions.None);
-        }
-
-        [ComVisible(false)]
-        public RegistryKey CreateSubKey(String subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions options) 
-        {
-            return CreateSubKeyInternal(subkey, permissionCheck, null, options);
-        }
-
-        [ComVisible(false)]
-        public RegistryKey CreateSubKey(String subkey, bool writable)
-        {
-            return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, RegistryOptions.None);
-        }
-
-        [ComVisible(false)]
-        public RegistryKey CreateSubKey(String subkey, bool writable, RegistryOptions options)
-        {
-            return CreateSubKeyInternal(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, null, options);
-        }
-
-        [ComVisible(false)]
-        private unsafe RegistryKey CreateSubKeyInternal(String subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
-        {
-            ValidateKeyOptions(registryOptions);
-            ValidateKeyName(subkey);
-            ValidateKeyMode(permissionCheck);            
-            EnsureWriteable();
-            subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
-            
-            // only keys opened under read mode is not writable
-            if (!remoteKey) {
-                RegistryKey key = InternalOpenSubKey(subkey, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree));
-                if (key != null)  { // Key already exits
-                    CheckPermission(RegistryInternalCheck.CheckSubKeyWritePermission, subkey, false, RegistryKeyPermissionCheck.Default);
-                    CheckPermission(RegistryInternalCheck.CheckSubTreePermission, subkey, false, permissionCheck);
-                    key.checkMode = permissionCheck;
-                    return key;
-                }
-            }
-
-            CheckPermission(RegistryInternalCheck.CheckSubKeyCreatePermission, subkey, false, RegistryKeyPermissionCheck.Default);      
-
-            Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
-
-            int disposition = 0;
-
-            // By default, the new key will be writable.
-            SafeRegistryHandle result = null;
-            int ret = Win32Native.RegCreateKeyEx(hkey,
-                subkey,
-                0,
-                null,
-                (int)registryOptions /* specifies if the key is volatile */,
-                GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)regView,
-                secAttrs,
-                out result,
-                out disposition);
-
-            if (ret == 0 && !result.IsInvalid) {
-                RegistryKey key = new RegistryKey(result, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree), false, remoteKey, false, regView);                
-                CheckPermission(RegistryInternalCheck.CheckSubTreePermission, subkey, false, permissionCheck);                
-                key.checkMode = permissionCheck;
-                
-                if (subkey.Length == 0)
-                    key.keyName = keyName;
-                else
-                    key.keyName = keyName + "\\" + subkey;
-                return key;
-            }
-            else if (ret != 0) // syscall failed, ret is an error code.
-                Win32Error(ret, keyName + "\\" + subkey);  // Access denied?
-
-            BCLDebug.Assert(false, "Unexpected code path in RegistryKey::CreateSubKey");
-            return null;
-        }
-
-        /**
-         * Deletes the specified subkey. Will throw an exception if the subkey has
-         * subkeys. To delete a tree of subkeys use, DeleteSubKeyTree.
-         *
-         * @param subkey SubKey to delete.
-         *
-         * @exception InvalidOperationException thrown if the subkey has child subkeys.
-         */
-        public void DeleteSubKey(String subkey) {
-            DeleteSubKey(subkey, true);
-        }
-
-        public void DeleteSubKey(String subkey, bool throwOnMissingSubKey) {
-            ValidateKeyName(subkey);        
-            EnsureWriteable();
-            subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
-            CheckPermission(RegistryInternalCheck.CheckSubKeyWritePermission, subkey, false, RegistryKeyPermissionCheck.Default);
-            
-            // Open the key we are deleting and check for children. Be sure to
-            // explicitly call close to avoid keeping an extra HKEY open.
-            //
-            RegistryKey key = InternalOpenSubKey(subkey,false);
-            if (key != null) {
-                try {
-                    if (key.InternalSubKeyCount() > 0) {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_RegRemoveSubKey);
-                    }
-                }
-                finally {
-                    key.Close();
-                }
-
-                int ret;
-
-                try {
-                    ret = Win32Native.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-                }
-                catch (EntryPointNotFoundException) {
-                    ret = Win32Native.RegDeleteKey(hkey, subkey);
-                }
-
-                if (ret!=0) {
-                    if (ret == Win32Native.ERROR_FILE_NOT_FOUND) {
-                        if (throwOnMissingSubKey)
-                            ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);
-                    }
-                    else
-                        Win32Error(ret, null);
-                }
-            }
-            else { // there is no key which also means there is no subkey
-                if (throwOnMissingSubKey)
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        /**
-         * Recursively deletes a subkey and any child subkeys.
-         *
-         * @param subkey SubKey to delete.
-         */
-        public void DeleteSubKeyTree(String subkey) {
-            DeleteSubKeyTree(subkey, true /*throwOnMissingSubKey*/);
-        }
-
-        [ComVisible(false)]
-        public void DeleteSubKeyTree(String subkey, Boolean throwOnMissingSubKey) {
-            ValidateKeyName(subkey);
-            
-            // Security concern: Deleting a hive's "" subkey would delete all
-            // of that hive's contents.  Don't allow "".
-            if (subkey.Length==0 && IsSystemKey()) {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyDelHive);
-            }
-
-            EnsureWriteable();
-
-            subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
-            CheckPermission(RegistryInternalCheck.CheckSubTreeWritePermission, subkey, false, RegistryKeyPermissionCheck.Default);            
-
-            RegistryKey key = InternalOpenSubKey(subkey, true);
-            if (key != null) {
-                try {
-                    if (key.InternalSubKeyCount() > 0) {
-                        String[] keys = key.InternalGetSubKeyNames();
-
-                        for (int i=0; i<keys.Length; i++) {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-                finally {
-                    key.Close();
-                }
-
-                int ret;
-                try {
-                    ret = Win32Native.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-                }
-                catch (EntryPointNotFoundException) {
-                    ret = Win32Native.RegDeleteKey(hkey, subkey);
-                }
-        
-                if (ret!=0) Win32Error(ret, null);
-            }
-            else if(throwOnMissingSubKey) {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        // An internal version which does no security checks or argument checking.  Skipping the 
-        // security checks should give us a slight perf gain on large trees. 
-        private void DeleteSubKeyTreeInternal(string subkey) {
-            RegistryKey key = InternalOpenSubKey(subkey, true);
-            if (key != null) {
-                try {
-                    if (key.InternalSubKeyCount() > 0) {
-                        String[] keys = key.InternalGetSubKeyNames();
-
-                        for (int i=0; i<keys.Length; i++) {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-                finally {
-                    key.Close();
-                }
-
-                int ret;
-                try {
-                    ret = Win32Native.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
-                }
-                catch (EntryPointNotFoundException) {
-                    ret = Win32Native.RegDeleteKey(hkey, subkey);
-                }
-                if (ret!=0) Win32Error(ret, null);
-            }
-            else {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyAbsent);
-            }
-        }
-        
-        /**
-         * Deletes the specified value from this key.
-         *
-         * @param name Name of value to delete.
-         */
-        public void DeleteValue(String name) {
-            DeleteValue(name, true);
         }
 
         public void DeleteValue(String name, bool throwOnMissingValue) {
@@ -547,68 +270,6 @@ namespace Microsoft.Win32
             SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
 
             RegistryKey key = new RegistryKey(srh, true, true,false, isPerf, view);
-            key.checkMode = RegistryKeyPermissionCheck.Default;
-            key.keyName = hkeyNames[index];
-            return key;
-        }
-
-
-        [ComVisible(false)]
-        public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view) {
-            ValidateKeyView(view);
-            CheckUnmanagedCodePermission();
-            return GetBaseKey((IntPtr)((int)hKey), view);
-        }
-
-        /**
-         * Retrieves a new RegistryKey that represents the requested key on a foreign
-         * machine.  Valid values for hKey are members of the RegistryHive enum, or
-         * Win32 integers such as:
-         *
-         * HKEY_CLASSES_ROOT,
-         * HKEY_CURRENT_USER,
-         * HKEY_LOCAL_MACHINE,
-         * HKEY_USERS,
-         * HKEY_PERFORMANCE_DATA,
-         * HKEY_CURRENT_CONFIG,
-         * HKEY_DYN_DATA.
-         *
-         * @param hKey HKEY_* to open.
-         * @param machineName the machine to connect to
-         *
-         * @return the RegistryKey requested.
-         */
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName) {
-            return OpenRemoteBaseKey(hKey, machineName, RegistryView.Default);
-        }
-
-        [ComVisible(false)]
-        public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view) {
-            if (machineName==null)
-                throw new ArgumentNullException(nameof(machineName));
-            int index = (int)hKey & 0x0FFFFFFF;
-            if (index < 0 || index >= hkeyNames.Length || ((int)hKey & 0xFFFFFFF0) != 0x80000000) {
-                throw new ArgumentException(Environment.GetResourceString("Arg_RegKeyOutOfRange"));
-            }
-            ValidateKeyView(view);
-
-            CheckUnmanagedCodePermission();
-            // connect to the specified remote registry
-            SafeRegistryHandle foreignHKey = null;
-            int ret = Win32Native.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out foreignHKey);
-
-            if (ret == Win32Native.ERROR_DLL_INIT_FAILED)
-                // return value indicates an error occurred
-                throw new ArgumentException(Environment.GetResourceString("Arg_DllInitFailure"));
-
-            if (ret != 0)
-                Win32ErrorStatic(ret, null);
-
-            if (foreignHKey.IsInvalid)
-                // return value indicates an error occurred
-                throw new ArgumentException(Environment.GetResourceString("Arg_RegKeyNoRemoteConnect", machineName));
-
-            RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr) hKey) == HKEY_PERFORMANCE_DATA, view);
             key.checkMode = RegistryKeyPermissionCheck.Default;
             key.keyName = hkeyNames[index];
             return key;
@@ -685,26 +346,6 @@ namespace Microsoft.Win32
             return OpenSubKey(name, false);
         }
 
-        /**
-         * Retrieves the count of subkeys.
-         *
-         * @return a count of subkeys.
-         */
-        public int SubKeyCount {
-            get {
-                CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
-                return InternalSubKeyCount();
-            }
-        }
-
-        [ComVisible(false)]
-        public RegistryView View {
-            get {
-                EnsureNotDisposed();
-                return regView;
-            }
-        }
-
         internal int InternalSubKeyCount() {
                 EnsureNotDisposed();
 
@@ -768,18 +409,6 @@ namespace Microsoft.Win32
             }
 
             return names;
-        }
-
-        /**
-         * Retrieves the count of values.
-         *
-         * @return a count of values.
-         */
-        public int ValueCount {
-            get {
-                CheckPermission(RegistryInternalCheck.CheckKeyReadPermission, null, false, RegistryKeyPermissionCheck.Default);
-                return InternalValueCount();
-            }
         }
 
         internal int InternalValueCount() {
@@ -1110,37 +739,6 @@ namespace Microsoft.Win32
             return data;
         }
 
-
-        [ComVisible(false)]
-        public RegistryValueKind GetValueKind(string name) {
-            CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);
-            EnsureNotDisposed();
-
-            int type = 0;
-            int datasize = 0;
-            int ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-            if (ret != 0)
-                Win32Error(ret, null);
-            if (type == Win32Native.REG_NONE)
-                return RegistryValueKind.None;
-            else if (!Enum.IsDefined(typeof(RegistryValueKind), type))
-                return RegistryValueKind.Unknown;
-            else
-                return (RegistryValueKind) type;
-        }
-
-        /**
-         * Retrieves the current state of the dirty property.
-         *
-         * A key is marked as dirty if any operation has occurred that modifies the
-         * contents of the key.
-         *
-         * @return <b>true</b> if the key has been modified.
-         */
-        private bool IsDirty() {
-            return (this.state & STATE_DIRTY) != 0;
-        }
-
         private bool IsSystemKey() {
             return (this.state & STATE_SYSTEMKEY) != 0;
         }
@@ -1151,13 +749,6 @@ namespace Microsoft.Win32
 
         private bool IsPerfDataKey() {
             return (this.state & STATE_PERF_DATA) != 0;
-        }
-
-        public String Name {
-            get { 
-                EnsureNotDisposed();
-                return keyName; 
-            }
         }
 
         private void SetDirty() {
@@ -1387,19 +978,6 @@ namespace Microsoft.Win32
                 case Win32Native.ERROR_FILE_NOT_FOUND:
                     throw new IOException(Environment.GetResourceString("Arg_RegKeyNotFound"), errorCode);                    
 
-                default:
-                    throw new IOException(Win32Native.GetMessage(errorCode), errorCode);
-            }
-        }
-
-        internal static void Win32ErrorStatic(int errorCode, String str) {
-            switch (errorCode) {
-                case Win32Native.ERROR_ACCESS_DENIED:
-                    if (str != null)
-                        throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_RegistryKeyGeneric_Key", str));
-                    else
-                        throw new UnauthorizedAccessException();
-    
                 default:
                     throw new IOException(Win32Native.GetMessage(errorCode), errorCode);
             }
@@ -1798,26 +1376,6 @@ namespace Microsoft.Win32
             return winAccess;
         }
 
-        static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode) {
-            int winAccess = 0;
-            switch(mode) {
-                case RegistryKeyPermissionCheck.ReadSubTree:        
-                case RegistryKeyPermissionCheck.Default:                    
-                    winAccess =  Win32Native.KEY_READ;
-                    break;
-                                        
-                case RegistryKeyPermissionCheck.ReadWriteSubTree:
-                    winAccess = Win32Native.KEY_READ| Win32Native.KEY_WRITE;                    
-                    break;                    
-                    
-               default:
-                    BCLDebug.Assert(false, "unexpected code path");
-                    break;
-            }      
-
-            return winAccess;
-        }
-
         private RegistryKeyPermissionCheck GetSubKeyPermissonCheck(bool subkeyWritable) {
             if( checkMode == RegistryKeyPermissionCheck.Default) {
                 return checkMode;
@@ -1851,18 +1409,6 @@ namespace Microsoft.Win32
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyStrLenBug);
                 
         }
-        
-        static private void ValidateKeyMode(RegistryKeyPermissionCheck mode) {
-            if( mode < RegistryKeyPermissionCheck.Default || mode > RegistryKeyPermissionCheck.ReadWriteSubTree) {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidRegistryKeyPermissionCheck, ExceptionArgument.mode);  
-            }            
-        }
-
-        static private void ValidateKeyOptions(RegistryOptions options) {
-            if (options < RegistryOptions.None || options > RegistryOptions.Volatile) {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidRegistryOptionsCheck, ExceptionArgument.options);
-            }
-        }
 
         static private void ValidateKeyView(RegistryView view) {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64) {
@@ -1877,14 +1423,14 @@ namespace Microsoft.Win32
     }
 
     [Flags]
-    public enum RegistryValueOptions {
+    internal enum RegistryValueOptions {
         None = 0,
         DoNotExpandEnvironmentNames = 1
     }    
 
     // the name for this API is meant to mimic FileMode, which has similar values
 
-    public enum RegistryKeyPermissionCheck {
+    internal enum RegistryKeyPermissionCheck {
         Default = 0,
         ReadSubTree = 1,
         ReadWriteSubTree = 2

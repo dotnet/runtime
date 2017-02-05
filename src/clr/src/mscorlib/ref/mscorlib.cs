@@ -6823,43 +6823,6 @@ namespace System.IO
         public virtual void WriteByte(byte value) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class StreamReader : System.IO.TextReader
-    {
-        public static readonly new System.IO.StreamReader Null;
-        public StreamReader(System.IO.Stream stream) { }
-        public StreamReader(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen) { }
-        public StreamReader(string path) { }
-        public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public virtual System.IO.Stream BaseStream { get { throw null; } }
-        public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
-        public bool EndOfStream { get { throw null; } }
-        public override void Close() { }
-        public void DiscardBufferedData() { }
-        protected override void Dispose(bool disposing) { }
-        public override int Peek() { throw null; }
-        public override int Read() { throw null; }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        public override int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public override string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public override string ReadToEnd() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StreamWriter : System.IO.TextWriter
     {
         public static readonly new System.IO.StreamWriter Null;
@@ -6900,26 +6863,6 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class StringReader : System.IO.TextReader
-    {
-        public StringReader(string s) { }
-        public override void Close() { }
-        protected override void Dispose(bool disposing) { }
-        public override int Peek() { throw null; }
-        public override int Read() { throw null; }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public override string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public override string ReadToEnd() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StringWriter : System.IO.TextWriter
     {
         public StringWriter() { }
@@ -6948,31 +6891,6 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class TextReader : System.IDisposable
-    {
-        public static readonly System.IO.TextReader Null;
-        protected TextReader() { }
-        public virtual void Close() { }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        public virtual int Peek() { throw null; }
-        public virtual int Read() { throw null; }
-        public virtual int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        public virtual int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public virtual string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public virtual string ReadToEnd() { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class TextWriter : System.IDisposable

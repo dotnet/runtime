@@ -296,8 +296,6 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr InternalAddrOfPinnedObject(IntPtr handle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalCheckDomain(IntPtr handle);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern GCHandleType InternalGetHandleType(IntPtr handle);
 
         // The actual integer handle value that the EE uses internally.
         private IntPtr m_handle;

@@ -11,7 +11,7 @@ namespace System.Security
 {
 
 [System.Runtime.InteropServices.ComVisible(true)]
-    public interface IPermission : ISecurityEncodable
+    internal interface IPermission
     {
         // NOTE: The constants that used to be defined here were moved to 
         // PermissionsEnum.cs due to CLS restrictions.

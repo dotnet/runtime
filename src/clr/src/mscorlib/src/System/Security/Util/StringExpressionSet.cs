@@ -48,11 +48,6 @@ namespace System.Security.Util {
         {
         }
         
-        public StringExpressionSet( String str )
-            : this( true, str, false )
-        {
-        }
-        
         public StringExpressionSet( bool ignoreCase, bool throwOnRelative )
             : this( ignoreCase, null, throwOnRelative )
         {

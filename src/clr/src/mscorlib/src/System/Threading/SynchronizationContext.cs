@@ -165,11 +165,6 @@ namespace System.Threading
             Thread.CurrentThread.SynchronizationContext = syncContext;
         }
 
-        public static void SetThreadStaticContext(SynchronizationContext syncContext)
-        {
-            Thread.CurrentThread.SynchronizationContext = syncContext;
-        }
-
         public static SynchronizationContext Current 
         {
             get      

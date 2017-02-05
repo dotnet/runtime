@@ -14,7 +14,7 @@ namespace System {
 
     [Serializable]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum PlatformID
+    internal enum PlatformID
     {
         Win32S        = 0,
         Win32Windows  = 1,

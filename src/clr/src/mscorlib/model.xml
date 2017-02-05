@@ -8160,7 +8160,7 @@
       <Member Name="Dispose" />
     </Type>
     <Type Name="System.Threading.ThreadPoolBoundHandle">
-      <Member Name="get_Handle" />
+      <Member Name="get_Handle" />      
       <Member Name="AllocateNativeOverlapped(System.Threading.IOCompletionCallback,System.Object,System.Object)" />
       <Member Name="AllocateNativeOverlapped(System.Threading.PreAllocatedOverlapped)" />
       <Member Name="BindHandle(System.Runtime.InteropServices.SafeHandle)" />

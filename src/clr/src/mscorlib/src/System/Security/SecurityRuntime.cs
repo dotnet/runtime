@@ -20,18 +20,6 @@ namespace System.Security
     {
         private SecurityRuntime(){}
 
-        // Returns the security object for the caller of the method containing
-        // 'stackMark' on its frame.
-        //
-        // THE RETURNED OBJECT IS THE LIVE RUNTIME OBJECT. BE CAREFUL WITH IT!
-        //
-        // Internal only, do not doc.
-        // 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern 
-        FrameSecurityDescriptor GetSecurityObjectForFrame(ref StackCrawlMark stackMark,
-                                                          bool create);
-
         // Constants used to return status to native
         internal const bool StackContinue  = true;
         internal const bool StackHalt      = false;
@@ -84,35 +72,11 @@ namespace System.Security
         {
         }
 
-        internal static void AssertAllPossible(ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void Deny(PermissionSet permSet, ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void PermitOnly(PermissionSet permSet, ref StackCrawlMark stackMark)
-        {
-        }
-
         //
         // Revert API
         //
 
         internal static void RevertAssert(ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void RevertDeny(ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void RevertPermitOnly(ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void RevertAll(ref StackCrawlMark stackMark)
         {
         }
     }

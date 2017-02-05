@@ -53,9 +53,6 @@ namespace System.Security {
         internal static SecurityPermission AssertPermission; 
         internal static PermissionToken AssertPermissionToken; 
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SpecialDemand(PermissionType whatPermission, ref StackCrawlMark stackMark);
-
         [System.Diagnostics.Conditional( "_DEBUG" )]
         private static void DEBUG_OUT( String str )
         {
@@ -330,21 +327,7 @@ namespace System.Security {
         {
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern FrameSecurityDescriptor CheckNReturnSO(PermissionToken permToken, 
-                                                                    CodeAccessPermission demand, 
-                                                                    ref StackCrawlMark stackMark,
-                                                                    int create );
-
         internal static void Assert(CodeAccessPermission cap, ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void Deny(CodeAccessPermission cap, ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void PermitOnly(CodeAccessPermission cap, ref StackCrawlMark stackMark)
         {
         }
 

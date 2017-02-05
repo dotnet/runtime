@@ -98,7 +98,7 @@ namespace System
 
     [Serializable]
     [ComVisible(true)]
-    public delegate void AppDomainInitializer(string[] args);
+    internal delegate void AppDomainInitializer(string[] args);
 
     internal class AppDomainInitializerInfo
     {
@@ -175,8 +175,7 @@ namespace System
         }
     }
 
-
-    public sealed class AppDomain : IEvidenceFactory
+    internal sealed class AppDomain
     {
         // Domain security information
         // These fields initialized from the other side only. (NOTE: order 
@@ -731,121 +730,6 @@ namespace System
 
             return Activator.CreateInstance(assemblyName,
                                             typeName);
-        }
-
-        internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, string typeName) {
-            PermissionSet.s_fullTrust.Assert();
-            return CreateInstance(assemblyName, typeName);
-        }
-
-        public ObjectHandle CreateInstanceFrom(String assemblyFile,
-                                               String typeName)
-                                         
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            Contract.EndContractBlock();
-
-            return Activator.CreateInstanceFrom(assemblyFile,
-                                                typeName);
-        }
-
-        internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, string typeName) {
-            PermissionSet.s_fullTrust.Assert();
-            return CreateInstanceFrom(assemblyName, typeName);
-        }
-
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public ObjectHandle CreateInstance(String assemblyName, 
-                                           String typeName, 
-                                           bool ignoreCase,
-                                           BindingFlags bindingAttr, 
-                                           Binder binder,
-                                           Object[] args,
-                                           CultureInfo culture,
-                                           Object[] activationAttributes,
-                                           Evidence securityAttributes)
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            Contract.EndContractBlock();
-
-#pragma warning disable 618
-            return Activator.CreateInstance(assemblyName,
-                                            typeName,
-                                            ignoreCase,
-                                            bindingAttr,
-                                            binder,
-                                            args,
-                                            culture,
-                                            activationAttributes,
-                                            securityAttributes);
-#pragma warning restore 618
-        }
-
-        internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, 
-                                                                    string typeName,
-                                                                    bool ignoreCase,
-                                                                    BindingFlags bindingAttr,
-                                                                    Binder binder,
-                                                                    Object[] args,
-                                                                    CultureInfo culture,
-                                                                    Object[] activationAttributes,
-                                                                    Evidence securityAttributes)
-        {
-            PermissionSet.s_fullTrust.Assert();
-#pragma warning disable 618
-            return CreateInstance(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-#pragma warning restore 618
-        }
-
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstanceFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public ObjectHandle CreateInstanceFrom(String assemblyFile,
-                                               String typeName, 
-                                               bool ignoreCase,
-                                               BindingFlags bindingAttr, 
-                                               Binder binder,
-                                               Object[] args,
-                                               CultureInfo culture,
-                                               Object[] activationAttributes,
-                                               Evidence securityAttributes)
-
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            Contract.EndContractBlock();
-
-            return Activator.CreateInstanceFrom(assemblyFile,
-                                                typeName,
-                                                ignoreCase,
-                                                bindingAttr,
-                                                binder,
-                                                args,
-                                                culture,
-                                                activationAttributes,
-                                                securityAttributes);
-        }
-
-        internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, 
-                                                                        string typeName,
-                                                                        bool ignoreCase,
-                                                                        BindingFlags bindingAttr,
-                                                                        Binder binder,
-                                                                        Object[] args,
-                                                                        CultureInfo culture,
-                                                                        Object[] activationAttributes,
-                                                                        Evidence securityAttributes)
-        {
-            PermissionSet.s_fullTrust.Assert();
-#pragma warning disable 618
-            return CreateInstanceFrom(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-#pragma warning restore 618
         }
 
         public static AppDomain CurrentDomain

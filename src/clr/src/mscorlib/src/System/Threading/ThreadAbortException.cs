@@ -36,10 +36,5 @@ namespace System.Threading
             : base(info, context) 
         {
         }
-   
-        public Object ExceptionState 
-        {
-            get {return Thread.CurrentThread.AbortReason;}
-        }
     }
 }

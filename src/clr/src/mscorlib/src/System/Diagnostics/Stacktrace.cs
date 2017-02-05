@@ -200,7 +200,6 @@ namespace System.Diagnostics {
         } 
 
         public virtual int GetNumberOfFrames() { return iFrameCount;}
-        public virtual void SetNumberOfFrames(int i) { iFrameCount = i;}
     
         //
         // serialization implementation

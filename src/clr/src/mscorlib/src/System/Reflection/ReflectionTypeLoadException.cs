@@ -33,11 +33,6 @@ namespace System.Reflection {
             SetErrorCode(__HResults.COR_E_REFLECTIONTYPELOAD);
         }
 
-        // private constructor.  This is called from inside the runtime.
-        private ReflectionTypeLoadException(String message) : base(message) {
-            SetErrorCode(__HResults.COR_E_REFLECTIONTYPELOAD);
-        }
-
         public ReflectionTypeLoadException(Type[] classes, Exception[] exceptions) : base(null)
         {
             _classes = classes;
