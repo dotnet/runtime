@@ -451,7 +451,6 @@ namespace System {
         Task_ContinueWith_NotOnAnything,
         Task_ContinueWith_ESandLR,
         TaskT_TransitionToFinal_AlreadyCompleted,
-        TaskT_ctor_SelfReplicating,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
