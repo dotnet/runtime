@@ -951,7 +951,7 @@ namespace System.Threading
             }
             else
             {
-                ExecutionContext.Run(context, ccb, this, preserveSyncCtx:true);
+                ExecutionContext.Run(context, ccb, this);
             }
         }
 
@@ -1010,7 +1010,7 @@ namespace System.Threading
 #if DEBUG
             MarkExecuted(aborted:false);
 #endif
-            ExecutionContext.Run(ExecutionContext.PreAllocatedDefault, ccb, this, preserveSyncCtx:true);
+            ExecutionContext.Run(ExecutionContext.Default, ccb, this);
         }
 
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
@@ -1042,17 +1042,15 @@ namespace System.Threading
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
 
-        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool compressStack, ref StackCrawlMark stackMark)
+        internal _ThreadPoolWaitOrTimerCallback(WaitOrTimerCallback waitOrTimerCallback, Object state, bool compressStack)
         {
             _waitOrTimerCallback = waitOrTimerCallback;
             _state = state;
 
-            if (compressStack && !ExecutionContext.IsFlowSuppressed())
+            if (compressStack)
             {
                 // capture the exection context
-                _executionContext = ExecutionContext.Capture(
-                    ref stackMark,
-                    ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase);
+                _executionContext = ExecutionContext.Capture();
             }
         }
         
@@ -1081,10 +1079,7 @@ namespace System.Threading
             }
             else
             {
-                using (ExecutionContext executionContext = helper._executionContext.CreateCopy())
-                {
-                    ExecutionContext.Run(executionContext, timedOut ? _ccbt : _ccbf, helper, preserveSyncCtx:true);
-                }
+                ExecutionContext.Run(helper._executionContext, timedOut ? _ccbt : _ccbf, helper);
             }
         }    
 
@@ -1167,7 +1162,7 @@ namespace System.Threading
 
             if (callBack != null)
             {
-                _ThreadPoolWaitOrTimerCallback callBackHelper = new _ThreadPoolWaitOrTimerCallback(callBack, state, compressStack, ref stackMark);
+                _ThreadPoolWaitOrTimerCallback callBackHelper = new _ThreadPoolWaitOrTimerCallback(callBack, state, compressStack);
                 state = (Object)callBackHelper;
                 // call SetWaitObject before native call so that waitObject won't be closed before threadpoolmgr registration
                 // this could occur if callback were to fire before SetWaitObject does its addref
@@ -1303,7 +1298,7 @@ namespace System.Threading
 
             ExecutionContext context = ExecutionContext.Capture();
 
-            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.PreAllocatedDefault ?
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 

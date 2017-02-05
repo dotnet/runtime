@@ -543,7 +543,7 @@ namespace System.Threading.Tasks
             m_action = action;
             if (flowExecutionContext)
             {
-                m_capturedContext = ExecutionContext.FastCapture();
+                m_capturedContext = ExecutionContext.Capture();
             }
         }
 
@@ -648,11 +648,7 @@ namespace System.Threading.Tasks
                     // If there is an execution context, get the cached delegate and run the action under the context.
                 else
                 {
-                    try
-                    {
-                        ExecutionContext.Run(m_capturedContext, GetInvokeActionCallback(), m_action, true);
-                    }
-                    finally { m_capturedContext.Dispose(); }
+                    ExecutionContext.Run(m_capturedContext, GetInvokeActionCallback(), m_action);
                 }
             }
             finally
@@ -667,8 +663,7 @@ namespace System.Threading.Tasks
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             // inline the fast path
-            if (m_capturedContext == null && !TplEtwProvider.Log.IsEnabled()
-            )
+            if (m_capturedContext == null && !TplEtwProvider.Log.IsEnabled())
             {
                 m_action();
             }
@@ -717,7 +712,7 @@ namespace System.Threading.Tasks
                 // If there's no captured context, just run the callback directly.
                 if (m_capturedContext == null) callback(state);
                 // Otherwise, use the captured context to do so.
-                else ExecutionContext.Run(m_capturedContext, callback, state, true);
+                else ExecutionContext.Run(m_capturedContext, callback, state);
             }
             catch (Exception exc) // we explicitly do not request handling of dangerous exceptions like AVs
             {
@@ -727,9 +722,6 @@ namespace System.Threading.Tasks
             {
                 // Restore the current task information
                 if (prevCurrentTask != null) currentTask = prevCurrentTask;
-
-                // Clean up after the execution context, which is only usable once.
-                if (m_capturedContext != null) m_capturedContext.Dispose();
             }
         }
 
