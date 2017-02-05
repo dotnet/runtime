@@ -305,3 +305,15 @@ msbuild /t:BuildAndTest /p:TargetGroup=uap
 In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap as opposed to the .NET Native version.
 
 The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
+
+## Testing with private CoreCLR bits
+
+	1) Go to <root>\corefx\Tools\testdotnetcli\shared\Microsoft.NETCore.App\9.9.9
+	2) Copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*dll . 
+    3) Del *.ni.*   (don't delete xuNIt bits!)
+	4) Edit Microsoft.NETCore.App.deps.json to remove these lines:
+          "runtimes/win7-x64/native/System.Private.CoreLib.ni.dll": {},
+          "runtimes/win7-x64/native/mscorlib.ni.dll": {},
+    5) Run the tests by any means you please - the binary shouldn't get overwritten.
+
+If you prefer you can use Debug Corelib but if you do you must have debug coreclr.dll. You probably don't want a debug runtime as it's so slow.
