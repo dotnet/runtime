@@ -40,7 +40,7 @@ namespace Functions
 
             if (diff > singleEpsilon)
             {
-                throw new Exception($"Expected Result {cosSingleExpectedResult}; Actual Result {result}");
+                throw new Exception($"Expected Result {cosSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
             }
         }
     }

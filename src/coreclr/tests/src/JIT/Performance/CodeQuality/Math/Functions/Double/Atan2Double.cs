@@ -41,7 +41,7 @@ namespace Functions
 
             if (diff > doubleEpsilon)
             {
-                throw new Exception($"Expected Result {atan2DoubleExpectedResult}; Actual Result {result}");
+                throw new Exception($"Expected Result {atan2DoubleExpectedResult,20:g17}; Actual Result {result,20:g17}");
             }
         }
     }
