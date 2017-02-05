@@ -400,15 +400,6 @@ namespace System.Threading.Tasks
                 InternalTaskOptions.None, ref stackMark);
         }
 
-        // Internal version includes InternalTaskOptions for Parallel.Invoke() support.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable            
-        internal Task StartNew(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Task.InternalStartNew(
-                Task.InternalCurrentIfAttached(creationOptions), action, null, cancellationToken, scheduler, creationOptions, internalOptions, ref stackMark);
-        }
-
 
         /// <summary>
         /// Creates and starts a <see cref="T:System.Threading.Tasks.Task">Task</see>.

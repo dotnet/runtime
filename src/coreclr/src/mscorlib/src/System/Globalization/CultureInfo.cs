@@ -432,21 +432,8 @@ namespace System.Globalization {
             this.cultureID = this.m_cultureData.ILANGUAGE;
 #endif
         }
+
 #endregion Serialization
-
-
-        // Is it safe to pass the CultureInfo cross AppDomain boundaries, not necessarily as an instance
-        // member of Thread. This is different from IsSafeCrossDomain, which implies passing the CultureInfo
-        // as a Thread instance member. 
-        internal bool CanSendCrossDomain()
-        {
-            bool isSafe = false;
-            if (this.GetType() == typeof(System.Globalization.CultureInfo))
-            {
-                isSafe = true;
-            }
-            return isSafe;
-        }
 
         // Constructor called by SQL Server's special munged culture - creates a culture with
         // a TextInfo and CompareInfo that come from a supplied alternate source. This object
@@ -1810,9 +1797,6 @@ namespace System.Globalization {
         
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int nativeGetLocaleInfoExInt(String localeName, uint field);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool nativeSetThreadLocale(String localeName);
 
         private static String GetDefaultLocaleName(int localeType)
         {

@@ -1670,15 +1670,6 @@ namespace System.Threading.Tasks
             get { return (Options & (TaskCreationOptions)InternalTaskOptions.ChildReplica) != 0; }
         }
 
-        internal int ActiveChildCount
-        {
-            get
-            {
-                var props = Volatile.Read(ref m_contingentProperties);
-                return props != null ? props.m_completionCountdown - 1 : 0;
-            }
-        }
-
         /// <summary>
         /// The property formerly known as IsFaulted.
         /// </summary>
@@ -1755,17 +1746,6 @@ namespace System.Threading.Tasks
 
             return capturedContext.CreateCopy();
         }
-
-
-#if DEBUG
-        /// <summary>
-        /// Retrieves an identifier for the task.
-        /// </summary>
-        internal int InternalId
-        {
-            get { return GetHashCode(); }
-        }
-#endif
 
         /////////////
         // methods
@@ -5190,49 +5170,6 @@ namespace System.Threading.Tasks
             }
 
             public bool InvokeMayRunArbitraryCode { get { return false; } }
-        }
-
-        /// <summary>
-        /// Internal WaitAll implementation which is meant to be used with small number of tasks,
-        /// optimized for Parallel.Invoke and other structured primitives.
-        /// </summary>
-        internal static void FastWaitAll(Task[] tasks)
-        {
-            Contract.Requires(tasks != null);
-
-            List<Exception> exceptions = null;
-
-            // Collects incomplete tasks in "waitedOnTaskList" and their cooperative events in "cooperativeEventList"
-            for (int i = tasks.Length - 1; i >= 0; i--)
-            {
-                if (!tasks[i].IsCompleted)
-                {
-                    // Just attempting to inline here... result doesn't matter.
-                    // We'll do a second pass to do actual wait on each task, and to aggregate their exceptions.
-                    // If the task is inlined here, it will register as IsCompleted in the second pass
-                    // and will just give us the exception.
-                    tasks[i].WrappedTryRunInline();
-                }
-            }
-
-            // Wait on the tasks.
-            for (int i = tasks.Length - 1; i >= 0; i--)
-            {
-                var task = tasks[i];
-                task.SpinThenBlockingWait(Timeout.Infinite, default(CancellationToken));
-                AddExceptionsForCompletedTask(ref exceptions, task);
-
-                // Note that unlike other wait code paths, we do not check
-                // task.NotifyDebuggerOfWaitCompletionIfNecessary() here, because this method is currently
-                // only used from contexts where the tasks couldn't have that bit set, namely
-                // Parallel.Invoke.  If that ever changes, such checks should be added here.
-            }
-
-            // If one or more threw exceptions, aggregate them.
-            if (exceptions != null)
-            {
-                ThrowHelper.ThrowAggregateException(exceptions);
-            }
         }
 
         /// <summary>

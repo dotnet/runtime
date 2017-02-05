@@ -18,9 +18,6 @@ namespace System.Runtime.Loader
 {
     public abstract class AssemblyLoadContext
     {
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern bool OverrideDefaultAssemblyLoadContextForCurrentDomain(IntPtr ptrNativeAssemblyLoadContext);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -29,10 +26,6 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern IntPtr LoadFromAssemblyName(IntPtr ptrNativeAssemblyLoadContext, bool fRepresentsTPALoadContext);
         
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -350,28 +343,6 @@ namespace System.Runtime.Loader
                 
                 return s_DefaultAssemblyLoadContext;
             }
-        }
-
-        // This will be used to set the AssemblyLoadContext for DefaultContext, for the AppDomain,
-        // by a host. Once set, the runtime will invoke the LoadFromAssemblyName method against it to perform
-        // assembly loads for the DefaultContext.
-        //
-        // This method will throw if the Default AssemblyLoadContext is already set or the Binding model is already locked.
-        public static void InitializeDefaultContext(AssemblyLoadContext context)
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-            
-            // Try to override the default assembly load context
-            if (!AssemblyLoadContext.OverrideDefaultAssemblyLoadContextForCurrentDomain(context.m_pNativeAssemblyLoadContext))
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("AppDomain_BindingModelIsLocked"));
-            }
-            
-            // Update the managed side as well.
-            s_DefaultAssemblyLoadContext = context;
         }
         
         // This call opens and closes the file, but does not add the

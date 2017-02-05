@@ -515,36 +515,6 @@ namespace System.Reflection.Emit
             }            
             
         }
-
-        private void AddData(uint data)
-        {
-            if (m_currSig + 4 > m_signature.Length)
-            {
-                m_signature = ExpandArray(m_signature);
-            }
-
-            m_signature[m_currSig++] = (byte)((data)     & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>8)  & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>16) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>24) & 0xFF);
-        }
-        
-        private void AddData(ulong data)
-        {
-            if (m_currSig + 8 > m_signature.Length)
-            {
-                m_signature = ExpandArray(m_signature);
-            }
-
-            m_signature[m_currSig++] = (byte)((data)     & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>8)  & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>16) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>24) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>32) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>40) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>48) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>56) & 0xFF);
-        }
         
         private void AddElementType(CorElementType cvt)
         {

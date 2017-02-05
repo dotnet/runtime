@@ -18,7 +18,7 @@ namespace System.Security.Permissions
     [ComVisible(true)]
     [Flags]
     [Serializable]
-    public enum ReflectionPermissionFlag
+    internal enum ReflectionPermissionFlag
     {
         NoFlags = 0x00,
         [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
@@ -34,7 +34,7 @@ namespace System.Security.Permissions
 
     [ComVisible(true)]
     [Serializable]
-    sealed public class ReflectionPermission
+    sealed internal class ReflectionPermission
            : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
         // ReflectionPermissionFlag.AllFlags doesn't contain the new value RestrictedMemberAccess,

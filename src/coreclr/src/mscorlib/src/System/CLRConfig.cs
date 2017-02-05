@@ -9,26 +9,6 @@ using System.Security;
 
 namespace System {
 
-/// <summary>
-/// For now, this class should be the central point to collect all managed declarations
-/// of native functions designed to expose config switches.
-/// In Dev11 M2.2 we will redesign this class to expose CLRConfig from within the CLR
-/// and refactor managed Fx code to access all compat switches through here.
-/// </summary>
-[FriendAccessAllowed]
-internal class CLRConfig {
-    
-    [FriendAccessAllowed]
-    [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    [SuppressUnmanagedCodeSecurity]
-    internal static extern bool CheckLegacyManagedDeflateStream();
-
-    [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    [SuppressUnmanagedCodeSecurity]
-    internal static extern bool CheckThrowUnobservedTaskExceptions();
-
-}  // internal class CLRConfig
-
 }  // namespace System
 
 // file CLRConfig

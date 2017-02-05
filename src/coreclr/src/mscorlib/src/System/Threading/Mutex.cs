@@ -32,7 +32,7 @@ namespace System.Threading
     {
         static bool dummyBool;
 
-        public class MutexSecurity
+        internal class MutexSecurity
         {
         }
 
@@ -43,7 +43,7 @@ namespace System.Threading
         }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        public unsafe Mutex(bool initiallyOwned, String name, out bool createdNew, MutexSecurity mutexSecurity)
+        internal unsafe Mutex(bool initiallyOwned, String name, out bool createdNew, MutexSecurity mutexSecurity)
         {
             if (name == string.Empty)
             {
@@ -58,25 +58,6 @@ namespace System.Threading
 #endif
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
-
-            CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
-        }
-
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal Mutex(bool initiallyOwned, String name, out bool createdNew, Win32Native.SECURITY_ATTRIBUTES secAttrs) 
-        {
-            if (name == string.Empty)
-            {
-                // Empty name is treated as an unnamed mutex. Set to null, and we will check for null from now on.
-                name = null;
-            }
-#if !PLATFORM_UNIX
-            if (name != null && System.IO.Path.MaxPath < name.Length)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
-            }
-#endif
-            Contract.EndContractBlock();
 
             CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
         }
@@ -224,11 +205,11 @@ namespace System.Threading
             return OpenExisting(name, (MutexRights) 0);
         }
 
-        public enum MutexRights
+        internal enum MutexRights
         {
         }
 
-        public static Mutex OpenExisting(string name, MutexRights rights)
+        internal static Mutex OpenExisting(string name, MutexRights rights)
         {
             Mutex result;
             switch (OpenExistingWorker(name, rights, out result))
@@ -251,11 +232,6 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, out Mutex result)
         {
             return OpenExistingWorker(name, (MutexRights)0, out result) == OpenExistingResult.Success;
-        }
-
-        public static bool TryOpenExisting(string name, MutexRights rights, out Mutex result)
-        {
-            return OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
         }
 
         private static OpenExistingResult OpenExistingWorker(string name, MutexRights rights, out Mutex result)

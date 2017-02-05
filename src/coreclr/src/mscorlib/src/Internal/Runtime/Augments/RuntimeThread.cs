@@ -16,6 +16,8 @@ namespace Internal.Runtime.Augments
 {
     public class RuntimeThread : CriticalFinalizerObject
     {
+        internal RuntimeThread() {}
+
         public static RuntimeThread Create(ThreadStart start) => new Thread(start);
         public static RuntimeThread Create(ThreadStart start, int maxStackSize) => new Thread(start, maxStackSize);
         public static RuntimeThread Create(ParameterizedThreadStart start) => new Thread(start);

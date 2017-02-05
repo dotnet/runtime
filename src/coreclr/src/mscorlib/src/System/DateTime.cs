@@ -710,12 +710,6 @@ namespace System {
                 return (Int64)dateData;
             }
         }        
-
-        // Return the underlying data, without adjust local times to the right time zone. Needed if performance
-        // or compatibility are important.
-        internal Int64 ToBinaryRaw() {
-            return (Int64)dateData;
-        }        
     
         // Returns the date part of this DateTime. The resulting value
         // corresponds to this DateTime with the time-of-day part set to

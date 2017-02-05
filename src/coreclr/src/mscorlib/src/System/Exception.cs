@@ -537,33 +537,6 @@ namespace System {
 
         }
 
-        // This is used by remoting to preserve the server side stack trace
-        // by appending it to the message ... before the exception is rethrown
-        // at the client call site.
-        internal Exception PrepForRemoting()
-        {
-            String tmp = null;
-
-            if (_remoteStackIndex == 0)
-            {
-                tmp = Environment.NewLine+ "Server stack trace: " + Environment.NewLine
-                    + StackTrace 
-                    + Environment.NewLine + Environment.NewLine 
-                    + "Exception rethrown at ["+_remoteStackIndex+"]: " + Environment.NewLine;
-            }
-            else
-            {
-                tmp = StackTrace 
-                    + Environment.NewLine + Environment.NewLine 
-                    + "Exception rethrown at ["+_remoteStackIndex+"]: " + Environment.NewLine;
-            }
-
-            _remoteStackTraceString = tmp;
-            _remoteStackIndex++;
-
-            return this;
-        }
-
         // This method will clear the _stackTrace of the exception object upon deserialization
         // to ensure that references from another AD/Process dont get accidently used.
         [OnDeserialized]

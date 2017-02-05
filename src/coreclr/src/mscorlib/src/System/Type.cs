@@ -675,16 +675,6 @@ namespace System
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,null,null);
         }
 
-        internal PropertyInfo GetProperty(String name, BindingFlags bindingAttr, Type returnType)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
-                throw new ArgumentNullException(nameof(returnType));
-            Contract.EndContractBlock();
-            return GetPropertyImpl(name, bindingAttr, null, returnType, null, null);
-        }
-
         public PropertyInfo GetProperty(String name)
         {
             if (name == null)
@@ -1228,11 +1218,6 @@ namespace System
              [Pure]
              get {return IsMarshalByRefImpl();}
          }
-
-         internal bool HasProxyAttribute {
-             [Pure]
-            get {return HasProxyAttributeImpl();}
-        }
                        
         // Protected routine to determine if this class represents a value class
         // The default implementation of IsValueTypeImpl never returns true for non-runtime types.
@@ -1293,12 +1278,6 @@ namespace System
         // Protected routine to determine if this class is marshaled by ref
         protected virtual bool IsMarshalByRefImpl()
         {
-            return false;
-        }
-
-        internal virtual bool HasProxyAttributeImpl()
-        {
-            // We will override this in RuntimeType
             return false;
         }
 

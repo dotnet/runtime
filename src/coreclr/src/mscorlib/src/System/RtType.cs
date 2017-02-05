@@ -968,29 +968,6 @@ namespace System
                     }
                 }
 
-                private static void AddElementTypes(Type template, IList<Type> types)
-                {   
-                    if (!template.HasElementType)
-                        return;
-                    
-                    AddElementTypes(template.GetElementType(), types);
-                    
-                    for (int i = 0; i < types.Count; i ++)
-                    {
-                        if (template.IsArray)
-                        {
-                            if (template.IsSzArray)
-                                types[i] = types[i].MakeArrayType();
-                            else 
-                                types[i] = types[i].MakeArrayType(template.GetArrayRank());
-                        }
-                        else if (template.IsPointer)
-                        {
-                            types[i] = types[i].MakePointerType();
-                        }
-                    }
-                }
-
                 private void AddSpecialInterface(ref ListBuilder<RuntimeType> list, Filter filter, RuntimeType iList, bool addSubInterface)
                 {
                     if (iList.IsAssignableFrom(ReflectedType))
@@ -2525,8 +2502,6 @@ namespace System
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(System.Object);
         private static readonly RuntimeType StringType = (RuntimeType)typeof(System.String);
         private static readonly RuntimeType DelegateType = (RuntimeType)typeof(System.Delegate);
-
-        private static Type[] s_SICtorParamTypes;
         #endregion
 
         #region Constructor
@@ -3582,11 +3557,6 @@ namespace System
         private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
 
 #endif // FEATURE_COMINTEROP
-
-        internal override bool HasProxyAttributeImpl() 
-        {
-            return RuntimeTypeHandle.HasProxyAttribute(this);
-        }
 
         internal bool IsDelegate()
         {

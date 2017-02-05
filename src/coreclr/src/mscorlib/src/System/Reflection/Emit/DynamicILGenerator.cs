@@ -267,43 +267,6 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void EmitCalli(OpCode opcode,
-                                       CallingConvention unmanagedCallConv,
-                                       Type returnType,
-                                       Type[] parameterTypes)
-        {
-            int stackchange = 0;
-            int cParams = 0;
-            int i;
-            SignatureHelper sig;
-
-            if (parameterTypes != null)
-                cParams = parameterTypes.Length;
-
-            sig = SignatureHelper.GetMethodSigHelper(unmanagedCallConv, returnType);
-
-            if (parameterTypes != null)
-                for (i = 0; i < cParams; i++)
-                    sig.AddArgument(parameterTypes[i]);
-
-            // If there is a non-void return type, push one.
-            if (returnType != typeof(void))
-                stackchange++;
-
-            // Pop off arguments if any.
-            if (parameterTypes != null)
-                stackchange -= cParams;
-
-            // Pop the native function pointer.
-            stackchange--;
-            UpdateStackSize(OpCodes.Calli, stackchange);
-
-            EnsureCapacity(7);
-            Emit(OpCodes.Calli);
-            int token = GetTokenForSig(sig.GetSignature(true));
-            PutInteger4(token);
-        }
-
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[] optionalParameterTypes)
         {
             if (methodInfo == null)
@@ -964,7 +927,7 @@ namespace System.Reflection.Emit
 
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public class DynamicILInfo
+    internal class DynamicILInfo
     {
         #region Private Data Members
         private DynamicMethod m_method;
@@ -974,18 +937,6 @@ namespace System.Reflection.Emit
         private byte[] m_localSignature;
         private int m_maxStackSize;
         private int m_methodSignature;
-        #endregion
-
-        #region Constructor
-        internal DynamicILInfo(DynamicScope scope, DynamicMethod method, byte[] methodSignature)
-        {
-            m_method = method;
-            m_scope = scope;
-            m_methodSignature = m_scope.GetTokenFor(methodSignature);
-            m_exceptions = EmptyArray<Byte>.Value;
-            m_code = EmptyArray<Byte>.Value;
-            m_localSignature = EmptyArray<Byte>.Value;
-        }
         #endregion
 
         #region Internal Methods
@@ -1014,113 +965,8 @@ namespace System.Reflection.Emit
         public DynamicMethod DynamicMethod { get { return m_method; } }
         internal DynamicScope DynamicScope { get { return m_scope; } }
 
-        public void SetCode(byte[] code, int maxStackSize)
-        {
-            m_code = (code != null) ? (byte[])code.Clone() : EmptyArray<Byte>.Value;
-            m_maxStackSize = maxStackSize;
-        }
-
-        [CLSCompliant(false)]
-        public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
-        {
-            if (codeSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(codeSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
-
-            if (codeSize > 0 && code == null)
-                throw new ArgumentNullException(nameof(code));
-            Contract.EndContractBlock();
-
-            m_code = new byte[codeSize];
-            for (int i = 0; i < codeSize; i++)
-            {
-                m_code[i] = *code;
-                code++;
-            }
-
-            m_maxStackSize = maxStackSize;
-        }
-
-        public void SetExceptions(byte[] exceptions)
-        {
-            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : EmptyArray<Byte>.Value;
-        }
-
-        [CLSCompliant(false)]
-        public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
-        {
-            if (exceptionsSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(exceptionsSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
-
-            if (exceptionsSize > 0 && exceptions == null)
-                throw new ArgumentNullException(nameof(exceptions));
-            Contract.EndContractBlock();
-
-            m_exceptions = new byte[exceptionsSize];
-
-            for (int i = 0; i < exceptionsSize; i++)
-            {
-                m_exceptions[i] = *exceptions;
-                exceptions++;
-            }
-        }
-
-        public void SetLocalSignature(byte[] localSignature)
-        {
-            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : EmptyArray<Byte>.Value;
-        }
-
-        [CLSCompliant(false)]
-        public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
-        {
-            if (signatureSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(signatureSize), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
-
-            if (signatureSize > 0 && localSignature == null)
-                throw new ArgumentNullException(nameof(localSignature));
-            Contract.EndContractBlock();
-
-            m_localSignature = new byte[signatureSize];
-            for (int i = 0; i < signatureSize; i++)
-            {
-                m_localSignature[i] = *localSignature;
-                localSignature++;
-            }
-        }
-        #endregion
-
-        #region Public Scope Methods
-        public int GetTokenFor(RuntimeMethodHandle method)
-        {
-            return DynamicScope.GetTokenFor(method);
-        }
-        public int GetTokenFor(DynamicMethod method)
-        {
-            return DynamicScope.GetTokenFor(method);
-        }
-        public int GetTokenFor(RuntimeMethodHandle method, RuntimeTypeHandle contextType)
-        {
-            return DynamicScope.GetTokenFor(method, contextType);
-        }
-        public int GetTokenFor(RuntimeFieldHandle field)
-        {
-            return DynamicScope.GetTokenFor(field);
-        }
-        public int GetTokenFor(RuntimeFieldHandle field, RuntimeTypeHandle contextType)
-        {
-            return DynamicScope.GetTokenFor(field, contextType);
-        }
-        public int GetTokenFor(RuntimeTypeHandle type)
-        {
-            return DynamicScope.GetTokenFor(type);
-        }
-        public int GetTokenFor(string literal)
-        {
-            return DynamicScope.GetTokenFor(literal);
-        }
-        public int GetTokenFor(byte[] signature)
-        {
-            return DynamicScope.GetTokenFor(signature);
-        }
+#endregion
+#region Public Scope Methods
         #endregion
     }
 

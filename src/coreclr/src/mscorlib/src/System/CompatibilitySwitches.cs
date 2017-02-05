@@ -10,7 +10,6 @@ namespace System
     internal static class CompatibilitySwitches
     {
         private static bool s_AreSwitchesSet;
-        private static bool s_useLatestBehaviorWhenTFMNotSpecified; // Which behavior to use when the TFM is not specified.
 
         public static bool IsCompatibilityBehaviorDefined
         {

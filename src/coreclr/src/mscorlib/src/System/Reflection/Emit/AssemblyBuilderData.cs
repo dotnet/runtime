@@ -14,7 +14,6 @@ namespace System.Reflection.Emit {
     using System.Security;
     using System.Diagnostics;
     using CultureInfo = System.Globalization.CultureInfo;
-    using IResourceWriter = System.Resources.IResourceWriter;
     using System.IO;
     using System.Runtime.Versioning;
     using System.Diagnostics.SymbolStore;
@@ -51,12 +50,6 @@ namespace System.Reflection.Emit {
         internal void AddModule(ModuleBuilder dynModule)
         {
             m_moduleBuilderList.Add(dynModule);
-        }
-    
-        // Helper to add a resource information into the tracking list
-        internal void AddResWriter(ResWriterData resData)
-        {
-            m_resWriterList.Add(resData);
         }
 
 
@@ -110,194 +103,6 @@ namespace System.Reflection.Emit {
             m_CACons[m_iCAs] = con;
             m_iCAs++;
         }
-
-        // Helper to calculate unmanaged version info from Assembly's custom attributes.
-        // If DefineUnmanagedVersionInfo is called, the parameter provided will override
-        // the CA's value.
-        //                      
-        internal void FillUnmanagedVersionInfo()
-        {
-            // Get the lcid set on the assembly name as default if available
-            // Note that if LCID is not avaible from neither AssemblyName or AssemblyCultureAttribute,
-            // it is default to -1 which is treated as language neutral. 
-            //
-            CultureInfo locale = m_assembly.GetLocale();
-#if FEATURE_USE_LCID            
-            if (locale != null)
-                m_nativeVersion.m_lcid = locale.LCID;
-#endif            
-                                                    
-            for (int i = 0; i < m_iCABuilder; i++)
-            {
-                // check for known attributes
-                Type conType = m_CABuilders[i].m_con.DeclaringType;
-                if (m_CABuilders[i].m_constructorArgs.Length == 0 || m_CABuilders[i].m_constructorArgs[0] == null)
-                    continue;
-
-                if (conType.Equals(typeof(System.Reflection.AssemblyCopyrightAttribute)))
-                {
-                        // assert that we should only have one argument for this CA and the type should
-                        // be a string.
-                        // 
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        m_nativeVersion.m_strCopyright = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyTrademarkAttribute))) 
-                {
-                        // assert that we should only have one argument for this CA and the type should
-                        // be a string.
-                        // 
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        m_nativeVersion.m_strTrademark = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyProductAttribute))) 
-                {
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        // assert that we should only have one argument for this CA and the type should
-                        // be a string.
-                        // 
-                        m_nativeVersion.m_strProduct = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyCompanyAttribute))) 
-                {
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        // assert that we should only have one argument for this CA and the type should
-                        // be a string.
-                        // 
-                        m_nativeVersion.m_strCompany = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyDescriptionAttribute))) 
-                {
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    m_nativeVersion.m_strDescription = m_CABuilders[i].m_constructorArgs[0].ToString();
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyTitleAttribute))) 
-                {
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    m_nativeVersion.m_strTitle = m_CABuilders[i].m_constructorArgs[0].ToString();
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyInformationalVersionAttribute))) 
-                {
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        m_nativeVersion.m_strProductVersion = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyCultureAttribute))) 
-                {
-                    // retrieve the LCID
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    // CultureInfo attribute overrides the lcid from AssemblyName.                                      
-                    CultureInfo culture = new CultureInfo(m_CABuilders[i].m_constructorArgs[0].ToString());
-#if FEATURE_USE_LCID
-                    m_nativeVersion.m_lcid = culture.LCID;
-#endif
-                }
-                else if (conType.Equals(typeof(System.Reflection.AssemblyFileVersionAttribute))) 
-                {
-                    if (m_CABuilders[i].m_constructorArgs.Length != 1)
-                    {
-                        throw new ArgumentException(Environment.GetResourceString(
-                            "Argument_BadCAForUnmngRSC",
-                            m_CABuilders[i].m_con.ReflectedType.Name));
-                    }
-                    if (m_OverrideUnmanagedVersionInfo == false)
-                    {
-                        m_nativeVersion.m_strFileVersion = m_CABuilders[i].m_constructorArgs[0].ToString();
-                    }
-                }
-            }
-        }
-
-        
-        // Helper to ensure the resource name is unique underneath assemblyBuilder
-        internal void CheckResNameConflict(String strNewResName)
-        {
-            int         size = m_resWriterList.Count;
-            int         i;
-            for (i = 0; i < size; i++) 
-            {
-                ResWriterData resWriter = m_resWriterList[i];
-                if (resWriter.m_strName.Equals(strNewResName))
-                {
-                    // Cannot have two resources with the same name
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DuplicateResourceName"));
-                }
-            }        
-        }
-
-    
-        // Helper to ensure the module name is unique underneath assemblyBuilder
-        internal void CheckNameConflict(String strNewModuleName)
-        {
-            int         size = m_moduleBuilderList.Count;
-            int         i;
-            for (i = 0; i < size; i++) 
-            {
-                ModuleBuilder moduleBuilder = m_moduleBuilderList[i];
-                if (moduleBuilder.m_moduleData.m_strModuleName.Equals(strNewModuleName))
-                {
-                    // Cannot have two dynamic modules with the same name
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DuplicateModuleName"));
-                }
-            }
-
-            // Right now dynamic modules can only be added to dynamic assemblies in which
-            // all modules are dynamic. Otherwise we would also need to check the static modules 
-            // with this:
-            //  if (m_assembly.GetModule(strNewModuleName) != null)
-            //  {
-            //      // Cannot have two dynamic modules with the same name
-            //      throw new ArgumentException(Environment.GetResourceString("Argument_DuplicateModuleName"));
-            //  }
-        }
     
         // Helper to ensure the type name is unique underneath assemblyBuilder
         internal void CheckTypeNameConflict(String strTypeName, TypeBuilder enclosingType)
@@ -320,102 +125,6 @@ namespace System.Reflection.Emit {
             //      }
         }
         
-
-        // Helper to ensure the file name is unique underneath assemblyBuilder. This includes 
-        // modules and resources.
-        //  
-        //  
-        //  
-        internal void CheckFileNameConflict(String strFileName)
-        {
-            int         size = m_moduleBuilderList.Count;
-            int         i;
-            for (i = 0; i < size; i++) 
-            {
-                ModuleBuilder moduleBuilder = m_moduleBuilderList[i];
-                if (moduleBuilder.m_moduleData.m_strFileName != null)
-                {
-                    if (String.Compare(moduleBuilder.m_moduleData.m_strFileName, strFileName, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        // Cannot have two dynamic module with the same name
-                        throw new ArgumentException(Environment.GetResourceString("Argument_DuplicatedFileName"));
-                    }
-                }
-            }    
-            size = m_resWriterList.Count;
-            for (i = 0; i < size; i++) 
-            {
-                ResWriterData resWriter = m_resWriterList[i];
-                if (resWriter.m_strFileName != null)
-                {
-                    if (String.Compare(resWriter.m_strFileName, strFileName, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        // Cannot have two dynamic module with the same name
-                        throw new ArgumentException(Environment.GetResourceString("Argument_DuplicatedFileName"));
-                    }
-                }
-            }    
-
-        }
-    
-        // Helper to look up which module that assembly is supposed to be stored at
-        //  
-        // 
-        //  
-        internal ModuleBuilder FindModuleWithFileName(String strFileName)
-        {
-            int         size = m_moduleBuilderList.Count;
-            int         i;
-            for (i = 0; i < size; i++) 
-            {
-                ModuleBuilder moduleBuilder = m_moduleBuilderList[i];
-                if (moduleBuilder.m_moduleData.m_strFileName != null)
-                {
-                    if (String.Compare(moduleBuilder.m_moduleData.m_strFileName, strFileName, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        return moduleBuilder;
-                    }
-                }
-            } 
-            return null;       
-        }
-
-        // Helper to look up module by name.
-        //  
-        // 
-        //  
-        internal ModuleBuilder FindModuleWithName(String strName)
-        {
-            int         size = m_moduleBuilderList.Count;
-            int         i;
-            for (i = 0; i < size; i++) 
-            {
-                ModuleBuilder moduleBuilder = m_moduleBuilderList[i];
-                if (moduleBuilder.m_moduleData.m_strModuleName != null)
-                {
-                    if (String.Compare(moduleBuilder.m_moduleData.m_strModuleName, strName, StringComparison.OrdinalIgnoreCase) == 0)
-                        return moduleBuilder;
-                }
-            } 
-            return null;       
-        }
-
-        
-        // add type to public COMType tracking list
-        internal void AddPublicComType(Type type)
-        {
-            BCLDebug.Log("DYNIL","## DYNIL LOGGING: AssemblyBuilderData.AddPublicComType( " + type.FullName + " )"); 
-            if (m_isSaved == true)
-            {
-                // assembly has been saved before!
-                throw new InvalidOperationException(Environment.GetResourceString(
-                    "InvalidOperation_CannotAlterAssembly"));
-            }        
-            EnsurePublicComTypeCapacity();
-            m_publicComTypeList[m_iPublicComTypeCount] = type;
-            m_iPublicComTypeCount++;
-        }
-        
         // add security permission requests
         internal void AddPermissionRequests(
             PermissionSet       required,
@@ -432,20 +141,6 @@ namespace System.Reflection.Emit {
             m_RequiredPset = required;
             m_OptionalPset = optional;
             m_RefusedPset = refused;
-        }
-        
-        private void EnsurePublicComTypeCapacity()
-        {
-            if (m_publicComTypeList == null)
-            {
-                m_publicComTypeList = new Type[m_iInitialSize];
-            }
-            if (m_iPublicComTypeCount == m_publicComTypeList.Length)
-            {
-                Type[]  tempTypeList = new Type[m_iPublicComTypeCount * 2];
-                Array.Copy(m_publicComTypeList, 0, tempTypeList, 0, m_iPublicComTypeCount);
-                m_publicComTypeList = tempTypeList;            
-            }
         }
          
         internal List<ModuleBuilder>    m_moduleBuilderList;
@@ -497,24 +192,6 @@ namespace System.Reflection.Emit {
     **********************************************/
     internal class ResWriterData 
     {
-        internal ResWriterData(
-            IResourceWriter  resWriter,
-            Stream          memoryStream,
-            String          strName,
-            String          strFileName,
-            String          strFullFileName,
-            ResourceAttributes attribute)
-        {
-            m_resWriter = resWriter;
-            m_memoryStream = memoryStream;
-            m_strName = strName;
-            m_strFileName = strFileName;
-            m_strFullFileName = strFullFileName;
-            m_nextResWriter = null;
-            m_attribute = attribute;
-        }
-
-        internal IResourceWriter        m_resWriter;
         internal String                 m_strName;
         internal String                 m_strFileName;
         internal String                 m_strFullFileName;
