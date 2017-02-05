@@ -16,11 +16,10 @@ using Xunit;
 namespace System.Security.Cryptography.Xml.Tests
 {
 
-    [TestFixture]
     public class KeyInfoNodeTest
     {
 
-        [Test]
+        [Fact]
         public void NewKeyNode()
         {
             string test = "<Test></Test>";
@@ -34,10 +33,10 @@ namespace System.Security.Cryptography.Xml.Tests
             KeyInfoNode node2 = new KeyInfoNode(node1.Value);
             node2.LoadXml(xel);
 
-            Assert.AreEqual((node1.GetXml().OuterXml), (node2.GetXml().OuterXml), "node1==node2");
+            Assert.Equal((node1.GetXml().OuterXml), (node2.GetXml().OuterXml));
         }
 
-        [Test]
+        [Fact]
         public void ImportKeyNode()
         {
             // Note: KeyValue is a valid KeyNode
@@ -49,11 +48,11 @@ namespace System.Security.Cryptography.Xml.Tests
             node1.LoadXml(doc.DocumentElement);
 
             string s = (node1.GetXml().OuterXml);
-            Assert.AreEqual(value, s, "Node");
+            Assert.Equal(value, s);
         }
 
         // well there's no invalid value - unless you read the doc ;-)
-        [Test]
+        [Fact]
         public void InvalidKeyNode()
         {
             string bad = "<Test></Test>";
@@ -63,7 +62,7 @@ namespace System.Security.Cryptography.Xml.Tests
             KeyInfoNode node1 = new KeyInfoNode();
             // LAMESPEC: No ArgumentNullException is thrown if value == null
             node1.LoadXml(null);
-            Assert.IsNull(node1.Value, "Value==null");
+            Assert.Null(node1.Value);
         }
     }
 }
