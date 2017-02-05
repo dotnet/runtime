@@ -8,7 +8,7 @@ class C
 {
     static int Main()
     {
-        Console.WriteLine("Hello " + "world");
+        LowLevelConsole.WriteLine("Hello " + "world");
         return 100;
     }
 }
