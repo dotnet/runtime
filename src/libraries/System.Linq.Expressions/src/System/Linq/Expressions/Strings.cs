@@ -65,11 +65,6 @@ namespace System.Linq.Expressions
         internal static string TypeMustNotBePointer => SR.TypeMustNotBePointer;
 
         /// <summary>
-        /// A string like "Type doesn't have constructor with a given signature"
-        /// </summary>
-        internal static string TypeDoesNotHaveConstructorForTheSignature => SR.TypeDoesNotHaveConstructorForTheSignature;
-
-        /// <summary>
         /// A string like "Setter should have void type."
         /// </summary>
         internal static string SetterMustBeVoid => SR.SetterMustBeVoid;
