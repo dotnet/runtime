@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Ceiling(float) over 5000 iterations for the domain -1, +1
 
         private const float ceilingSingleDelta = 0.0004f;
-        private const float ceilingSingleExpectedResult = 2500.0f;
+        private const float ceilingSingleExpectedResult = 2502.0f;
 
         [Benchmark]
         public static void CeilingSingleBenchmark()

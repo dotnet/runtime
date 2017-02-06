@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Log10(float) over 5000 iterations for the domain -1, +1
 
         private const float log10SingleDelta = 0.0004f;
-        private const float log10SingleExpectedResult = -664.073849f;
+        private const float log10SingleExpectedResult = -664.094971f;
 
         [Benchmark]
         public static void Log10SingleBenchmark()

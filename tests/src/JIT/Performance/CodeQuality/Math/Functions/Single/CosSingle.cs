@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Cos(float) over 5000 iterations for the domain 0, PI
 
         private const float cosSingleDelta = 0.000628318531f;
-        private const float cosSingleExpectedResult = -1.00000000f;
+        private const float cosSingleExpectedResult = -0.993487537f;
 
         [Benchmark]
         public static void CosSingleBenchmark()
