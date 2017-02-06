@@ -35,6 +35,10 @@
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
     </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'debian.8-armel'" Include="debian/Microsoft.NETCore.ILAsm.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
+    </Project>
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'fedora.23-x64'" Include="fedora/23/Microsoft.NETCore.ILAsm.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
@@ -78,6 +82,10 @@
     <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'alpine.3.4.3-x64'" Include="alpine/3.4.3/Microsoft.NETCore.ILAsm.pkgproj">
       <OSGroup>Linux</OSGroup>
       <Platform>amd64</Platform>
+    </Project>
+    <Project Condition="'$(TargetsLinux)' == 'true' and '$(DistroRid)' == 'tizen.4.0.0-armel'" Include="tizen/4.0.0/Microsoft.NETCore.ILAsm.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>armel</Platform>
     </Project>
     <Project Condition="'$(TargetsOSX)' == 'true'" Include="osx/Microsoft.NETCore.ILAsm.pkgproj">
       <OSGroup>OSX</OSGroup>
