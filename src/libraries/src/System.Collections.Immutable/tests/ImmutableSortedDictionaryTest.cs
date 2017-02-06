@@ -27,7 +27,7 @@ namespace System.Collections.Immutable.Tests
             var expected = new SortedDictionary<int, bool>();
             var actual = ImmutableSortedDictionary<int, bool>.Empty;
 
-            int seed = (int)DateTime.Now.Ticks;
+            int seed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
