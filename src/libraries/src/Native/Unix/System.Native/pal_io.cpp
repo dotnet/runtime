@@ -291,9 +291,16 @@ extern "C" intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_
 
 extern "C" int32_t SystemNative_ShmUnlink(const char* name)
 {
+#if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     int32_t result;
     while (CheckInterrupted(result = shm_unlink(name)));
     return result;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because name is unused
+    (void)name;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
