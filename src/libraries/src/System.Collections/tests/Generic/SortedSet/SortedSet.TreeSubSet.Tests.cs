@@ -12,25 +12,25 @@ namespace System.Collections.Tests
     {
         protected override int Min => int.MinValue;
         protected override int Max => int.MaxValue;
-        private int Current { get; set; } = 1;
 
         protected override bool DefaultValueAllowed => true;
 
         protected override int CreateT(int seed)
         {
-            return Current++;
+            Random rand = new Random(seed);
+            return rand.Next();
         }
     }
 
     public class SortedSet_TreeSubset_String_Tests : SortedSet_TreeSubset_Tests<string>
     {
-        protected override string Min => 0.ToString().PadLeft(12);
-        protected override string Max => int.MaxValue.ToString().PadLeft(12);
-        private int Current { get; set; } = 1;
+        protected override string Min => 0.ToString().PadLeft(10);
+        protected override string Max => int.MaxValue.ToString().PadLeft(10);
+        private int _current = 1;
 
         protected override string CreateT(int seed)
         {
-            return Current++.ToString().PadLeft(12);
+            return _current++.ToString().PadLeft(10);
         }
 
         public override void ICollection_Generic_Remove_DefaultValueContainedInCollection(int count)
