@@ -295,18 +295,6 @@ namespace System.Threading
             }
         }
 
-        [FriendAccessAllowed]
-        internal static ExecutionContext FastCapture()
-        {
-            return Capture();
-        }
-
-        [FriendAccessAllowed]
-        internal static void Run(ExecutionContext executionContext, ContextCallback callback, Object state, bool preserveSyncCtx)
-        {
-            Run(executionContext, callback, state);
-        }
-
         public ExecutionContext CreateCopy()
         {
             return this; // since CoreCLR's ExecutionContext is immutable, we don't need to create copies.
