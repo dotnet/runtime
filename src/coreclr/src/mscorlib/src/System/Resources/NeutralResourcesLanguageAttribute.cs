@@ -26,7 +26,6 @@ namespace System.Resources {
     using System.Diagnostics.Contracts;
     
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=false)]  
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class NeutralResourcesLanguageAttribute : Attribute 
     {
         private String _culture;

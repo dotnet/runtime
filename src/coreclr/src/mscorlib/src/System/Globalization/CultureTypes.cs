@@ -11,7 +11,6 @@ namespace System.Globalization {
 
 [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CultureTypes 
     {
         NeutralCultures             = 0x0001,             // Neutral cultures are cultures like "en", "de", "zh", etc, for enumeration this includes ALL neutrals regardless of other flags

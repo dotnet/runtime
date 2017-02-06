@@ -633,19 +633,16 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className)
         {
             return GetType(className, false, false);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className, bool throwOnError, bool ignoreCase)
         {
             lock(SyncRoot)
@@ -938,7 +935,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public TypeBuilder DefineType(String name, TypeAttributes attr, Type parent, Type[] interfaces)
         {
             Contract.Ensures(Contract.Result<TypeBuilder>() != null);
@@ -1530,7 +1526,6 @@ namespace System.Reflection.Emit
             return new SymbolMethod(this, token, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public MethodToken GetConstructorToken(ConstructorInfo con)
         {
             // Return a token for the ConstructorInfo relative to the Module. 
@@ -1680,7 +1675,6 @@ namespace System.Reflection.Emit
 
         #region Other
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

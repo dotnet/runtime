@@ -16,7 +16,6 @@ namespace System.Reflection {
     // This Enum matchs the CorParamAttr defined in CorHdr.h
 [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ParameterAttributes
     {
         None      =   0x0000,      // no flag is specified

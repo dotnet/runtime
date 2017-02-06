@@ -21,7 +21,6 @@ namespace System.Collections {
     // the Array and List classes.
     // 
     // Interfaces are not serializable
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IComparer {
         // Compares two objects. An implementation of this method must return a
         // value less than zero if x is less than y, zero if x is equal to y, or a

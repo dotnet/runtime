@@ -19,7 +19,6 @@ namespace System.Reflection.Emit {
     using System.Security.Permissions;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct MethodToken
     {
         public static readonly MethodToken Empty = new MethodToken();

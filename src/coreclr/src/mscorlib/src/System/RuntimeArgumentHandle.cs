@@ -13,7 +13,6 @@ namespace System {
     //  This corresponds to EE VARARGS cookie.
 
     // Cannot be serialized
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct RuntimeArgumentHandle
     {
         private IntPtr m_ptr;

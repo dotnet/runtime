@@ -25,7 +25,6 @@ using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Runtime.InteropServices
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     static public class RuntimeEnvironment {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -23,7 +23,6 @@ namespace System.Reflection.Emit {
     // Module.GetFieldToken().  There are no meaningful accessors on this class,
     // but it can be passed to ILGenerator which understands it's internals.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct FieldToken
     {
         public static readonly FieldToken Empty = new FieldToken();

@@ -24,7 +24,6 @@ namespace System.Runtime.Serialization
     using System.Security;
     using System.Runtime.CompilerServices;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class SerializationInfo
     {
         private const int defaultSize = 4;
@@ -428,7 +427,6 @@ namespace System.Runtime.Serialization
             return m_data[index];
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         private Object GetElementNoThrow(String name, out Type foundType)
         {
             int index = FindElement(name);
@@ -479,7 +477,6 @@ namespace System.Runtime.Serialization
             return m_converter.Convert(value, type);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         internal Object GetValueNoThrow(String name, Type type)
         {
             Type foundType;

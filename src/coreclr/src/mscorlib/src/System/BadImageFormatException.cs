@@ -20,7 +20,6 @@ namespace System {
     using SecurityException = System.Security.SecurityException;
     using System.Globalization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class BadImageFormatException : SystemException {
 

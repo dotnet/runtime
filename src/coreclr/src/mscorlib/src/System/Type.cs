@@ -375,7 +375,6 @@ namespace System
         // This method will search for the specified constructor.  For constructors,
         //  unlike everything else, the default is to not look for static methods.  The
         //  reason is that we don't typically expose the class initializer.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(BindingFlags bindingAttr,
                                               Binder binder,
                                               CallingConventions callConvention, 
@@ -392,7 +391,6 @@ namespace System
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers)
         {
             if (types == null)
@@ -404,7 +402,6 @@ namespace System
             return GetConstructorImpl(bindingAttr, binder, CallingConventions.Any, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(Type[] types)
         {
             // The arguments are checked in the called version of GetConstructor.
@@ -421,15 +418,12 @@ namespace System
         // This routine will return an array of all constructors supported by the class.
         //  Unlike everything else, the default is to not look for static methods.  The
         //  reason is that we don't typically expose the class initializer.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo[] GetConstructors() {
             return GetConstructors(BindingFlags.Public | BindingFlags.Instance);
         }
  
-        [System.Runtime.InteropServices.ComVisible(true)]
         abstract public ConstructorInfo[] GetConstructors(BindingFlags bindingAttr);
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo TypeInitializer {
             get {
                 return GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
@@ -1577,7 +1571,6 @@ namespace System
         // else returns false.  If this class and c are the same class false is
         // returned.
         // 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public virtual bool IsSubclassOf(Type c)
         {
@@ -1754,7 +1747,6 @@ namespace System
         // This method will return an interface mapping for the interface
         //  requested.  It will throw an argument exception if the Type doesn't
         //  implemenet the interface.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride"));

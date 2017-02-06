@@ -213,7 +213,6 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // SizeOf()
         //====================================================================
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static int SizeOf(Object structure)
         {
             if (structure == null)
@@ -840,7 +839,6 @@ namespace System.Runtime.InteropServices
         // "fDeleteOld" is true, this routine will call DestroyStructure() first. 
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static extern void StructureToPtr(Object structure, IntPtr ptr, bool fDeleteOld);
 
         public static void StructureToPtr<T>(T structure, IntPtr ptr, bool fDeleteOld)
@@ -851,7 +849,6 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Marshals data from a native memory block to a preallocated structure class.
         //====================================================================
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static void PtrToStructure(IntPtr ptr, Object structure)
         {
             PtrToStructureHelper(ptr, structure, false);
@@ -866,7 +863,6 @@ namespace System.Runtime.InteropServices
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
         //====================================================================
-        [System.Runtime.InteropServices.ComVisible(true)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Object PtrToStructure(IntPtr ptr, Type structureType)
         {
@@ -907,7 +903,6 @@ namespace System.Runtime.InteropServices
         // "structureclass" is used to provide layout information.
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         public static void DestroyStructure<T>(IntPtr ptr)

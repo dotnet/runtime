@@ -16,7 +16,6 @@ namespace System {
     // Represents a Globally Unique Identifier.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct Guid : IFormattable, IComparable
         , IComparable<Guid>, IEquatable<Guid>

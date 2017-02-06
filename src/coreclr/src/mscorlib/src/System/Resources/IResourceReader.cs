@@ -17,7 +17,6 @@ namespace System.Resources {
     using System.IO;
     using System.Collections;
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IResourceReader : IEnumerable, IDisposable
     {
         // Interface does not need to be marked with the serializable attribute

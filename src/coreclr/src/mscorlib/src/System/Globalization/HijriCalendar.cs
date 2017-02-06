@@ -49,7 +49,6 @@ namespace System.Globalization {
      */
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public class HijriCalendar : Calendar {
 
 
@@ -84,7 +83,6 @@ namespace System.Globalization {
         internal static readonly DateTime calendarMaxValue = DateTime.MaxValue;
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -94,7 +92,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -106,7 +103,6 @@ namespace System.Globalization {
         // Return the type of the Hijri calendar.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -614,7 +610,6 @@ namespace System.Globalization {
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetLeapMonth(int year, int era)
         {
             CheckYearRange(year, era);

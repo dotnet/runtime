@@ -58,7 +58,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
     
 #if FEATURE_REFLECTION_ONLY_LOAD
-    [ComVisible(false)]
     public class NamespaceResolveEventArgs : EventArgs
     {
         private string _NamespaceName;
@@ -98,7 +97,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 #endif //FEATURE_REFLECTION_ONLY
 
-    [ComVisible(false)]
     internal class DesignerNamespaceResolveEventArgs : EventArgs
     {
         private string _NamespaceName;

@@ -27,7 +27,6 @@ namespace System
 
     [Serializable]
     [ClassInterface(ClassInterfaceType.None)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal sealed class AppDomainSetup
     {
         [Serializable]

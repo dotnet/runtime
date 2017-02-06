@@ -16,7 +16,6 @@ namespace System {
     // method which is called to create a clone of the object.   Object defines a method
     // MemberwiseClone to support default clone operations.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface ICloneable
     {
         // Interface does not need to be marked with the serializable attribute

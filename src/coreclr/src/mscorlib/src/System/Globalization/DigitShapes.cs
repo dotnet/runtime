@@ -9,7 +9,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum DigitShapes : int {
 
         Context         = 0x0000,   // The shape depends on the previous text in the same output.

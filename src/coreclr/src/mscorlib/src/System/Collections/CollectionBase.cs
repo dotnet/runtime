@@ -12,7 +12,6 @@ namespace System.Collections {
 
     // Useful base class for typed read/write collections where items derive from object
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CollectionBase : IList {
         private ArrayList list;
 

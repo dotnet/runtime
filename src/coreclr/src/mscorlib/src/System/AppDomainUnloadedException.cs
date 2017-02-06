@@ -15,7 +15,6 @@ namespace System {
 
     using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     internal class AppDomainUnloadedException : SystemException {
         public AppDomainUnloadedException() 
