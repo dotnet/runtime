@@ -27,8 +27,6 @@ namespace System {
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Exception))]
     [Serializable]
     public class Exception : ISerializable, _Exception
     {

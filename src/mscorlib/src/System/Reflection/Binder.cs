@@ -16,7 +16,6 @@ namespace System.Reflection {
     using CultureInfo = System.Globalization.CultureInfo;
     
     [Serializable]
-    [ClassInterface(ClassInterfaceType.AutoDual)]
     public abstract class Binder
     {    
         // Given a set of methods that match the basic criteria, select a method to
