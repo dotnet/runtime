@@ -216,7 +216,6 @@ set(VM_SOURCES_WKS
     securitydeclarative.cpp
     securitydeclarativecache.cpp
     securitydescriptorappdomain.cpp
-    securityhostprotection.cpp
     securitymeta.cpp
     securitypolicy.cpp
     securitytransparentassembly.cpp
@@ -294,7 +293,6 @@ list(APPEND VM_SOURCES_WKS
     rcwrefcache.cpp
     rtlfunctions.cpp
     runtimecallablewrapper.cpp
-    securityprincipal.cpp
     stacksampler.cpp
     stdinterfaces.cpp
     stdinterfaces_wrapper.cpp

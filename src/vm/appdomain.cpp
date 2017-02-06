@@ -75,7 +75,6 @@
 #include "appdomain.inl"
 #include "typeparse.h"
 #include "mdaassistants.h"
-#include "stackcompressor.h"
 #ifdef FEATURE_REMOTING
 #include "mscorcfg.h"
 #include "appdomainconfigfactory.hpp"

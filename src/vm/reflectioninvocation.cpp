@@ -3333,27 +3333,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetSafeUninitializedObject, ReflectCla
         COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_APTCA
-    if (!pMT->GetAssembly()->AllowUntrustedCaller()) {
-        OBJECTREF permSet = NULL;
-        Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-        Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-    }
-#endif // FEATURE_APTCA
-
-#ifdef FEATURE_CAS_POLICY 
-    if (pMT->GetClass()->RequiresLinktimeCheck()) {
-        OBJECTREF refClassNonCasDemands = NULL;
-        OBJECTREF refClassCasDemands = NULL;
-
-        refClassCasDemands = TypeSecurityDescriptor::GetLinktimePermissions(pMT, &refClassNonCasDemands);
-
-        if (refClassCasDemands != NULL)
-            Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, refClassCasDemands);
-
-    }
-#endif // FEATURE_CAS_POLICY
-
     // If it is a nullable, return the underlying type instead.  
     if (Nullable::IsNullableType(pMT)) 
         pMT = pMT->GetInstantiation()[0].GetMethodTable();

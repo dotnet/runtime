@@ -28,7 +28,6 @@
 #include "remoting.h"
 #endif
 #include "eeconfig.h"
-#include "stackcompressor.h"
 #ifdef FEATURE_REMOTING
 #include "appdomainhelper.h"
 #include "objectclone.h"

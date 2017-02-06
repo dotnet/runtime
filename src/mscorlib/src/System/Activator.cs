@@ -258,7 +258,7 @@ namespace System {
                     // Classic managed type
                     assembly = RuntimeAssembly.InternalLoadAssemblyName(
                         assemblyName, securityInfo, null, ref stackMark,
-                        true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+                        true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
                 }
             }
 

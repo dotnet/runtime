@@ -82,14 +82,7 @@ DEFINE_FIELD_U(ReflectionOnlyAssemblyResolve,  AppDomainBaseObject, m_pReflectio
 #ifdef FEATURE_REMOTING
 DEFINE_FIELD_U(_DefaultContext,            AppDomainBaseObject, m_pDefaultContext)
 #endif
-#if defined(FEATURE_CLICKONCE)
-DEFINE_FIELD_U(_activationContext,         AppDomainBaseObject, m_pActivationContext)
-DEFINE_FIELD_U(_applicationIdentity,       AppDomainBaseObject, m_pApplicationIdentity)
-#endif
 DEFINE_FIELD_U(_applicationTrust,          AppDomainBaseObject, m_pApplicationTrust)
-#ifdef FEATURE_IMPERSONATION
-DEFINE_FIELD_U(_DefaultPrincipal,          AppDomainBaseObject, m_pDefaultPrincipal)
-#endif // FEATURE_IMPERSONATION
 #ifdef FEATURE_REMOTING
 DEFINE_FIELD_U(_RemotingData,              AppDomainBaseObject, m_pURITable)
 #endif
@@ -104,9 +97,6 @@ DEFINE_FIELD_U(_compatFlags,              AppDomainBaseObject, m_compatFlags)
 DEFINE_FIELD_U(_firstChanceException,      AppDomainBaseObject, m_pFirstChanceExceptionHandler)
 #endif // FEATURE_EXCEPTION_NOTIFICATIONS
 DEFINE_FIELD_U(_pDomain,                   AppDomainBaseObject, m_pDomain)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_FIELD_U(_PrincipalPolicy,           AppDomainBaseObject, m_iPrincipalPolicy)
-#endif 
 DEFINE_FIELD_U(_HasSetPolicy,                     AppDomainBaseObject, m_bHasSetPolicy)
 DEFINE_FIELD_U(_IsFastFullTrustDomain,            AppDomainBaseObject, m_bIsFastFullTrustDomain)
 DEFINE_FIELD_U(_compatFlagsInitialized,           AppDomainBaseObject, m_compatFlagsInitialized)
@@ -135,9 +125,6 @@ DEFINE_METHOD(APP_DOMAIN,           SET_DOMAIN_CONTEXT,     InternalSetDomainCon
 #endif // FEATURE_FUSION
 #ifdef FEATURE_REMOTING
 DEFINE_METHOD(APP_DOMAIN,           CREATE_DOMAIN,          CreateDomain,               SM_Str_Evidence_AppDomainSetup_RetAppDomain)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(APP_DOMAIN,           CREATE_DOMAINEX,        CreateDomain,               SM_Str_Evidence_Str_Str_Bool_RetAppDomain)
-#endif // FEATURE_CAS_POLICY
 DEFINE_METHOD(APP_DOMAIN,           VAL_CREATE_DOMAIN,      InternalCreateDomain,       SM_Str_RetAppDomain)
 #endif
 #ifdef FEATURE_REMOTING
@@ -152,10 +139,6 @@ DEFINE_METHOD(APP_DOMAIN,           TURN_ON_BINDING_REDIRECTS, TurnOnBindingRedi
 DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
-#ifdef FEATURE_CLICKONCE
-DEFINE_METHOD(APP_DOMAIN,           SETUP_DEFAULT_CLICKONCE_DOMAIN, SetupDefaultClickOnceDomain, IM_Str_ArrStr_ArrStr_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           ACTIVATE_APPLICATION,   ActivateApplication,        IM_RetInt)
-#endif // FEATURE_CLICKONCE
 #ifdef FEATURE_APTCA
 DEFINE_METHOD(APP_DOMAIN,           IS_ASSEMBLY_ON_APTCA_VISIBLE_LIST, IsAssemblyOnAptcaVisibleList, IM_Assembly_RetBool)
 DEFINE_METHOD(APP_DOMAIN,           IS_ASSEMBLY_ON_APTCA_VISIBLE_LIST_RAW, IsAssemblyOnAptcaVisibleListRaw, IM_PtrChar_Int_PtrByte_Int_RetBool)
@@ -180,36 +163,12 @@ DEFINE_FIELD_U(typeKind,        TypeNameNative,             typeKind)
 
 #endif
 
-DEFINE_CLASS_U(Policy,                 ApplicationTrust,            ApplicationTrustObject)
-
-#ifdef FEATURE_CLICKONCE
-DEFINE_FIELD_U(m_appId,                ApplicationTrustObject,     _appId)
-DEFINE_FIELD_U(m_extraInfo,            ApplicationTrustObject,     _extraInfo)
-DEFINE_FIELD_U(m_elExtraInfo,          ApplicationTrustObject,     _elExtraInfo)
-#endif // FEATURE_CLICKONCE
-
-DEFINE_FIELD_U(m_psDefaultGrant,       ApplicationTrustObject,     _psDefaultGrant)
-DEFINE_FIELD_U(m_fullTrustAssemblies,  ApplicationTrustObject,     _fullTrustAssemblies)
-DEFINE_FIELD_U(m_grantSetSpecialFlags, ApplicationTrustObject,     _grantSetSpecialFlags)
-
-#ifdef FEATURE_CLICKONCE
-DEFINE_FIELD_U(m_appTrustedToRun,      ApplicationTrustObject,     _appTrustedToRun)
-DEFINE_FIELD_U(m_persist,              ApplicationTrustObject,     _persist)
-#endif // FEATURE_CLICKONCE
-
-DEFINE_CLASS_U(Policy,                 PolicyStatement,             PolicyStatementObject)
-DEFINE_FIELD_U(m_permSet,              PolicyStatementObject,      _permSet)
-DEFINE_FIELD_U(m_attributes,           PolicyStatementObject,      _attributes)
-
 DEFINE_CLASS(APPDOMAIN_SETUP,       System,                 AppDomainSetup)
 DEFINE_CLASS_U(System,       AppDomainSetup,                 AppDomainSetupObject)
 DEFINE_FIELD_U(_Entries,                           AppDomainSetupObject,   m_Entries)
 DEFINE_FIELD_U(_AppBase,                           AppDomainSetupObject,   m_AppBase)
 DEFINE_FIELD_U(_AppDomainInitializer,              AppDomainSetupObject,   m_AppDomainInitializer)
 DEFINE_FIELD_U(_AppDomainInitializerArguments,     AppDomainSetupObject,   m_AppDomainInitializerArguments)
-#ifdef FEATURE_CLICKONCE
-DEFINE_FIELD_U(_ActivationArguments,               AppDomainSetupObject,   m_ActivationArguments)
-#endif // FEATURE_CLICKONCE
 DEFINE_FIELD_U(_ApplicationTrust,                  AppDomainSetupObject,   m_ApplicationTrust)
 DEFINE_FIELD_U(_ConfigurationBytes,                AppDomainSetupObject,   m_ConfigurationBytes)
 DEFINE_FIELD_U(_AppDomainManagerAssembly,          AppDomainSetupObject,   m_AppDomainManagerAssembly)
@@ -318,11 +277,6 @@ DEFINE_METHOD(ASSEMBLY,             ON_MODULE_RESOLVE,      OnModuleResolveEvent
 DEFINE_METHOD(ASSEMBLY,             DEMAND_PERMISSION,      DemandPermission,           SM_Str_Bool_Int_RetV)
 #endif
 
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(ASSEMBLY_EVIDENCE_FACTORY, Policy,             AssemblyEvidenceFactory)
-DEFINE_METHOD(ASSEMBLY_EVIDENCE_FACTORY, UPGRADE_SECURITY_IDENTITY, UpgradeSecurityIdentity, SM_Evidence_Asm_RetEvidence)
-#endif // FEATURE_CAS_POLICY
-
 #ifdef FEATURE_COMINTEROP_REGISTRATION
 DEFINE_CLASS(ASSEMBLY_REGISTRATION_FLAGS, Interop,          AssemblyRegistrationFlags)
 #endif // FEATURE_COMINTEROP_REGISTRATION
@@ -371,8 +325,6 @@ DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,       
 DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
 DEFINE_CLASS(CLASS_INTROSPECTION_ONLY, System,              ReflectionOnlyType)
-
-DEFINE_CLASS(CODE_ACCESS_PERMISSION, Security,              CodeAccessPermission)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
@@ -465,20 +417,6 @@ DEFINE_METHOD(CONTEXT,              RESERVE_SLOT,           ReserveSlot,        
 #ifdef FEATURE_REMOTING
 DEFINE_CLASS(CONTEXT_BOUND_OBJECT,  System,                 ContextBoundObject)
 #endif
-
-#ifdef FEATURE_CRYPTO
-DEFINE_CLASS(CSP_PARAMETERS,        Cryptography,           CspParameters)
-
-DEFINE_FIELD(CSP_PARAMETERS,        PROVIDER_TYPE,          ProviderType)
-DEFINE_FIELD(CSP_PARAMETERS,        PROVIDER_NAME,          ProviderName)
-DEFINE_FIELD(CSP_PARAMETERS,        KEY_CONTAINER_NAME,     KeyContainerName)
-DEFINE_FIELD(CSP_PARAMETERS,        FLAGS,                  m_flags)
-#endif //FEATURE_CRYPTO
-
-#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO)
-DEFINE_CLASS(CRYPTO_EXCEPTION,      Cryptography,           CryptographicException)
-DEFINE_METHOD(CRYPTO_EXCEPTION,     THROW,                  ThrowCryptographicException, SM_Int_RetVoid)
-#endif // FEATURE_X509 || FEATURE_CRYPTO
 
 #ifndef FEATURE_CORECLR
 DEFINE_CLASS_U(Globalization,          AppDomainSortingSetupInfo,           AppDomainSortingSetupInfoObject)
@@ -685,11 +623,6 @@ DEFINE_CLASS(EVENT_HANDLERGENERIC,  System,                 EventHandler`1)
 DEFINE_CLASS(EVENT_INFO,            Reflection,             EventInfo)
 
 DEFINE_CLASS(EVIDENCE,              Policy,                 Evidence)
-#ifdef FEATURE_CAS_POLICY
-// .ctor support for ICorRuntimeHost::CreateEvidence
-DEFINE_METHOD(EVIDENCE,             CTOR,                   .ctor, IM_RetVoid)
-DEFINE_METHOD(EVIDENCE,             WAS_STRONGNAME_EVIDENCE_USED, WasStrongNameEvidenceUsed, IM_RetBool)
-#endif // FEATURE_CAS_POLICY
 
 DEFINE_CLASS_U(System,                 Exception,      ExceptionObject)
 DEFINE_FIELD_U(_className,         ExceptionObject,    _className)
@@ -788,17 +721,6 @@ DEFINE_FIELD_U(_completedSynchronously, AsyncResultBase, _completedSynchronously
 DEFINE_CLASS(FILESTREAM_ASYNCRESULT, IO,               FileStreamAsyncResult)
 #endif // !FEATURE_CORECLR
 
-DEFINE_CLASS_U(Security,           FrameSecurityDescriptor, FrameSecurityDescriptorBaseObject)
-DEFINE_FIELD_U(m_assertions,       FrameSecurityDescriptorBaseObject,  m_assertions)
-DEFINE_FIELD_U(m_denials,          FrameSecurityDescriptorBaseObject,  m_denials)
-DEFINE_FIELD_U(m_restriction,      FrameSecurityDescriptorBaseObject,  m_restriction)
-DEFINE_FIELD_U(m_AssertFT,         FrameSecurityDescriptorBaseObject,  m_assertFT)
-DEFINE_FIELD_U(m_assertAllPossible,FrameSecurityDescriptorBaseObject,  m_assertAllPossible)
-DEFINE_FIELD_U(m_DeclarativeAssertions,       FrameSecurityDescriptorBaseObject,  m_DeclarativeAssertions)
-DEFINE_FIELD_U(m_DeclarativeDenials,          FrameSecurityDescriptorBaseObject,  m_DeclarativeDenials)
-DEFINE_FIELD_U(m_DeclarativeRestrictions,      FrameSecurityDescriptorBaseObject,  m_DeclarativeRestrictions)
-DEFINE_CLASS(FRAME_SECURITY_DESCRIPTOR, Security,           FrameSecurityDescriptor)
-
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
 #ifdef FEATURE_COMINTEROP
@@ -879,10 +801,6 @@ DEFINE_CLASS(IDISPOSABLE,           System,                 IDisposable)
 DEFINE_CLASS(IEXPANDO,              Expando,                IExpando)
 DEFINE_METHOD(IEXPANDO,             ADD_FIELD,              AddField,                   IM_Str_RetFieldInfo)
 DEFINE_METHOD(IEXPANDO,             REMOVE_MEMBER,          RemoveMember,               IM_MemberInfo_RetVoid)
-
-DEFINE_CLASS(IPERMISSION,           Security,               IPermission)
-
-DEFINE_CLASS(IPRINCIPAL,            Principal,              IPrincipal)
 
 DEFINE_CLASS(IREFLECT,              Reflection,             IReflect)
 DEFINE_METHOD(IREFLECT,             GET_PROPERTIES,         GetProperties,              IM_BindingFlags_RetArrPropertyInfo)
@@ -1162,66 +1080,6 @@ DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
 DEFINE_CLASS(PARAMETER_MODIFIER,    Reflection,             ParameterModifier)
 
-// Keep this in sync with System.Security.PermissionSet
-DEFINE_CLASS_U(Security,               PermissionSet,      PermissionSetObject)
-DEFINE_FIELD_U(m_permSet,                  PermissionSetObject, _permSet)
-DEFINE_FIELD_U(m_Unrestricted,             PermissionSetObject, _Unrestricted)
-DEFINE_FIELD_U(m_allPermissionsDecoded,    PermissionSetObject, _allPermissionsDecoded)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_FIELD_U(m_canUnrestrictedOverride,PermissionSetObject, _canUnrestrictedOverride)
-#endif // FEATURE_CAS_POLICY
-DEFINE_FIELD_U(m_ignoreTypeLoadFailures, PermissionSetObject, _ignoreTypeLoadFailures)
-DEFINE_FIELD_U(m_CheckedForNonCas,         PermissionSetObject, _CheckedForNonCas)
-DEFINE_FIELD_U(m_ContainsCas,              PermissionSetObject, _ContainsCas)
-DEFINE_FIELD_U(m_ContainsNonCas,           PermissionSetObject, _ContainsNonCas)
-
-DEFINE_CLASS(PERMISSION_SET,        Security,               PermissionSet)
-DEFINE_METHOD(PERMISSION_SET,       CTOR,                   .ctor,                      IM_Bool_RetVoid)
-DEFINE_METHOD(PERMISSION_SET,       CREATE_SERIALIZED,      CreateSerialized,           SM_ArrObj_Bool_RefArrByte_OutPMS_HostProtectionResource_Bool_RetArrByte)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(PERMISSION_SET,       SETUP_SECURITY,         SetupSecurity,              SM_RetVoid)
-#endif // FEATURE_CAS_POLICY
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(PERMISSION_SET,       DECODE_XML,             DecodeXml,                  IM_ArrByte_HostProtectionResource_HostProtectionResource_RetBool)
-DEFINE_METHOD(PERMISSION_SET,       ENCODE_XML,             EncodeXml,                  IM_RetArrByte)
-#endif // FEATURE_CAS_POLICY
-DEFINE_METHOD(PERMISSION_SET,       CONTAINS,               Contains,                   IM_IPermission_RetBool)
-DEFINE_METHOD(PERMISSION_SET,       DEMAND,                 Demand,                     IM_RetVoid)
-DEFINE_METHOD(PERMISSION_SET,       DEMAND_NON_CAS,         DemandNonCAS,               IM_RetVoid)
-DEFINE_METHOD(PERMISSION_SET,       IS_UNRESTRICTED,        IsUnrestricted,             IM_RetBool)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(PERMISSION_SET,       IS_SUBSET_OF,           IsSubsetOf,                 IM_PMS_RetBool)
-DEFINE_METHOD(PERMISSION_SET,       INTERSECT,              Intersect,                  IM_PMS_RetPMS)
-#endif // #ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(PERMISSION_SET,       INPLACE_UNION,          InplaceUnion,               IM_PMS_RetVoid)
-DEFINE_METHOD(PERMISSION_SET,       UNION,                  Union,                      IM_PMS_RetPMS)
-DEFINE_METHOD(PERMISSION_SET,       IS_EMPTY,               IsEmpty,                    IM_RetBool)
-DEFINE_METHOD(PERMISSION_SET,       ADD_PERMISSION,         AddPermission,              IM_IPermission_RetIPermission)
-
-DEFINE_CLASS(NAMEDPERMISSION_SET,      Security,               NamedPermissionSet)
-
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(PEFILE_EVIDENCE_FACTORY,   Policy,             PEFileEvidenceFactory)
-DEFINE_METHOD(PEFILE_EVIDENCE_FACTORY,  CREATE_SECURITY_IDENTITY, CreateSecurityIdentity, SM_PEFile_Evidence_RetEvidence)
-#endif // FEATURE_CAS_POLICY
-
-DEFINE_CLASS_U(Security,             PermissionListSet,     PermissionListSetObject)
-DEFINE_FIELD_U(m_firstPermSetTriple,  PermissionListSetObject, _firstPermSetTriple)
-DEFINE_FIELD_U(m_permSetTriples,      PermissionListSetObject, _permSetTriples)
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_FIELD_U(m_zoneList,            PermissionListSetObject, _zoneList)
-DEFINE_FIELD_U(m_originList,          PermissionListSetObject, _originList)
-#endif // FEAUTRE_COMPRESSEDSTACK
-DEFINE_CLASS(PERMISSION_LIST_SET,   Security,               PermissionListSet)
-DEFINE_METHOD(PERMISSION_LIST_SET,  CTOR,                   .ctor,                      IM_RetVoid)
-DEFINE_METHOD(PERMISSION_LIST_SET,  CHECK_DEMAND_NO_THROW,  CheckDemandNoThrow,         IM_CodeAccessPermission_RetBool)
-DEFINE_METHOD(PERMISSION_LIST_SET,  CHECK_SET_DEMAND_NO_THROW, CheckSetDemandNoThrow,   IM_PMS_RetBool)
-DEFINE_METHOD(PERMISSION_LIST_SET,  UPDATE,                  Update,                     IM_PMS_RetVoid)
-
-DEFINE_CLASS(PERMISSION_STATE,      Permissions,            PermissionState)
-
-DEFINE_CLASS(PERMISSION_TOKEN,      Security,               PermissionToken)
-
 DEFINE_CLASS(POINTER,               Reflection,             Pointer)
 
 DEFINE_CLASS_U(Reflection, Pointer, ReflectionPointer)
@@ -1259,11 +1117,6 @@ DEFINE_METHOD(REAL_PROXY,           SUPPORTSINTERFACE,      SupportsInterface,  
 
 #endif // FEATURE_COMINTEROP
 #endif // FEATURE_REMOTING
-
-DEFINE_CLASS(REFLECTION_PERMISSION, Permissions,            ReflectionPermission)
-DEFINE_METHOD(REFLECTION_PERMISSION,  CTOR,                   .ctor,                    IM_ReflectionPermissionFlag_RetVoid)
-
-DEFINE_CLASS(REFLECTION_PERMISSION_FLAG, Permissions,       ReflectionPermissionFlag)
 
 #ifdef FEATURE_COMINTEROP_REGISTRATION
 DEFINE_CLASS(REGISTRATION_SERVICES, Interop,                RegistrationServices)
@@ -1382,101 +1235,18 @@ DEFINE_METHOD(SAFE_HANDLE,          RELEASE_HANDLE,         ReleaseHandle,      
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE,                Dispose,                    IM_RetVoid)
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(SAFE_PEFILE_HANDLE,    SafeHandles,            SafePEFileHandle)
-#endif // FEATURE_CAS_POLICY
-
 #ifndef FEATURE_CORECLR
 DEFINE_CLASS(SAFE_TOKENHANDLE, SafeHandles, SafeAccessTokenHandle)
 #endif
 
 DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
 
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_CLASS(SAFE_CSHANDLE, Threading, SafeCompressedStackHandle)
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
-
-
-DEFINE_CLASS(SECURITY_ACTION,       Permissions,            SecurityAction)
-DEFINE_CLASS(HOST_PROTECTION_RESOURCE, Permissions,         HostProtectionResource)
-
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(SECURITY_ATTRIBUTE,    Permissions,            SecurityAttribute)
-DEFINE_METHOD(SECURITY_ATTRIBUTE, FIND_SECURITY_ATTRIBUTE_TYPE_HANDLE, FindSecurityAttributeTypeHandle, SM_Str_RetIntPtr)
-#endif
-
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(SECURITY_ELEMENT,      Security,               SecurityElement)
-DEFINE_METHOD(SECURITY_ELEMENT,     TO_STRING,              ToString,                   IM_RetStr)
-#endif // FEATURE_CAS_POLICY
-
-DEFINE_CLASS(SECURITY_ENGINE,       Security,               CodeAccessSecurityEngine)
-DEFINE_METHOD(SECURITY_ENGINE,      CHECK_HELPER,           CheckHelper,                SM_CS_PMS_PMS_CodeAccessPermission_PermissionToken_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid)
-DEFINE_METHOD(SECURITY_ENGINE,      CHECK_SET_HELPER,       CheckSetHelper,             SM_CS_PMS_PMS_PMS_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid)
-#ifdef FEATURE_APTCA
-DEFINE_METHOD(SECURITY_ENGINE,      THROW_SECURITY_EXCEPTION, ThrowSecurityException,   SM_Assembly_PMS_PMS_RuntimeMethodHandleInternal_SecurityAction_Obj_IPermission_RetVoid)
-#endif // FEATURE_APTCA
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(SECURITY_ENGINE,      RESOLVE_GRANT_SET,      ResolveGrantSet,            SM_Evidence_RefInt_Bool_RetPMS)
-DEFINE_METHOD(SECURITY_ENGINE,      PRE_RESOLVE,            PreResolve,                 SM_RefBool_RefBool_RetVoid)
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_PLS
-DEFINE_METHOD(SECURITY_ENGINE,      UPDATE_APPDOMAIN_PLS,   UpdateAppDomainPLS,         SM_PermissionListSet_PMS_PMS_RetPermissionListSet)
-#endif // FEATURE_PLS
-
-#ifdef FEATURE_CAS_POLICY
-#ifdef FEATURE_NONGENERIC_COLLECTIONS 
-DEFINE_METHOD(SECURITY_ENGINE,      GET_ZONE_AND_ORIGIN_HELPER, GetZoneAndOriginHelper, SM_CS_PMS_PMS_ArrayList_ArrayList_RetVoid)
-#else
-#error Need replacement for GetZoneAndOriginHelper
-#endif // FEATURE_NONGENERIC_COLLECTIONS 
-DEFINE_METHOD(SECURITY_ENGINE,      REFLECTION_TARGET_DEMAND_HELPER,    ReflectionTargetDemandHelper,    SM_Int_PMS_RetVoid)
-DEFINE_METHOD(SECURITY_ENGINE,      REFLECTION_TARGET_DEMAND_HELPER_WITH_CONTEXT, ReflectionTargetDemandHelper,    SM_Int_PMS_Resolver_RetVoid)
-DEFINE_METHOD(SECURITY_ENGINE,      CHECK_GRANT_SET_HELPER, CheckGrantSetHelper,        SM_PMS_RetVoid)
-#endif // FEATURE_CAS_POLICY
-
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(SECURITY_EXCEPTION,   CTOR,                   .ctor,                      IM_Str_Type_Str_RetVoid)
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_CAS_POLICY
-DEFINE_CLASS(HOST_PROTECTION_EXCEPTION, Security,         HostProtectionException)
-DEFINE_METHOD(HOST_PROTECTION_EXCEPTION, CTOR,            .ctor,                        IM_HPR_HPR_RetVoid)
-#endif // FEATURE_CAS_POLICY
-
-DEFINE_CLASS(SECURITY_MANAGER,      Security,               SecurityManager)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(SECURITY_MANAGER,     RESOLVE_CAS_POLICY,     ResolveCasPolicy,           SM_Evidence_PMS_PMS_PMS_PMS_int_Bool_RetPMS)
-#endif
-
-DEFINE_CLASS(SECURITY_PERMISSION,   Permissions,            SecurityPermission)
-DEFINE_METHOD(SECURITY_PERMISSION,  CTOR,                   .ctor,                      IM_SecurityPermissionFlag_RetVoid)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METHOD(SECURITY_PERMISSION,  TOXML,                  ToXml,                      IM_RetSecurityElement)
-#endif // FEATURE_CAS_POLICY
-
-DEFINE_CLASS(SECURITY_PERMISSION_FLAG,Permissions,          SecurityPermissionFlag)
-
-DEFINE_CLASS(SECURITY_RUNTIME,      Security,               SecurityRuntime)
-DEFINE_METHOD(SECURITY_RUNTIME,     FRAME_DESC_HELPER,      FrameDescHelper,            SM_FrameSecurityDescriptor_IPermission_PermissionToken_RuntimeMethodHandleInternal_RetBool)
-DEFINE_METHOD(SECURITY_RUNTIME,     FRAME_DESC_SET_HELPER,  FrameDescSetHelper,         SM_FrameSecurityDescriptor_PMS_OutPMS_RuntimeMethodHandleInternal_RetBool)
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METHOD(SECURITY_RUNTIME,     CHECK_DYNAMIC_METHOD_HELPER,      CheckDynamicMethodHelper,    SM_DynamicResolver_IPermission_PermissionToken_RuntimeMethodHandleInternal_RetBool)
-DEFINE_METHOD(SECURITY_RUNTIME,     CHECK_DYNAMIC_METHOD_SET_HELPER,  CheckDynamicMethodSetHelper, SM_DynamicResolver_PMS_OutPMS_RuntimeMethodHandleInternal_RetBool)
-#endif // FEATURE_COMPRESSEDSTACK
 
 #ifdef FEATURE_REMOTING
 DEFINE_CLASS(SERVER_IDENTITY,       Remoting,               ServerIdentity)
 DEFINE_FIELD(SERVER_IDENTITY,       SERVER_CONTEXT,         _srvCtx)
 #endif // FEATURE_REMOTING
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_CLASS(DOMAIN_COMPRESSED_STACK, Threading, DomainCompressedStack)
-DEFINE_METHOD(DOMAIN_COMPRESSED_STACK, CREATE_MANAGED_OBJECT, CreateManagedObject, SM_IntPtr_RetDCS)
-DEFINE_CLASS(COMPRESSED_STACK, Threading, CompressedStack)
-DEFINE_METHOD(COMPRESSED_STACK,    RUN,                   Run,                SM_CompressedStack_ContextCallback_Object_RetVoid)
-#endif // FEATURE_COMPRESSEDSTACK            
 
 DEFINE_CLASS(SHARED_STATICS,        System,                 SharedStatics)
 DEFINE_FIELD(SHARED_STATICS,        SHARED_STATICS,         _sharedStatics)
@@ -1573,36 +1343,6 @@ DEFINE_METHOD(TCE_EVENT_ITF_INFO,   CTOR,                   .ctor,              
 
 DEFINE_CLASS(CONTEXTCALLBACK,       Threading,       ContextCallback)
 
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-DEFINE_CLASS_U(Security,           SecurityContext,        SecurityContextObject)
-DEFINE_FIELD_U(_executionContext,      SecurityContextObject,      _executionContext)
-#if defined(FEATURE_IMPERSONATION)
-DEFINE_FIELD_U(_windowsIdentity,       SecurityContextObject,      _windowsIdentity)
-#endif
-DEFINE_FIELD_U(_compressedStack,       SecurityContextObject,      _compressedStack)
-DEFINE_FIELD_U(_disableFlow,           SecurityContextObject,      _disableFlow)
-DEFINE_FIELD_U(isNewCapture,           SecurityContextObject,      _isNewCapture)
-DEFINE_CLASS(SECURITYCONTEXT,     Security,           SecurityContext)
-DEFINE_METHOD(SECURITYCONTEXT,               RUN,                   Run,                SM_SecurityContext_ContextCallback_Object_RetVoid)
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-
-#ifndef FEATURE_CORECLR
-DEFINE_CLASS_U(Threading,                  ExecutionContext,       ExecutionContextObject)
-#ifdef FEATURE_CAS_POLICY
-DEFINE_FIELD_U(_hostExecutionContext,  ExecutionContextObject,     _hostExecutionContext)
-#endif // FEATURE_CAS_POLICY
-DEFINE_FIELD_U(_syncContext,           ExecutionContextObject,     _syncContext)
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-DEFINE_FIELD_U(_securityContext,       ExecutionContextObject,     _securityContext)
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-#ifdef FEATURE_REMOTING
-DEFINE_FIELD_U(_logicalCallContext,    ExecutionContextObject,     _logicalCallContext)
-DEFINE_FIELD_U(_illogicalCallContext,  ExecutionContextObject,     _illogicalCallContext)
-#endif // #ifdef FEATURE_REMOTING
-DEFINE_CLASS(EXECUTIONCONTEXT,          Threading,                  ExecutionContext)
-DEFINE_METHOD(EXECUTIONCONTEXT,               RUN,                   Run,                SM_ExecutionContext_ContextCallback_Object_Bool_RetVoid)
-#endif //FEATURE_CORECLR
-
 #ifdef _DEBUG
 DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 #endif
@@ -1629,9 +1369,6 @@ DEFINE_CLASS(THREAD,                Threading,              Thread)
 #ifndef FEATURE_LEAK_CULTURE_INFO 
 DEFINE_FIELD(THREAD,                CULTURE,                m_CurrentCulture)
 DEFINE_FIELD(THREAD,                UI_CULTURE,             m_CurrentUICulture)
-#endif
-#ifdef FEATURE_IMPERSONATION
-DEFINE_METHOD(THREAD,               SET_PRINCIPAL_INTERNAL, SetPrincipalInternal,       IM_IPrincipal_RetVoid)
 #endif
 #ifdef FEATURE_REMOTING
 DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_CONTEXT,        CurrentContext,             Context)
@@ -1676,9 +1413,6 @@ DEFINE_PROPERTY(TYPE,               IS_IMPORT,              IsImport,           
 
 DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
 
-DEFINE_CLASS(UI_PERMISSION,         Permissions,            UIPermission)
-DEFINE_METHOD(UI_PERMISSION,        CTOR,                   .ctor,                      IM_PermissionState_RetVoid)
-
 DEFINE_CLASS(UNHANDLED_EVENTARGS,   System,                 UnhandledExceptionEventArgs)
 DEFINE_METHOD(UNHANDLED_EVENTARGS,  CTOR,                   .ctor,                      IM_Obj_Bool_RetVoid)
 
@@ -1710,15 +1444,6 @@ DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_IMPERSONATION
-DEFINE_CLASS(WINDOWS_IDENTITY,      Principal,              WindowsIdentity)
-DEFINE_METHOD(WINDOWS_IDENTITY,     SERIALIZATION_CTOR,     .ctor,                      IM_SerInfo_RetVoid)
-#endif
-#ifdef FEATURE_X509
-DEFINE_CLASS(X509_CERTIFICATE,      X509,                   X509Certificate)
-DEFINE_METHOD(X509_CERTIFICATE,     CTOR,                   .ctor,                      IM_ArrByte_RetVoid)
-#endif // FEATURE_X509
 
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
@@ -2190,28 +1915,6 @@ DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptio
 DEFINE_FIELD_U(_Kind,               ContractExceptionObject,    _Kind)
 DEFINE_FIELD_U(_UserMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_Condition,          ContractExceptionObject,    _Condition)
-
-// The COM interfaces for the reflection types.
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-DEFINE_CLASS(IAPPDOMAIN,        System,              _AppDomain)
-DEFINE_CLASS(ITYPE,             InteropServices,     _Type)
-DEFINE_CLASS(IASSEMBLY,         InteropServices,     _Assembly)
-DEFINE_CLASS(IMEMBERINFO,       InteropServices,     _MemberInfo)
-DEFINE_CLASS(IMETHODBASE,       InteropServices,     _MethodBase)
-DEFINE_CLASS(IMETHODINFO,       InteropServices,     _MethodInfo)
-DEFINE_CLASS(ICONSTRUCTORINFO,  InteropServices,     _ConstructorInfo)
-DEFINE_CLASS(IFIELDINFO,        InteropServices,     _FieldInfo)
-DEFINE_CLASS(IPROPERTYINFO,     InteropServices,     _PropertyInfo)
-DEFINE_CLASS(IEVENTINFO,        InteropServices,     _EventInfo)
-DEFINE_CLASS(IPARAMETERINFO,    InteropServices,     _ParameterInfo)
-DEFINE_CLASS(IMODULE,           InteropServices,     _Module)
-#endif // FEATURE_COMINTEROP && !FEATURE_CORECLR
-
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_CLASS_U(Security,           FrameSecurityDescriptorWithResolver, FrameSecurityDescriptorWithResolverBaseObject)
-DEFINE_FIELD_U(m_resolver,         FrameSecurityDescriptorWithResolverBaseObject,  m_resolver)
-DEFINE_CLASS(FRAME_SECURITY_DESCRIPTOR_WITH_RESOLVER, Security, FrameSecurityDescriptorWithResolver)
-#endif // FEATURE_COMPRESSEDSTACK
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ASYNC_TRACING_EVENT_ARGS,       WindowsFoundationDiag,         TracingStatusChangedEventArgs)

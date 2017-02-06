@@ -32,7 +32,6 @@
 //   r  -- Ref  -- a byref
 //         Ret  -- indicates function return type
 //
-//         PMS  -- PermissionSet
 //         Var  -- Variant
 //
 //   b  -- Byte -- (unsigned) byte
@@ -306,8 +305,6 @@ DEFINE_METASIG_T(SM(Exception_RetInt, C(EXCEPTION), i))
 DEFINE_METASIG_T(SM(ContextBoundObject_RetObj, C(CONTEXT_BOUND_OBJECT), j))
 #endif
 
-DEFINE_METASIG_T(SM(PMS_PMS_RetInt, C(PERMISSION_SET) C(PERMISSION_SET), i))
-
 DEFINE_METASIG(SM(IntPtr_RetVoid, I, v))
 DEFINE_METASIG(SM(IntPtr_Bool_RetVoid, I F, v))
 DEFINE_METASIG(SM(IntPtr_UInt_IntPtr_RetVoid, I K I, v))
@@ -342,38 +339,6 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
 #endif
 
-DEFINE_METASIG_T(SM(IPermission_RetPermissionToken, C(IPERMISSION), C(PERMISSION_TOKEN)))
-DEFINE_METASIG_T(SM(FrameSecurityDescriptor_IPermission_PermissionToken_RuntimeMethodHandleInternal_RetBool, \
-                 C(FRAME_SECURITY_DESCRIPTOR) C(IPERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL), F))
-DEFINE_METASIG_T(SM(FrameSecurityDescriptor_PMS_OutPMS_RuntimeMethodHandleInternal_RetBool, \
-                 C(FRAME_SECURITY_DESCRIPTOR) C(PERMISSION_SET) r(C(PERMISSION_SET)) g(METHOD_HANDLE_INTERNAL), F))
-DEFINE_METASIG_T(SM(FrameSecurityDescriptor_RetInt, C(FRAME_SECURITY_DESCRIPTOR), i))
-DEFINE_METASIG_T(SM(DynamicResolver_IPermission_PermissionToken_RuntimeMethodHandleInternal_RetBool, \
-                 C(DYNAMICRESOLVER) C(IPERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL), F))
-DEFINE_METASIG_T(SM(DynamicResolver_PMS_OutPMS_RuntimeMethodHandleInternal_RetBool, \
-                 C(DYNAMICRESOLVER) C(PERMISSION_SET) r(C(PERMISSION_SET)) g(METHOD_HANDLE_INTERNAL), F))
-DEFINE_METASIG_T(SM(PermissionListSet_PMS_PMS_RetPermissionListSet, \
-                 C(PERMISSION_LIST_SET) C(PERMISSION_SET) C(PERMISSION_SET), C(PERMISSION_LIST_SET)))
-DEFINE_METASIG_T(SM(PMS_IntPtr_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, C(PERMISSION_SET) I g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METASIG_T(SM(CS_PMS_PMS_CodeAccessPermission_PermissionToken_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, \
-                 C(COMPRESSED_STACK) C(PERMISSION_SET) C(PERMISSION_SET) C(CODE_ACCESS_PERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
-DEFINE_METASIG_T(SM(CS_PMS_PMS_PMS_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, C(COMPRESSED_STACK) C(PERMISSION_SET) C(PERMISSION_SET) C(PERMISSION_SET) g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
-#else // #ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METASIG_T(SM(CS_PMS_PMS_CodeAccessPermission_PermissionToken_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, \
-                 j C(PERMISSION_SET) C(PERMISSION_SET) C(CODE_ACCESS_PERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
-DEFINE_METASIG_T(SM(CS_PMS_PMS_PMS_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, j C(PERMISSION_SET) C(PERMISSION_SET) C(PERMISSION_SET) g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METASIG_T(SM(Evidence_RefInt_Bool_RetPMS, C(EVIDENCE) r(i) F, C(PERMISSION_SET)))
-#ifdef FEATURE_APTCA
-DEFINE_METASIG_T(SM(Assembly_PMS_PMS_RuntimeMethodHandleInternal_SecurityAction_Obj_IPermission_RetVoid, C(ASSEMBLY) C(PERMISSION_SET) C(PERMISSION_SET) g(METHOD_HANDLE_INTERNAL) g(SECURITY_ACTION) j C(IPERMISSION), v))
-#endif // FEATURE_APTCA
-DEFINE_METASIG_T(SM(Evidence_PMS_PMS_PMS_PMS_int_Bool_RetPMS, \
-                 C(EVIDENCE) C(PERMISSION_SET) C(PERMISSION_SET) C(PERMISSION_SET) r(C(PERMISSION_SET)) r(i) F, C(PERMISSION_SET)))
-DEFINE_METASIG_T(SM(Int_PMS_RetVoid, i C(PERMISSION_SET), v))
-DEFINE_METASIG_T(SM(Int_PMS_Resolver_RetVoid, i C(PERMISSION_SET) C(RESOLVER), v))
-DEFINE_METASIG_T(SM(PMS_RetVoid, C(PERMISSION_SET), v))
-
 #ifndef FEATURE_CORECLR
 DEFINE_METASIG_T(SM(ExecutionContext_ContextCallback_Object_Bool_RetVoid, \
                  C(EXECUTIONCONTEXT) C(CONTEXTCALLBACK) j F, v))
@@ -402,7 +367,6 @@ DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
-DEFINE_METASIG_T(SM(ArrObj_Bool_RefArrByte_OutPMS_HostProtectionResource_Bool_RetArrByte, a(j) F r(a(b)) r(C(PERMISSION_SET)) g(HOST_PROTECTION_RESOURCE) F, a(b)))
 DEFINE_METASIG_T(SM(Evidence_RetEvidence, C(EVIDENCE), C(EVIDENCE)))
 #ifdef FEATURE_CAS_POLICY
 DEFINE_METASIG_T(SM(PEFile_Evidence_RetEvidence, C(SAFE_PEFILE_HANDLE) C(EVIDENCE), C(EVIDENCE)))
@@ -413,14 +377,6 @@ DEFINE_METASIG_T(IM(Evidence_RetVoid, C(EVIDENCE), v))
 DEFINE_METASIG_T(SM(Void_RetRuntimeTypeHandle, _, g(RT_TYPE_HANDLE)))
 DEFINE_METASIG(SM(Void_RetIntPtr, _, I))
 
-#ifdef FEATURE_CAS_POLICY
-#ifdef FEATURE_NONGENERIC_COLLECTIONS 
-DEFINE_METASIG_T(SM(CS_PMS_PMS_ArrayList_ArrayList_RetVoid, \
-                 C(COMPRESSED_STACK) C(PERMISSION_SET) C(PERMISSION_SET) C(ARRAY_LIST) C(ARRAY_LIST), v))
-#else
-#error Need replacement for GetZoneAndOriginHelper
-#endif // FEATURE_NONGENERIC_COLLECTIONS 
-#endif // #ifdef FEATURE_CAS_POLICY
 DEFINE_METASIG_T(SM(UInt_UInt_PtrNativeOverlapped_RetVoid, K K P(g(NATIVEOVERLAPPED)), v))
 #ifdef FEATURE_REMOTING
 DEFINE_METASIG_T(SM(CrossContextDelegate_ArrObj_RetObj, C(CROSS_CONTEXT_DELEGATE) a(j), j))
@@ -526,15 +482,8 @@ DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid, j j g(BINDI
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetObj, j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), j))
 DEFINE_METASIG_T(IM(Obj_Type_CultureInfo_RetObj, j C(TYPE) C(CULTURE_INFO), j))
-DEFINE_METASIG_T(IM(IPrincipal_RetVoid, C(IPRINCIPAL), v))
 DEFINE_METASIG_T(IM(MemberInfo_RetVoid, C(MEMBER), v))
 DEFINE_METASIG(IM(IntPtr_ArrObj_Obj_RefArrObj_RetObj, I a(j) j r(a(j)), j))
-DEFINE_METASIG_T(IM(CodeAccessPermission_RetBool, C(CODE_ACCESS_PERMISSION), F))
-DEFINE_METASIG_T(IM(IPermission_RetIPermission, C(IPERMISSION), C(IPERMISSION)))
-DEFINE_METASIG_T(IM(IPermission_RetBool, C(IPERMISSION), F))
-DEFINE_METASIG_T(IM(PMS_RetVoid, C(PERMISSION_SET), v))
-DEFINE_METASIG_T(IM(PMS_RetPMS, C(PERMISSION_SET), C(PERMISSION_SET)))
-DEFINE_METASIG_T(IM(PMS_RetBool, C(PERMISSION_SET), F))
 DEFINE_METASIG(IM(RefObject_RetBool, r(j), F))
 DEFINE_METASIG_T(IM(Class_RetObj, C(CLASS), j))
 DEFINE_METASIG(IM(Int_VoidPtr_RetVoid, i P(v), v))
@@ -592,7 +541,6 @@ DEFINE_METASIG_T(IM(BindingFlags_RetArrMemberInfo, g(BINDING_FLAGS), a(C(MEMBER)
 DEFINE_METASIG_T(IM(BindingFlags_RetArrMethodInfo, g(BINDING_FLAGS), a(C(METHOD_INFO))))
 DEFINE_METASIG_T(IM(BindingFlags_RetArrPropertyInfo, g(BINDING_FLAGS), a(C(PROPERTY_INFO))))
 DEFINE_METASIG(IM(ArrByte_RetVoid, a(b), v))
-DEFINE_METASIG_T(IM(ArrByte_HostProtectionResource_HostProtectionResource_RetBool, a(b) g(HOST_PROTECTION_RESOURCE) g(HOST_PROTECTION_RESOURCE), F))
 DEFINE_METASIG(IM(ArrChar_RetVoid, a(u), v))
 DEFINE_METASIG(IM(ArrChar_Int_Int_RetVoid, a(u) i i, v))
 DEFINE_METASIG_T(IM(ArrType_ArrException_Str_RetVoid, a(C(TYPE)) a(C(EXCEPTION)) s, v))
@@ -602,10 +550,6 @@ DEFINE_METASIG_T(IM(RuntimeType_RetVoid, C(CLASS) , v))
 DEFINE_METASIG_T(SM(ArrException_PtrInt_RetVoid, a(C(EXCEPTION)) P(i), v))
 
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))
-DEFINE_METASIG_T(IM(SecurityPermissionFlag_RetVoid, g(SECURITY_PERMISSION_FLAG), v))
-DEFINE_METASIG_T(IM(PermissionState_RetVoid, g(PERMISSION_STATE), v))
-DEFINE_METASIG_T(IM(SecurityAction_RetVoid, g(SECURITY_ACTION), v))
-DEFINE_METASIG_T(IM(ReflectionPermissionFlag_RetVoid, g(REFLECTION_PERMISSION_FLAG), v))
 DEFINE_METASIG_T(IM(LicenseInteropHelper_GetCurrentContextInfo, r(i) r(I) g(RT_TYPE_HANDLE), v))
 DEFINE_METASIG(IM(LicenseInteropHelper_SaveKeyInCurrentContext, I, v))
 DEFINE_METASIG_T(SM(LicenseInteropHelper_AllocateAndValidateLicense, g(RT_TYPE_HANDLE) I i, j))
@@ -642,8 +586,6 @@ DEFINE_METASIG(SM(Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj, j r(s) r(s) r(a(
 // Execution Context
 DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT) a(I) F i, i))
 #endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-// HostProtectionException
-DEFINE_METASIG_T(IM(HPR_HPR_RetVoid, g(HOST_PROTECTION_RESOURCE) g(HOST_PROTECTION_RESOURCE), v))
 
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface

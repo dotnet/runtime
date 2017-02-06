@@ -234,20 +234,6 @@ struct SharedPermissionObjects
 // PermissionState.Unrestricted
 #define PERMISSION_STATE_UNRESTRICTED               1      // PermissionState.cs
 
-SELECTANY const SharedPermissionObjects g_rPermObjectsTemplate[] =
-{
-    {NULL, CLASS__SECURITY_PERMISSION, METHOD__SECURITY_PERMISSION__CTOR, SECURITY_PERMISSION_UNMANAGEDCODE },
-    {NULL, CLASS__SECURITY_PERMISSION, METHOD__SECURITY_PERMISSION__CTOR, SECURITY_PERMISSION_SKIPVERIFICATION },
-    {NULL, CLASS__REFLECTION_PERMISSION, METHOD__REFLECTION_PERMISSION__CTOR, REFLECTION_PERMISSION_TYPEINFO },
-    {NULL, CLASS__SECURITY_PERMISSION, METHOD__SECURITY_PERMISSION__CTOR, SECURITY_PERMISSION_ASSERTION },
-    {NULL, CLASS__REFLECTION_PERMISSION, METHOD__REFLECTION_PERMISSION__CTOR, REFLECTION_PERMISSION_MEMBERACCESS },
-    {NULL, CLASS__SECURITY_PERMISSION, METHOD__SECURITY_PERMISSION__CTOR, SECURITY_PERMISSION_SERIALIZATIONFORMATTER},
-    {NULL, CLASS__REFLECTION_PERMISSION, METHOD__REFLECTION_PERMISSION__CTOR, REFLECTION_PERMISSION_RESTRICTEDMEMBERACCESS},
-    {NULL, CLASS__PERMISSION_SET, METHOD__PERMISSION_SET__CTOR, PERMISSION_STATE_UNRESTRICTED},
-    {NULL, CLASS__SECURITY_PERMISSION, METHOD__SECURITY_PERMISSION__CTOR, SECURITY_PERMISSION_BINDINGREDIRECTS },
-    {NULL, CLASS__UI_PERMISSION, METHOD__UI_PERMISSION__CTOR, PERMISSION_STATE_UNRESTRICTED },
-};
-
 // Array index in SharedPermissionObjects array
 // Note: these should all be permissions that implement IUnrestrictedPermission.
 // Any changes to these must be reflected in bcl\system\security\codeaccesssecurityengine.cs and the above table
@@ -282,8 +268,6 @@ SELECTANY const SharedPermissionObjects g_rPermObjectsTemplate[] =
 // Class holding a grab bag of security stuff we need on a per-appdomain basis.
 struct SecurityContext
 {
-    SharedPermissionObjects     m_rPermObjects[NUM_PERM_OBJECTS];
-
     // Cached declarative permissions per method
     EEPtrHashTable m_pCachedMethodPermissionsHash;
     SimpleRWLock * m_prCachedMethodPermissionsLock;
@@ -299,7 +283,6 @@ struct SecurityContext
             GC_TRIGGERS;
             MODE_ANY;
         } CONTRACTL_END;
-        memcpy(m_rPermObjects, g_rPermObjectsTemplate, sizeof(m_rPermObjects));
         
         // initialize cache of method-level declarative security permissions
         // Note that the method-level permissions are stored elsewhere

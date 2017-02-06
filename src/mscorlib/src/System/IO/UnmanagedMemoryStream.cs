@@ -108,18 +108,14 @@ namespace System.IO {
         }
 
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length) {
-            Initialize(buffer, offset, length, FileAccess.Read, false);
+            Initialize(buffer, offset, length, FileAccess.Read);
         }
 
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access) {
-            Initialize(buffer, offset, length, access, false);
+            Initialize(buffer, offset, length, access);
         }
 
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access) {
-            Initialize(buffer, offset, length, access, false);
-        }
-
-        internal void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck) {
             if (buffer == null) {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -139,11 +135,6 @@ namespace System.IO {
 
             if (_isOpen) {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CalledTwice"));
-            }
-            if (!skipSecurityCheck) {
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
             }
 
             // check for wraparound
@@ -174,30 +165,17 @@ namespace System.IO {
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
-            Initialize(pointer, length, length, FileAccess.Read, false);
+            Initialize(pointer, length, length, FileAccess.Read);
         }
 
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access) 
         {
-            Initialize(pointer, length, capacity, access, false);
-        }
-
-        // We must create one of these without doing a security check.  This
-        // class is created while security is trying to start up.  Plus, doing
-        // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        internal unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck) 
-        {
-            Initialize(pointer, length, capacity, access, skipSecurityCheck);
+            Initialize(pointer, length, capacity, access);
         }
 
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access) 
-        {
-            Initialize(pointer, length, capacity, access, false);
-        }
-
-        internal unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck) 
         {
             if (pointer == null)
                 throw new ArgumentNullException(nameof(pointer));
@@ -213,12 +191,6 @@ namespace System.IO {
                 throw new ArgumentOutOfRangeException(nameof(access), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             if (_isOpen)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CalledTwice"));
-
-            if (!skipSecurityCheck) {
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-            }
 
             _mem = pointer;
             _offset = 0;

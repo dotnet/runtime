@@ -129,7 +129,6 @@ namespace System.Reflection
                 null, // hashValue
                 AssemblyHashAlgorithm.None,
                 false,// forIntrospection);
-                false,// suppressSecurityChecks
                 ref stackMark);
         }
 
@@ -183,7 +182,7 @@ namespace System.Reflection
 
                 assembly = RuntimeAssembly.InternalLoadAssemblyName(
                     assemblyName, null, null, ref stackMark,
-                    true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+                    true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
             }
             return assembly.GetType(typeName, true /*throwOnError*/, false /*ignoreCase*/);
         }
@@ -215,7 +214,7 @@ namespace System.Reflection
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
         }
 
         // Locate an assembly by its name. The name can be strong or
@@ -232,7 +231,7 @@ namespace System.Reflection
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/, ptrLoadContextBinder);
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, ptrLoadContextBinder);
         }
 
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
@@ -866,7 +865,6 @@ namespace System.Reflection
         {
             get {
                 String codeBase = GetCodeBase(false);
-                VerifyCodeBaseDiscovery(codeBase);
                 return codeBase;
             }
         }
@@ -884,7 +882,6 @@ namespace System.Reflection
             AssemblyName an = new AssemblyName();
 
             String codeBase = GetCodeBase(copiedName);
-            VerifyCodeBaseDiscovery(codeBase);
 
             an.Init(GetSimpleName(), 
                     GetPublicKey(),
@@ -1082,7 +1079,6 @@ namespace System.Reflection
                                                          byte[] hashValue, 
                                                          AssemblyHashAlgorithm hashAlgorithm,
                                                          bool forIntrospection,
-                                                         bool suppressSecurityChecks,
                                                          ref StackCrawlMark stackMark)
         {
             if (assemblyFile == null)
@@ -1094,7 +1090,7 @@ namespace System.Reflection
             an.CodeBase = assemblyFile;
             an.SetHashControl(hashValue, hashAlgorithm);
             // The stack mark is used for MDA filtering
-            return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection, suppressSecurityChecks);
+            return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection);
         }
 
         // Wrapper function to wrap the typical use of InternalLoad.
@@ -1123,7 +1119,7 @@ namespace System.Reflection
 
             return InternalLoadAssemblyName(an, assemblySecurity, null, ref stackMark, 
                                             pPrivHostBinder,
-                                            true  /*thrownOnFileNotFound*/, forIntrospection, false /* suppressSecurityChecks */);
+                                            true  /*thrownOnFileNotFound*/, forIntrospection);
         }
         
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
@@ -1159,10 +1155,9 @@ namespace System.Reflection
             ref StackCrawlMark stackMark,
             bool throwOnFileNotFound,
             bool forIntrospection,
-            bool suppressSecurityChecks,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
-            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, ptrLoadContextBinder);
         }
 
         internal static RuntimeAssembly InternalLoadAssemblyName(
@@ -1173,7 +1168,6 @@ namespace System.Reflection
             IntPtr pPrivHostBinder,
             bool throwOnFileNotFound, 
             bool forIntrospection,
-            bool suppressSecurityChecks,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
        
@@ -1193,34 +1187,11 @@ namespace System.Reflection
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
             }
 
-            if (assemblySecurity != null)
-            {
-                if (!suppressSecurityChecks)
-                {
-#pragma warning disable 618
-                    new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
-#pragma warning restore 618
-                }
-            }
-
             String codeBase = VerifyCodeBase(assemblyRef.CodeBase);
-            if (codeBase != null && !suppressSecurityChecks)
-            {
-                if (String.Compare( codeBase, 0, s_localFilePrefix, 0, 5, StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    // Of all the binders, Fusion is the only one that understands Web locations                 
-                     throw new ArgumentException(Environment.GetResourceString("Arg_InvalidFileName"), "assemblyRef.CodeBase");
-                }
-                else
-                {
-                    System.Security.Util.URLString urlString = new System.Security.Util.URLString( codeBase, true );
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read , urlString.GetFileName() ).Demand();
-                }
-            }
 
             return nLoad(assemblyRef, codeBase, assemblySecurity, reqAssembly, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+                throwOnFileNotFound, forIntrospection, ptrLoadContextBinder);
         }
 
         // These are the framework assemblies that does reflection invocation
@@ -1268,11 +1239,11 @@ namespace System.Reflection
                                              IntPtr pPrivHostBinder,
                                              bool throwOnFileNotFound,
                                              bool forIntrospection,
-                                             bool suppressSecurityChecks, IntPtr ptrLoadContextBinder = default(IntPtr))
+                                             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
             return _nLoad(fileName, codeBase, assemblySecurity, locationHint, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+                throwOnFileNotFound, forIntrospection, true /* suppressSecurityChecks */, ptrLoadContextBinder);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1394,9 +1365,6 @@ namespace System.Reflection
 
                 GetLocation(GetNativeHandle(), JitHelpers.GetStringHandleOnStack(ref location));
 
-                if (location != null)
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery, location ).Demand();
-
                 return location;
             }
         }
@@ -1503,7 +1471,7 @@ namespace System.Reflection
                 if (length > Int64.MaxValue)
                     throw new NotImplementedException(Environment.GetResourceString("NotImplemented_ResourcesLongerThan2^63"));
 
-                return new UnmanagedMemoryStream(pbInMemoryResource, (long)length, (long)length, FileAccess.Read, true);
+                return new UnmanagedMemoryStream(pbInMemoryResource, (long)length, (long)length, FileAccess.Read);
             }
 
             //Console.WriteLine("GetManifestResourceStream: Blob "+name+" not found...");
@@ -1548,15 +1516,6 @@ namespace System.Reflection
         {
             get {
                 return FCallIsDynamic(GetNativeHandle());
-            }
-        }
-
-        private void VerifyCodeBaseDiscovery(String codeBase)
-        {
-            if ((codeBase != null) &&
-                (String.Compare( codeBase, 0, s_localFilePrefix, 0, 5, StringComparison.OrdinalIgnoreCase) == 0)) {
-                System.Security.Util.URLString urlString = new System.Security.Util.URLString( codeBase, true );
-                new FileIOPermission( FileIOPermissionAccess.PathDiscovery, urlString.GetFileName() ).Demand();
             }
         }
 
@@ -1681,7 +1640,7 @@ namespace System.Reflection
 
             RuntimeAssembly retAssembly = nLoad(an, null, null, this,  ref stackMark, 
                                 IntPtr.Zero,
-                                throwOnFileNotFound, false, false);
+                                throwOnFileNotFound, false);
 
             if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
             {
