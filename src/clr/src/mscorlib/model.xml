@@ -3998,8 +3998,6 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_assembly" />
       <Member Status="ImplRoot" Name="OnModuleResolveEvent(System.String)" /> <!-- EE -->
       <Member Status="ImplRoot" MemberType="Property" Name="DefinedTypes" />
-      <!-- Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
-      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" />
     </Type>
     <Type Name="System.Reflection.TypeInfo">
       <Member Name="#ctor" />
@@ -9437,41 +9435,6 @@
       <Member Name="get_Version" />
       <Member MemberType="Property" Name="Version" />
     </Type>
-    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionAttribute">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Permissions.SecurityAction)" />
-      <Member Name="get_ExternalProcessMgmt" />
-      <Member Name="get_ExternalThreading" />
-      <Member Name="get_MayLeakOnAbort" />
-      <Member Name="get_Resources" />
-      <Member Name="get_SecurityInfrastructure" />
-      <Member Name="get_SelfAffectingProcessMgmt" />
-      <Member Name="get_SelfAffectingThreading" />
-      <Member Name="get_SharedState" />
-      <Member Name="get_Synchronization" />
-      <Member Name="get_UI" />
-      <Member Name="set_ExternalProcessMgmt(System.Boolean)" />
-      <Member Name="set_ExternalThreading(System.Boolean)" />
-      <Member Name="set_MayLeakOnAbort(System.Boolean)" />
-      <Member Name="set_Resources(System.Security.Permissions.HostProtectionResource)" />
-      <Member Name="set_SecurityInfrastructure(System.Boolean)" />
-      <Member Name="set_SelfAffectingProcessMgmt(System.Boolean)" />
-      <Member Name="set_SelfAffectingThreading(System.Boolean)" />
-      <Member Name="set_SharedState(System.Boolean)" />
-      <Member Name="set_Synchronization(System.Boolean)" />
-      <Member Name="set_UI(System.Boolean)" />
-      <Member MemberType="Property" Name="ExternalProcessMgmt" />
-      <Member MemberType="Property" Name="ExternalThreading" />
-      <Member MemberType="Property" Name="MayLeakOnAbort" />
-      <Member MemberType="Property" Name="Resources" />
-      <Member MemberType="Property" Name="SecurityInfrastructure" />
-      <Member MemberType="Property" Name="SelfAffectingProcessMgmt" />
-      <Member MemberType="Property" Name="SelfAffectingThreading" />
-      <Member MemberType="Property" Name="SharedState" />
-      <Member MemberType="Property" Name="Synchronization" />
-      <Member MemberType="Property" Name="UI" />
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionResource" />
     <Type Name="System.IO.BinaryReader">
       <Member Name="#ctor(System.IO.Stream)" />
       <Member Name="#ctor(System.IO.Stream,System.Text.Encoding)" />
@@ -10923,24 +10886,7 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_keepalive" />
       <Member Name="GetPropertyInfo(System.RuntimeType,System.Int32)" /> <!-- EE -->
     </Type>
-    <Type Status="ImplRoot" Name="System.Security.CodeAccessPermission" />
-    <Type Status="ImplRoot" Name="System.Security.PermissionType" />
-    <Type Status="ImplRoot" Name="System.Security.CodeAccessSecurityEngine">
-      <Member Name="CheckHelper(System.Object,System.Security.PermissionSet,System.Security.PermissionSet,System.Security.CodeAccessPermission,System.Security.PermissionToken,System.RuntimeMethodHandleInternal,System.Reflection.RuntimeAssembly,System.Security.Permissions.SecurityAction)" /> <!-- EE -->
-      <Member Name="CheckSetHelper(System.Object,System.Security.PermissionSet,System.Security.PermissionSet,System.Security.PermissionSet,System.RuntimeMethodHandleInternal,System.Reflection.RuntimeAssembly,System.Security.Permissions.SecurityAction)" /> <!-- EE -->
-    </Type>
     <Type Status="ImplRoot" Name="System.Security.DynamicSecurityMethodAttribute" />
-    <Type Status="ImplRoot" Name="System.Security.FrameSecurityDescriptor">
-      <Member MemberType="Field" Name="m_DeclarativeDenials" />
-      <Member MemberType="Field" Name="m_DeclarativeRestrictions" />
-      <Member MemberType="Field" Name="m_denials" />
-      <Member MemberType="Field" Name="m_restriction" />
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.PermissionListSet">
-      <Member Name="CheckDemandNoThrow(System.Security.CodeAccessPermission)" /> <!-- EE -->
-      <Member Name="CheckSetDemandNoThrow(System.Security.PermissionSet)" /> <!-- EE -->
-      <Member Name="Update(System.Security.PermissionSet)" /> <!-- EE -->
-    </Type>
     <Type Name="System.Security.Cryptography.CryptographicException">
       <Member Name="#ctor"/>
       <Member Name="#ctor(System.Int32)"/>
@@ -10951,45 +10897,6 @@
     </Type>
  
     <Type Status="ImplRoot" Name="System.Security.Permissions.PermissionState" />
-    <Type Status="ImplRoot" Name="System.Security.Permissions.SecurityPermission" />
-    <Type Status="ImplRoot" Name="System.Security.PermissionSet">
-      <Member MemberType="Field" Name="m_serializedPermissionSet" />  <!-- smosier: avoid changing layout of objects mirrored in EE for now -->
-      <Member MemberType="Field" Name="m_unrestrictedPermSet" />  <!-- smosier: avoid changing layout of objects mirrored in EE for now -->
-      <Member MemberType="Field" Name="m_normalPermSet" />  <!-- smosier: avoid changing layout of objects mirrored in EE for now -->
-      <Member MemberType="Field" Name="readableonly" />  <!-- smosier: avoid changing layout of objects mirrored in EE for now -->
-      <Member Name="CreateSerialized(System.Object[],System.Boolean,System.Byte[]@,System.Security.PermissionSet@,System.Security.Permissions.HostProtectionResource,System.Boolean)" /> <!-- EE -->
-      <Member Name="Contains(System.Security.IPermission)" /> <!-- EE -->
-      <Member Name="Demand" /> <!-- EE -->
-      <Member Name="DemandNonCAS" /> <!-- EE -->
-      <Member Name="Union(System.Security.PermissionSet)" /> <!-- EE -->
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.PermissionToken" />
-    <Type Status="ImplRoot" Name="System.Security.Policy.Evidence" />
-    <Type Name="System.Security.Principal.IIdentity">
-      <Member MemberType="Property" Name="AuthenticationType" />
-      <Member MemberType="Property" Name="IsAuthenticated" />
-      <Member MemberType="Property" Name="Name" />
-      <Member Name="get_AuthenticationType" />
-      <Member Name="get_IsAuthenticated" />
-      <Member Name="get_Name" />
-    </Type>
-    <Type Name="System.Security.Principal.IPrincipal">
-      <Member MemberType="Property" Name="Identity" />
-      <Member Name="IsInRole(System.String)" />
-      <Member Name ="get_Identity" />
-    </Type>
-    <Type Name="System.Security.Principal.TokenImpersonationLevel">
-      <Member MemberType="Field" Name="Anonymous" />
-      <Member MemberType="Field" Name="Delegation" />
-      <Member MemberType="Field" Name="Identification" />
-      <Member MemberType="Field" Name="Impersonation" />
-      <Member MemberType="Field" Name="None" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.SecurityRuntime">
-      <Member Name="FrameDescHelper(System.Security.FrameSecurityDescriptor,System.Security.IPermission,System.Security.PermissionToken,System.RuntimeMethodHandleInternal)" /> <!-- EE -->
-      <Member Name="FrameDescSetHelper(System.Security.FrameSecurityDescriptor,System.Security.PermissionSet,System.Security.PermissionSet@,System.RuntimeMethodHandleInternal)" /> <!-- EE -->
-    </Type>
     <Type Name="System.Security.SecurityRulesAttribute">
       <Member Name="#ctor(System.Security.SecurityRuleSet)" />
       <Member Name="get_RuleSet" />

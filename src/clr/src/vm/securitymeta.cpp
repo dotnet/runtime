@@ -34,7 +34,6 @@
 #include "objectclone.h"
 #endif //FEATURE_REMOTING
 #include "typestring.h"
-#include "stackcompressor.h"
 #include "securitydeclarative.h"
 #include "customattribute.h"
 #include "../md/compiler/custattr.h"

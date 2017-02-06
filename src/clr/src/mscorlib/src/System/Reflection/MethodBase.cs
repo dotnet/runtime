@@ -222,9 +222,6 @@ namespace System.Reflection
             }
         }
 
-#pragma warning disable 618
-        [ReflectionPermissionAttribute(SecurityAction.Demand, Flags=ReflectionPermissionFlag.MemberAccess)]            
-#pragma warning restore 618
         public virtual MethodBody GetMethodBody()
         {
             throw new InvalidOperationException();

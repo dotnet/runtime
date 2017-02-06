@@ -22,7 +22,6 @@ namespace System
     using System.Security;
     using System.Security.Permissions;
     using System.Security.Policy;
-    using System.Security.Util;
     using System.Collections;
     using System.Collections.Generic;
     using System.Threading;
@@ -159,7 +158,6 @@ namespace System
             if (Info==null)
                 return null;
             AppDomainInitializer retVal=null;
-            new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
             for (int i=0;i<Info.Length;i++)
             {
                 Assembly assembly=Assembly.Load(Info[i].TargetTypeAssembly);
@@ -183,7 +181,7 @@ namespace System
         // the EE- AppDomainBaseObject in this case)
 
         private AppDomainManager _domainManager;
-        private Dictionary<String, Object[]> _LocalStore;
+        private Dictionary<String, Object> _LocalStore;
         private AppDomainSetup   _FusionStore;
         private Evidence         _SecurityIdentity;
 #pragma warning disable 169
@@ -423,9 +421,7 @@ namespace System
             {
                 try
                 {
-                    new PermissionSet(PermissionState.Unrestricted).Assert();
                     _domainManager = CreateInstanceAndUnwrap(domainManagerAssembly, domainManagerType) as AppDomainManager;
-                    CodeAccessPermission.RevertAssert();
                 }
                 catch (FileNotFoundException e)
                 {
@@ -785,27 +781,22 @@ namespace System
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
 
         public void SetData (string name, object data) {
-            SetDataHelper(name, data, null);
-        }
-
-        private void SetDataHelper (string name, object data, IPermission permission)
-        {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             // SetData should only be used to set values that don't already exist.
-            object[] currentVal;
+            object currentVal;
             lock (((ICollection)LocalStore).SyncRoot) {
                 LocalStore.TryGetValue(name, out currentVal);
             }
-            if (currentVal != null && currentVal[0] != null)
+            if (currentVal != null)
             {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_SetData_OnlyOnce"));
             }
 
             lock (((ICollection)LocalStore).SyncRoot) {
-                LocalStore[name] = new object[] {data, permission};
+                LocalStore[name] = data;
             }
         }
 
@@ -823,17 +814,13 @@ namespace System
                     return FusionStore.LoaderOptimization;
                 else 
                 {
-                    object[] data;
+                    object data;
                     lock (((ICollection)LocalStore).SyncRoot) {
                         LocalStore.TryGetValue(name, out data);
                     }
                     if (data == null)
                         return null;
-                    if (data[1] != null) {
-                        IPermission permission = (IPermission) data[1];
-                        permission.Demand();
-                    }
-                    return data[0];
+                    return data;
                 }
             }
            else {
@@ -1060,13 +1047,13 @@ namespace System
             return null;
         }
 
-        private Dictionary<String, Object[]> LocalStore
+        private Dictionary<String, Object> LocalStore
         {
             get { 
                 if (_LocalStore != null)
                     return _LocalStore;
                 else {
-                    _LocalStore = new Dictionary<String, Object[]>();
+                    _LocalStore = new Dictionary<String, Object>();
                     return _LocalStore;
                 }
             }
@@ -1246,11 +1233,11 @@ namespace System
                         if(values == null)
                             throw new ArgumentNullException(propertyNames[i]);
 
-                        ad.SetDataHelper(propertyNames[i], NormalizeAppPaths(values), null);
+                        ad.SetData(propertyNames[i], NormalizeAppPaths(values));
                     }
                     else if(propertyNames[i]!= null)
                     {
-                        ad.SetDataHelper(propertyNames[i],propertyValues[i],null);     // just propagate
+                        ad.SetData(propertyNames[i],propertyValues[i]);     // just propagate
                     }
                 }
             }
@@ -1412,10 +1399,7 @@ namespace System
         {
             get
             {
-                PermissionSet grantSet = null;
-                GetGrantSet(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref grantSet));
-
-                return grantSet == null || grantSet.IsUnrestricted();
+                return true;
             }
         }
 

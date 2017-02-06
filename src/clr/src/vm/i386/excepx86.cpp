@@ -33,7 +33,6 @@
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
-#include "securityprincipal.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"

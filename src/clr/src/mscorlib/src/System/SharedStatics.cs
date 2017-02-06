@@ -16,7 +16,6 @@ namespace System
     using System.Threading;
     using System.Runtime.Remoting;
     using System.Security;
-    using System.Security.Util;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Diagnostics;

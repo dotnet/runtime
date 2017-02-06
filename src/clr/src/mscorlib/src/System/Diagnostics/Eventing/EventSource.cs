@@ -3803,7 +3803,9 @@ namespace System.Diagnostics.Tracing
             // RET
             // 
             // If we find this pattern we return the XXX.  Otherwise we return -1.  
+#if !CORECLR
             (new ReflectionPermission(ReflectionPermissionFlag.MemberAccess)).Assert();
+#endif
             byte[] instrs = method.GetMethodBody().GetILAsByteArray();
             int retVal = -1;
             for (int idx = 0; idx < instrs.Length;)

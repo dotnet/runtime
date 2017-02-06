@@ -707,7 +707,7 @@ namespace System.Resources {
                     // For the case that we've memory mapped in the .resources
                     // file, just return a Stream pointing to that block of memory.
                     unsafe {
-                        return new UnmanagedMemoryStream(_ums.PositionPointer, len, len, FileAccess.Read, true);
+                        return new UnmanagedMemoryStream(_ums.PositionPointer, len, len, FileAccess.Read);
                     }
                 }
                 

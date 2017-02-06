@@ -690,11 +690,7 @@ CorInfoIsAccessAllowedResult SecurityTransparent::RequiresTransparentCodeChecks(
         // Check to see if the callee has a LinkDemand, if so we may need to intercept the call.
         if (pCalleeMD->RequiresLinktimeCheck())
         {
-            if (pCalleeMD->RequiresLinkTimeCheckHostProtectionOnly()
-#ifndef CROSSGEN_COMPILE
-                && GetHostProtectionManager()->GetProtectedCategories() == eNoChecks
-#endif // CROSSGEN_COMPILE
-                )
+            if (pCalleeMD->RequiresLinkTimeCheckHostProtectionOnly())
             {
                 // exclude HPA which are marked as LinkDemand and there is no HostProtection enabled currently
                 return CORINFO_ACCESS_ALLOWED;
