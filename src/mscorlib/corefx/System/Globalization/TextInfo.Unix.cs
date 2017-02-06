@@ -33,7 +33,6 @@ namespace System.Globalization
         {
         }
 
-        [SecuritySafeCritical]
         private unsafe string ChangeCase(string s, bool toUpper)
         {
             Debug.Assert(s != null);
@@ -78,7 +77,6 @@ namespace System.Globalization
             return result;
         }
 
-        [SecuritySafeCritical]
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             char dst = default(char);
