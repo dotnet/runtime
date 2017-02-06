@@ -1446,7 +1446,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+  #define RBM_INIT_PINVOKE_FRAME_TRASH (RBM_CALLEE_TRASH | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH)
 
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11

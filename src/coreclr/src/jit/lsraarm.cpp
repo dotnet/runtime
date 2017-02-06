@@ -398,7 +398,13 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
     RegisterType registerType = call->TypeGet();
 
     // Set destination candidates for return value of the call.
-    if (hasMultiRegRetVal)
+    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    {
+        // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
+        // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
+        info->setDstCandidates(l, RBM_PINVOKE_TCB);
+    }
+    else if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
         info->setDstCandidates(l, retTypeDesc->GetABIReturnRegs());
@@ -850,6 +856,13 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             CheckImmedAndMakeContained(tree, tree->gtOp.gtOp2);
             break;
 
+        case GT_RETURNTRAP:
+            // this just turns into a compare of its child with an int
+            // + a conditional call
+            info->srcCount = 1;
+            info->dstCount = 0;
+            break;
+
         case GT_MUL:
             if (tree->gtOverflow())
             {
@@ -1074,6 +1087,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_LABEL:
+        case GT_PINVOKE_PROLOG:
             info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {

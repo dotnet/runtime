@@ -2881,9 +2881,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(LEGACY_BACKEND)
-#if defined(_TARGET_X86_)
-        // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper has a custom calling convention. Set the argument registers
-        // correctly here.
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+        // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers has a custom calling convention.
+        // Set the argument registers correctly here.
         if (call->IsHelperCall(this, CORINFO_HELP_INIT_PINVOKE_FRAME))
         {
             GenTreeArgList* args = call->gtCallArgs;
@@ -2891,6 +2891,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             assert(arg1 != nullptr);
             nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
         }
+#endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_X86_)
         // The x86 shift helpers have custom calling conventions and expect the lo part of the long to be in EAX and the
         // hi part to be in EDX. This sets the argument registers up correctly.
         else if (call->IsHelperCall(this, CORINFO_HELP_LLSH) || call->IsHelperCall(this, CORINFO_HELP_LRSH) ||
