@@ -216,18 +216,6 @@ namespace System {
             Contract.EndContractBlock();
             return _CollectionCount(generation, 0);
         }
-
-        // pass in true to get the BGC or FGC count.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        internal static int CollectionCount (int generation, bool getSpecialGCCount) 
-        {
-            if (generation<0) 
-            {
-                throw new ArgumentOutOfRangeException(nameof(generation), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
-            }
-            Contract.EndContractBlock();
-            return _CollectionCount(generation, (getSpecialGCCount ? 1 : 0));
-        }
         
         // This method DOES NOT DO ANYTHING in and of itself.  It's used to 
         // prevent a finalizable object from losing any outstanding references 

@@ -23,16 +23,6 @@ namespace System.IO
         }
 
         /// <summary>
-        ///     Converts, resetting it, the last Win32 error into a corresponding <see cref="Exception"/> object, optionally 
-        ///     including the specified path in the error message.
-        /// </summary>
-        internal static Exception GetExceptionForLastWin32Error(string path)
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-            return GetExceptionForWin32Error(errorCode, path);
-        }
-
-        /// <summary>
         ///     Converts the specified Win32 error into a corresponding <see cref="Exception"/> object.
         /// </summary>
         internal static Exception GetExceptionForWin32Error(int errorCode)
@@ -48,49 +38,49 @@ namespace System.IO
         {
             switch (errorCode)
             {
-                case Interop.mincore.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
                     if (path.Length == 0)
                         return new FileNotFoundException(SR.IO_FileNotFound);
                     else
                         return new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path);
 
-                case Interop.mincore.Errors.ERROR_PATH_NOT_FOUND:
+                case Interop.Errors.ERROR_PATH_NOT_FOUND:
                     if (path.Length == 0)
                         return new DirectoryNotFoundException(SR.IO_PathNotFound_NoPathName);
                     else
                         return new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path));
 
-                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     if (path.Length == 0)
                         return new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
                     else
                         return new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
 
-                case Interop.mincore.Errors.ERROR_ALREADY_EXISTS:
+                case Interop.Errors.ERROR_ALREADY_EXISTS:
                     if (path.Length == 0)
                         goto default;
 
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path), MakeHRFromErrorCode(errorCode));
 
-                case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE:
+                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
                     return new PathTooLongException(SR.IO_PathTooLong);
 
-                case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
+                case Interop.Errors.ERROR_INVALID_PARAMETER:
                     return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
 
-                case Interop.mincore.Errors.ERROR_SHARING_VIOLATION:
+                case Interop.Errors.ERROR_SHARING_VIOLATION:
                     if (path.Length == 0)
                         return new IOException(SR.IO_SharingViolation_NoFileName, MakeHRFromErrorCode(errorCode));
                     else
                         return new IOException(SR.Format(SR.IO_SharingViolation_File, path), MakeHRFromErrorCode(errorCode));
 
-                case Interop.mincore.Errors.ERROR_FILE_EXISTS:
+                case Interop.Errors.ERROR_FILE_EXISTS:
                     if (path.Length == 0)
                         goto default;
 
                     return new IOException(SR.Format(SR.IO_FileExists_Name, path), MakeHRFromErrorCode(errorCode));
 
-                case Interop.mincore.Errors.ERROR_OPERATION_ABORTED:
+                case Interop.Errors.ERROR_OPERATION_ABORTED:
                     return new OperationCanceledException();
 
                 default:
@@ -109,26 +99,11 @@ namespace System.IO
         }
 
         /// <summary>
-        ///     Returns a Win32 error code for the specified HRESULT if it came from FACILITY_WIN32
-        ///     If not, returns the HRESULT unchanged
-        /// </summary>
-        internal static int TryMakeWin32ErrorCodeFromHR(int hr)
-        {
-            if ((0xFFFF0000 & hr) == 0x80070000)
-            {
-                // Win32 error, Win32Marshal.GetExceptionForWin32Error expects the Win32 format
-                hr &= 0x0000FFFF;
-            }
-
-            return hr;
-        }
-
-        /// <summary>
         ///     Returns a string message for the specified Win32 error code.
         /// </summary>
         internal static string GetMessage(int errorCode)
         {
-            return Interop.mincore.GetMessage(errorCode);
+            return Interop.Kernel32.GetMessage(errorCode);
         }
     }
 }

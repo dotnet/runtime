@@ -67,6 +67,14 @@ _add_library(System.Globalization.Native
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
+_add_library(System.Globalization.Native_Static
+    STATIC
+    ${NATIVEGLOBALIZATION_SOURCES}
+)
+
+# Remove the _Static postfix from the static library name
+set_target_properties(System.Globalization.Native_Static PROPERTIES OUTPUT_NAME System.Globalization.Native)
+
 # Disable the "lib" prefix.
 set_target_properties(System.Globalization.Native PROPERTIES PREFIX "")
 
@@ -80,8 +88,15 @@ if(NOT CLR_CMAKE_PLATFORM_DARWIN)
             ${ICUUC}
             ${ICUI18N}
         )
+        target_link_libraries(System.Globalization.Native_Static
+            ${ICUUC}
+            ${ICUI18N}
+        )
     elseif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
         target_link_libraries(System.Globalization.Native
+            dl
+        )
+        target_link_libraries(System.Globalization.Native_Static
             dl
         )
     endif()
@@ -100,4 +115,5 @@ verify_dependencies(
 
 # add the install targets
 install_clr(System.Globalization.Native)
+install(TARGETS System.Globalization.Native_Static DESTINATION .)
 

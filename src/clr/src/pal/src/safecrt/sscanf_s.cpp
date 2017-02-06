@@ -21,7 +21,7 @@
 
 typedef int (*INPUTFN)(miniFILE *, const unsigned char*, va_list);
 typedef int (*WINPUTFN)(miniFILE *, const wchar_t*, va_list);
-
+extern size_t PAL_wcsnlen(const WCHAR* inString, size_t inMaxSize);
 
 /***
 *static int v[nw]scan_fn([w]inputfn, string, [count], format, ...)
@@ -115,7 +115,7 @@ static int __cdecl vwscan_fn (
         miniFILE str;
         miniFILE *infile = &str;
         int retval;
-        size_t count = wcsnlen(string, INT_MAX);
+        size_t count = PAL_wcsnlen(string, INT_MAX);
 
         _VALIDATE_RETURN( (string != NULL), EINVAL, EOF);
         _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);
@@ -149,7 +149,7 @@ static int __cdecl vnwscan_fn (
         miniFILE str;
         miniFILE *infile = &str;
         int retval;
-        size_t length = wcsnlen(string, INT_MAX);
+        size_t length = PAL_wcsnlen(string, INT_MAX);
 
         _VALIDATE_RETURN( (string != NULL), EINVAL, EOF);
         _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);

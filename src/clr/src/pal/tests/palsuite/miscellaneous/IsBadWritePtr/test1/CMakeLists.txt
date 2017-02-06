@@ -13,7 +13,5 @@ add_executable(paltest_isbadwriteptr_test1
 add_dependencies(paltest_isbadwriteptr_test1 coreclrpal)
 
 target_link_libraries(paltest_isbadwriteptr_test1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -25,8 +25,6 @@ extern "C"
 {
 #endif // __cplusplus
 
-#define HIJACK_ON_SIGNAL 1
-
 // List of exception types we will be watching for
 // NOTE: if you change any of these, you need to adapt s_nMachExceptionPortsMax in thread.hpp
 #define PAL_EXC_ILLEGAL_MASK   (EXC_MASK_BAD_INSTRUCTION | EXC_MASK_EMULATION)

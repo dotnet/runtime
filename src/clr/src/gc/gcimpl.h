@@ -198,7 +198,6 @@ public:
     BOOL FinalizeAppDomain(AppDomain *pDomain, BOOL fRunFinalizers);
     BOOL ShouldRestartFinalizerWatchDog();
 
-    void SetCardsAfterBulkCopy( Object**, size_t);
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);
 
 public:	// FIX 

@@ -2466,7 +2466,18 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
 BOOL MethodDesc::IsFCallOrIntrinsic()
 {
     WRAPPER_NO_CONTRACT;
-    return (IsFCall() || IsArray());
+
+    if (IsFCall() || IsArray())
+        return TRUE;
+
+#ifdef FEATURE_SPAN_OF_T
+    // Intrinsic methods on ByReference<T> or Span<T>
+    MethodTable * pMT = GetMethodTable();
+    if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
+        return TRUE;
+#endif
+
+    return FALSE;
 }
 
 //*******************************************************************************

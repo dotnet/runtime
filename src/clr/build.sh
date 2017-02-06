@@ -47,6 +47,7 @@ usage()
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
+    echo "buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
 
     exit 1
 }
@@ -322,7 +323,7 @@ isMSBuildOnNETCoreSupported()
                 "opensuse.42.1-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                "rhel.7.2-x64")
+                "rhel.7"*"-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
                 "ubuntu.14.04-x64")
@@ -724,7 +725,9 @@ while :; do
                 exit 1
             fi
             ;;
-
+        buildstandalonegc)
+            __cmakeargs="-DFEATURE_STANDALONE_GC=1"
+            ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;

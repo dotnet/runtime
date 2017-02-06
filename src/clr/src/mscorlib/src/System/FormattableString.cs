@@ -4,13 +4,13 @@
 
 /*============================================================
 **
-** Class:  FormattableString
 **
 **
 ** Purpose: implementation of the FormattableString
 ** class.
 **
 ===========================================================*/
+
 namespace System
 {
     /// <summary>

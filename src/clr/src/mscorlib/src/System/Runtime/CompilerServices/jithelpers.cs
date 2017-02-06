@@ -216,7 +216,6 @@ namespace System.Runtime.CompilerServices {
         extern static bool IsAddressInStack(IntPtr ptr);
 #endif
 
-#if FEATURE_SPAN_OF_T
         static internal bool ByRefLessThan<T>(ref T refA, ref T refB)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
@@ -239,6 +238,5 @@ namespace System.Runtime.CompilerServices {
             typeof(ArrayPinningHelper).ToString(); // Type used by the actual method body
             throw new InvalidOperationException();
         }
-#endif // FEATURE_SPAN_OF_T
     }
 }

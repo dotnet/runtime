@@ -149,23 +149,6 @@ namespace System.Threading.Tasks
         /// Add an exception to the holder.  This will ensure the holder is
         /// in the proper state (handled/unhandled) depending on the list's contents.
         /// </summary>
-        /// <param name="exceptionObject">
-        /// An exception object (either an Exception, an ExceptionDispatchInfo,
-        /// an IEnumerable{Exception}, or an IEnumerable{ExceptionDispatchInfo}) 
-        /// to add to the list.
-        /// </param>
-        /// <remarks>
-        /// Must be called under lock.
-        /// </remarks>
-        internal void Add(object exceptionObject)
-        {
-            Add(exceptionObject, representsCancellation: false);
-        }
-
-        /// <summary>
-        /// Add an exception to the holder.  This will ensure the holder is
-        /// in the proper state (handled/unhandled) depending on the list's contents.
-        /// </summary>
         /// <param name="representsCancellation">
         /// Whether the exception represents a cancellation request (true) or a fault (false).
         /// </param>

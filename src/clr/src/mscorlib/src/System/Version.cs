@@ -34,7 +34,6 @@ namespace System {
         private readonly int _Minor;
         private readonly int _Build = -1;
         private readonly int _Revision = -1;
-        private static readonly char[] SeparatorsArray = new char[] { '.' };
     
         public Version(int major, int minor, int build, int revision) {
             if (major < 0) 
@@ -301,7 +300,7 @@ namespace System {
                 return false;
             }
 
-            String[] parsedComponents = version.Split(SeparatorsArray);
+            String[] parsedComponents = version.Split('.');
             int parsedComponentsLength = parsedComponents.Length;
             if ((parsedComponentsLength < 2) || (parsedComponentsLength > 4)) {
                 result.SetFailure(ParseFailureKind.ArgumentException);

@@ -23,10 +23,7 @@ namespace System.Reflection
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ConstructorInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class ConstructorInfo : MethodBase, _ConstructorInfo
+    public abstract class ConstructorInfo : MethodBase
     {
         #region Static Members
         [System.Runtime.InteropServices.ComVisible(true)]
@@ -135,14 +132,6 @@ namespace System.Reflection
                 return true;
 
             return false;
-        }
-
-        internal override bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return !AppDomain.ProfileAPICheck || !IsNonW8PFrameworkAPI();
-            }
         }
 #endif // FEATURE_APPX
 
@@ -271,20 +260,6 @@ namespace System.Reflection
         }
 
         internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
-
-        // Differs from MethodHandle in that it will return a valid handle even for reflection only loaded types
-        internal RuntimeMethodHandle GetMethodHandle()
-        {
-            return new RuntimeMethodHandle(this);
-        }
-
-        internal bool IsOverloaded
-        { 
-            get 
-            { 
-                return m_reflectedTypeCache.GetConstructorList(MemberListType.CaseSensitive, Name).Length > 1;
-            }
-        }
         #endregion
 
         #region Object Overrides
@@ -540,7 +515,7 @@ namespace System.Reflection
         
 
 #pragma warning disable 618
-        [ReflectionPermissionAttribute(SecurityAction.Demand, Flags = ReflectionPermissionFlag.MemberAccess)]
+        [ReflectionPermission(SecurityAction.Demand, Flags = ReflectionPermissionFlag.MemberAccess)]
 #pragma warning restore 618
         public override MethodBody GetMethodBody()
         {

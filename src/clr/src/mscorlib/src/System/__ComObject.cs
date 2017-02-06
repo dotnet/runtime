@@ -58,12 +58,6 @@ namespace System
                 
             return base.ToString();
         }
-        
-        internal IntPtr GetIUnknown(out bool fIsURTAggregated)
-        {
-            fIsURTAggregated = !GetType().IsDefined(typeof(ComImportAttribute), false);
-            return System.Runtime.InteropServices.Marshal.GetIUnknownForObject(this);
-        }
 
         //====================================================================
         // This method retrieves the data associated with the specified

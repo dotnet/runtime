@@ -123,7 +123,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // We can safely skip access check because this is only used in full trust scenarios.
             // And we have already verified that the property accessor is public.
-            Debug.Assert(AppDomain.CurrentDomain.PermissionSet.IsUnrestricted());
             return rtMethod.UnsafeInvoke(target, BindingFlags.Default, null, args, null);
         }
 

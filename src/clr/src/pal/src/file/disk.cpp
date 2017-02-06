@@ -26,10 +26,7 @@ Revision History:
 #include "pal/stackstring.hpp"
 
 #include <sys/param.h>
-#if !defined(_AIX)
-// do we actually need this on other platforms. We don't seem to be using anything from there
 #include <sys/mount.h>
-#endif
 #include <errno.h>
 #if HAVE_STATVFS
 #include <sys/types.h>

@@ -1898,7 +1898,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
 
 #if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
 
-HANDLE g_hContinueStartupEvent = NULL;
+HANDLE g_hContinueStartupEvent = INVALID_HANDLE_VALUE;
 
 CLR_ENGINE_METRICS g_CLREngineMetrics = {
     sizeof(CLR_ENGINE_METRICS), 
@@ -1945,7 +1945,7 @@ void NotifyDebuggerOfTelestoStartup()
     // enumeration of this process will get back a valid continue event
     // the instant we signal the startup notification event.
 
-    CONSISTENCY_CHECK(NULL == g_hContinueStartupEvent);
+    CONSISTENCY_CHECK(INVALID_HANDLE_VALUE == g_hContinueStartupEvent);
     g_hContinueStartupEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
     CONSISTENCY_CHECK(INVALID_HANDLE_VALUE != g_hContinueStartupEvent); // we reserve this value for error conditions in EnumerateCLRs
 
@@ -2173,7 +2173,14 @@ HRESULT Debugger::Startup(void)
     // Signal the debugger (via dbgshim) and wait until it is ready for us to 
     // continue. This needs to be outside the lock and after the transport is
     // initialized.
-    PAL_NotifyRuntimeStarted();
+    if (PAL_NotifyRuntimeStarted())
+    {
+        // The runtime was successfully launched and attached so mark it now
+        // so no notifications are missed especially the initial module load 
+        // which would cause debuggers problems with reliable setting breakpoints 
+        // in startup code or Main.
+       MarkDebuggerAttachedInternal();
+    }
 #endif // FEATURE_PAL
 
     // We don't bother changing this process's permission.

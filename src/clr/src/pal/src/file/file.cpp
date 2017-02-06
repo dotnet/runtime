@@ -18,6 +18,9 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
 #include "shmfilelockmgr.hpp"
@@ -25,7 +28,6 @@ Abstract:
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/filetime.h"
 #include "pal/utils.h"
@@ -41,8 +43,6 @@ Abstract:
 #include <limits.h>
 
 using namespace CorUnix;
-
-SET_DEFAULT_DEBUG_CHANNEL(FILE);
 
 int MaxWCharToAcpLengthFactor = 3;
 
@@ -3657,12 +3657,9 @@ DWORD FILEGetLastErrorFromErrno( void )
     case EEXIST:
         dwRet = ERROR_ALREADY_EXISTS; 
         break;
-#if !defined(_AIX)
-    // ENOTEMPTY is the same as EEXIST on AIX. Meaningful when involving directory operations
     case ENOTEMPTY:
         dwRet = ERROR_DIR_NOT_EMPTY; 
         break;
-#endif
     case EBADF:
         dwRet = ERROR_INVALID_HANDLE; 
         break;

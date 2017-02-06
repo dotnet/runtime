@@ -5849,11 +5849,11 @@ CordbMiscFrame::CordbMiscFrame()
 // the real constructor which stores the funclet-related information in the CordbMiscFrame
 CordbMiscFrame::CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData)
 {
-#if defined(DBG_TARGET_WIN64) || defined(DBG_TARGET_ARM)
+#ifdef WIN64EXCEPTIONS
     this->parentIP       = pJITFuncData->parentNativeOffset;
     this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
     this->fIsFilterFunclet = (pJITFuncData->fIsFilterFrame == TRUE);
-#endif // DBG_TARGET_WIN64 || DBG_TARGET_ARM
+#endif // WIN64EXCEPTIONS
 }
 
 /* ------------------------------------------------------------------------- *

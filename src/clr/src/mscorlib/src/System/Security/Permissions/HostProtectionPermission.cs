@@ -21,7 +21,7 @@ namespace System.Security.Permissions
 [Serializable]
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public enum HostProtectionResource
+    internal enum HostProtectionResource
     {
         None                        = 0x0,
         //--------------------------------
@@ -45,7 +45,7 @@ namespace System.Security.Permissions
     // as internal by BCLRewriter so we are simply marking it as FriendAccessAllowed so it stays in the asmmeta.
     [System.Runtime.CompilerServices.FriendAccessAllowedAttribute]
 #pragma warning disable 618
-    sealed public class HostProtectionAttribute : CodeAccessSecurityAttribute
+    sealed internal class HostProtectionAttribute : CodeAccessSecurityAttribute
 #pragma warning restore 618
     {
         private HostProtectionResource m_resources = HostProtectionResource.None;

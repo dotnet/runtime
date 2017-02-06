@@ -44,7 +44,6 @@ namespace System {
 
     [Pure]
     internal static class ThrowHelper {    
-#if FEATURE_SPAN_OF_T
         internal static void ThrowArrayTypeMismatchException() {
             throw new ArrayTypeMismatchException();
         }
@@ -72,7 +71,6 @@ namespace System {
         internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan() {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallGetHashCodeOnSpan"));
         }
-#endif
 
         internal static void ThrowArgumentOutOfRange_IndexException() {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
@@ -363,7 +361,7 @@ namespace System {
         updateValueFactory,
         concurrencyLevel,
         text,
-
+        callBack,
     }
 
     //
@@ -453,7 +451,6 @@ namespace System {
         Task_ContinueWith_NotOnAnything,
         Task_ContinueWith_ESandLR,
         TaskT_TransitionToFinal_AlreadyCompleted,
-        TaskT_ctor_SelfReplicating,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,

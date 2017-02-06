@@ -35,7 +35,6 @@
 #endif // FEATURE_COMINTEROP
 
 #include "rcwwalker.h"
-#include "../gc/softwarewritewatch.h"
 
 //========================================================================
 //
@@ -1241,9 +1240,9 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (SoftwareWriteWatch::IsEnabledForGCHeap())
+    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
     {
-        SoftwareWriteWatch::SetDirty(dst, sizeof(*dst));
+        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -1298,9 +1297,9 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 #endif
     
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (SoftwareWriteWatch::IsEnabledForGCHeap())
+    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
     {
-        SoftwareWriteWatch::SetDirty(dst, sizeof(*dst));
+        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -1366,9 +1365,9 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    if (SoftwareWriteWatch::IsEnabledForGCHeap())
+    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
     {
-        SoftwareWriteWatch::SetDirty(dst, sizeof(*dst));
+        GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -1399,10 +1398,11 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
     if (ref->Collectible())
     {
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (SoftwareWriteWatch::IsEnabledForGCHeap())
+        if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
         {
-            SoftwareWriteWatch::SetDirty(dst, sizeof(*dst));
+            GCHeapUtilities::SoftwareWriteWatchSetDirty(dst, sizeof(*dst));
         }
+
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
         BYTE *refObject = *(BYTE **)((MethodTable*)ref)->GetLoaderAllocatorObjectHandle();
@@ -1417,3 +1417,84 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
         }
     }
 }
+
+//----------------------------------------------------------------------------
+//
+// Write Barrier Support for bulk copy ("Clone") operations
+//
+// StartPoint is the target bulk copy start point
+// len is the length of the bulk copy (in bytes)
+//
+//
+// Performance Note:
+//
+// This is implemented somewhat "conservatively", that is we
+// assume that all the contents of the bulk copy are object
+// references.  If they are not, and the value lies in the
+// ephemeral range, we will set false positives in the card table.
+//
+// We could use the pointer maps and do this more accurately if necessary
+
+#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
+#endif //_MSC_VER && _TARGET_X86_
+
+void
+SetCardsAfterBulkCopy(Object **start, size_t len)
+{
+    // Check whether the writes were even into the heap. If not there's no card update required.
+    // Also if the size is smaller than a pointer, no write barrier is required.
+    if ((BYTE*)start < g_lowest_address || (BYTE*)start >= g_highest_address || len < sizeof(uintptr_t))
+    {
+        return;
+    }
+
+
+    // Don't optimize the Generation 0 case if we are checking for write barrier violations
+    // since we need to update the shadow heap even in the generation 0 case.
+#if defined (WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
+    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)
+    {
+        for(unsigned i=0; i < len / sizeof(Object*); i++)
+        {
+            updateGCShadow(&start[i], start[i]);
+        }
+    }
+#endif //WRITE_BARRIER_CHECK && !SERVER_GC
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (GCHeapUtilities::SoftwareWriteWatchIsEnabled())
+    {
+        GCHeapUtilities::SoftwareWriteWatchSetDirtyRegion(start, len);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+    size_t startAddress = (size_t)start;
+    size_t endAddress = startAddress + len;
+    size_t startingClump = startAddress >> card_byte_shift;
+    size_t endingClump = (endAddress + (1 << card_byte_shift) - 1) >> card_byte_shift;
+
+    // calculate the number of clumps to mark (round_up(end) - start)
+    size_t clumpCount = endingClump - startingClump;
+    // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
+    // with g_lowest/highest_address check at the beginning of this function.
+    uint8_t* card = ((uint8_t*)VolatileLoadWithoutBarrier(&g_card_table)) + startingClump;
+
+    // Fill the cards. To avoid cache line thrashing we check whether the cards have already been set before
+    // writing.
+    do
+    {
+        if (*card != 0xff)
+        {
+            *card = 0xff;
+        }
+
+        card++;
+        clumpCount--;
+    }
+    while (clumpCount != 0);
+}
+
+#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#pragma optimize("", on)        // Go back to command line default optimizations
+#endif //_MSC_VER && _TARGET_X86_

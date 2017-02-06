@@ -223,19 +223,11 @@ inline void *__cdecl operator new(size_t, void *_P)
 // PAL_safe_offsetof is a version of offsetof that protects against an
 // overridden operator&
 
-#if defined(__GNUC__) && (__GNUC__ == 3 && __GNUC_MINOR__ >= 5 || __GNUC__ > 3)
 #define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
 #ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
 #endif
 #define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
-#else
-#define FIELD_OFFSET(type, field) (((LONG)(LONG_PTR)&(((type *)64)->field)) - 64)
-#ifndef offsetof
-#define offsetof(s,m)          ((size_t)((ptrdiff_t)&(((s *)64)->m)) - 64)
-#endif
-#define PAL_safe_offsetof(s,m) ((size_t)((ptrdiff_t)&(char&)(((s *)64)->m))-64)
-#endif
 
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - FIELD_OFFSET(type, field)))
@@ -243,7 +235,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
 
-#if defined(_WIN64) || defined(_M_ALPHA)
+#if defined(_WIN64)
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
 #else
 #define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
@@ -1186,7 +1178,6 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 #define _ReturnAddress() __builtin_return_address(0)
 
-#ifdef PLATFORM_UNIX
 #define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
 #define DIRECTORY_SEPARATOR_STR_A "/"
@@ -1194,15 +1185,6 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 #define PATH_SEPARATOR_CHAR_W W(':')
 #define PATH_SEPARATOR_STR_W W(":")
 #define VOLUME_SEPARATOR_CHAR_W W('/')
-#else // PLATFORM_UNIX
-#define DIRECTORY_SEPARATOR_CHAR_A '\\'
-#define DIRECTORY_SEPARATOR_CHAR_W W('\\')
-#define DIRECTORY_SEPARATOR_STR_A "\\"
-#define DIRECTORY_SEPARATOR_STR_W W("\\")
-#define PATH_SEPARATOR_CHAR_W W(';')
-#define PATH_SEPARATOR_STR_W W(";")
-#define VOLUME_SEPARATOR_CHAR_W W(':')
-#endif // PLATFORM_UNIX
 
 #ifndef IMAGE_IMPORT_DESC_FIELD
 #define IMAGE_IMPORT_DESC_FIELD(img, f)     ((img).u.f)
@@ -1524,6 +1506,7 @@ typedef struct _DISPATCHER_CONTEXT {
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
     PUNWIND_HISTORY_TABLE HistoryTable;
+    BOOLEAN ControlPcIsUnwound;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
 #else

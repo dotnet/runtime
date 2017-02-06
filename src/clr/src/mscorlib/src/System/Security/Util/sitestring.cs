@@ -14,8 +14,6 @@ namespace System.Security.Util {
         protected String m_site;
         protected ArrayList m_separatedSite;
 
-        protected static char[] m_separators = { '.' };
-        
         protected internal SiteString()
         {
             // Only call this in derived classes when you know what you're doing.
@@ -24,12 +22,6 @@ namespace System.Security.Util {
         public SiteString( String site )
         {
             m_separatedSite = CreateSeparatedSite( site );
-            m_site = site;
-        }
-
-        private SiteString(String site, ArrayList separatedSite)
-        {
-            m_separatedSite = separatedSite;
             m_site = site;
         }
 
@@ -58,7 +50,7 @@ namespace System.Security.Util {
 
             // Regular hostnames or IPv4 addresses
             // We dont need to do this for IPv4 addresses, but it's easier to do it anyway
-            String[] separatedArray = site.Split( m_separators );
+            String[] separatedArray = site.Split('.');
             
             for (int index = separatedArray.Length-1; index > -1; --index)
             {
@@ -180,12 +172,6 @@ namespace System.Security.Util {
                 return false;
             return this.IsSubsetOf(ss, ignoreCase) && ss.IsSubsetOf(this, ignoreCase);
         }
-            
-        
-        public virtual SiteString Copy()
-        {
-            return new SiteString( m_site, m_separatedSite );
-        }
 
         public virtual bool IsSubsetOf( SiteString operand )
         {
@@ -242,48 +228,6 @@ namespace System.Security.Util {
             }
             else 
                 return true;
-        }
-                
-        
-    
-        public virtual SiteString Intersect( SiteString operand )
-        {
-            if (operand == null)
-            {
-                return null;
-            }
-            else if (this.IsSubsetOf( operand ))
-            {
-                return this.Copy();
-            }
-            else if (operand.IsSubsetOf( this ))
-            {
-                return operand.Copy();
-            }
-            else
-            {
-                return null;
-            }
-        }
-        
-        public virtual SiteString Union( SiteString operand )
-        {
-            if (operand == null)
-            {
-                return this;
-            }
-            else if (this.IsSubsetOf( operand ))
-            {
-                return operand.Copy();
-            }
-            else if (operand.IsSubsetOf( this ))
-            {
-                return this.Copy();
-            }
-            else
-            {
-                return null;
-            }
         }
     }
 }

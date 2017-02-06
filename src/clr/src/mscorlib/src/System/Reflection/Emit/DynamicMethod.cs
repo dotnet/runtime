@@ -58,9 +58,6 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-#if FEATURE_COMPRESSEDSTACK
-        internal CompressedStack m_creationContext;
-#endif // FEATURE_COMPRESSEDSTACK
         private static volatile InternalModuleBuilder s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
         
@@ -330,9 +327,6 @@ namespace System.Reflection.Emit
                     m_restrictedSkipVisibility = true;
                 }
 
-#if FEATURE_COMPRESSEDSTACK
-                m_creationContext = CompressedStack.Capture();
-#endif // FEATURE_COMPRESSEDSTACK
             }
             else
             {
@@ -592,30 +586,6 @@ namespace System.Reflection.Emit
                 parameters[position].SetAttributes(attributes);
             }
             return null;
-        }
-
-        public DynamicILInfo GetDynamicILInfo()
-        {
-#pragma warning disable 618
-            new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-
-            if (m_DynamicILInfo != null)
-                return m_DynamicILInfo;
-
-            return GetDynamicILInfo(new DynamicScope());
-        }
-
-        internal DynamicILInfo GetDynamicILInfo(DynamicScope scope)
-        {
-            if (m_DynamicILInfo == null)
-            {
-                byte[] methodSignature = SignatureHelper.GetMethodSigHelper(
-                        null, CallingConvention, ReturnType, null, null, m_parameterTypes, null, null).GetSignature(true);
-                m_DynamicILInfo = new DynamicILInfo(scope, this, methodSignature);
-            }
-
-            return m_DynamicILInfo;
         }
 
         public ILGenerator GetILGenerator() {

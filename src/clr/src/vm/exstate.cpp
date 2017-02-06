@@ -498,7 +498,7 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
 
     int nestingLevel = 0;
     
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
     //
     // Get the SEH frame that covers this location on the stack. Note: we pass a skip count of 1. We know that when
     // this is called, there is a nested exception handler on pThread's stack that is only there during exception
@@ -517,11 +517,7 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
     nestingLevel = ComputeEnclosingHandlerNestingLevel(pJitManager,
                                                            methodToken,
                                                            natOffset);
-#elif !defined(WIN64EXCEPTIONS)  
-    // !_TARGET_X86_ && !WIN64EXCEPTIONS
-    PORTABILITY_ASSERT("SetDebuggerInterceptInfo() (ExState.cpp) - continuable exceptions NYI\n");
-    return FALSE;
-#endif // !_TARGET_X86_
+#endif // !WIN64EXCEPTIONS
 
     //
     // These values will override the normal information used by the EH subsystem to handle the exception.

@@ -20,7 +20,7 @@ namespace System.Security.Policy {
 [Serializable]
     [Flags]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum PolicyStatementAttribute
+    internal enum PolicyStatementAttribute
     {
         Nothing = 0x0,
         Exclusive = 0x01,
@@ -30,7 +30,7 @@ namespace System.Security.Policy {
     
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    sealed public class PolicyStatement : ISecurityPolicyEncodable, ISecurityEncodable
+    sealed internal class PolicyStatement 
     {
         // The PermissionSet associated with this policy
         internal PermissionSet m_permSet;
@@ -64,23 +64,6 @@ namespace System.Security.Policy {
                 m_attributes = attributes;
             }
         }
-        
-        private PolicyStatement( PermissionSet permSet, PolicyStatementAttribute attributes, bool copy )
-        {
-            if (permSet != null)
-            {
-                if (copy)
-                    m_permSet = permSet.Copy();
-                else
-                    m_permSet = permSet;
-            }
-            else
-            {
-                m_permSet = new PermissionSet( false );
-            }
-                
-            m_attributes = attributes;
-        }
 
         public PermissionSet PermissionSet
         {
@@ -107,65 +90,6 @@ namespace System.Security.Policy {
                 }
             }
         }
-        
-        internal void SetPermissionSetNoCopy( PermissionSet permSet )
-        {
-            m_permSet = permSet;
-        }
-        
-        internal PermissionSet GetPermissionSetNoCopy()
-        {
-            lock (this)
-            {
-                return m_permSet;
-            }
-        }
-        
-        public PolicyStatementAttribute Attributes
-        {
-            get
-            {
-                return m_attributes;
-            }
-            
-            set
-            {
-                if (ValidProperties( value ))
-                {
-                    m_attributes = value;
-                }
-            }
-        }
-
-        public PolicyStatement Copy()
-        {
-            // The PolicyStatement .ctor will copy the permission set
-            return new PolicyStatement(m_permSet, Attributes, true);
-        }
-
-        public String AttributeString
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder();
-            
-                bool first = true;
-            
-                if (GetFlag((int) PolicyStatementAttribute.Exclusive ))
-                {
-                    sb.Append( "Exclusive" );
-                    first = false;
-                }
-                if (GetFlag((int) PolicyStatementAttribute.LevelFinal ))
-                {
-                    if (!first)
-                        sb.Append( " " );
-                    sb.Append( "LevelFinal" );
-                }
-            
-                return sb.ToString();
-            }
-        }
 
         private static bool ValidProperties( PolicyStatementAttribute attributes )
         {
@@ -176,40 +100,6 @@ namespace System.Security.Policy {
             else
             {
                 throw new ArgumentException( Environment.GetResourceString( "Argument_InvalidFlag" ) );
-            }
-        }
-        
-        private bool GetFlag( int flag )
-        {
-            return (flag & (int)m_attributes) != 0;
-        }
-
-        /// <summary>
-        ///     Union a child policy statement into this policy statement
-        /// </summary>
-        internal void InplaceUnion(PolicyStatement childPolicy)
-        {
-            BCLDebug.Assert(childPolicy != null, "childPolicy != null");
-
-            if (((Attributes & childPolicy.Attributes) & PolicyStatementAttribute.Exclusive) == PolicyStatementAttribute.Exclusive)
-            {
-                throw new PolicyException(Environment.GetResourceString( "Policy_MultipleExclusive" ));
-            }
-
-            // We need to merge together our grant set and attributes.  The result of this merge is
-            // dependent upon if we're merging a child marked exclusive or not.  If the child is not
-            // exclusive, we need to union in its grant set and or in its attributes. However, if the child
-            // is exclusive then it is the only code group which should have an effect on the resulting
-            // grant set and therefore our grant should be ignored.
-            if ((childPolicy.Attributes & PolicyStatementAttribute.Exclusive) == PolicyStatementAttribute.Exclusive)
-            {
-                m_permSet = childPolicy.GetPermissionSetNoCopy();
-                Attributes = childPolicy.Attributes;
-            }
-            else
-            {
-                m_permSet.InplaceUnion(childPolicy.GetPermissionSetNoCopy());
-                Attributes = Attributes | childPolicy.Attributes;
             }
         }
 

@@ -445,7 +445,7 @@ class PrecodeStubManager : public StubManager
 #ifndef DACCESS_COMPILE
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              CONTEXT *pContext,
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr);
 #endif
 
@@ -509,7 +509,7 @@ class StubLinkStubManager : public StubManager
 #ifndef DACCESS_COMPILE
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              CONTEXT *pContext,
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr);
 #endif
 
@@ -646,7 +646,7 @@ class RangeSectionStubManager : public StubManager
 #ifndef DACCESS_COMPILE
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              CONTEXT *pContext,
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr);
 #endif
 
@@ -708,7 +708,7 @@ class ILStubManager : public StubManager
 
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              CONTEXT *pContext,
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr);
 #endif
 
@@ -752,7 +752,7 @@ class InteropDispatchStubManager : public StubManager
 #ifndef DACCESS_COMPILE
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
-                              CONTEXT *pContext,
+                              T_CONTEXT *pContext,
                               BYTE **pRetAddr);
 #endif
 
@@ -797,7 +797,7 @@ class DelegateInvokeStubManager : public StubManager
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
 #if !defined(DACCESS_COMPILE)
-    virtual BOOL TraceManager(Thread *thread, TraceDestination *trace, CONTEXT *pContext, BYTE **pRetAddr);
+    virtual BOOL TraceManager(Thread *thread, TraceDestination *trace, T_CONTEXT *pContext, BYTE **pRetAddr);
     static BOOL TraceDelegateObject(BYTE *orDel, TraceDestination *trace);
 #endif // DACCESS_COMPILE
 
@@ -846,7 +846,7 @@ public:
     TailCallStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
     ~TailCallStubManager() {WRAPPER_NO_CONTRACT;}
 
-    virtual BOOL TraceManager(Thread * pThread, TraceDestination * pTrace, CONTEXT * pContext, BYTE ** ppRetAddr);
+    virtual BOOL TraceManager(Thread * pThread, TraceDestination * pTrace, T_CONTEXT * pContext, BYTE ** ppRetAddr);
 
     static bool IsTailCallStubHelper(PCODE code);
 #endif // DACCESS_COMPILE

@@ -18,7 +18,6 @@ namespace System.Runtime.CompilerServices
 {
     [Serializable]
     [AttributeUsage(AttributeTargets.Class)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CompilerGlobalScopeAttribute : Attribute
     {
        public CompilerGlobalScopeAttribute () {}

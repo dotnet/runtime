@@ -268,10 +268,6 @@ public:
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 #endif
-#if FANCY_ARRAY_OPT
-    unsigned char lvAssignOne : 1; // assigned at least  once?
-    unsigned char lvAssignTwo : 1; // assigned at least twice?
-#endif
 
     unsigned char lvSpilled : 1; // enregistered variable was spilled
 #ifndef _TARGET_64BIT_
@@ -322,6 +318,7 @@ public:
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
     unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
+    var_types     lvBaseType : 5;            // Note: this only packs because var_types is a typedef of unsigned char
 #endif                                       // FEATURE_SIMD
     unsigned char lvRegStruct : 1;           // This is a reg-sized non-field-addressed struct.
 
@@ -330,9 +327,6 @@ public:
                                   // local.
         unsigned lvParentLcl; // The index of the local var representing the parent (i.e. the promoted struct local).
                               // Valid on promoted struct local fields.
-#ifdef FEATURE_SIMD
-        var_types lvBaseType; // The base type of a SIMD local var.  Valid on TYP_SIMD locals.
-#endif                        // FEATURE_SIMD
     };
 
     unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
@@ -710,10 +704,6 @@ public:
     typeInfo lvVerTypeInfo; // type info needed for verification
 
     BYTE* lvGcLayout; // GC layout info for structs
-
-#if FANCY_ARRAY_OPT
-    GenTreePtr lvKnownDim; // array size if known
-#endif
 
 #if ASSERTION_PROP
     BlockSet   lvRefBlks;          // Set of blocks that contain refs
@@ -1771,7 +1761,11 @@ public:
     // a PSPSym for functions with any EH.
     bool ehNeedsPSPSym() const
     {
+#ifdef _TARGET_X86_
+        return false;
+#else  // _TARGET_X86_
         return compHndBBtabCount > 0;
+#endif // _TARGET_X86_
     }
 
     bool     ehAnyFunclets();  // Are there any funclets in this function?
@@ -2068,13 +2062,13 @@ public:
 
     bool gtHasLocalsWithAddrOp(GenTreePtr tree);
 
-    unsigned gtHashValue(GenTree* tree);
-
     unsigned gtSetListOrder(GenTree* list, bool regs, bool isListCallArgs);
 
     void gtWalkOp(GenTree** op1, GenTree** op2, GenTree* adr, bool constOnly);
 
 #ifdef DEBUG
+    unsigned gtHashValue(GenTree* tree);
+
     GenTreePtr gtWalkOpEffectiveVal(GenTreePtr op);
 #endif
 
@@ -2785,7 +2779,7 @@ protected:
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
-    bool impCanPInvokeInline(BasicBlock* block);
+    bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
         GenTreePtr call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
@@ -2836,7 +2830,8 @@ protected:
 
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
-    GenTreePtr impIntrinsic(CORINFO_CLASS_HANDLE  clsHnd,
+    GenTreePtr impIntrinsic(GenTreePtr            newobjThis,
+                            CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             int                   memberRef,
@@ -3430,6 +3425,7 @@ public:
     bool fgComputePredsDone; // Have we computed the bbPreds list
     bool fgCheapPredsValid;  // Is the bbCheapPreds list valid?
     bool fgDomsComputed;     // Have we computed the dominator sets?
+    bool fgOptimizedFinally; // Did we optimize any try-finallys?
 
     bool     fgHasSwitch;  // any BBJ_SWITCH jumps?
     bool     fgHasPostfix; // any postfix ++/-- found?
@@ -3499,6 +3495,16 @@ public:
     void fgImport();
 
     void fgInline();
+
+    void fgRemoveEmptyTry();
+
+    void fgRemoveEmptyFinally();
+
+    void fgCloneFinally();
+
+    void fgCleanupContinuation(BasicBlock* continuation);
+
+    void fgUpdateFinallyTargetFlags();
 
     GenTreePtr fgGetCritSectOfStaticMethod();
 
@@ -3575,10 +3581,9 @@ public:
     void fgLocalVarLivenessInit();
 
 #ifdef LEGACY_BACKEND
-    GenTreePtr fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr relopNode, GenTreePtr asgdLclVar);
+    GenTreePtr fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, GenTreePtr relopNode);
 #else
-    void fgPerNodeLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
-    void fgPerStatementLocalVarLiveness(GenTree* node, GenTree* asgdLclVar);
+    void fgPerNodeLocalVarLiveness(GenTree* node);
 #endif
     void fgPerBlockLocalVarLiveness();
 
@@ -4272,6 +4277,7 @@ public:
     void fgDebugCheckNodeLinks(BasicBlock* block, GenTreePtr stmt);
     void fgDebugCheckFlags(GenTreePtr tree);
     void fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsigned chkFlags);
+    void fgDebugCheckTryFinallyExits();
 #endif
 
 #ifdef LEGACY_BACKEND
@@ -4524,7 +4530,6 @@ private:
     static MorphAddrContext s_CopyBlockMAC;
 
 #ifdef FEATURE_SIMD
-    GenTreePtr fgCopySIMDNode(GenTreeSIMD* simdNode);
     GenTreePtr getSIMDStructFromField(GenTreePtr tree,
                                       var_types* baseTypeOut,
                                       unsigned*  indexOut,
@@ -4617,7 +4622,7 @@ private:
     bool fgCurHeapDef;   // True iff the current basic block defines the heap.
     bool fgCurHeapHavoc; // True if  the current basic block is known to set the heap to a "havoc" value.
 
-    void fgMarkUseDef(GenTreeLclVarCommon* tree, GenTree* asgdLclVar = nullptr);
+    void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
     void fgEndScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
@@ -5931,10 +5936,6 @@ protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTreePtr mul, GenTreePtr* pIndex DEBUGARG(bool bRngChk));
     GenTreePtr optFindLocalInit(BasicBlock* block, GenTreePtr local, VARSET_TP* pKilledInOut, bool* isKilledAfterInit);
 
-#if FANCY_ARRAY_OPT
-    bool optIsNoMore(GenTreePtr op1, GenTreePtr op2, int add1 = 0, int add2 = 0);
-#endif
-
     bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
 
 protected:
@@ -6845,10 +6846,15 @@ private:
     void unwindReserveFunc(FuncInfoDsc* func);
     void unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode);
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || (defined(_TARGET_X86_) && FEATURE_EH_FUNCLETS)
 
     void unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode);
     void unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
+
+#endif // _TARGET_AMD64_ || (_TARGET_X86_ && FEATURE_EH_FUNCLETS)
+
+#if defined(_TARGET_AMD64_)
+
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
 
     void unwindBegPrologWindows();
@@ -6931,6 +6937,20 @@ private:
 
     // Should we support SIMD intrinsics?
     bool featureSIMD;
+
+    // Have we identified any SIMD types?
+    // This is currently used by struct promotion to avoid getting type information for a struct
+    // field to see if it is a SIMD type, if we haven't seen any SIMD types or operations in
+    // the method.
+    bool _usesSIMDTypes;
+    bool usesSIMDTypes()
+    {
+        return _usesSIMDTypes;
+    }
+    void setUsesSIMDTypes(bool value)
+    {
+        _usesSIMDTypes = value;
+    }
 
     // This is a temp lclVar allocated on the stack as TYP_SIMD.  It is used to implement intrinsics
     // that require indexed access to the individual fields of the vector, which is not well supported
@@ -7625,8 +7645,6 @@ public:
 #else
         static const bool compNoPInvokeInlineCB;
 #endif
-
-        bool compMustInlinePInvokeCalli; // Unmanaged CALLI in IL stubs must be inlined
 
 #ifdef DEBUG
         bool compGcChecks;         // Check arguments and return values to ensure they are sane

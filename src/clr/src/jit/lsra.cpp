@@ -1914,6 +1914,14 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 
 void LinearScan::identifyCandidates()
 {
+
+    // Initialize the sets of lclVars that are used to determine whether, and for which lclVars,
+    // we need to perform resolution across basic blocks.
+    // Note that we can't do this in the constructor because the number of tracked lclVars may
+    // change between the constructor and the actual allocation.
+    VarSetOps::AssignNoCopy(compiler, resolutionCandidateVars, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(compiler, splitOrSpilledVars, VarSetOps::MakeEmpty(compiler));
+
     if (compiler->lvaCount == 0)
     {
         return;
@@ -1950,8 +1958,6 @@ void LinearScan::identifyCandidates()
     // for vectors on Arm64, though the actual value may differ.
 
     VarSetOps::AssignNoCopy(compiler, fpCalleeSaveCandidateVars, VarSetOps::MakeEmpty(compiler));
-    VarSetOps::AssignNoCopy(compiler, resolutionCandidateVars, VarSetOps::MakeEmpty(compiler));
-    VarSetOps::AssignNoCopy(compiler, splitOrSpilledVars, VarSetOps::MakeEmpty(compiler));
     VARSET_TP    VARSET_INIT_NOCOPY(fpMaybeCandidateVars, VarSetOps::MakeEmpty(compiler));
     unsigned int floatVarCount        = 0;
     unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
@@ -10412,11 +10418,21 @@ void LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasD
         }
         if (!hasDest && tree->gtHasReg())
         {
-            // This can be true for the "localDefUse" case - defining a reg, but
-            // pushing it on the stack
-            assert(spillChar == ' ');
-            spillChar = '*';
-            hasDest   = true;
+            // A node can define a register, but not produce a value for a parent to consume,
+            // i.e. in the "localDefUse" case.
+            // There used to be an assert here that we wouldn't spill such a node.
+            // However, we can have unused lclVars that wind up being the node at which
+            // it is spilled. This probably indicates a bug, but we don't realy want to
+            // assert during a dump.
+            if (spillChar == 'S')
+            {
+                spillChar = '$';
+            }
+            else
+            {
+                spillChar = '*';
+            }
+            hasDest = true;
         }
     }
     printf("%c N%03u. ", spillChar, tree->gtSeqNum);

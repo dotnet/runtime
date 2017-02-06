@@ -466,10 +466,9 @@ namespace System
             {
                 // Create an array of delegate copies and each
                 //    element into the array
-                int invocationCount = (int)_invocationCount;
-                del = new Delegate[invocationCount];
+                del = new Delegate[(int)_invocationCount];
                 
-                for (int i = 0; i < invocationCount; i++)
+                for (int i = 0; i < del.Length; i++)
                     del[i] = (Delegate)invocationList[i];
             }
             return del;

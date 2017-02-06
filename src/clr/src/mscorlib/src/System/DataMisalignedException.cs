@@ -9,37 +9,31 @@
 **
 =============================================================================*/
 
-namespace System 
-{
-    using System;
-    using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
+namespace System
+{
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DataMisalignedException : SystemException 
     {
-        public DataMisalignedException() 
-            : base(Environment.GetResourceString("Arg_DataMisalignedException")) 
+        public DataMisalignedException()
+            : base(SR.Arg_DataMisalignedException)
         {
-            SetErrorCode(__HResults.COR_E_DATAMISALIGNED);
-        }
-    
-        public DataMisalignedException(String message) 
-            : base(message) 
-        {
-            SetErrorCode(__HResults.COR_E_DATAMISALIGNED);
+            HResult = __HResults.COR_E_DATAMISALIGNED;
         }
 
-        public DataMisalignedException(String message, Exception innerException) 
-            : base(message, innerException) 
+        public DataMisalignedException(String message)
+            : base(message)
         {
-            SetErrorCode(__HResults.COR_E_DATAMISALIGNED);
+            HResult = __HResults.COR_E_DATAMISALIGNED;
         }
 
-        internal DataMisalignedException(SerializationInfo info, StreamingContext context) 
-            : base (info, context) 
+        public DataMisalignedException(String message, Exception innerException)
+            : base(message, innerException)
         {
+            HResult = __HResults.COR_E_DATAMISALIGNED;
         }
+
+        internal DataMisalignedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

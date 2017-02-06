@@ -13,7 +13,5 @@ add_executable(paltest_tls_test2
 add_dependencies(paltest_tls_test2 coreclrpal)
 
 target_link_libraries(paltest_tls_test2
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

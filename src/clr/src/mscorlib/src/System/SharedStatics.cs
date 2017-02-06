@@ -36,40 +36,9 @@ namespace System
         }
 
         private volatile String _Remoting_Identity_IDGuid;
-        public static String Remoting_Identity_IDGuid 
-        { 
-            get 
-            {
-                if (_sharedStatics._Remoting_Identity_IDGuid == null)
-                {
-                    bool tookLock = false;
-                    RuntimeHelpers.PrepareConstrainedRegions();
-                    try {
-                        Monitor.Enter(_sharedStatics, ref tookLock);
-
-                        if (_sharedStatics._Remoting_Identity_IDGuid == null)
-                        {
-                            _sharedStatics._Remoting_Identity_IDGuid = Guid.NewGuid().ToString().Replace('-', '_');
-                        }
-                    }
-                    finally {
-                        if (tookLock)
-                            Monitor.Exit(_sharedStatics);
-                    }
-                }
-
-                Debug.Assert(_sharedStatics._Remoting_Identity_IDGuid != null,
-                                "_sharedStatics._Remoting_Identity_IDGuid != null");
-                return _sharedStatics._Remoting_Identity_IDGuid;
-            } 
-        }
 
         // Note this may not need to be process-wide.
         private int _Remoting_Identity_IDSeqNum;
-        internal static int Remoting_Identity_GetNextSeqNum()
-        {
-            return Interlocked.Increment(ref _sharedStatics._Remoting_Identity_IDSeqNum);
-        }
 
 
         // This is the total amount of memory currently "reserved" via

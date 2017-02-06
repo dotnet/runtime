@@ -2,15 +2,16 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [UbuntuCodeName] [lldbx.y]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
-    echo "UbuntuCodeName - optional, Code name for Ubuntu, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, UbuntuCodeName is jessie(default) or tizen."
+    echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8"
+    echo "--skipunmount - optional, will skip the unmount of rootfs folder."
 
     exit 1
 }
 
-__UbuntuCodeName=trusty
+__LinuxCodeName=trusty
 
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
@@ -20,6 +21,7 @@ __UbuntuRepo="http://ports.ubuntu.com/"
 __UbuntuPackagesBase="build-essential libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
 __LLDB_Package="lldb-3.6-dev"
 __UnprocessedBuildArgs=
+__SkipUnmount=0
 
 for i in "$@"
     do
@@ -41,7 +43,7 @@ for i in "$@"
             __BuildArch=armel
             __UbuntuArch=armel
             __UbuntuRepo="http://ftp.debian.org/debian/"
-            __UbuntuCodeName=jessie
+            __LinuxCodeName=jessie
             ;;
         x86)
             __BuildArch=x86
@@ -55,22 +57,22 @@ for i in "$@"
             __LLDB_Package="lldb-3.8-dev"
             ;;
         vivid)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=vivid
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=vivid
             fi
             ;;
         wily)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=wily
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=wily
             fi
             ;;
         xenial)
-            if [ "$__UbuntuCodeName" != "jessie" ]; then
-                __UbuntuCodeName=xenial
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=xenial
             fi
             ;;
         jessie)
-            __UbuntuCodeName=jessie
+            __LinuxCodeName=jessie
             __UbuntuRepo="http://ftp.debian.org/debian/"
             ;;
         tizen)
@@ -79,9 +81,12 @@ for i in "$@"
                 usage;
                 exit 1;
             fi
-            __UbuntuCodeName=
+            __LinuxCodeName=
             __UbuntuRepo=
             __Tizen=tizen
+            ;;
+        --skipunmount)
+            __SkipUnmount=1
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
@@ -101,18 +106,23 @@ if [[ -n "$ROOTFS_DIR" ]]; then
 fi
 
 if [ -d "$__RootfsDir" ]; then
-    umount $__RootfsDir/*
+    if [ $__SkipUnmount == 0 ]; then
+        umount $__RootfsDir/*
+    fi
     rm -rf $__RootfsDir
 fi
 
-if [[ -n $__UbuntuCodeName ]]; then
-    qemu-debootstrap --arch $__UbuntuArch $__UbuntuCodeName $__RootfsDir $__UbuntuRepo
-    cp $__CrossDir/$__BuildArch/sources.list.$__UbuntuCodeName $__RootfsDir/etc/apt/sources.list
+if [[ -n $__LinuxCodeName ]]; then
+    qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
+    cp $__CrossDir/$__BuildArch/sources.list.$__LinuxCodeName $__RootfsDir/etc/apt/sources.list
     chroot $__RootfsDir apt-get update
     chroot $__RootfsDir apt-get -f -y install
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
     chroot $__RootfsDir symlinks -cr /usr
-    umount $__RootfsDir/*
+
+    if [ $__SkipUnmount == 0 ]; then
+        umount $__RootfsDir/*
+    fi
 elif [ "$__Tizen" == "tizen" ]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh
 else

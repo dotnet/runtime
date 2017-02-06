@@ -176,8 +176,10 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
+        // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+
        _ASSERTE(IsStructPassedInRegs());
-     
+
         TADDR genRegDest = dac_cast<TADDR>(GetStructGenRegDestinationAddress());
         INDEBUG(int remainingBytes = fieldBytes;)
 
@@ -199,7 +201,8 @@ public:
                     _ASSERTE(eightByteSize == 8);
                     _ASSERTE(IS_ALIGNED((SIZE_T)genRegDest, 8));
 
-                    (*fn)(dac_cast<PTR_PTR_Object>(genRegDest), sc, 0);
+                    uint32_t flags = eightByteClassification == SystemVClassificationTypeIntegerByRef ? GC_CALL_INTERIOR : 0;
+                    (*fn)(dac_cast<PTR_PTR_Object>(genRegDest), sc, flags);
                 }
 
                 genRegDest += eightByteSize;

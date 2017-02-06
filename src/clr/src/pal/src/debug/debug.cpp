@@ -545,254 +545,6 @@ SetThreadContext(
 
 /*++
 Function:
-  PAL_CreateExecWatchpoint
-
-Abstract
-  Creates an OS exec watchpoint for the specified instruction
-  and thread. This function should only be called on architectures
-  that do not support a hardware single-step mode (e.g., SPARC).
-
-Parameter
-  hThread : the thread for which the watchpoint is to apply
-  pvInstruction : the instruction on which the watchpoint is to be set
-
-Return
-  A Win32 error code
---*/
-
-DWORD
-PAL_CreateExecWatchpoint(
-    HANDLE hThread,
-    PVOID pvInstruction
-    )
-{
-    PERF_ENTRY(PAL_CreateExecWatchpoint);
-    ENTRY("PAL_CreateExecWatchpoint (hThread=%p, pvInstruction=%p)\n", hThread, pvInstruction);
-
-    DWORD dwError = ERROR_NOT_SUPPORTED;
-
-#if HAVE_PRWATCH_T
-
-    CPalThread *pThread = NULL;
-    CPalThread *pTargetThread = NULL;
-    IPalObject *pobjThread = NULL;
-    int fd = -1;
-    char ctlPath[50];
-
-    struct
-    {
-        long ctlCode;
-        prwatch_t prwatch;
-    } ctlStruct;
-
-    //
-    // We must never set a watchpoint on an instruction that enters a syscall;
-    // if such a request comes in we succeed it w/o actually creating the
-    // watchpoint. This mirrors the behavior of setting the single-step flag
-    // in a thread context when the thread is w/in a system service -- the
-    // flag is ignored and will not be present when the thread returns
-    // to user mode.
-    //
-
-#if defined(_SPARC_)
-    if (*(DWORD*)pvInstruction == 0x91d02008) // ta 8
-    {
-        TRACE("Watchpoint requested on sysenter instruction -- ignoring");
-        dwError = ERROR_SUCCESS;
-        goto PAL_CreateExecWatchpointExit;        
-    }
-#else
-#error Need syscall instruction for this platform
-#endif // _SPARC_
-
-    pThread = InternalGetCurrentThread();
-
-    dwError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        0, // THREAD_SET_CONTEXT
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (NO_ERROR != dwError)
-    {
-        goto PAL_CreateExecWatchpointExit;
-    }
-
-    snprintf(ctlPath, sizeof(ctlPath), "/proc/%u/lwp/%u/lwpctl", getpid(), pTargetThread->GetLwpId());
-
-    fd = InternalOpen(pThread, ctlPath, O_WRONLY);
-    if (-1 == fd)
-    {
-        ERROR("Failed to open %s\n", ctlPath);
-        dwError = ERROR_INVALID_ACCESS;
-        goto PAL_CreateExecWatchpointExit;
-    }
-
-    ctlStruct.ctlCode = PCWATCH;
-    ctlStruct.prwatch.pr_vaddr = (uintptr_t) pvInstruction;
-    ctlStruct.prwatch.pr_size = sizeof(DWORD);
-    ctlStruct.prwatch.pr_wflags = WA_EXEC | WA_TRAPAFTER;
-
-    if (write(fd, (void*) &ctlStruct, sizeof(ctlStruct)) != sizeof(ctlStruct))
-    {
-        ERROR("Failure writing control structure (errno = %u)\n", errno);
-        dwError = ERROR_INTERNAL_ERROR;
-        goto PAL_CreateExecWatchpointExit;
-    }
-
-    dwError = ERROR_SUCCESS;
-    
-PAL_CreateExecWatchpointExit:
-
-    if (NULL != pobjThread)
-    {
-        pobjThread->ReleaseReference(pThread);
-    }
-
-    if (-1 != fd)
-    {
-        close(fd);
-    }
-
-#endif // HAVE_PRWATCH_T     
-    
-    LOGEXIT("PAL_CreateExecWatchpoint returns ret:%d\n", dwError);
-    PERF_EXIT(PAL_CreateExecWatchpoint);
-    return dwError;
-}
-
-/*++
-Function:
-  PAL_DeleteExecWatchpoint
-
-Abstract
-  Deletes an OS exec watchpoint for the specified instruction
-  and thread. This function should only be called on architectures
-  that do not support a hardware single-step mode (e.g., SPARC).
-
-Parameter
-  hThread : the thread to remove the watchpoint from
-  pvInstruction : the instruction for which the watchpoint is to be removed
-
-Return
-  A Win32 error code. Attempting to delete a watchpoint that does not exist
-  may or may not result in an error, depending on the behavior of the
-  underlying operating system.
---*/
-
-DWORD
-PAL_DeleteExecWatchpoint(
-    HANDLE hThread,
-    PVOID pvInstruction
-    )
-{
-    PERF_ENTRY(PAL_DeleteExecWatchpoint);
-    ENTRY("PAL_DeleteExecWatchpoint (hThread=%p, pvInstruction=%p)\n", hThread, pvInstruction);
-
-    DWORD dwError = ERROR_NOT_SUPPORTED;
-
-#if HAVE_PRWATCH_T
-
-    CPalThread *pThread = NULL;
-    CPalThread *pTargetThread = NULL;
-    IPalObject *pobjThread = NULL;
-    int fd = -1;
-    char ctlPath[50];
-
-    struct
-    {
-        long ctlCode;
-        prwatch_t prwatch;
-    } ctlStruct;
-
-
-    pThread = InternalGetCurrentThread();
-
-    dwError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        0, // THREAD_SET_CONTEXT
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (NO_ERROR != dwError)
-    {
-        goto PAL_DeleteExecWatchpointExit;
-    }
-
-    snprintf(ctlPath, sizeof(ctlPath), "/proc/%u/lwp/%u/lwpctl", getpid(), pTargetThread->GetLwpId());
-
-    fd = InternalOpen(pThread, ctlPath, O_WRONLY);
-    if (-1 == fd)
-    {
-        ERROR("Failed to open %s\n", ctlPath);
-        dwError = ERROR_INVALID_ACCESS;
-        goto PAL_DeleteExecWatchpointExit;
-    }
-
-    ctlStruct.ctlCode = PCWATCH;
-    ctlStruct.prwatch.pr_vaddr = (uintptr_t) pvInstruction;
-    ctlStruct.prwatch.pr_size = sizeof(DWORD);
-    ctlStruct.prwatch.pr_wflags = 0;
-
-    if (write(fd, (void*) &ctlStruct, sizeof(ctlStruct)) != sizeof(ctlStruct))
-    {
-        ERROR("Failure writing control structure (errno = %u)\n", errno);
-        dwError = ERROR_INTERNAL_ERROR;
-        goto PAL_DeleteExecWatchpointExit;
-    }
-
-    dwError = ERROR_SUCCESS;
-    
-PAL_DeleteExecWatchpointExit:
-
-    if (NULL != pobjThread)
-    {
-        pobjThread->ReleaseReference(pThread);
-    }
-
-    if (-1 != fd)
-    {
-        close(fd);
-    }
-
-#endif // HAVE_PRWATCH_T    
-    
-    LOGEXIT("PAL_DeleteExecWatchpoint returns ret:%d\n", dwError);
-    PERF_EXIT(PAL_DeleteExecWatchpoint);
-    return dwError;
-}
-
-__attribute__((noinline))
-__attribute__((optnone))
-void 
-ProbeMemory(volatile PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
-{
-    // Need an throw in this function to fool the C++ runtime into handling the 
-    // possible h/w exception below.
-    if (pbBuffer == NULL)
-    {
-        throw PAL_SEHException();
-    }
-
-    // Simple one byte at a time probing
-    while (cbBuffer > 0)
-    {
-        volatile BYTE read = *pbBuffer;
-        if (fWriteAccess)
-        {
-            *pbBuffer = read;
-        }
-        ++pbBuffer;
-        --cbBuffer;
-    }
-}
-
-/*++
-Function:
   PAL_ProbeMemory
 
 Abstract
@@ -812,18 +564,58 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
-    try
-    {
-        // Need to explicit h/w exception holder so to catch them in ProbeMemory
-        CatchHardwareExceptionHolder __catchHardwareException;
+    int fds[2];
 
-        ProbeMemory((PBYTE)pBuffer, cbBuffer, fWriteAccess);
-    }
-    catch(...)
+    if (pipe(fds) != 0)
     {
+        ASSERT("pipe failed: errno is %d (%s)\n", errno, strerror(errno));
         return FALSE;
     }
-    return TRUE;
+
+    fcntl(fds[0], O_NONBLOCK);
+    fcntl(fds[1], O_NONBLOCK);
+
+    PVOID pEnd = (PBYTE)pBuffer + cbBuffer;
+    BOOL result = TRUE;
+
+    // Validate the first byte in the buffer, then validate the first byte on each page after that.
+    while (pBuffer < pEnd)
+    {
+        int written = write(fds[1], pBuffer, 1);
+        if (written == -1)
+        {
+            if (errno != EFAULT)
+            {
+                ASSERT("write failed: errno is %d (%s)\n", errno, strerror(errno));
+            }
+            result = FALSE;
+            break;
+        }
+        else
+        {
+            if (fWriteAccess)
+            {
+                int rd = read(fds[0], pBuffer, 1);
+                if (rd == -1)
+                {
+                    if (errno != EFAULT)
+                    {
+                        ASSERT("read failed: errno is %d (%s)\n", errno, strerror(errno));
+                    }
+                    result = FALSE;
+                    break;
+                }
+            }
+        }
+
+        // Round to the beginning of the next page
+        pBuffer = (PVOID)(((SIZE_T)pBuffer & ~VIRTUAL_PAGE_MASK) + VIRTUAL_PAGE_SIZE);
+    }
+
+    close(fds[0]);
+    close(fds[1]);
+
+    return result;
 }
 
 } // extern "C"

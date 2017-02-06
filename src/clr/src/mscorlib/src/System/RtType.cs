@@ -343,7 +343,8 @@ namespace System
                             // no one should be looking for a member whose name is longer than 1024
                             if (cUtf8Name > MAXNAMELEN)
                             {
-                                fixed (byte* pUtf8Name = new byte[cUtf8Name])
+                                byte[] utf8Name = new byte[cUtf8Name];
+                                fixed (byte* pUtf8Name = &utf8Name[0])
                                 {
                                     list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
                                 }
@@ -963,29 +964,6 @@ namespace System
                             new MdFieldInfo(tkField, fieldAttributes, declaringType.GetTypeHandleInternal(), m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
-                        }
-                    }
-                }
-
-                private static void AddElementTypes(Type template, IList<Type> types)
-                {   
-                    if (!template.HasElementType)
-                        return;
-                    
-                    AddElementTypes(template.GetElementType(), types);
-                    
-                    for (int i = 0; i < types.Count; i ++)
-                    {
-                        if (template.IsArray)
-                        {
-                            if (template.IsSzArray)
-                                types[i] = types[i].MakeArrayType();
-                            else 
-                                types[i] = types[i].MakeArrayType(template.GetArrayRank());
-                        }
-                        else if (template.IsPointer)
-                        {
-                            types[i] = types[i].MakePointerType();
                         }
                     }
                 }
@@ -2524,8 +2502,6 @@ namespace System
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(System.Object);
         private static readonly RuntimeType StringType = (RuntimeType)typeof(System.String);
         private static readonly RuntimeType DelegateType = (RuntimeType)typeof(System.Delegate);
-
-        private static Type[] s_SICtorParamTypes;
         #endregion
 
         #region Constructor
@@ -3581,11 +3557,6 @@ namespace System
         private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
 
 #endif // FEATURE_COMINTEROP
-
-        internal override bool HasProxyAttributeImpl() 
-        {
-            return RuntimeTypeHandle.HasProxyAttribute(this);
-        }
 
         internal bool IsDelegate()
         {

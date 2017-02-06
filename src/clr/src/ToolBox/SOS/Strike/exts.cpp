@@ -111,30 +111,29 @@ ArchQuery(void)
     {
         targetMachine = AMD64Machine::GetInstance();
     }
-#endif // SOS_TARGET_AMD64
-#ifdef SOS_TARGET_X86
+#elif defined(SOS_TARGET_X86)
     if (targetArchitecture == IMAGE_FILE_MACHINE_I386)
     {
         targetMachine = X86Machine::GetInstance();
     }
-#endif // SOS_TARGET_X86
-#ifdef SOS_TARGET_ARM
+#elif defined(SOS_TARGET_ARM)
     if (targetArchitecture == IMAGE_FILE_MACHINE_ARMNT)
     {
         targetMachine = ARMMachine::GetInstance();
     }
-#endif // SOS_TARGET_ARM
-#ifdef SOS_TARGET_ARM64
+#elif defined(SOS_TARGET_ARM64)
     if (targetArchitecture == IMAGE_FILE_MACHINE_ARM64)
     {
         targetMachine = ARM64Machine::GetInstance();
     }
-#endif // SOS_TARGET_ARM64
+#else
+#error "Undefined target architecture"
+#endif
 
     if (targetMachine == NULL)
     {
         g_targetMachine = NULL;
-        ExtErr("SOS does not support the current target architecture.\n");
+        ExtErr("SOS does not support the current target architecture 0x%llx.\n", targetArchitecture);
         return E_FAIL;
     }
 

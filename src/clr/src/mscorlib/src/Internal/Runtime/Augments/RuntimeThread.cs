@@ -16,6 +16,8 @@ namespace Internal.Runtime.Augments
 {
     public class RuntimeThread : CriticalFinalizerObject
     {
+        internal RuntimeThread() {}
+
         public static RuntimeThread Create(ThreadStart start) => new Thread(start);
         public static RuntimeThread Create(ThreadStart start, int maxStackSize) => new Thread(start, maxStackSize);
         public static RuntimeThread Create(ParameterizedThreadStart start) => new Thread(start);
@@ -163,8 +165,6 @@ namespace Internal.Runtime.Augments
         ** thread is not currently blocked in that manner, it will be interrupted
         ** when it next begins to block.
         =========================================================================*/
-#pragma warning disable 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
-#pragma warning restore 618 // obsolete types: SecurityPermissionAttribute, SecurityAction
         public void Interrupt() => InterruptInternal();
 
         // Internal helper (since we can't place security demands on

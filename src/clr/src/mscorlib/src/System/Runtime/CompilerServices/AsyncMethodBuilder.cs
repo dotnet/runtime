@@ -840,36 +840,6 @@ namespace System.Runtime.CompilerServices
 
         // This method is copy&pasted into the public Start methods to avoid size overhead of valuetype generic instantiations.
         // Ideally, we would build intrinsics to get the raw ref address and raw code address of MoveNext, and just use the shared implementation.
-#if false
-        /// <summary>Initiates the builder's execution with the associated state machine.</summary>
-        /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
-        /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument is null (Nothing in Visual Basic).</exception>
-        [DebuggerStepThrough]
-        internal static void Start<TStateMachine>(ref TStateMachine stateMachine)
-            where TStateMachine : IAsyncStateMachine
-        {
-            if (stateMachine == null) throw new ArgumentNullException(nameof(stateMachine));
-            Contract.EndContractBlock();
-
-            // Run the MoveNext method within a copy-on-write ExecutionContext scope.
-            // This allows us to undo any ExecutionContext changes made in MoveNext,
-            // so that they won't "leak" out of the first await.
-
-            Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
-                stateMachine.MoveNext();
-            }
-            finally
-            {
-                ecs.Undo(currentThread);
-            }
-        }
-#endif
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -906,12 +876,12 @@ namespace System.Runtime.CompilerServices
             Debugger.NotifyOfCrossThreadDependency();
 
             // The builder needs to flow ExecutionContext, so capture it.
-            var capturedContext = ExecutionContext.FastCapture(); // ok to use FastCapture as we haven't made any permission demands/asserts
+            var capturedContext = ExecutionContext.Capture();
 
             // If the ExecutionContext is the default context, try to use a cached delegate, creating one if necessary.
             Action action;
             MoveNextRunner runner;
-            if (capturedContext != null && capturedContext.IsPreAllocatedDefault)
+            if (capturedContext == ExecutionContext.Default)
             {
                 // Get the cached delegate, and if it's non-null, return it.
                 action = m_defaultContextAction;
@@ -1046,12 +1016,8 @@ namespace System.Runtime.CompilerServices
 
                 if (m_context != null)
                 {
-                    try
-                    {
-                        // Use the context and callback to invoke m_stateMachine.MoveNext.
-                        ExecutionContext.Run(m_context, InvokeMoveNextCallback, m_stateMachine, preserveSyncCtx: true);
-                    }
-                    finally { m_context.Dispose(); }
+                    // Use the context and callback to invoke m_stateMachine.MoveNext.
+                    ExecutionContext.Run(m_context, InvokeMoveNextCallback, m_stateMachine);
                 }
                 else
                 {
@@ -1076,24 +1042,11 @@ namespace System.Runtime.CompilerServices
             internal void RunWithDefaultContext()
             {
                 Debug.Assert(m_stateMachine != null, "The state machine must have been set before calling Run.");
-                ExecutionContext.Run(ExecutionContext.PreAllocatedDefault, InvokeMoveNextCallback, m_stateMachine, preserveSyncCtx: true);
+                ExecutionContext.Run(ExecutionContext.Default, InvokeMoveNextCallback, m_stateMachine);
             }
 
             /// <summary>Gets a delegate to the InvokeMoveNext method.</summary>
-            protected static ContextCallback InvokeMoveNextCallback
-            {
-                get { return s_invokeMoveNext ?? (s_invokeMoveNext = InvokeMoveNext); }
-            }
-
-            /// <summary>Cached delegate used with ExecutionContext.Run.</summary>
-            private static ContextCallback s_invokeMoveNext; // lazily-initialized due to SecurityCritical attribution
-
-            /// <summary>Invokes the MoveNext method on the supplied IAsyncStateMachine.</summary>
-            /// <param name="stateMachine">The IAsyncStateMachine machine instance.</param>
-            private static void InvokeMoveNext(object stateMachine)
-            {
-                ((IAsyncStateMachine)stateMachine).MoveNext();
-            }
+            protected static readonly ContextCallback InvokeMoveNextCallback = sm => ((IAsyncStateMachine)sm).MoveNext();
         }
 
         /// <summary>

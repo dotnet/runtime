@@ -37,7 +37,8 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
+        adrp    \HelperReg, \Name
+        add     \HelperReg, \HelperReg, :lo12:\Name
 .endm
 
 .macro PROLOG_STACK_ALLOC Size

@@ -27,11 +27,6 @@ namespace System.Reflection.Emit {
         public static readonly ParameterToken Empty = new ParameterToken();
         internal int m_tkParameter;
     
-#if false
-        public ParameterToken() {
-            m_tkParameter=0;
-        }
-#endif
         
         internal ParameterToken(int tkParam) {
             m_tkParameter = tkParam;

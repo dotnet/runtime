@@ -265,6 +265,12 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreePtr tgt, GenTr
         case GT_STOREIND:
 #endif               // !LEGACY_BACKEND
         case GT_IND: /* Could be the managed heap */
+            if (tgt->TypeGet() == TYP_BYREF)
+            {
+                // Byref values cannot be in managed heap.
+                // This case occurs for Span<T>.
+                return WBF_NoBarrier;
+            }
             return gcWriteBarrierFormFromTargetAddress(tgt->gtOp.gtOp1);
 
         case GT_LEA:

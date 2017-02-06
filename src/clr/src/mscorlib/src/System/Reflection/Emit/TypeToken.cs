@@ -27,11 +27,6 @@ namespace System.Reflection.Emit {
 
         internal int m_class;
     
-#if false
-        public TypeToken() {
-            m_class=0;
-        }
-#endif
         
         internal TypeToken(int str) {
             m_class=str;

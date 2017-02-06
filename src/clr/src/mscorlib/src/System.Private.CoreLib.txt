@@ -330,8 +330,8 @@ Arg_MemberInfoNullModule = The Module object containing the member cannot be nul
 Arg_ParameterInfoNullMember = The MemberInfo object defining the parameter cannot be null.
 Arg_ParameterInfoNullModule = The Module object containing the parameter cannot be null.
 Arg_AssemblyNullModule = The manifest module of the assembly cannot be null.
-Arg_LongerThanSrcArray = Source array was not long enough. Check srcIndex and length, and the array's lower bounds.
-Arg_LongerThanDestArray = Destination array was not long enough. Check destIndex and length, and the array's lower bounds.
+Arg_LongerThanSrcArray = Source array was not long enough. Check the source index, length, and the array's lower bounds.
+Arg_LongerThanDestArray = Destination array was not long enough. Check the destination index, length, and the array's lower bounds.
 Arg_LowerBoundsMustMatch = The arrays' lower bounds must be identical.
 Arg_MustBeBoolean = Object must be of type Boolean.
 Arg_MustBeByte = Object must be of type Byte.
@@ -590,10 +590,8 @@ Argument_PreAllocatedAlreadyAllocated = 'preAllocated' is already in use.
 Argument_NativeOverlappedWrongBoundHandle = 'overlapped' was not allocated by this ThreadPoolBoundHandle instance.
 Argument_NativeOverlappedAlreadyFree = 'overlapped' has already been freed.
 Argument_AlreadyBoundOrSyncHandle = 'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.
-#if FEATURE_SPAN_OF_T
 Argument_InvalidTypeWithPointersNotSupported = Cannot use type '{0}'. Only value types without pointers or references are supported.
 Argument_DestinationTooShort = Destination is too short.
-#endif // FEATURE_SPAN_OF_T
 
 ;
 ; =====================================================
@@ -895,44 +893,6 @@ Cryptography_PasswordDerivedBytes_FewBytesSalt = Salt is not at least eight byte
 Cryptography_PKCS7_InvalidPadding = Padding is invalid and cannot be removed.
 Cryptography_UnknownHashAlgorithm='{0}' is not a known hash algorithm.
 
-#if FEATURE_CRYPTO
-Cryptography_Config_EncodedOIDError = Encoded OID length is too large (greater than 0x7f bytes).
-Cryptography_CSP_AlgKeySizeNotAvailable = Algorithm implementation does not support a key size of {0}.
-Cryptography_CSP_AlgorithmNotAvailable = Cryptographic service provider (CSP) could not be found for this algorithm.
-Cryptography_CSP_CFBSizeNotSupported = Feedback size for the cipher feedback mode (CFB) must be 8 bits.
-Cryptography_CSP_NotFound = The requested key container was not found.
-Cryptography_CSP_NoPrivateKey = Object contains only the public half of a key pair. A private key must also be provided.
-Cryptography_CSP_OFBNotSupported = Output feedback mode (OFB) is not supported by this implementation.
-Cryptography_CSP_WrongKeySpec = The specified cryptographic service provider (CSP) does not support this key algorithm.
-Cryptography_HashNameSet = Hash name cannot be changed after the first write to the stream.
-Cryptography_HashAlgorithmNameNullOrEmpty = The hash algorithm name cannot be null or empty.
-Cryptography_InvalidHashSize = {0} algorithm hash size is {1} bytes.
-Cryptography_InvalidKey_Weak = Specified key is a known weak key for '{0}' and cannot be used.
-Cryptography_InvalidKey_SemiWeak = Specified key is a known semi-weak key for '{0}' and cannot be used.
-Cryptography_InvalidKeyParameter = Parameter '{0}' is not a valid key parameter.
-Cryptography_InvalidFeedbackSize = Specified feedback size is invalid.
-Cryptography_InvalidOperation = This operation is not supported for this class.
-Cryptography_InvalidPaddingMode = Specified padding mode is not valid for this algorithm.
-Cryptography_InvalidFromXmlString = Input string does not contain a valid encoding of the '{0}' '{1}' parameter.
-Cryptography_MissingKey = No asymmetric key object has been associated with this formatter object.
-Cryptography_MissingOID = Required object identifier (OID) cannot be found.
-Cryptography_NotInteractive = The current session is not interactive.
-Cryptography_NonCompliantFIPSAlgorithm = This implementation is not part of the Windows Platform FIPS validated cryptographic algorithms.
-Cryptography_Padding_Win2KEnhOnly = Direct Encryption and decryption using RSA are not available on this platform.
-Cryptography_Padding_EncDataTooBig = The data to be encrypted exceeds the maximum for this modulus of {0} bytes.
-Cryptography_Padding_DecDataTooBig = The data to be decrypted exceeds the maximum for this modulus of {0} bytes.
-Cryptography_PasswordDerivedBytes_ValuesFixed = Value of '{0}' cannot be changed after the bytes have been retrieved.
-Cryptography_PasswordDerivedBytes_TooManyBytes = Requested number of bytes exceeds the maximum.
-Cryptography_PasswordDerivedBytes_InvalidAlgorithm = Algorithm is unavailable or is not supported for this operation.
-Cryptography_PKCS1Decoding = Error occurred while decoding PKCS1 padding.
-Cryptography_RC2_EKSKS = EffectiveKeySize value must be at least as large as the KeySize value.
-Cryptography_RC2_EKSKS2 = EffectiveKeySize must be the same as KeySize in this implementation.
-Cryptography_RC2_EKS40 = EffectiveKeySize value must be at least 40 bits.
-Cryptography_SSD_InvalidDataSize = Length of the data to decrypt is invalid.
-Cryptography_AddNullOrEmptyName = CryptoConfig cannot add a mapping for a null or empty name.
-Cryptography_AlgorithmTypesMustBeVisible = Algorithms added to CryptoConfig must be accessable from outside their assembly.
-#endif  // FEATURE_CRYPTO
-
 ; EventSource
 EventSource_ToString = EventSource({0}, {1})
 EventSource_EventSourceGuidInUse = An instance of EventSource with Guid {0} already exists.
@@ -1092,7 +1052,6 @@ InvalidOperation_CantCancelCtrlBreak = Applications may not prevent control-brea
 InvalidOperation_CalledTwice = The method cannot be called twice on the same instance.
 InvalidOperation_CollectionCorrupted = A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.
 InvalidOperation_CriticalTransparentAreMutuallyExclusive = SecurityTransparent and SecurityCritical attributes cannot be applied to the assembly scope at the same time.
-InvalidOperation_SubclassedObject = Cannot set sub-classed {0} object to {1} object.
 InvalidOperation_ExceptionStateCrossAppDomain = Thread.ExceptionState cannot access an ExceptionState from a different AppDomain.
 InvalidOperation_DebuggerLaunchFailed = Debugger unable to launch.
 InvalidOperation_ApartmentStateSwitchFailed = Failed to set the specified COM apartment state.
@@ -1410,10 +1369,9 @@ NotSupported_NativeCallableTarget = Methods with NativeCallableAttribute cannot 
 NotSupported_GenericMethod = Generic methods with NativeCallableAttribute are not supported.
 NotSupported_NonBlittableTypes = Non-blittable parameter types are not supported for NativeCallable methods.
 
-#if FEATURE_WINDOWSPHONE
 NotSupported_UserDllImport = DllImport cannot be used on user-defined methods.
 NotSupported_UserCOM = COM Interop is not supported for user-defined types.
-#endif //FEATURE_WINDOWSPHONE
+
 #if FEATURE_APPX
 NotSupported_AppX = {0} is not supported in AppX.
 LoadOfFxAssemblyNotSupported_AppX = {0} of .NET Framework assemblies is not supported in AppX.
@@ -1426,16 +1384,12 @@ ReflectionTypeLoad_LoadFailed = Unable to load one or more of the requested type
 #if FEATURE_COMINTEROP
 NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in AppX.
 #endif
-#if FEATURE_WINDOWSPHONE
-; Not referring to "Windows Phone" in the messages, as FEATURE_WINDOWSPHONE is defined for .NET Core as well.
-NotSupported_WindowsPhone = {0} is not supported.
 NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
-#endif
-#if FEATURE_SPAN_OF_T
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
-#endif // FEATURE_SPAN_OF_T
+NotSupported_ReflectionOnlyLoad = Assembly.ReflectionOnlyLoad is not supported.
+NotSupported_ReflectionOnlyGetType = Type.ReflectionOnlyGetType is not supported.
 
 ; TypeLoadException
 TypeLoad_ResolveType = Could not resolve type '{0}'.
@@ -1991,10 +1945,6 @@ WeakReference_NoLongerValid = The weak reference is no longer valid.
 Interop.COM_TypeMismatch = Type mismatch between source and destination types.
 Interop_Marshal_Unmappable_Char = Cannot marshal: Encountered unmappable character.
 
-#if FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-WinRTHostDomainName = Windows Runtime Object Host Domain for '{0}'
-#endif
-
 ;
 ; Loader Exceptions
 ;
@@ -2007,11 +1957,9 @@ Loader_ContextPolicies = Context Policies:
 ; AppDomain Exceptions
 AppDomain_RequireApplicationName = ApplicationName must be set before the DynamicBase can be set.
 AppDomain_AppBaseNotSet = The ApplicationBase must be set before retrieving this property.
-
-#if FEATURE_HOST_ASSEMBLY_RESOLVER
 AppDomain_BindingModelIsLocked = Binding model is already locked for the AppDomain and cannot be reset.
 Argument_CustomAssemblyLoadContextRequestedNameMismatch = Resolved assembly's simple name should be the same as of the requested assembly.
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER
+
 ;
 ; XMLSyntaxExceptions
 XMLSyntax_UnexpectedEndOfFile = Unexpected end of file.

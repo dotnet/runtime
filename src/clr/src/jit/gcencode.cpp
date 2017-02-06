@@ -3778,8 +3778,10 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     }
 #endif // FEATURE_EH_FUNCLETS
 
+#if FEATURE_FIXED_OUT_ARGS
     // outgoing stack area size
     gcInfoEncoderWithLog->SetSizeOfStackOutgoingAndScratchArea(compiler->lvaOutgoingArgSpaceSize);
+#endif // FEATURE_FIXED_OUT_ARGS
 
 #if DISPLAY_SIZES
 
@@ -3941,13 +3943,6 @@ void GCInfo::gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
             // If we haven't continued to the next variable, we should report this as an untracked local.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if DOUBLE_ALIGN
-            // For genDoubleAlign(), locals are addressed relative to ESP and
-            // arguments are addressed relative to EBP.
-
-            if (genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-                offset += compiler->codeGen->genTotalFrameSize();
-#endif
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
             if (varDsc->TypeGet() == TYP_BYREF)
@@ -3998,7 +3993,7 @@ void GCInfo::gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
                 // For genDoubleAlign(), locals are addressed relative to ESP and
                 // arguments are addressed relative to EBP.
 
-                if (genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)
+                if (compiler->genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)
                     offset += compiler->codeGen->genTotalFrameSize();
 #endif
                 GcSlotFlags flags = GC_SLOT_UNTRACKED;

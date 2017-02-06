@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-    
+using System;
+
+namespace System
+{
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void EventHandler(Object sender, EventArgs e);
 
     [Serializable]

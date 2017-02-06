@@ -3166,12 +3166,7 @@ public:
     };
 
 private:
-    BOOL           ReadyForInterrupt()
-    {
-        return ReadyForAsyncException(TI_Interrupt);
-    }
-
-    BOOL           ReadyForAsyncException(ThreadInterruptMode mode);
+    BOOL           ReadyForAsyncException();
 
 public:
     inline BOOL IsYieldRequested()
@@ -3185,7 +3180,7 @@ public:
     void           SetAbortRequest(EEPolicy::ThreadAbortTypes abortType);  // Should only be called by ADUnload
     BOOL           ReadyForAbort()
     {
-        return ReadyForAsyncException(TI_Abort);
+        return ReadyForAsyncException();
     }
 
     BOOL           IsRudeAbort();
@@ -3386,7 +3381,7 @@ public:
         m_singleStepper.Disable();
     }
 
-    void ApplySingleStep(CONTEXT *pCtx)
+    void ApplySingleStep(T_CONTEXT *pCtx)
     {
         m_singleStepper.Apply(pCtx);
     }
@@ -3399,7 +3394,7 @@ public:
     // Fixup code called by our vectored exception handler to complete the emulation of single stepping
     // initiated by EnableSingleStep above. Returns true if the exception was indeed encountered during
     // stepping.
-    bool HandleSingleStep(CONTEXT *pCtx, DWORD dwExceptionCode)
+    bool HandleSingleStep(T_CONTEXT *pCtx, DWORD dwExceptionCode)
     {
         return m_singleStepper.Fixup(pCtx, dwExceptionCode);
     }

@@ -335,7 +335,7 @@ function_name() to call the system's implementation
 #undef va_arg
 #endif
 
-#if !defined(_MSC_VER) && defined(FEATURE_PAL) && defined(_WIN64)
+#if !defined(_MSC_VER) && defined(_WIN64)
 #undef _BitScanForward64
 #endif 
 
@@ -358,6 +358,7 @@ function_name() to call the system's implementation
 #undef memchr
 #undef strlen
 #undef strnlen
+#undef wcsnlen
 #undef stricmp
 #undef strstr
 #undef strcmp
@@ -601,14 +602,18 @@ function_name() to call the system's implementation
 #define INFTIM  -1
 #endif // !HAVE_INFTIM
 
-#if (__GNUC__ >= 4)
 #define OffsetOf(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
-#else
-#define OffsetOf(s, f) (INT)(SIZE_T)&(((s*)0)->f)
-#endif /* __GNUC__ version check*/
 
 #undef assert
 #define assert (Use__ASSERTE_instead_of_assert) assert
+
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp/"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#endif
 
 #define PROCESS_PIPE_NAME_PREFIX ".dotnet-pal-processpipe"
 

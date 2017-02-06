@@ -587,6 +587,7 @@ echo skipmscorlib: skip building System.Private.CoreLib ^(default: System.Privat
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
 echo skipbuildpackages: skip building nuget packages ^(default: packages are built^).
+echo buildstandalonegc: builds the GC in a standalone mode.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.

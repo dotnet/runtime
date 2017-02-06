@@ -154,7 +154,7 @@ namespace System {
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = lengths)
+            fixed (int* pLengths = &lengths[0])
                 return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,null);
         }
 
@@ -211,8 +211,8 @@ namespace System {
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            fixed (int* pLengths = lengths)
-                fixed(int* pLowerBounds = lowerBounds)
+            fixed (int* pLengths = &lengths[0])
+                fixed(int* pLowerBounds = &lowerBounds[0])
                     return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,pLowerBounds);
         }
 
@@ -222,21 +222,6 @@ namespace System {
         internal static Array UnsafeCreateInstance(Type elementType, int length)
         {
             return CreateInstance(elementType, length);
-        }
-
-        internal static Array UnsafeCreateInstance(Type elementType, int length1, int length2)
-        {
-            return CreateInstance(elementType, length1, length2);
-        }
-
-        internal static Array UnsafeCreateInstance(Type elementType, params int[] lengths)
-        {
-            return CreateInstance(elementType, lengths);
-        }
-
-        internal static Array UnsafeCreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
-        {
-            return CreateInstance(elementType, lengths, lowerBounds);
         }
 
         // Copies length elements from sourceArray, starting at index 0, to
@@ -328,7 +313,7 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = indices)
+            fixed(int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
@@ -485,7 +470,7 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = indices)
+            fixed(int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             InternalSetValue(&elemref,value);
         }

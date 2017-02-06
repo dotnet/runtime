@@ -115,13 +115,6 @@ namespace System.IO {
             Initialize(buffer, offset, length, access, false);
         }
 
-        // We must create one of these without doing a security check.  This
-        // class is created while security is trying to start up.  Plus, doing
-        // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        internal UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck) {
-            Initialize(buffer, offset, length, access, skipSecurityCheck);
-        }
-
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access) {
             Initialize(buffer, offset, length, access, false);
         }
