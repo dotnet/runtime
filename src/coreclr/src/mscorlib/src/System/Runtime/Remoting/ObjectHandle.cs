@@ -19,7 +19,6 @@ namespace System.Runtime.Remoting
     using System;
     using System.Runtime.InteropServices;
 
-    [ClassInterface(ClassInterfaceType.AutoDual)]
     public class ObjectHandle 
     {
         private Object WrappedObject;
