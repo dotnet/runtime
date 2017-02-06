@@ -16,7 +16,6 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.AutoDual)]
     public abstract class Delegate : ICloneable, ISerializable 
     {
         // _target is the object we will invoke on
