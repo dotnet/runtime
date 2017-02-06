@@ -562,13 +562,13 @@ CONFIG_DWORD_INFO_EX(INTERNAL_JitLoopHoistStats, W("JitLoopHoistStats"), 0, "Dis
 CONFIG_DWORD_INFO_EX(INTERNAL_JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0, "In debug builds log places where loop cloning optimizations are performed on the fast path.", CLRConfig::REGUTIL_default);
 CONFIG_DWORD_INFO_EX(INTERNAL_JitVNMapSelLimit, W("JitVNMapSelLimit"), 0, "If non-zero, assert if # of VNF_MapSelect applications considered reaches this", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 #define EXTERNAL_FeatureSIMD_Default 1
 #define EXTERNAL_JitEnableAVX_Default 1
-#else // !defined(_TARGET_AMD64_)
+#else // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
 #define EXTERNAL_FeatureSIMD_Default 0
 #define EXTERNAL_JitEnableAVX_Default 0
-#endif // !defined(_TARGET_AMD64_)
+#endif // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_FeatureSIMD, W("FeatureSIMD"), EXTERNAL_FeatureSIMD_Default, "Enable SIMD support with companion SIMDVector.dll", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_EnableAVX, W("EnableAVX"), EXTERNAL_JitEnableAVX_Default, "Enable AVX instruction set for wide operations as default", CLRConfig::REGUTIL_default)
 

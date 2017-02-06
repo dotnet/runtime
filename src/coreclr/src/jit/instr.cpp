@@ -3513,6 +3513,12 @@ instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
 {
     // On SSE2/AVX - the same instruction is used for moving double/quad word to XMM/YMM register.
     assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
+
+#if !defined(_TARGET_64BIT_)
+    // No 64-bit registers on x86.
+    assert((srcType != TYP_LONG) && (srcType != TYP_ULONG));
+#endif // !defined(_TARGET_64BIT_)
+
     return INS_mov_i2xmm;
 }
 
@@ -3520,6 +3526,12 @@ instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
 {
     // On SSE2/AVX - the same instruction is used for moving double/quad word of XMM/YMM to an integer register.
     assert((dstType == TYP_INT) || (dstType == TYP_UINT) || (dstType == TYP_LONG) || (dstType == TYP_ULONG));
+
+#if !defined(_TARGET_64BIT_)
+    // No 64-bit registers on x86.
+    assert((dstType != TYP_LONG) && (dstType != TYP_ULONG));
+#endif // !defined(_TARGET_64BIT_)
+
     return INS_mov_xmm2i;
 }
 
