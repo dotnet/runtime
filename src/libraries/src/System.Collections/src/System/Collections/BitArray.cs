@@ -12,10 +12,6 @@ namespace System.Collections
     [Serializable]
     public sealed class BitArray : ICollection, ICloneable
     {
-        private BitArray()
-        {
-        }
-
         /*=========================================================================
         ** Allocates space to hold length bit values. All of the values in the bit
         ** array are set to false.
