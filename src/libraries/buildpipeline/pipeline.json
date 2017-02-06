@@ -58,20 +58,8 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "opensuse132_prereqs_v4",
-            "PB_TargetQueue": "Suse.132.Amd64"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "openSUSE 13.2",
-            "Type": "build/product/",
-            "ConfigurationGroup": "Release"
-          }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
             "PB_DockerTag": "opensuse421_prereqs_v3",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_TargetQueue": "suse.421.amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
@@ -345,20 +333,8 @@
         {
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
-            "PB_DockerTag": "opensuse132_prereqs_v4",
-            "PB_TargetQueue": "Suse.132.Amd64"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "openSUSE 13.2",
-            "Type": "build/product/",
-            "ConfigurationGroup": "Debug"
-          }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
             "PB_DockerTag": "opensuse421_prereqs_v3",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
+            "PB_TargetQueue": "suse.421.amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "openSUSE 42.1",
