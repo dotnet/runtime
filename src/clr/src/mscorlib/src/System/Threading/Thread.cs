@@ -206,7 +206,6 @@ namespace System.Threading {
             SetStartHelper((Delegate)start, maxStackSize);
         }
 
-        [ComVisible(false)]
         public override int GetHashCode()
         {
             return m_ManagedThreadId;

@@ -75,7 +75,6 @@ namespace Microsoft.Win32
      * @security(checkDllCalls=off)
      * @security(checkClassLinking=on)
      */
-    [ComVisible(true)]
     internal sealed class RegistryKey : MarshalByRefObject, IDisposable 
     {
 
@@ -512,7 +511,6 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        [ComVisible(false)]
         public Object GetValue(String name, Object defaultValue, RegistryValueOptions options) {
             if( options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames) {
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options), nameof(options));
@@ -765,7 +763,6 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        [ComVisible(false)]
         public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind) {
             if (value==null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);

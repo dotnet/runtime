@@ -8,7 +8,6 @@ namespace System.Reflection {
     // This Enum matchs the CorTypeAttr defined in CorHdr.h
 [Serializable]
 [Flags] 
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum TypeAttributes
     {
         VisibilityMask    =   0x00000007,
@@ -43,7 +42,6 @@ namespace System.Reflection {
         Import            =   0x00001000,     // Class / interface is imported
         Serializable      =   0x00002000,     // The class is Serializable.
 
-        [ComVisible(false)]
         WindowsRuntime    =   0x00004000,     // Type is a Windows Runtime type.
 
         // Use tdStringFormatMask to retrieve string information for native interop

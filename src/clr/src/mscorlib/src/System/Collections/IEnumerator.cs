@@ -20,7 +20,6 @@ namespace System.Collections {
     // Base interface for all enumerators, providing a simple approach
     // to iterating over a collection.
     [Guid("496B0ABF-CDEE-11d3-88E8-00902754C43A")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IEnumerator
     {
         // Interfaces are not serializable

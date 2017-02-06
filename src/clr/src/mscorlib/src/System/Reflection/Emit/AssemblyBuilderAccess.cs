@@ -10,7 +10,6 @@ using System;
 namespace System.Reflection.Emit 
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Flags]
     public enum AssemblyBuilderAccess
     {

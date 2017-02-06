@@ -23,7 +23,6 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
 
     [Serializable] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class RegionInfo
     {
         //--------------------------------------------------------------------//
@@ -259,7 +258,6 @@ namespace System.Globalization {
         //  WARNING: You need a full locale name for this to make sense.        
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String NativeName
         {
             get
@@ -329,7 +327,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]        
         public virtual int GeoId 
         {
             get 
@@ -345,7 +342,6 @@ namespace System.Globalization {
         //  English name for this region's currency, ie: Swiss Franc
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String CurrencyEnglishName
         {
             get
@@ -362,7 +358,6 @@ namespace System.Globalization {
         //  WARNING: You need a full locale name for this to make sense.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String CurrencyNativeName
         {
             get

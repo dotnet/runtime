@@ -44,7 +44,6 @@ namespace System.Globalization {
     using System.Resources;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class CultureInfo : ICloneable, IFormatProvider {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
@@ -862,7 +861,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 #if FEATURE_USE_LCID
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int KeyboardLayoutId
         {
             get
@@ -923,7 +921,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String IetfLanguageTag
         {
             get
@@ -1171,7 +1168,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public CultureTypes CultureTypes
         {
             get
@@ -1386,7 +1382,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public CultureInfo GetConsoleFallbackUICulture()
         {
             Contract.Ensures(Contract.Result<CultureInfo>() != null);

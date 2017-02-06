@@ -13,7 +13,6 @@ using System.Diagnostics.Contracts;
 namespace System.Reflection
 {   
     [Flags()]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ExceptionHandlingClauseOptions: int
     {
         Clause = 0x0,
@@ -22,7 +21,6 @@ namespace System.Reflection
         Fault = 0x4,
     }
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ExceptionHandlingClause
     {
         #region costructor
@@ -107,7 +105,6 @@ namespace System.Reflection
         #endregion
     }
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class MethodBody
     {
         #region costructor
@@ -135,7 +132,6 @@ namespace System.Reflection
         #endregion
     }   
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class LocalVariableInfo
     {
         #region Private Data Members

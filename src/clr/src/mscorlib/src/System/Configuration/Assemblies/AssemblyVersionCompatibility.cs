@@ -14,7 +14,6 @@ namespace System.Configuration.Assemblies {
     
     using System;
      [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum AssemblyVersionCompatibility
     {
         SameMachine         = 1,

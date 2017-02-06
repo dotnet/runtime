@@ -252,7 +252,6 @@ namespace System.Diagnostics {
     // StackTrace, we use an InheritanceDemand to prevent partially-trusted
     // subclasses.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StackTrace
     {
         private StackFrame[] frames;
@@ -515,7 +514,6 @@ namespace System.Diagnostics {
         // The nth element of this array is the same as GetFrame(n). 
         // The length of the array is the same as FrameCount.
         // 
-        [ComVisible(false)]
         public virtual StackFrame [] GetFrames()
         {
             if (frames == null || m_iNumOfFrames <= 0)

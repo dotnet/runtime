@@ -41,13 +41,11 @@ namespace System.Globalization {
 
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public class JapaneseCalendar : Calendar
     {
         internal static readonly DateTime calendarMinValue = new DateTime(1868, 9, 8);
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -56,7 +54,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -68,7 +65,6 @@ namespace System.Globalization {
         // Return the type of the Japanese calendar.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -421,7 +417,6 @@ namespace System.Globalization {
 
 
         [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
             return (helper.GetWeekOfYear(time, rule, firstDayOfWeek));
@@ -465,7 +460,6 @@ namespace System.Globalization {
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetLeapMonth(int year, int era)
         {
             return (helper.GetLeapMonth(year, era));

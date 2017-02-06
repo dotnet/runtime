@@ -14,7 +14,6 @@
 namespace System {
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal enum LoaderOptimization 
     {
         NotSpecified            = 0,

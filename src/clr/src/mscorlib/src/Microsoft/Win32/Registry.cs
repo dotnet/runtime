@@ -15,7 +15,6 @@ namespace Microsoft.Win32 {
      * @security(checkClassLinking=on)
      */
     //This class contains only static members and does not need to be serializable.
-    [ComVisible(true)]
     internal static class Registry {
         static Registry()
         { 

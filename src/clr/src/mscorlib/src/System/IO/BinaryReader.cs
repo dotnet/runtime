@@ -23,7 +23,6 @@ namespace System.IO {
     using System.Diagnostics.Contracts;
     using System.Security;
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public class BinaryReader : IDisposable
     {
         private const int MaxCharBytesSize = 128;

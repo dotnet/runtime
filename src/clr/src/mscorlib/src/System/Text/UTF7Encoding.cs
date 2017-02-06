@@ -16,7 +16,6 @@ namespace System.Text
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class UTF7Encoding : Encoding
     {
         private const String base64Chars =
@@ -127,7 +126,6 @@ namespace System.Text
 
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override bool Equals(Object value)
         {
             UTF7Encoding that = value as UTF7Encoding;
@@ -142,7 +140,6 @@ namespace System.Text
 
         // Compared to all the other encodings, variations of UTF7 are unlikely
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetHashCode()
         {
             return this.CodePage + this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode();
@@ -170,20 +167,17 @@ namespace System.Text
             return EncodingForwarder.GetByteCount(this, chars, index, count);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetByteCount(String s)
         {
             return EncodingForwarder.GetByteCount(this, s);
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             return EncodingForwarder.GetByteCount(this, chars, count);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetBytes(String s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
@@ -206,7 +200,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
@@ -221,7 +214,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, count);
@@ -234,7 +226,6 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);
@@ -243,7 +234,6 @@ namespace System.Text
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override String GetString(byte[] bytes, int index, int count)
         {
             return EncodingForwarder.GetString(this, bytes, index, count);
