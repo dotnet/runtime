@@ -13,7 +13,6 @@ namespace System.Reflection.Emit
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class GenericTypeParameterBuilder: TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
@@ -118,7 +117,6 @@ namespace System.Reflection.Emit
 
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
@@ -147,7 +145,6 @@ namespace System.Reflection.Emit
 
         public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType) { throw new NotSupportedException(); }
 
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException(); }
@@ -198,7 +195,6 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom(Type c) { throw new NotSupportedException(); }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public override bool IsSubclassOf(Type c) { throw new NotSupportedException(); }
         #endregion
@@ -228,7 +224,6 @@ namespace System.Reflection.Emit
             m_type.SetParent(baseTypeConstraint);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetInterfaceConstraints(params Type[] interfaceConstraints)
         {
             m_type.CheckContext(interfaceConstraints);

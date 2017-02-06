@@ -16,7 +16,6 @@ namespace System.Reflection.Emit {
 using System;
 
 [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
 public enum FlowControl
 {
 

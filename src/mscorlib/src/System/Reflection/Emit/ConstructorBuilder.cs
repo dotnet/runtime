@@ -216,7 +216,6 @@ namespace System.Reflection.Emit
             get { return m_methodBuilder.Signature; }
         }
     
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_methodBuilder.SetCustomAttribute(con, binaryAttribute);

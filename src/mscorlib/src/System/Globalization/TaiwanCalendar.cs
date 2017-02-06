@@ -22,7 +22,6 @@ namespace System.Globalization {
     ============================================================================*/
     /* SSS_WARNINGS_ON */ /* SSS_DROP_END */  
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable] public class TaiwanCalendar: Calendar {
         //
         // The era value for the current era.
@@ -62,7 +61,6 @@ namespace System.Globalization {
         internal static readonly DateTime calendarMinValue = new DateTime(1912, 1, 1);
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -71,7 +69,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -83,7 +80,6 @@ namespace System.Globalization {
         // Return the type of the Taiwan calendar.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -151,7 +147,6 @@ namespace System.Globalization {
 
 
         [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
             return (helper.GetWeekOfYear(time, rule, firstDayOfWeek));
@@ -186,7 +181,6 @@ namespace System.Globalization {
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetLeapMonth(int year, int era)
         {
             return (helper.GetLeapMonth(year, era));

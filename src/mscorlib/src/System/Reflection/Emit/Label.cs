@@ -26,7 +26,6 @@ namespace System.Reflection.Emit {
     // Labels are created by using ILGenerator.CreateLabel and their position is set
     // by using ILGenerator.MarkLabel.
     [Serializable]
-    [ComVisible(true)]
     public struct Label {
     
         internal int m_label;

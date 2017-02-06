@@ -19,7 +19,6 @@ namespace System {
     // The Boolean class provides the
     // object representation of the boolean primitive type.
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct Boolean : IComparable, IConvertible, IComparable<Boolean>,  IEquatable<Boolean>
     {
     

@@ -31,7 +31,6 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-    [ComVisible(true)]
     public enum EnvironmentVariableTarget
     {
         Process = 0,
@@ -39,7 +38,6 @@ namespace System {
         Machine = 2,
     }
 
-    [ComVisible(true)]
     public static partial class Environment
     {
         // Assume the following constants include the terminating '\0' - use <, not <=

@@ -19,7 +19,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics.Contracts;
     using System.Runtime.InteropServices;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DynamicMethod : MethodInfo
     {
         private RuntimeType[] m_parameterTypes;
@@ -395,7 +394,6 @@ namespace System.Reflection.Emit
         // Delegate and method creation
         //
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public sealed override Delegate CreateDelegate(Type delegateType) {
             if (m_restrictedSkipVisibility)
             {
@@ -410,7 +408,6 @@ namespace System.Reflection.Emit
             return d;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public sealed override Delegate CreateDelegate(Type delegateType, Object target) {
             if (m_restrictedSkipVisibility)
             {

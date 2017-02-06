@@ -22,7 +22,6 @@ namespace System {
     using nuint = System.UInt32;
 #endif // BIT64
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public static class Buffer
     {
         // Copies from one primitive array to another primitive array without

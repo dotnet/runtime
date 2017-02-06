@@ -133,7 +133,6 @@ namespace System.Reflection {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public AssemblyContentType ContentType
         {
             get

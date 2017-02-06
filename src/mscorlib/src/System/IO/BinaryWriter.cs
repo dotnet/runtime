@@ -26,7 +26,6 @@ namespace System.IO {
     // give unique encodings.
     //
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class BinaryWriter : IDisposable
     {
         public static readonly BinaryWriter Null = new BinaryWriter();

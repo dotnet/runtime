@@ -13,7 +13,6 @@ namespace System.Collections.ObjectModel
     using System.Runtime;
     
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]    
     public class Collection<T>: IList<T>, IList, IReadOnlyList<T>

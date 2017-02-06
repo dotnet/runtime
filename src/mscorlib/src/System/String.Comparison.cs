@@ -716,7 +716,6 @@ namespace System
         }
 
         [Pure]
-        [ComVisible(false)]
         public Boolean EndsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
                 throw new ArgumentNullException(nameof(value));                                
@@ -1069,7 +1068,6 @@ namespace System
         }
 
         [Pure]
-        [ComVisible(false)]
         public Boolean StartsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
                 throw new ArgumentNullException(nameof(value));                                

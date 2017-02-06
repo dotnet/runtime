@@ -18,7 +18,6 @@ namespace System.Reflection {
     using System;
     using System.Runtime.Serialization;
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class TargetException : ApplicationException {
         public TargetException() : base() {
             SetErrorCode(__HResults.COR_E_TARGET);

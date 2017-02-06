@@ -9,7 +9,6 @@ namespace System.Runtime.CompilerServices
     using System;
 
     [AttributeUsage(AttributeTargets.Field)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AccessedThroughPropertyAttribute : Attribute
     {
         private readonly string propertyName;

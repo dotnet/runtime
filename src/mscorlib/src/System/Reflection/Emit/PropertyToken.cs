@@ -19,7 +19,6 @@ namespace System.Reflection.Emit {
     using System.Security.Permissions;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct PropertyToken {
     
         public static readonly PropertyToken Empty = new PropertyToken();

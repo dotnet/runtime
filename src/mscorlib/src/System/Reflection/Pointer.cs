@@ -19,7 +19,6 @@ namespace System.Reflection {
 
     [CLSCompliant(false)]
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Pointer : ISerializable
     {
         unsafe private void* _ptr;

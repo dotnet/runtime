@@ -419,7 +419,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));      
         }
         
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));      
@@ -497,7 +496,6 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));      
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));      

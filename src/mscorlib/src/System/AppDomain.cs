@@ -38,7 +38,6 @@ namespace System
     using System.Diagnostics.Contracts;
     using System.Runtime.ExceptionServices;
 
-    [ComVisible(true)]
     public class ResolveEventArgs : EventArgs
     {
         private String _Name;
@@ -70,7 +69,6 @@ namespace System
         }
     }
 
-    [ComVisible(true)]
     public class AssemblyLoadEventArgs : EventArgs
     {
         private Assembly _LoadedAssembly;
@@ -88,15 +86,12 @@ namespace System
     }
 
     [Serializable]
-    [ComVisible(true)]
     public delegate Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
 
     [Serializable]
-    [ComVisible(true)]
     public delegate void AssemblyLoadEventHandler(Object sender, AssemblyLoadEventArgs args);
 
     [Serializable]
-    [ComVisible(true)]
     internal delegate void AppDomainInitializer(string[] args);
 
     internal class AppDomainInitializerInfo
@@ -187,7 +182,6 @@ namespace System
 #pragma warning disable 169
         private Object[]         _Policies; // Called from the VM.
 #pragma warning restore 169
-        [method: System.Security.SecurityCritical]
         public event AssemblyLoadEventHandler AssemblyLoad;
 
         private ResolveEventHandler _TypeResolve;
@@ -254,7 +248,6 @@ namespace System
         }
 
 #if FEATURE_REFLECTION_ONLY_LOAD
-        [method: System.Security.SecurityCritical]
         public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
 #endif // FEATURE_REFLECTION_ONLY
 

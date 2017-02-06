@@ -7,7 +7,6 @@ namespace System.Reflection.Emit {
     using System;
     // This Enum matchs the CorFieldAttr defined in CorHdr.h
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum PEFileKinds
     {
         Dll                = 0x0001,

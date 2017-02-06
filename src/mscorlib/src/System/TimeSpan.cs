@@ -28,7 +28,6 @@ namespace System {
     // details of this type should change, or new fields added, we need to remember to add
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable] public struct TimeSpan : IComparable
         , IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable
     {

@@ -27,7 +27,6 @@ namespace System.Threading
     using System.Diagnostics.CodeAnalysis;
     using Win32Native = Microsoft.Win32.Win32Native;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class WaitHandle : MarshalByRefObject, IDisposable {
         public const int WaitTimeout = 0x102;                    
 

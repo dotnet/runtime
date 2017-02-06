@@ -32,7 +32,6 @@ namespace System.IO {
     // This class is intended for character input, not bytes.  
     // There are methods on the Stream class for reading bytes. 
     [Serializable]
-    [ComVisible(true)]
     public abstract class TextReader : MarshalByRefObject, IDisposable {
 
         public static readonly TextReader Null = new NullTextReader();
@@ -170,7 +169,6 @@ namespace System.IO {
         }
 
         #region Task based Async APIs
-        [ComVisible(false)]
         public virtual Task<String> ReadLineAsync()
         {
             return Task<String>.Factory.StartNew(state =>
@@ -180,7 +178,6 @@ namespace System.IO {
             this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public async virtual Task<String> ReadToEndAsync()
         {
             char[] chars = new char[4096];
@@ -193,7 +190,6 @@ namespace System.IO {
             return sb.ToString();
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
@@ -223,7 +219,6 @@ namespace System.IO {
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
@@ -352,21 +347,18 @@ namespace System.IO {
             // On SyncTextReader all APIs should run synchronously, even the async ones.
             //
 
-            [ComVisible(false)]
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             public override Task<String> ReadLineAsync()
             {
                 return Task.FromResult(ReadLine());
             }
 
-            [ComVisible(false)]
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             public override Task<String> ReadToEndAsync()
             {
                 return Task.FromResult(ReadToEnd());
             }
 
-            [ComVisible(false)]
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
             {
@@ -382,7 +374,6 @@ namespace System.IO {
                 return Task.FromResult(ReadBlock(buffer, index, count));
             }
 
-            [ComVisible(false)]
             [MethodImplAttribute(MethodImplOptions.Synchronized)]
             public override Task<int> ReadAsync(char[] buffer, int index, int count)
             {

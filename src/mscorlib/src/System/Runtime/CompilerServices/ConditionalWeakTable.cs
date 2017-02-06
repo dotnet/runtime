@@ -67,7 +67,6 @@ using System.Threading;
 namespace System.Runtime.CompilerServices
 {
     #region ConditionalWeakTable
-    [ComVisible(false)]
     public sealed class ConditionalWeakTable<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class
@@ -1065,7 +1064,6 @@ namespace System.Runtime.CompilerServices
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
     //=========================================================================================
-    [ComVisible(false)]
     internal struct DependentHandle
     {
         #region Constructors

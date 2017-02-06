@@ -16,7 +16,6 @@ namespace System.Runtime.Serialization {
     using System;
 
     // Interface does not need to be marked with the serializable attribute    
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IDeserializationCallback {
         void OnDeserialization(Object sender);
     }

@@ -14,7 +14,6 @@ namespace System.Reflection {
     using CultureInfo = System.Globalization.CultureInfo;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public class TypeDelegator : TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
@@ -86,7 +85,6 @@ namespace System.Reflection {
             return typeImpl.GetConstructor(bindingAttr,binder,callConvention,types,modifiers);
         }
         
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return typeImpl.GetConstructors(bindingAttr);
@@ -251,7 +249,6 @@ namespace System.Reflection {
             return typeImpl.IsDefined(attributeType, inherit);
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             return typeImpl.GetInterfaceMap(interfaceType);
