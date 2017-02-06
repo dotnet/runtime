@@ -10,7 +10,7 @@ namespace System.Threading.Tests
     public static class ThreadingAclExtensionsTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // APIs not supported on Unix
         public static void ExistenceTest_Windows()
         {
             var e = new ManualResetEvent(true);
@@ -31,7 +31,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // APIs not supported on Unix
         public static void ExistenceTest_Unix()
         {
             var e = new ManualResetEvent(true);

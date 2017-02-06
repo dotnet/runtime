@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Not supported on Unix
         [Fact]
         public static void Constructor_StoreHandle()
         {
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API not supported on Unix
         [Fact]
         public static void Constructor_StoreHandle_Unix()
         {
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new X509Chain(IntPtr.Zero));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Not supported on Unix
         [Fact]
         public static void TestDispose()
         {
