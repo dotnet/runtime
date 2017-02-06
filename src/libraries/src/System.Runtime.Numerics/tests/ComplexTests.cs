@@ -1358,29 +1358,26 @@ namespace System.Numerics.Tests
             Tan_Advanced(real, imaginary, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tan_Advanced_TestData()
-        {
-            yield return new object[] { double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue), 0 };
-            yield return new object[] { double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue), 0 };
+        public static IEnumerable<object[]> Tan_Advanced_TestData () {
 
-            yield return new object[] { 0, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MinValue, double.NaN, double.NaN };
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex trig functions with large real parts.
 
-            yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.MaxValue, 0.0, 1.0 };
+            yield return new object[] { 0.0, -double.MaxValue, 0.0, -1.0 };
 
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
-                }
-            }
+            yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 1.0 };
+            yield return new object[] { 0.0, double.NegativeInfinity, 0.0, -1.0 };
+
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
         }
 
         [Theory, MemberData("Tan_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tan_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1388,16 +1385,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tanh_Basic_TestData()
-        {
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
-        }
-
         [Theory]
-        [MemberData(nameof(Tanh_Basic_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Tanh_Basic(double real, double imaginary)
@@ -1413,24 +1401,23 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tanh_Advanced_TestData()
         {
-            // Boundary values
-            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue) };
-            yield return new object[] { 0, double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue) };
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex hyperbolic trig functions with large imaginary parts.
 
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
-                }
-            }
+            yield return new object[] { double.MaxValue, 0.0, 1.0, 0.0 };
+            yield return new object[] { -double.MaxValue, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
+            yield return new object[] { double.NegativeInfinity, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
         }
 
         [Theory, MemberData("Tanh_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tanh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
