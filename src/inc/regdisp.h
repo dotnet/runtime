@@ -400,6 +400,30 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
 #else // !WIN64EXCEPTIONS
     pRD->pContext   = pctx;
+
+    // Setup the references
+    pRD->pCurrentContextPointers = &pRD->ctxPtrsOne;
+    pRD->pCallerContextPointers = &pRD->ctxPtrsTwo;
+
+    pRD->pCurrentContext = &(pRD->ctxOne);
+    pRD->pCallerContext  = &(pRD->ctxTwo);
+
+    // copy the active context to initialize our stackwalk
+    *(pRD->pCurrentContext)     = *(pctx);
+
+    // copy the caller context as well if it's specified
+    if (pCallerCtx == NULL)
+    {
+        pRD->IsCallerContextValid = FALSE;
+        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+    }
+    else
+    {
+        *(pRD->pCallerContext)    = *(pCallerCtx);
+        pRD->IsCallerContextValid = TRUE;
+        pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
+    }
+
 #ifdef _TARGET_AMD64_
     for (int i = 0; i < 16; i++)
     {
@@ -418,6 +442,7 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     }
 
     pRD->ctxPtrsOne.Lr = &pctx->Lr;
+    pRD->pPC = &pRD->pCurrentContext->Pc;
 #elif defined(_TARGET_X86_) // _TARGET_ARM_
     for (int i = 0; i < 7; i++)
     {
@@ -426,33 +451,6 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 #else // _TARGET_X86_
     PORTABILITY_ASSERT("FillRegDisplay");
 #endif // _TARGET_???_ (ELSE)
-
-    // Setup the references
-    pRD->pCurrentContextPointers = &pRD->ctxPtrsOne;
-    pRD->pCallerContextPointers = &pRD->ctxPtrsTwo;
-
-    pRD->pCurrentContext = &(pRD->ctxOne);
-    pRD->pCallerContext  = &(pRD->ctxTwo);
-
-    // copy the active context to initialize our stackwalk
-    *(pRD->pCurrentContext)     = *(pctx);
-    
-    // copy the caller context as well if it's specified
-    if (pCallerCtx == NULL)
-    {
-        pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-    }
-    else
-    {
-        *(pRD->pCallerContext)    = *(pCallerCtx);
-        pRD->IsCallerContextValid = TRUE;
-        pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
-    }
-
-#ifdef _TARGET_ARM_
-    pRD->pPC = &pRD->pCurrentContext->Pc;
-#endif
 
 #ifdef DEBUG_REGDISPLAY
     pRD->_pThread = NULL;
