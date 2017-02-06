@@ -16,7 +16,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
     using System.Globalization;
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class MissingFieldException : MissingMemberException, ISerializable {
         public MissingFieldException() 

@@ -22,7 +22,6 @@ namespace System.Reflection
 
     //all today's runtime Type derivations derive now from TypeInfo
     //we make TypeInfo implement IRCT - simplifies work
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public abstract class TypeInfo:Type,IReflectableType
     {

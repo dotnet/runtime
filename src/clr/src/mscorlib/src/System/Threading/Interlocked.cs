@@ -86,7 +86,6 @@ namespace System.Threading
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
             _Exchange(__makeref(location1), __makeref(value));
@@ -157,7 +156,6 @@ namespace System.Threading
          *****************************************************************/
         
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
             // _CompareExchange() passes back the value read from location1 via local named 'value'

@@ -8,7 +8,6 @@ namespace System.Reflection
     // This Enum matchs the CorFieldAttr defined in CorHdr.h
     [Serializable]
     [Flags()]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FieldAttributes
     {
         // member access mask - Use this mask to retrieve accessibility information.

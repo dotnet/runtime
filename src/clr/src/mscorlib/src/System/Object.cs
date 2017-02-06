@@ -33,7 +33,6 @@ namespace System
  //This class contains no data and does not need to be serializable 
 [Serializable]
 [ClassInterface(ClassInterfaceType.AutoDual)]
-[System.Runtime.InteropServices.ComVisible(true)]
 public class Object
 {
     // Creates a new instance of an Object.
@@ -203,7 +202,6 @@ public class Object
 
 [Serializable]
 [ClassInterface(ClassInterfaceType.AutoDual)]
-[System.Runtime.InteropServices.ComVisible(true)]
 internal class __Canon
 {
 }

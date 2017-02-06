@@ -22,7 +22,6 @@ using System.Diagnostics.Contracts;
 namespace System.Reflection 
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CustomAttributeData
     {
         #region Public Static Members
@@ -515,10 +514,8 @@ namespace System.Reflection
         #region Public Members
         public Type AttributeType { get { return Constructor.DeclaringType; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual ConstructorInfo Constructor { get { return m_ctor; } }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments
         {
             get
@@ -576,7 +573,6 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct CustomAttributeNamedArgument
     {
         #region Public Static Members
@@ -666,7 +662,6 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ComVisible(true)]
     public struct CustomAttributeTypedArgument
     {
         #region Public Static Members
@@ -1135,7 +1130,6 @@ namespace System.Reflection
         public CustomAttributeEncoding EncodedType { get { return m_encodedType; } }
         public CustomAttributeEncoding EncodedEnumType { get { return m_encodedEnumType; } }
         public CustomAttributeEncoding EncodedArrayType { get { return m_encodedArrayType; } }
-        [System.Runtime.InteropServices.ComVisible(true)]
         public string EnumName { get { return m_enumName; } }
         #endregion
     }

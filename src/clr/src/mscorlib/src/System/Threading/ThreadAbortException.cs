@@ -21,7 +21,6 @@ namespace System.Threading
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public sealed class ThreadAbortException : SystemException 
     {

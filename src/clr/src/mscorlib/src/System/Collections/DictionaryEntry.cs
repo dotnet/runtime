@@ -19,7 +19,6 @@ namespace System.Collections {
     using System.ComponentModel;
     // A DictionaryEntry holds a key and a value from a dictionary.
     // It is returned by IDictionaryEnumerator::GetEntry().
-[System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public struct DictionaryEntry
     {

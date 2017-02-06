@@ -133,7 +133,6 @@ namespace System.Reflection.Emit {
                             types, modifiers);
         }
         
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetConstructors(bindingAttr);
@@ -214,7 +213,6 @@ namespace System.Reflection.Emit {
             return m_typeBuilder.GetMembers(bindingAttr);
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             return m_typeBuilder.GetInterfaceMap(interfaceType);
@@ -308,7 +306,6 @@ namespace System.Reflection.Emit {
 
        // Use this function if client decides to form the custom attribute blob themselves
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
              m_typeBuilder.SetCustomAttribute(con, binaryAttribute);

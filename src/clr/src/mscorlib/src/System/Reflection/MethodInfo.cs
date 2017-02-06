@@ -71,10 +71,8 @@ namespace System.Reflection
 
         public abstract MethodInfo GetBaseDefinition();
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type[] GetGenericArguments() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual MethodInfo GetGenericMethodDefinition() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
 
         public virtual MethodInfo MakeGenericMethod(params Type[] typeArguments) { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }

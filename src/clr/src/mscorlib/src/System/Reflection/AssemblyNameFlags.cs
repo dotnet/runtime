@@ -19,7 +19,6 @@ namespace System.Reflection {
     using System;
     [Serializable]
     [FlagsAttribute()]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum AssemblyNameFlags
     {
         None                      = 0x0000,
@@ -35,7 +34,6 @@ namespace System.Reflection {
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public enum AssemblyContentType
     {
         Default                 = 0x0000, 
@@ -43,7 +41,6 @@ namespace System.Reflection {
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ProcessorArchitecture
     {
         None = 0x0000,

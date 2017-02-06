@@ -23,7 +23,6 @@ namespace System.IO {
      * and STG_E_PATHNOTFOUND (0x80030003).
      */
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class DirectoryNotFoundException : IOException {
         public DirectoryNotFoundException() 
             : base(Environment.GetResourceString("Arg_DirectoryNotFoundException")) {

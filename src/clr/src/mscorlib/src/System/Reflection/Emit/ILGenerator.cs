@@ -609,7 +609,6 @@ namespace System.Reflection.Emit
             PutInteger4(tempVal);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
             if (con == null)

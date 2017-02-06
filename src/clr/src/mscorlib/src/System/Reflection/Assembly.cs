@@ -522,7 +522,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        [ComVisible(false)]
         public virtual Module ManifestModule
         {
             get
@@ -735,7 +734,6 @@ namespace System.Reflection
             }
         }
 
-        [ComVisible(false)]
         public virtual Int64 HostContext
         {
             get
@@ -783,7 +781,6 @@ namespace System.Reflection
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
 #region private data members
-        [method: System.Security.SecurityCritical]
         private event ModuleResolveEventHandler _ModuleResolve;
         private string m_fullname;
         private object m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit

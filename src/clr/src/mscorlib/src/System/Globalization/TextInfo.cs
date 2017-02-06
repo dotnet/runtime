@@ -29,7 +29,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         //--------------------------------------------------------------------//
@@ -378,7 +377,6 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
 
 #if FEATURE_USE_LCID
-        [System.Runtime.InteropServices.ComVisible(false)]
         public int LCID 
         {
             get 
@@ -395,7 +393,6 @@ namespace System.Globalization {
         //  The name of the culture associated with the current TextInfo.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public string CultureName 
         {
             get 
@@ -411,7 +408,6 @@ namespace System.Globalization {
         //  Detect if the object is readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsReadOnly 
         {
             get { return (m_isReadOnly); }
@@ -424,7 +420,6 @@ namespace System.Globalization {
         //  Is the implementation of ICloneable.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual Object Clone()
         {
             object o = MemberwiseClone();
@@ -440,7 +435,6 @@ namespace System.Globalization {
         //  readonly.
         //
         ////////////////////////////////////////////////////////////////////////
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static TextInfo ReadOnly(TextInfo textInfo) 
         {
             if (textInfo == null)       { throw new ArgumentNullException(nameof(textInfo)); }
@@ -487,7 +481,6 @@ namespace System.Globalization {
                 return (m_listSeparator);
             }
 
-            [System.Runtime.InteropServices.ComVisible(false)]
             set 
             {
                 if (value == null) 
@@ -901,7 +894,6 @@ namespace System.Globalization {
         //
         // Returns true if the dominant direction of text and UI such as the relative position of buttons and scroll bars
         //
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsRightToLeft
         {
             get

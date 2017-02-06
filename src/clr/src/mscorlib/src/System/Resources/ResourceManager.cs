@@ -149,7 +149,6 @@ namespace System.Resources {
     //
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ResourceManager
     {
 
@@ -1246,12 +1245,10 @@ namespace System.Resources {
             return null;
         }
 
-        [ComVisible(false)]
         public UnmanagedMemoryStream GetStream(String name) {
             return GetStream(name, (CultureInfo)null);
         }
         
-        [ComVisible(false)]
         public UnmanagedMemoryStream GetStream(String name, CultureInfo culture) {
             Object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;

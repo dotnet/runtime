@@ -20,7 +20,6 @@ using System.Runtime.Serialization;
 
 namespace System.Resources {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class MissingSatelliteAssemblyException : SystemException
     {
         private String _cultureName;

@@ -67,7 +67,6 @@ namespace System.Reflection
             return m;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())
@@ -155,7 +154,6 @@ namespace System.Reflection
 
         public virtual CallingConventions CallingConvention { get { return CallingConventions.Standard; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
         
         public virtual bool IsGenericMethodDefinition { get { return false; } }
@@ -210,7 +208,6 @@ namespace System.Reflection
 
         public bool IsSpecialName { get { return(Attributes & MethodAttributes.SpecialName) != 0; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public bool IsConstructor 
         {
             get 

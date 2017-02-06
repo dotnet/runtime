@@ -40,7 +40,6 @@ namespace System.Reflection
             return f;            
         }           
         
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())

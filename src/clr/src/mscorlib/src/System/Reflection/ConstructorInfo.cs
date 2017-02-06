@@ -26,10 +26,8 @@ namespace System.Reflection
     public abstract class ConstructorInfo : MethodBase
     {
         #region Static Members
-        [System.Runtime.InteropServices.ComVisible(true)]
         public readonly static String ConstructorName = ".ctor";
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public readonly static String TypeConstructorName = ".cctor";
         #endregion
 
@@ -70,7 +68,6 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override MemberTypes MemberType { get { return System.Reflection.MemberTypes.Constructor; } }
         #endregion
     
@@ -319,7 +316,6 @@ namespace System.Reflection
         {
             get { return RuntimeMethodHandle.GetName(this); }
         }
-[System.Runtime.InteropServices.ComVisible(true)]
         public override MemberTypes MemberType { get { return MemberTypes.Constructor; } }
         
         public override Type DeclaringType 
