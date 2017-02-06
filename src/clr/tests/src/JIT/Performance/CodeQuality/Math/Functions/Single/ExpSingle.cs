@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Exp(float) over 5000 iterations for the domain -1, +1
 
         private const float expSingleDelta = 0.0004f;
-        private const float expSingleExpectedResult = 5877.18125f;
+        private const float expSingleExpectedResult = 5877.28564f;
 
         [Benchmark]
         public static void ExpSingleBenchmark()

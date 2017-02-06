@@ -13,7 +13,7 @@ namespace Functions
 
         private const float atan2SingleDeltaX = -0.0004f;
         private const float atan2SingleDeltaY = 0.0004f;
-        private const float atan2SingleExpectedResult = 3926.99082f;
+        private const float atan2SingleExpectedResult = 3930.14282f;
 
         [Benchmark]
         public static void Atan2SingleBenchmark()

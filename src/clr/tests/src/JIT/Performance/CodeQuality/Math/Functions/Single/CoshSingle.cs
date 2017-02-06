@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Cosh(float) over 5000 iterations for the domain -1, +1
 
         private const float coshSingleDelta = 0.0004f;
-        private const float coshSingleExpectedResult = 5876.00605f;
+        private const float coshSingleExpectedResult = 5876.02588f;
 
         [Benchmark]
         public static void CoshSingleBenchmark()

@@ -13,7 +13,7 @@ namespace Functions
 
         private const float powSingleDeltaX = -0.0004f;
         private const float powSingleDeltaY = 0.0004f;
-        private const float powSingleExpectedResult = 4659.46274f;
+        private const float powSingleExpectedResult = 4659.30762f;
 
         [Benchmark]
         public static void PowSingleBenchmark()

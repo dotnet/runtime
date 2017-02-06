@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Sqrt(float) over 5000 iterations for the domain 0, PI
 
         private const float sqrtSingleDelta = 0.000628318531f;
-        private const float sqrtSingleExpectedResult = 5909.06053f;
+        private const float sqrtSingleExpectedResult = 5909.03027f;
 
         [Benchmark]
         public static void SqrtSingleBenchmark()
