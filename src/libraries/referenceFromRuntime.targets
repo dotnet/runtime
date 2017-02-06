@@ -36,7 +36,7 @@
       <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
           Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' AND '%(Identity)' != ''" />
 
-      <_missingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="'@(_referencePathFromRuntimeByFileName)" />
+      <_missingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="@(_referencePathFromRuntimeByFileName)" />
 
       <!-- transform back to path -->
       <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
