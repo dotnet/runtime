@@ -26,7 +26,7 @@ internal partial class VectorTest
         }
         if (returnVal == false)
         {
-            Console.WriteLine("CheckValue failed for " + expectedValue + " of type " + typeof(T).ToString());
+            Console.WriteLine("CheckValue failed for type " + typeof(T).ToString() + ". Expected: {0} (0x{0:X}), Got: {1} (0x{1:X})", expectedValue, value);
         }
         return returnVal;
     }

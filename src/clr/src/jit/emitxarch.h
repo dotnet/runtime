@@ -109,6 +109,16 @@ void SetUseSSE3_4(bool value)
 }
 bool Is4ByteSSE4Instruction(instruction ins);
 
+bool hasRexPrefix(code_t code)
+{
+#ifdef _TARGET_AMD64_
+    const code_t REX_PREFIX_MASK = 0xFF00000000LL;
+    return (code & REX_PREFIX_MASK) != 0;
+#else  // !_TARGET_AMD64_
+    return false;
+#endif // !_TARGET_AMD64_
+}
+
 #ifdef FEATURE_AVX_SUPPORT
 
 // 3-byte VEX prefix starts with byte 0xC4
@@ -178,7 +188,7 @@ bool IsThreeOperandAVXInstruction(instruction ins)
 }
 bool Is4ByteAVXInstruction(instruction ins);
 #else  // !FEATURE_AVX_SUPPORT
-bool                     UseAVX()
+bool UseAVX()
 {
     return false;
 }
