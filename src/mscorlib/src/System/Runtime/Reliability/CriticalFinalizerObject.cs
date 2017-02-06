@@ -22,7 +22,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.ConstrainedExecution
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CriticalFinalizerObject
     {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]

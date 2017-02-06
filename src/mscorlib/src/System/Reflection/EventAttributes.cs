@@ -16,7 +16,6 @@ namespace System.Reflection {
     using System;
     [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum EventAttributes {
         None              =   0x0000,
             

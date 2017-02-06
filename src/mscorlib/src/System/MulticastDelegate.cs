@@ -14,7 +14,6 @@ namespace System
     using System.Reflection.Emit;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {
         // This is set under 3 circumstances

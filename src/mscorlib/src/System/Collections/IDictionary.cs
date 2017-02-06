@@ -21,7 +21,6 @@ namespace System.Collections {
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
     // property, Items.
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IDictionary : ICollection
     {
         // Interfaces are not serializable

@@ -16,7 +16,6 @@ namespace System.Diagnostics.SymbolStore {
     using System;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     internal enum SymAddressKind
     {
         // ILOffset: addr1 = IL local var or param index.

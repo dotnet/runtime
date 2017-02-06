@@ -38,7 +38,6 @@ namespace System.Threading
     /// All members of this struct are thread-safe and may be used concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
     public struct CancellationToken
     {

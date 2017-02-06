@@ -21,7 +21,6 @@ namespace System.Threading
 
 
         
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void TimerCallback(Object state);
 
     //
@@ -659,7 +658,6 @@ namespace System.Threading
     }
 
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Timer : MarshalByRefObject, IDisposable
     {
         private const UInt32 MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;

@@ -17,7 +17,6 @@ namespace System.Runtime.Serialization {
     using System;
     using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class SerializationException : SystemException {
         

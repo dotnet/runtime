@@ -21,7 +21,6 @@ namespace System.Reflection.Emit {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum PackingSize
     {
         Unspecified                 = 0,
@@ -892,7 +891,6 @@ namespace System.Reflection.Emit {
             return m_bakedRuntimeType.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -1030,7 +1028,6 @@ namespace System.Reflection.Emit {
             return m_bakedRuntimeType.GetMember(name, type, bindingAttr);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             if (!IsCreated())
@@ -1161,7 +1158,6 @@ namespace System.Reflection.Emit {
             get { return false; }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public override bool IsSubclassOf(Type c)
         {
@@ -1484,7 +1480,6 @@ namespace System.Reflection.Emit {
         #endregion
 
         #region Define Constructor
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineTypeInitializer()
         {
             lock(SyncRoot)
@@ -1506,7 +1501,6 @@ namespace System.Reflection.Emit {
             return constBuilder;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface)
@@ -1574,13 +1568,11 @@ namespace System.Reflection.Emit {
             return constBuilder;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes)
         {
             return DefineConstructor(attributes, callingConvention, parameterTypes, null, null);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, 
             Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers)
         {
@@ -1637,7 +1629,6 @@ namespace System.Reflection.Emit {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public TypeBuilder DefineNestedType(String name, TypeAttributes attr, Type parent, Type[] interfaces)
         {
             lock(SyncRoot)
@@ -2150,7 +2141,6 @@ namespace System.Reflection.Emit {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void AddInterfaceImplementation(Type interfaceType)
         {
             if (interfaceType == null)
@@ -2181,7 +2171,6 @@ public TypeToken TypeToken
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

@@ -19,7 +19,6 @@ namespace System.Security
     //  Indicates that the target P/Invoke method(s) should skip the per-call
     //  security checked for unmanaged code permission.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false )] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
     {
     }
@@ -27,7 +26,6 @@ namespace System.Security
     // UnverifiableCodeAttribute:
     //  Indicates that the target module contains unverifiable code.
     [AttributeUsage(AttributeTargets.Module, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
     sealed public class UnverifiableCodeAttribute : System.Attribute
     {
     }
@@ -38,7 +36,6 @@ namespace System.Security
     //  For v.1, this is valid only on Assemblies, but could be expanded to 
     //  include Module, Method, class
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false )] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         private PartialTrustVisibilityLevel _visibilityLevel;

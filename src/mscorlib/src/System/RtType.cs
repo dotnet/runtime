@@ -2729,7 +2729,6 @@ namespace System
             return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
@@ -3318,7 +3317,6 @@ namespace System
             return RuntimeTypeHandle.IsInstanceOfType(this, o);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public override bool IsSubclassOf(Type type) 
         {

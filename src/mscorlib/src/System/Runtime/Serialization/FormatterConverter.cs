@@ -17,7 +17,6 @@ namespace System.Runtime.Serialization {
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
     internal class FormatterConverter : IFormatterConverter {
 
         public FormatterConverter() {

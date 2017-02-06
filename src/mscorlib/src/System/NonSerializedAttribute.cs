@@ -15,7 +15,6 @@ namespace System
     using System.Reflection;
 
     [AttributeUsage(AttributeTargets.Field, Inherited=false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class NonSerializedAttribute : Attribute 
     {
         internal static Attribute GetCustomAttribute(RuntimeFieldInfo field) 

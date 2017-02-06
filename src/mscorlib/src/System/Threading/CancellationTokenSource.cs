@@ -35,7 +35,6 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
 
     public class CancellationTokenSource : IDisposable
     {

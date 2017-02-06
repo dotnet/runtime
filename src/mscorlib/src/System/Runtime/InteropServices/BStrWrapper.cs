@@ -18,7 +18,6 @@ namespace System.Runtime.InteropServices {
     using System.Security.Permissions;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class BStrWrapper
     {
         public BStrWrapper(String value)

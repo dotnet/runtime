@@ -26,7 +26,6 @@ namespace System.Security
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class SecurityException : SystemException
     {

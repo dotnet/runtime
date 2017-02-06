@@ -12,7 +12,6 @@ namespace System.Runtime.CompilerServices {
     
     [Serializable]
     [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum MethodImplOptions
     {
         Unmanaged          =   System.Reflection.MethodImplAttributes.Unmanaged,
@@ -21,14 +20,12 @@ namespace System.Runtime.CompilerServices {
         InternalCall       =   System.Reflection.MethodImplAttributes.InternalCall,
         Synchronized       =   System.Reflection.MethodImplAttributes.Synchronized,
         NoInlining         =   System.Reflection.MethodImplAttributes.NoInlining,
-        [System.Runtime.InteropServices.ComVisible(false)]
         AggressiveInlining =   System.Reflection.MethodImplAttributes.AggressiveInlining,
         NoOptimization     =   System.Reflection.MethodImplAttributes.NoOptimization,
         // **** If you add something, update internal MethodImplAttribute(MethodImplAttributes methodImplAttributes)! ****
     }
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum MethodCodeType
     {
         IL              =   System.Reflection.MethodImplAttributes.IL,
@@ -41,7 +38,6 @@ namespace System.Runtime.CompilerServices {
     // Custom attribute to specify additional method properties.
 [Serializable]
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)] 
-[System.Runtime.InteropServices.ComVisible(true)]
     sealed public class MethodImplAttribute : Attribute  
     {    
         internal MethodImplOptions  _val;

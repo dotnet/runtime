@@ -8,7 +8,6 @@ namespace System.Globalization
 {
     // This class represents a starting/ending time for a period of daylight saving time.
     [Serializable]
-    [ComVisible(true)]
     public class DaylightTime
     {
         internal DateTime m_start;

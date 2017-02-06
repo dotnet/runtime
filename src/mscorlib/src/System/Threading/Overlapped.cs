@@ -44,7 +44,6 @@ namespace System.Threading
     // The first five matches OVERLAPPED structure.
     // The remaining are reserved at the end
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct NativeOverlapped
     {
         public IntPtr  InternalLow;
@@ -222,7 +221,6 @@ namespace System.Threading
             return AllocateNativeOverlapped();
         }
 
-        [ComVisible(false)]
         internal IntPtr UserHandle
         {
             get { return m_nativeOverlapped.EventHandle; }
@@ -248,7 +246,6 @@ namespace System.Threading
     #region class Overlapped
 
     /// <internalonly/>
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class Overlapped
     {
         private OverlappedData m_overlappedData;
@@ -300,7 +297,6 @@ namespace System.Threading
             set { m_overlappedData.UserHandle = new IntPtr(value); }
         }
 
-        [ComVisible(false)]
         public IntPtr EventHandleIntPtr
         {
             get { return m_overlappedData.UserHandle; }
@@ -329,7 +325,7 @@ namespace System.Threading
             return Pack (iocb, null);
         }
 
-        [CLSCompliant(false),ComVisible(false)]
+        [CLSCompliant(false)]
         unsafe public NativeOverlapped* Pack(IOCompletionCallback iocb, Object userData)
         {
             return m_overlappedData.Pack(iocb, userData);
@@ -342,7 +338,7 @@ namespace System.Threading
             return UnsafePack (iocb, null);
         }
 
-        [CLSCompliant(false), ComVisible(false)]
+        [CLSCompliant(false)]
         unsafe public NativeOverlapped* UnsafePack(IOCompletionCallback iocb, Object userData)
         {            
             return m_overlappedData.UnsafePack(iocb, userData);

@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices {
     // The enum of the return value of IQuerable.GetInterface
     //====================================================================
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public enum CustomQueryInterfaceResult
     {
         Handled                 = 0,
@@ -30,7 +29,6 @@ namespace System.Runtime.InteropServices {
     //====================================================================
     // The interface for customizing IQueryInterface
     //====================================================================
-    [System.Runtime.InteropServices.ComVisible(false)]
     public interface ICustomQueryInterface
     {
         CustomQueryInterfaceResult GetInterface([In]ref Guid iid, out IntPtr ppv);

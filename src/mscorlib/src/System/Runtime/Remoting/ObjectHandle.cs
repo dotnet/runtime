@@ -20,7 +20,6 @@ namespace System.Runtime.Remoting
     using System.Runtime.InteropServices;
 
     [ClassInterface(ClassInterfaceType.AutoDual)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ObjectHandle 
     {
         private Object WrappedObject;
