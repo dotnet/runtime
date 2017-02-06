@@ -238,10 +238,7 @@ namespace System.Collections.Immutable
             // If this node is frozen, all its descendants must already be frozen.
             if (!_frozen)
             {
-                if (freezeAction != null)
-                {
-                    freezeAction(new KeyValuePair<int, TValue>(_key, _value));
-                }
+                freezeAction?.Invoke(new KeyValuePair<int, TValue>(_key, _value));
 
                 _left.Freeze(freezeAction);
                 _right.Freeze(freezeAction);

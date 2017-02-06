@@ -335,22 +335,6 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets the value or default.
-            /// </summary>
-            /// <param name="key">The key.</param>
-            /// <param name="keyComparer">The key comparer.</param>
-            /// <returns>The value.</returns>
-            [Pure]
-            internal TValue GetValueOrDefault(TKey key, IComparer<TKey> keyComparer)
-            {
-                Requires.NotNullAllowStructs(key, nameof(key));
-                Requires.NotNull(keyComparer, nameof(keyComparer));
-
-                var match = this.Search(key, keyComparer);
-                return match.IsEmpty ? default(TValue) : match._value;
-            }
-
-            /// <summary>
             /// Tries to get the value.
             /// </summary>
             /// <param name="key">The key.</param>
@@ -479,18 +463,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
             /// </summary>
-            internal void Freeze(Action<KeyValuePair<TKey, TValue>> freezeAction = null)
+            internal void Freeze()
             {
                 // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
-                    if (freezeAction != null)
-                    {
-                        freezeAction(new KeyValuePair<TKey, TValue>(_key, _value));
-                    }
-
-                    _left.Freeze(freezeAction);
-                    _right.Freeze(freezeAction);
+                    _left.Freeze();
+                    _right.Freeze();
                     _frozen = true;
                 }
             }
