@@ -124,7 +124,7 @@ namespace System.Collections.Generic
                 return comp >= 0;
             }
 
-            internal override bool InOrderTreeWalk(TreeWalkPredicate<T> action, bool reverse)
+            internal override bool InOrderTreeWalk(TreeWalkPredicate<T> action)
             {
                 VersionCheck();
 
@@ -142,7 +142,7 @@ namespace System.Collections.Generic
                     if (IsWithinRange(current.Item))
                     {
                         stack.Push(current);
-                        current = (reverse ? current.Right : current.Left);
+                        current = current.Left;
                     }
                     else if (_lBoundActive && Comparer.Compare(_min, current.Item) > 0)
                     {
@@ -162,13 +162,13 @@ namespace System.Collections.Generic
                         return false;
                     }
 
-                    Node node = (reverse ? current.Left : current.Right);
+                    Node node = current.Right;
                     while (node != null)
                     {
                         if (IsWithinRange(node.Item))
                         {
                             stack.Push(node);
-                            node = (reverse ? node.Right : node.Left);
+                            node = node.Left;
                         }
                         else if (_lBoundActive && Comparer.Compare(_min, node.Item) > 0)
                         {

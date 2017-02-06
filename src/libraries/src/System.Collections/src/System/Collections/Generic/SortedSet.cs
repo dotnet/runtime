@@ -210,11 +210,7 @@ namespace System.Collections.Generic
         // If the action delegate returns false, stop the walk.
         // Return true if the entire tree has been walked.
         // Otherwise returns false.
-
-        internal bool InOrderTreeWalk(TreeWalkPredicate<T> action) => InOrderTreeWalk(action, reverse: false);
-
-        // Allows for the change in traversal direction. Reverse visits nodes in descending order
-        internal virtual bool InOrderTreeWalk(TreeWalkPredicate<T> action, bool reverse)
+        internal virtual bool InOrderTreeWalk(TreeWalkPredicate<T> action)
         {
             if (_root == null)
             {
@@ -230,7 +226,7 @@ namespace System.Collections.Generic
             while (current != null)
             {
                 stack.Push(current);
-                current = (reverse ? current.Right : current.Left);
+                current = current.Left;
             }
             while (stack.Count != 0)
             {
@@ -240,11 +236,11 @@ namespace System.Collections.Generic
                     return false;
                 }
 
-                Node node = (reverse ? current.Left : current.Right);
+                Node node = current.Right;
                 while (node != null)
                 {
                     stack.Push(node);
-                    node = (reverse ? node.Right : node.Left);
+                    node = node.Left;
                 }
             }
             return true;
