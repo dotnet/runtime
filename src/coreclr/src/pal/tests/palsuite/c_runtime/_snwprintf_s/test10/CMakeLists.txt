@@ -13,7 +13,5 @@ add_executable(paltest_snwprintf_test10
 add_dependencies(paltest_snwprintf_test10 coreclrpal)
 
 target_link_libraries(paltest_snwprintf_test10
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

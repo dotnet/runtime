@@ -42,7 +42,7 @@ int __cdecl main(int argc, char *argv[]) {
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
     /* Compare START_VALUE with BaseVariableToManipulate, they're equal, 
        so exchange 
     */
@@ -55,18 +55,10 @@ int __cdecl main(int argc, char *argv[]) {
     /* Exchanged, these should be equal now */
     if(BaseVariableToManipulate != ValueToExchange) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: A successful compare and exchange should have occurred, "
              "making the variable have the value of %ll, as opposed to the "
              "current value of %ll.",
              ValueToExchange,BaseVariableToManipulate);  
-#else
-        Fail("ERROR: A successful compare and exchange should have occurred, "
-             "making the variable have the value of %I64, as opposed to the "
-             "current value of %d.",
-             ValueToExchange,BaseVariableToManipulate);  
-
-#endif
     }
   
     /* Check to make sure it returns the original number which 
@@ -74,15 +66,9 @@ int __cdecl main(int argc, char *argv[]) {
     */
     if(TheReturn != START_VALUE) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The return value after the first exchange should be the "
              "former value of the variable, which was %ll, but it is now %ll.",
              START_VALUE,TheReturn);
-#else
-        Fail("ERROR: The return value after the first exchange should be the "
-             "former value of the variable, which was %I64, but it is now %I64.",
-             START_VALUE,TheReturn);
-#endif
 
     }
 
@@ -103,20 +89,13 @@ int __cdecl main(int argc, char *argv[]) {
   
     if(BaseVariableToManipulate != TempValue) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR:  An attempted exchange should have failed due to "
              "the compare failing.  But, it seems to have succeeded.  The "
              "value should be %ll but is %ll in this case.",
              TempValue,BaseVariableToManipulate);  
-#else
-        Fail("ERROR:  An attempted exchange should have failed due to "
-             "the compare failing.  But, it seems to have succeeded.  The "
-             "value should be %I64 but is %I64 in this case.",
-             TempValue,BaseVariableToManipulate);  
-#endif
     }
 
-#endif  //if defined(BIT64) && defined(PLATFORM_UNIX)
+#endif  //if defined(BIT64)
     PAL_Terminate();
     return PASS; 
 }

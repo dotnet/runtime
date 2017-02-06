@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
+using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 namespace System
 {
     /// <summary>
-    /// Span represents contiguous region of arbitrary memory, with performance
-    /// characteristics on par with T[]. Unlike arrays, it can point to either managed
+    /// Span represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
     public struct Span<T>
@@ -30,14 +29,13 @@ namespace System
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[] array)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (default(T) == null) { // Arrays of valuetypes are never covariant
-                if (array.GetType() != typeof(T[]))
-                    ThrowHelper.ThrowArrayTypeMismatchException();
-            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
 
             _pointer = new ByReference<T>(ref JitHelpers.GetArrayData(array));
             _length = array.Length;
@@ -55,14 +53,13 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[] array, int start)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (default(T) == null) { // Arrays of valuetypes are never covariant
-                if (array.GetType() != typeof(T[]))
-                    ThrowHelper.ThrowArrayTypeMismatchException();
-            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -87,10 +84,8 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (default(T) == null) { // Arrays of valuetypes are never covariant
-                if (array.GetType() != typeof(T[]))
-                    ThrowHelper.ThrowArrayTypeMismatchException();
-            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -138,6 +133,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> DangerousCreate(object obj, ref T objectData, int length)
         {
             if (obj == null)
@@ -147,13 +143,13 @@ namespace System
 
             return new Span<T>(ref objectData, length);
         }
-        
 
-        /// <summary>
-        /// An internal helper for creating spans.
-        /// </summary>
+        // Constructor for internal use only.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Span(ref T ptr, int length)
         {
+            Debug.Assert(length >= 0);
+
             _pointer = new ByReference<T>(ref ptr);
             _length = length;
         }
@@ -168,36 +164,90 @@ namespace System
         }
 
         /// <summary>
-        /// Gets the number of elements contained in the <see cref="Span{T}"/>
+        /// The number of items in the span.
         /// </summary>
         public int Length => _length;
 
         /// <summary>
-        /// Returns whether the <see cref="Span{T}"/> is empty.
+        /// Returns true if Length is 0.
         /// </summary>
         public bool IsEmpty => _length == 0;
 
         /// <summary>
-        /// Fetches the element at the specified index.
+        /// Returns a reference to specified element of the Span.
         /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         /// <exception cref="System.IndexOutOfRangeException">
-        /// Thrown when the specified <paramref name="index"/> is not in range (&lt;0 or &gt;&eq;Length).
+        /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
+
+        // TODO: https://github.com/dotnet/corefx/issues/13681
+        //   Until we get over the hurdle of C# 7 tooling, this indexer will return "T" and have a setter rather than a "ref T". (The doc comments
+        //   continue to reflect the original intent of returning "ref T")
         public T this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return Unsafe.Add(ref DangerousGetPinnableReference(), index);
+                return Unsafe.Add(ref _pointer.Value, index);
             }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                Unsafe.Add(ref DangerousGetPinnableReference(), index) = value;
+                Unsafe.Add(ref _pointer.Value, index) = value;
+            }
+        }
+
+        /// <summary>
+        /// Returns a reference to specified element of the Span.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <exception cref="System.IndexOutOfRangeException">
+        /// Thrown when index less than 0 or index greater than or equal to Length
+        /// </exception>
+
+        // TODO: https://github.com/dotnet/corefx/issues/13681
+        //   Until we get over the hurdle of C# 7 tooling, this temporary method will simulate the intended "ref T" indexer for those
+        //   who need bypass the workaround for performance.
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894 
+        public ref T GetItem(int index)
+        {
+            if ((uint)index >= ((uint)_length))
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            return ref Unsafe.Add(ref _pointer.Value, index);
+        }
+
+        /// <summary>
+        /// Clears the contents of this span.
+        /// </summary>
+        public void Clear()
+        {
+            // TODO: Optimize - https://github.com/dotnet/coreclr/issues/9161
+            for (int i = 0; i < _length; i++)
+            {
+                this[i] = default(T);
+            }
+        }
+
+        /// <summary>
+        /// Fills the contents of this span with the given value.
+        /// </summary>
+        public void Fill(T value)
+        {
+            // TODO: Optimize - https://github.com/dotnet/coreclr/issues/9161
+            for (int i = 0; i < _length; i++)
+            {
+                this[i] = value;
             }
         }
 
@@ -229,7 +279,7 @@ namespace System
             if ((uint)_length > (uint)destination.Length)
                 return false;
 
-            SpanHelper.CopyTo<T>(ref destination.DangerousGetPinnableReference(), ref DangerousGetPinnableReference(), _length);
+            SpanHelper.CopyTo<T>(ref destination._pointer.Value, ref _pointer.Value, _length);
             return true;
         }
 
@@ -239,7 +289,7 @@ namespace System
         /// </summary>
         public static bool operator ==(Span<T> left, Span<T> right)
         {
-            return left._length == right._length && Unsafe.AreSame<T>(ref left.DangerousGetPinnableReference(), ref right.DangerousGetPinnableReference());
+            return left._length == right._length && Unsafe.AreSame<T>(ref left._pointer.Value, ref right._pointer.Value);
         }
 
         /// <summary>
@@ -286,19 +336,19 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(ArraySegment<T> arraySegment) =>  new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        public static implicit operator Span<T>(ArraySegment<T> arraySegment) => new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(ref span.DangerousGetPinnableReference(), span._length);
+        public static implicit operator ReadOnlySpan<T>(Span<T> span) => new ReadOnlySpan<T>(ref span._pointer.Value, span._length);
 
         /// <summary>
         /// Forms a slice out of the given span, beginning at 'start'.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894
         public Span<T> Slice(int start)
@@ -306,7 +356,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref DangerousGetPinnableReference(), start), _length - start);
+            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, start), _length - start);
         }
 
         /// <summary>
@@ -315,7 +365,7 @@ namespace System
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
         /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894
         public Span<T> Slice(int start, int length)
@@ -323,7 +373,7 @@ namespace System
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref DangerousGetPinnableReference(), start), length);
+            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, start), length);
         }
 
         /// <summary>
@@ -337,7 +387,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref DangerousGetPinnableReference(), _length);
+            SpanHelper.CopyTo<T>(ref JitHelpers.GetArrayData(destination), ref _pointer.Value, _length);
             return destination;
         }
 
@@ -347,7 +397,7 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
     }
 
-    public static class SpanExtensions
+    public static class Span
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
@@ -435,6 +485,61 @@ namespace System
             return new ReadOnlySpan<TTo>(
                 ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        public static ReadOnlySpan<char> Slice(this string text)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+
+            return new ReadOnlySpan<char>(ref text.GetFirstCharRef(), text.Length);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at 'start'.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        public static ReadOnlySpan<char> Slice(this string text, int start)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), text.Length - start);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at <paramref name="start"/>, of given <paramref name="length"/>.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="length">The number of items in the span.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// </exception>
+        public static ReadOnlySpan<char> Slice(this string text, int start, int length)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
         }
     }
 

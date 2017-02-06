@@ -11,15 +11,14 @@
 **
 **
 ===========================================================*/
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System;
+
+namespace System
+{
     public interface ICustomFormatter
     {
         // Interface does not need to be marked with the serializable attribute
-        String Format (String format, Object arg, IFormatProvider formatProvider);
+        String Format(String format, Object arg, IFormatProvider formatProvider);
     }
 }

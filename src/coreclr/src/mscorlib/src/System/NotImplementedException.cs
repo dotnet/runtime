@@ -12,29 +12,29 @@
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
+namespace System
+{
     [Serializable]
     public class NotImplementedException : SystemException
     {
-        public NotImplementedException() 
-            : base(Environment.GetResourceString("Arg_NotImplementedException")) {
-            SetErrorCode(__HResults.E_NOTIMPL);
+        public NotImplementedException()
+            : base(SR.Arg_NotImplementedException)
+        {
+            HResult = __HResults.E_NOTIMPL;
         }
-        public NotImplementedException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.E_NOTIMPL);
+        public NotImplementedException(String message)
+            : base(message)
+        {
+            HResult = __HResults.E_NOTIMPL;
         }
-        public NotImplementedException(String message, Exception inner) 
-            : base(message, inner) {
-            SetErrorCode(__HResults.E_NOTIMPL);
+        public NotImplementedException(String message, Exception inner)
+            : base(message, inner)
+        {
+            HResult = __HResults.E_NOTIMPL;
         }
 
-        protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context) {
-        }
+        protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

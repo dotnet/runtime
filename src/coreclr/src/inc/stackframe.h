@@ -115,16 +115,13 @@ struct CallerStackFrame : StackFrame
     {
     }
 
+#ifdef WIN64EXCEPTIONS
     static inline CallerStackFrame FromRegDisplay(REGDISPLAY* pRD)
     {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         _ASSERTE(pRD->IsCallerSPValid || pRD->IsCallerContextValid);
         return CallerStackFrame(GetSP(pRD->pCallerContext));
-#else  // !_TARGET_AMD64_ && !_TARGET_ARM_ && !_TARGET_ARM64_
-        _ASSERTE(!"CallerStackFrame::FromRegDisplay() - NYI on this platform");
-        return CallerStackFrame();
-#endif // !_TARGET_AMD64_ && !_TARGET_ARM_ && !_TARGET_ARM64_
     }
+#endif // WIN64EXCEPTIONS
 };
 
 #endif  // __STACKFRAME_H

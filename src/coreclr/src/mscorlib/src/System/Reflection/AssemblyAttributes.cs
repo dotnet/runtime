@@ -360,7 +360,6 @@ namespace System.Reflection {
         }
     }   
 
-#if FEATURE_STRONGNAME_MIGRATION
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false, AllowMultiple=false)]
     public sealed class AssemblySignatureKeyAttribute : Attribute
     {
@@ -383,7 +382,6 @@ namespace System.Reflection {
             get { return _countersignature; }
         }
     }
-#endif
 
     [AttributeUsage (AttributeTargets.Assembly, Inherited=false)]  
 [System.Runtime.InteropServices.ComVisible(true)]

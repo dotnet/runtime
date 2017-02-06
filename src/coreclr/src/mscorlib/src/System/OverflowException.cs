@@ -11,32 +11,31 @@
 **
 =============================================================================*/
 
-namespace System {
- 
-    
-    using System;
-    using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System.Runtime.Serialization;
+
+namespace System
+{
     [Serializable]
-    public class OverflowException : ArithmeticException {
-        public OverflowException() 
-            : base(Environment.GetResourceString("Arg_OverflowException")) {
-            SetErrorCode(__HResults.COR_E_OVERFLOW);
-        }
-    
-        public OverflowException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_OVERFLOW);
-        }
-        
-        public OverflowException(String message, Exception innerException) 
-            : base(message, innerException) {
-            SetErrorCode(__HResults.COR_E_OVERFLOW);
+    public class OverflowException : ArithmeticException
+    {
+        public OverflowException()
+            : base(SR.Arg_OverflowException)
+        {
+            HResult = __HResults.COR_E_OVERFLOW;
         }
 
-        protected OverflowException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public OverflowException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_OVERFLOW;
         }
 
+        public OverflowException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+            HResult = __HResults.COR_E_OVERFLOW;
+        }
+
+        protected OverflowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

@@ -2286,6 +2286,59 @@ BOOL CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
 }
 
 /*********************************************************************/
+static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
+{
+    STANDARD_VM_CONTRACT;
+
+    unsigned result = 0;
+
+    _ASSERTE(pMT->IsValueType());
+
+    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
+    // case the check for g_TypedReferenceMT below would not be necessary
+    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    {
+        if (gcPtrs[0] == TYPE_GC_NONE)
+        {
+            gcPtrs[0] = TYPE_GC_BYREF;
+            result++;
+        }
+        else if (gcPtrs[0] != TYPE_GC_BYREF)
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        return result;
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        int fieldStartIndex = pFD->GetOffset() / sizeof(void*);
+
+        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+        {
+            if (pFD->IsObjRef())
+            {
+                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
+                {
+                    gcPtrs[fieldStartIndex] = TYPE_GC_REF;
+                    result++;
+                }
+                else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
+        else
+        {
+            MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+    }
+    return result;
+}
+
 unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 {
     CONTRACTL {
@@ -2305,6 +2358,8 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 
     if (pMT->IsByRefLike())
     {
+        // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
+        // which case the check for g_TypedReferenceMT below would not be necessary
         if (pMT == g_TypedReferenceMT)
         {
             gcPtrs[0] = TYPE_GC_BYREF;
@@ -2313,10 +2368,12 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         }
         else
         {
-            // TODO-SPAN: Proper GC reporting
             memset(gcPtrs, TYPE_GC_NONE,
-                   (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
-            result = 0;
+                (VMClsHnd.GetSize() + sizeof(void*) - 1) / sizeof(void*));
+            // Note: This case is more complicated than the TypedReference case
+            // due to ByRefLike structs being included as fields in other value 
+            // types (TypedReference can not be.)
+            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
         }
     }
     else if (VMClsHnd.IsNativeValueType())
@@ -5115,6 +5172,14 @@ void CEEInfo::getCallInfo(
             {
                 // Pretend this was a "constrained. UnderlyingType" instruction prefix
                 constrainedType = TypeHandle(MscorlibBinder::GetElementType(constrainedType.GetVerifierCorElementType()));
+
+                // Native image signature encoder will use this field. It needs to match that pretended type, a bogus signature
+                // would be produced otherwise.
+                pConstrainedResolvedToken->hClass = (CORINFO_CLASS_HANDLE)constrainedType.AsPtr();
+
+                // Clear the token and typespec because of they do not match hClass anymore.
+                pConstrainedResolvedToken->token = mdTokenNil;
+                pConstrainedResolvedToken->pTypeSpec = NULL;
             }
         }
 
@@ -8764,6 +8829,29 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
     {
         result = ECall::GetIntrinsicID(method);
     }
+    else
+    {
+        MethodTable * pMT = method->GetMethodTable();
+        if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
+        {
+            if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
+            {
+                // ByReference<T> has just two methods: constructor and Value property
+                if (method->IsCtor())
+                {
+                    result = CORINFO_INTRINSIC_ByReference_Ctor;
+                }
+                else
+                {
+                    _ASSERTE(strcmp(method->GetName(), "get_Value") == 0);
+                    result = CORINFO_INTRINSIC_ByReference_Value;
+                }
+                *pMustExpand = true;
+            }
+
+            // TODO-SPAN: Span<T> intrinsics for optimizations
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 
@@ -10882,6 +10970,33 @@ void CEEJitInfo::CompressDebugInfo()
     EE_TO_JIT_TRANSITION();
 }
 
+void reservePersonalityRoutineSpace(ULONG &unwindSize)
+{
+#if defined(_TARGET_X86_)
+    // Do nothing
+#elif defined(_TARGET_AMD64_)
+    // Add space for personality routine, it must be 4-byte aligned.
+    // Everything in the UNWIND_INFO up to the variable-sized UnwindCodes
+    // array has already had its size included in unwindSize by the caller.
+    unwindSize += sizeof(ULONG);
+
+    // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
+    // So the largest size could be 510 bytes, plus the header and language
+    // specific stuff.  This can't overflow.
+
+    _ASSERTE(FitsInU4(unwindSize + sizeof(ULONG)));
+    unwindSize = (ULONG)(ALIGN_UP(unwindSize, sizeof(ULONG)));
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+    // The JIT passes in a 4-byte aligned block of unwind data.
+    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+
+    // Add space for personality routine, it must be 4-byte aligned.
+    unwindSize += sizeof(ULONG);
+#else
+    PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
+#endif // !defined(_TARGET_AMD64_)
+
+}
 // Reserve memory for the method/funclet's unwind information.
 // Note that this must be called before allocMem. It should be
 // called once for the main method, once for every funclet, and
@@ -10914,27 +11029,7 @@ void CEEJitInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwind
 
     ULONG currentSize  = unwindSize;
 
-#if defined(_TARGET_AMD64_)
-    // Add space for personality routine, it must be 4-byte aligned.
-    // Everything in the UNWIND_INFO up to the variable-sized UnwindCodes
-    // array has already had its size included in unwindSize by the caller.
-    currentSize += sizeof(ULONG);
-
-    // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
-    // So the largest size could be 510 bytes, plus the header and language
-    // specific stuff.  This can't overflow.
-
-    _ASSERTE(FitsInU4(currentSize + sizeof(ULONG)));
-    currentSize = (ULONG)(ALIGN_UP(currentSize, sizeof(ULONG)));
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-    // The JIT passes in a 4-byte aligned block of unwind data.
-    _ASSERTE(IS_ALIGNED(currentSize, sizeof(ULONG)));
-
-    // Add space for personality routine, it must be 4-byte aligned.
-    currentSize += sizeof(ULONG);
-#else
-    PORTABILITY_ASSERT("CEEJitInfo::reserveUnwindInfo");
-#endif // !defined(_TARGET_AMD64_)
+    reservePersonalityRoutineSpace(currentSize);
 
     m_totalUnwindSize += currentSize;
 
@@ -11019,27 +11114,7 @@ void CEEJitInfo::allocUnwindInfo (
     UNWIND_INFO * pUnwindInfo = (UNWIND_INFO *) &(m_theUnwindBlock[m_usedUnwindSize]);
     m_usedUnwindSize += unwindSize;
 
-#if defined(_TARGET_AMD64_)
-    // Add space for personality routine, it must be 4-byte aligned.
-    // Everything in the UNWIND_INFO up to the variable-sized UnwindCodes
-    // array has already had its size included in unwindSize by the caller.
-    m_usedUnwindSize += sizeof(ULONG);
-
-    // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
-    // So the largest size could be 510 bytes, plus the header and language
-    // specific stuff.  This can't overflow.
-
-    _ASSERTE(FitsInU4(m_usedUnwindSize + sizeof(ULONG)));
-    m_usedUnwindSize = (ULONG)(ALIGN_UP(m_usedUnwindSize,sizeof(ULONG)));
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-    // The JIT passes in a 4-byte aligned block of unwind data.
-    _ASSERTE(IS_ALIGNED(m_usedUnwindSize, sizeof(ULONG)));
-
-    // Add space for personality routine, it must be 4-byte aligned.
-    m_usedUnwindSize += sizeof(ULONG);
-#else
-    PORTABILITY_ASSERT("CEEJitInfo::reserveUnwindInfo");
-#endif
+    reservePersonalityRoutineSpace(m_usedUnwindSize);
 
     _ASSERTE(m_usedUnwindSize <= m_totalUnwindSize);
 
@@ -11082,7 +11157,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#ifdef _TARGET_AMD64_
     pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
 #endif
 
@@ -11102,10 +11177,14 @@ void CEEJitInfo::allocUnwindInfo (
     }
 #endif // _DEBUG
 
-#if defined(_TARGET_AMD64_)
-
     /* Copy the UnwindBlock */
     memcpy(pUnwindInfo, pUnwindBlock, unwindSize);
+
+#if defined(_TARGET_X86_)
+
+    // Do NOTHING
+
+#elif defined(_TARGET_AMD64_)
 
     pUnwindInfo->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
@@ -11114,9 +11193,6 @@ void CEEJitInfo::allocUnwindInfo (
 
 #elif defined(_TARGET_ARM64_)
 
-    /* Copy the UnwindBlock */
-    memcpy(pUnwindInfo, pUnwindBlock, unwindSize);
-
     *(LONG *)pUnwindInfo |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutine = (ULONG*)((BYTE *)pUnwindInfo + ALIGN_UP(unwindSize, sizeof(ULONG)));
@@ -11124,13 +11200,11 @@ void CEEJitInfo::allocUnwindInfo (
 
 #elif defined(_TARGET_ARM_)
 
-    /* Copy the UnwindBlock */
-    memcpy(pUnwindInfo, pUnwindBlock, unwindSize);
-
     *(LONG *)pUnwindInfo |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutine = (ULONG*)((BYTE *)pUnwindInfo + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutine = (TADDR)ProcessCLRException - baseAddress;
+
 #endif
 
 #if defined(_TARGET_AMD64_)

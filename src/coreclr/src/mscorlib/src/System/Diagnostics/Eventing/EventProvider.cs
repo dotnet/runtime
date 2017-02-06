@@ -341,9 +341,10 @@ namespace System.Diagnostics.Tracing
         {
             List<SessionInfo> liveSessionList = null;
 
-            GetSessionInfo((Action<int, long>)
-                ((etwSessionId, matchAllKeywords) =>
-                    GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref liveSessionList)));
+            GetSessionInfo(
+                (int etwSessionId, long matchAllKeywords, ref List<SessionInfo> sessionList) =>
+                    GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
+                ref liveSessionList);
 
             List<Tuple<SessionInfo, bool>> changedSessionList = new List<Tuple<SessionInfo, bool>>();
 
@@ -407,12 +408,14 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        private delegate void SessionInfoCallback(int etwSessionId, long matchAllKeywords, ref List<SessionInfo> sessionList);
+        
         /// <summary>
         /// This method enumerates over all active ETW sessions that have enabled 'this.m_Guid' 
         /// for the current process ID, calling 'action' for each session, and passing it the
         /// ETW session and the 'AllKeywords' the session enabled for the current provider.
         /// </summary>
-        private unsafe void GetSessionInfo(Action<int, long> action)
+        private unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo> sessionList)
         {
             // We wish the EventSource package to be legal for Windows Store applications.   
             // Currently EnumerateTraceGuidsEx is not an allowed API, so we avoid its use here
@@ -453,7 +456,7 @@ namespace System.Diagnostics.Tracing
                     var enabledInfos = (UnsafeNativeMethods.ManifestEtw.TRACE_ENABLE_INFO*)&providerInstance[1];
                     // iterate over the list of active ETW sessions "listening" to the current provider
                     for (int j = 0; j < providerInstance->EnableCount; j++)
-                        action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword);
+                        action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
                 }
                 if (providerInstance->NextOffset == 0)
                     break;
@@ -503,7 +506,7 @@ namespace System.Diagnostics.Tracing
                                     string keywordBitString = dataAsString.Substring(startIdx, endIdx-startIdx);
                                     int keywordBit;
                                     if (0 < endIdx && int.TryParse(keywordBitString, out keywordBit))
-                                        action(etwSessionId, 1L << keywordBit);
+                                        action(etwSessionId, 1L << keywordBit, ref sessionList);
                                 }
                             }
                         }

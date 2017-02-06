@@ -113,39 +113,22 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     movdqu xmm7, [eax + CONTEXT_Xmm7]
 LOCAL_LABEL(Done_Restore_CONTEXT_EXTENDED_REGISTERS):
 
-    // Restore CONTROL register(s)
-    mov   ecx, [eax + CONTEXT_Eip]
-    mov   [esp], ecx
+    // Restore Stack
+    mov   esp, [eax + CONTEXT_Esp]
 
-    mov   ecx, [eax + CONTEXT_Esp]
-    push  ecx
-    mov   ecx, [eax + CONTEXT_Ebp]
-    push  ecx
+    // Create a minimal frame
+    push  DWORD PTR [eax + CONTEXT_Eip]
 
-    pop   ebp
-    pop   esp
-
-    // Restore INTEGER register(s)
-    mov   ecx, [eax + CONTEXT_Edi]
-    push  ecx
-    mov   ecx, [eax + CONTEXT_Esi]
-    push  ecx
-    mov   ecx, [eax + CONTEXT_Edx]
-    push  ecx
+    // Restore register(s)
+    mov   ebp, [eax + CONTEXT_Ebp]
+    mov   edi, [eax + CONTEXT_Edi]
+    mov   esi, [eax + CONTEXT_Esi]
+    mov   edx, [eax + CONTEXT_Edx]
     mov   ecx, [eax + CONTEXT_Ecx]
-    push  ecx
-    mov   ecx, [eax + CONTEXT_Ebx]
-    push  ecx
-    mov   ecx, [eax + CONTEXT_Eax]
-    push  ecx
+    mov   ebx, [eax + CONTEXT_Ebx]
+    mov   eax, [eax + CONTEXT_Eax]
 
-    pop   eax
-    pop   ebx
-    pop   ecx
-    pop   edx
-    pop   esi
-    pop   edi
-
-    ret   8
+    // Resume
+    ret
 LEAF_END RtlRestoreContext, _TEXT
 

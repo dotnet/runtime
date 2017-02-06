@@ -4,16 +4,13 @@
 
 /*=============================================================================
 **
-**
-**
 ** Purpose: For Threads-related custom attributes.
-**
 **
 =============================================================================*/
 
-namespace System {
-    [AttributeUsage (AttributeTargets.Method)]  
-[System.Runtime.InteropServices.ComVisible(true)]
+namespace System
+{
+    [AttributeUsage(AttributeTargets.Method)]
     public sealed class STAThreadAttribute : Attribute
     {
         public STAThreadAttribute()
@@ -21,8 +18,7 @@ namespace System {
         }
     }
 
-    [AttributeUsage (AttributeTargets.Method)]  
-[System.Runtime.InteropServices.ComVisible(true)]
+    [AttributeUsage(AttributeTargets.Method)]
     public sealed class MTAThreadAttribute : Attribute
     {
         public MTAThreadAttribute()

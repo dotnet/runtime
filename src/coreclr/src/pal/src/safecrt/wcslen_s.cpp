@@ -42,7 +42,7 @@
 *
 *******************************************************************************/
 
-size_t __cdecl wcsnlen(const wchar_t *wcs, size_t maxsize)
+size_t __cdecl PAL_wcsnlen(const wchar_t *wcs, size_t maxsize)
 {
     size_t n;
 

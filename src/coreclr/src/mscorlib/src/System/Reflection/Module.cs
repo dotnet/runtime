@@ -56,10 +56,7 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Module))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Module : _Module, ISerializable, ICustomAttributeProvider
+    public abstract class Module : ISerializable, ICustomAttributeProvider
     {   
         #region Static Constructor
         static Module()

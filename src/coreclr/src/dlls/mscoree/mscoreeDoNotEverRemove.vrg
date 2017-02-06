@@ -1,4 +1,0 @@
-VSREG 7
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\Secure Mime Handlers]
-"CorTransientLoader.CorLoad.1"=""

@@ -25,17 +25,18 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$(BaseOutputPathWithConfig.Replace("\","/"))dasm/$(BuildProjectRelativeDir.Replace("\","/"))</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
       <JitDisasmBashScript>
 <![CDATA[
 # JitDisasm Script
 if [ ! -z $RunningJitDisasm ]
 then
-    echo $CORE_ROOT/corerun "$CORE_ROOT/jit-dasm.dll" --crossgen $CORE_ROOT/crossgen.exe --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
-    "$CORE_ROOT/corerun" "$CORE_ROOT/jit-dasm" --crossgen $CORE_ROOT/crossgen.exe --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
-    if [ $ERRORLEVEL -ne 0 ]
+    echo $CORE_ROOT/corerun "$CORE_ROOT/jit-dasm.dll" --crossgen $CORE_ROOT/crossgen --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
+    "$CORE_ROOT/corerun" "$CORE_ROOT/jit-dasm.dll" --crossgen $CORE_ROOT/crossgen --platform $CORE_ROOT --output $(JitDisasmOut) $(InputAssemblyName)
+    _jdExitCode=$?
+    if [ $_jdExitCode -ne 0 ]
     then
-        echo EXECUTION OF JIT-DASM - FAILED $ERRORLEVEL
+        echo EXECUTION OF JIT-DASM - FAILED $_jdExitCode
         exit 1
     fi
 fi
@@ -49,7 +50,7 @@ fi
     <PropertyGroup>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
-      <JitDisasmOut>$(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)</JitDisasmOut>
+      <JitDisasmOut>$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
       <JitDisasmBatchScript>
 <![CDATA[
 REM JitDisasm Script

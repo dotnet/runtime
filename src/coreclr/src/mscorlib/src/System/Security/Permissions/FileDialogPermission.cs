@@ -17,7 +17,7 @@ namespace System.Security.Permissions {
 [Serializable]
 [Flags]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum FileDialogPermissionAccess {
+    internal enum FileDialogPermissionAccess {
         None = 0x00,
     
         Open = 0x01,
@@ -30,7 +30,7 @@ namespace System.Security.Permissions {
 
     [Serializable] 
 [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class FileDialogPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission {
+    internal sealed class FileDialogPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission {
         FileDialogPermissionAccess access;
 
         public FileDialogPermission(PermissionState state) {

@@ -2202,7 +2202,7 @@ namespace System {
 
             string returnString = string.FastAllocateString(stringLength);
             fixed (char* outChars = returnString){
-                fixed (byte* inData = inArray) {
+                fixed (byte* inData = &inArray[0]) {
                     int j = ConvertToBase64Array(outChars,inData,offset,length, insertLineBreaks);
                     BCLDebug.Assert(returnString.Length == j, "returnString.Length == j");
                     return returnString;
@@ -2265,7 +2265,7 @@ namespace System {
                 throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
 
             fixed (char* outChars = &outArray[offsetOut]) {
-                fixed (byte* inData = inArray) { 
+                fixed (byte* inData = &inArray[0]) { 
                    retVal = ConvertToBase64Array(outChars,inData,offsetIn,length, insertLineBreaks);
                 }
             }
@@ -2282,7 +2282,7 @@ namespace System {
             int i;
 
             // get a pointer to the base64Table to avoid unnecessary range checking
-            fixed(char* base64 = base64Table) {
+            fixed(char* base64 = &base64Table[0]) {
                 for (i=offset; i<calcLength; i+=3)
                 {
                     if (insertLineBreaks) {

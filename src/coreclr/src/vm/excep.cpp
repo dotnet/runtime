@@ -1644,6 +1644,7 @@ const char *TCFStringFromConst(TRY_CATCH_FINALLY tcf)
 }
 #endif //LOGGING
 
+#ifndef WIN64EXCEPTIONS
 // We're unwinding if we'll return to the EE's code.  Otherwise
 // we'll return to someplace in the current code.  Anywhere outside
 // this function is "EE code".
@@ -1675,7 +1676,6 @@ bool FinallyIsUnwinding(EHRangeTreeNode *pNode,
         return false;
 }
 
-#ifndef WIN64EXCEPTIONS
 BOOL LeaveCatch(ICodeManager* pEECM,
                 Thread *pThread,
                 CONTEXT *pCtx,
@@ -1690,7 +1690,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
     // We can assert these things here, and skip a call
     // to COMPlusCheckForAbort later.
 
@@ -1708,10 +1707,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
 
     SetSP(pCtx, (UINT_PTR)esp);
     return TRUE;
-#else // FEATURE_PAL
-    PORTABILITY_ASSERT("LeaveCatch");
-    return FALSE;
-#endif
 }
 #endif // WIN64EXCEPTIONS
 
@@ -1926,7 +1921,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                 case TCF_NONE:
                 case TCF_TRY:
                 {
-#if !defined(WIN64EXCEPTIONS)
+#ifndef WIN64EXCEPTIONS
                     if (!FinallyIsUnwinding(pNode, pEECM, pReg, addrStart))
                     {
                         CONTEXT *pFilterCtx = pThread->GetFilterContext();
@@ -1946,14 +1941,14 @@ HRESULT IsLegalTransition(Thread *pThread,
                     {
                         return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY;
                     }
-#else  // _WIN64
+#else // !WIN64EXCEPTIONS
                     // <NOTE>
                     // Setting IP out of a non-unwinding finally clause is not supported on WIN64EXCEPTIONS because of funclets.
                     // This scenario is disabled with approval from VS because it's not considered to be a common user
                     // scenario.
                     // </NOTE>
                     return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64;
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
                     break;
                 }
@@ -7264,11 +7259,13 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #ifdef WIN64EXCEPTIONS
 
+#ifndef _TARGET_X86_
 EXTERN_C void JIT_MemSet_End();
 EXTERN_C void JIT_MemCpy_End();
 
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
+#endif // _TARGET_X86_
 
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
 EXTERN_C void JIT_WriteBarrier_Debug();
@@ -7288,11 +7285,13 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
+#ifndef _TARGET_X86_
     CHECK_RANGE(JIT_MemSet)
     CHECK_RANGE(JIT_MemCpy)
 
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
+#endif // _TARGET_X86_
 
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
@@ -7314,8 +7313,7 @@ AdjustContextForWriteBarrier(
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef _TARGET_X86_
-
+#if defined(_TARGET_X86_) && !defined(PLATFORM_UNIX)
     void* f_IP = (void *)GetIP(pContext);
 
     if (((f_IP >= (void *) JIT_WriteBarrierStart) && (f_IP <= (void *) JIT_WriteBarrierLast)) ||
@@ -7329,11 +7327,8 @@ AdjustContextForWriteBarrier(
         // put ESP back to what it was before the call.
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
-
     return FALSE;
-
-#elif defined(WIN64EXCEPTIONS)
-
+#elif defined(WIN64EXCEPTIONS) // _TARGET_X86_ && !PLATFORM_UNIX
     void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
 
     CONTEXT             tempContext;
@@ -7377,7 +7372,7 @@ AdjustContextForWriteBarrier(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // _TARGET_ARM_
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -7399,13 +7394,10 @@ AdjustContextForWriteBarrier(
     }
 
     return FALSE;
-
-#else // ! _X86_ && !WIN64EXCEPTIONS
-
-    PORTABILITY_WARNING("AdjustContextForWriteBarrier() not implemented on this platform");
+#else // WIN64EXCEPTIONS
+    PORTABILITY_ASSERT("AdjustContextForWriteBarrier");
     return FALSE;
-
-#endif
+#endif // ELSE
 }
 
 struct SavedExceptionInfo
@@ -7556,20 +7548,21 @@ void InitSavedExceptionInfo()
 void FaultingExceptionFrame::Init(CONTEXT *pContext)
 {
     WRAPPER_NO_CONTRACT;
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
+#ifdef _TARGET_X86_
     CalleeSavedRegisters *pRegs = GetCalleeSavedRegisters();
-    pRegs->ebp = pContext->Ebp;
-    pRegs->ebx = pContext->Ebx;
-    pRegs->esi = pContext->Esi;
-    pRegs->edi = pContext->Edi;
+#define CALLEE_SAVED_REGISTER(regname) pRegs->regname = pContext->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
     m_ReturnAddress = ::GetIP(pContext);
     m_Esp = (DWORD)GetSP(pContext);
-#elif defined(WIN64EXCEPTIONS)
+#else // _TARGET_X86_
+    PORTABILITY_ASSERT("FaultingExceptionFrame::Init");
+#endif // _TARGET_???_ (ELSE)
+#else // !WIN64EXCEPTIONS
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
-#else
-    PORTABILITY_ASSERT("FaultingExceptionFrame::InitAndLink");
-#endif
+#endif // !WIN64EXCEPTIONS
 }
 
 //
@@ -8986,11 +8979,13 @@ LONG ReflectionInvocationExceptionFilter(
 #else // !(_WIN64 || _TARGET_X86_)
 #error Unsupported platform
 #endif // _WIN64
-        
+
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
         {
             EEPolicy::HandleFatalError(COR_E_FAILFAST, reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress), NULL, pExceptionInfo);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     return ret;
@@ -13111,9 +13106,9 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 // there is no more managed code on the stack.
 //
 // Note: This function should be invoked ONLY during unwind.
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-#elif defined(WIN64EXCEPTIONS)
+#else
 void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame)
 #endif
 {
@@ -13123,9 +13118,9 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
         PRECONDITION(pEstablisherFrame != NULL);
-#elif defined(WIN64EXCEPTIONS)
+#else
         PRECONDITION(pCf != NULL);
         PRECONDITION(!sfCurrentStackFrame.IsNull());
 #endif
@@ -13136,14 +13131,14 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
     if (pThread->IsAbortRequested())
     {
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
             // Topmost handler and abort requested.
             fResetThreadAbortState = TRUE;
             LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Topmost handler resets abort as no more managed code beyond %p.\n", pEstablisherFrame));
         }
-#elif defined(WIN64EXCEPTIONS)
+#else // !WIN64EXCEPTIONS
         // Get the active exception tracker
         PTR_ExceptionTracker pCurEHTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
         _ASSERTE(pCurEHTracker != NULL);
@@ -13198,9 +13193,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
             LOG((LF_EH, LL_INFO100, "ResetThreadAbortState: Resetting thread abort state since there is no more managed code beyond stack frames:\n"));
             LOG((LF_EH, LL_INFO100, "sf.SP = %p   ", dataCallback.sfSeedCrawlFrame.SP));
         }
-#else // WIN64EXCEPTIONS
-#error Unsupported platform
-#endif // WIN64EXCEPTIONS
+#endif // !WIN64EXCEPTIONS
     }
 
     if (fResetThreadAbortState)

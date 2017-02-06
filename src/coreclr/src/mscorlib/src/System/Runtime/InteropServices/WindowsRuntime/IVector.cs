@@ -57,9 +57,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         void Append(T value);
         void RemoveAtEnd();
         void Clear();
-        [Pure]
-        uint GetMany(uint startIndex, [Out] T[] items);
-        void ReplaceAll(T[] items);
     }
 
     [ComImport]

@@ -13,7 +13,5 @@ add_executable(paltest_mapviewoffile_test5
 add_dependencies(paltest_mapviewoffile_test5 coreclrpal)
 
 target_link_libraries(paltest_mapviewoffile_test5
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

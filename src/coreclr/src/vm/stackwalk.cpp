@@ -20,6 +20,10 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
+#ifdef WIN64EXCEPTIONS
+#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
+#endif
+
 #ifdef _DEBUG
 void* forceFrame;   // Variable used to force a local variable to the frame
 #endif
@@ -555,17 +559,13 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContext = pRD->pCallerContext;
         pRD->pCallerContext  = temp;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         PT_KNONVOLATILE_CONTEXT_POINTERS tempPtrs = pRD->pCurrentContextPointers;
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     }
     else
     {
-        PT_KNONVOLATILE_CONTEXT_POINTERS pCurrentContextPointers = NULL;
-        NOT_X86(pCurrentContextPointers = pRD->pCurrentContextPointers);
-        VirtualUnwindCallFrame(pRD->pCurrentContext, pCurrentContextPointers, pCodeInfo);
+        VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
     }
 
     SyncRegDisplayToCurrentContext(pRD);
@@ -722,15 +722,12 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
     CONTRACTL_END;
 
     PCODE           uControlPc = GetIP(pContext);
-#if defined(_WIN64)
+#ifdef BIT64
     UINT64              EstablisherFrame;
-    PVOID               HandlerData;
-#elif defined(_TARGET_ARM_)
+#else  // BIT64
     DWORD               EstablisherFrame;
+#endif // BIT64
     PVOID               HandlerData;
-#else
-    _ASSERTE(!"nyi platform stackwalking");
-#endif
 
     if (NULL == pFunctionEntry)
     {
@@ -893,7 +890,7 @@ StackWalkAction Thread::MakeStackwalkerCallback(
 }
 
 
-#if !defined(DACCESS_COMPILE) && defined(_TARGET_X86_)
+#if !defined(DACCESS_COMPILE) && defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
 #define STACKWALKER_MAY_POP_FRAMES
 #endif
 
@@ -1191,10 +1188,10 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     _ASSERTE(CanThisThreadCallIntoHost() || (flags & LIGHTUNWIND) == 0);
 #endif // DACCESS_COMPILE
 
-#if !defined(_TARGET_X86_)
+#ifdef WIN64EXCEPTIONS
     _ASSERTE(!(flags & POPFRAMES));
     _ASSERTE(pRegDisp->pCurrentContext);
-#endif // !_TARGET_X86_
+#endif // WIN64EXCEPTIONS
 
     BEGIN_FORBID_TYPELOAD();
 
@@ -1350,7 +1347,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     {
         TADDR curSP = GetRegdisplaySP(m_crawl.pRD);
 
-#if !defined(_TARGET_X86_)
+#ifdef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         if (m_crawl.IsFrameless())
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame 
@@ -1358,7 +1355,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
             EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL);
             curSP = GetSP(m_crawl.pRD->pCallerContext);
         }
-#endif // !_TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
 #if defined(_TARGET_X86_)
         // special processing on x86; see below for more information
@@ -2375,7 +2372,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         }
         else
         {
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // On x86, we process a managed stack frame before processing any explicit frames contained in it.
             // So when we are done with the skipped explicit frame, we have already processed the managed
             // stack frame, and it is time to move onto the next stack frame.
@@ -2384,7 +2381,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             {
                 goto Cleanup;
             }
-#else // _TARGET_X86_
+#else // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // We are done handling the skipped explicit frame at this point.  So move on to the 
             // managed stack frame.
             m_crawl.isFrameless = true;
@@ -2394,7 +2391,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             PreProcessingForManagedFrames();
             goto Cleanup;
-#endif // _TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         }
     }
     else if (m_frameState == SFITER_FRAMELESS_METHOD)
@@ -2467,7 +2464,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
              DBG_ADDR(GetRegdisplaySP(m_crawl.pRD)), 
              DBG_ADDR(GetControlPC(m_crawl.pRD))));
 
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && defined(HAS_QUICKUNWIND)
         StackwalkCacheEntry *pCacheEntry = m_crawl.GetStackwalkCacheEntry();
         if (pCacheEntry != NULL)
         {
@@ -2477,7 +2474,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             EECodeManager::QuickUnwindStackFrame(m_crawl.pRD, pCacheEntry, EECodeManager::UnwindCurrentStackFrame);
         }
         else
-#endif // !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && HAS_QUICKUNWIND
         {
 #if !defined(DACCESS_COMPILE)
             // non-optimized stack unwind schema, doesn't use StackwalkCache
@@ -2579,14 +2576,14 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         m_crawl.hasFaulted    = FALSE;
         m_crawl.isIPadjusted  = FALSE;
 
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
         // remember, x86 handles the managed stack frame before the explicit frames contained in it
         if (CheckForSkippedFrames())
         {
             _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);
             goto Cleanup;
         }
-#endif // _TARGET_X86_
+#endif // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
         PostProcessingForManagedFrames();
         if (m_frameState == SFITER_NATIVE_MARKER_FRAME)
@@ -2675,11 +2672,11 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 #endif // !_TARGET_X86_
 
 
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(WIN64EXCEPTIONS)
                 // We are transitioning from unmanaged code to managed code... lets do some validation of our
                 // EH mechanism on platforms that we can.
-#if defined(_DEBUG)  && !defined(DACCESS_COMPILE) && (defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL))
                 VerifyValidTransitionFromManagedCode(m_crawl.pThread, &m_crawl);
-#endif // _DEBUG && !DACCESS_COMPILE && _TARGET_X86_
+#endif // _DEBUG && !DACCESS_COMPILE &&  !WIN64EXCEPTIONS
             }
         }
 
@@ -2972,7 +2969,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;
 
-#if !defined(_TARGET_X86_)
+#ifdef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             // On non-X86, we want to process the skipped explicit frames before the managed stack frame
             // containing them.
             if (CheckForSkippedFrames())
@@ -2980,7 +2977,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);
             }
             else
-#endif // !_TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
             {
                 PreProcessingForManagedFrames();
                 _ASSERTE(m_frameState == SFITER_FRAMELESS_METHOD);
@@ -3027,9 +3024,9 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
-#if defined(_TARGET_X86_)
+#ifndef PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
     pvReferenceSP = GetRegdisplaySP(m_crawl.pRD);
-#else // _TARGET_X86_
+#else // !PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
@@ -3037,7 +3034,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry(), &m_cachedCodeInfo);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
-#endif // _TARGET_X86_
+#endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) && 
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )

@@ -6,7 +6,7 @@ namespace System.Security.Permissions {
     
     using System;
 [System.Runtime.InteropServices.ComVisible(true)]
-    public interface IUnrestrictedPermission
+    internal interface IUnrestrictedPermission
     {
         bool IsUnrestricted();
     }

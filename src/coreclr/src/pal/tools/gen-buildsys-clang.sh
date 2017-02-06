@@ -144,9 +144,15 @@ if [ "$build_arch" == "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
+if [ "$build_arch" == "arm" -o "$build_arch" == "armel" ]; then
+    overridefile=clang-compiler-override-arm.txt  
+else
+    overridefile=clang-compiler-override.txt  
+fi
+
 cmake \
   -G "$generator" \
-  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/clang-compiler-override.txt" \
+  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/$overridefile" \
   "-DCMAKE_AR=$llvm_ar" \
   "-DCMAKE_LINKER=$llvm_link" \
   "-DCMAKE_NM=$llvm_nm" \

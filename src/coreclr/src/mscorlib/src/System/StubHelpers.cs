@@ -27,7 +27,8 @@ namespace  System.StubHelpers {
         unsafe static internal byte[] DoAnsiConversion(string str, bool fBestFit, bool fThrowOnUnmappableChar, out int cbLength)
         {
             byte[] buffer = new byte[(str.Length + 1) * Marshal.SystemMaxDBCSCharSize];
-            fixed (byte *bufferPtr = buffer)
+            BCLDebug.Assert(buffer.Length != 0);
+            fixed (byte *bufferPtr = &buffer[0])
             {
                 cbLength = str.ConvertToAnsi(bufferPtr, buffer.Length, fBestFit, fThrowOnUnmappableChar);
             }
@@ -218,7 +219,7 @@ namespace  System.StubHelpers {
             // null argument.
             char[] cCharBuffer = new char[numChar + 1];
             cCharBuffer[numChar] = '\0';
-            fixed (char* pBuffer = cCharBuffer)
+            fixed (char* pBuffer = &cCharBuffer[0])
             {
                 numChar = Encoding.UTF8.GetChars((byte*)pNative, nbBytes, pBuffer, numChar);
                 // replace string builder internal buffer

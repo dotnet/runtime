@@ -13,7 +13,6 @@
 ** <owner>gkhanna</owner>
 ** 
 =============================================================================*/
-#if FEATURE_EXCEPTION_NOTIFICATIONS
 namespace System.Runtime.ExceptionServices {
     using System;
     using System.Runtime.ConstrainedExecution;
@@ -38,4 +37,3 @@ namespace System.Runtime.ExceptionServices {
         private Exception m_Exception;
     }
 }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS

@@ -562,6 +562,17 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
 #endif // !FEATURE_PAL
 }
 
+#ifdef _DEBUG
+static DWORD ShouldInjectFaultInRange()
+{
+    static DWORD fInjectFaultInRange = 99;
+
+    if (fInjectFaultInRange == 99)
+        fInjectFaultInRange = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) & 0x40);
+    return fInjectFaultInRange;
+}
+#endif
+
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
 //
@@ -575,17 +586,6 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
 // It returns NULL when it fails to find any memory that satisfies
 // the range.
 //
-
-#ifdef _DEBUG
-static DWORD ShouldInjectFaultInRange()
-{
-    static DWORD fInjectFaultInRange = 99;
-
-    if (fInjectFaultInRange == 99)
-        fInjectFaultInRange = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) & 0x40);
-    return fInjectFaultInRange;
-}
-#endif
 
 BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                   const BYTE *pMaxAddr,
@@ -601,7 +601,11 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
     CONTRACTL_END;
 
-    BYTE *pResult = NULL;
+    BYTE *pResult = nullptr;  // our return value;
+
+    static unsigned countOfCalls = 0;  // We log the number of tims we call this method
+    countOfCalls++;                    // increment the call counter
+
     //
     // First lets normalize the pMinAddr and pMaxAddr values
     //
@@ -630,55 +634,98 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         return NULL;
     }
 
-    // We will do one scan: [pMinAddr .. pMaxAddr]
-    // Align to 64k. See docs for VirtualAllocEx and lpAddress and 64k alignment for reasons.
-    BYTE *tryAddr = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+    // We will do one scan from [pMinAddr .. pMaxAddr]
+    // First align the tryAddr up to next 64k base address. 
+    // See docs for VirtualAllocEx and lpAddress and 64k alignment for reasons.
+    //
+    BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+    bool     virtualQueryFailed = false;
+    bool     faultInjected      = false;
+    unsigned virtualQueryCount  = 0;
 
     // Now scan memory and try to find a free block of the size requested.
     while ((tryAddr + dwSize) <= (BYTE *) pMaxAddr)
     {
         MEMORY_BASIC_INFORMATION mbInfo;
-
+            
         // Use VirtualQuery to find out if this address is MEM_FREE
         //
+        virtualQueryCount++;
         if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
+        {
+            // Exit and return nullptr if the VirtualQuery call fails.
+            virtualQueryFailed = true;
             break;
-
+        }
+            
         // Is there enough memory free from this start location?
-        // The PAL version of VirtualQuery sets RegionSize to 0 for free
-        // memory regions, in which case we go just ahead and try
-        // VirtualAlloc without checking the size, and see if it succeeds.
-        if (mbInfo.State == MEM_FREE &&
-            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
+        // Note that for most versions of UNIX the mbInfo.RegionSize returned will always be 0
+        if ((mbInfo.State == MEM_FREE) && 
+            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0)) 
         {
             // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*) ClrVirtualAlloc(tryAddr, dwSize, MEM_RESERVE, flProtect);
+            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, MEM_RESERVE, flProtect);
 
-            if (pResult != NULL) 
+            // Normally this will be successful
+            //
+            if (pResult != nullptr)
             {
-                return pResult;
+                // return pResult
+                break;
             }
-#ifdef _DEBUG 
-            // pResult == NULL
-            else if (ShouldInjectFaultInRange())
+
+#ifdef _DEBUG
+            if (ShouldInjectFaultInRange())
             {
-                return NULL;
+                // return nullptr (failure)
+                faultInjected = true;
+                break;
             }
 #endif // _DEBUG
 
-            // We could fail in a race.  Just move on to next region and continue trying
+            // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
+            // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
+            // However we can't distinguish between this and the race case.
+
+            // We might fail in a race.  So just move on to next region and continue trying
             tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
         }
         else
         {
             // Try another section of memory
             tryAddr = max(tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY,
-                (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
+                          (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
         }
     }
 
-    // Our tryAddr reached pMaxAddr
-    return NULL;
+    STRESS_LOG7(LF_JIT, LL_INFO100,
+                "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ], query count was %u - returned %s: %p\n",
+                countOfCalls, (DWORD)dwSize, pMinAddr, pMaxAddr,
+                virtualQueryCount, (pResult != nullptr) ? "success" : "failure", pResult);
+
+    // If we failed this call the process will typically be terminated
+    // so we log any additional reason for failing this call.
+    //
+    if (pResult == nullptr)
+    {
+        if ((tryAddr + dwSize) > (BYTE *)pMaxAddr)
+        {
+            // Our tryAddr reached pMaxAddr
+            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: Address space exhausted.\n");
+        }
+
+        if (virtualQueryFailed)
+        {
+            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
+        }
+
+        if (faultInjected)
+        {
+            STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: fault injected.\n");
+        }
+    }
+
+    return pResult;
 }
 
 //******************************************************************************

@@ -22,11 +22,7 @@ namespace System.Reflection.Emit {
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Security.Permissions;
 
-    
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_EnumBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    sealed public class EnumBuilder : TypeInfo, _EnumBuilder
+    sealed public class EnumBuilder : TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
             if(typeInfo==null) return false;
@@ -341,9 +337,6 @@ namespace System.Reflection.Emit {
         {
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
-
-
-        internal int MetadataTokenInternal { get { return m_typeBuilder.MetadataTokenInternal; } }
     
         /*****************************************************
          * 

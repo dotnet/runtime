@@ -9,9 +9,9 @@
 ** Purpose: Type of callback for async operations
 **
 ===========================================================*/
-namespace System {
-    [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public delegate void AsyncCallback(IAsyncResult ar);
 
+namespace System
+{
+    [Serializable]
+    public delegate void AsyncCallback(IAsyncResult ar);
 }

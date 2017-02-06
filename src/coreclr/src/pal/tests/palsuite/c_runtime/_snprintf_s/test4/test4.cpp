@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
 	/*
 	**  Run only on 64 bit platforms
 	*/
-	#if defined(BIT64) && defined(PLATFORM_UNIX)
+	#if defined(BIT64)
 		Trace("Testing for 64 Bit Platforms \n");
 		DoPointerTest("%p", NULL, "NULL", "0000000000000000"); 
 		DoPointerTest("%p", ptr, "pointer to 0x123456", "0000000000123456");
@@ -61,7 +61,7 @@ int __cdecl main(int argc, char *argv[])
 		DoPointerTest("%Lp", ptr, "pointer to 0x123456", "00123456");
 		DoI64Test("%I64p", lptr, "pointer to 0x1234567887654321",
 				"1234567887654321");
-	#endif //defined(BIT64) && defined(PLATFORM_UNIX)
+	#endif //defined(BIT64)
 
 	PAL_Terminate();
     return PASS;

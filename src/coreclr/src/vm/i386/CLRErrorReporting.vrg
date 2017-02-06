@@ -1,5 +1,0 @@
-VSREG 7
-
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Eventlog\Application\.NET Runtime 4.0 Error Reporting]
-"EventMessageFile"="[DWFolder.D0DF3458_A845_11D3_8D0A_0050046416B9]DW20.EXE"
-"TypesSupported"=dword:00000007

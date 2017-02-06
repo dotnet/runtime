@@ -1614,9 +1614,9 @@ void LoaderHeapTraverse(CLRDATA_ADDRESS blockData,size_t blockSize,BOOL blockIsC
 \**********************************************************************/
 void PrintHeapSize(DWORD_PTR total, DWORD_PTR wasted)
 {
-    ExtOut("Size: 0x%" POINTERSIZE_TYPE "x (%" POINTERSIZE_TYPE "lu) bytes", total, total);
+    ExtOut("Size: 0x%" POINTERSIZE_TYPE "x (%" POINTERSIZE_TYPE "u) bytes", total, total);
     if (wasted)
-        ExtOut(" total, 0x%" POINTERSIZE_TYPE "x (%" POINTERSIZE_TYPE "lu) bytes wasted", wasted,  wasted);    
+        ExtOut(" total, 0x%" POINTERSIZE_TYPE "x (%" POINTERSIZE_TYPE "u) bytes wasted", wasted,  wasted);    
     ExtOut(".\n");
 }
 

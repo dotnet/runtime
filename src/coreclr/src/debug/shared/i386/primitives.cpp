@@ -88,12 +88,12 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     // Frame pointer        
     LPVOID FPAddress = GetRegdisplayFPAddress(pRD);
     pDRD->FP  = (FPAddress == NULL ? 0 : *((SIZE_T *)FPAddress));
-    pDRD->Edi  = (pRD->pEdi == NULL ? 0 : *(pRD->pEdi));
-    pDRD->Esi  = (pRD->pEsi == NULL ? 0 : *(pRD->pEsi));
-    pDRD->Ebx  = (pRD->pEbx == NULL ? 0 : *(pRD->pEbx));
-    pDRD->Edx  = (pRD->pEdx == NULL ? 0 : *(pRD->pEdx));
-    pDRD->Ecx  = (pRD->pEcx == NULL ? 0 : *(pRD->pEcx));
-    pDRD->Eax  = (pRD->pEax == NULL ? 0 : *(pRD->pEax));
+    pDRD->Edi = (pRD->GetEdiLocation() == NULL ? 0 : *pRD->GetEdiLocation());
+    pDRD->Esi = (pRD->GetEsiLocation() == NULL ? 0 : *pRD->GetEsiLocation());
+    pDRD->Ebx = (pRD->GetEbxLocation() == NULL ? 0 : *pRD->GetEbxLocation());
+    pDRD->Edx = (pRD->GetEdxLocation() == NULL ? 0 : *pRD->GetEdxLocation());
+    pDRD->Ecx = (pRD->GetEcxLocation() == NULL ? 0 : *pRD->GetEcxLocation());
+    pDRD->Eax = (pRD->GetEsiLocation() == NULL ? 0 : *pRD->GetEaxLocation());
 
 #if defined(USE_REMOTE_REGISTER_ADDRESS)
     pDRD->pFP = PushedRegAddr(pRD, FPAddress);
@@ -113,7 +113,7 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     pDRD->pEax = NULL;
 #endif // !USE_REMOTE_REGISTER_ADDRESS
 
-    pDRD->SP   = pRD->Esp;
+    pDRD->SP   = pRD->SP;
     pDRD->PC   = pRD->ControlPC;
 
     // Please leave EBP, ESP, EIP at the front so I don't have to scroll

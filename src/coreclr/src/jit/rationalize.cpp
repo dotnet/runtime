@@ -7,6 +7,7 @@
 #pragma hdrstop
 #endif
 
+#ifndef LEGACY_BACKEND
 // state carried over the tree walk, to be used in making
 // a splitting decision.
 struct SplitData
@@ -1054,3 +1055,4 @@ void Rationalizer::DoPhase()
 
     comp->compRationalIRForm = true;
 }
+#endif // LEGACY_BACKEND

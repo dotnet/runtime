@@ -1,9 +1,0 @@
-REGEDIT4
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\policy]
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\policy\v4.0]
-"[URTBuildNum]"="[URTBuildNum]-[URTBuildNum]"
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\policy\standards\v1.0.0]
-"v4.0.[URTBuildNum]"=DWORD:[URTBuildNum]

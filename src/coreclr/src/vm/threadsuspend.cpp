@@ -1345,7 +1345,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 #endif
 
 
-BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
+BOOL Thread::ReadyForAsyncException()
 {
     CONTRACTL {
         NOTHROW;
@@ -1354,8 +1354,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
     }
     CONTRACTL_END;
 
-    if (((mode & TI_Abort) != 0 && !IsAbortRequested()) ||
-        ((mode & TI_Interrupt) != 0 && (m_UserInterrupt & TI_Interrupt) == 0))
+    if (!IsAbortRequested())
     {
         return FALSE;
     }
@@ -2190,7 +2189,7 @@ LRetry:
                               | TS_Detached
                               | TS_Unstarted)));
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
         // TODO WIN64: consider this if there is a way to detect of managed code on stack.
         if ((m_pFrame == FRAME_TOP)
             && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
@@ -2213,7 +2212,7 @@ LRetry:
         if (!m_fPreemptiveGCDisabled)
         {
             if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
                 && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
 #endif // _TARGET_X86_
                 )

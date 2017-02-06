@@ -472,10 +472,6 @@ namespace System.Runtime
                     _availPageFile >> 20, _totalFreeAddressSpace >> 20, 
                     _lastKnownFreeAddressSpace >> 20, _reservedMem);
             }
-
-            public String StackTrace {
-                get { return _stackTrace; }
-            }
         }
 #endif
     }

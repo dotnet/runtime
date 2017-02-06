@@ -140,8 +140,7 @@ class DacHeapWalker;
 extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
-extern "C" uint8_t* g_gc_ephemeral_low;
-extern "C" uint8_t* g_gc_ephemeral_high;
+extern "C" bool g_fFinalizerRunOnShutDown;
 
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
@@ -268,6 +267,11 @@ public:
         WRAPPER_NO_CONTRACT;
 
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
+    }
+
+    void SetFinalizeRunOnShutdown(bool value)
+    {
+        g_fFinalizerRunOnShutDown = value;
     }
 
 protected: 

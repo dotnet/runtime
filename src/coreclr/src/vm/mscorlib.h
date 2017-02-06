@@ -1400,8 +1400,10 @@ DEFINE_CLASS(SAFE_CSHANDLE, Threading, SafeCompressedStackHandle)
 DEFINE_CLASS(SECURITY_ACTION,       Permissions,            SecurityAction)
 DEFINE_CLASS(HOST_PROTECTION_RESOURCE, Permissions,         HostProtectionResource)
 
+#ifdef FEATURE_CAS_POLICY
 DEFINE_CLASS(SECURITY_ATTRIBUTE,    Permissions,            SecurityAttribute)
 DEFINE_METHOD(SECURITY_ATTRIBUTE, FIND_SECURITY_ATTRIBUTE_TYPE_HANDLE, FindSecurityAttributeTypeHandle, SM_Str_RetIntPtr)
+#endif
 
 #ifdef FEATURE_CAS_POLICY
 DEFINE_CLASS(SECURITY_ELEMENT,      Security,               SecurityElement)

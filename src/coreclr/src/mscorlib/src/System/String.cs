@@ -331,18 +331,12 @@ namespace System {
         // These just wrap calls to Normalization class
         public bool IsNormalized()
         {
-#if !FEATURE_NORM_IDNA_ONLY
             // Default to Form C
             return IsNormalized(NormalizationForm.FormC);
-#else
-            // Default to Form IDNA
-            return IsNormalized((NormalizationForm)ExtendedNormalizationForms.FormIdna);
-#endif
         }
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-#if !FEATURE_NORM_IDNA_ONLY
             if (this.IsFastSort())
             {
                 // If its FastSort && one of the 4 main forms, then its already normalized
@@ -352,24 +346,17 @@ namespace System {
                     normalizationForm == NormalizationForm.FormKD )
                     return true;
             }            
-#endif // !FEATURE_NORM_IDNA_ONLY            
             return Normalization.IsNormalized(this, normalizationForm);
         }
 
         public String Normalize()
         {
-#if !FEATURE_NORM_IDNA_ONLY
             // Default to Form C
             return Normalize(NormalizationForm.FormC);
-#else
-            // Default to Form IDNA
-            return Normalize((NormalizationForm)ExtendedNormalizationForms.FormIdna);
-#endif
         }
 
         public String Normalize(NormalizationForm normalizationForm)
         {
-#if !FEATURE_NORM_IDNA_ONLY        
             if (this.IsAscii())
             {
                 // If its FastSort && one of the 4 main forms, then its already normalized
@@ -379,7 +366,6 @@ namespace System {
                     normalizationForm == NormalizationForm.FormKD )
                     return this;
             }
-#endif // !FEATURE_NORM_IDNA_ONLY            
             return Normalization.Normalize(this, normalizationForm);
         }
 
@@ -842,10 +828,8 @@ namespace System {
             }
         }
 
-#if FEATURE_SPAN_OF_T
         internal ref char GetFirstCharRef() {
             return ref m_firstChar;
         }
-#endif
     }
 }

@@ -68,7 +68,7 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
         NEON128 Q[16];
         ULONGLONG D[32];
         DWORD S[32];
-    } DUMMYUNIONNAME;
+    };
 
     //
     // Debug registers

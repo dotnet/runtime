@@ -13,6 +13,7 @@
 #include "gc.h"
 #include "gcscan.h"
 #include "gcdesc.h"
+#include "softwarewritewatch.h"
 
 #define SERVER_GC 1
 

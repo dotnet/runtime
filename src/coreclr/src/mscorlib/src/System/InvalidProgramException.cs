@@ -11,31 +11,31 @@
 **
 =============================================================================*/
 
-namespace System {
+using System.Runtime.Serialization;
 
-    using System;
-    using System.Runtime.Serialization;
+namespace System
+{
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class InvalidProgramException : SystemException {
-        public InvalidProgramException() 
-            : base(Environment.GetResourceString("InvalidProgram_Default")) {
-            SetErrorCode(__HResults.COR_E_INVALIDPROGRAM);
-        }
-    
-        public InvalidProgramException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_INVALIDPROGRAM);
-        }
-    
-        public InvalidProgramException(String message, Exception inner) 
-            : base(message, inner) {
-            SetErrorCode(__HResults.COR_E_INVALIDPROGRAM);
+    public sealed class InvalidProgramException : SystemException
+    {
+        public InvalidProgramException()
+            : base(SR.InvalidProgram_Default)
+        {
+            HResult = __HResults.COR_E_INVALIDPROGRAM;
         }
 
-        internal InvalidProgramException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public InvalidProgramException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_INVALIDPROGRAM;
         }
 
+        public InvalidProgramException(String message, Exception inner)
+            : base(message, inner)
+        {
+            HResult = __HResults.COR_E_INVALIDPROGRAM;
+        }
+
+        internal InvalidProgramException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

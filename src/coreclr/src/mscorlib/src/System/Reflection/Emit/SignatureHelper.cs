@@ -16,10 +16,7 @@ namespace System.Reflection.Emit
     using System.Runtime.Versioning;
     using System.Security.Permissions;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_SignatureHelper))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SignatureHelper : _SignatureHelper
+    public sealed class SignatureHelper
     {
         #region Consts Fields
         private const int NO_SIZE_IN_SIG = -1;
@@ -517,36 +514,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(Environment.GetResourceString("Argument_LargeInteger"));
             }            
             
-        }
-
-        private void AddData(uint data)
-        {
-            if (m_currSig + 4 > m_signature.Length)
-            {
-                m_signature = ExpandArray(m_signature);
-            }
-
-            m_signature[m_currSig++] = (byte)((data)     & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>8)  & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>16) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>24) & 0xFF);
-        }
-        
-        private void AddData(ulong data)
-        {
-            if (m_currSig + 8 > m_signature.Length)
-            {
-                m_signature = ExpandArray(m_signature);
-            }
-
-            m_signature[m_currSig++] = (byte)((data)     & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>8)  & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>16) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>24) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>32) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>40) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>48) & 0xFF);
-            m_signature[m_currSig++] = (byte)((data>>56) & 0xFF);
         }
         
         private void AddElementType(CorElementType cvt)

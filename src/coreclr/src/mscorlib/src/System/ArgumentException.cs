@@ -11,84 +11,87 @@
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System;
-    using System.Runtime.Remoting;
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System.Security.Permissions;
-    using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.Serialization;
+
+namespace System
+{
     // The ArgumentException is thrown when an argument does not meet 
     // the contract of the method.  Ideally it should give a meaningful error
     // message describing what was wrong and which parameter is incorrect.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    public class ArgumentException : SystemException, ISerializable {
-        private String m_paramName;
-        
+    public class ArgumentException : SystemException, ISerializable
+    {
+        private String _paramName;
+
         // Creates a new ArgumentException with its message 
         // string set to the empty string. 
-        public ArgumentException() 
-            : base(Environment.GetResourceString("Arg_ArgumentException")) {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+        public ArgumentException()
+            : base(SR.Arg_ArgumentException)
+        {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
-        
+
         // Creates a new ArgumentException with its message 
         // string set to message. 
         // 
-        public ArgumentException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
-        }
-        
-        public ArgumentException(String message, Exception innerException) 
-            : base(message, innerException) {
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+        public ArgumentException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
-        public ArgumentException(String message, String paramName, Exception innerException) 
-            : base(message, innerException) {
-            m_paramName = paramName;
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
-        }
-        
-        public ArgumentException (String message, String paramName)
-        
-            : base (message) {
-            m_paramName = paramName;
-            SetErrorCode(__HResults.COR_E_ARGUMENT);
+        public ArgumentException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+            HResult = __HResults.COR_E_ARGUMENT;
         }
 
-        protected ArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
-            m_paramName = info.GetString("ParamName");
+        public ArgumentException(String message, String paramName, Exception innerException)
+            : base(message, innerException)
+        {
+            _paramName = paramName;
+            HResult = __HResults.COR_E_ARGUMENT;
         }
-        
+
+        public ArgumentException(String message, String paramName)
+            : base(message)
+        {
+            _paramName = paramName;
+            HResult = __HResults.COR_E_ARGUMENT;
+        }
+
+        protected ArgumentException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _paramName = info.GetString("ParamName");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("ParamName", _paramName, typeof(String));
+        }
+
         public override String Message
         {
-            get {
+            get
+            {
                 String s = base.Message;
-                if (!String.IsNullOrEmpty(m_paramName)) {
-                    String resourceString = Environment.GetResourceString("Arg_ParamName_Name", m_paramName);
+                if (!String.IsNullOrEmpty(_paramName))
+                {
+                    String resourceString = SR.Format(SR.Arg_ParamName_Name, _paramName);
                     return s + Environment.NewLine + resourceString;
                 }
                 else
                     return s;
             }
         }
-                
-        public virtual String ParamName {
-            get { return m_paramName; }
-        }
-    
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
-            if (info==null) {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
-            base.GetObjectData(info, context);
-            info.AddValue("ParamName", m_paramName, typeof(String));
+
+        public virtual String ParamName
+        {
+            get { return _paramName; }
         }
     }
 }

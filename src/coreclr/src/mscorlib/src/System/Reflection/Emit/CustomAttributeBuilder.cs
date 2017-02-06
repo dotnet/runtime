@@ -25,10 +25,7 @@ namespace System.Reflection.Emit {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_CustomAttributeBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class CustomAttributeBuilder : _CustomAttributeBuilder
+    public class CustomAttributeBuilder
     {
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
@@ -553,18 +550,6 @@ namespace System.Reflection.Emit {
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner)
         {
             CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
-        }
-
-        //*************************************************
-        // Upon saving to disk, we need to create the memberRef token for the custom attribute's type
-        // first of all. So when we snap the in-memory module for on disk, this token will be there.
-        // We also need to enforce the use of MemberRef. Because MemberDef token might move. 
-        // This function has to be called before we snap the in-memory module for on disk (i.e. Presave on
-        // ModuleBuilder.
-        //*************************************************
-        internal int PrepareCreateCustomAttributeToDisk(ModuleBuilder mod)
-        {
-            return mod.InternalGetConstructorToken(m_con, true).Token;
         }
 
         //*************************************************

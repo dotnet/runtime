@@ -64,16 +64,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String FormatSignature(byte [] signature);
     
-    
-    
-        // Potentially called from the EE
-        private MissingMemberException(String className, String memberName, byte[] signature)
-        {
-            ClassName   = className;
-            MemberName  = memberName;
-            Signature   = signature;
-        }
-    
         public MissingMemberException(String className, String memberName)
         {
             ClassName   = className;
