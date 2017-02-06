@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Floor(float) over 5000 iterations for the domain -1, +1
 
         private const float floorSingleDelta = 0.0004f;
-        private const float floorSingleExpectedResult = -2500.0f;
+        private const float floorSingleExpectedResult = -2498.0f;
 
         [Benchmark]
         public static void FloorSingleBenchmark()

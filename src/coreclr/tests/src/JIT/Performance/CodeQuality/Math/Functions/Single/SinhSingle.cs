@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Sinh(float) over 5000 iterations for the domain -1, +1
 
         private const float sinhSingleDelta = 0.0004f;
-        private const float sinhSingleExpectedResult = 1.17520119f;
+        private const float sinhSingleExpectedResult = 1.26028216f;
 
         [Benchmark]
         public static void SinhSingleBenchmark()

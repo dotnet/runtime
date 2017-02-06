@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Atan(float) over 5000 iterations for the domain -1, +1
 
         private const float atanSingleDelta = 0.0004f;
-        private const float atanSingleExpectedResult = 0.785398163f;
+        private const float atanSingleExpectedResult = 0.841940999f;
 
         [Benchmark]
         public static void AtanSingleBenchmark()

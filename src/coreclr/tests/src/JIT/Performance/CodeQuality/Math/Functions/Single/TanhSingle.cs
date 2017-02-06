@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Tanh(float) over 5000 iterations for the domain -1, +1
 
         private const float tanhSingleDelta = 0.0004f;
-        private const float tanhSingleExpectedResult = 0.761594156f;
+        private const float tanhSingleExpectedResult = 0.816701353f;
 
         [Benchmark]
         public static void TanhSingleBenchmark()
