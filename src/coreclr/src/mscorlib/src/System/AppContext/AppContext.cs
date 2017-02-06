@@ -84,7 +84,7 @@ namespace System
         }  
 
         public static event System.EventHandler ProcessExit;
-        public static event System.EventHandler Unloading;
+        internal static event System.EventHandler Unloading;
 
         private static void OnProcessExit(object sender, EventArgs e)
         {

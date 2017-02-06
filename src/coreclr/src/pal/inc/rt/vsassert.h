@@ -11,10 +11,6 @@
 #ifndef __VSASSERT_H__
 #define __VSASSERT_H__
 
-#ifndef FEATURE_PAL
-#error "FEATURE_PAL must be defined for this file"
-#else // FEATURE_PAL
-
 #define VSASSERT(e, szMsg)                                      \
 do {                                                            \
     if (!(e)) {                                                 \
@@ -94,5 +90,4 @@ do {                                                            \
 
 #define VsIgnoreAllocs(f)
 
-#endif // FEATURE_PAL
 #endif // __VSASSERT_H__

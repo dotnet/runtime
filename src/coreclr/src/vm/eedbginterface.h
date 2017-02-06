@@ -139,8 +139,10 @@ public:
 
 #ifndef DACCESS_COMPILE
 
+#ifndef USE_GC_INFO_DECODER
     virtual BOOL IsInPrologOrEpilog(const BYTE *address,
                                     size_t* prologSize) = 0;
+#endif
 
     // Determine whether certain native offsets of the specified function are within
     // an exception filter or handler.

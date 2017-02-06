@@ -784,7 +784,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* 
 
 #if defined(FEATURE_PAL)
 // call back through data target to unwind out-of-process
-HRESULT DacVirtualUnwind(ULONG32 threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
+HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
 #endif // FEATURE_PAL
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS

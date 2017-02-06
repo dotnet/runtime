@@ -265,9 +265,6 @@ namespace System.Collections.Generic
             Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
         }
         
-        // Used by the serialization engine.
-        private Int64EnumComparer(SerializationInfo info, StreamingContext context) { }
-        
         public override int Compare(T x, T y)
         {
             long lx = JitHelpers.UnsafeEnumCastLong(x);

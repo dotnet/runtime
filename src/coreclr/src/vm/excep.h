@@ -415,7 +415,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(TypeHandle thCastFro
 VOID DECLSPEC_NORETURN RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo);
 
 
-#ifdef _TARGET_X86_
+#ifndef WIN64EXCEPTIONS
 
 #include "eexcp.h"
 #include "exinfo.h"
@@ -454,7 +454,7 @@ struct NestedHandlerExRecord : public FrameHandlerExRecord
     }
 };
 
-#endif // _TARGET_X86_
+#endif // !WIN64EXCEPTIONS
 
 #if defined(ENABLE_CONTRACTS_IMPL)
 
@@ -520,10 +520,6 @@ extern "C" BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownT
 // The stuff below is what works "behind the scenes" of the public macros.
 //==========================================================================
 
-#ifdef _TARGET_X86_
-LPVOID COMPlusEndCatchWorker(Thread *pCurThread);
-EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVOID* pRetAddress);
-#endif
 
 // Specify NULL for uTryCatchResumeAddress when not checking for a InducedThreadRedirectAtEndOfCatch
 EXTERN_C LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress = NULL);
@@ -946,9 +942,9 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_TARGET_X86_)
+#ifndef WIN64EXCEPTIONS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame);
-#elif defined(WIN64EXCEPTIONS)
+#else
 void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame);
 #endif
 

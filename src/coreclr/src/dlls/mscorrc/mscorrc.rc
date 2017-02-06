@@ -1230,6 +1230,9 @@ BEGIN
     IDS_CLASSLOAD_NOTINTERFACE              "Could not load type '%1' from assembly '%2' because it attempts to implement a class as an interface."
     IDS_CLASSLOAD_VALUEINSTANCEFIELD        "Could not load the value type '%1' from assembly '%2' because it has an instance field of itself."
 
+    IDS_CLASSLOAD_BYREFLIKE_STATICFIELD     "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a static field."
+    IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a class instance field."
+
     IDS_CLASSLOAD_BAD_NAME                  "Type name '%1' from assembly '%2' is invalid."
     IDS_CLASSLOAD_RANK_TOOLARGE             "'%1' from assembly '%2' has too many dimensions."
     IDS_CLASSLOAD_BAD_MANAGED_RVA           "Managed method '%3' on type '%1' from assembly '%2' is not supported."

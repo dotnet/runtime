@@ -15,7 +15,6 @@
 ** 
 =============================================================================*/
 
-#if FEATURE_EXCEPTIONDISPATCHINFO
 namespace System.Runtime.ExceptionServices {
     using System;
     
@@ -132,4 +131,3 @@ namespace System.Runtime.ExceptionServices {
         }
     }
 }
-#endif // FEATURE_EXCEPTIONDISPATCHINFO

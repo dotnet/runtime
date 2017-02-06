@@ -129,8 +129,6 @@ make the most sense to just skip the named semaphore test on Windows
 - from an object management perspective it doesn't really gain 
 us anything over what we already have."
 */
-#ifdef PLATFORM_UNIX
-
     ZeroMemory( objectSuffix, MAX_PATH );
 
     if(GetParameters(argc, argv))
@@ -272,7 +270,6 @@ us anything over what we already have."
         Trace("Test Failed\n");
     }
 
-#endif //PLATFORM_UNIX
     PAL_Terminate();
     return testReturnCode;
 }

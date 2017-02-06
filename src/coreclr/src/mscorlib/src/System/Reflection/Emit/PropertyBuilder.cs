@@ -25,10 +25,7 @@ namespace System.Reflection.Emit {
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
     // 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_PropertyBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class PropertyBuilder : PropertyInfo, _PropertyBuilder
+    public sealed class PropertyBuilder : PropertyInfo
     { 
     
         // Make a private constructor so these cannot be constructed externally.
@@ -83,14 +80,6 @@ namespace System.Reflection.Emit {
         public PropertyToken PropertyToken
         {
             get {return m_prToken;}
-        }
-
-        internal int MetadataTokenInternal
-        {
-            get 
-            {
-                return m_tkProperty;
-            }
         }
         
         public override Module Module

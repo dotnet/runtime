@@ -2404,6 +2404,12 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     FieldDesc *pField = GetApproxFieldDescListRaw();
     FieldDesc *pFieldEnd = pField + numIntroducedFields;
 
+    // System types are loaded before others, so ByReference<T> would be loaded before Span<T> or any other type that has a
+    // ByReference<T> field. ByReference<T> is the first by-ref-like system type to be loaded (see
+    // SystemDomain::LoadBaseSystemClasses), so if the current method table is marked as by-ref-like and g_pByReferenceClass is
+    // null, it must be the initial load of ByReference<T>.
+    bool isThisByReferenceOfT = IsByRefLike() && (g_pByReferenceClass == nullptr || HasSameTypeDefAs(g_pByReferenceClass));
+
     for (; pField < pFieldEnd; pField++)
     {
 #ifdef _DEBUG
@@ -2425,7 +2431,19 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         CorElementType fieldType = pField->GetFieldType();
 
-        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+        SystemVClassificationType fieldClassificationType;
+        if (isThisByReferenceOfT)
+        {
+            // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
+            // memory, so classify its field as such
+            _ASSERTE(numIntroducedFields == 1);
+            _ASSERTE(fieldType == CorElementType::ELEMENT_TYPE_I);
+            fieldClassificationType = SystemVClassificationTypeIntegerByRef;
+        }
+        else
+        {
+            fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+        }
 
 #ifdef _DEBUG
         LPCUTF8 fieldName;

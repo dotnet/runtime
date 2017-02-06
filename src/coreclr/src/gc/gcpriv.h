@@ -1671,7 +1671,7 @@ protected:
     PER_HEAP
     void reset_write_watch (BOOL concurrent_p);
     PER_HEAP
-    void adjust_ephemeral_limits (bool is_runtime_suspended);
+    void adjust_ephemeral_limits ();
     PER_HEAP
     void make_generation (generation& gen, heap_segment* seg,
                           uint8_t* start, uint8_t* pointer);
@@ -2802,13 +2802,11 @@ public:
     PER_HEAP
     void exit_gc_done_event_lock();
 
-#ifdef MULTIPLE_HEAPS
     PER_HEAP
     uint8_t*  ephemeral_low;      //lowest ephemeral address
 
     PER_HEAP
     uint8_t*  ephemeral_high;     //highest ephemeral address
-#endif //MULTIPLE_HEAPS
 
     PER_HEAP
     uint32_t* card_table;

@@ -442,8 +442,5 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b409748\b409748\b409748.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_283795\DevDiv_283795\DevDiv_283795.cmd">
-            <Issue>8077</Issue>
-        </ExcludeList>
     </ItemGroup>
 </Project>

@@ -27,12 +27,10 @@ set(ILDASM_SOURCES
     ../dasm.cpp
     ../dasm_formattype.cpp
     ../dasm_mi.cpp
-    ../dasm_pr.cpp
     ../dasm_sz.cpp
     ../dis.cpp
     ../dman.cpp
     ../dres.cpp
-    ../gui.cpp
     ../ildasmpch.cpp
     ../windasm.cpp
 )

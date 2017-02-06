@@ -441,8 +441,6 @@ extern MethodTable * g_pFreeObjectMethodTable;
 
 extern int32_t g_TrapReturningThreads;
 
-extern bool g_fFinalizerRunOnShutDown;
-
 //
 // Locks
 //
@@ -453,21 +451,6 @@ class Thread;
 Thread * GetThread();
 
 typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
-
-class FinalizerThread
-{
-public:
-    static bool Initialize();
-    static void EnableFinalization();
-
-    static bool HaveExtraWorkForFinalizer();
-
-    static bool IsCurrentThreadFinalizer();
-    static void Wait(DWORD timeout, bool allowReentrantWait = false);
-    static void SignalFinalizationDone(bool fFinalizer);
-    static void SetFinalizerThread(Thread * pThread);
-    static HANDLE GetFinalizerEvent();
-};
 
 bool IsGCSpecialThread();
 
@@ -509,8 +492,6 @@ void LogSpewAlways(const char *fmt, ...);
 
 // -----------------------------------------------------------------------------------------------------------
 
-void StompWriteBarrierEphemeral(bool isRuntimeSuspended);
-void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
 bool IsGCThread();
 
 class CLRConfig

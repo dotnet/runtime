@@ -2310,6 +2310,9 @@ void Compiler::compSetProcessor()
         if (opts.compCanUseAVX)
         {
             codeGen->getEmitter()->SetUseAVX(true);
+            // Assume each JITted method does not contain AVX instruction at first
+            codeGen->getEmitter()->SetContainsAVX(false);
+            codeGen->getEmitter()->SetContains256bitAVX(false);
         }
         else
 #endif // FEATURE_AVX_SUPPORT
@@ -3022,6 +3025,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef FEATURE_SIMD
     // Minimum bar for availing SIMD benefits is SSE2 on AMD64/x86.
     featureSIMD = jitFlags->IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD);
+    setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
     if (compIsForInlining() || compIsForImportOnly())
@@ -3293,8 +3297,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compTailCallLoopOpt = false;
     }
 #endif
-
-    opts.compMustInlinePInvokeCalli = jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
 
     opts.compScopeInfo = opts.compDbgInfo;
 
@@ -6850,8 +6852,8 @@ void Compiler::CopyTestDataToCloneTree(GenTreePtr from, GenTreePtr to)
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-            CopyTestDataToCloneTree(from->gtBoundsChk.gtArrLen, to->gtBoundsChk.gtArrLen);
             CopyTestDataToCloneTree(from->gtBoundsChk.gtIndex, to->gtBoundsChk.gtIndex);
+            CopyTestDataToCloneTree(from->gtBoundsChk.gtArrLen, to->gtBoundsChk.gtArrLen);
             return;
 
         default:
@@ -9161,10 +9163,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_RELOP_QMARK)
                 {
                     chars += printf("[RELOP_QMARK]");
-                }
-                if (tree->gtFlags & GTF_RELOP_SMALL)
-                {
-                    chars += printf("[RELOP_SMALL]");
                 }
                 break;
 

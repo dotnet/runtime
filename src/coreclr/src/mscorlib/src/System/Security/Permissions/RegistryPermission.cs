@@ -5,7 +5,6 @@
 namespace System.Security.Permissions
 {
     using System;
-    using SecurityElement = System.Security.SecurityElement;
     using System.Security.AccessControl;
     using System.Security.Util;
     using System.IO;
@@ -15,7 +14,7 @@ namespace System.Security.Permissions
 [Serializable]
     [Flags]
 [System.Runtime.InteropServices.ComVisible(true)]
-    public enum RegistryPermissionAccess
+    internal enum RegistryPermissionAccess
     {
         NoAccess = 0x00,
         Read = 0x01,
@@ -26,7 +25,7 @@ namespace System.Security.Permissions
     
 [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    sealed public class RegistryPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
+    sealed internal class RegistryPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
         private StringExpressionSet m_read;
         private StringExpressionSet m_write;
@@ -107,62 +106,11 @@ namespace System.Security.Permissions
                 m_create.AddExpressions( pathList );
             }
         }
-    
-        public String GetPathList( RegistryPermissionAccess access )
-        {
-            // SafeCritical: these are registry paths, which means we're not leaking file system information here
-            VerifyAccess( access );
-            ExclusiveAccess( access );
-    
-            if ((access & RegistryPermissionAccess.Read) != 0)
-            {
-                if (m_read == null)
-                {
-                    return "";
-                }
-                return m_read.UnsafeToString();
-            }
-            
-            if ((access & RegistryPermissionAccess.Write) != 0)
-            {
-                if (m_write == null)
-                {
-                    return "";
-                }
-                return m_write.UnsafeToString();
-            }
-    
-            if ((access & RegistryPermissionAccess.Create) != 0)
-            {
-                if (m_create == null)
-                {
-                    return "";
-                }
-                return m_create.UnsafeToString();
-            }
-            
-            /* not reached */
-            
-            return "";
-        }     
         
         private void VerifyAccess( RegistryPermissionAccess access )
         {
             if ((access & ~RegistryPermissionAccess.AllAccess) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access));
-        }
-        
-        private void ExclusiveAccess( RegistryPermissionAccess access )
-        {
-            if (access == RegistryPermissionAccess.NoAccess)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") ); 
-            }
-    
-            if (((int) access & ((int)access-1)) != 0)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") ); 
-            }
         }
         
         private bool IsEmpty()

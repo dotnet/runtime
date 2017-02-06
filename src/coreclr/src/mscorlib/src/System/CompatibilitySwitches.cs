@@ -10,7 +10,6 @@ namespace System
     internal static class CompatibilitySwitches
     {
         private static bool s_AreSwitchesSet;
-        private static bool s_useLatestBehaviorWhenTFMNotSpecified; // Which behavior to use when the TFM is not specified.
 
         public static bool IsCompatibilityBehaviorDefined
         {
@@ -20,39 +19,9 @@ namespace System
             }
         }
 
-        private static bool IsCompatibilitySwitchSet(string compatibilitySwitch)
-        {
-            bool? result = AppDomain.CurrentDomain.IsCompatibilitySwitchSet(compatibilitySwitch);
-            return (result.HasValue && result.Value);
-        }
-
         internal static void InitializeSwitches()
         {
             s_AreSwitchesSet = true;
-        }
-
-        public static bool IsNetFx40TimeSpanLegacyFormatMode
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsNetFx40LegacySecurityPolicy
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public static bool IsNetFx45LegacyManagedDeflateStream
-        {
-            get
-            {
-                return false;
-            }
         }
     }
 }

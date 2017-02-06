@@ -150,6 +150,26 @@ void SetUseAVX(bool value)
     useAVXEncodings = value;
 }
 
+bool containsAVXInstruction = false;
+bool ContainsAVX()
+{
+    return containsAVXInstruction;
+}
+void SetContainsAVX(bool value)
+{
+    containsAVXInstruction = value;
+}
+
+bool contains256bitAVXInstruction = false;
+bool Contains256bitAVX()
+{
+    return contains256bitAVXInstruction;
+}
+void SetContains256bitAVX(bool value)
+{
+    contains256bitAVXInstruction = value;
+}
+
 bool IsThreeOperandBinaryAVXInstruction(instruction ins);
 bool IsThreeOperandMoveAVXInstruction(instruction ins);
 bool IsThreeOperandAVXInstruction(instruction ins)
@@ -159,6 +179,14 @@ bool IsThreeOperandAVXInstruction(instruction ins)
 bool Is4ByteAVXInstruction(instruction ins);
 #else  // !FEATURE_AVX_SUPPORT
 bool                     UseAVX()
+{
+    return false;
+}
+bool ContainsAVX()
+{
+    return false;
+}
+bool Contains256bitAVX()
 {
     return false;
 }

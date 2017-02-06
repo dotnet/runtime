@@ -18,6 +18,9 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do this first
+
 #include "pal/thread.hpp"
 #include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
@@ -27,7 +30,6 @@ Abstract:
 #include "../objmgr/shmobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
 #include "pal/sharedmemory.h"
 #include "pal/shmemory.h"
 #include "pal/process.h"
@@ -89,8 +91,6 @@ using namespace CorUnix;
 
 extern "C" BOOL CRTInitStdStreams( void );
 
-
-SET_DEFAULT_DEBUG_CHANNEL(PAL);
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
@@ -312,17 +312,6 @@ Initialize(
             goto CLEANUP1;
         }
 #endif // HAVE_MACH_EXCEPTIONS
-
-        //
-        // Initialize global thread data
-        //
-
-        palError = InitializeGlobalThreadData();
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize thread data\n");
-            goto CLEANUP1;
-        }
 
         //
         // Allocate the initial thread data

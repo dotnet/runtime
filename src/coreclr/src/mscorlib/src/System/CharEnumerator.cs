@@ -11,65 +11,71 @@
 **
 **
 ============================================================*/
-namespace System {
 
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
+using System.Collections;
+using System.Collections.Generic;
 
-[System.Runtime.InteropServices.ComVisible(true)]
-    [Serializable] 
-    public sealed class CharEnumerator : IEnumerator, ICloneable, IEnumerator<char>, IDisposable {
-        private String str;
-        private int index;
-        private char currentElement;
+namespace System
+{
+    public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
+    {
+        private String _str;
+        private int _index;
+        private char _currentElement;
 
-        internal CharEnumerator(String str) {
-            Contract.Requires(str != null);
-            this.str = str;
-            this.index = -1;
+        internal CharEnumerator(String str)
+        {
+            _str = str;
+            _index = -1;
         }
 
-        public Object Clone() {
+        public object Clone()
+        {
             return MemberwiseClone();
         }
-    
-        public bool MoveNext() {
-            if (index < (str.Length-1)) {
-                index++;
-                currentElement = str[index];
+
+        public bool MoveNext()
+        {
+            if (_index < (_str.Length - 1))
+            {
+                _index++;
+                _currentElement = _str[_index];
                 return true;
             }
             else
-                index = str.Length;
+                _index = _str.Length;
             return false;
-
         }
 
-        public void Dispose() {
-            if (str != null)
-                index = str.Length;
-            str = null;
+        public void Dispose()
+        {
+            if (_str != null)
+                _index = _str.Length;
+            _str = null;
         }
-    
+
         /// <internalonly/>
-        Object IEnumerator.Current {
+        Object IEnumerator.Current
+        {
             get { return Current; }
         }
-    
-        public char Current {
-            get {
-                if (index == -1)
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                if (index >= str.Length)
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));                                            
-                return currentElement;
+
+        public char Current
+        {
+            get
+            {
+                if (_index == -1)
+                    throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+                if (_index >= _str.Length)
+                    throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
+                return _currentElement;
             }
         }
 
-        public void Reset() {
-            currentElement = (char)0;
-            index = -1;
+        public void Reset()
+        {
+            _currentElement = (char)0;
+            _index = -1;
         }
     }
 }

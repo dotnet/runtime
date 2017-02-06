@@ -830,34 +830,6 @@ namespace System.Runtime.InteropServices
             }
         }
     
-        //====================================================================
-        // NumParamBytes
-        //====================================================================
-        public static int NumParamBytes(MethodInfo m)
-        {
-            if (m == null) 
-                throw new ArgumentNullException(nameof(m));
-            Contract.EndContractBlock();
-
-            RuntimeMethodInfo rmi = m as RuntimeMethodInfo;
-            if (rmi == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"));
-
-            return InternalNumParamBytes(rmi);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern int InternalNumParamBytes(IRuntimeMethodInfo m);
-
-        //====================================================================
-        // Win32 Exception stuff
-        // These are mostly interesting for Structured exception handling,
-        // but need to be exposed for all exceptions (not just SEHException).
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [System.Runtime.InteropServices.ComVisible(true)]
-        public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
@@ -1015,42 +987,6 @@ namespace System.Runtime.InteropServices
 
 
         //====================================================================
-        // This method is intended for compiler code generators rather
-        // than applications. 
-        //====================================================================
-        [ObsoleteAttribute("The GetUnmanagedThunkForManagedMethodPtr method has been deprecated and will be removed in a future release.", false)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr GetUnmanagedThunkForManagedMethodPtr(IntPtr pfnMethodToWrap, IntPtr pbSignature, int cbSignature);
-
-        //====================================================================
-        // This method is intended for compiler code generators rather
-        // than applications. 
-        //====================================================================
-        [ObsoleteAttribute("The GetManagedThunkForUnmanagedMethodPtr method has been deprecated and will be removed in a future release.", false)]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr GetManagedThunkForUnmanagedMethodPtr(IntPtr pfnMethodToWrap, IntPtr pbSignature, int cbSignature);
-
-        //====================================================================
-        // The hosting APIs allow a sophisticated host to schedule fibers
-        // onto OS threads, so long as they notify the runtime of this
-        // activity.  A fiber cookie can be redeemed for its managed Thread
-        // object by calling the following service.
-        //====================================================================
-        [ObsoleteAttribute("The GetThreadFromFiberCookie method has been deprecated.  Use the hosting API to perform this operation.", false)]
-        public static Thread GetThreadFromFiberCookie(int cookie)
-        {
-            if (cookie == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ArgumentZero"), nameof(cookie));
-            Contract.EndContractBlock();
-
-            return InternalGetThreadFromFiberCookie(cookie);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread InternalGetThreadFromFiberCookie(int cookie);
-
-
-        //====================================================================
         // Memory allocation and deallocation.
         //====================================================================
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -1192,185 +1128,6 @@ namespace System.Runtime.InteropServices
         internal static extern int GetHRForException_WinRT(Exception e);
 
 		internal static readonly Guid ManagedNameGuid = new Guid("{0F21F359-AB84-41E8-9A78-36D110E6D2F9}"); 
-       
-        //====================================================================
-        // Given a managed object that wraps a UCOMITypeLib, return its name
-        //====================================================================
-        [Obsolete("Use System.Runtime.InteropServices.Marshal.GetTypeLibName(ITypeLib pTLB) instead. http://go.microsoft.com/fwlink/?linkid=14202&ID=0000011.", false)]
-        public static String GetTypeLibName(UCOMITypeLib pTLB)
-        {
-            return GetTypeLibName((ITypeLib)pTLB);
-        }
-
-
-        //====================================================================
-        // Given a managed object that wraps an ITypeLib, return its name
-        //====================================================================
-        public static String GetTypeLibName(ITypeLib typelib)
-        {
-            if (typelib == null)
-                throw new ArgumentNullException(nameof(typelib));
-            Contract.EndContractBlock();
-            
-            String strTypeLibName = null;
-            String strDocString = null;
-            int dwHelpContext = 0;
-            String strHelpFile = null;
-
-            typelib.GetDocumentation(-1, out strTypeLibName, out strDocString, out dwHelpContext, out strHelpFile);
-
-            return strTypeLibName;
-        }   
-
-        //====================================================================
-        // Internal version of GetTypeLibName
-        // Support GUID_ManagedName which aligns with TlbImp
-        //====================================================================
-        internal static String GetTypeLibNameInternal(ITypeLib typelib)
-        {
-            if (typelib == null)
-                throw new ArgumentNullException(nameof(typelib));
-            Contract.EndContractBlock();
-
-            // Try GUID_ManagedName first
-            ITypeLib2 typeLib2 = typelib as ITypeLib2;
-            if (typeLib2 != null)
-            {
-                Guid guid = ManagedNameGuid;
-                object val;
-
-                try
-                {
-                    typeLib2.GetCustData(ref guid, out val);
-                }       
-                catch(Exception)
-                {
-                    val = null;
-                }
-                
-                if (val != null && val.GetType() == typeof(string))
-                {               
-                    string customManagedNamespace = (string)val;
-                    customManagedNamespace = customManagedNamespace.Trim();
-                    if (customManagedNamespace.EndsWith(".DLL", StringComparison.OrdinalIgnoreCase))
-                        customManagedNamespace = customManagedNamespace.Substring(0, customManagedNamespace.Length - 4);
-                    else if (customManagedNamespace.EndsWith(".EXE", StringComparison.OrdinalIgnoreCase))
-                        customManagedNamespace = customManagedNamespace.Substring(0, customManagedNamespace.Length - 4);
-                    return customManagedNamespace;
-                }
-            }
-			
-            return GetTypeLibName(typelib);
-        }
-        
-
-        //====================================================================
-        // Given an managed object that wraps an UCOMITypeLib, return its guid
-        //====================================================================
-        [Obsolete("Use System.Runtime.InteropServices.Marshal.GetTypeLibGuid(ITypeLib pTLB) instead. http://go.microsoft.com/fwlink/?linkid=14202&ID=0000011.", false)]
-        public static Guid GetTypeLibGuid(UCOMITypeLib pTLB)
-        {
-            return GetTypeLibGuid((ITypeLib)pTLB);
-        }
-
-        //====================================================================
-        // Given an managed object that wraps an ITypeLib, return its guid
-        //====================================================================
-        public static Guid GetTypeLibGuid(ITypeLib typelib)
-        {
-            Guid result = new Guid ();
-            FCallGetTypeLibGuid (ref result, typelib);
-            return result;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallGetTypeLibGuid(ref Guid result, ITypeLib pTLB);
-
-        //====================================================================
-        // Given a managed object that wraps a UCOMITypeLib, return its lcid
-        //====================================================================
-        [Obsolete("Use System.Runtime.InteropServices.Marshal.GetTypeLibLcid(ITypeLib pTLB) instead. http://go.microsoft.com/fwlink/?linkid=14202&ID=0000011.", false)]
-        public static int GetTypeLibLcid(UCOMITypeLib pTLB)
-        {
-            return GetTypeLibLcid((ITypeLib)pTLB);
-        }
-
-        //====================================================================
-        // Given a managed object that wraps an ITypeLib, return its lcid
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetTypeLibLcid(ITypeLib typelib);
-
-        //====================================================================
-        // Given a managed object that wraps an ITypeLib, return it's 
-        // version information.
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetTypeLibVersion(ITypeLib typeLibrary, out int major, out int minor);
-
-        //====================================================================
-        // Given a managed object that wraps an ITypeInfo, return its guid.
-        //====================================================================
-        internal static Guid GetTypeInfoGuid(ITypeInfo typeInfo)
-        {
-            Guid result = new Guid ();
-            FCallGetTypeInfoGuid (ref result, typeInfo);
-            return result;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallGetTypeInfoGuid(ref Guid result, ITypeInfo typeInfo);
-
-        //====================================================================
-        // Given a assembly, return the TLBID that will be generated for the
-        // typelib exported from the assembly.
-        //====================================================================
-        public static Guid GetTypeLibGuidForAssembly(Assembly asm)
-        {
-            if (asm == null)
-                throw new ArgumentNullException(nameof(asm));
-            Contract.EndContractBlock();
-
-            RuntimeAssembly rtAssembly = asm as RuntimeAssembly;
-            if (rtAssembly == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), nameof(asm));
-
-            Guid result = new Guid();
-            FCallGetTypeLibGuidForAssembly(ref result, rtAssembly);
-            return result;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallGetTypeLibGuidForAssembly(ref Guid result, RuntimeAssembly asm);
-
-        //====================================================================
-        // Given a assembly, return the version number of the type library
-        // that would be exported from the assembly.
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void _GetTypeLibVersionForAssembly(RuntimeAssembly inputAssembly, out int majorVersion, out int minorVersion);
-
-        public static void GetTypeLibVersionForAssembly(Assembly inputAssembly, out int majorVersion, out int minorVersion) 
-        {
-            if (inputAssembly == null)
-                throw new ArgumentNullException(nameof(inputAssembly));
-            Contract.EndContractBlock();
-
-            RuntimeAssembly rtAssembly = inputAssembly as RuntimeAssembly;
-            if (rtAssembly == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"), nameof(inputAssembly));
-
-            _GetTypeLibVersionForAssembly(rtAssembly, out majorVersion, out minorVersion);
-        }
-
-        //====================================================================
-        // Given a managed object that wraps an UCOMITypeInfo, return its name
-        //====================================================================
-        [Obsolete("Use System.Runtime.InteropServices.Marshal.GetTypeInfoName(ITypeInfo pTLB) instead. http://go.microsoft.com/fwlink/?linkid=14202&ID=0000011.", false)]
-        public static String GetTypeInfoName(UCOMITypeInfo pTI)
-        {
-            return GetTypeInfoName((ITypeInfo)pTI);
-        }
 
         //====================================================================
         // Given a managed object that wraps an ITypeInfo, return its name
@@ -1391,77 +1148,12 @@ namespace System.Runtime.InteropServices
             return strTypeLibName;
         }
 
-        //====================================================================
-        // Internal version of GetTypeInfoName
-        // Support GUID_ManagedName which aligns with TlbImp
-        //====================================================================
-        internal static String GetTypeInfoNameInternal(ITypeInfo typeInfo, out bool hasManagedName)
-        {
-            if (typeInfo == null)
-                throw new ArgumentNullException(nameof(typeInfo));
-            Contract.EndContractBlock();
-            
-            // Try ManagedNameGuid first
-            ITypeInfo2 typeInfo2 = typeInfo as ITypeInfo2;
-            if (typeInfo2 != null)
-            {
-                Guid guid = ManagedNameGuid;
-                object val;
-
-                try
-                {
-                    typeInfo2.GetCustData(ref guid, out val);
-                }       
-                catch(Exception)
-                {
-                    val = null;
-                }
-                
-                if (val != null && val.GetType() == typeof(string))
-                {
-                    hasManagedName = true;
-                    return (string)val;
-                }               
-            }
-
-            hasManagedName = false;
-            return GetTypeInfoName(typeInfo);
-        }
-
-        //====================================================================
-        // Get the corresponding managed name as converted by TlbImp
-        // Used to get the type using GetType() from imported assemblies
-        //====================================================================
-        internal static String GetManagedTypeInfoNameInternal(ITypeLib typeLib, ITypeInfo typeInfo)
-        {
-            bool hasManagedName;
-            string name = GetTypeInfoNameInternal(typeInfo, out hasManagedName);
-            if (hasManagedName)
-                return name;
-            else
-                return GetTypeLibNameInternal(typeLib) + "." + name;
-        }
-
-        //====================================================================
-        // If a type with the specified GUID is loaded, this method will 
-        // return the reflection type that represents it. Otherwise it returns
-        // NULL.
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Type GetLoadedTypeForGUID(ref Guid guid);
-
         // This method is identical to Type.GetTypeFromCLSID. Since it's interop specific, we expose it
         // on Marshal for more consistent API surface.
         public static Type GetTypeFromCLSID(Guid clsid)
         {
             return RuntimeType.GetTypeFromCLSIDImpl(clsid, null, false);
         }
-
-        //====================================================================
-        // map Type to ITypeInfo*
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern IntPtr /* ITypeInfo* */ GetITypeInfoForType(Type t);
 
         //====================================================================
         // return the IUnknown* for an Object if the current context
@@ -1471,11 +1163,6 @@ namespace System.Runtime.InteropServices
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(Object o)
         {
             return GetIUnknownForObjectNative(o, false);
-        }
-
-        public static IntPtr /* IUnknown* */ GetIUnknownForObjectInContext(Object o)
-        {
-            return GetIUnknownForObjectNative(o, true);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1499,18 +1186,6 @@ namespace System.Runtime.InteropServices
         }
         
 #if FEATURE_COMINTEROP
-        //====================================================================
-        // return the IDispatch* for an Object if the current context
-        // is the one where the RCW was first seen. Will return null 
-        // otherwise.
-        //====================================================================
-        public static IntPtr /* IUnknown* */ GetIDispatchForObjectInContext(Object o)
-        {
-            return GetIDispatchForObjectNative(o, true);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetIDispatchForObjectNative(Object o, bool onlyInContext);
 
         //====================================================================
         // return the IUnknown* representing the interface for the Object
@@ -1535,17 +1210,6 @@ namespace System.Runtime.InteropServices
         {
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, false, bEnableCustomizedQueryInterface);
-        }
-
-        //====================================================================
-        // return the IUnknown* representing the interface for the Object
-        // Object o should support Type T if the current context
-        // is the one where the RCW was first seen. Will return null 
-        // otherwise.
-        //====================================================================
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObjectInContext(Object o, Type t)
-        {
-            return GetComInterfaceForObjectNative(o, t, true, true);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1892,21 +1556,6 @@ namespace System.Runtime.InteropServices
         private static extern Object InternalCreateWrapperOfType(Object o, Type t);
 
         //====================================================================
-        // There may be a thread-based cache of COM components.  This service can
-        // force the aggressive release of the current thread's cache.
-        //====================================================================
-        [Obsolete("This API did not perform any operation and will be removed in future versions of the CLR.", false)]
-        public static void ReleaseThreadCache()
-        {
-        }
-
-        //====================================================================
-        // check if the type is visible from COM.
-        //====================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern bool IsTypeVisibleFromCom(Type t);
-
-        //====================================================================
         // IUnknown Helpers
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1958,45 +1607,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetStartComSlot(Type t);
 
-        /// <summary>
-        /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
-        /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetEndComSlot(Type t);
-
-        /// <summary>
-        /// <para>Returns the MemberInfo that COM callers calling through the exposed 
-        /// vtable on the given slot will be calling. The slot should take into account
-        /// if the exposed interface is IUnknown based or IDispatch based.
-        /// For classes, the lookup is done on the default interface that will be
-        /// exposed for the class. </para>
-        /// </summary>
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern MemberInfo GetMethodInfoForComSlot(Type t, int slot, ref ComMemberType memberType);
-
-        /// <summary>
-        /// <para>Returns the COM slot for a memeber info, taking into account whether 
-        /// the exposed interface is IUnknown based or IDispatch based</para>
-        /// </summary>
-        public static int GetComSlotForMethodInfo(MemberInfo m)
-        {
-            if (m== null) 
-                throw new ArgumentNullException(nameof(m));
-
-            if (!(m is RuntimeMethodInfo))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), nameof(m));
-
-            if (!m.DeclaringType.IsInterface)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeInterfaceMethod"), nameof(m));
-            if (m.DeclaringType.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(m));
-            Contract.EndContractBlock();
-            
-            return InternalGetComSlotForMethodInfo((IRuntimeMethodInfo)m);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int InternalGetComSlotForMethodInfo(IRuntimeMethodInfo m);
 #endif // FEATURE_COMINTEROP
 
         //====================================================================
@@ -2069,38 +1679,6 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
-        //====================================================================
-        // This method gets the currently running object.
-        //====================================================================
-        public static Object GetActiveObject(String progID)
-        {
-            Object obj = null;
-            Guid clsid;
-
-            // Call CLSIDFromProgIDEx first then fall back on CLSIDFromProgID if
-            // CLSIDFromProgIDEx doesn't exist.
-            try 
-            {
-                CLSIDFromProgIDEx(progID, out clsid);
-            }
-//            catch
-            catch(Exception)
-            {
-                CLSIDFromProgID(progID, out clsid);
-            }
-
-            GetActiveObject(ref clsid, IntPtr.Zero, out obj);
-            return obj;
-        }
-
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void CLSIDFromProgIDEx([MarshalAs(UnmanagedType.LPWStr)] String progId, out Guid clsid);
-
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void CLSIDFromProgID([MarshalAs(UnmanagedType.LPWStr)] String progId, out Guid clsid);
-
         [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
@@ -2112,19 +1690,6 @@ namespace System.Runtime.InteropServices
         [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
-
-        [DllImport(Microsoft.Win32.Win32Native.OLEAUT32, PreserveSig = false)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void GetActiveObject(ref Guid rclsid, IntPtr reserved, [MarshalAs(UnmanagedType.Interface)] out Object ppunk);
-
-        //========================================================================
-        // Private method called from remoting to support ServicedComponents.
-        //========================================================================
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalSwitchCCW(Object oldtp, Object newtp);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object InternalWrapIUnknownWithComObject(IntPtr i);
 
         //========================================================================
         // Private method called from EE upon use of license/ICF2 marshaling.
@@ -2155,86 +1720,6 @@ namespace System.Runtime.InteropServices
         //========================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object GetNativeActivationFactory(Type type);
-
-        //========================================================================
-        // Methods allowing retrieval of the IIDs exposed by an underlying WinRT
-        // object, as specified by the object's IInspectable::GetIids()
-        //========================================================================
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern void _GetInspectableIids(ObjectHandleOnStack obj, ObjectHandleOnStack guids);
-
-        internal static System.Guid[] GetInspectableIids(object obj)
-        {
-            System.Guid[] result = null;
-            System.__ComObject comObj = obj as System.__ComObject;
-            if (comObj != null)
-            {
-                _GetInspectableIids(JitHelpers.GetObjectHandleOnStack(ref comObj), 
-                                    JitHelpers.GetObjectHandleOnStack(ref result));
-            }
-
-            return result;
-        }
-
-        //========================================================================
-        // Methods allowing retrieval of the cached WinRT type corresponding to
-        // the specified GUID
-        //========================================================================
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern void _GetCachedWinRTTypeByIid(
-                        ObjectHandleOnStack appDomainObj, 
-                        System.Guid iid,
-                        out IntPtr rthHandle);
-
-        internal static System.Type GetCachedWinRTTypeByIid(
-                        System.AppDomain ad, 
-                        System.Guid iid)
-        {
-            IntPtr rthHandle;
-            _GetCachedWinRTTypeByIid(JitHelpers.GetObjectHandleOnStack(ref ad),
-                        iid,
-                        out rthHandle);
-            System.Type res = Type.GetTypeFromHandleUnsafe(rthHandle);
-            return res;
-        }
-
-
-        //========================================================================
-        // Methods allowing retrieval of the WinRT types cached in the specified
-        // app domain
-        //========================================================================
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
-        private static extern void _GetCachedWinRTTypes(
-                        ObjectHandleOnStack appDomainObj, 
-                        ref int epoch,
-                        ObjectHandleOnStack winrtTypes);
-
-        internal static System.Type[] GetCachedWinRTTypes(
-                        System.AppDomain ad, 
-                        ref int epoch)
-        {
-            System.IntPtr[] res = null;
-
-            _GetCachedWinRTTypes(JitHelpers.GetObjectHandleOnStack(ref ad), 
-                                ref epoch,
-                                JitHelpers.GetObjectHandleOnStack(ref res));
-
-            System.Type[] result = new System.Type[res.Length];
-            for (int i = 0; i < res.Length; ++i)
-            {
-                result[i] = Type.GetTypeFromHandleUnsafe(res[i]);
-            }
-
-            return result;
-        }
-
-        internal static System.Type[] GetCachedWinRTTypes(
-                        System.AppDomain ad)
-        {
-            int dummyEpoch = 0;
-            return GetCachedWinRTTypes(ad, ref dummyEpoch);
-        }
-
 
 #endif // FEATURE_COMINTEROP
 

@@ -274,6 +274,16 @@ CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 
 CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
+#if defined(DEBUG)
+#if defined(FEATURE_CORECLR)
+CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
+CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
+#else
+CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 0)
+CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 0)
+#endif // defined(FEATURE_CORECLR)
+#endif // DEBUG
+
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
 #undef CONFIG_METHODSET

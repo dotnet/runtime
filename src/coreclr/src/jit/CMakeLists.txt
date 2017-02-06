@@ -81,6 +81,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     codegenxarch.cpp
     emitxarch.cpp
     lowerxarch.cpp
+    lsraxarch.cpp
     simd.cpp
     simdcodegenxarch.cpp
     targetamd64.cpp
@@ -92,6 +93,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     decomposelongs.cpp
     emitarm.cpp
     lowerarm.cpp
+    lsraarm.cpp
     targetarm.cpp
     unwindarm.cpp
   )
@@ -101,15 +103,18 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     decomposelongs.cpp
     emitxarch.cpp
     lowerxarch.cpp
+    lsraxarch.cpp
     simd.cpp
     simdcodegenxarch.cpp
     targetx86.cpp
+    unwindx86.cpp
   )
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   set( ARCH_SOURCES
     codegenarm64.cpp
     emitarm64.cpp
     lowerarm64.cpp
+    lsraarm64.cpp
     targetarm64.cpp
     unwindarm.cpp
     unwindarm64.cpp
@@ -203,9 +208,9 @@ if (CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_subdirectory(protojit)
 endif (CLR_CMAKE_PLATFORM_ARCH_ARM)
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386)
+if (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)
     add_subdirectory(legacyjit)
     if (NOT CLR_BUILD_JIT32)
         add_subdirectory(compatjit)
     endif ()
-endif (CLR_CMAKE_PLATFORM_ARCH_I386)
+endif (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)

@@ -378,8 +378,6 @@ namespace System.Globalization {
         private int    nDataItem;
         [OptionalField(VersionAdded = 2)]
         internal bool m_isDefaultCalendar;                // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
-        [OptionalField(VersionAdded = 2)]
-        private static volatile Hashtable s_calendarNativeNames;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
 
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
         // Now we always synthesize so its not helpful
@@ -407,10 +405,6 @@ namespace System.Globalization {
             {
                 calendar = (Calendar) GregorianCalendar.GetDefaultInstance().Clone();
                 calendar.SetReadOnlyState(m_isReadOnly);
-            }
-            else
-            {
-                CultureInfo.CheckDomainSafetyObject(calendar, this);
             }
             InitializeOverridableProperties(m_cultureData, calendar.ID);
 
@@ -586,12 +580,6 @@ namespace System.Globalization {
                 if (value == calendar) {
                     return;
                 }
-
-                //
-                // Because the culture is agile object which can be attached to a thread and then thread can travel
-                // to another app domain then we prevent attaching any customized object to culture that we cannot contol.
-                //
-                CultureInfo.CheckDomainSafetyObject(value, this);
 
                 for (int i = 0; i < this.OptionalCalendars.Length; i++)
                 {
@@ -2455,7 +2443,7 @@ namespace System.Globalization {
                             case DateTimeFormatInfoScanner.IgnorableSymbolChar:
                                 String symbol = dateWords[i].Substring(1);
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
-                                if (this.DateSeparator.Trim(null).Equals(symbol))
+                                if (this.DateSeparator.Trim().Equals(symbol))
                                 {
                                     // The date separator is the same as the ingorable symbol.
                                     useDateSepAsIgnorableSymbol = true;
@@ -2802,7 +2790,7 @@ namespace System.Globalization {
             // If there is whitespace characters in the beginning and end of the string, trim them since whitespaces are skipped by
             // DateTime.Parse().
             if (Char.IsWhiteSpace(str[0]) || Char.IsWhiteSpace(str[str.Length - 1])) {
-                str = str.Trim(null);   // Trim white space characters.
+                str = str.Trim();   // Trim white space characters.
                 // Could have space for separators
                 if (str.Length == 0)
                     return;

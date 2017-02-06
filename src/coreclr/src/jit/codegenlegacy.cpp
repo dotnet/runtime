@@ -1837,6 +1837,15 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     GenTreePtr arrRef    = NULL;
     int        lenOffset = 0;
 
+    /* Is the array index a constant value? */
+    GenTreePtr index = bndsChk->gtIndex;
+    if (!index->IsCnsIntOrI())
+    {
+        // No, it's not a constant.
+        genCodeForTree(index, RBM_ALLINT);
+        regSet.rsMarkRegUsed(index);
+    }
+
     // If "arrLen" is a ARR_LENGTH operation, get the array whose length that takes in a register.
     // Otherwise, if the length is not a constant, get it (the length, not the arr reference) in
     // a register.
@@ -1884,14 +1893,8 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
         }
     }
 
-    /* Is the array index a constant value? */
-    GenTreePtr index = bndsChk->gtIndex;
     if (!index->IsCnsIntOrI())
     {
-        // No, it's not a constant.
-        genCodeForTree(index, RBM_ALLINT);
-        regSet.rsMarkRegUsed(index);
-
         // If we need "arrRef" or "arrLen", and evaluating "index" displaced whichever of them we're using
         // from its register, get it back in a register.
         if (arrRef != NULL)
@@ -1983,6 +1986,11 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     }
 
     // Free the registers that were used.
+    if (!index->IsCnsIntOrI())
+    {
+        regSet.rsMarkRegFree(index->gtRegNum, index);
+    }
+
     if (arrRef != NULL)
     {
         regSet.rsMarkRegFree(arrRef->gtRegNum, arrRef);
@@ -1990,11 +1998,6 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     else if (!arrLen->IsCnsIntOrI())
     {
         regSet.rsMarkRegFree(arrLen->gtRegNum, arrLen);
-    }
-
-    if (!index->IsCnsIntOrI())
-    {
-        regSet.rsMarkRegFree(index->gtRegNum, index);
     }
 }
 
@@ -14538,79 +14541,6 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                 goto DONE;
 
-#if LONG_ASG_OPS
-
-            case GT_ASG_OR:
-                insLo = insHi = INS_OR;
-                goto ASG_OPR;
-            case GT_ASG_XOR:
-                insLo = insHi = INS_XOR;
-                goto ASG_OPR;
-            case GT_ASG_AND:
-                insLo = insHi = INS_AND;
-                goto ASG_OPR;
-            case GT_ASG_SUB:
-                insLo = INS_sub;
-                insHi = INS_SUBC;
-                goto ASG_OPR;
-            case GT_ASG_ADD:
-                insLo = INS_add;
-                insHi = INS_ADDC;
-                goto ASG_OPR;
-
-            ASG_OPR:
-
-                if (op2->gtOper == GT_CNS_LNG)
-                {
-                    __int64 lval = op2->gtLngCon.gtLconVal;
-
-                    /* Make the target addressable */
-
-                    addrReg = genMakeAddressable(op1, needReg, RegSet::FREE_REG);
-
-                    /* Optimize some special cases */
-
-                    doLo = doHi = true;
-
-                    /* Check for "(op1 AND -1)" and "(op1 [X]OR 0)" */
-
-                    switch (oper)
-                    {
-                        case GT_ASG_AND:
-                            if ((int)(lval) == -1)
-                                doLo = false;
-                            if ((int)(lval >> 32) == -1)
-                                doHi = false;
-                            break;
-
-                        case GT_ASG_OR:
-                        case GT_ASG_XOR:
-                            if (!(lval & 0x00000000FFFFFFFF))
-                                doLo = false;
-                            if (!(lval & 0xFFFFFFFF00000000))
-                                doHi = false;
-                            break;
-                    }
-
-                    if (doLo)
-                        inst_TT_IV(insLo, op1, (int)(lval), 0);
-                    if (doHi)
-                        inst_TT_IV(insHi, op1, (int)(lval >> 32), 4);
-
-                    bool isArith = (oper == GT_ASG_ADD || oper == GT_ASG_SUB);
-                    if (doLo || doHi)
-                        tree->gtFlags |= GTF_ZSF_SET;
-
-                    genDoneAddressable(op1, addrReg, RegSet::FREE_REG);
-                    goto DONE_ASSG_REGS;
-                }
-
-                /* TODO: allow non-const long assignment operators */
-
-                noway_assert(!"non-const long asgop NYI");
-
-#endif // LONG_ASG_OPS
-
             case GT_IND:
             case GT_NULLCHECK:
             {
@@ -20725,10 +20655,9 @@ bool CodeGen::genRegTrashable(regNumber reg, GenTreePtr tree)
 */
 
 GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, // The node to start walking with.
-                                                          GenTreePtr relopNode, // The node before the startNode.
+                                                          GenTreePtr relopNode) // The node before the startNode.
                                                                                 // (It should either be NULL or
                                                                                 // a GTF_RELOP_QMARK node.)
-                                                          GenTreePtr asgdLclVar)
 {
     GenTreePtr tree;
 
@@ -20810,7 +20739,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_VAR:
             case GT_STORE_LCL_FLD:
-                fgMarkUseDef(tree->AsLclVarCommon(), asgdLclVar);
+                fgMarkUseDef(tree->AsLclVarCommon());
                 break;
 
             case GT_CLS_VAR:
@@ -20827,7 +20756,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a heap def, when we get to
                 // assignment.
                 // Otherwise, we treat it as a use here.
-                if (!fgCurHeapDef && (tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
+                if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
                 {
                     fgCurHeapUse = true;
                 }
@@ -20855,16 +20784,13 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                     if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                     {
-                        if (!fgCurHeapDef)
-                        {
-                            fgCurHeapUse = true;
-                        }
+                        fgCurHeapUse = true;
                     }
                     else
                     {
                         // Defines a local addr
                         assert(dummyLclVarTree != nullptr);
-                        fgMarkUseDef(dummyLclVarTree->AsLclVarCommon(), asgdLclVar);
+                        fgMarkUseDef(dummyLclVarTree->AsLclVarCommon());
                     }
                 }
                 break;
@@ -20880,10 +20806,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
             case GT_XADD:
             case GT_XCHG:
             case GT_CMPXCHG:
-                if (!fgCurHeapDef)
-                {
-                    fgCurHeapUse = true;
-                }
+                fgCurHeapUse   = true;
                 fgCurHeapDef   = true;
                 fgCurHeapHavoc = true;
                 break;
@@ -20909,10 +20832,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                 }
                 if (modHeap)
                 {
-                    if (!fgCurHeapDef)
-                    {
-                        fgCurHeapUse = true;
-                    }
+                    fgCurHeapUse   = true;
                     fgCurHeapDef   = true;
                     fgCurHeapHavoc = true;
                 }
@@ -20967,7 +20887,7 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
                     // fgCurDefSet and fgCurUseSet into local variables defSet_BeforeSplit and useSet_BeforeSplit.
                     // The cached values will be used to restore fgCurDefSet and fgCurUseSet once we see the GT_COLON
                     // node.
-                    tree = fgLegacyPerStatementLocalVarLiveness(tree->gtNext, tree, asgdLclVar);
+                    tree = fgLegacyPerStatementLocalVarLiveness(tree->gtNext, tree);
 
                     // We must have been returned here after seeing a GT_QMARK node.
                     noway_assert(tree->gtOper == GT_QMARK);

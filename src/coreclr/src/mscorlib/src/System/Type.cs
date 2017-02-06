@@ -29,10 +29,7 @@ namespace System
     using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Type))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Type : MemberInfo, _Type, IReflect
+    public abstract class Type : MemberInfo, IReflect
     {
         //
         // System.Type is appdomain agile type. Appdomain agile types cannot have precise static constructors. Make
@@ -135,8 +132,11 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Type ReflectionOnlyGetType(String typeName, bool throwIfNotFound, bool ignoreCase) 
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwIfNotFound, ignoreCase, true /*reflectionOnly*/, ref stackMark);
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
+            if (typeName.Length == 0 && throwIfNotFound)
+                throw new TypeLoadException(Environment.GetResourceString("Arg_TypeLoadNullStr"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyGetType"));
         }
 
         public virtual Type MakePointerType() { throw new NotSupportedException(); }
@@ -297,7 +297,6 @@ namespace System
 
 
         // Module Property associated with a class.
-        // _Type.Module
         public new abstract Module Module { get; }
 
         // Assembly Property associated with a class.
@@ -674,16 +673,6 @@ namespace System
                 throw new ArgumentNullException(nameof(returnType));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,null,null);
-        }
-
-        internal PropertyInfo GetProperty(String name, BindingFlags bindingAttr, Type returnType)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
-                throw new ArgumentNullException(nameof(returnType));
-            Contract.EndContractBlock();
-            return GetPropertyImpl(name, bindingAttr, null, returnType, null, null);
         }
 
         public PropertyInfo GetProperty(String name)
@@ -1229,11 +1218,6 @@ namespace System
              [Pure]
              get {return IsMarshalByRefImpl();}
          }
-
-         internal bool HasProxyAttribute {
-             [Pure]
-            get {return HasProxyAttributeImpl();}
-        }
                        
         // Protected routine to determine if this class represents a value class
         // The default implementation of IsValueTypeImpl never returns true for non-runtime types.
@@ -1294,12 +1278,6 @@ namespace System
         // Protected routine to determine if this class is marshaled by ref
         protected virtual bool IsMarshalByRefImpl()
         {
-            return false;
-        }
-
-        internal virtual bool HasProxyAttributeImpl()
-        {
-            // We will override this in RuntimeType
             return false;
         }
 
@@ -1746,7 +1724,6 @@ namespace System
             return Equals(o as Type);
         }
 
-        // _Type.Equals(Type)
         [Pure]
         public virtual bool Equals(Type o)
         {
@@ -1784,7 +1761,6 @@ namespace System
         }
 
         // this method is required so Object.GetType is not made virtual by the compiler 
-        // _Type.GetType()
         public new Type GetType()
         {
             return base.GetType();

@@ -451,6 +451,7 @@ private:
     GcSlotDesc* m_pLastSlot;
 };
 
+#ifdef USE_GC_INFO_DECODER
 class GcInfoDecoder
 {
 public:
@@ -678,6 +679,7 @@ private:
         }
     }
 };
+#endif // USE_GC_INFO_DECODER
 
 
 #endif // _GC_INFO_DECODER_

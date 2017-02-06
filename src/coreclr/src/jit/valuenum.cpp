@@ -6226,6 +6226,39 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                     fgValueNumberArrIndexVal(tree, elemTypeEq, arrVN, inxVN, addrXvnp.GetLiberal(), fldSeq);
                 }
             }
+            else if (tree->gtFlags & GTF_IND_ARR_LEN)
+            {
+                // It's an array length.  The argument is the sum of an array ref with some integer values...
+                ValueNum arrRefLib  = vnStore->VNForRefInAddr(tree->gtOp.gtOp1->gtVNPair.GetLiberal());
+                ValueNum arrRefCons = vnStore->VNForRefInAddr(tree->gtOp.gtOp1->gtVNPair.GetConservative());
+
+                assert(vnStore->TypeOfVN(arrRefLib) == TYP_REF || vnStore->TypeOfVN(arrRefLib) == TYP_BYREF);
+                if (vnStore->IsVNConstant(arrRefLib))
+                {
+                    // (or in weird cases, a REF or BYREF constant, in which case the result is an exception).
+                    tree->gtVNPair.SetLiberal(
+                        vnStore->VNWithExc(ValueNumStore::VNForVoid(),
+                                           vnStore->VNExcSetSingleton(
+                                               vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, arrRefLib))));
+                }
+                else
+                {
+                    tree->gtVNPair.SetLiberal(vnStore->VNForFunc(TYP_INT, VNFunc(GT_ARR_LENGTH), arrRefLib));
+                }
+                assert(vnStore->TypeOfVN(arrRefCons) == TYP_REF || vnStore->TypeOfVN(arrRefCons) == TYP_BYREF);
+                if (vnStore->IsVNConstant(arrRefCons))
+                {
+                    // (or in weird cases, a REF or BYREF constant, in which case the result is an exception).
+                    tree->gtVNPair.SetConservative(
+                        vnStore->VNWithExc(ValueNumStore::VNForVoid(),
+                                           vnStore->VNExcSetSingleton(
+                                               vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, arrRefCons))));
+                }
+                else
+                {
+                    tree->gtVNPair.SetConservative(vnStore->VNForFunc(TYP_INT, VNFunc(GT_ARR_LENGTH), arrRefCons));
+                }
+            }
 
             // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
             // We will "evaluate" this as part of the assignment.  (Unless we're explicitly told by
@@ -6506,49 +6539,6 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                                                                        tree->gtOp.gtOp1->gtVNPair)));
                     break;
 
-                case GT_BLK:
-                case GT_OBJ:
-                case GT_IND:
-                    if (tree->gtFlags & GTF_IND_ARR_LEN)
-                    {
-                        // It's an array length.  The argument is the sum of an array ref with some integer values...
-                        ValueNum arrRefLib  = vnStore->VNForRefInAddr(tree->gtOp.gtOp1->gtVNPair.GetLiberal());
-                        ValueNum arrRefCons = vnStore->VNForRefInAddr(tree->gtOp.gtOp1->gtVNPair.GetConservative());
-
-                        assert(vnStore->TypeOfVN(arrRefLib) == TYP_REF || vnStore->TypeOfVN(arrRefLib) == TYP_BYREF);
-                        if (vnStore->IsVNConstant(arrRefLib))
-                        {
-                            // (or in weird cases, a REF or BYREF constant, in which case the result is an exception).
-                            tree->gtVNPair.SetLiberal(
-                                vnStore->VNWithExc(ValueNumStore::VNForVoid(),
-                                                   vnStore->VNExcSetSingleton(
-                                                       vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, arrRefLib))));
-                        }
-                        else
-                        {
-                            tree->gtVNPair.SetLiberal(vnStore->VNForFunc(TYP_INT, VNFunc(GT_ARR_LENGTH), arrRefLib));
-                        }
-                        assert(vnStore->TypeOfVN(arrRefCons) == TYP_REF || vnStore->TypeOfVN(arrRefCons) == TYP_BYREF);
-                        if (vnStore->IsVNConstant(arrRefCons))
-                        {
-                            // (or in weird cases, a REF or BYREF constant, in which case the result is an exception).
-                            tree->gtVNPair.SetConservative(
-                                vnStore->VNWithExc(ValueNumStore::VNForVoid(),
-                                                   vnStore->VNExcSetSingleton(
-                                                       vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, arrRefCons))));
-                        }
-                        else
-                        {
-                            tree->gtVNPair.SetConservative(
-                                vnStore->VNForFunc(TYP_INT, VNFunc(GT_ARR_LENGTH), arrRefCons));
-                        }
-                    }
-                    else
-                    {
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    }
-                    break;
-
                 case GT_LOCKADD: // Binop
                 case GT_XADD:    // Binop
                 case GT_XCHG:    // Binop
@@ -6592,10 +6582,10 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 // A bounds check node has no value, but may throw exceptions.
                 ValueNumPair excSet = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_IndexOutOfRangeExc,
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtArrLen->gtVNPair),
-                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtIndex->gtVNPair)));
-                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
+                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtIndex->gtVNPair),
+                                           vnStore->VNPNormVal(tree->AsBoundsChk()->gtArrLen->gtVNPair)));
                 excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtIndex->gtVNPair));
+                excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
 
                 tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSet);
             }

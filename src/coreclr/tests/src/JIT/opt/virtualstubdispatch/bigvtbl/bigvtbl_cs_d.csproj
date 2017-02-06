@@ -15,8 +15,9 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
 
-    <!-- NOTE: this test simply takes too long to complete under GC stress; it is not fundamentally incompatible -->
+    <!-- NOTE: this test simply takes too long to complete under GC stress/heap verify; it is not fundamentally incompatible -->
     <GCStressIncompatible Condition="'$(Platform)' == 'x86'">true</GCStressIncompatible>
+    <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

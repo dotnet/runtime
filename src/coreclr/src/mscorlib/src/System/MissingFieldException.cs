@@ -51,14 +51,6 @@ namespace System {
             }
         }
     
-        // Called from the EE
-        private MissingFieldException(String className, String fieldName, byte[] signature)
-        {
-            ClassName   = className;
-            MemberName  = fieldName;
-            Signature   = signature;
-        }
-    
         public MissingFieldException(String className, String fieldName)
         {
             ClassName   = className;

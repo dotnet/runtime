@@ -41,7 +41,7 @@ def static getOSGroup(def os) {
 			{
 				parameters
 				{
-					stringParam('BenchviewCommitName', '%ghprbPullTitle%', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+					stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
 				}
 			}
 			def configuration = 'Release'
@@ -107,7 +107,7 @@ def static getOSGroup(def os) {
 			{
 				parameters
 				{
-					stringParam('BenchviewCommitName', '\$ghprbPullTitle', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+					stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
 				}
 			}
 			def osGroup = getOSGroup(os)
@@ -128,8 +128,7 @@ def static getOSGroup(def os) {
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/Unix.AnyCPU.${configuration};\${WORKSPACE}/corefx/bin/AnyOS.AnyCPU.${configuration}\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/corefx/bin/${osGroup}.${architecture}.${configuration}\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/corefx\" \\
 				--runType=\"${runType}\" \\
 				--benchViewOS=\"${os}\" \\
 				--uploadToBenchview""")

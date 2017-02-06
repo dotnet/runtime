@@ -165,11 +165,13 @@ CrstStatic          BaseDomain::m_SpecialStaticsCrst;
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // Shared Domain Statics
+DECLSPEC_ALIGN(16) 
 static BYTE         g_pSharedDomainMemory[sizeof(SharedDomain)];
 
 // System Domain Statics
 GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
 
+DECLSPEC_ALIGN(16) 
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
@@ -2872,6 +2874,9 @@ void SystemDomain::LoadBaseSystemClasses()
 
 #ifdef FEATURE_SPAN_OF_T
     // Load ByReference class
+    //
+    // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
+    //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
     g_pByReferenceClass = MscorlibBinder::GetClass(CLASS__BYREFERENCE);
 #endif
 

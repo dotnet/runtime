@@ -79,19 +79,6 @@ namespace System.Diagnostics {
             get { return strName;}
         }
     
-        // Get property returns the description of the switch
-        public virtual String Description
-        {
-            get {return strDescription;}
-        }
-    
-    
-        // Get property returns the parent of the switch
-        public virtual LogSwitch Parent
-        {
-            get { return ParentSwitch; }
-        }
-    
     
         // Property to Get/Set the level of log messages which are "on" for the switch.  
         // 

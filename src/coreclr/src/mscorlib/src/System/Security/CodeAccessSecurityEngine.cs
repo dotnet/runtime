@@ -53,9 +53,6 @@ namespace System.Security {
         internal static SecurityPermission AssertPermission; 
         internal static PermissionToken AssertPermissionToken; 
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SpecialDemand(PermissionType whatPermission, ref StackCrawlMark stackMark);
-
         [System.Diagnostics.Conditional( "_DEBUG" )]
         private static void DEBUG_OUT( String str )
         {
@@ -110,21 +107,6 @@ namespace System.Security {
             }
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        internal static void CheckSetHelper(CompressedStack cs,
-                                           PermissionSet grants,
-                                           PermissionSet refused,
-                                           PermissionSet demands,
-                                           RuntimeMethodHandleInternal rmh,
-                                           RuntimeAssembly asm,
-                                           SecurityAction action)
-        {
-            if (cs != null)
-                cs.CheckSetDemand(demands, rmh);
-            else
-                CheckSetHelper(grants, refused, demands, rmh, (Object)asm, action, true);
-        }
-#else // FEATURE_COMPRESSEDSTACK
 #pragma warning disable 618
         internal static void CheckSetHelper(Object notUsed,
                                            PermissionSet grants,
@@ -143,7 +125,6 @@ namespace System.Security {
             CheckSetHelper(grants, refused, demands, rmh, (Object)asm, action, true);
         }
 
-#endif // FEATURE_COMPRESSEDSTACK
 
 #pragma warning disable 618
         internal static bool CheckSetHelper(PermissionSet grants,
@@ -207,22 +188,6 @@ namespace System.Security {
             }
             return true;
         }
-#if FEATURE_COMPRESSEDSTACK
-        internal static void CheckHelper(CompressedStack cs,
-                                        PermissionSet grantedSet,
-                                        PermissionSet refusedSet,
-                                        CodeAccessPermission demand, 
-                                        PermissionToken permToken,
-                                        RuntimeMethodHandleInternal rmh,
-                                        RuntimeAssembly asm,
-                                        SecurityAction action)
-        {
-            if (cs != null)
-                cs.CheckDemand(demand, permToken, rmh);
-            else
-                CheckHelper(grantedSet, refusedSet, demand, permToken, rmh, (Object)asm, action, true);
-        }
-#else // FEATURE_COMPRESSEDSTACK
 #pragma warning disable 618
         internal static void CheckHelper(Object notUsed,
                                         PermissionSet grantedSet,
@@ -240,7 +205,6 @@ namespace System.Security {
             Debug.Assert(notUsed == null, "Should not reach here with a non-null first arg which is the CompressedStack");
             CheckHelper(grantedSet, refusedSet, demand, permToken, rmh, (Object)asm, action, true);
         }
-#endif // FEATURE_COMPRESSEDSTACK
 #pragma warning disable 618
         internal static bool CheckHelper(PermissionSet grantedSet,
                                         PermissionSet refusedSet,
@@ -363,38 +327,9 @@ namespace System.Security {
         {
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern FrameSecurityDescriptor CheckNReturnSO(PermissionToken permToken, 
-                                                                    CodeAccessPermission demand, 
-                                                                    ref StackCrawlMark stackMark,
-                                                                    int create );
-
         internal static void Assert(CodeAccessPermission cap, ref StackCrawlMark stackMark)
         {
         }
 
-        internal static void Deny(CodeAccessPermission cap, ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void PermitOnly(CodeAccessPermission cap, ref StackCrawlMark stackMark)
-        {
-        }
-
-#if FEATURE_PLS
-        // Update the PLS used for optimization in the AppDomain: called from the VM
-        private static PermissionListSet UpdateAppDomainPLS(PermissionListSet adPLS, PermissionSet grantedPerms, PermissionSet refusedPerms) {
-            if (adPLS == null) {
-                adPLS = new PermissionListSet();
-                adPLS.UpdateDomainPLS(grantedPerms, refusedPerms);
-                return adPLS;
-            } else {
-                PermissionListSet newPLS = new PermissionListSet();
-                newPLS.UpdateDomainPLS(adPLS);
-                newPLS.UpdateDomainPLS(grantedPerms, refusedPerms);
-                return newPLS;
-            }
-        }
-#endif //FEATURE_PLS
     }
 }

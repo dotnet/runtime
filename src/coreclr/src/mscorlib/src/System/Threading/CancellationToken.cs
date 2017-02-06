@@ -317,11 +317,8 @@ namespace System.Threading
         }
 
         // the real work..
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
@@ -341,8 +338,7 @@ namespace System.Threading
                 if (useSynchronizationContext)
                     capturedSyncContext = SynchronizationContext.Current;
                 if (useExecutionContext)
-                    capturedExecutionContext = ExecutionContext.Capture(
-                        ref stackMark, ExecutionContext.CaptureOptions.OptimizeDefaultCase); // ideally we'd also use IgnoreSyncCtx, but that could break compat
+                    capturedExecutionContext = ExecutionContext.Capture();
             }
 
             // Register the callback with the source.

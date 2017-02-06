@@ -120,19 +120,6 @@ namespace Microsoft.Win32 {
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventUnregister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern uint EventUnregister([In] long registrationHandle);
 
-            //
-            // Writing (Publishing/Logging) APIs
-            //
-            // 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWrite", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-            internal static extern unsafe int EventWrite(
-                    [In] long registrationHandle,
-                    [In] ref EventDescriptor eventDescriptor,
-                    [In] int userDataCount,
-                    [In] EventProvider.EventData* userData
-                    );
-
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteString", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern unsafe int EventWriteString(

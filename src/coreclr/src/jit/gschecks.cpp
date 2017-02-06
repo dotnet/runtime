@@ -409,7 +409,8 @@ void Compiler::gsParamsToShadows()
         lvaTable[shadowVar].lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
         if (varDsc->lvSIMDType)
         {
-            lvaTable[shadowVar].lvBaseType = varDsc->lvBaseType;
+            lvaTable[shadowVar].lvExactSize = varDsc->lvExactSize;
+            lvaTable[shadowVar].lvBaseType  = varDsc->lvBaseType;
         }
 #endif
         lvaTable[shadowVar].lvRegStruct = varDsc->lvRegStruct;

@@ -36,7 +36,7 @@ int __cdecl main(int argc, char *argv[])
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64) && defined(PLATFORM_UNIX)
+#if defined(BIT64)
     /* Compare START_VALUE with BaseVariableToManipulate, they're equal, 
        so exchange 
     */
@@ -46,27 +46,17 @@ int __cdecl main(int argc, char *argv[])
     /* Decremented twice, it should be -2 now */
     if(TheValue != -2) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: After being decremented twice, the value should be -2, "
              "but it is really %ll.",TheValue);
-#else
-        Fail("ERROR: After being decremented twice, the value should be -2, "
-             "but it is really %I64.",TheValue);
-#endif
     }
   
     /* Check to make sure it returns itself */
     if(TheReturn != TheValue) 
     {
-#ifdef PLATFORM_UNIX
         Fail("ERROR: The function should have returned the new value of %d "
              "but instead returned %ll.",TheValue,TheReturn);    
-#else
-        Fail("ERROR: After being decremented twice, the value should be -2, "
-             "but it is really %I64.",TheValue);
-#endif
     }
-#endif  //defined(BIT64) && defined(PLATFORM_UNIX)
+#endif  //defined(BIT64)
     PAL_Terminate();
     return PASS; 
 } 

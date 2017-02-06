@@ -311,7 +311,7 @@ namespace System.Globalization {
             // Get Strings
             //
             // Needs to be a certain length e_a_E_A at least (7 chars, exactly 4 groups)
-            String[] names = data.Split(new char[] {'_'});
+            String[] names = data.Split('_');
 
             // Should have exactly 4 parts
             // 0 - Era Name

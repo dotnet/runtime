@@ -5629,8 +5629,13 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         // to ensure that the same values are used in the bounds check and the actual
         // dereference.
         // Also we allocate the temporary when the arrRef is sufficiently complex/expensive.
+        // Note that if 'arrRef' is a GT_FIELD, it has not yet been morphed so its true
+        // complexity is not exposed. (Without that condition there are cases of local struct
+        // fields that were previously, needlessly, marked as GTF_GLOB_REF, and when that was
+        // fixed, there were some regressions that were mostly ameliorated by adding this condition.)
         //
-        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY))
+        if ((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) ||
+            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || (arrRef->OperGet() == GT_FIELD))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
@@ -5649,7 +5654,8 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         // dereference.
         // Also we allocate the temporary when the index is sufficiently complex/expensive.
         //
-        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY))
+        if ((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) || gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) ||
+            (arrRef->OperGet() == GT_FIELD))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
             indexDefn            = gtNewTempAssign(indexTmpNum, index);
@@ -5683,7 +5689,7 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         }
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
-            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, arrLen, index, SCK_RNGCHK_FAIL);
+            GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, SCK_RNGCHK_FAIL);
 
         bndsChk = arrBndsChk;
 
@@ -6051,13 +6057,14 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    noway_assert(tree->gtFlags & GTF_GLOB_REF);
-
     CORINFO_FIELD_HANDLE symHnd          = tree->gtField.gtFldHnd;
     unsigned             fldOffset       = tree->gtField.gtFldOffset;
     GenTreePtr           objRef          = tree->gtField.gtFldObj;
     bool                 fieldMayOverlap = false;
     bool                 objIsLocal      = false;
+
+    noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
+                 ((tree->gtFlags & GTF_GLOB_REF) != 0));
 
     if (tree->gtField.gtFldMayOverlap)
     {
@@ -6067,8 +6074,8 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
     }
 
 #ifdef FEATURE_SIMD
-    // if this field belongs to simd struct, tranlate it to simd instrinsic.
-    if (mac == nullptr || mac->m_kind != MACK_Addr)
+    // if this field belongs to simd struct, translate it to simd instrinsic.
+    if (mac == nullptr)
     {
         GenTreePtr newTree = fgMorphFieldToSIMDIntrinsicGet(tree);
         if (newTree != tree)
@@ -6076,13 +6083,6 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             newTree = fgMorphSmpOp(newTree);
             return newTree;
         }
-    }
-    else if (objRef != nullptr && objRef->OperGet() == GT_ADDR && objRef->OperIsSIMD())
-    {
-        // We have a field of an SIMD intrinsic in an address-taken context.
-        // We need to copy the SIMD result to a temp, and take the field of that.
-        GenTree* copy      = fgCopySIMDNode(objRef->gtOp.gtOp1->AsSIMD());
-        objRef->gtOp.gtOp1 = copy;
     }
 #endif
 
@@ -6468,6 +6468,11 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                     addr->gtIntCon.gtFieldSeq = fieldSeq;
 
                     tree->SetOper(GT_IND);
+                    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
+                    // We must clear it when we transform the node.
+                    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
+                    // that the logic above does its own checking to determine whether a nullcheck is needed.
+                    tree->gtFlags &= ~GTF_IND_ARR_LEN;
                     tree->gtOp.gtOp1 = addr;
 
                     return fgMorphSmpOp(tree);
@@ -6507,6 +6512,11 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
         }
     }
     noway_assert(tree->gtOper == GT_IND);
+    // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
+    // We must clear it when we transform the node.
+    // TODO-Cleanup: It appears that the GTF_FLD_NULLCHECK flag is never checked, and note
+    // that the logic above does its own checking to determine whether a nullcheck is needed.
+    tree->gtFlags &= ~GTF_IND_ARR_LEN;
 
     GenTreePtr res = fgMorphSmpOp(tree);
 
@@ -8467,7 +8477,7 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
     // The SIMD type in question could be Vector2f which is 8-bytes in size.
     // The below check is to make sure that we don't turn that copyblk
     // into a assignment, since rationalizer logic will transform the
-    // copyblk apropriately. Otherwise, the transormation made in this
+    // copyblk appropriately. Otherwise, the transformation made in this
     // routine will prevent rationalizer logic and we might end up with
     // GT_ADDR(GT_SIMD) node post rationalization, leading to a noway assert
     // in codegen.
@@ -8495,6 +8505,12 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
     }
     else
     {
+        // Is this an enregisterable struct that is already a simple assignment?
+        // This can happen if we are re-morphing.
+        if ((dest->OperGet() == GT_IND) && (dest->TypeGet() != TYP_STRUCT) && isCopyBlock)
+        {
+            return tree;
+        }
         noway_assert(dest->OperIsLocal());
         lclVarTree = dest;
         destVarNum = lclVarTree->AsLclVarCommon()->gtLclNum;
@@ -10323,50 +10339,6 @@ GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
 
 #ifdef FEATURE_SIMD
 
-//--------------------------------------------------------------------------------------
-// fgCopySIMDNode: make a copy of a SIMD intrinsic node, e.g. so that a field can be accessed.
-//
-// Arguments:
-//    simdNode  - The GenTreeSIMD node to be copied
-//
-// Return Value:
-//    A comma node where op1 is the assignment of the simd node to a temp, and op2 is the temp lclVar.
-//
-GenTree* Compiler::fgCopySIMDNode(GenTreeSIMD* simdNode)
-{
-    // Copy the result of the SIMD intrinsic into a temp.
-    unsigned lclNum = lvaGrabTemp(true DEBUGARG("Copy of SIMD intrinsic with field access"));
-
-    CORINFO_CLASS_HANDLE simdHandle = NO_CLASS_HANDLE;
-    // We only have fields of the fixed float vectors.
-    noway_assert(simdNode->gtSIMDBaseType == TYP_FLOAT);
-    switch (simdNode->gtSIMDSize)
-    {
-        case 8:
-            simdHandle = SIMDVector2Handle;
-            break;
-        case 12:
-            simdHandle = SIMDVector3Handle;
-            break;
-        case 16:
-            simdHandle = SIMDVector4Handle;
-            break;
-        default:
-            noway_assert(!"field of unexpected SIMD type");
-            break;
-    }
-    assert(simdHandle != NO_CLASS_HANDLE);
-
-    lvaSetStruct(lclNum, simdHandle, false, true);
-    lvaTable[lclNum].lvFieldAccessed = true;
-
-    GenTree* asg           = gtNewTempAssign(lclNum, simdNode);
-    GenTree* newLclVarNode = new (this, GT_LCL_VAR) GenTreeLclVar(simdNode->TypeGet(), lclNum, BAD_IL_OFFSET);
-
-    GenTree* comma = gtNewOperNode(GT_COMMA, simdNode->TypeGet(), asg, newLclVarNode);
-    return comma;
-}
-
 //--------------------------------------------------------------------------------------------------------------
 // getSIMDStructFromField:
 //   Checking whether the field belongs to a simd struct or not. If it is, return the GenTreePtr for
@@ -10449,12 +10421,12 @@ GenTreePtr Compiler::getSIMDStructFromField(GenTreePtr tree,
 }
 
 /*****************************************************************************
-*  If a read operation tries to access simd struct field, then transform the this
-*  operation to to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
+*  If a read operation tries to access simd struct field, then transform the
+*  operation to the SIMD intrinsic SIMDIntrinsicGetItem, and return the new tree.
 *  Otherwise, return the old tree.
 *  Argument:
 *   tree - GenTreePtr. If this pointer points to simd struct which is used for simd
-*          intrinsic. We will morph it as simd intrinsic SIMDIntrinsicGetItem.
+*          intrinsic, we will morph it as simd intrinsic SIMDIntrinsicGetItem.
 *  Return:
 *   A GenTreePtr which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
@@ -10468,7 +10440,6 @@ GenTreePtr Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTreePtr tree)
     GenTreePtr simdStructNode = getSIMDStructFromField(tree, &baseType, &index, &simdSize);
     if (simdStructNode != nullptr)
     {
-
         assert(simdSize >= ((index + 1) * genTypeSize(baseType)));
         GenTree* op2 = gtNewIconNode(index);
         tree         = gtNewSIMDNode(baseType, simdStructNode, op2, SIMDIntrinsicGetItem, baseType, simdSize);
@@ -10481,11 +10452,11 @@ GenTreePtr Compiler::fgMorphFieldToSIMDIntrinsicGet(GenTreePtr tree)
 
 /*****************************************************************************
 *  Transform an assignment of a SIMD struct field to SIMD intrinsic
-*  SIMDIntrinsicGetItem, and return a new tree. If If it is not such an assignment,
+*  SIMDIntrinsicSet*, and return a new tree. If it is not such an assignment,
 *  then return the old tree.
 *  Argument:
 *   tree - GenTreePtr. If this pointer points to simd struct which is used for simd
-*          intrinsic. We will morph it as simd intrinsic set.
+*          intrinsic, we will morph it as simd intrinsic set.
 *  Return:
 *   A GenTreePtr which points to the new tree. If the tree is not for simd intrinsic,
 *   return nullptr.
@@ -10538,7 +10509,8 @@ GenTreePtr Compiler::fgMorphFieldAssignToSIMDIntrinsicSet(GenTreePtr tree)
     return tree;
 }
 
-#endif
+#endif // FEATURE_SIMD
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -11300,12 +11272,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         // comma list.  The left arg (op1) gets a fresh context.
                         subMac1 = nullptr;
                         break;
-                    case GT_ASG:
-                        if (tree->OperIsBlkOp())
-                        {
-                            subMac1 = &subIndMac1;
-                        }
-                        break;
                     case GT_OBJ:
                     case GT_BLK:
                     case GT_DYN_BLK:
@@ -11441,12 +11407,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         {
                             mac->m_allConstantOffsets = false;
                         }
-                    }
-                    break;
-                case GT_ASG:
-                    if (tree->OperIsBlkOp())
-                    {
-                        mac = &subIndMac2;
                     }
                     break;
                 default:
@@ -13511,12 +13471,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             /*     and also  "a = x <op> a" into "a <op>= x" for communative ops */
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !LONG_ASG_OPS
             if (typ == TYP_LONG)
             {
                 break;
             }
-#endif
 
             if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
             {
@@ -13672,25 +13630,9 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                 case GT_LSH:
                 case GT_RSH:
                 case GT_RSZ:
-
-#if LONG_ASG_OPS
-
-                    if (typ == TYP_LONG)
-                        break;
-#endif
-
                 case GT_OR:
                 case GT_XOR:
                 case GT_AND:
-
-#if LONG_ASG_OPS
-
-                    /* TODO: allow non-const long assignment operators */
-
-                    if (typ == TYP_LONG && op2->gtOp.gtOp2->gtOper != GT_CNS_LNG)
-                        break;
-#endif
-
                 ASG_OP:
                 {
                     bool bReverse       = false;
@@ -14696,8 +14638,8 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
             fgSetRngChkTarget(tree);
 
             GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
             bndsChk->gtIndex          = fgMorphTree(bndsChk->gtIndex);
+            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
             // If the index is a comma(throw, x), just return that.
             if (!optValnumCSE_phase && fgIsCommaThrow(bndsChk->gtIndex))
             {
@@ -14705,8 +14647,8 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
             }
 
             // Propagate effects flags upwards
-            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
             bndsChk->gtFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
+            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
 
             // Otherwise, we don't change the tree.
         }
@@ -16910,6 +16852,20 @@ void Compiler::fgMorph()
     fgDebugCheckBBlist(false, false);
 #endif // DEBUG
 
+    fgRemoveEmptyTry();
+
+    EndPhase(PHASE_EMPTY_TRY);
+
+    fgRemoveEmptyFinally();
+
+    EndPhase(PHASE_EMPTY_FINALLY);
+
+    fgCloneFinally();
+
+    EndPhase(PHASE_CLONE_FINALLY);
+
+    fgUpdateFinallyTargetFlags();
+
     /* For x64 and ARM64 we need to mark irregular parameters early so that they don't get promoted */
     fgMarkImplicitByRefArgs();
 
@@ -17203,109 +17159,102 @@ void Compiler::fgPromoteStructs()
 Compiler::fgWalkResult Compiler::fgMorphStructField(GenTreePtr tree, fgWalkData* fgWalkPre)
 {
     noway_assert(tree->OperGet() == GT_FIELD);
-    noway_assert(tree->gtFlags & GTF_GLOB_REF);
 
     GenTreePtr objRef = tree->gtField.gtFldObj;
+    GenTreePtr obj    = ((objRef != nullptr) && (objRef->gtOper == GT_ADDR)) ? objRef->gtOp.gtOp1 : nullptr;
+    noway_assert((tree->gtFlags & GTF_GLOB_REF) || ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR)));
 
     /* Is this an instance data member? */
 
-    if (objRef)
+    if ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR))
     {
-        if (objRef->gtOper == GT_ADDR)
+        unsigned   lclNum = obj->gtLclVarCommon.gtLclNum;
+        LclVarDsc* varDsc = &lvaTable[lclNum];
+
+        if (varTypeIsStruct(obj))
         {
-            GenTreePtr obj = objRef->gtOp.gtOp1;
-
-            if (obj->gtOper == GT_LCL_VAR)
+            if (varDsc->lvPromoted)
             {
-                unsigned   lclNum = obj->gtLclVarCommon.gtLclNum;
-                LclVarDsc* varDsc = &lvaTable[lclNum];
+                // Promoted struct
+                unsigned fldOffset     = tree->gtField.gtFldOffset;
+                unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                noway_assert(fieldLclIndex != BAD_VAR_NUM);
 
-                if (varTypeIsStruct(obj))
+                tree->SetOper(GT_LCL_VAR);
+                tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
+                tree->gtType = lvaTable[fieldLclIndex].TypeGet();
+                tree->gtFlags &= GTF_NODE_MASK;
+                tree->gtFlags &= ~GTF_GLOB_REF;
+
+                GenTreePtr parent = fgWalkPre->parentStack->Index(1);
+                if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
                 {
-                    if (varDsc->lvPromoted)
-                    {
-                        // Promoted struct
-                        unsigned fldOffset     = tree->gtField.gtFldOffset;
-                        unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
-                        noway_assert(fieldLclIndex != BAD_VAR_NUM);
-
-                        tree->SetOper(GT_LCL_VAR);
-                        tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
-                        tree->gtType = lvaTable[fieldLclIndex].TypeGet();
-                        tree->gtFlags &= GTF_NODE_MASK;
-                        tree->gtFlags &= ~GTF_GLOB_REF;
-
-                        GenTreePtr parent = fgWalkPre->parentStack->Index(1);
-                        if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
-                        {
-                            tree->gtFlags |= GTF_VAR_DEF;
-                            tree->gtFlags |= GTF_DONT_CSE;
-                        }
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Replacing the field in promoted struct with a local var:\n");
-                            fgWalkPre->printModified = true;
-                        }
-#endif // DEBUG
-                        return WALK_SKIP_SUBTREES;
-                    }
+                    tree->gtFlags |= GTF_VAR_DEF;
+                    tree->gtFlags |= GTF_DONT_CSE;
                 }
-                else
+#ifdef DEBUG
+                if (verbose)
                 {
-                    // Normed struct
-                    // A "normed struct" is a struct that the VM tells us is a basic type. This can only happen if
-                    // the struct contains a single element, and that element is 4 bytes (on x64 it can also be 8
-                    // bytes). Normally, the type of the local var and the type of GT_FIELD are equivalent. However,
-                    // there is one extremely rare case where that won't be true. An enum type is a special value type
-                    // that contains exactly one element of a primitive integer type (that, for CLS programs is named
-                    // "value__"). The VM tells us that a local var of that enum type is the primitive type of the
-                    // enum's single field. It turns out that it is legal for IL to access this field using ldflda or
-                    // ldfld. For example:
-                    //
-                    //  .class public auto ansi sealed mynamespace.e_t extends [mscorlib]System.Enum
-                    //  {
-                    //    .field public specialname rtspecialname int16 value__
-                    //    .field public static literal valuetype mynamespace.e_t one = int16(0x0000)
-                    //  }
-                    //  .method public hidebysig static void  Main() cil managed
-                    //  {
-                    //     .locals init (valuetype mynamespace.e_t V_0)
-                    //     ...
-                    //     ldloca.s   V_0
-                    //     ldflda     int16 mynamespace.e_t::value__
-                    //     ...
-                    //  }
-                    //
-                    // Normally, compilers will not generate the ldflda, since it is superfluous.
-                    //
-                    // In the example, the lclVar is short, but the JIT promotes all trees using this local to the
-                    // "actual type", that is, INT. But the GT_FIELD is still SHORT. So, in the case of a type
-                    // mismatch like this, don't do this morphing. The local var may end up getting marked as
-                    // address taken, and the appropriate SHORT load will be done from memory in that case.
-
-                    if (tree->TypeGet() == obj->TypeGet())
-                    {
-                        tree->ChangeOper(GT_LCL_VAR);
-                        tree->gtLclVarCommon.SetLclNum(lclNum);
-                        tree->gtFlags &= GTF_NODE_MASK;
-
-                        GenTreePtr parent = fgWalkPre->parentStack->Index(1);
-                        if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
-                        {
-                            tree->gtFlags |= GTF_VAR_DEF;
-                            tree->gtFlags |= GTF_DONT_CSE;
-                        }
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("Replacing the field in normed struct with the local var:\n");
-                            fgWalkPre->printModified = true;
-                        }
-#endif // DEBUG
-                        return WALK_SKIP_SUBTREES;
-                    }
+                    printf("Replacing the field in promoted struct with a local var:\n");
+                    fgWalkPre->printModified = true;
                 }
+#endif // DEBUG
+                return WALK_SKIP_SUBTREES;
+            }
+        }
+        else
+        {
+            // Normed struct
+            // A "normed struct" is a struct that the VM tells us is a basic type. This can only happen if
+            // the struct contains a single element, and that element is 4 bytes (on x64 it can also be 8
+            // bytes). Normally, the type of the local var and the type of GT_FIELD are equivalent. However,
+            // there is one extremely rare case where that won't be true. An enum type is a special value type
+            // that contains exactly one element of a primitive integer type (that, for CLS programs is named
+            // "value__"). The VM tells us that a local var of that enum type is the primitive type of the
+            // enum's single field. It turns out that it is legal for IL to access this field using ldflda or
+            // ldfld. For example:
+            //
+            //  .class public auto ansi sealed mynamespace.e_t extends [mscorlib]System.Enum
+            //  {
+            //    .field public specialname rtspecialname int16 value__
+            //    .field public static literal valuetype mynamespace.e_t one = int16(0x0000)
+            //  }
+            //  .method public hidebysig static void  Main() cil managed
+            //  {
+            //     .locals init (valuetype mynamespace.e_t V_0)
+            //     ...
+            //     ldloca.s   V_0
+            //     ldflda     int16 mynamespace.e_t::value__
+            //     ...
+            //  }
+            //
+            // Normally, compilers will not generate the ldflda, since it is superfluous.
+            //
+            // In the example, the lclVar is short, but the JIT promotes all trees using this local to the
+            // "actual type", that is, INT. But the GT_FIELD is still SHORT. So, in the case of a type
+            // mismatch like this, don't do this morphing. The local var may end up getting marked as
+            // address taken, and the appropriate SHORT load will be done from memory in that case.
+
+            if (tree->TypeGet() == obj->TypeGet())
+            {
+                tree->ChangeOper(GT_LCL_VAR);
+                tree->gtLclVarCommon.SetLclNum(lclNum);
+                tree->gtFlags &= GTF_NODE_MASK;
+
+                GenTreePtr parent = fgWalkPre->parentStack->Index(1);
+                if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
+                {
+                    tree->gtFlags |= GTF_VAR_DEF;
+                    tree->gtFlags |= GTF_DONT_CSE;
+                }
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Replacing the field in normed struct with the local var:\n");
+                    fgWalkPre->printModified = true;
+                }
+#endif // DEBUG
+                return WALK_SKIP_SUBTREES;
             }
         }
     }

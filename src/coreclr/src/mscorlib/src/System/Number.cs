@@ -310,10 +310,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe static extern Boolean NumberBufferToDouble(byte* number, ref Double value);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [System.Runtime.CompilerServices.FriendAccessAllowed]
-        internal static extern unsafe string FormatNumberBuffer(byte* number, string format, NumberFormatInfo info, char* allDigits);
-
         // Constants used by number parsing
         private const Int32 NumberMaxDigits = 50;
 

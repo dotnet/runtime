@@ -2475,6 +2475,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_jle, // GT_LE
         EJ_jge, // GT_GE
         EJ_jg,  // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_je,  // GT_TEST_EQ
+        EJ_jne, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ
         EJ_ne,   // GT_NE
@@ -2494,6 +2498,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_jbe, // GT_LE
         EJ_jae, // GT_GE
         EJ_ja,  // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_je,  // GT_TEST_EQ
+        EJ_jne, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ
         EJ_ne,   // GT_NE
@@ -2513,6 +2521,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
         EJ_NONE, // GT_LE
         EJ_jns,  // GT_GE   (S == 0)
         EJ_NONE, // GT_GT
+#ifndef LEGACY_BACKEND
+        EJ_NONE, // GT_TEST_EQ
+        EJ_NONE, // GT_TEST_NE
+#endif
 #elif defined(_TARGET_ARMARCH_)
         EJ_eq,   // GT_EQ   (Z == 1)
         EJ_ne,   // GT_NE   (Z == 0)
@@ -2530,6 +2542,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
     assert(genJCCinsSigned[GT_LE - GT_EQ] == EJ_jle);
     assert(genJCCinsSigned[GT_GE - GT_EQ] == EJ_jge);
     assert(genJCCinsSigned[GT_GT - GT_EQ] == EJ_jg);
+#ifndef LEGACY_BACKEND
+    assert(genJCCinsSigned[GT_TEST_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsSigned[GT_TEST_NE - GT_EQ] == EJ_jne);
+#endif
 
     assert(genJCCinsUnsigned[GT_EQ - GT_EQ] == EJ_je);
     assert(genJCCinsUnsigned[GT_NE - GT_EQ] == EJ_jne);
@@ -2537,6 +2553,10 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
     assert(genJCCinsUnsigned[GT_LE - GT_EQ] == EJ_jbe);
     assert(genJCCinsUnsigned[GT_GE - GT_EQ] == EJ_jae);
     assert(genJCCinsUnsigned[GT_GT - GT_EQ] == EJ_ja);
+#ifndef LEGACY_BACKEND
+    assert(genJCCinsUnsigned[GT_TEST_EQ - GT_EQ] == EJ_je);
+    assert(genJCCinsUnsigned[GT_TEST_NE - GT_EQ] == EJ_jne);
+#endif
 
     assert(genJCCinsLogical[GT_EQ - GT_EQ] == EJ_je);
     assert(genJCCinsLogical[GT_NE - GT_EQ] == EJ_jne);
@@ -10241,6 +10261,66 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
 // Look in CodeGenArm64.cpp
 
+#elif defined(_TARGET_X86_)
+
+/*****************************************************************************
+ *
+ *  Generates code for an EH funclet prolog.
+ */
+
+void CodeGen::genFuncletProlog(BasicBlock* block)
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genFuncletProlog()\n");
+    }
+#endif
+
+    ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
+
+    compiler->unwindBegProlog();
+
+    // TODO Save callee-saved registers
+
+    // This is the end of the OS-reported prolog for purposes of unwinding
+    compiler->unwindEndProlog();
+}
+
+/*****************************************************************************
+ *
+ *  Generates code for an EH funclet epilog.
+ */
+
+void CodeGen::genFuncletEpilog()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genFuncletEpilog()\n");
+    }
+#endif
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+
+    // TODO Restore callee-saved registers
+
+    instGen_Return(0);
+}
+
+/*****************************************************************************
+ *
+ *  Capture the information used to generate the funclet prologs and epilogs.
+ */
+
+void CodeGen::genCaptureFuncletPrologEpilogInfo()
+{
+    if (!compiler->ehAnyFunclets())
+    {
+        return;
+    }
+}
+
 #else // _TARGET_*
 
 /*****************************************************************************
@@ -10583,6 +10663,7 @@ GenTreePtr CodeGen::genMakeConst(const void* cnsAddr, var_types cnsType, GenTree
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
+    genVzeroupperIfNeeded(false);
     regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
@@ -10621,16 +10702,6 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
-
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
 }
 
 // Save/Restore compCalleeFPRegsPushed with the smallest register number saved at [RSP+offset], working
@@ -10651,6 +10722,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // fast path return
     if (regMask == RBM_NONE)
     {
+        genVzeroupperIfNeeded();
         return;
     }
 
@@ -10682,16 +10754,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     assert((offset % 16) == 0);
 #endif // _TARGET_AMD64_
 
-#ifdef FEATURE_AVX_SUPPORT
-    // Just before restoring float registers issue a Vzeroupper to zero out upper 128-bits of all YMM regs.
-    // This is to avoid penalty if this routine is using AVX-256 and now returning to a routine that is
-    // using SSE2.
-    if (compiler->getFloatingPointInstructionSet() == InstructionSet_AVX)
-    {
-        instGen(INS_vzeroupper);
-    }
-#endif
-
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
         regMaskTP regBit = genRegMask(reg);
@@ -10706,7 +10768,41 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             offset -= XMM_REGSIZE_BYTES;
         }
     }
+    genVzeroupperIfNeeded();
 }
+
+// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
+// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
+// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
+// 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
+// code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
+// if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
+//
+// Params
+//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
+//      instruction, false to check if the function contains AVX instruciton (either 128-bit or 256-bit).
+//
+void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
+{
+#ifdef FEATURE_AVX_SUPPORT
+    bool emitVzeroUpper = false;
+    if (check256bitOnly)
+    {
+        emitVzeroUpper = getEmitter()->Contains256bitAVX();
+    }
+    else
+    {
+        emitVzeroUpper = getEmitter()->ContainsAVX();
+    }
+
+    if (emitVzeroUpper)
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        instGen(INS_vzeroupper);
+    }
+#endif
+}
+
 #endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
 
 //-----------------------------------------------------------------------------------

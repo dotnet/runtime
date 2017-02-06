@@ -10,6 +10,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <OutputType>Library</OutputType>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <HighEntropyVA>true</HighEntropyVA>
 
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>

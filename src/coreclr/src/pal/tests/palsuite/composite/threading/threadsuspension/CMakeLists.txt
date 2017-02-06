@@ -14,7 +14,5 @@ add_executable(paltest_threading_threadsuspension
 add_dependencies(paltest_threading_threadsuspension coreclrpal)
 
 target_link_libraries(paltest_threading_threadsuspension
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

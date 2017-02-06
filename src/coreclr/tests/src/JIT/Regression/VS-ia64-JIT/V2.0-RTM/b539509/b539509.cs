@@ -133,7 +133,7 @@ public class AA<TA, TB, TC, TD, TE, TF>
         do
         {
             bool[, , , ,][,] local8 = (new bool[81u, 98u, ((uint)(58.0f)), ((uint)(36.0f)),
-                74u][,]);
+                74u*4u][,]);
             while ((((uint)(local5)) != 4u))
             {
                 if (Convert.ToBoolean((local5 + local5)))

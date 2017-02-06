@@ -5,25 +5,20 @@
 #ifndef __SOFTWARE_WRITE_WATCH_H__
 #define __SOFTWARE_WRITE_WATCH_H__
 
+#include "gcinterface.h"
+#include "gc.h"
+
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE
-
-extern void SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
-extern void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
-
-#define SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift 0xc
 
 extern "C"
 {
     // Table containing the dirty state. This table is translated to exclude the lowest address it represents, see
     // TranslateTableToExcludeHeapStartAddress.
-    extern uint8_t *g_sw_ww_table;
+    extern uint8_t *g_gc_sw_ww_table;
 
     // Write watch may be disabled when it is not needed (between GCs for instance). This indicates whether it is enabled.
-    extern bool g_sw_ww_enabled_for_gc_heap;
-
-    extern uint8_t *g_lowest_address; // start address of the GC heap
-    extern uint8_t *g_highest_address; // end address of the GC heap
+    extern bool g_gc_sw_ww_enabled_for_gc_heap;
 }
 
 class SoftwareWriteWatch
@@ -116,7 +111,7 @@ inline void SoftwareWriteWatch::VerifyMemoryRegion(
 
 inline uint8_t *SoftwareWriteWatch::GetTable()
 {
-    return g_sw_ww_table;
+    return g_gc_sw_ww_table;
 }
 
 inline uint8_t *SoftwareWriteWatch::GetUntranslatedTable()
@@ -163,7 +158,7 @@ inline void SoftwareWriteWatch::SetUntranslatedTable(uint8_t *untranslatedTable,
     assert(ALIGN_DOWN(untranslatedTable, sizeof(size_t)) == untranslatedTable);
     assert(heapStartAddress != nullptr);
 
-    g_sw_ww_table = TranslateTableToExcludeHeapStartAddress(untranslatedTable, heapStartAddress);
+    g_gc_sw_ww_table = TranslateTableToExcludeHeapStartAddress(untranslatedTable, heapStartAddress);
 }
 
 inline void SoftwareWriteWatch::SetResizedUntranslatedTable(
@@ -194,7 +189,7 @@ inline void SoftwareWriteWatch::SetResizedUntranslatedTable(
 
 inline bool SoftwareWriteWatch::IsEnabledForGCHeap()
 {
-    return g_sw_ww_enabled_for_gc_heap;
+    return g_gc_sw_ww_enabled_for_gc_heap;
 }
 
 inline void SoftwareWriteWatch::EnableForGCHeap()
@@ -204,9 +199,13 @@ inline void SoftwareWriteWatch::EnableForGCHeap()
 
     VerifyCreated();
     assert(!IsEnabledForGCHeap());
+    g_gc_sw_ww_enabled_for_gc_heap = true;
 
-    g_sw_ww_enabled_for_gc_heap = true;
-    SwitchToWriteWatchBarrier(true);
+    WriteBarrierParameters args = {};
+    args.operation = WriteBarrierOp::SwitchToWriteWatch;
+    args.write_watch_table = g_gc_sw_ww_table;
+    args.is_runtime_suspended = true;
+    GCToEEInterface::StompWriteBarrier(&args);
 }
 
 inline void SoftwareWriteWatch::DisableForGCHeap()
@@ -216,19 +215,22 @@ inline void SoftwareWriteWatch::DisableForGCHeap()
 
     VerifyCreated();
     assert(IsEnabledForGCHeap());
+    g_gc_sw_ww_enabled_for_gc_heap = false;     
 
-    g_sw_ww_enabled_for_gc_heap = false;
-    SwitchToNonWriteWatchBarrier(true);
+    WriteBarrierParameters args = {};
+    args.operation = WriteBarrierOp::SwitchToNonWriteWatch;
+    args.is_runtime_suspended = true;
+    GCToEEInterface::StompWriteBarrier(&args);
 }
 
 inline void *SoftwareWriteWatch::GetHeapStartAddress()
 {
-    return g_lowest_address;
+    return g_gc_lowest_address;
 }
 
 inline void *SoftwareWriteWatch::GetHeapEndAddress()
 {
-    return g_highest_address;
+    return g_gc_highest_address;
 }
 
 inline size_t SoftwareWriteWatch::GetTableByteIndex(void *address)

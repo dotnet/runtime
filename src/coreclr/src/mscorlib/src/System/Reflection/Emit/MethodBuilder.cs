@@ -19,10 +19,7 @@ namespace System.Reflection.Emit
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class MethodBuilder : MethodInfo, _MethodBuilder
+    public sealed class MethodBuilder : MethodInfo
     {
         #region Private Data Members
         // Identity
@@ -67,11 +64,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        internal MethodBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[] parameterTypes, ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod) 
-        {
-            Init(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null, mod, type, bIsGlobalMethod);
-        }
 
         internal MethodBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
@@ -369,11 +361,6 @@ namespace System.Reflection.Emit
                 Debug.Assert(false, "We should never get here!");
                 return null;
             }
-        }
-
-        internal void SetToken(MethodToken token)
-        {
-            m_tkMethod = token;
         }
 
         internal byte[] GetBody()
@@ -851,197 +838,11 @@ namespace System.Reflection.Emit
             return new ParameterBuilder(this, position, attributes, strParamName);
         }
 
-        [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public void SetMarshal(UnmanagedMarshal unmanagedMarshal)
-        {
-            ThrowIfGeneric ();
-
-            // set Marshal info for the return type
-
-            m_containingType.ThrowIfCreated();
-            
-            if (m_retParam == null)
-            {
-                m_retParam = new ParameterBuilder(this, 0, 0, null);
-            }
-
-            m_retParam.SetMarshal(unmanagedMarshal);
-        }
-
         private List<SymCustomAttr> m_symCustomAttrs;
         private struct SymCustomAttr
         {
-            public SymCustomAttr(String name, byte[] data)
-            {
-                m_name = name;
-                m_data = data;
-            }
             public String m_name;
             public byte[] m_data;
-        }
-
-        public void SetSymCustomAttribute(String name, byte[] data)           
-        {
-            // Note that this API is rarely used.  Support for custom attributes in PDB files was added in
-            // Whidbey and as of 8/2007 the only known user is the C# compiler.  There seems to be little
-            // value to this for Reflection.Emit users since they can always use metadata custom attributes.
-            // Some versions of the symbol writer used in the CLR will ignore these entirely.  This API has 
-            // been removed from the Silverlight API surface area, but we should also consider removing it
-            // from future desktop product versions as well.
-            
-            ThrowIfGeneric ();
-
-            // This is different from CustomAttribute. This is stored into the SymWriter.
-            m_containingType.ThrowIfCreated();
-
-            ModuleBuilder dynMod = (ModuleBuilder) m_module;
-            if ( dynMod.GetSymWriter() == null)
-            {
-                // Cannot SetSymCustomAttribute when it is not a debug module
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotADebugModule"));
-            }
-
-            if (m_symCustomAttrs == null)
-                m_symCustomAttrs = new List<SymCustomAttr>();
-
-            m_symCustomAttrs.Add(new SymCustomAttr(name, data));
-        }
-
-        public void SetMethodBody(byte[] il, int maxStack, byte[] localSignature, IEnumerable<ExceptionHandler> exceptionHandlers, IEnumerable<int> tokenFixups)
-        {
-            if (il == null)
-            {
-                throw new ArgumentNullException(nameof(il), Environment.GetResourceString("ArgumentNull_Array"));
-            }
-            if (maxStack < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxStack), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-            Contract.EndContractBlock();
-
-            if (m_bIsBaked)
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_MethodBaked"));
-            }
-
-            m_containingType.ThrowIfCreated();
-            ThrowIfGeneric();
-            
-            byte[] newLocalSignature = null;
-            ExceptionHandler[] newHandlers = null;
-            int[] newTokenFixups = null;
-
-            byte[] newIL = (byte[])il.Clone();
-
-            if (localSignature != null)
-            {
-                newLocalSignature = (byte[])localSignature.Clone();
-            }
-
-            if (exceptionHandlers != null)
-            {
-                newHandlers = ToArray(exceptionHandlers);
-                CheckExceptionHandlerRanges(newHandlers, newIL.Length);
-
-                // Note: Fixup entries for type tokens stored in ExceptionHandlers are added by the method body emitter.
-            }
-
-            if (tokenFixups != null)
-            {
-                newTokenFixups = ToArray(tokenFixups);
-                int maxTokenOffset = newIL.Length - 4;
-
-                for (int i = 0; i < newTokenFixups.Length; i++)
-                {
-                    // Check that fixups are within the range of this method's IL, otherwise some random memory might get "fixed up".
-                    if (newTokenFixups[i] < 0 || newTokenFixups[i] > maxTokenOffset)
-                    {
-                        throw new ArgumentOutOfRangeException("tokenFixups[" + i + "]", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, maxTokenOffset));
-                    }
-                }
-            }
-
-            m_ubBody = newIL;
-            m_localSignature = newLocalSignature;
-            m_exceptions = newHandlers;
-            m_mdMethodFixups = newTokenFixups;
-            m_maxStack = maxStack;
-
-            // discard IL generator, all information stored in it is now irrelevant
-            m_ilGenerator = null;
-            m_bIsBaked = true;
-        }
-
-        private static T[] ToArray<T>(IEnumerable<T> sequence)
-        {
-            T[] array = sequence as T[];
-            if (array != null)
-            {
-                return (T[])array.Clone();
-            }
-
-            return new List<T>(sequence).ToArray();
-        }
-
-        private static void CheckExceptionHandlerRanges(ExceptionHandler[] exceptionHandlers, int maxOffset)
-        {
-            // Basic checks that the handler ranges are within the method body (ranges are end-exclusive).
-            // Doesn't verify that the ranges are otherwise correct - it is very well possible to emit invalid IL.
-            for (int i = 0; i < exceptionHandlers.Length; i++)
-            {
-                var handler = exceptionHandlers[i];
-                if (handler.m_filterOffset > maxOffset || handler.m_tryEndOffset > maxOffset || handler.m_handlerEndOffset > maxOffset)
-                {
-                    throw new ArgumentOutOfRangeException("exceptionHandlers[" + i + "]", Environment.GetResourceString("ArgumentOutOfRange_Range", 0, maxOffset));
-                }
-
-                // Type token might be 0 if the ExceptionHandler was created via a default constructor.
-                // Other tokens migth also be invalid. We only check nil tokens as the implementation (SectEH_Emit in corhlpr.cpp) requires it,
-                // and we can't check for valid tokens until the module is baked.
-                if (handler.Kind == ExceptionHandlingClauseOptions.Clause && handler.ExceptionTypeToken == 0)
-                {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", handler.ExceptionTypeToken), "exceptionHandlers[" + i + "]");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Obsolete.
-        /// </summary>
-        public void CreateMethodBody(byte[] il, int count)
-        {
-            ThrowIfGeneric();
-
-            // Note that when user calls this function, there are a few information that client is
-            // not able to supply: local signature, exception handlers, max stack size, a list of Token fixup, a list of RVA fixup
-
-            if (m_bIsBaked)
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_MethodBaked"));
-            }
-
-            m_containingType.ThrowIfCreated();
-
-            if (il != null && (count < 0 || count > il.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
-            }
-
-            if (il == null)
-            {
-                m_ubBody = null;
-                return;
-            }
-
-            m_ubBody = new byte[count];
-            Buffer.BlockCopy(il, 0, m_ubBody, 0, count);
-
-            m_localSignature = null;
-            m_exceptions = null;
-            m_mdMethodFixups = null;
-            m_maxStack = DefaultMaxStack;
-
-            m_bIsBaked = true;
         }
 
         public void SetImplementationFlags(MethodImplAttributes attributes) 
@@ -1315,7 +1116,7 @@ namespace System.Reflection.Emit
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     [ComVisible(false)]
-    public struct ExceptionHandler : IEquatable<ExceptionHandler>
+    internal struct ExceptionHandler : IEquatable<ExceptionHandler>
     {
         // Keep in sync with unmanged structure. 
         internal readonly int m_exceptionClass;
@@ -1326,118 +1127,7 @@ namespace System.Reflection.Emit
         internal readonly int m_handlerEndOffset;
         internal readonly ExceptionHandlingClauseOptions m_kind;
 
-        public int ExceptionTypeToken
-        {
-            get { return m_exceptionClass; }
-        }
-
-        public int TryOffset
-        {
-            get { return m_tryStartOffset; }
-        }
-
-        public int TryLength
-        {
-            get { return m_tryEndOffset - m_tryStartOffset; }
-        }
-
-        public int FilterOffset
-        {
-            get { return m_filterOffset; }
-        }
-
-        public int HandlerOffset
-        {
-            get { return m_handlerStartOffset; }
-        }
-
-        public int HandlerLength
-        {
-            get { return m_handlerEndOffset - m_handlerStartOffset; }
-        }
-
-        public ExceptionHandlingClauseOptions Kind
-        {
-            get { return m_kind; }
-        }
-
-        #region Constructors
-
-        /// <summary>
-        /// Creates a description of an exception handler.
-        /// </summary>
-        /// <param name="tryOffset">The offset of the first instruction protected by this handler.</param>
-        /// <param name="tryLength">The number of bytes protected by this handler.</param>
-        /// <param name="filterOffset">The filter code begins at the specified offset and ends at the first instruction of the handler block. Specify 0 if not applicable (this is not a filter handler).</param>
-        /// <param name="handlerOffset">The offset of the first instruction of this handler.</param>
-        /// <param name="handlerLength">The number of bytes of the handler.</param>
-        /// <param name="kind">The kind of handler, the handler might be a catch handler, filter handler, fault handler, or finally handler.</param>
-        /// <param name="exceptionTypeToken">The token of the exception type handled by this handler. Specify 0 if not applicable (this is finally handler).</param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Some of the instruction offset is negative, 
-        /// the end offset of specified range is less than its start offset,
-        /// or <paramref name="kind"/> has an invalid value.
-        /// </exception>
-        public ExceptionHandler(int tryOffset, int tryLength, int filterOffset, int handlerOffset, int handlerLength,
-            ExceptionHandlingClauseOptions kind, int exceptionTypeToken)
-        {
-            if (tryOffset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tryOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-
-            if (tryLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-
-            if (filterOffset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(filterOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-
-            if (handlerOffset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(handlerOffset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-
-            if (handlerLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-            }
-
-            if ((long)tryOffset + tryLength > Int32.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tryLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - tryOffset));
-            }
-
-            if ((long)handlerOffset + handlerLength > Int32.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(handlerLength), Environment.GetResourceString("ArgumentOutOfRange_Range", 0, Int32.MaxValue - handlerOffset));
-            }
-
-            // Other tokens migth also be invalid. We only check nil tokens as the implementation (SectEH_Emit in corhlpr.cpp) requires it,
-            // and we can't check for valid tokens until the module is baked.
-            if (kind == ExceptionHandlingClauseOptions.Clause && (exceptionTypeToken & 0x00FFFFFF) == 0)
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeToken", exceptionTypeToken), nameof(exceptionTypeToken));
-            }
-
-            Contract.EndContractBlock();
-
-            if (!IsValidKind(kind))
-            {
-                throw new ArgumentOutOfRangeException(nameof(kind), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
-            }
-            
-            m_tryStartOffset = tryOffset;
-            m_tryEndOffset = tryOffset + tryLength;
-            m_filterOffset = filterOffset;
-            m_handlerStartOffset = handlerOffset;
-            m_handlerEndOffset = handlerOffset + handlerLength;
-            m_kind = kind;
-            m_exceptionClass = exceptionTypeToken;
-        }
+#region Constructors
 
         internal ExceptionHandler(int tryStartOffset, int tryEndOffset, int filterOffset, int handlerStartOffset, int handlerEndOffset,
             int kind, int exceptionTypeToken)

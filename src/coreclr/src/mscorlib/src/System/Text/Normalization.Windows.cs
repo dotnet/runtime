@@ -21,19 +21,15 @@ namespace System.Text
         //
         // Flags that track whether given normalization form was initialized
         //
-#if !FEATURE_NORM_IDNA_ONLY
         private static volatile bool NFC;
         private static volatile bool NFD;
         private static volatile bool NFKC;
         private static volatile bool NFKD;
-#endif // !FEATURE_NORM_IDNA_ONLY                
         private static volatile bool IDNA;
-#if !FEATURE_NORM_IDNA_ONLY        
         private static volatile bool NFCDisallowUnassigned;
         private static volatile bool NFDDisallowUnassigned;
         private static volatile bool NFKCDisallowUnassigned;
         private static volatile bool NFKDDisallowUnassigned;
-#endif // !FEATURE_NORM_IDNA_ONLY    
         private static volatile bool IDNADisallowUnassigned;
         private static volatile bool Other;
 
@@ -77,7 +73,6 @@ namespace System.Text
         {
             switch ((ExtendedNormalizationForms)form)
             {
-#if !FEATURE_NORM_IDNA_ONLY
                 case ExtendedNormalizationForms.FormC:
                     if (NFC) return;
                     InitializeForm(form, "normnfc.nlp");
@@ -101,7 +96,6 @@ namespace System.Text
                     InitializeForm(form, "normnfkd.nlp");
                     NFKD = true;
                     break;
-#endif // !FEATURE_NORM_IDNA_ONLY
 
                 case ExtendedNormalizationForms.FormIdna:
                     if (IDNA) return;
@@ -109,7 +103,6 @@ namespace System.Text
                     IDNA = true;
                     break;
 
-#if !FEATURE_NORM_IDNA_ONLY
                 case ExtendedNormalizationForms.FormCDisallowUnassigned:
                     if (NFCDisallowUnassigned) return;
                     InitializeForm(form, "normnfc.nlp");
@@ -133,7 +126,6 @@ namespace System.Text
                     InitializeForm(form, "normnfkd.nlp");
                     NFKDDisallowUnassigned = true;
                     break;
-#endif // !FEATURE_NORM_IDNA_ONLY
 
                 case ExtendedNormalizationForms.FormIdnaDisallowUnassigned:
                     if (IDNADisallowUnassigned) return;

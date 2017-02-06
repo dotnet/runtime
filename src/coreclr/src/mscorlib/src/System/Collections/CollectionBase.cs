@@ -14,18 +14,13 @@ namespace System.Collections {
     [Serializable]
 [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CollectionBase : IList {
-        ArrayList list;
+        private ArrayList list;
 
         protected CollectionBase() {
             list = new ArrayList();
         }
-        
-        protected CollectionBase(int capacity) {
-            list = new ArrayList(capacity);
-        }
 
-
-        protected ArrayList InnerList { 
+        internal ArrayList InnerList { 
             get { 
                 if (list == null)
                     list = new ArrayList();
@@ -35,16 +30,6 @@ namespace System.Collections {
 
         protected IList List {
             get { return (IList)this; }
-        }
-
-        [System.Runtime.InteropServices.ComVisible(false)]        
-        public int Capacity {
-            get {
-                return InnerList.Capacity;
-            }
-            set {
-                InnerList.Capacity = value;
-            }
         }
 
 

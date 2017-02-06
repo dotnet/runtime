@@ -40,7 +40,7 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 	
-	#if defined(BIT64) && defined(PLATFORM_UNIX)
+	#if defined(BIT64)
 
 		//Create MAX_THREADS threads that will operate on the global counter
 		for (i=0;i<MAX_THREADS;i++)
@@ -79,7 +79,7 @@ int __cdecl main(int argc, char *argv[])
 			Fail("Test Case Failed: InterlockedDecrement \n");
 		}
 
-#endif  //defined(BIT64) && defined(PLATFORM_UNIX)
+#endif  //defined(BIT64)
 	
     PAL_Terminate();
     return PASS; 

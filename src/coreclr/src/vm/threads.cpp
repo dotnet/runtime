@@ -3060,7 +3060,16 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     DWORD dwCreationFlags = CREATE_SUSPENDED;
 
 #ifdef FEATURE_CORECLR
-    dwCreationFlags |=  STACK_SIZE_PARAM_IS_A_RESERVATION;
+    dwCreationFlags |= STACK_SIZE_PARAM_IS_A_RESERVATION;
+
+#ifndef FEATURE_PAL // the PAL does its own adjustments as necessary
+    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= OS_PAGE_SIZE)
+    {
+        // On Windows, passing a value that is <= one page size bizarrely causes the OS to use the default stack size instead of
+        // a minimum, which is undesirable. This adjustment fixes that issue to use a minimum stack size (typically 64 KB).
+        sizeToCommitOrReserve = OS_PAGE_SIZE + 1;
+    }
+#endif // !FEATURE_PAL
 #else
     if(sizeToCommitOrReserve != 0)
     {
@@ -4533,9 +4542,6 @@ retry:
         {
             // Probe all handles with a timeout of zero. When we find one that's
             // invalid, move it out of the list and retry the wait.
-#ifdef _DEBUG
-            BOOL fFoundInvalid = FALSE;
-#endif
             for (int i = 0; i < countHandles; i++)
             {
                 // WaitForSingleObject won't pump memssage; we already probe enough space
@@ -4548,12 +4554,8 @@ retry:
                 if ((countHandles - i - 1) > 0)
                     memmove(&handles[i], &handles[i+1], (countHandles - i - 1) * sizeof(HANDLE));
                 countHandles--;
-#ifdef _DEBUG
-                fFoundInvalid = TRUE;
-#endif
                 break;
             }
-            _ASSERTE(fFoundInvalid);
 
             // Compute the new timeout value by assume that the timeout
             // is not large enough for more than one wrap
@@ -4599,7 +4601,6 @@ retry:
                 _ASSERTE(subRet == WAIT_TIMEOUT);
                 ret++;
             }
-            _ASSERTE(i != countHandles);
         }
     }
 
@@ -6807,17 +6808,14 @@ void Thread::HandleThreadInterrupt (BOOL fWaitForADUnload)
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        if (ReadyForInterrupt())
-        {
-            ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
-            FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
 
 #ifdef _DEBUG
-            AddFiberInfo(ThreadTrackInfo_Abort);
+        AddFiberInfo(ThreadTrackInfo_Abort);
 #endif
 
-            COMPlusThrow(kThreadInterruptedException);
-        }
+        COMPlusThrow(kThreadInterruptedException);
     }
     END_SO_INTOLERANT_CODE;
 }
@@ -7327,11 +7325,25 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
             return FALSE;
         }
 
-        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. The limit
-        // is currently set at 50% of the stack, which should be sufficient to allow the average Framework
-        // function to run, and to allow us to throw and dispatch an exception up a reasonable call chain.
-        m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase) - 
-            (reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) / 2;
+        // Compute the limit used by EnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
+        // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
+        // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
+        // among other things.
+#ifdef BIT64
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !BIT64
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // BIT64
+        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
+        if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
+            MinExecutionStackSize)
+        {
+            m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + MinExecutionStackSize;
+        }
+        else
+        {
+            m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase);
+        }
     }
 
     // Ensure that we've setup the stack guarantee properly before we cache the stack limits
@@ -8241,7 +8253,7 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
 }
 
 
-#if defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#ifdef DEBUG_REGDISPLAY
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
@@ -8254,7 +8266,7 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     }
 }
 
-#endif // defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#endif // DEBUG_REGDISPLAY
 
 //                      Trip Functions
 //                      ==============

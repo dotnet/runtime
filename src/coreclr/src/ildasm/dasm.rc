@@ -10,9 +10,6 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#ifndef FEATURE_CORECLR
-#include "afxres.h"
-#endif
 #include <winresrc.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,250 +54,16 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-
-#if !defined(FEATURE_PAL) && !defined(FEATURE_CORECLR)
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_ICON2               ICON    DISCARDABLE     "Litening.ico"
-
-#if FX_VFT == VFT_DLL 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDB_FIELD               BITMAP  MOVEABLE PURE   "field.bmp"
-IDB_METHOD              BITMAP  MOVEABLE PURE   "method.bmp"
-IDB_STATICFIELD         BITMAP  MOVEABLE PURE   "staticfield.bmp"
-IDB_STATICMETHOD        BITMAP  MOVEABLE PURE   "staticmethod.bmp"
-IDB_REDARROW            BITMAP  MOVEABLE PURE   "redarrow.bmp"
-IDB_EVENT               BITMAP  DISCARDABLE     "event.bmp"
-IDB_PROP                BITMAP  DISCARDABLE     "prop.bmp"
-IDB_NAMESPACE           BITMAP  DISCARDABLE     "namespace.bmp"
-IDB_CLASS               BITMAP  DISCARDABLE     "classa.bmp"
-IDB_CLASSENUM           BITMAP  DISCARDABLE     "classe.bmp"
-IDB_CLASSINT            BITMAP  DISCARDABLE     "classi.bmp"
-IDB_CLASSVAL            BITMAP  DISCARDABLE     "classv.bmp"
-
-IDB_METHOD_GEN          BITMAP  MOVEABLE PURE   "methodg.bmp"
-IDB_STATICMETHOD_GEN    BITMAP  MOVEABLE PURE   "staticmethodg.bmp"
-IDB_CLASS_GEN           BITMAP  DISCARDABLE     "classag.bmp"
-IDB_CLASSENUM_GEN       BITMAP  DISCARDABLE     "classeg.bmp"
-IDB_CLASSINT_GEN        BITMAP  DISCARDABLE     "classig.bmp"
-IDB_CLASSVAL_GEN        BITMAP  DISCARDABLE     "classvg.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_DIALOG1 DIALOG DISCARDABLE  0, 0, 157, 306
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
-CAPTION "Dump options"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    DEFPUSHBUTTON   L"OK",IDOK,13,285,50,14
-    PUSHBUTTON      L"Cancel",IDCANCEL,81,285,50,14
-    GROUPBOX        L"Encoding",IDC_STATIC,13,3,129,28
-    CONTROL         L"ANSI",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,19,16,34,9
-    CONTROL         L"UTF-8",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,55,16,34,
-                    9
-    CONTROL         L"Unicode",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,91,16,
-                    40,9
-    CONTROL         L"Dump Class List",IDC_CHECK19,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,36,106,10
-    CONTROL         L"Dump Statistics",IDC_CHECK2,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,48,106,10
-    CONTROL         L"Show Progress Bar",IDC_CHECK18,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,60,124,11
-    CONTROL         L"Dump Header",IDC_CHECK1,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,73,106,10
-    CONTROL         L"Dump IL Code",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,86,106,10
-    CONTROL         L"Token Values",IDC_CHECK4,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,99,106,10
-    CONTROL         L"Actual Bytes",IDC_CHECK5,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,110,106,10
-    CONTROL         L"Line Numbers",IDC_CHECK20,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,120,106,10
-    CONTROL         L"Source Lines",IDC_CHECK6,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,131,106,10
-    CONTROL         L"Expand try/catch",IDC_CHECK7,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,142,106,10
-    CONTROL         L"Dump Metainfo",IDC_CHECK8,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,14,158,106,10
-    CONTROL         L"More HEX",IDC_CHECK11,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,174,106,10
-    CONTROL         L"Raw: Counts,Sizes",IDC_CHECK12,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,185,106,10
-    CONTROL         L"Raw: Header",IDC_CHECK10,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,198,106,10
-    CONTROL         L"Raw: Header,Schema",IDC_CHECK14,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    37,209,106,10
-    CONTROL         L"Raw: Header,Schema,Rows",IDC_CHECK15,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,37,222,106,10
-    CONTROL         L"Raw: Heaps",IDC_CHECK17,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,233,106,10
-    CONTROL         L"Unresolved Externals",IDC_CHECK13,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    37,246,106,10
-    CONTROL         L"Validate",IDC_CHECK16,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,37,257,106,10
-    CONTROL         L"Debug",IDC_CHECK9,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    37,270,106,10
-END
-
-IDD_ABOUT DIALOGEX 0, 0, 289, 112
-STYLE DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_CAPTION
-EXSTYLE WS_EX_CLIENTEDGE
-CAPTION L"About IL DASM"
-FONT 8, "MS Shell Dlg"
-BEGIN
-    DEFPUSHBUTTON   L"OK",ID_ABOUT_OK,122,83,50,14
-    ICON            IDI_ICON2,IDC_STATIC,18,22,21,20,0
-    LTEXT           L"Static",IDC_ABOUT_LINE1,47,22,279,11
-    LTEXT           L"Static",IDC_ABOUT_LINE2,47,38,279,11
-    LTEXT           L"Static",IDC_ABOUT_LINE3,47,56,279,11
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Accelerator
-//
-
-FileAccel ACCELERATORS MOVEABLE PURE 
-BEGIN
-    "O",            1,                      VIRTKEY, CONTROL
-    "D",            2,                      VIRTKEY, CONTROL
-    "T",            3,                      VIRTKEY, CONTROL
-    "X",            4,                      VIRTKEY, CONTROL
-    "M",            21,                     VIRTKEY, CONTROL
-    VK_F1,          31,                     VIRTKEY 
-    VK_ESCAPE,      4,                      VIRTKEY 
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
-BEGIN
-    IDD_DIALOG1, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 150
-        TOPMARGIN, 3
-        BOTTOMMARGIN, 299
-    END
-
-    IDD_ABOUT, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 232
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 105
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// String Table
-//
-
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_FILE                L"&File"
-    IDS_VIEW                L"&View"
-    IDS_HELP                L"&Help"
-    IDS_OPEN                L"&Open\tCtrl+O"
-    IDS_DUMP                L"&Dump\tCtrl+D"
-    IDS_DUMPTREE            L"Dump &TreeView\tCtrl+T"
-    IDS_EXIT                L"E&xit\tCtrl+X"
-    IDS_FONTS               L"Set &Fonts"
-    IDS_FONT_TREE           L"&Tree view"
-    IDS_FONT_DASM           L"&Disassembly"
-    IDS_SORT_BY_NAME        L"Sort by &name"
-    IDS_SHOW_PUB            L"Hide &Public"
-    IDS_SHOW_PRIV           L"Hide P&rivate"
-    IDS_SHOW_FAM            L"Hide Famil&y"
-    IDS_SHOW_ASM            L"Hide &Assembly"
-END
-
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_FIND                L"&Find"
-    IDS_FINDNEXT            L"Find &Next"
-END
-
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_MI_DEBUG            L"&Debug"
-    IDS_MI_SCHEMA           L"Raw:Header,Sch&ema"
-    IDS_MI_RAW              L"Raw:Header,Schema,&Rows"
-    IDS_MI_HEAPS            L"Raw:Hea&ps"
-    IDS_MI_VALIDATE         L"&Validate"
-    IDS_SHOW_METAINFO       L"&Show!\tCtrl+M"
-    IDS_ABOUT               L"&About IL DASM"
-END
-
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_SHOW_FAA            L"Hide FamAN&DAssem"
-    IDS_SHOW_FOA            L"Hide Fam&ORAssem"
-    IDS_SHOW_PSCOPE         L"Hide Private&Scope"
-    IDS_FULL_INFO           L"Show member &types"
-    IDS_BYTES               L"Show &bytes"
-    IDS_TOKENS              L"Show token &values"
-    IDS_SOURCELINES         L"Show source &lines"
-    IDS_QUOTEALLNAMES       L"&Quote all names"
-    IDS_EXPANDTRY           L"E&xpand try/catch"
-    IDS_SHOW_HEADER         L"&Headers"
-    IDS_SHOW_STAT           L"Stat&istics"
-    IDS_METAINFO            L"&MetaInfo"
-    IDS_MI_HEADER           L"Raw:&Header"
-    IDS_MI_HEX              L"&More HEX"
-    IDS_MI_CSV              L"Raw:&Counts,Sizes"
-    IDS_MI_UNREX            L"&Unresolved ext."
-    IDS_TREEVIEWFCN         L"Full &Class Names"
-    IDS_CAVERBAL            L"V&erbal CA blobs"
-    IDS_DUMPRTF             L"&Use RTF"
-END
-
-#endif // FX_VFT == VFT_DLL
-#endif // !defined(FEATURE_PAL) && !defined(FEATURE_CORECLR)
-
 #if FX_VFT == VFT_DLL
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_USAGE_TITLE         L"ILDASM command line syntax"
     IDS_USAGE_01            L"Usage: ildasm [options] <file_name> [options]\n\n"
     IDS_USAGE_02            L"Options for output redirection:\n"
-#ifndef FEATURE_PAL
-    IDS_USAGE_03            L"  /OUT=<file name>    Direct output to file rather than to GUI.\n"
-    IDS_USAGE_04            L"  /TEXT               Direct output to console window rather than to GUI.\n\n"
-    IDS_USAGE_04A           L"  /HTML               Output in HTML format (valid with /OUT option only).\n"
-    IDS_USAGE_04B           L"  /RTF                Output in rich text format (invalid with /TEXT option).\n"
-    IDS_USAGE_05            L"Options for GUI or file/console output (EXE and DLL files only):\n"
-#else
     IDS_USAGE_03            L"  /OUT=<file name>    Direct output to file rather than to console.\n"
-    IDS_USAGE_04            L""
     IDS_USAGE_04A           L"  /HTML               Output in HTML format (valid with /OUT option only).\n"
     IDS_USAGE_04B           L"  /RTF                Output in rich text format (valid with /OUT option only).\n"
     IDS_USAGE_05            L"Options for file/console output:\n"
-#endif // !FEATURE_PAL
 #ifdef OWNER_OPTION_ENABLED
     IDS_USAGE_06            L"  /OWNER=<owner name> Set owner name to disassemble a protected PE file.\n"
 #endif
@@ -322,15 +85,8 @@ BEGIN
     IDS_USAGE_15            L"  /QUOTEALLNAMES      Include all names into single quotes.\n"
     IDS_USAGE_15A           L"  /NOCA               Suppress output of custom attributes.\n"
     IDS_USAGE_15B           L"  /CAVERBAL           Output CA blobs in verbal form (default - in binary form).\n"
-#ifndef FEATURE_PAL
-    IDS_USAGE_16            L"  /NOBAR              Suppress disassembly progress bar window pop-up.\n\n"
     IDS_USAGE_17            L"The following options are valid for file/console output only:\n"
     IDS_USAGE_18            L"Options for EXE and DLL files:\n"
-#else
-    IDS_USAGE_16            L""
-    IDS_USAGE_17            L""
-    IDS_USAGE_18            L""
-#endif // !FEATURE_PAL
     IDS_USAGE_19            L"  /UTF8               Use UTF-8 encoding for output (default - ANSI).\n"
     IDS_USAGE_20            L"  /UNICODE            Use UNICODE encoding for output.\n"
     IDS_USAGE_21            L"  /NOIL               Suppress IL assembler code output.\n"
@@ -390,7 +146,6 @@ BEGIN
     IDS_E_BADCORHDR         L"error : Bad CLR header, or the version of the file format is not supported"
     IDS_E_OPENMD            L"error : Failed to open meta data"
     IDS_E_COPYRIGHT         L"error : Copyrighted material - can not disassemble!"
-    IDS_E_DASMABORT         L"********* DISASSEMBLY ABORTED BY THE OPERATOR **************"
     IDS_E_DASMOK            L"*********** DISASSEMBLY COMPLETE ***********************"
     IDS_E_PARTDASM          L"warning : THIS IS A PARTIAL DISASSEMBLY, NOT SUITABLE FOR RE-ASSEMBLING"
     IDS_E_INSTRDT           L"error : Failed to create instruction decoding table"

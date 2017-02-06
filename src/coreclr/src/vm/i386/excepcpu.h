@@ -21,25 +21,13 @@
 
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
+#ifndef WIN64EXCEPTIONS
 class Thread;
 
 #if defined(_MSC_VER)
 #pragma warning(disable:4733) // Inline asm assigning to `FS:0` : handler not registered as safe handler
                               // Actually, the handler getting set is properly registered
 #endif
-
-#ifdef FEATURE_PAL
-
-extern VOID SetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
-extern VOID ResetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
-
-#define INSTALL_SEH_RECORD(record)                                        \
-    SetSEHRecord(record);                                                 \
-
-#define UNINSTALL_SEH_RECORD(record)                                      \
-    ResetSEHRecord(record);
-
-#else  // FEATURE_PAL
 
 #define INSTALL_SEH_RECORD(record)                                        \
     {                                                                     \
@@ -51,8 +39,6 @@ extern VOID ResetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
     {                                                                     \
         __writefsdword(0, (DWORD) ((record)->Next));                      \
     }
-
-#endif // FEATURE_PAL
 
 #define INSTALL_EXCEPTION_HANDLING_RECORD(record)               \
     {                                                           \
@@ -90,14 +76,32 @@ extern VOID ResetSEHRecord(PEXCEPTION_REGISTRATION_RECORD record);
 
 #endif
 
+
+PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
+PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread*);
+
+LPVOID COMPlusEndCatchWorker(Thread *pCurThread);
+EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVOID* pRetAddress);
+
+#else // WIN64EXCEPTIONS
+#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
+#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
+#define DECLARE_CPFH_EH_RECORD(pCurThread)
+
+#endif // WIN64EXCEPTIONS
+
 //
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
+#ifdef WIN64EXCEPTIONS
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
 
-PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
-PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread*);
+class FaultingExceptionFrame;
+
+FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
+#endif // WIN64EXCEPTIONS
 
 // Determine the address of the instruction that made the current call.
 inline

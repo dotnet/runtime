@@ -28,10 +28,7 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     // Only statics, does not need to be marked with the serializable attribute
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Activator))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Activator : _Activator
+    public sealed class Activator
     {
         internal const int LookupMask                 = 0x000000FF;
         internal const BindingFlags ConLookup         = (BindingFlags) (BindingFlags.Instance | BindingFlags.Public);
@@ -209,31 +206,6 @@ namespace System {
                                       null,
                                       activationAttributes);
         }
-                                  
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        static public ObjectHandle CreateInstance(String assemblyName, 
-                                                  String typeName, 
-                                                  bool ignoreCase,
-                                                  BindingFlags bindingAttr, 
-                                                  Binder binder,
-                                                  Object[] args,
-                                                  CultureInfo culture,
-                                                  Object[] activationAttributes,
-                                                  Evidence securityInfo)
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return CreateInstance(assemblyName,
-                                  typeName,
-                                  ignoreCase,
-                                  bindingAttr,
-                                  binder,
-                                  args,
-                                  culture,
-                                  activationAttributes,
-                                  securityInfo,
-                                  ref stackMark);
-        }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static ObjectHandle CreateInstance(string assemblyName,
@@ -314,29 +286,6 @@ namespace System {
             }
         }
 
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstanceFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        static public ObjectHandle CreateInstanceFrom(String assemblyFile,
-                                                      String typeName, 
-                                                      bool ignoreCase,
-                                                      BindingFlags bindingAttr, 
-                                                      Binder binder,
-                                                      Object[] args,
-                                                      CultureInfo culture,
-                                                      Object[] activationAttributes,
-                                                      Evidence securityInfo)
-                                               
-        {
-            return CreateInstanceFromInternal(assemblyFile,
-                                              typeName,
-                                              ignoreCase,
-                                              bindingAttr,
-                                              binder,
-                                              args,
-                                              culture,
-                                              activationAttributes,
-                                              securityInfo);
-        }
-
         public static ObjectHandle CreateInstanceFrom(string assemblyFile,
                                                       string typeName,
                                                       bool ignoreCase,
@@ -386,120 +335,6 @@ namespace System {
                 ObjectHandle Handle = new ObjectHandle(o);
                 return Handle;
             }
-        }
-
-        //
-        // This API is designed to be used when a host needs to execute code in an AppDomain
-        // with restricted security permissions. In that case, we demand in the client domain
-        // and assert in the server domain because the server domain might not be trusted enough
-        // to pass the security checks when activating the type.
-        //
-
-        public static ObjectHandle CreateInstance (AppDomain domain, string assemblyName, string typeName) {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-            return domain.InternalCreateInstanceWithNoSecurity(assemblyName, typeName);
-        }
-
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public static ObjectHandle CreateInstance (AppDomain domain,
-                                                   string assemblyName,
-                                                   string typeName,
-                                                   bool ignoreCase,
-                                                   BindingFlags bindingAttr,
-                                                   Binder binder,
-                                                   Object[] args,
-                                                   CultureInfo culture,
-                                                   Object[] activationAttributes,
-                                                   Evidence securityAttributes) {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-
-            return domain.InternalCreateInstanceWithNoSecurity(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-        }
-
-        public static ObjectHandle CreateInstance(AppDomain domain,
-                                                  string assemblyName,
-                                                  string typeName,
-                                                  bool ignoreCase,
-                                                  BindingFlags bindingAttr,
-                                                  Binder binder,
-                                                  object[] args,
-                                                  CultureInfo culture,
-                                                  object[] activationAttributes)
-        {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-
-            return domain.InternalCreateInstanceWithNoSecurity(assemblyName,
-                                                               typeName,
-                                                               ignoreCase,
-                                                               bindingAttr,
-                                                               binder,
-                                                               args,
-                                                               culture,
-                                                               activationAttributes,
-                                                               null);
-        }
-
-        //
-        // This API is designed to be used when a host needs to execute code in an AppDomain
-        // with restricted security permissions. In that case, we demand in the client domain
-        // and assert in the server domain because the server domain might not be trusted enough
-        // to pass the security checks when activating the type.
-        //
-
-        public static ObjectHandle CreateInstanceFrom (AppDomain domain, string assemblyFile, string typeName) {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-            return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile, typeName);
-        }
-
-        [Obsolete("Methods which use Evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstanceFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public static ObjectHandle CreateInstanceFrom (AppDomain domain,
-                                                       string assemblyFile,
-                                                       string typeName,
-                                                       bool ignoreCase,
-                                                       BindingFlags bindingAttr,
-                                                       Binder binder,
-                                                       Object[] args,
-                                                       CultureInfo culture,
-                                                       Object[] activationAttributes,
-                                                       Evidence securityAttributes) {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-
-            return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-        }
-
-        public static ObjectHandle CreateInstanceFrom(AppDomain domain,
-                                                      string assemblyFile,
-                                                      string typeName,
-                                                      bool ignoreCase,
-                                                      BindingFlags bindingAttr,
-                                                      Binder binder,
-                                                      object[] args,
-                                                      CultureInfo culture,
-                                                      object[] activationAttributes)
-        {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-            Contract.EndContractBlock();
-
-            return domain.InternalCreateInstanceFromWithNoSecurity(assemblyFile,
-                                                                   typeName,
-                                                                   ignoreCase,
-                                                                   bindingAttr,
-                                                                   binder,
-                                                                   args,
-                                                                   culture,
-                                                                   activationAttributes,
-                                                                   null);
         }
 
         public static ObjectHandle CreateComInstanceFrom(String assemblyName,
@@ -552,28 +387,6 @@ namespace System {
         [System.Diagnostics.Conditional("_DEBUG")]
         private static void Log(bool test, string title, string success, string failure)
         {
-        }
-
-        void _Activator.GetTypeInfoCount(out uint pcTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Activator.GetTypeInfo(uint iTInfo, uint lcid, IntPtr ppTInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        void _Activator.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
-        {
-            throw new NotImplementedException();
-        }
-
-        // If you implement this method, make sure to include _Activator.Invoke in VM\DangerousAPIs.h and
-        // include _Activator in SystemDomain::IsReflectionInvocationMethod in AppDomain.cpp.
-        void _Activator.Invoke(uint dispIdMember, [In] ref Guid riid, uint lcid, short wFlags, IntPtr pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, IntPtr puArgErr)
-        {
-            throw new NotImplementedException();
         }
     }
 }

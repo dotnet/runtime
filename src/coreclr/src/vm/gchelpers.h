@@ -109,6 +109,8 @@ OBJECTREF AllocateObject(MethodTable *pMT
 
 extern void StompWriteBarrierEphemeral(bool isRuntimeSuspended);
 extern void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
+extern void SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
+extern void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
 
 extern void ThrowOutOfMemoryDimensionsExceeded();
 
@@ -119,5 +121,5 @@ extern void ThrowOutOfMemoryDimensionsExceeded();
 //========================================================================
 
 void ErectWriteBarrier(OBJECTREF* dst, OBJECTREF ref);
-
+void SetCardsAfterBulkCopy(Object **start, size_t len);
 #endif // _GCHELPERS_H_

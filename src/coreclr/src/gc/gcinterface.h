@@ -46,7 +46,9 @@ enum class WriteBarrierOp
 {
     StompResize,
     StompEphemeral,
-    Initialize
+    Initialize,
+    SwitchToWriteWatch,
+    SwitchToNonWriteWatch
 };
 
 // Arguments to GCToEEInterface::StompWriteBarrier
@@ -85,11 +87,15 @@ struct WriteBarrierParameters
 
     // The new start of the ephemeral generation. 
     // Used for WriteBarrierOp::StompEphemeral.
-    uint8_t* ephemeral_lo;
+    uint8_t* ephemeral_low;
 
     // The new end of the ephemeral generation.
     // Used for WriteBarrierOp::StompEphemeral.
-    uint8_t* ephemeral_hi;
+    uint8_t* ephemeral_high;
+
+    // The new write watch table, if we are using our own write watch
+    // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
+    uint8_t* write_watch_table;
 };
 
 #include "gcinterface.ee.h"
@@ -147,6 +153,10 @@ struct segment_info
 #define min_obj_size ((sizeof(uint8_t*) + sizeof(uintptr_t) + sizeof(size_t)))
 
 #define max_generation 2
+
+// The bit shift used to convert a memory address into an index into the
+// Software Write Watch table.
+#define SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift 0xc
 
 class Object;
 class IGCHeap;
@@ -303,6 +313,10 @@ public:
     // Gets the next finalizable object.
     virtual Object* GetNextFinalizable() = 0;
 
+    // Sets whether or not the GC should report all finalizable objects as
+    // ready to be finalized, instead of only collectable objects.
+    virtual void SetFinalizeRunOnShutdown(bool value) = 0;
+
     /*
     ===========================================================================
     BCL routines. These are routines that are directly exposed by mscorlib
@@ -397,9 +411,6 @@ public:
     // Returns the number of GCs that have occured. Mainly used for
     // sanity checks asserting that a GC has not occured.
     virtual unsigned GetGcCount() = 0;
-
-    // Sets cards after an object has been memmoved. 
-    virtual void SetCardsAfterBulkCopy(Object** obj, size_t length) = 0;
 
     // Gets whether or not the home heap of this alloc context matches the heap
     // associated with this thread.

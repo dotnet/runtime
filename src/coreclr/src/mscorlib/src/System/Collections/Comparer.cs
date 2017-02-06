@@ -22,7 +22,7 @@ namespace System.Collections {
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Comparer : IComparer , ISerializable
+    internal sealed class Comparer : IComparer , ISerializable
     {
         private CompareInfo m_compareInfo;   
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);

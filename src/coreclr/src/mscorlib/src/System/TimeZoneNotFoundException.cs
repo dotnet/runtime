@@ -2,22 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-   using  System.Runtime.Serialization;
-   using  System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
-   [Serializable]
-   [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-   public class TimeZoneNotFoundException : Exception {
-       public TimeZoneNotFoundException(String message)
-           : base(message) { }
+namespace System
+{
+    [Serializable]
+    public class TimeZoneNotFoundException : Exception
+    {
+        public TimeZoneNotFoundException()
+        {
+        }
 
-       public TimeZoneNotFoundException(String message, Exception innerException)
-           : base(message, innerException) { }
+        public TimeZoneNotFoundException(String message)
+            : base(message)
+        {
+        }
 
-       protected TimeZoneNotFoundException(SerializationInfo info, StreamingContext context)
-           : base(info, context) { }
+        public TimeZoneNotFoundException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
 
-       public TimeZoneNotFoundException() { }
-   }
+        protected TimeZoneNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
 }
