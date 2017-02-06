@@ -16,6 +16,7 @@
 
 #define _countof(a) (sizeof(a) / sizeof(a[0]))
 
+#undef PAGE_SIZE
 #define PAGE_SIZE (4096)
 
 auto test_strcpy = strcpy;
