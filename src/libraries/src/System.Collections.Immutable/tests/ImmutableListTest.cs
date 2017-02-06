@@ -148,6 +148,17 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRange_IOrderedCollection()
+        {
+            var list = ImmutableList<int>.Empty;
+            ImmutableList<int>.Builder builder = ImmutableList.CreateBuilder<int>();
+            builder.Add(1);
+
+            list = list.AddRange(builder);
+            Assert.Equal(new int[] { 1 }, list);
+        }
+
+        [Fact]
         public void AddRangeOptimizationsTest()
         {
             // All these optimizations are tested based on filling an empty list.
