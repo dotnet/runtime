@@ -5,7 +5,6 @@
 namespace System.Globalization {
     using System;
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum CalendarAlgorithmType {
         Unknown = 0,            // This is the default value to return in the Calendar base class.
         SolarCalendar = 1,      // Solar-base calendar, such as GregorianCalendar, jaoaneseCalendar, JulianCalendar, etc.

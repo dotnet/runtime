@@ -9,7 +9,6 @@ namespace System.Runtime.InteropServices {
     using System;
     // Used for the CallingConvention named argument to the DllImport attribute
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum CallingConvention
     {
         Winapi          = 1,

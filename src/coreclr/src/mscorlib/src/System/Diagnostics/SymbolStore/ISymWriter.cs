@@ -20,7 +20,6 @@ namespace System.Diagnostics.SymbolStore {
     using System.Runtime.Versioning;
 
     // Interface does not need to be marked with the serializable attribute
-[System.Runtime.InteropServices.ComVisible(true)]
     internal interface ISymbolWriter
     {
         

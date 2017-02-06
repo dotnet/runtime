@@ -7,7 +7,6 @@ namespace System.Reflection
     using System;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct ParameterModifier 
     {
         #region Private Data Members

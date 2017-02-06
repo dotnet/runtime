@@ -29,7 +29,6 @@ namespace System.Runtime.Serialization {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public static class FormatterServices {
     
         // Gets a new instance of the object.  The entire object is initalized to 0 and no 

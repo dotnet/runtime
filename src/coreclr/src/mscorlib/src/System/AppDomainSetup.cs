@@ -26,8 +26,6 @@ namespace System
     using System.Collections.Generic;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal sealed class AppDomainSetup
     {
         [Serializable]

@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices {
     using System;
     using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class SafeArrayTypeMismatchException : SystemException {
         public SafeArrayTypeMismatchException() 

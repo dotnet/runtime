@@ -37,7 +37,6 @@ namespace System {
     // implemented as a part of String.  As with arrays, character positions
     // (indices) are zero-based.
     
-    [ComVisible(true)]
     [Serializable]
     public sealed partial class String : IComparable, ICloneable, IConvertible, IEnumerable
         , IComparable<String>, IEnumerable<char>, IEquatable<String>

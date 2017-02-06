@@ -230,7 +230,6 @@ namespace System.IO {
             if (!_isOpen) __Error.StreamIsClosed();
         }
         
-        [ComVisible(false)] 
         public override Task FlushAsync(CancellationToken cancellationToken) { 
         
             if (cancellationToken.IsCancellationRequested) 
@@ -386,7 +385,6 @@ namespace System.IO {
             return nInt;
         }
         
-        [ComVisible(false)]
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) {        
             if (buffer==null)
                 throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
@@ -583,7 +581,6 @@ namespace System.IO {
             return;
         }
         
-        [ComVisible(false)] 
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken) { 
         
             if (buffer==null)

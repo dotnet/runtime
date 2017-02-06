@@ -25,7 +25,6 @@ namespace System {
     // specified component.
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Version : ICloneable, IComparable
         , IComparable<Version>, IEquatable<Version>
     {

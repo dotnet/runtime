@@ -27,7 +27,6 @@ namespace System.Threading {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public static class Monitor 
     {
         /*=========================================================================

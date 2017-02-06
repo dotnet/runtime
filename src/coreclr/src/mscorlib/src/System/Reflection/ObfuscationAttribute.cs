@@ -11,7 +11,6 @@ namespace System.Reflection
 {
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Delegate,
         AllowMultiple = true, Inherited = false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ObfuscationAttribute: Attribute
     {
         private bool m_strip = true;

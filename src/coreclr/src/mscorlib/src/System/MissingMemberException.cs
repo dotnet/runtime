@@ -22,7 +22,6 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class MissingMemberException : MemberAccessException, ISerializable {
         public MissingMemberException() 

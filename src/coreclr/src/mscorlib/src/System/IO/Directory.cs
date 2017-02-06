@@ -26,7 +26,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     internal static class Directory {
 
         // Private class that holds search data that is passed around 

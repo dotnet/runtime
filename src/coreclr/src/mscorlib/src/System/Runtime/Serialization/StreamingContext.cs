@@ -16,7 +16,6 @@ namespace System.Runtime.Serialization {
     using System.Runtime.Remoting;
     using System;
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct StreamingContext {
         internal Object m_additionalContext;
         internal StreamingContextStates m_state;
@@ -59,7 +58,6 @@ namespace System.Runtime.Serialization {
     // **********************************************************
 [Serializable]
 [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum StreamingContextStates {
         CrossProcess=0x01,
         CrossMachine=0x02,

@@ -21,7 +21,6 @@ namespace System.Globalization {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StringInfo  
     {
 
@@ -57,7 +56,6 @@ namespace System.Globalization {
         }   
 #endregion Serialization
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override bool Equals(Object value)
         {
             StringInfo that = value as StringInfo;
@@ -68,7 +66,6 @@ namespace System.Globalization {
             return (false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetHashCode()
         {
             return this.m_str.GetHashCode();

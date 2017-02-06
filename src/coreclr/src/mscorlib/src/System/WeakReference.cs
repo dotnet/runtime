@@ -19,7 +19,6 @@ namespace System {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class WeakReference : ISerializable 
     {

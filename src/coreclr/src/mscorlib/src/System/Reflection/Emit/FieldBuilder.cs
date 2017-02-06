@@ -188,7 +188,6 @@ namespace System.Reflection.Emit
         }
         
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

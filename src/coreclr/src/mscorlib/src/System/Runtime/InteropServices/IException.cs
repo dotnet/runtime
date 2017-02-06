@@ -22,7 +22,6 @@ namespace System.Runtime.InteropServices {
     [GuidAttribute("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
     [CLSCompliant(false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface _Exception
     {
         //

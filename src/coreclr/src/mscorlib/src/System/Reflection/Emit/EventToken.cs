@@ -18,7 +18,6 @@ namespace System.Reflection.Emit {
     using System.Reflection;
     using System.Security.Permissions;
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct EventToken
     {
         public static readonly EventToken Empty = new EventToken();

@@ -18,7 +18,6 @@ namespace System.Globalization {
     //*      Julia       0001/01/03   9999/10/19
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public class JulianCalendar : Calendar {
 
 
@@ -51,7 +50,6 @@ namespace System.Globalization {
         internal int MaxYear = 9999;
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MinSupportedDateTime
         {
             get
@@ -60,7 +58,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -72,7 +69,6 @@ namespace System.Globalization {
         // Return the type of the Julian calendar.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -344,7 +340,6 @@ namespace System.Globalization {
         // if this calendar does not have leap month, or this year is not a leap year.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public override int GetLeapMonth(int year, int era)
         {
             CheckYearEraRange(year, era);

@@ -21,7 +21,6 @@ namespace System.Collections {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     internal sealed class Comparer : IComparer , ISerializable
     {
         private CompareInfo m_compareInfo;   

@@ -4,7 +4,6 @@
 
 
 namespace Microsoft.Win32 {
-[System.Runtime.InteropServices.ComVisible(true)]
     internal enum RegistryValueKind {
         String =        Win32Native.REG_SZ,
         ExpandString =  Win32Native.REG_EXPAND_SZ,
@@ -13,7 +12,6 @@ namespace Microsoft.Win32 {
         MultiString =   Win32Native.REG_MULTI_SZ,
         QWord =         Win32Native.REG_QWORD,
         Unknown =       0,                          // REG_NONE is defined as zero but BCL
-        [System.Runtime.InteropServices.ComVisible(false)]
         None =          unchecked((int)0xFFFFFFFF), //  mistakingly overrode this value.  
     }   // Now instead of using Win32Native.REG_NONE we use "-1" and play games internally.
 }

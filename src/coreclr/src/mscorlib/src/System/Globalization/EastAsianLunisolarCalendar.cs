@@ -14,7 +14,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public abstract class EastAsianLunisolarCalendar : Calendar {
         internal const int LeapMonth = 0;
         internal const int Jan1Month = 1;

@@ -514,7 +514,6 @@ namespace System.Globalization
 
         public String AMDesignator
         {
-            // auto-generated
             get
             {
                 if (this.amDesignator == null)
@@ -1031,7 +1030,6 @@ namespace System.Globalization
 
         public String PMDesignator
         {
-            // auto-generated
             get
             {
                 if (this.pmDesignator == null)

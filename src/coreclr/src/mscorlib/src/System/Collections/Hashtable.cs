@@ -66,7 +66,6 @@ namespace System.Collections {
     // 
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     internal class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable {
         /*

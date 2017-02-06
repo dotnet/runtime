@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices.Expando {
     using System.Reflection;
 
     [Guid("AFBF15E6-C37C-11d2-B88E-00A0C9B471B8")]
-[System.Runtime.InteropServices.ComVisible(true)]
     internal interface IExpando : IReflect
     {
         // Add a new Field to the reflection object.  The field has

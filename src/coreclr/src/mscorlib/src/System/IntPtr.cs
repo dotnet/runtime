@@ -23,7 +23,6 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
