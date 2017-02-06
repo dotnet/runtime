@@ -2758,6 +2758,8 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
                     needFloatTmpForFPCall = true;
                 }
             }
+#endif // _TARGET_X86_
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
             if (tree->IsHelperCall())
             {
                 GenTreeCall*    call     = tree->AsCall();
@@ -2765,7 +2767,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
                 killMask                 = compiler->compHelperCallKillSet(helpFunc);
             }
             else
-#endif // _TARGET_X86_
+#endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
             {
                 // if there is no FP used, we can ignore the FP kills
                 if (compiler->compFloatingPointUsed)
