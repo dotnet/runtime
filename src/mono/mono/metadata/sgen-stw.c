@@ -358,12 +358,14 @@ sgen_unified_suspend_stop_world (void)
 		/* Once we remove the old suspend code, we should move sgen to directly access the state in MonoThread */
 		info->client_info.stack_start = (gpointer) ((char*)MONO_CONTEXT_GET_SP (&info->client_info.ctx) - REDZONE_SIZE);
 
-		/* altstack signal handler, sgen can't handle them, mono-threads should have handled this. */
-		if (!info->client_info.stack_start
-			 || info->client_info.stack_start < info->client_info.stack_start_limit
+		if (info->client_info.stack_start < info->client_info.stack_start_limit
 			 || info->client_info.stack_start >= info->client_info.stack_end) {
-			g_error ("BAD STACK: stack_start = %p, stack_start_limit = %p, stack_end = %p",
-				info->client_info.stack_start, info->client_info.stack_start_limit, info->client_info.stack_end);
+			/*
+			 * Thread context is in unhandled state, most likely because it is
+			 * dying. We don't scan it.
+			 * FIXME We should probably rework and check the valid flag instead.
+			 */
+			info->client_info.stack_start = NULL;
 		}
 
 		stopped_ip = (gpointer) (MONO_CONTEXT_GET_IP (&info->client_info.ctx));

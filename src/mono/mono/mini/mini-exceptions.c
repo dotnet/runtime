@@ -2871,7 +2871,6 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
 	if (!thread) {
 		ctx->valid = FALSE;
-		g_error ("Invoked mono_thread_state_init_from_sigctx from non-Mono thread");
 		return FALSE;
 	}
 
