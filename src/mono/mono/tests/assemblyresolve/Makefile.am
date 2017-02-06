@@ -2,8 +2,6 @@ CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 RUNTIME = $(top_builddir)/runtime/mono-wrapper --debug
 TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME)
-MCS = MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
-CLASS = $(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 MCS = $(TOOLS_RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library
 
