@@ -5,6 +5,7 @@
 #ifndef _INTEROP_TYPES__H
 #define _INTEROP_TYPES__H
 
+#undef INT_MIN
 #define INT_MIN	   (-2147483647 - 1)
 
 typedef char16_t WCHAR;
