@@ -1748,7 +1748,7 @@ double FloatingPointUtils::round(double x)
 {
     // If the number has no fractional part do nothing
     // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
-    if (x == ((double)((__int64)x)))
+    if (x == (double)((INT64)x))
     {
         return x;
     }
@@ -1765,4 +1765,44 @@ double FloatingPointUtils::round(double x)
     }
 
     return _copysign(flrTempVal, x);
+}
+
+// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
+// We will redirect the macro to this other functions if the macro is not defined for the platform.
+// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
+// downcasting for the _copysign() call.
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+
+#if !defined(_copysignf)
+#define _copysignf (float)_copysign
+#endif
+
+#endif
+
+// Rounds a single-precision floating-point value to the nearest integer,
+// and rounds midpoint values to the nearest even number.
+// Note this should align with classlib in floatsingle.cpp
+// Specializing for x86 using a x87 instruction is optional since
+// this outcome is identical across targets.
+float FloatingPointUtils::round(float x)
+{
+    // If the number has no fractional part do nothing
+    // This shortcut is necessary to workaround precision loss in borderline cases on some platforms
+    if (x == (float)((INT32)x))
+    {
+        return x;
+    }
+
+    // We had a number that was equally close to 2 integers.
+    // We need to return the even one.
+
+    float tempVal    = (x + 0.5f);
+    float flrTempVal = floorf(tempVal);
+
+    if ((flrTempVal == tempVal) && (fmodf(tempVal, 2.0f) != 0))
+    {
+        flrTempVal -= 1.0f;
+    }
+
+    return _copysignf(flrTempVal, x);
 }
