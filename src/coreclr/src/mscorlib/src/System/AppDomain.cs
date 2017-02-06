@@ -182,7 +182,6 @@ namespace System
 #pragma warning disable 169
         private Object[]         _Policies; // Called from the VM.
 #pragma warning restore 169
-        [method: System.Security.SecurityCritical]
         public event AssemblyLoadEventHandler AssemblyLoad;
 
         private ResolveEventHandler _TypeResolve;
@@ -249,7 +248,6 @@ namespace System
         }
 
 #if FEATURE_REFLECTION_ONLY_LOAD
-        [method: System.Security.SecurityCritical]
         public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
 #endif // FEATURE_REFLECTION_ONLY
 
