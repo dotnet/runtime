@@ -1615,6 +1615,7 @@ double ValueNumStore::GetConstantDouble(ValueNum argVN)
 {
     assert(IsVNConstant(argVN));
     var_types argVNtyp = TypeOfVN(argVN);
+    assert(varTypeIsFloating(argVNtyp));
 
     double result = 0;
 
@@ -1625,6 +1626,27 @@ double ValueNumStore::GetConstantDouble(ValueNum argVN)
             break;
         case TYP_DOUBLE:
             result = ConstantValue<double>(argVN);
+            break;
+        default:
+            unreached();
+    }
+    return result;
+}
+
+// Given a float constant value number return its value as a float.
+//
+float ValueNumStore::GetConstantSingle(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    var_types argVNtyp = TypeOfVN(argVN);
+    assert(argVNtyp == TYP_FLOAT);
+
+    float result = 0;
+
+    switch (argVNtyp)
+    {
+        case TYP_FLOAT:
+            result = ConstantValue<float>(argVN);
             break;
         default:
             unreached();
@@ -3269,46 +3291,106 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
     assert(arg0VN == VNNormVal(arg0VN));
     if (IsVNConstant(arg0VN) && Compiler::IsTargetIntrinsic(gtMathFN))
     {
-        // If the math intrinsic is not implemented by target-specific instructions, such as implemented
-        // by user calls, then don't do constant folding on it. This minimizes precision loss.
-        // I *may* need separate tracks for the double/float -- if the intrinsic funcs have overloads for these.
-        double arg0Val = GetConstantDouble(arg0VN);
+        assert(varTypeIsFloating(TypeOfVN(arg0VN)));
 
-        double res = 0.0;
-        switch (gtMathFN)
-        {
-            case CORINFO_INTRINSIC_Sin:
-                res = sin(arg0Val);
-                break;
-            case CORINFO_INTRINSIC_Cos:
-                res = cos(arg0Val);
-                break;
-            case CORINFO_INTRINSIC_Sqrt:
-                res = sqrt(arg0Val);
-                break;
-            case CORINFO_INTRINSIC_Abs:
-                res = fabs(arg0Val); // The result and params are doubles.
-                break;
-            case CORINFO_INTRINSIC_Round:
-                res = FloatingPointUtils::round(arg0Val);
-                break;
-            default:
-                unreached(); // the above are the only math intrinsics at the time of this writing.
-        }
         if (typ == TYP_DOUBLE)
         {
+            // Both operand and its result must be of the same floating point type.
+            assert(typ == TypeOfVN(arg0VN));
+
+            // If the math intrinsic is not implemented by target-specific instructions, such as implemented
+            // by user calls, then don't do constant folding on it. This minimizes precision loss.
+            double arg0Val = GetConstantDouble(arg0VN);
+
+            double res = 0.0;
+            switch (gtMathFN)
+            {
+                case CORINFO_INTRINSIC_Sin:
+                    res = sin(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Cos:
+                    res = cos(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Sqrt:
+                    res = sqrt(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Abs:
+                    res = fabs(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Round:
+                    res = FloatingPointUtils::round(arg0Val);
+                    break;
+                default:
+                    unreached(); // the above are the only math intrinsics at the time of this writing.
+            }
+
             return VNForDoubleCon(res);
         }
         else if (typ == TYP_FLOAT)
         {
-            return VNForFloatCon(float(res));
+            // Both operand and its result must be of the same floating point type.
+            assert(typ == TypeOfVN(arg0VN));
+
+            // If the math intrinsic is not implemented by target-specific instructions, such as implemented
+            // by user calls, then don't do constant folding on it. This minimizes precision loss.
+            float arg0Val = GetConstantSingle(arg0VN);
+
+            float res = 0.0f;
+            switch (gtMathFN)
+            {
+                case CORINFO_INTRINSIC_Sin:
+                    res = sinf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Cos:
+                    res = cosf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Sqrt:
+                    res = sqrtf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Abs:
+                    res = fabsf(arg0Val);
+                    break;
+                case CORINFO_INTRINSIC_Round:
+                    res = FloatingPointUtils::round(arg0Val);
+                    break;
+                default:
+                    unreached(); // the above are the only math intrinsics at the time of this writing.
+            }
+
+            return VNForFloatCon(res);
         }
         else
         {
             assert(typ == TYP_INT);
             assert(gtMathFN == CORINFO_INTRINSIC_Round);
 
-            return VNForIntCon(int(res));
+            int res = 0;
+            if (gtMathFN == CORINFO_INTRINSIC_Round)
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_DOUBLE:
+                    {
+                        double arg0Val = GetConstantDouble(arg0VN);
+                        res            = int(FloatingPointUtils::round(arg0Val));
+                        break;
+                    }
+                    case TYP_FLOAT:
+                    {
+                        float arg0Val = GetConstantSingle(arg0VN);
+                        res           = int(FloatingPointUtils::round(arg0Val));
+                        break;
+                    }
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                unreached(); // the above is the only math intrinsics at the time of this writing.
+            }
+
+            return VNForIntCon(res);
         }
     }
     else
