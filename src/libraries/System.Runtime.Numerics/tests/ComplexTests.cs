@@ -1358,7 +1358,7 @@ namespace System.Numerics.Tests
             Tan_Advanced(real, imaginary, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tan_Advanced_TestData () {
+        public static IEnumerable<object[]> Tan_Advanced_TestData() {
 
             // .NET does not compute simple trig functions of large values correctly, so we can't make any
             // assertions about complex trig functions with large real parts.
