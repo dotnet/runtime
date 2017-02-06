@@ -140,7 +140,7 @@ namespace System.Threading.Threads.Tests
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void GetSetApartmentStateTest_ChangeAfterThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -162,7 +162,7 @@ namespace System.Threading.Threads.Tests
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -183,7 +183,7 @@ namespace System.Threading.Threads.Tests
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_Unix(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,

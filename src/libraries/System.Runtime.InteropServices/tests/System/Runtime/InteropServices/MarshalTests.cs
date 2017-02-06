@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
 
         [Theory]
         [MemberData(nameof(StringData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // SecureStringToBSTR not supported on Unix
         public static void SecureStringToBSTR(string data)
         {
             using (SecureString str = ToSecureString(data))

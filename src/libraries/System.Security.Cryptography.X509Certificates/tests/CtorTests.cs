@@ -293,7 +293,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // StoreSavedAsSerializedCerData not supported on Unix
         public static void TestConstructor_SerializedCert_Windows()
         {
             const string ExpectedThumbPrint = "71CB4E2B02738AD44F8B382C93BD17BA665F9914";
@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // StoreSavedAsSerializedCerData not supported on Unix
         public static void TestByteArrayConstructor_SerializedCert_Unix()
         {
             Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.StoreSavedAsSerializedCerData));

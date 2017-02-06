@@ -2902,7 +2902,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Output filename is \'\\\\\'")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Invalid path specific to Windows
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]

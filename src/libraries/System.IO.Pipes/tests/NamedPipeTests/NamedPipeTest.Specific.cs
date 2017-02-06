@@ -211,7 +211,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -231,7 +231,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix currently doesn't support message mode
         public void Unix_MessagePipeTransissionMode()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
@@ -241,7 +241,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.Out)]
         [InlineData(PipeDirection.InOut)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implementation uses bidirectional sockets
         public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
@@ -276,7 +276,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
         public static void Windows_BufferSizeRoundtripping()
         {
             int desiredBufferSize = 10;
@@ -356,7 +356,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix doesn't currently support message mode
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = GetUniquePipeName();
@@ -413,7 +413,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         public void NameTooLong_MaxLengthPerPlatform()
         {
             // Increase a name's length until it fails
