@@ -21,7 +21,6 @@ namespace System {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
 [Serializable]
 [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)] public struct Char : IComparable, IConvertible
         , IComparable<Char>, IEquatable<Char>

@@ -45,7 +45,6 @@ namespace System.Globalization {
 
 [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CompareOptions
     {
         None                = 0x00000000,
@@ -66,7 +65,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
@@ -217,12 +215,10 @@ namespace System.Globalization {
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static bool IsSortable(char ch) {
             return(IsSortable(ch.ToString()));
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static bool IsSortable(String text) {
             if (text == null) {
                 // A null param is invalid here.
@@ -316,7 +312,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual String Name
         {
             get

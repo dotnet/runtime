@@ -19,7 +19,6 @@ namespace System.Collections {
 
     // Base interface for all collections, defining enumerators, size, and 
     // synchronization methods.
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface ICollection : IEnumerable
     {
         // Interfaces are not serialable

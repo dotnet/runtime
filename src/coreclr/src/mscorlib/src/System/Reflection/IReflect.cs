@@ -20,7 +20,6 @@ namespace System.Reflection {
     
     // Interface does not need to be marked with the serializable attribute
     [Guid("AFBF15E5-C37C-11d2-B88E-00A0C9B471B8")]
-[System.Runtime.InteropServices.ComVisible(true)]
     public interface IReflect
     {
         // Return the requested method if it is implemented by the Reflection object.  The

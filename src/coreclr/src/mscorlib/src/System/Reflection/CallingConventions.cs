@@ -15,7 +15,6 @@ namespace System.Reflection {
     using System;
     [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CallingConventions
     {
         //NOTE: If you change this please update COMMember.cpp.  These

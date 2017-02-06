@@ -20,7 +20,6 @@ using System;
 namespace System.Resources {
 
 [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum UltimateResourceFallbackLocation
     {
         MainAssembly,

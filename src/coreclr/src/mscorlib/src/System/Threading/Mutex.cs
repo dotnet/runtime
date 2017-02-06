@@ -27,7 +27,6 @@ namespace System.Threading
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [ComVisible(true)]
     public sealed class Mutex : WaitHandle
     {
         static bool dummyBool;

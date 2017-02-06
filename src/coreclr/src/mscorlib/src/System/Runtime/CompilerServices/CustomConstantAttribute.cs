@@ -9,7 +9,6 @@ namespace System.Runtime.CompilerServices
 {
     [Serializable]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited=false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CustomConstantAttribute : Attribute
     {
         public abstract Object Value { get; }

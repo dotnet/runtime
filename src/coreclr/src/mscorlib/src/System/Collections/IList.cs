@@ -21,7 +21,6 @@ namespace System.Collections {
     // An IList is an ordered collection of objects.  The exact ordering
     // is up to the implementation of the list, ranging from a sorted
     // order to insertion order.
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface IList : ICollection
     {
         // The Item property provides methods to read and edit entries in the List.

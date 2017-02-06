@@ -17,7 +17,6 @@ namespace System.Threading {
 
     using System;
     using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class SynchronizationLockException : SystemException {
         public SynchronizationLockException() 

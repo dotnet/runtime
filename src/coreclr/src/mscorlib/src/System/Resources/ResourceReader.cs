@@ -68,7 +68,6 @@ namespace System.Resources {
     }
 
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ResourceReader : IResourceReader
     {
         // A reasonable default buffer size for reading from files, especially

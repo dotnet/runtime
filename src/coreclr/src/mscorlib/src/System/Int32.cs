@@ -21,7 +21,6 @@ namespace System {
 
 [Serializable]
 [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)] 
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct Int32 : IComparable, IFormattable, IConvertible
         , IComparable<Int32>, IEquatable<Int32>
     {

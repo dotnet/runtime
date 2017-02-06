@@ -27,7 +27,6 @@ namespace System.Threading
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void ContextCallback(Object state);
 
     internal struct ExecutionContextSwitcher

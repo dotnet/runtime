@@ -28,7 +28,6 @@ namespace System.Resources {
 
     [Serializable]
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct LooselyLinkedResourceReference {
         private String _manifestResourceName;
         private String _typeName;

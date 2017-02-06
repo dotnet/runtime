@@ -13,7 +13,6 @@ namespace System {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>{
         private static readonly StringComparer _invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);        
         private static readonly StringComparer _invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, true);      

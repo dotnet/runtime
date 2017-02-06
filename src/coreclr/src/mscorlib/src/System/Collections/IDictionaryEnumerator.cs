@@ -44,7 +44,6 @@ namespace System.Collections {
     // return the same DictionaryEntry and avoids boxing the DictionaryEntry (boxing
     // is somewhat expensive).
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
     public interface IDictionaryEnumerator : IEnumerator
     {
         // Returns the key of the current element of the enumeration. The returned

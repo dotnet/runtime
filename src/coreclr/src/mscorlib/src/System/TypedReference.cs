@@ -16,7 +16,6 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [CLSCompliant(false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct TypedReference
     {

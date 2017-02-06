@@ -18,7 +18,6 @@ namespace System {
     using System.Diagnostics.Contracts;
 
 
-    [ComVisible(true)]
     [Serializable]
     internal sealed class OperatingSystem : ICloneable , ISerializable
     {

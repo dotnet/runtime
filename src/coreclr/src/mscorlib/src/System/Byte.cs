@@ -22,7 +22,6 @@ namespace System {
     // The Byte class extends the Value class and 
     // provides object representation of the byte primitive type. 
     // 
-[System.Runtime.InteropServices.ComVisible(true)]
 [Serializable]
 [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     public struct Byte : IComparable, IFormattable, IConvertible

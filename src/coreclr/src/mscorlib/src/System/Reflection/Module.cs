@@ -25,7 +25,6 @@ namespace System.Reflection
 
     [Serializable]
     [Flags] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum PortableExecutableKinds 
     {
         NotAPortableExecutableImage = 0x0,
@@ -38,12 +37,10 @@ namespace System.Reflection
         
         Unmanaged32Bit              = 0x8,
 
-        [ComVisible(false)]
         Preferred32Bit              = 0x10,
     }
     
     [Serializable] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ImageFileMachine 
     {
         I386    = 0x014c,
@@ -273,18 +270,15 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual Type GetType(String className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual Type GetType(String className) {
             return GetType(className, false, false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual Type GetType(String className, bool throwOnError, bool ignoreCase)
         {
             throw new NotImplementedException();
@@ -980,7 +974,6 @@ namespace System.Reflection
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.ModuleUnity, this.ScopeName, this.GetRuntimeAssembly());
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"

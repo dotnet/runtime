@@ -17,7 +17,6 @@ namespace System.Diagnostics.SymbolStore {
     using System;
     
     // Interface does not need to be marked with the serializable attribute
-    [System.Runtime.InteropServices.ComVisible(true)]
     public interface ISymbolDocumentWriter
     {
         // SetSource will store the raw source for a document into the

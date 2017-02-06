@@ -10,7 +10,6 @@ namespace System.Globalization {
     using System.Threading;
     using System.Diagnostics.Contracts;
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
