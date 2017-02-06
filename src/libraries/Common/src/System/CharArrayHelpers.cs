@@ -44,9 +44,12 @@ namespace System
                 uint charA = left[i];
                 uint charB = right[rightStartIndex + i];
 
-                // We're only interested in ASCII characters here.
-                if ((charA - 'a') <= ('z' - 'a')) charA -= ('a' - 'A');
-                if ((charB - 'a') <= ('z' - 'a')) charB -= ('a' - 'A');
+                unchecked
+                {
+                    // We're only interested in ASCII characters here.
+                    if ((charA - 'a') <= ('z' - 'a')) charA -= ('a' - 'A');
+                    if ((charB - 'a') <= ('z' - 'a')) charB -= ('a' - 'A');
+                }
 
                 if (charA != charB)
                 {

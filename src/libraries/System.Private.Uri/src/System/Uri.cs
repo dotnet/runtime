@@ -2729,7 +2729,7 @@ namespace System
             // Which Uri parts are not escaped canonically ?
             // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
             //
-            ushort nonCanonical = (ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical);
+            ushort nonCanonical = unchecked((ushort)((ushort)_flags & (ushort)Flags.CannotDisplayCanonical));
 
             // We keep separate flags for some of path canonicalization facts
             if ((uriParts & UriComponents.Path) != 0)

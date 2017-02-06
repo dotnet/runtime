@@ -31,7 +31,7 @@ namespace System.Collections.Immutable.Tests
             var expected = new List<int>();
             var actual = ImmutableList<int>.Empty;
 
-            int seed = (int)DateTime.Now.Ticks;
+            int seed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
@@ -179,7 +179,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRangeBalanceTest()
         {
-            int randSeed = (int)DateTime.Now.Ticks;
+            int randSeed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
@@ -212,7 +212,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void InsertRangeRandomBalanceTest()
         {
-            int randSeed = (int)DateTime.Now.Ticks;
+            int randSeed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
