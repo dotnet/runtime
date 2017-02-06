@@ -151,10 +151,6 @@ OBJECTHANDLE         g_pPreallocatedThreadAbortException;
 OBJECTHANDLE         g_pPreallocatedSentinelObject;
 OBJECTHANDLE         g_pPreallocatedBaseException;
 
-#ifdef FEATURE_CAS_POLICY
-CertificateCache *g_pCertificateCache = NULL;
-#endif
-
 // 
 //
 // Global System Info

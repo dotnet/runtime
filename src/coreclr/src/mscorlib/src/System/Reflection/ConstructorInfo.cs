@@ -512,11 +512,7 @@ namespace System.Reflection
             }
             return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false);
         }
-        
 
-#pragma warning disable 618
-        [ReflectionPermission(SecurityAction.Demand, Flags = ReflectionPermissionFlag.MemberAccess)]
-#pragma warning restore 618
         public override MethodBody GetMethodBody()
         {
             MethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);

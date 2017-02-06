@@ -548,7 +548,7 @@ namespace System
         internal ApplicationTrust InternalGetApplicationTrust()
         {
             if (_ApplicationTrust == null) return null;
-            ApplicationTrust grantSet = new ApplicationTrust(NamedPermissionSet.GetBuiltInSet(_ApplicationTrust));
+            ApplicationTrust grantSet = new ApplicationTrust();
             return grantSet;
         }
 

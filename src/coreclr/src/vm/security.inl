@@ -181,7 +181,9 @@ inline void Security::CheckLinkDemandAgainstAppDomain(MethodDesc *pMD)
 inline void Security::LinktimeCheckMethod(Assembly *pCaller, MethodDesc *pCallee) 
 {
     WRAPPER_NO_CONTRACT; 
-    SecurityDeclarative::LinktimeCheckMethod(pCaller, pCallee); 
+#ifdef FEATURE_CAS_POLICY
+    SecurityDeclarative::LinktimeCheckMethod(pCaller, pCallee);
+#endif
 }
 
 inline void Security::ClassInheritanceCheck(MethodTable *pClass, MethodTable *pParent) 
@@ -194,12 +196,6 @@ inline void Security::MethodInheritanceCheck(MethodDesc *pMethod, MethodDesc *pP
 {
     WRAPPER_NO_CONTRACT; 
     SecurityDeclarative::MethodInheritanceCheck(pMethod, pParent); 
-}
-
-inline void Security::GetPermissionInstance(OBJECTREF *perm, int index) 
-{
-    WRAPPER_NO_CONTRACT; 
-    SecurityDeclarative::GetPermissionInstance(perm, index); 
 }
 
 inline void Security::DoDeclarativeActions(MethodDesc *pMD, DeclActionInfo *pActions, LPVOID pSecObj, MethodSecurityDescriptor *pMSD) 
@@ -230,14 +226,6 @@ inline BOOL Security::MethodIsVisibleOutsideItsAssembly(DWORD dwMethodAttr, DWOR
 {
     WRAPPER_NO_CONTRACT; 
     return SecurityDeclarative::MethodIsVisibleOutsideItsAssembly(dwMethodAttr, dwClassAttr, fIsGlobalClass);
-}
-
-inline void Security::CheckBeforeAllocConsole(AppDomain* pDomain, Assembly* pAssembly) 
-{
-    WRAPPER_NO_CONTRACT; 
-#ifdef FEATURE_CAS_POLICY
-    SecurityRuntime::CheckBeforeAllocConsole(pDomain, pAssembly); 
-#endif
 }
 
 // ----------------------------------------

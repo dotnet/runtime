@@ -559,7 +559,9 @@ namespace System.Diagnostics.Tracing
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
                 // we need to assert this permission for partial trust scenarios
+#if !CORECLR
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
+#endif
                 data = Microsoft.Win32.Registry.GetValue(regKey, valueName, null) as byte[];
                 if (data != null)
                 {

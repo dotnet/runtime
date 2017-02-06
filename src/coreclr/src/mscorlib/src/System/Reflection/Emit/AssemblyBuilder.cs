@@ -264,18 +264,6 @@ namespace System.Reflection.Emit
             // Clone the name in case the caller modifies it underneath us.
             name = (AssemblyName)name.Clone();
 
-            // If the caller is trusted they can supply identity
-            // evidence for the new assembly. Otherwise we copy the
-            // current grant and deny sets from the caller's assembly,
-            // inject them into the new assembly and mark policy as
-            // resolved. If/when the assembly is persisted and
-            // reloaded, the normal rules for gathering evidence will
-            // be used.
-            if (evidence != null)
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
-#pragma warning restore 618
-
             // Scan the assembly level attributes for any attributes which modify how we create the
             // assembly. Currently, we look for any attribute which modifies the security transparency
             // of the assembly.
@@ -522,12 +510,6 @@ namespace System.Reflection.Emit
             if (emitSymbolInfo)
             {
                 writer = SymWrapperCore.SymWriter.CreateSymWriter();
-                // Set the underlying writer for the managed writer
-                // that we're using.  Note that this function requires
-                // unmanaged code access.
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Assert();
-#pragma warning restore 618
 
                 String fileName = "Unused"; // this symfile is never written to disk so filename does not matter.
                 

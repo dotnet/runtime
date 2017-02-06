@@ -261,8 +261,6 @@ enum ParseCtl {
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
 };
 
-extern CorHostProtectionManager s_CorHostProtectionManager;
-
 class EEConfig
 {
 public:
@@ -1331,24 +1329,6 @@ public:
 #define FILE_FORMAT_CHECK(_condition)
 
 #endif
-
-void InitHostProtectionManager();
-
-extern BYTE g_CorHostProtectionManagerInstance[];
-
-inline CorHostProtectionManager* GetHostProtectionManager()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-//        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    return (CorHostProtectionManager*)g_CorHostProtectionManagerInstance;
-}
 
 extern BOOL g_CLRPolicyRequested;
 

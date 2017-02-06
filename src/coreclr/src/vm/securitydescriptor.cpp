@@ -404,59 +404,7 @@ void PEFileSecurityDescriptor::ResolveWorker()
     }
     CONTRACTL_END;
 
-    if (NingenEnabled()) {
-        SetGrantedPermissionSet(NULL, NULL, 0xFFFFFFFF);
-    }
-
-#ifndef CROSSGEN_COMPILE
-    struct _gc
-    {
-        OBJECTREF evidence;         // Object containing evidence
-        OBJECTREF granted;          // Policy based Granted Permission
-        OBJECTREF grantdenied;      // Policy based explicitly Denied Permissions
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
-    DWORD dwSpecialFlags = 0;
-    if (QuickIsFullyTrusted())
-    {
-        Security::GetPermissionInstance(&gc.granted, SECURITY_FULL_TRUST);
-        dwSpecialFlags = 0xFFFFFFFF;
-    }
-    else
-    {
-        if (IsEvidenceComputed())
-        {
-            gc.evidence = ObjectFromLazyHandle(m_hAdditionalEvidence, m_pLoaderAllocator);
-        }
-        else
-        {
-            gc.evidence = GetEvidence();
-        }
-
-        if (!m_pAppDomain->GetSecurityDescriptor()->IsLegacyCasPolicyEnabled())
-        {
-            gc.granted = SecurityPolicy::ResolveGrantSet(gc.evidence, &dwSpecialFlags, FALSE);
-        }
-        else
-        {
-            gc.granted = SecurityPolicy::ResolveCasPolicy(gc.evidence,
-                                                          NULL,
-                                                          NULL,
-                                                          NULL,
-                                                          &gc.grantdenied,
-                                                          &dwSpecialFlags,
-                                                          FALSE);
-        }
-    }
-
-    SetGrantedPermissionSet(gc.granted, NULL, dwSpecialFlags);
-
-    GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
+    SetGrantedPermissionSet(NULL, NULL, 0xFFFFFFFF);
 }
 
 BOOL PEFileSecurityDescriptor::AllowBindingRedirects()

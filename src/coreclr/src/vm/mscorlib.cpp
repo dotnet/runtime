@@ -27,8 +27,6 @@
 #include "arraynative.h"
 #include "stringnative.h"
 #include "stringbuffer.h"
-#include "securityimperative.h"
-#include "securitystackwalk.h"
 #include "objectnative.h"
 #include "comdelegate.h"
 #include "customattribute.h"
@@ -71,33 +69,15 @@
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
 #include "synchronizationcontextnative.h"
-#include "newcompressedstack.h"
 #include "commemoryfailpoint.h"
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
 #include "varargsnative.h"
 
-#ifndef FEATURE_CORECLR
-#include "confighelper.h"
-#include "console.h"
-#endif
-
 #ifdef MDA_SUPPORTED 
 #include "mdaassistants.h"
 #endif
-
-#ifdef FEATURE_CRYPTO
-#include "cryptography.h"
-#endif // FEATURE_CRYPTO
-
-#ifndef FEATURE_CORECLR
-#include "securityprincipal.h"
-#endif // !FEATURE_CORECLR
-
-#ifdef FEATURE_X509
-#include "x509certificate.h"
-#endif // FEATURE_X509
 
 #include "coverage.h"
 

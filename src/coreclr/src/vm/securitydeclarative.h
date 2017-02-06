@@ -42,9 +42,6 @@ inline LinktimeCheckReason operator&=(LinktimeCheckReason &lhs, LinktimeCheckRea
 
 namespace SecurityDeclarative
 {
-    // Returns an instance of a well-known permission.  (It caches them, so each permission is created only once.)
-    void _GetSharedPermissionInstance(OBJECTREF *perm, int index);
-
     // Perform the declarative actions
     //   Callers:
     //     DoDeclarativeSecurity
