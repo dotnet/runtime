@@ -205,6 +205,7 @@ private:
     int GetConstantInt32(ValueNum argVN);
     INT64 GetConstantInt64(ValueNum argVN);
     double GetConstantDouble(ValueNum argVN);
+    float GetConstantSingle(ValueNum argVN);
 
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
