@@ -129,6 +129,25 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NullNullableValueException(bool useInterpreter)
+        {
+            string localizedMessage = null;
+            try
+            {
+                int dummy = default(int?).Value;
+            }
+            catch (InvalidOperationException ioe)
+            {
+                localizedMessage = ioe.Message;
+            }
+
+            Expression<Func<long>> e = () => default(long?).Value;
+            Func<long> f = e.Compile(useInterpreter);
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => f());
+            Assert.Equal(localizedMessage, exception.Message);
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckMemberAccessClassInstanceFieldTest(bool useInterpreter)
