@@ -279,13 +279,13 @@ namespace System.Numerics
         public static Complex Tan(Complex value)
         {
             // tan z = sin z / cos z, but to avoid unnecessary repeated trig computations, use
-            //   tan z = \frac{\sin(2x) + i \sinh(2y)}{\cos(2x) + \cosh(2y)}
-            // (see from Abromowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
+            //   tan z = (sin(2x) + i sinh(2y)) / (cos(2x) + cosh(2y))
+            // (see Abramowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
 
             // Even this can only be used for |y| not-too-big, beacuse sinh and cosh (correctly) overflow
             // for quite moderate y, even though their ratio does not. In that case, divide
             // through by cosh to get:
-            //   tan z = \frac{\frac{\sin(2x)}{\cosh(2y)} + i \tanh(2y)}{1 + \frac{\cos(2x)}{\cosh(2y)}}
+            //   tan z = (sin(2x) / cosh(2y) + i \tanh(2y)) / (1 + cos(2x) / cosh(2y))
             // which correctly computes the (tiny) real part and the (normal-sized) imaginary part.
             
             double x2 = 2.0 * value._real;
