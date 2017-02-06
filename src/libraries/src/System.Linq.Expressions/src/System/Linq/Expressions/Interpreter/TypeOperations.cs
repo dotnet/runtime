@@ -155,9 +155,10 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (frame.Peek() == null)
                 {
-                    frame.Pop();
-                    throw new InvalidOperationException();
+                    // Trigger InvalidOperationException with same localized method as if we'd called the Value getter.
+                    return (int)default(int?);
                 }
+
                 return 1;
             }
         }
