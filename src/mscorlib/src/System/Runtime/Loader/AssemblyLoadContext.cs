@@ -13,15 +13,11 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 
-#if FEATURE_HOST_ASSEMBLY_RESOLVER
 
 namespace System.Runtime.Loader
 {
     public abstract class AssemblyLoadContext
     {
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern bool OverrideDefaultAssemblyLoadContextForCurrentDomain(IntPtr ptrNativeAssemblyLoadContext);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -30,16 +26,11 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern IntPtr LoadFromAssemblyName(IntPtr ptrNativeAssemblyLoadContext, bool fRepresentsTPALoadContext);
         
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr LoadFromStream(IntPtr ptrNativeAssemblyLoadContext, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
         
-#if FEATURE_MULTICOREJIT
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void InternalSetProfileRoot(string directoryPath);
@@ -47,7 +38,6 @@ namespace System.Runtime.Loader
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
-#endif // FEATURE_MULTICOREJIT
 
         protected AssemblyLoadContext()
         {
@@ -354,28 +344,6 @@ namespace System.Runtime.Loader
                 return s_DefaultAssemblyLoadContext;
             }
         }
-
-        // This will be used to set the AssemblyLoadContext for DefaultContext, for the AppDomain,
-        // by a host. Once set, the runtime will invoke the LoadFromAssemblyName method against it to perform
-        // assembly loads for the DefaultContext.
-        //
-        // This method will throw if the Default AssemblyLoadContext is already set or the Binding model is already locked.
-        public static void InitializeDefaultContext(AssemblyLoadContext context)
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-            
-            // Try to override the default assembly load context
-            if (!AssemblyLoadContext.OverrideDefaultAssemblyLoadContextForCurrentDomain(context.m_pNativeAssemblyLoadContext))
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("AppDomain_BindingModelIsLocked"));
-            }
-            
-            // Update the managed side as well.
-            s_DefaultAssemblyLoadContext = context;
-        }
         
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
@@ -433,17 +401,13 @@ namespace System.Runtime.Loader
         // Set the root directory path for profile optimization.
         public void SetProfileOptimizationRoot(string directoryPath)
         {
-#if FEATURE_MULTICOREJIT
             InternalSetProfileRoot(directoryPath);
-#endif // FEATURE_MULTICOREJIT
         }
 
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string profile)
         {
-#if FEATURE_MULTICOREJIT
             InternalStartProfile(profile, m_pNativeAssemblyLoadContext);
-#endif // FEATURE_MULTICOREJI
         }
 
         private void OnAppContextUnloading(object sender, EventArgs e)
@@ -526,4 +490,3 @@ namespace System.Runtime.Loader
     }
 }
 
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER

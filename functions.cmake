@@ -222,7 +222,7 @@ endfunction()
 function(verify_dependencies targetName errorMessage)
     # We don't need to verify dependencies on OSX, since missing dependencies
     # result in link error over there.
-    if (NOT CLR_CMAKE_PLATFORM_DARWIN)
+    if (NOT CLR_CMAKE_PLATFORM_DARWIN AND NOT CLR_CMAKE_PLATFORM_ANDROID)
         add_custom_command(
             TARGET ${targetName}
             POST_BUILD

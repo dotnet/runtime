@@ -10,9 +10,6 @@
 //*****************************************************************************
 #include "stdafx.h"
 #include "ceegen.h"
-#ifndef FEATURE_CORECLR
-#define DECLARE_DATA
-#endif
 #include "../../ildasm/dasmenum.hpp"
 #define MAX_CLASSNAME_LENGTH    1024
 

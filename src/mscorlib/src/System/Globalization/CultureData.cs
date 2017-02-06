@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1102,15 +1102,6 @@ namespace System.Globalization
             }
         }
 
-        // (user can override) country code (RegionInfo)
-        internal int ICOUNTRY
-        {
-            get
-            {
-                return DoGetLocaleInfoInt(LOCALE_ICOUNTRY);
-            }
-        }
-
         // GeoId
         internal int IGEOID
         {
@@ -1214,15 +1205,6 @@ namespace System.Globalization
             }
         }
 
-        // Default Country
-        private int IDEFAULTCOUNTRY
-        {
-            get
-            {
-                return DoGetLocaleInfoInt(LOCALE_IDEFAULTCOUNTRY);
-            }
-        }
-
         // Console fallback name (ie: locale to use for console apps for unicode-only locales)
         internal int IINPUTLANGUAGEHANDLE
         {
@@ -1259,26 +1241,6 @@ namespace System.Globalization
                     this.sConsoleFallbackName = consoleFallbackName;
                 }
                 return this.sConsoleFallbackName;
-            }
-        }
-
-        /////////////
-        // Numbers //
-        ////////////
-
-        //                internal String sPositiveSign            ; // (user can override) positive sign
-        //                internal String sNegativeSign            ; // (user can override) negative sign
-        //                internal String[] saNativeDigits         ; // (user can override) native characters for digits 0-9
-        //                internal int iDigitSubstitution       ; // (user can override) Digit substitution 0=context, 1=none/arabic, 2=Native/national (2 seems to be unused) (Windows Only)
-        //                internal int iDigits                  ; // (user can override) number of fractional digits
-        //                internal int iNegativeNumber          ; // (user can override) negative number format
-
-        // Leading zeroes
-        private bool ILEADINGZEROS
-        {
-            get
-            {
-                return (DoGetLocaleInfoInt(LOCALE_ILZERO) == 1);
             }
         }
 
@@ -1506,15 +1468,6 @@ namespace System.Globalization
             }
         }
 
-        // Paper size
-        private int IPAPERSIZE
-        {
-            get
-            {
-                return DoGetLocaleInfoInt(LOCALE_IPAPERSIZE);
-            }
-        }
-
         ////////////////////////////
         // Calendar/Time (Gregorian) //
         ////////////////////////////
@@ -1710,20 +1663,6 @@ namespace System.Globalization
             }
             containsSpace = false;
             return index;
-        }
-
-        // time duration format
-        internal String[] SADURATION
-        {
-            get
-            {
-                if (this.saDurationFormats == null)
-                {
-                    String durationFormat = DoGetLocaleInfo(LOCALE_SDURATION);
-                    this.saDurationFormats = new String[] { ReescapeWin32String(durationFormat) };
-                }
-                return this.saDurationFormats;
-            }
         }
 
         // (user can override) first day of week
@@ -1944,11 +1883,6 @@ namespace System.Globalization
             return calendarData;
         }
 
-        internal int CurrentEra(int calendarId)
-        {
-            return GetCalendar(calendarId).iCurrentEra;
-        }
-
         ///////////////////
         // Text Information //
         ///////////////////
@@ -2051,48 +1985,6 @@ namespace System.Globalization
             get
             {
                 return IsCustomCultureId(this.ILANGUAGE);
-            }
-        }
-
-        // Typical Scripts for this locale (latn;cyrl; etc)
-
-        private String SSCRIPTS
-        {
-            get
-            {
-                if (this.sScripts == null)
-                {
-                    this.sScripts = DoGetLocaleInfo(LOCALE_SSCRIPTS);
-                }
-                return this.sScripts;
-            }
-        }
-
-        private String SOPENTYPELANGUAGETAG
-        {
-            get
-            {
-                return DoGetLocaleInfo(LOCALE_SOPENTYPELANGUAGETAG);
-            }
-        }
-
-        private String FONTSIGNATURE
-        {
-            get
-            {
-                if (this.fontSignature == null)
-                {
-                    this.fontSignature = DoGetLocaleInfo(LOCALE_FONTSIGNATURE);
-                }
-                return this.fontSignature;
-            }
-        }
-
-        private String SKEYBOARDSTOINSTALL
-        {
-            get
-            {
-                return DoGetLocaleInfo(LOCALE_SKEYBOARDSTOINSTALL);
             }
         }
 

@@ -53,14 +53,6 @@ namespace System {
             }
         }
     
-        // Called from the EE
-        private MissingMethodException(String className, String methodName, byte[] signature)
-        {
-            ClassName   = className;
-            MemberName  = methodName;
-            Signature   = signature;
-        }
-    
         public MissingMethodException(String className, String methodName)
         {
             ClassName   = className;

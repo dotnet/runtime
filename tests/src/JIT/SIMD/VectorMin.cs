@@ -39,6 +39,7 @@ internal partial class VectorTest
             if (!(CheckValue<float>(C.X, result))) return Fail;
             if (!(CheckValue<float>(C.Y, result))) return Fail;
             if (!(CheckValue<float>(C.Z, result))) return Fail;
+            if (!(CheckValue<float>(C.W, result))) return Fail;
             return Pass;
         }
     }

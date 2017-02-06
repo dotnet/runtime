@@ -75,14 +75,6 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
 
         public abstract int MaxCharCount { get; }
-
-        internal bool IsMicrosoftBestFitFallback
-        {
-            get
-            {
-                return bIsMicrosoftBestFitFallback;
-            }
-        }
     }
 
 

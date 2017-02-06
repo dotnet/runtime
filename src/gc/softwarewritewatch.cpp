@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
-#include "softwarewritewatch.h"
-
 #include "gcenv.h"
 #include "env/gcenv.os.h"
+#include "softwarewritewatch.h"
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE
@@ -15,8 +14,8 @@ static_assert((static_cast<size_t>(1) << SOFTWARE_WRITE_WATCH_AddressToTableByte
 
 extern "C"
 {
-    uint8_t *g_sw_ww_table = nullptr;
-    bool g_sw_ww_enabled_for_gc_heap = false;
+    uint8_t *g_gc_sw_ww_table = nullptr;
+    bool g_gc_sw_ww_enabled_for_gc_heap = false;
 }
 
 void SoftwareWriteWatch::StaticClose()
@@ -26,8 +25,8 @@ void SoftwareWriteWatch::StaticClose()
         return;
     }
 
-    g_sw_ww_enabled_for_gc_heap = false;
-    g_sw_ww_table = nullptr;
+    g_gc_sw_ww_enabled_for_gc_heap = false;
+    g_gc_sw_ww_table = nullptr;
 }
 
 bool SoftwareWriteWatch::GetDirtyFromBlock(

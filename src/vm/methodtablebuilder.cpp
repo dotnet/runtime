@@ -4222,6 +4222,17 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 // Inherit IsByRefLike characteristic from fields
                 if (!IsSelfRef(pByValueClass) && pByValueClass->IsByRefLike())
                 {
+                    if (fIsStatic)
+                    {
+                        // By-ref-like types cannot be used for static fields
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                    }
+                    if (!IsValueClass())
+                    {
+                        // Non-value-classes cannot contain by-ref-like instance fields
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD);
+                    }
+
                     bmtFP->fIsByRefLikeType = true;
                 }
 
@@ -10216,6 +10227,14 @@ void MethodTableBuilder::CheckForSystemTypes()
         if (GetCl() == g_pByReferenceClass->GetCl())
         {
             pMT->SetIsByRefLike();
+#ifdef _TARGET_X86_
+            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
+            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
+            // treated as a value type so that its field can be considered as a by-ref pointer.
+            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
+            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
+            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
+#endif
             return;
         }
 #endif
@@ -10278,6 +10297,14 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_ByReferenceName) == 0)
         {
             pMT->SetIsByRefLike();
+#ifdef _TARGET_X86_
+            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
+            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
+            // treated as a value type so that its field can be considered as a by-ref pointer.
+            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
+            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
+            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
+#endif
         }
 #endif
         else if (strcmp(name, g_ArgIteratorName) == 0)

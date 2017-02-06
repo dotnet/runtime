@@ -19,9 +19,8 @@ namespace System.Security.Permissions
     [Serializable]
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
-    // The csharp compiler requires these types to be public, but they are not used elsewhere.
     [Obsolete("SecurityPermissionFlag is no longer accessible to application code.")]
-    public enum SecurityPermissionFlag
+    internal enum SecurityPermissionFlag
     {
         NoFlags = 0x00,
         /* The following enum value is used in the EE (ASSERT_PERMISSION in security.cpp)
@@ -46,7 +45,7 @@ namespace System.Security.Permissions
 
 [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    sealed public class SecurityPermission 
+    sealed internal class SecurityPermission 
            : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
 #pragma warning disable 618

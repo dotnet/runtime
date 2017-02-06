@@ -1565,10 +1565,10 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
             
             _ASSERTE(pThread->PreemptiveGCDisabled());    // Epilogs should be in cooperative mode, no GC can happen right now. 
             bool gcHappened = gcCover->gcCount != GCHeapUtilities::GetGCHeap()->GetGcCount();
-            checkAndUpdateReg(gcCover->callerRegs.Edi, *regDisp.pEdi, gcHappened);
-            checkAndUpdateReg(gcCover->callerRegs.Esi, *regDisp.pEsi, gcHappened);
-            checkAndUpdateReg(gcCover->callerRegs.Ebx, *regDisp.pEbx, gcHappened);
-            checkAndUpdateReg(gcCover->callerRegs.Ebp, *regDisp.pEbp, gcHappened);
+            checkAndUpdateReg(gcCover->callerRegs.Edi, *regDisp.GetEdiLocation(), gcHappened);
+            checkAndUpdateReg(gcCover->callerRegs.Esi, *regDisp.GetEsiLocation(), gcHappened);
+            checkAndUpdateReg(gcCover->callerRegs.Ebx, *regDisp.GetEbxLocation(), gcHappened);
+            checkAndUpdateReg(gcCover->callerRegs.Ebp, *regDisp.GetEbpLocation(), gcHappened);
             
             gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
 

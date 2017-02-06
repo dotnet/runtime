@@ -15,7 +15,7 @@ namespace System.Diagnostics.SymbolStore {
     using System.Runtime.InteropServices;
 
     [ComVisible(true)]
-    public struct SymbolToken
+    internal struct SymbolToken
     {
         internal int m_token;
         
@@ -36,16 +36,6 @@ namespace System.Diagnostics.SymbolStore {
         public bool Equals(SymbolToken obj)
         {
             return obj.m_token == m_token;
-        }
-    
-        public static bool operator ==(SymbolToken a, SymbolToken b)
-        {
-            return a.Equals(b);
-        }
-        
-        public static bool operator !=(SymbolToken a, SymbolToken b)
-        {
-            return !(a == b);
         }
     }
 }

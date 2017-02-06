@@ -48,10 +48,7 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodBase))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MethodBase : MemberInfo, _MethodBase
+    public abstract class MethodBase : MemberInfo
     {
         #region Static Members
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle)
@@ -131,20 +128,6 @@ namespace System.Reflection
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
 #if FEATURE_APPX
-
-        // The C# dynamic and VB late bound binders need to call this API. Since we don't have time to make this
-        // public in Dev11, the C# and VB binders currently call this through a delegate. 
-        // When we make this API public (hopefully) in Dev12 we need to change the C# and VB binders to call this
-        // probably statically. The code is located in:
-        // C#: ndp\fx\src\CSharp\Microsoft\CSharp\SymbolTable.cs - Microsoft.CSharp.RuntimeBinder.SymbolTable..cctor
-        // VB: vb\runtime\msvbalib\helpers\Symbols.vb - Microsoft.VisualBasic.CompilerServices.Symbols..cctor
-        internal virtual bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return true;
-            }
-        }
 #endif
         #endregion
 
@@ -269,7 +252,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef && !serialization)
                 {
-                    sbParamList.Append(typeName.TrimEnd(new char[] { '&' }));
+                    sbParamList.Append(typeName.TrimEnd('&'));
                     sbParamList.Append(" ByRef");
                 }
                 else

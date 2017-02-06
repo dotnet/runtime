@@ -1918,6 +1918,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     emitter*  emit       = getEmitter();
 
 #ifdef DEBUG
+    // Validate that all the operands for the current node are consumed in order.
+    // This is important because LSRA ensures that any necessary copies will be
+    // handled correctly.
+    lastConsumedNode = nullptr;
     if (compiler->verbose)
     {
         unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
@@ -2262,7 +2266,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             else
             {
                 assert(!data->isContained());
-                genConsumeReg(data);
                 dataReg = data->gtRegNum;
             }
             assert(dataReg != REG_NA);
@@ -2314,7 +2317,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 else
                 {
                     assert(!data->isContained());
-                    genConsumeReg(data);
                     dataReg = data->gtRegNum;
                 }
                 assert(dataReg != REG_NA);
@@ -2423,8 +2425,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             var_types  op1Type = op1->TypeGet();
             var_types  op2Type = op2->TypeGet();
 
-            assert(!op1->isContainedMemoryOp());
-            assert(!op2->isContainedMemoryOp());
+            assert(!op1->isUsedFromMemory());
+            assert(!op2->isUsedFromMemory());
 
             genConsumeOperands(tree);
 
@@ -3798,8 +3800,8 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     GenTree *    src1, *src2;
     emitJumpKind jmpKind;
 
-    genConsumeRegs(arrLen);
     genConsumeRegs(arrIndex);
+    genConsumeRegs(arrLen);
 
     if (arrIndex->isContainedIntOrIImmed())
     {
@@ -3951,14 +3953,14 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 
     if (!offsetNode->IsIntegralConst(0))
     {
-        emitter*   emit   = getEmitter();
-        GenTreePtr arrObj = arrOffset->gtArrObj;
-        regNumber  arrReg = genConsumeReg(arrObj);
-        noway_assert(arrReg != REG_NA);
+        emitter*  emit      = getEmitter();
         regNumber offsetReg = genConsumeReg(offsetNode);
         noway_assert(offsetReg != REG_NA);
         regNumber indexReg = genConsumeReg(indexNode);
         noway_assert(indexReg != REG_NA);
+        GenTreePtr arrObj = arrOffset->gtArrObj;
+        regNumber  arrReg = genConsumeReg(arrObj);
+        noway_assert(arrReg != REG_NA);
         regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
         regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
         noway_assert(tmpReg != REG_NA);
@@ -4118,12 +4120,11 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     assert(tree->gtRegNum != REG_NA);
 
     GenTreePtr operand = tree->gtGetOp1();
-    genConsumeReg(operand);
+    genConsumeOperands(tree->AsOp());
 
     GenTreePtr shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        genConsumeReg(shiftBy);
         getEmitter()->emitIns_R_R_R(ins, size, tree->gtRegNum, operand->gtRegNum, shiftBy->gtRegNum);
     }
     else

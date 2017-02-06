@@ -146,47 +146,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static bool Compare(byte[] a, byte[] b)
-        {
-            // if either or both assemblies do not have public key token, we should demand, hence, returning false will force a demand
-            if (a == null || b == null || a.Length == 0 || b.Length == 0 || a.Length != b.Length)
-            {
-                return false;
-            }
-            else
-            {
-                for (int i = 0; i < a.Length; i++)
-                {
-                    if (a[i] != b[i]) return false;
-                }
-
-                return true;
-            }
-        }
-
         internal static void DemandForUnsafeAssemblyNameAssignments(string originalAssemblyName, string newAssemblyName)
         {
-        }
-
-        internal static bool IsAssemblyNameAssignmentSafe(string originalAssemblyName, string newAssemblyName)
-        {
-            if (originalAssemblyName == newAssemblyName)
-            {
-                return true;
-            }
-
-            AssemblyName originalAssembly = new AssemblyName(originalAssemblyName);
-            AssemblyName newAssembly = new AssemblyName(newAssemblyName);
-
-            // mscorlib will get loaded by the runtime regardless of its string casing or its public key token,
-            // so setting the assembly name to mscorlib must always be protected by a demand
-            if (string.Equals(newAssembly.Name, s_mscorlibAssemblySimpleName, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(newAssembly.Name, s_mscorlibFileName, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            return Compare(originalAssembly.GetPublicKeyToken(), newAssembly.GetPublicKeyToken());
         }
 
         public int MemberCount
@@ -739,23 +700,6 @@ namespace System.Runtime.Serialization
                 return (String)value;
             }
             return m_converter.ToString(value);
-        }
-
-        internal string[] MemberNames
-        {
-            get
-            {
-                return m_members;
-            }
-
-        }
-
-        internal object[] MemberValues
-        {
-            get
-            {
-                return m_data;
-            }
         }
 
     }

@@ -19,8 +19,8 @@ namespace System.Security
 
     [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
-    abstract public class CodeAccessPermission
-        : IPermission, ISecurityEncodable, IStackWalk
+    internal abstract class CodeAccessPermission
+        : IPermission
     {
         // Static methods for manipulation of stack
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
@@ -28,28 +28,6 @@ namespace System.Security
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             SecurityRuntime.RevertAssert(ref stackMark);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public static void RevertDeny()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.RevertDeny(ref stackMark);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static void RevertPermitOnly()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.RevertPermitOnly(ref stackMark);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static void RevertAll()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.RevertAll(ref stackMark);
         }
 
         //
@@ -70,20 +48,6 @@ namespace System.Security
             }
         }
 
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        internal static void Demand(PermissionType permissionType)
-        {
-            //    The intent of the method is to be an internal mscorlib helper that Demands a specific permissiontype
-            //    without having to create objects.
-            //    The security annotation fxcop rule that flags all methods with a Demand() has logic
-            //    which checks for methods named Demand in types that implement IPermission or IStackWalk. 
-            Debug.Assert(new StackFrame().GetMethod().Name.Equals("Demand"), "This method needs to be named Demand");
-            
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCallersCaller;
-            CodeAccessSecurityEngine.SpecialDemand(permissionType, ref stackMark);
-        }
-
         // Metadata for this method should be flaged with REQ_SQ so that
         // EE can allocate space on the stack frame for FrameSecurityDescriptor
 
@@ -93,44 +57,6 @@ namespace System.Security
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             CodeAccessSecurityEngine.Assert(this, ref stackMark);
-        }
-
-
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable    
-        static internal void Assert(bool allPossible)
-        {
-            //    The intent of the method is to be an internal mscorlib helper that easily asserts for all possible permissions
-            //    without having to new a PermissionSet.
-            //    The security annotation fxcop rule that flags all methods with an Assert() has logic
-            //    which checks for methods named Assert in types that implement IPermission or IStackWalk. 
-            Debug.Assert(new StackFrame().GetMethod().Name.Equals("Assert"), "This method needs to be named Assert");
-            
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            SecurityRuntime.AssertAllPossible(ref stackMark);
-        }
-    
-        // Metadata for this method should be flaged with REQ_SQ so that
-        // EE can allocate space on the stack frame for FrameSecurityDescriptor
-
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public void Deny()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            CodeAccessSecurityEngine.Deny(this, ref stackMark);
-        }
-        
-        // Metadata for this method should be flaged with REQ_SQ so that
-        // EE can allocate space on the stack frame for FrameSecurityDescriptor
-
-        [DynamicSecurityMethodAttribute()]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public void PermitOnly()
-        {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            CodeAccessSecurityEngine.PermitOnly(this, ref stackMark);
         }
 
         // IPermission interfaces

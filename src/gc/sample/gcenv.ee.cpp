@@ -13,8 +13,6 @@ MethodTable * g_pFreeObjectMethodTable;
 
 int32_t g_TrapReturningThreads;
 
-bool g_fFinalizerRunOnShutDown;
-
 EEConfig * g_pConfig;
 
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
@@ -259,15 +257,10 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
 }
 
-void FinalizerThread::EnableFinalization()
+void GCToEEInterface::EnableFinalization(bool foundFinalizers)
 {
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization
-}
-
-bool FinalizerThread::HaveExtraWorkForFinalizer()
-{
-    return false;
 }
 
 bool IsGCSpecialThread()

@@ -19,15 +19,7 @@ using System.StubHelpers;
 using System.Threading.Tasks;
 
 #if FEATURE_COMINTEROP
-
 using System.Runtime.InteropServices.WindowsRuntime;
-
-[assembly:Guid("BED7F4EA-1A96-11d2-8F08-00A0C9A6186D")]
-
-// The following attribute are required to ensure COM compatibility.
-[assembly:System.Runtime.InteropServices.ComCompatibleVersion(1, 0, 3300, 0)]
-[assembly:System.Runtime.InteropServices.TypeLibVersion(2, 4)]
-
 #endif // FEATURE_COMINTEROP
 
 [assembly:DefaultDependencyAttribute(LoadHint.Always)]

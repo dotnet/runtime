@@ -50,7 +50,7 @@ Managed varargs are not supported in .NET Core.
 
 ## Generics
 
-*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the "this" pointer can serve dual-purpose as the instantiation parameter. When the "this" pointer is not the generic parameter, the generic parameter is passed as the next argument (after the optional return buffer and the optional "this" pointer, but before any user arguments). For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no "this" pointer) the generic parameter is a MethodTable pointer/TypeHandle.
+*Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the "this" pointer can serve dual-purpose as the instantiation parameter. When the "this" pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM, ARM64 and AMD64, it is passed after the optional return buffer and the optional "this" pointer, but before any user arguments. On x86, if all arguments of the function including "this" pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no "this" pointer) the generic parameter is a MethodTable pointer/TypeHandle.
 
 Sometimes the VM asks the JIT to report and keep alive the generics parameter. In this case, it must be saved on the stack someplace and kept alive via normal GC reporting (if it was the "this" pointer, as compared to a MethodDesc or MethodTable) for the entire method except the prolog and epilog. Also note that the code to home it, must be in the range of code reported as the prolog in the GC info (which probably isn't the same as the range of code reported as the prolog in the unwind info).
 
@@ -139,17 +139,19 @@ This section describes the conventions the JIT needs to follow when generating c
 
 ## Funclets
 
-For non-x86 platforms, all managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
+For all platforms except Windows/x86, all managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
 
 The only way to enter a handler funclet is via a call. In the case of an exception, the call is from the VM's EH subsystem as part of exception dispatch/unwind. In the non-exceptional case, this is called local unwind or a non-local exit. In C# this is accomplished by simply falling-through/out of a try body or an explicit goto. In IL this is always accomplished via a LEAVE opcode, within a try body, targeting an IL offset outside the try body. In such cases the call is from the JITed code of the parent function.
 
-For x86, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested. 
+For Windows/x86, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested. 
 
 ## Cloned finallys
 
 JIT64 attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). Because the VM semantics for non-rude Thread.Abort dictate that handlers will not be aborted, the JIT must mark these 'inlined' finally bodies. These show up as special entries at the end of the EH tables and are marked with `COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_DUPLICATED`, and the try_start, try_end, and handler_start are all the same: the start of the cloned finally.
 
-JIT32 and RyuJIT currently do not implement finally cloning.
+RyuJit also implements finally cloning, for all supported architectures. However, the implementation does not yet handle the thread abort case; cloned finally bodies are not guaranteed to remain intact and are not reported to the runtime. Because of this, finally cloning is disabled for VMs that support thread abort (desktop clr).
+
+JIT32 does not implement finally cloning.
 
 ## Invoking Finallys/Non-local exits
 
@@ -283,7 +285,7 @@ The PSPSym is a pointer-sized local variable in the frame of the main function a
 
 The VM uses the PSPSym to find other locals it cares about (such as the generics context in a funclet frame). The JIT uses it to re-establish the frame pointer register, so that the frame pointer is the same value in a funclet as it is in the main function body.
 
-When a funclet is called, it is passed the *Establisher Frame Pointer*. For AMD64 this is true for all funclets and it is passed as the first argument in RCX, but for ARM and ARM64 this is only true for first pass funclets (currently just filters) and it is passed as the second argument in R1. The Establisher Frame Pointer is a stack pointer of an interesting "parent" frame in the exception processing system. For the CLR, it points either to the main function frame or a dynamically enclosing funclet frame from the same function, for the funclet being invoked. The value of the Establisher Frame Pointer is Initial-SP on AMD64, Caller-SP on ARM and ARM64.
+When a funclet is called, it is passed the *Establisher Frame Pointer*. For AMD64 this is true for all funclets and it is passed as the first argument in RCX, but for ARM and ARM64 this is only true for first pass funclets (currently just filters) and it is passed as the second argument in R1. The Establisher Frame Pointer is a stack pointer of an interesting "parent" frame in the exception processing system. For the CLR, it points either to the main function frame or a dynamically enclosing funclet frame from the same function, for the funclet being invoked. The value of the Establisher Frame Pointer is Initial-SP on AMD64, Caller-SP on x86, ARM, and ARM64.
 
 Using the establisher frame, the funclet wants to load the value of the PSPSym. Since we don't know if the Establisher Frame is from the main function or a funclet, we design the main function and funclet frame layouts to place the PSPSym at an identical, small, constant offset from the Establisher Frame in each case. (This is also required because we only report a single offset to the PSPSym in the GC information, and that offset must be valid for the main function and all of its funclets). Then, the funclet uses this known offset to compute the PSPSym address and read its value. From this, it can compute the value of the frame pointer (which is a constant offset from the PSPSym value) and set the frame register to be the same as the parent function. Also, the funclet writes the value of the PSPSym to its own frame's PSPSym. This "copying" of the PSPSym happens for every funclet invocation, in particular, for every nested funclet invocation.
 
@@ -331,9 +333,9 @@ When a funclet finishes execution, and the VM returns execution to the function 
 
 Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame.
 
-## x86 EH considerations
+## Windows/x86 EH considerations
 
-The x86 model is somewhat different than the non-x86 model. X86-specific concerns are mentioned here.
+The Windows/x86 model is somewhat different than non-Windows/x86 model. Windows/X86-specific concerns are mentioned here.
 
 ### catch / filter-handler regions
 

@@ -51,11 +51,6 @@ void CodeSeqSM::Start(Compiler* comp)
 void CodeSeqSM::Reset()
 {
     curState = SM_STATE_ID_START;
-
-#ifdef DEBUG
-    // Reset the state occurence counts
-    memset(StateMatchedCounts, 0, sizeof(StateMatchedCounts));
-#endif
 }
 
 void CodeSeqSM::End()

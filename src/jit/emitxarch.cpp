@@ -898,7 +898,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
     // The following SSE2 instructions write to a general purpose integer register.
     if (!IsSSEOrAVXInstruction(ins) || ins == INS_mov_xmm2i || ins == INS_cvttsd2si
 #ifndef LEGACY_BACKEND
-        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si
+        || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si || ins == INS_pmovmskb ||
+        ins == INS_pextrw
 #endif // !LEGACY_BACKEND
         )
     {
@@ -2786,20 +2787,19 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(GenTreeDblCon* tree, emitAttr at
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
     // dst can only be a reg or modrm
-    assert(!dst->isContained() || dst->isContainedMemoryOp() ||
-           instrIs3opImul(ins)); // dst on these isn't really the dst
+    assert(!dst->isContained() || dst->isUsedFromMemory() || instrIs3opImul(ins)); // dst on these isn't really the dst
 
 #ifdef DEBUG
     // src can be anything but both src and dst cannot be addr modes
     // or at least cannot be contained addr modes
-    if (dst->isContainedMemoryOp())
+    if (dst->isUsedFromMemory())
     {
-        assert(!src->isContainedMemoryOp());
+        assert(!src->isUsedFromMemory());
     }
 
-    if (src->isContainedMemoryOp())
+    if (src->isUsedFromMemory())
     {
-        assert(!dst->isContainedMemoryOp());
+        assert(!dst->isUsedFromMemory());
     }
 #endif
 
@@ -2837,7 +2837,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find local field if any
     GenTreeLclFld* lclField = nullptr;
-    if (src->isContainedLclField())
+    if (src->isLclFldUsedFromMemory())
     {
         lclField = src->AsLclFld();
     }
@@ -2848,12 +2848,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find contained lcl var if any
     GenTreeLclVar* lclVar = nullptr;
-    if (src->isContainedLclVar())
+    if (src->isLclVarUsedFromMemory())
     {
         assert(src->IsRegOptional());
         lclVar = src->AsLclVar();
     }
-    else if (dst->isContainedLclVar())
+    if (dst->isLclVarUsedFromMemory())
     {
         assert(dst->IsRegOptional());
         lclVar = dst->AsLclVar();
@@ -2861,12 +2861,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
     // find contained spill tmp if any
     TempDsc* tmpDsc = nullptr;
-    if (src->isContainedSpillTemp())
+    if (src->isUsedFromSpillTemp())
     {
         assert(src->IsRegOptional());
         tmpDsc = codeGen->getSpillTempDsc(src);
     }
-    else if (dst->isContainedSpillTemp())
+    else if (dst->isUsedFromSpillTemp())
     {
         assert(dst->IsRegOptional());
         tmpDsc = codeGen->getSpillTempDsc(dst);
@@ -2952,7 +2952,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     if (varNum != BAD_VAR_NUM || tmpDsc != nullptr)
     {
         // Is the memory op in the source position?
-        if (src->isContainedMemoryOp())
+        if (src->isUsedFromMemory())
         {
             if (instrHasImplicitRegPairDest(ins))
             {
@@ -8055,10 +8055,7 @@ DONE:
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -8450,10 +8447,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -8883,10 +8877,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -9428,10 +9419,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else
     {
-        if (emitInsCanOnlyWriteSSE2OrAVXReg(id))
-        {
-        }
-        else
+        if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
             switch (id->idInsFmt())
             {
@@ -10832,6 +10820,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dst += emitOutputByte(dst, emitGetInsSC(id));
             sz = emitSizeOfInsDsc(id);
+
+            // Kill any GC ref in the destination register if necessary.
+            if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+            {
+                emitGCregDeadUpd(id->idReg1(), dst);
+            }
             break;
 
         /********************************************************************/
@@ -11202,9 +11196,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(sz == emitSizeOfInsDsc(id));
 
 #if !FEATURE_FIXED_OUT_ARGS
+    bool updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
+
+#if FEATURE_EH_FUNCLETS
+    updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
+#endif // FEATURE_EH_FUNCLETS
 
     // Make sure we keep the current stack level up to date
-    if (!emitIGisInProlog(ig) && !emitIGisInEpilog(ig))
+    if (updateStackLevel)
     {
         switch (ins)
         {

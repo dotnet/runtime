@@ -74,24 +74,6 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Returns true if the path is too long
-        /// </summary>
-        internal static bool IsPathTooLong(string fullPath)
-        {
-            // We'll never know precisely what will fail as paths get changed internally in Windows and
-            // may grow to exceed MaxLongPath.
-            return fullPath.Length >= MaxLongPath;
-        }
-
-        /// <summary>
-        /// Returns true if the directory is too long
-        /// </summary>
-        internal static bool IsDirectoryTooLong(string fullPath)
-        {
-            return IsPathTooLong(fullPath);
-        }
-
-        /// <summary>
         /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
         /// AND the path is more than 259 characters. (> MAX_PATH + null)
         /// </summary>
@@ -455,32 +437,6 @@ namespace System.IO
         internal static bool IsDirectoryOrVolumeSeparator(char ch)
         {
             return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
-        }
-
-        /// <summary>
-        /// Validates volume separator only occurs as C: or \\?\C:. This logic is meant to filter out Alternate Data Streams.
-        /// </summary>
-        /// <returns>True if the path has an invalid volume separator.</returns>
-        internal static bool HasInvalidVolumeSeparator(string path)
-        {
-            // Toss out paths with colons that aren't a valid drive specifier.
-            // Cannot start with a colon and can only be of the form "C:" or "\\?\C:".
-            // (Note that we used to explicitly check "http:" and "file:"- these are caught by this check now.)
-
-            // We don't care about skipping starting space for extended paths. Assume no knowledge of extended paths if we're forcing old path behavior.
-            int startIndex = IsExtended(path) ? ExtendedPathPrefix.Length : PathStartSkip(path);
-
-            // If we start with a colon
-            if ((path.Length > startIndex && path[startIndex] == VolumeSeparatorChar)
-                // Or have an invalid drive letter and colon
-                || (path.Length >= startIndex + 2 && path[startIndex + 1] == VolumeSeparatorChar && !IsValidDriveChar(path[startIndex]))
-                // Or have any colons beyond the drive colon
-                || (path.Length > startIndex + 2 && path.IndexOf(VolumeSeparatorChar, startIndex + 2) != -1))
-            {
-                return true;
-            }
-
-            return false;
         }
     }
 }

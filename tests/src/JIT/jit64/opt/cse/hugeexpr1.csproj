@@ -29,6 +29,8 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
+    <!-- This test is very resource heavy and doesn't play well with some JitStress modes, especially when memory is limited -->
+    <JitOptimizationSensitive Condition="'$(Platform)' == 'x86'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hugeexpr1.cs" />

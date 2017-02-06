@@ -20,18 +20,6 @@ namespace System.Security
     {
         private SecurityRuntime(){}
 
-        // Returns the security object for the caller of the method containing
-        // 'stackMark' on its frame.
-        //
-        // THE RETURNED OBJECT IS THE LIVE RUNTIME OBJECT. BE CAREFUL WITH IT!
-        //
-        // Internal only, do not doc.
-        // 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern 
-        FrameSecurityDescriptor GetSecurityObjectForFrame(ref StackCrawlMark stackMark,
-                                                          bool create);
-
         // Constants used to return status to native
         internal const bool StackContinue  = true;
         internal const bool StackHalt      = false;
@@ -75,44 +63,6 @@ namespace System.Security
             return secDesc.CheckDemand((CodeAccessPermission) demandIn, permToken, rmh);
         }
 
-#if FEATURE_COMPRESSEDSTACK
-        private static bool CheckDynamicMethodSetHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
-                                                     PermissionSet demandSet,
-                                                     out PermissionSet alteredDemandSet,
-                                                     RuntimeMethodHandleInternal rmh)
-        {
-            System.Threading.CompressedStack creationStack = dynamicResolver.GetSecurityContext();
-            bool result;
-            try
-            {
-                result = creationStack.CheckSetDemandWithModificationNoHalt(demandSet, out alteredDemandSet, rmh);
-            }
-            catch (SecurityException ex)
-            {
-                throw new SecurityException(Environment.GetResourceString("Security_AnonymouslyHostedDynamicMethodCheckFailed"), ex);
-            }
-            
-            return result;
-        }
-
-        private static bool CheckDynamicMethodHelper(System.Reflection.Emit.DynamicResolver dynamicResolver,
-                                             IPermission demandIn, 
-                                             PermissionToken permToken,
-                                             RuntimeMethodHandleInternal rmh)
-        {
-            System.Threading.CompressedStack creationStack = dynamicResolver.GetSecurityContext();
-            bool result;
-            try
-            {
-                result = creationStack.CheckDemandNoHalt((CodeAccessPermission)demandIn, permToken, rmh);
-            }
-            catch (SecurityException ex)
-            {
-                throw new SecurityException(Environment.GetResourceString("Security_AnonymouslyHostedDynamicMethodCheckFailed"), ex);
-            }
-            return result;
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 
         //
         // API for PermissionSets
@@ -122,35 +72,11 @@ namespace System.Security
         {
         }
 
-        internal static void AssertAllPossible(ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void Deny(PermissionSet permSet, ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void PermitOnly(PermissionSet permSet, ref StackCrawlMark stackMark)
-        {
-        }
-
         //
         // Revert API
         //
 
         internal static void RevertAssert(ref StackCrawlMark stackMark)
-        {
-        }
-
-        internal static void RevertDeny(ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void RevertPermitOnly(ref StackCrawlMark stackMark)
-        {
-        }
-        
-        internal static void RevertAll(ref StackCrawlMark stackMark)
         {
         }
     }

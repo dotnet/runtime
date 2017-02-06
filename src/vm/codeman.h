@@ -69,6 +69,10 @@ Abstract:
 #include "pedecoder.h"
 #include "gcinfo.h"
 
+#if defined(WIN64EXCEPTIONS) && !defined(USE_INDIRECT_CODEHEADER)
+#error "WIN64EXCEPTIONS requires USE_INDIRECT_CODEHEADER"
+#endif // WIN64EXCEPTIONS && !USE_INDIRECT_CODEHEADER
+
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
@@ -177,7 +181,7 @@ public:
         return phdrMDesc;
     }
 #if defined(FEATURE_GDBJIT)
-    PTR_BYTE                GetCalledMethods()
+    VOID*                GetCalledMethods()
     {
         SUPPORTS_DAC;
         return pCalledMethods;
@@ -1475,6 +1479,16 @@ private:
         static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == (PCODE)-1; }
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
+
+    static unsigned m_normal_JumpStubLookup;
+    static unsigned m_normal_JumpStubUnique;
+    static unsigned m_normal_JumpStubBlockAllocCount;
+    static unsigned m_normal_JumpStubBlockFullCount;
+
+    static unsigned m_LCG_JumpStubLookup;
+    static unsigned m_LCG_JumpStubUnique;
+    static unsigned m_LCG_JumpStubBlockAllocCount;
+    static unsigned m_LCG_JumpStubBlockFullCount;
 
     struct JumpStubCache
     {

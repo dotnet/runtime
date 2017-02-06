@@ -14,8 +14,6 @@ add_executable(paltest_mutex_shared
 add_dependencies(paltest_mutex_shared coreclrpal)
 
 target_link_libraries(paltest_mutex_shared
-  pthread
+  ${COMMON_TEST_LIBRARIES}
   rt
-  m
-  coreclrpal
 )

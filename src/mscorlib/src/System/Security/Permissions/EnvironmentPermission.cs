@@ -5,7 +5,6 @@
 namespace System.Security.Permissions {
     using System.Security;
     using System;
-    using SecurityElement = System.Security.SecurityElement;
     using System.Security.Util;
     using System.IO;
     using System.Globalization;
@@ -14,7 +13,7 @@ namespace System.Security.Permissions {
     [Serializable]
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public enum EnvironmentPermissionAccess
+    internal enum EnvironmentPermissionAccess
     {
         NoAccess = 0x00,
         Read = 0x01,
@@ -27,11 +26,6 @@ namespace System.Security.Permissions {
     {
         public EnvironmentStringExpressionSet()
             : base( true, null, false )
-        {
-        }
-        
-        public EnvironmentStringExpressionSet( String str )
-            : base( true, str, false )
         {
         }
         
@@ -66,7 +60,7 @@ namespace System.Security.Permissions {
     
 [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
-    sealed public class EnvironmentPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
+    sealed internal class EnvironmentPermission : CodeAccessPermission, IUnrestrictedPermission, IBuiltInPermission
     {
         private StringExpressionSet m_read;
         private StringExpressionSet m_write;
@@ -121,54 +115,12 @@ namespace System.Security.Permissions {
             }
     
         }
-    
-        public String GetPathList( EnvironmentPermissionAccess flag )
-        {
-            VerifyFlag( flag );
-            ExclusiveFlag( flag );
-    
-            if (FlagIsSet( flag, EnvironmentPermissionAccess.Read ))
-            {
-                if (m_read == null)
-                {
-                    return "";
-                }
-                return m_read.ToString();
-            }
-            
-            if (FlagIsSet( flag, EnvironmentPermissionAccess.Write ))
-            {
-                if (m_write == null)
-                {
-                    return "";
-                }
-                return m_write.ToString();
-            }
-    
-            /* not reached */
-            
-            return "";
-        }     
         
             
         private void VerifyFlag( EnvironmentPermissionAccess flag )
         {
             if ((flag & ~EnvironmentPermissionAccess.AllAccess) != 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)flag));
-            Contract.EndContractBlock();
-        }
-    
-        private void ExclusiveFlag( EnvironmentPermissionAccess flag )
-        {
-            if (flag == EnvironmentPermissionAccess.NoAccess)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") ); 
-            }
-    
-            if (((int)flag & ((int)flag-1)) != 0)
-            {
-                throw new ArgumentException( Environment.GetResourceString("Arg_EnumNotSingleFlag") );
-            }
             Contract.EndContractBlock();
         }
         

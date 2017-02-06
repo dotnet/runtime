@@ -71,13 +71,11 @@ namespace System.Threading
         {
         }
 
-        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ref StackCrawlMark stackMark)
+        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback)
         {
             _ioCompletionCallback = ioCompletionCallback;
             // clone the exection context
-            _executionContext = ExecutionContext.Capture(
-                ref stackMark, 
-                ExecutionContext.CaptureOptions.IgnoreSyncCtx | ExecutionContext.CaptureOptions.OptimizeDefaultCase);
+            _executionContext = ExecutionContext.Capture();
         }
         // Context callback: same sig for SendOrPostCallback and ContextCallback
         static internal ContextCallback _ccb = new ContextCallback(IOCompletionCallback_Context);
@@ -103,26 +101,23 @@ namespace System.Threading
                 overlapped = OverlappedData.GetOverlappedFromNative(pOVERLAP).m_overlapped;
                 helper  = overlapped.iocbHelper;
 
-            if (helper == null || helper._executionContext == null || helper._executionContext.IsDefaultFTContext(true))
-            {
-                // We got here because of UnsafePack (or) Pack with EC flow supressed
-                IOCompletionCallback callback = overlapped.UserCallback;
-                callback( errorCode,  numBytes,  pOVERLAP);
-            }
-            else
-            {
-                // We got here because of Pack
-                helper._errorCode = errorCode;
-                helper._numBytes = numBytes;
-                helper._pOVERLAP = pOVERLAP;
-                    using (ExecutionContext executionContext = helper._executionContext.CreateCopy())
-                    ExecutionContext.Run(executionContext, _ccb, helper, true);
-            }                    
+                if (helper == null || helper._executionContext == null || helper._executionContext == ExecutionContext.Default)
+                {
+                    // We got here because of UnsafePack (or) Pack with EC flow supressed
+                    IOCompletionCallback callback = overlapped.UserCallback;
+                    callback( errorCode,  numBytes,  pOVERLAP);
+                }
+                else
+                {
+                    // We got here because of Pack
+                    helper._errorCode = errorCode;
+                    helper._numBytes = numBytes;
+                    helper._pOVERLAP = pOVERLAP;
+                    ExecutionContext.Run(helper._executionContext, _ccb, helper);
+                }                    
 
-                    //Quickly check the VM again, to see if a packet has arrived.
-
+                //Quickly check the VM again, to see if a packet has arrived.
                 OverlappedData.CheckVMForIOPacket(out pOVERLAP, out errorCode, out numBytes);
-
             } while (pOVERLAP != null);
 
         }
@@ -174,17 +169,15 @@ namespace System.Threading
             m_nativeOverlapped.InternalHigh = (IntPtr)0;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         unsafe internal NativeOverlapped* Pack(IOCompletionCallback iocb, Object userData)
         {
             if (!m_pinSelf.IsNull()) {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_Overlapped_Pack"));
             }
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             if (iocb != null)
             {
-                m_iocbHelper = new _IOCompletionCallback(iocb, ref stackMark);
+                m_iocbHelper = new _IOCompletionCallback(iocb);
                 m_iocb = iocb;
             }
             else

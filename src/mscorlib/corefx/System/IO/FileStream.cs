@@ -139,20 +139,6 @@ namespace System.IO
             this(path, mode, access, share, bufferSize, useAsync ? FileOptions.Asynchronous : FileOptions.None)
         { }
 
-        internal FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, string msgPath, bool bFromProxy)
-            : this(path, mode, access, share, bufferSize, options, msgPath, bFromProxy, useLongPath: false)
-        {
-        }
-
-        internal FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, string msgPath, bool bFromProxy, bool useLongPath)
-            : this(path, mode, access, share, bufferSize, options)
-        {
-            // msgPath is the path that is handed back to untrusted code, CoreCLR is always full trust
-            // bFromProxy is also related to asserting rights for limited trust and also can be ignored
-            // useLongPath was used to get around the legacy MaxPath check, this is no longer applicable as everything supports long paths
-            // checkHost is also related to limited trust scenarios
-        }
-
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (path == null)
@@ -223,24 +209,6 @@ namespace System.IO
         {
             // This will eventually get more complicated as we can actually check the underlying handle type on Windows
             return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
-        }
-
-        // InternalOpen, InternalCreate, and InternalAppend:
-        // Factory methods for FileStream used by File, FileInfo, and ReadLinesIterator
-        // Specifies default access and sharing options for FileStreams created by those classes
-        internal static FileStream InternalOpen(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
-        {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
-        }
-
-        internal static FileStream InternalCreate(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
-        {
-            return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
-        }
-
-        internal static FileStream InternalAppend(string path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultIsAsync)
-        {
-            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
@@ -649,6 +617,68 @@ namespace System.IO
             // finalizer in past releases and derived classes may depend
             // on Dispose(false) call.
             Dispose(false);
+        }
+
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (numBytes < 0)
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (array.Length - offset < numBytes)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+
+            if (!IsAsync)
+                return base.BeginRead(array, offset, numBytes, callback, state);
+            else
+                return TaskToApm.Begin(ReadAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (numBytes < 0)
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (array.Length - offset < numBytes)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            if (IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+            if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+            if (!IsAsync)
+                return base.BeginWrite(array, offset, numBytes, callback, state);
+            else
+                return TaskToApm.Begin(WriteAsyncInternal(array, offset, numBytes, CancellationToken.None), callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            if (asyncResult == null)
+                throw new ArgumentNullException(nameof(asyncResult));
+
+            if (!IsAsync)
+                return base.EndRead(asyncResult);
+            else
+                return TaskToApm.End<int>(asyncResult);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            if (asyncResult == null)
+                throw new ArgumentNullException(nameof(asyncResult));
+
+            if (!IsAsync)
+                base.EndWrite(asyncResult);
+            else
+                TaskToApm.End(asyncResult);
         }
     }
 }

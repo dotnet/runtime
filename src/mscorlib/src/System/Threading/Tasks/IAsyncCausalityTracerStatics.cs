@@ -27,7 +27,6 @@ namespace Windows.Foundation.Diagnostics
 		void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySource source, CausalitySynchronousWork work);
         //These next 2 functions could've been represented as an event except that the EventRegistrationToken wasn't being propagated to WinRT
         EventRegistrationToken add_TracingStatusChanged(System.EventHandler<TracingStatusChangedEventArgs> eventHandler);
-        void remove_TracingStatusChanged(EventRegistrationToken token);
 	}
 
     [ComImport]

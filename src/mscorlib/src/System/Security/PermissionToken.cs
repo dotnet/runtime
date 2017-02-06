@@ -88,39 +88,13 @@ namespace System.Security
     }
 
     [Serializable]
-    internal sealed class PermissionToken : ISecurityEncodable
+    internal sealed class PermissionToken
     {
         private static readonly PermissionTokenFactory s_theTokenFactory;
         private const string c_mscorlibName = System.CoreLib.Name;
         internal int    m_index;
         internal volatile PermissionTokenType m_type;
         static internal TokenBasedSet s_tokenSet = new TokenBasedSet();
-
-        internal static bool IsMscorlibClassName (string className) {
-            Debug.Assert( c_mscorlibName == ((RuntimeAssembly)Assembly.GetExecutingAssembly()).GetSimpleName(),
-                System.CoreLib.Name+" name mismatch" );
-
-            // If the class name does not look like a fully qualified name, we cannot simply determine if it's 
-            // an mscorlib.dll type so we should return true so the type can be matched with the
-            // right index in the TokenBasedSet.
-            int index = className.IndexOf(',');
-            if (index == -1)
-                return true;
-
-            index = className.LastIndexOf(']');
-            if (index == -1)
-                index = 0;
-
-            // Search for the string 'mscorlib' in the classname. If we find it, we will conservatively assume it's an mscorlib.dll type and load it.
-            for (int i = index; i < className.Length; i++) {
-                if (className[i] == 's' || className[i] == 'S')
-                {
-                    if (String.Compare(className, i, c_mscorlibName, 0, c_mscorlibName.Length, StringComparison.OrdinalIgnoreCase) == 0)
-                        return true;
-                }
-            }
-            return false;
-        }
 
         static PermissionToken()
         {
@@ -137,14 +111,6 @@ namespace System.Security
             m_type = type;
         }
 
-        public static PermissionToken GetToken(Type cls)
-        {
-            if (cls == null)
-                return null;
-
-            return s_theTokenFactory.GetToken(cls, null);
-        }
-
         public static PermissionToken GetToken(IPermission perm)
         {
             if (perm == null)
@@ -156,27 +122,6 @@ namespace System.Security
                 return s_theTokenFactory.BuiltInGetToken( ibPerm.GetTokenIndex(), perm, null );
             else
                 return s_theTokenFactory.GetToken(perm.GetType(), perm);
-        }
-
-        public static PermissionToken FindTokenByIndex( int i )
-        {
-            return s_theTokenFactory.FindTokenByIndex( i );
-        }
-
-        public static bool IsTokenProperlyAssigned( IPermission perm, PermissionToken token )
-        {
-            PermissionToken heldToken = GetToken( perm );
-            if (heldToken.m_index != token.m_index)
-                return false;
-
-            if (token.m_type != heldToken.m_type)
-                return false;
-
-            if (perm.GetType().Module.Assembly == Assembly.GetExecutingAssembly() &&
-                heldToken.m_index >= BuiltInPermissionIndex.NUM_BUILTIN_NORMAL + BuiltInPermissionIndex.NUM_BUILTIN_UNRESTRICTED)
-                return false;
-
-            return true;
         }
     }
 
@@ -209,22 +154,6 @@ namespace System.Security
             m_tokenTable = null;
             m_handleTable = new Hashtable(size);
             m_indexTable = new Hashtable(size);
-        }
-
-        internal PermissionToken FindTokenByIndex( int i )
-        {
-            PermissionToken token;
-
-            if (i < BuiltInPermissionIndex.NUM_BUILTIN_NORMAL + BuiltInPermissionIndex.NUM_BUILTIN_UNRESTRICTED)
-            {
-                token = BuiltInGetToken( i, null, null );
-            }
-            else
-            {
-                token = (PermissionToken)m_indexTable[i];
-            }
-
-            return token;
         }
 
         internal PermissionToken GetToken(Type cls, IPermission perm)
@@ -295,34 +224,6 @@ namespace System.Security
                         ((PermissionToken)tok).m_type = PermissionTokenType.IUnrestricted;
                     else
                         ((PermissionToken)tok).m_type = PermissionTokenType.Normal;
-                }
-            }
-
-            return (PermissionToken)tok;
-        }
-
-        internal PermissionToken GetToken(String typeStr)
-        {
-            Object tok = null;
-            tok = m_tokenTable != null ? m_tokenTable[typeStr] : null; // Assumes asynchronous lookups are safe
-            if (tok == null)
-            {
-                lock (this)
-                {
-                    if (m_tokenTable != null)
-                    {
-                        tok = m_tokenTable[typeStr]; // Make sure it wasn't just added
-                    }
-                    else
-                        m_tokenTable = new Hashtable(m_size, 1.0f, new PermissionTokenKeyComparer());
-                        
-                    if (tok == null)
-                    {
-                        tok = new PermissionToken( m_index++, PermissionTokenType.DontKnow, typeStr );
-                        m_tokenTable.Add(typeStr, tok);
-                        m_indexTable.Add(m_index - 1, tok);
-                        PermissionToken.s_tokenSet.SetItem(((PermissionToken)tok).m_index, tok);
-                    }
                 }
             }
 

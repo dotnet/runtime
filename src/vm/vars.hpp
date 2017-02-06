@@ -592,7 +592,6 @@ EXTERN BOOL g_fSuspendOnShutdown;
 EXTERN BOOL g_fSuspendFinalizerOnShutdown;
 #endif // DACCESS_COMPILE
 EXTERN Volatile<LONG> g_fForbidEnterEE;
-EXTERN bool g_fFinalizerRunOnShutDown;
 GVAL_DECL(bool, g_fProcessDetach);
 EXTERN bool g_fManagedAttach;
 EXTERN bool g_fNoExceptions;

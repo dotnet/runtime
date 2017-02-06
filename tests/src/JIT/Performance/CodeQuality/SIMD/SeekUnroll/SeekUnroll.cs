@@ -62,9 +62,9 @@ public static class SeekUnroll
     // Iteration counts for inner loop set to have each call take 1 or
     // 2 seconds or so in release, finish quickly in debug.
 #if DEBUG
-    const int InnerIterations = 1;
+    static int InnerIterations = 1;
 #else
-    const int InnerIterations = 1000000000;
+    static int InnerIterations = 1000000000;
 #endif
 
     // Function to meaure InnerLoop using the xunit-perf benchmark measurement facilities
@@ -143,6 +143,14 @@ public static class SeekUnroll
     public static int Main()
     {
         int failures = 0;
+
+        // On non-hardware accelerated platforms, the test times out because it runs for too long.
+        // In those cases, we decrease InnerIterations so the test doesn't time out.
+        if (!Vector.IsHardwareAccelerated)
+        {
+            InnerIterations = 100000;
+        }
+
         foreach(int index in IndicesToTest)
         {
             ManualLoopTimes = new long[10];

@@ -87,7 +87,7 @@
     <ClCompile Include="GCSample.cpp" />
     <ClCompile Include="..\gccommon.cpp" />
     <ClCompile Include="..\gceewks.cpp" />
-    <ClCompile Include="..\gcenv.windows.cpp">
+    <ClCompile Include="..\windows\gcenv.windows.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\gcscan.cpp" />

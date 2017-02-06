@@ -13,7 +13,5 @@ add_executable(paltest_waitforsingleobject_wfsoexsemaphoretest
 add_dependencies(paltest_waitforsingleobject_wfsoexsemaphoretest coreclrpal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoexsemaphoretest
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

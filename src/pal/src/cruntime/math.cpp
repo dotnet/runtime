@@ -66,11 +66,7 @@ int __cdecl _finite(double x)
     PERF_ENTRY(_finite);
     ENTRY("_finite (x=%f)\n", x);
 
-#if defined(_IA64_) && defined (_HPUX_)
-    ret = !isnan(x) && (x != PAL_POSINF_DBL) && (x != PAL_NEGINF_DBL);
-#else
     ret = isfinite(x);
-#endif
 
     LOGEXIT("_finite returns int %d\n", ret);
     PERF_EXIT(_finite);
@@ -452,11 +448,7 @@ int __cdecl _finitef(float x)
     PERF_ENTRY(_finitef);
     ENTRY("_finitef (x=%f)\n", x);
 
-#if defined(_IA64_) && defined (_HPUX_)
-    ret = !isnan(x) && (x != PAL_POSINF_FLT) && (x != PAL_NEGINF_FLT);
-#else
     ret = isfinite(x);
-#endif
 
     LOGEXIT("_finitef returns int %d\n", ret);
     PERF_EXIT(_finitef);

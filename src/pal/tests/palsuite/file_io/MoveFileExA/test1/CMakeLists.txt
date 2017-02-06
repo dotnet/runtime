@@ -13,7 +13,5 @@ add_executable(paltest_movefileexa_test1
 add_dependencies(paltest_movefileexa_test1 coreclrpal)
 
 target_link_libraries(paltest_movefileexa_test1
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -4,42 +4,41 @@
 
 /*=============================================================================
 **
-**
-**
-** Purpose: Exception class for bad cast conditions!
-**
+** Purpose: Exception class for invalid cast conditions!
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System.Runtime.Serialization;
+
+namespace System
+{
     [Serializable]
-    public class InvalidCastException : SystemException {
-        public InvalidCastException() 
-            : base(Environment.GetResourceString("Arg_InvalidCastException")) {
-            SetErrorCode(__HResults.COR_E_INVALIDCAST);
-        }
-    
-        public InvalidCastException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_INVALIDCAST);
+    public class InvalidCastException : SystemException
+    {
+        public InvalidCastException()
+            : base(SR.Arg_InvalidCastException)
+        {
+            HResult = __HResults.COR_E_INVALIDCAST;
         }
 
-        public InvalidCastException(String message, Exception innerException) 
-            : base(message, innerException) {
-            SetErrorCode(__HResults.COR_E_INVALIDCAST);
+        public InvalidCastException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_INVALIDCAST;
         }
 
-        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public InvalidCastException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+            HResult = __HResults.COR_E_INVALIDCAST;
         }
 
-        public InvalidCastException(String message, int errorCode) 
-            : base(message) {
-            SetErrorCode(errorCode);
+        public InvalidCastException(String message, int errorCode)
+            : base(message)
+        {
+            HResult = errorCode;
         }
 
+        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

@@ -24,12 +24,14 @@
     typedef Elf32_Ehdr  Elf_Ehdr;
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
+    const uint16_t DW_FORM_size = DW_FORM_data4;
 #define ADDRESS_SIZE 4    
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
     typedef Elf64_Sym   Elf_Sym;
-#define ADDRESS_SIZE 8    
+    const uint16_t DW_FORM_size = DW_FORM_data8;
+#define ADDRESS_SIZE 8
 #else
 #error "Target is not supported"
 #endif
@@ -184,6 +186,43 @@ public:
     int m_type_encoding;
 };
 
+class TypeDefInfo : public DwarfDumpable
+{
+public:
+    TypeDefInfo(char *typedef_name,int typedef_type):
+    m_typedef_name(typedef_name), m_typedef_type(typedef_type) {}
+    void DumpStrings(char* ptr, int& offset) override;
+    void DumpDebugInfo(char* ptr, int& offset) override;
+    virtual ~TypeDefInfo()
+    {
+        if (m_typedef_name != nullptr)
+        {
+            delete [] m_typedef_name;
+        }
+    }
+    char *m_typedef_name;
+    int m_typedef_type;
+    int m_typedef_type_offset;
+    int m_typedef_name_offset;
+};
+
+class ByteTypeInfo : public PrimitiveTypeInfo
+{
+public:
+    ByteTypeInfo(TypeHandle typeHandle, int encoding) : PrimitiveTypeInfo(typeHandle, encoding)
+    {
+        m_typedef_info = new (nothrow) TypeDefInfo(nullptr, 0);
+    }
+    virtual ~ByteTypeInfo()
+    {
+        delete m_typedef_info;
+    }
+    void DumpDebugInfo(char* ptr, int& offset) override;
+    void DumpStrings(char* ptr, int& offset) override;
+
+    TypeDefInfo* m_typedef_info;
+};
+
 class RefTypeInfo: public TypeInfoBase
 {
 public:
@@ -208,6 +247,7 @@ public:
 
     int m_num_members;
     TypeMember* members;
+    TypeInfoBase* m_parent;
 };
 
 class TypeMember: public DwarfDumpable
@@ -431,6 +471,8 @@ public:
         m_sub_loc[0] = 1;
 #if defined(_TARGET_AMD64_)
         m_sub_loc[1] = DW_OP_reg6;
+#elif defined(_TARGET_X86_)
+        m_sub_loc[1] = DW_OP_reg5;
 #elif defined(_TARGET_ARM_)
         m_sub_loc[1] = DW_OP_reg11;
 #else

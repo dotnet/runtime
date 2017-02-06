@@ -105,6 +105,7 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 
 #if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(CROSSGEN_COMPILE)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
+extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 extern "C" DWORD __stdcall xmmYmmStateSupport();
 #endif
 

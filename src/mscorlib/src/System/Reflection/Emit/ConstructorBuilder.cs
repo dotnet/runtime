@@ -16,10 +16,7 @@ namespace System.Reflection.Emit
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ConstructorBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ConstructorBuilder : ConstructorInfo, _ConstructorBuilder
+    public sealed class ConstructorBuilder : ConstructorInfo
     { 
         private readonly MethodBuilder m_methodBuilder;
         internal bool m_isDefaultConstructor;
@@ -64,11 +61,6 @@ namespace System.Reflection.Emit
         private TypeBuilder GetTypeBuilder()
         {
             return m_methodBuilder.GetTypeBuilder();
-        }
-
-        internal ModuleBuilder GetModuleBuilder()
-        {
-            return GetTypeBuilder().GetModuleBuilder();
         }
         #endregion
 
@@ -181,11 +173,6 @@ namespace System.Reflection.Emit
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
     
-        public void SetSymCustomAttribute(String name, byte[] data)
-        {
-            m_methodBuilder.SetSymCustomAttribute(name, data);
-        }
-    
         public ILGenerator GetILGenerator() 
         {
             if (m_isDefaultConstructor)
@@ -202,16 +189,6 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetILGenerator(streamSize);
         }
 
-        public void SetMethodBody(byte[] il, int maxStack, byte[] localSignature, IEnumerable<ExceptionHandler> exceptionHandlers, IEnumerable<int> tokenFixups)
-        {
-            if (m_isDefaultConstructor)
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_DefaultConstructorDefineBody"));
-            }
-
-            m_methodBuilder.SetMethodBody(il, maxStack, localSignature, exceptionHandlers, tokenFixups);
-        }
-
         public override CallingConventions CallingConvention 
         { 
             get 
@@ -226,13 +203,6 @@ namespace System.Reflection.Emit
         public Module GetModule()
         {
             return m_methodBuilder.GetModule();
-        }
-    
-    
-        [Obsolete("This property has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")] //It always returns null.
-        public Type ReturnType
-        {
-            get { return GetReturnType(); }
         }
         
         // This always returns null. Is that what we want?
