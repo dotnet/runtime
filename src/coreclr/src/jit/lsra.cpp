@@ -3417,7 +3417,7 @@ static int ComputeOperandDstCount(GenTree* operand)
 // ComputeAvailableSrcCount: computes the number of registers available as
 //                           sources for a node.
 //
-// This is simply the sum of the number of registers prduced by each
+// This is simply the sum of the number of registers produced by each
 // operand to the node.
 //
 // Arguments:
@@ -3436,7 +3436,7 @@ static int ComputeAvailableSrcCount(GenTree* node)
 
     return numSources;
 }
-#endif
+#endif // DEBUG
 
 void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           BasicBlock*               block,
