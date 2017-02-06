@@ -25,8 +25,8 @@
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="System\Threading\HostExecutionContext.cs" />
     <Compile Include="System\Threading\HostExecutionContextManager.cs" />
-    <Compile Include="System\Threading\LockCookie.cs" />
-    <Compile Include="System\Threading\ReaderWriterLock.cs" />
+    <Compile Include="System\Threading\LockCookie.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\ReaderWriterLock.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
