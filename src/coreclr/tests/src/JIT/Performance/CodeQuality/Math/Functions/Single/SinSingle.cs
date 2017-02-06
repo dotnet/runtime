@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Sin(float) over 5000 iterations for the domain -PI/2, +PI/2
 
         private const float sinSingleDelta = 0.000628318531f;
-        private const float sinSingleExpectedResult = 1.00000000f;
+        private const float sinSingleExpectedResult = 1.03592682f;
 
         [Benchmark]
         public static void SinSingleBenchmark()

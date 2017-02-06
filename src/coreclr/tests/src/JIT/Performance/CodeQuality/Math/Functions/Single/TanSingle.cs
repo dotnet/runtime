@@ -12,7 +12,7 @@ namespace Functions
         // Tests MathF.Tan(float) over 5000 iterations for the domain -PI/2, +PI/2
 
         private const float tanSingleDelta = 0.0004f;
-        private const float tanSingleExpectedResult = 1.55740772f;
+        private const float tanSingleExpectedResult = 1.66717815f;
 
         [Benchmark]
         public static void TanSingleBenchmark()
