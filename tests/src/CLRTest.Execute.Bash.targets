@@ -274,7 +274,7 @@ $(BashCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
         <![CDATA[
-%23%21/bin/bash
+%23%21/usr/bin/env bash
 TakeLock()
 {
     echo "in takeLock"
