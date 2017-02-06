@@ -19,7 +19,6 @@ namespace System.Threading
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
     public class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }

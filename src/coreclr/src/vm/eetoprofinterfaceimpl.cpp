@@ -2370,18 +2370,6 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         }        
     }
 
-    // Flags defined in COR_PRF_REQUIRE_PROFILE_IMAGE will force to JIT mscorlib if the
-    // user does not ngen mscorlib with /profiler. Similarly, the
-    // COR_PRF_DISABLE_ALL_NGEN_IMAGES flag always forces us to JIT mscorlib. Using the
-    // jitted version of mscorlib with HPA(Host Protection Attributes) enabled will cause
-    // stack overflow inside JIT. See Dev 10 Bug 637987 for the detail.
-    if (((dwEventMask & (COR_PRF_REQUIRE_PROFILE_IMAGE | COR_PRF_DISABLE_ALL_NGEN_IMAGES)) != 0) &&
-        (GetHostProtectionManager() != NULL) &&
-        (GetHostProtectionManager()->GetProtectedCategories() != eNoChecks))
-    {
-        return CORPROF_E_INCONSISTENT_FLAGS_WITH_HOST_PROTECTION_SETTING;
-    }
-
     // High event bits
 
     if (((dwEventMaskHigh & COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES) != 0) &&

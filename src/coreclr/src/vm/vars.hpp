@@ -73,10 +73,6 @@ typedef unsigned short wchar_t;
 #include "eeprofinterfaces.h"
 #include "eehash.h"
 
-#ifdef FEATURE_CAS_POLICY
-#include "certificatecache.h"
-#endif
-
 #include "profilepriv.h"
 
 class ClassLoader;
@@ -492,10 +488,6 @@ extern DWORD g_dwHandles;
 typedef DPTR(RCWCleanupList) PTR_RCWCleanupList;
 GPTR_DECL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_CAS_POLICY
-EXTERN CertificateCache *g_pCertificateCache;
-#endif 
 
 #ifdef FEATURE_IPCMAN
 // support for IPCManager

@@ -34,42 +34,12 @@ namespace System.Diagnostics
         // debugger is launched.
         public static void Break()
         {
-            if (!Debugger.IsAttached)
-            {
-                // Try and demand UnmanagedCodePermission.  This is done in a try block because if this
-                // fails we want to be able to silently eat the exception and just return so
-                // that the call to Break does not possibly cause an unhandled exception.
-                // The idea here is that partially trusted code shouldn't be able to launch a debugger 
-                // without the user going through Watson.
-                try
-                {
-#pragma warning disable 618
-                    new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-                }
-
-                // If we enter this block, we do not have permission to break into the debugger
-                // and so we just return.
-                catch (SecurityException)
-                {
-                    return;
-                }
-            }
-
             // Causing a break is now allowed.
             BreakInternal();
         }
 
         static void BreakCanThrow()
         {
-            if (!Debugger.IsAttached)
-            {
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-            }
-
-            // Causing a break is now allowed.
             BreakInternal();
         }
 
@@ -83,25 +53,6 @@ namespace System.Diagnostics
         {
             if (Debugger.IsAttached)
                 return (true);
-
-            // Try and demand UnmanagedCodePermission.  This is done in a try block because if this
-            // fails we want to be able to silently eat the exception and just return so
-            // that the call to Break does not possibly cause an unhandled exception.
-            // The idea here is that partially trusted code shouldn't be able to launch a debugger 
-            // without the user going through Watson.
-            try
-            {
-#pragma warning disable 618
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-            }
-
-            // If we enter this block, we do not have permission to break into the debugger
-            // and so we just return.
-            catch (SecurityException)
-            {
-                return (false);
-            }
 
             // Causing the debugger to launch is now allowed.
             return (LaunchInternal());

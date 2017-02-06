@@ -764,11 +764,6 @@ namespace System.Reflection.Emit
                     fullyQualifiedName = Path.Combine(ContainingAssemblyBuilder.m_assemblyData.m_strDir, fullyQualifiedName);
                     fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
                 }
-                
-                if (ContainingAssemblyBuilder.m_assemblyData.m_strDir != null && fullyQualifiedName != null) 
-                {
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery, fullyQualifiedName ).Demand();
-                }
 
                 return fullyQualifiedName;
             }

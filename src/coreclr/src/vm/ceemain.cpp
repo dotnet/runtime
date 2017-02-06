@@ -3820,7 +3820,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                                             GetThreadUICultureId);
 
                 InitEEPolicy();
-                InitHostProtectionManager();
 
                 break;
             }

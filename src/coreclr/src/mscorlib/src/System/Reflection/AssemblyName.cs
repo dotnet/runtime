@@ -189,7 +189,6 @@ namespace System.Reflection {
             // Assembly.GetNameInternal() will not demand path discovery 
             //  permission, so do that first.
             string fullPath = Path.GetFullPath(assemblyFile);
-            new FileIOPermission( FileIOPermissionAccess.PathDiscovery, fullPath ).Demand();
             return nGetFileInformation(fullPath);
         }
     

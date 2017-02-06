@@ -167,10 +167,6 @@ namespace System.Globalization {
             
             try
             {
-                // Need to access registry
-                PermissionSet permSet = new PermissionSet(PermissionState.None);
-                permSet.AddPermission(new RegistryPermission(RegistryPermissionAccess.Read, c_japaneseErasHivePermissionList));
-                permSet.Assert();
                 RegistryKey key = Registry.LocalMachine.OpenSubKey(c_japaneseErasHive, writable: false);
 
                 // Abort if we didn't find anything

@@ -38,12 +38,6 @@ inline LinktimeCheckReason operator&=(LinktimeCheckReason &lhs, LinktimeCheckRea
     return lhs;
 }
 
-inline void SecurityDeclarative::GetPermissionInstance(OBJECTREF *perm, int index)
-{ 
-    WRAPPER_NO_CONTRACT;
-    _GetSharedPermissionInstance(perm, index);
-}
-
 inline BOOL SecurityDeclarative::FullTrustCheckForLinkOrInheritanceDemand(Assembly *pAssembly)
 {
     WRAPPER_NO_CONTRACT;

@@ -43,7 +43,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsDefaultAppDomainForEvidence, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL2(Object*, GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL fForIntrospection); 
     static FCDECL2(Object*, GetOrInternString, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE);
-    static FCDECL3(INT32, ExecuteAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyBaseObject* assemblyNameUNSAFE, PTRArray* stringArgsUNSAFE);
 #ifdef FEATURE_VERSIONING
     static FCDECL1(void, CreateContext, AppDomainBaseObject *refThisUNSAFE);
     static void QCALLTYPE SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatformAssemblies, __in_z LPCWSTR wszPlatformResourceRoots, __in_z LPCWSTR wszAppPaths, __in_z LPCWSTR wszAppNiPaths, __in_z LPCWSTR appLocalWinMD);

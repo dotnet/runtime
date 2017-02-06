@@ -1005,22 +1005,7 @@ namespace System.Reflection
         {
             get
             {
-                String fullyQualifiedName = GetFullyQualifiedName();
-                
-                if (fullyQualifiedName != null) {
-                    bool checkPermission = true;
-                    try {
-                        Path.GetFullPath(fullyQualifiedName);
-                    }
-                    catch(ArgumentException) {
-                        checkPermission = false;
-                    }
-                    if (checkPermission) {
-                        new FileIOPermission( FileIOPermissionAccess.PathDiscovery, fullyQualifiedName ).Demand();
-                    }
-                }
-
-                return fullyQualifiedName;
+                return GetFullyQualifiedName();
             }
         }
 

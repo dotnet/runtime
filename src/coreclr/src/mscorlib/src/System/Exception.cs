@@ -770,19 +770,6 @@ namespace System {
         // and create a corresponding CrossAppDomainMarshaledException
         internal virtual String InternalToString()
         {
-            try 
-            {
-#pragma warning disable 618
-                SecurityPermission sp= new SecurityPermission(SecurityPermissionFlag.ControlEvidence | SecurityPermissionFlag.ControlPolicy);
-#pragma warning restore 618
-                sp.Assert();
-            }
-            catch  
-            {
-                //under normal conditions there should be no exceptions
-                //however if something wrong happens we still can call the usual ToString
-            }
-
             // Get the current stack trace string. 
             return ToString(true, true);
         }

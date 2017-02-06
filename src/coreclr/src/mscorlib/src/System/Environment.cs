@@ -373,7 +373,6 @@ namespace System {
         ==============================================================================*/
         public static String[] GetCommandLineArgs()
         {
-            new EnvironmentPermission(EnvironmentPermissionAccess.Read, "Path").Demand();
             /*
              * There are multiple entry points to a hosted app.
              * The host could use ::ExecuteAssembly() or ::CreateDelegate option
@@ -448,7 +447,7 @@ namespace System {
 
             return block;
         }
-        
+
         /*===================================NewLine====================================
         **Action: A property which returns the appropriate newline string for the given
         **        platform.
@@ -484,7 +483,6 @@ namespace System {
                 return new Version(4,0,30319,42000);
             }
         }
-
 
         /*==================================OSVersion===================================
         **Action:
@@ -554,7 +552,6 @@ namespace System {
             get {
                 Contract.Ensures(Contract.Result<String>() != null);
 
-                new EnvironmentPermission(PermissionState.Unrestricted).Demand();
                 return GetStackTrace(null, true);
             }
         }
@@ -673,146 +670,6 @@ namespace System {
                 return true;
             }
         }
-
-        internal static string UnsafeGetFolderPath(SpecialFolder folder)
-        {
-            return InternalGetFolderPath(folder, SpecialFolderOption.None, suppressSecurityChecks: true);
-        }
-
-        private static string InternalGetFolderPath(SpecialFolder folder, SpecialFolderOption option, bool suppressSecurityChecks = false)
-        {
-            // This is currently customized for Windows Phone since CoreSystem doesn't support
-            // SHGetFolderPath. The allowed folder values are based on the version of .NET CF WP7 was using.
-            switch (folder)
-            {
-                case SpecialFolder.System:
-                    return SystemDirectory;
-                case SpecialFolder.ApplicationData:
-                case SpecialFolder.Favorites:
-                case SpecialFolder.Programs:
-                case SpecialFolder.StartMenu:
-                case SpecialFolder.Startup:
-                case SpecialFolder.Personal:
-                    throw new PlatformNotSupportedException();
-                default:
-                    throw new PlatformNotSupportedException();
-            }
-        }
-
-        internal enum SpecialFolderOption {
-            None        = 0,
-            Create      = Win32Native.CSIDL_FLAG_CREATE,
-            DoNotVerify = Win32Native.CSIDL_FLAG_DONT_VERIFY,
-        }
-        
-//////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!////////
-//////!!!!!! Keep the following locations synchronized            !!!!!!////////
-//////!!!!!! 1) ndp\clr\src\BCL\Microsoft\Win32\Win32Native.cs    !!!!!!////////
-//////!!!!!! 2) ndp\clr\src\BCL\System\Environment.cs             !!!!!!////////
-//////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!////////
-        [ComVisible(true)]
-        internal enum SpecialFolder {
-            //  
-            //      Represents the file system directory that serves as a common repository for
-            //       application-specific data for the current, roaming user. 
-            //     A roaming user works on more than one computer on a network. A roaming user's 
-            //       profile is kept on a server on the network and is loaded onto a system when the
-            //       user logs on. 
-            //  
-            ApplicationData =  Win32Native.CSIDL_APPDATA,
-            //  
-            //      Represents the file system directory that serves as a common repository for application-specific data that
-            //       is used by all users. 
-            //  
-            CommonApplicationData =  Win32Native.CSIDL_COMMON_APPDATA,
-            //  
-            //     Represents the file system directory that serves as a common repository for application specific data that
-            //       is used by the current, non-roaming user. 
-            //  
-            LocalApplicationData =  Win32Native.CSIDL_LOCAL_APPDATA,
-            //  
-            //     Represents the file system directory that serves as a common repository for Internet
-            //       cookies. 
-            //  
-            Cookies =  Win32Native.CSIDL_COOKIES,
-            Desktop = Win32Native.CSIDL_DESKTOP,
-            //  
-            //     Represents the file system directory that serves as a common repository for the user's
-            //       favorite items. 
-            //  
-            Favorites =  Win32Native.CSIDL_FAVORITES,
-            //  
-            //     Represents the file system directory that serves as a common repository for Internet
-            //       history items. 
-            //  
-            History =  Win32Native.CSIDL_HISTORY,
-            //  
-            //     Represents the file system directory that serves as a common repository for temporary 
-            //       Internet files. 
-            //  
-            InternetCache =  Win32Native.CSIDL_INTERNET_CACHE,
-            //  
-            //      Represents the file system directory that contains
-            //       the user's program groups. 
-            //  
-            Programs =  Win32Native.CSIDL_PROGRAMS,
-            MyComputer =  Win32Native.CSIDL_DRIVES,
-            MyMusic =  Win32Native.CSIDL_MYMUSIC,
-            MyPictures = Win32Native.CSIDL_MYPICTURES,
-            //      "My Videos" folder
-            MyVideos = Win32Native.CSIDL_MYVIDEO,
-            //  
-            //     Represents the file system directory that contains the user's most recently used
-            //       documents. 
-            //  
-            Recent =  Win32Native.CSIDL_RECENT,
-            //  
-            //     Represents the file system directory that contains Send To menu items. 
-            //  
-            SendTo =  Win32Native.CSIDL_SENDTO,
-            //  
-            //     Represents the file system directory that contains the Start menu items. 
-            //  
-            StartMenu =  Win32Native.CSIDL_STARTMENU,
-            //  
-            //     Represents the file system directory that corresponds to the user's Startup program group. The system
-            //       starts these programs whenever any user logs on to Windows NT, or
-            //       starts Windows 95 or Windows 98. 
-            //  
-            Startup =  Win32Native.CSIDL_STARTUP,
-            //  
-            //     System directory.
-            //  
-            System =  Win32Native.CSIDL_SYSTEM,
-            //  
-            //     Represents the file system directory that serves as a common repository for document
-            //       templates. 
-            //  
-            Templates =  Win32Native.CSIDL_TEMPLATES,
-            //  
-            //     Represents the file system directory used to physically store file objects on the desktop.
-            //       This should not be confused with the desktop folder itself, which is
-            //       a virtual folder. 
-            //  
-            DesktopDirectory =  Win32Native.CSIDL_DESKTOPDIRECTORY,
-            //  
-            //     Represents the file system directory that serves as a common repository for documents. 
-            //  
-            Personal =  Win32Native.CSIDL_PERSONAL, 
-            //          
-            // "MyDocuments" is a better name than "Personal"
-            //
-            MyDocuments = Win32Native.CSIDL_PERSONAL,
-            //  
-            //     Represents the program files folder. 
-            //  
-            ProgramFiles =  Win32Native.CSIDL_PROGRAM_FILES,
-            //  
-            //     Represents the folder for components that are shared across applications. 
-            //  
-            CommonProgramFiles =  Win32Native.CSIDL_PROGRAM_FILES_COMMON,
-        }
-
         public static int CurrentManagedThreadId
         {
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]

@@ -5629,14 +5629,6 @@ public:
 static CLRDomainManager s_CLRDomainManager;
 #endif // FEATURE_APTCA
 
-BYTE g_CorHostProtectionManagerInstance[sizeof(CorHostProtectionManager)];
-
-void InitHostProtectionManager()
-{
-    WRAPPER_NO_CONTRACT;
-    new (g_CorHostProtectionManagerInstance) CorHostProtectionManager();
-}
-
 BOOL g_CLRPolicyRequested = FALSE;
 
 class CCorCLRControl: public ICLRControl

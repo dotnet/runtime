@@ -4755,33 +4755,6 @@ namespace System
                     throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
                 }
 
-                // If we're creating a delegate, we're about to call a
-                // constructor taking an integer to represent a target
-                // method. Since this is very difficult (and expensive)
-                // to verify, we're just going to demand UnmanagedCode
-                // permission before allowing this. Partially trusted
-                // clients can instead use Delegate.CreateDelegate,
-                // which allows specification of the target method via
-                // name or MethodInfo.
-                //if (isDelegate)
-                if (RuntimeType.DelegateType.IsAssignableFrom(invokeMethod.DeclaringType))
-                {
-                    // In CoreCLR, CAS is not exposed externally. So what we really are looking
-                    // for is to see if the external caller of this API is transparent or not.
-                    // We get that information from the fact that a Demand will succeed only if
-                    // the external caller is not transparent. 
-                    try
-                    {
-#pragma warning disable 618
-                        new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-                    }
-                    catch
-                    {
-                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("NotSupported_DelegateCreationFromPT")));
-                    }
-                }
-
                 if (invokeMethod.GetParametersNoCopy().Length == 0)
                 {
                     if (args.Length != 0)
@@ -4839,17 +4812,8 @@ namespace System
             readonly ActivatorCacheEntry[] cache = new ActivatorCacheEntry[CACHE_SIZE];
 
             volatile ConstructorInfo     delegateCtorInfo;
-            volatile PermissionSet       delegateCreatePermissions;
 
             private void InitializeDelegateCreator() {
-                // No synchronization needed here. In the worst case we create extra garbage
-                PermissionSet ps = new PermissionSet(PermissionState.None);
-                ps.AddPermission(new ReflectionPermission(ReflectionPermissionFlag.MemberAccess));
-#pragma warning disable 618
-                ps.AddPermission(new SecurityPermission(SecurityPermissionFlag.UnmanagedCode));
-#pragma warning restore 618
-                delegateCreatePermissions = ps;
-
                 ConstructorInfo ctorInfo = typeof(CtorDelegate).GetConstructor(new Type[] {typeof(Object), typeof(IntPtr)});
                 delegateCtorInfo = ctorInfo; // this assignment should be last
             }
@@ -4862,7 +4826,6 @@ namespace System
                     
                     if (delegateCtorInfo == null)
                         InitializeDelegateCreator();
-                    delegateCreatePermissions.Assert();
 
                     // No synchronization needed here. In the worst case we create extra garbage
                     CtorDelegate ctor = (CtorDelegate)delegateCtorInfo.Invoke(new Object[] { null, RuntimeMethodHandle.GetFunctionPointer(ace.m_hCtorMethodHandle) });

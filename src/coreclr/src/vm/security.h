@@ -14,7 +14,6 @@
 #include "securityattributes.h"
 #include "securitydeclarativecache.h"
 #include "securitydeclarative.h"
-#include "securityimperative.h"
 #include "securitytransparentassembly.h"
 
 #ifdef FEATURE_APTCA
@@ -126,7 +125,6 @@ namespace Security
 #endif // #ifndef DACCESS_COMPILE
     inline BOOL MethodIsVisibleOutsideItsAssembly(MethodDesc * pMD);
     inline BOOL MethodIsVisibleOutsideItsAssembly(DWORD dwMethodAttr, DWORD dwClassAttr, BOOL fIsGlobalClass);
-    inline void CheckBeforeAllocConsole(AppDomain* pDomain, Assembly* pAssembly);
 
     // ----------------------------------------
     // SecurityStackWalk
