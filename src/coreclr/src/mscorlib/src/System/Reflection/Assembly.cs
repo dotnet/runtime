@@ -522,7 +522,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        [ComVisible(false)]
         public virtual Module ManifestModule
         {
             get
@@ -735,7 +734,6 @@ namespace System.Reflection
             }
         }
 
-        [ComVisible(false)]
         public virtual Int64 HostContext
         {
             get

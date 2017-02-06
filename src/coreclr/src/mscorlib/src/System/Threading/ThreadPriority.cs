@@ -16,7 +16,6 @@ namespace System.Threading {
     using System.Threading;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum ThreadPriority
     {   
         /*=========================================================================

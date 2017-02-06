@@ -64,7 +64,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public class HebrewCalendar : Calendar {
 
 

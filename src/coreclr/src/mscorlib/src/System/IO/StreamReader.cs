@@ -18,7 +18,6 @@ namespace System.IO
     // whereas the Stream class is designed for byte input and output.  
     // 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.
@@ -757,7 +756,6 @@ namespace System.IO
         }
         
         #region Task based Async APIs
-        [ComVisible(false)]
         public override Task<String> ReadLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -837,7 +835,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [ComVisible(false)]
         public override Task<String> ReadToEndAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -873,7 +870,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
@@ -1060,7 +1056,6 @@ namespace System.IO
             return charsRead;
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)

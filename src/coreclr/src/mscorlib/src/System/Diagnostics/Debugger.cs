@@ -17,7 +17,6 @@ namespace System.Diagnostics
     using System.Runtime.Versioning;
 
     // No data, does not need to be marked with the serializable attribute
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Debugger
     {
         // This should have been a static class, but wasn't as of v3.5.  Clearly, this is
@@ -85,7 +84,6 @@ namespace System.Diagnostics
         // notification will apprise the debugger that it will need  to slip a thread or abort the funceval 
         // in such a situation. The notification is subject to collection after this function returns. 
         // 
-        [method:System.Runtime.InteropServices.ComVisible(false)]
         public static void NotifyOfCrossThreadDependency()
         {
             if (Debugger.IsAttached)

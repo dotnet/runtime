@@ -17,7 +17,6 @@ namespace System {
     using System.Runtime.Versioning;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public abstract class ValueType {
 
         public override bool Equals (Object obj) {

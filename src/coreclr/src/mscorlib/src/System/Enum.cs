@@ -15,7 +15,6 @@ using System.Diagnostics.Contracts;
 namespace System 
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
@@ -367,13 +366,11 @@ namespace System
             return retValue;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object Parse(Type enumType, String value)
         {
             return Parse(enumType, value, false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object Parse(Type enumType, String value, bool ignoreCase)
         {
             EnumResult parseResult = new EnumResult() { canThrow = true };
@@ -531,7 +528,6 @@ namespace System
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Type GetUnderlyingType(Type enumType)
         {
             if (enumType == null)
@@ -542,7 +538,6 @@ namespace System
             return enumType.GetEnumUnderlyingType();
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Array GetValues(Type enumType)
         {
             if (enumType == null)
@@ -559,7 +554,6 @@ namespace System
             return GetCachedValuesAndNames(enumType, false).Values;
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String GetName(Type enumType, Object value)
         {
             if (enumType == null)
@@ -569,7 +563,6 @@ namespace System
             return enumType.GetEnumName(value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String[] GetNames(Type enumType)
         {
             if (enumType == null)
@@ -586,7 +579,6 @@ namespace System
             return GetCachedValuesAndNames(enumType, true).Names;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, Object value)
         {
             if (value == null)
@@ -635,7 +627,6 @@ namespace System
         }
 
         [Pure]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static bool IsDefined(Type enumType, Object value)
         {
             if (enumType == null)
@@ -645,7 +636,6 @@ namespace System
             return enumType.IsEnumDefined(value);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String Format(Type enumType, Object value, String format)
         {
             if (enumType == null)
@@ -1104,7 +1094,6 @@ namespace System
     
         #region ToObject
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, sbyte value)
         {
             if (enumType == null)
@@ -1118,7 +1107,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, short value)
         {
             if (enumType == null)
@@ -1132,7 +1120,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, int value)
         {
             if (enumType == null)
@@ -1146,7 +1133,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, byte value)
         {
             if (enumType == null)
@@ -1161,7 +1147,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, ushort value)
         {
             if (enumType == null)
@@ -1176,7 +1161,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, uint value)
         {
             if (enumType == null)
@@ -1190,7 +1174,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, long value)
         {
             if (enumType == null)
@@ -1205,7 +1188,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, ulong value)
         {
             if (enumType == null)

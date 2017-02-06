@@ -844,7 +844,6 @@ namespace System.Threading
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle waitObject);
     }
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class RegisteredWaitHandle : MarshalByRefObject {
         private readonly RegisteredWaitHandleSafe internalRegisteredWait;
     
@@ -863,7 +862,6 @@ namespace System.Threading
            internalRegisteredWait.SetWaitObject(waitObject);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         // This is the only public method on this class
         public bool Unregister(
              WaitHandle     waitObject          // object to be notified when all callbacks to delegates have completed
@@ -873,10 +871,8 @@ namespace System.Threading
         }
     }
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void WaitCallback(Object state);
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
 
     //
@@ -1086,7 +1082,6 @@ namespace System.Threading
     }
 
     [CLSCompliant(false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     unsafe public delegate void IOCompletionCallback(uint errorCode, // Error code
                                        uint numBytes, // No. of bytes transferred 
                                        NativeOverlapped* pOVERLAP // ptr to OVERLAP structure

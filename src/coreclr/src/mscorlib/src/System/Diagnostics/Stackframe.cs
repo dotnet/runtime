@@ -13,7 +13,6 @@ namespace System.Diagnostics {
 
     // There is no good reason for the methods of this class to be virtual.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StackFrame
     {
         private MethodBase    method;

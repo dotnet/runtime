@@ -28,7 +28,6 @@ namespace System.IO {
     // 
 [Serializable]
 [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum FileShare
     {
         // No sharing. Any request to open the file (by this process or another

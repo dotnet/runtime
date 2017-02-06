@@ -30,7 +30,6 @@ using System.Reflection;
 
 namespace System.IO {
     [Serializable]
-    [ComVisible(true)]
     public abstract class Stream : MarshalByRefObject, IDisposable {
 
         public static readonly Stream Null = new NullStream();
@@ -65,7 +64,6 @@ namespace System.IO {
             get;
         }
 
-        [ComVisible(false)]
         public virtual bool CanTimeout {
             [Pure]
             get {
@@ -87,7 +85,6 @@ namespace System.IO {
             set;
         }
 
-        [ComVisible(false)]
         public virtual int ReadTimeout {
             get {
                 Contract.Ensures(Contract.Result<int>() >= 0);
@@ -98,7 +95,6 @@ namespace System.IO {
             }
         }
 
-        [ComVisible(false)]
         public virtual int WriteTimeout {
             get {
                 Contract.Ensures(Contract.Result<int>() >= 0);
@@ -109,7 +105,6 @@ namespace System.IO {
             }
         }
 
-        [ComVisible(false)]
         public Task CopyToAsync(Stream destination)
         {
             int bufferSize = _DefaultCopyBufferSize;
@@ -146,13 +141,11 @@ namespace System.IO {
             return CopyToAsync(destination, bufferSize);
         }
 
-        [ComVisible(false)]
         public Task CopyToAsync(Stream destination, Int32 bufferSize)
         {
             return CopyToAsync(destination, bufferSize, CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken)
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
@@ -278,13 +271,11 @@ namespace System.IO {
 
         public abstract void Flush();
 
-        [ComVisible(false)]
         public Task FlushAsync()
         {
             return FlushAsync(CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
             return Task.Factory.StartNew(state => ((Stream)state).Flush(), this,
@@ -398,13 +389,11 @@ namespace System.IO {
             }
         }
 
-        [ComVisible(false)]
         public Task<int> ReadAsync(Byte[] buffer, int offset, int count)
         {
             return ReadAsync(buffer, offset, count, CancellationToken.None);
         }
 
-        [ComVisible(false)]
         public virtual Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // If cancellation was requested, bail early with an already completed task.
@@ -686,7 +675,6 @@ namespace System.IO {
             bool ITaskCompletionAction.InvokeMayRunArbitraryCode { get { return true; } }
         }
 
-        [ComVisible(false)]
         public Task WriteAsync(Byte[] buffer, int offset, int count)
         {
             return WriteAsync(buffer, offset, count, CancellationToken.None);
@@ -694,7 +682,6 @@ namespace System.IO {
 
 
 
-        [ComVisible(false)]
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // If cancellation was requested, bail early with an already completed task.
@@ -902,7 +889,6 @@ namespace System.IO {
             {
             }
 
-            [ComVisible(false)]
             public override Task FlushAsync(CancellationToken cancellationToken)
             {
                 return cancellationToken.IsCancellationRequested ?
@@ -947,7 +933,6 @@ namespace System.IO {
                 return 0;
             }
 
-            [ComVisible(false)]
             public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 var nullReadTask = s_nullReadTask;
@@ -966,7 +951,6 @@ namespace System.IO {
             {
             }
 
-            [ComVisible(false)]
             public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 return cancellationToken.IsCancellationRequested ?
@@ -1102,7 +1086,6 @@ namespace System.IO {
                 get { return _stream.CanSeek; }
             }
         
-            [ComVisible(false)]
             public override bool CanTimeout {
                 [Pure]
                 get {
@@ -1131,7 +1114,6 @@ namespace System.IO {
                 }
             }
 
-            [ComVisible(false)]
             public override int ReadTimeout {
                 get {
                     return _stream.ReadTimeout;
@@ -1141,7 +1123,6 @@ namespace System.IO {
                 }
             }
 
-            [ComVisible(false)]
             public override int WriteTimeout {
                 get {
                     return _stream.WriteTimeout;

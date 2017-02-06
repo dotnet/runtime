@@ -17,7 +17,6 @@ namespace System {
 
     [Serializable]
     [ClassInterface(ClassInterfaceType.AutoDual)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Delegate : ICloneable, ISerializable 
     {
         // _target is the object we will invoke on
@@ -191,7 +190,6 @@ namespace System {
             return  a.CombineImpl(b);
         }
             
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Delegate Combine(params Delegate[] delegates)
         {
             if (delegates == null || delegates.Length == 0)

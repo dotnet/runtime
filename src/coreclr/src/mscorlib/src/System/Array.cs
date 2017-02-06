@@ -26,7 +26,6 @@ namespace System {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     [Serializable]
-    [ComVisible(true)]
     public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable 
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
@@ -360,7 +359,6 @@ namespace System {
             return TypedReference.InternalToObject(&elemref);
         }
 
-        [ComVisible(false)]       
         public Object GetValue(long index)
         {
             if (index > Int32.MaxValue || index < Int32.MinValue)
@@ -370,7 +368,6 @@ namespace System {
             return this.GetValue((int) index);
         }
 
-        [ComVisible(false)]
         public Object GetValue(long index1, long index2)
         {
             if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
@@ -382,7 +379,6 @@ namespace System {
             return this.GetValue((int) index1, (int) index2);
         }
 
-        [ComVisible(false)]
         public Object GetValue(long index1, long index2, long index3)
         {
             if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
@@ -396,7 +392,6 @@ namespace System {
             return this.GetValue((int) index1, (int) index2, (int) index3);
         }
 
-        [ComVisible(false)]
         public Object GetValue(params long[] indices)
         {
             if (indices == null)
@@ -475,7 +470,6 @@ namespace System {
             InternalSetValue(&elemref,value);
         }
 
-        [ComVisible(false)]
         public void SetValue(Object value, long index)
         {
             if (index > Int32.MaxValue || index < Int32.MinValue)
@@ -485,7 +479,6 @@ namespace System {
             this.SetValue(value, (int) index);
         }
 
-        [ComVisible(false)]
         public void SetValue(Object value, long index1, long index2)
         {
             if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
@@ -497,7 +490,6 @@ namespace System {
             this.SetValue(value, (int) index1, (int) index2);
         }
 
-        [ComVisible(false)]
         public void SetValue(Object value, long index1, long index2, long index3)
         {
             if (index1 > Int32.MaxValue || index1 < Int32.MinValue)
@@ -511,7 +503,6 @@ namespace System {
             this.SetValue(value, (int) index1, (int) index2, (int) index3);
         }
 
-        [ComVisible(false)]
         public void SetValue(Object value, params long[] indices)
         {
             if (indices == null)
@@ -565,7 +556,6 @@ namespace System {
         internal const int MaxArrayLength = 0X7FEFFFFF;
         internal const int MaxByteArrayLength = 0x7FFFFFC7;
 
-        [ComVisible(false)]
         public extern long LongLength {
             [Pure]
             [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
@@ -578,7 +568,6 @@ namespace System {
         public extern int GetLength(int dimension);
 
         [Pure]
-        [ComVisible(false)]
         public long GetLongLength(int dimension) {
             //This method should throw an IndexOufOfRangeException for compat if dimension < 0 or >= Rank
             return GetLength(dimension);
@@ -989,7 +978,6 @@ namespace System {
         }
 
         [Pure]
-        [ComVisible(false)]
         public void CopyTo(Array array, long index)
         {
             if (index > Int32.MaxValue || index < Int32.MinValue)

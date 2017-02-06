@@ -14,7 +14,6 @@ namespace System.Diagnostics.SymbolStore {
     using System;
     using System.Runtime.InteropServices;
 
-    [ComVisible(true)]
     internal struct SymbolToken
     {
         internal int m_token;

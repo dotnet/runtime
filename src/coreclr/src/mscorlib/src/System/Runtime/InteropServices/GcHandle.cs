@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices
     // IMPORTANT: If new values are added to the enum the GCHandle::MaxHandleType
     //            constant must be updated.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum GCHandleType
     {
         Weak = 0,
@@ -40,7 +39,6 @@ namespace System.Runtime.InteropServices
     //
 
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct GCHandle
     {
         // IMPORTANT: This must be kept in sync with the GCHandleType enum.

@@ -16,7 +16,6 @@ namespace System {
     using System.Reflection;
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class SerializableAttribute : Attribute 
     {
         internal static Attribute GetCustomAttribute(RuntimeType type) 
