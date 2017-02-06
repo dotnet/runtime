@@ -2840,11 +2840,11 @@ void Lowering::InsertPInvokeMethodProlog()
     // for x86, don't pass the secretArg.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
     GenTreeArgList* argList = comp->gtNewArgList(frameAddr);
-#else  // !_TARGET_X86_
+#else
     GenTreeArgList*    argList = comp->gtNewArgList(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
-#endif // !_TARGET_X86_
+#endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, 0, argList);
 
@@ -2865,8 +2865,9 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
 
-#ifndef _TARGET_X86_ // For x86, this step is done at the call site (due to stack pointer not being static in the
-                     // function).
+#if !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
+    // For x86, this step is done at the call site (due to stack pointer not being static in the function).
+    // For arm32, CallSiteSP is set up by the call to CORINFO_HELP_INIT_PINVOKE_FRAME.
 
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCallSiteSP = @RSP;
@@ -2878,7 +2879,10 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
 
-#endif // !_TARGET_X86_
+#endif // !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
+
+#if !defined(_TARGET_ARM_)
+    // For arm32, CalleeSavedFP is set up by the call to CORINFO_HELP_INIT_PINVOKE_FRAME.
 
     // --------------------------------------------------------
     // InlinedCallFrame.m_pCalleeSavedEBP = @RBP;
@@ -2890,6 +2894,7 @@ void Lowering::InsertPInvokeMethodProlog()
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
+#endif // !defined(_TARGET_ARM_)
 
     // --------------------------------------------------------
     // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto

@@ -1513,7 +1513,13 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         }
         else
         {
-            if (varTypeIsFloating(returnType))
+            if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+            {
+                // The CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
+                // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
+                returnReg = REG_PINVOKE_TCB;
+            }
+            else if (varTypeIsFloating(returnType))
             {
                 returnReg = REG_FLOATRET;
             }
