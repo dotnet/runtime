@@ -17,7 +17,7 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>397e0144426eaa39b2fb480eacc34c517692fce8</CoreFxCurrentRef>
+    <CoreFxCurrentRef>85185417fa53abb10ebb38326604e19fb8b4d105</CoreFxCurrentRef>
     <CoreClrCurrentRef>12c003566891efaa83edd960ee54fe9f417cc18e</CoreClrCurrentRef>
     <ExternalCurrentRef>6ebb1923d44306ebc37fe819f95f54e547a38c46</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>8bff607695d15009cc3c94456500d5383a3487ae</ProjectNTfsCurrentRef>
@@ -26,7 +26,7 @@
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-25004-01</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-25006-01</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-25006-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25006-00</ProjectNTfsExpectedPrerelease>
