@@ -28,10 +28,9 @@
     <Reference Include="Windows" />
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <Reference Include="System.Runtime.Extensions">
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
       <Aliases>System_Runtime_Extensions</Aliases>
-    </Reference>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+    </ProjectReference>    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
@@ -58,8 +57,9 @@
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj">
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
       <Aliases>System_Runtime_Extensions</Aliases>
+      <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">
       <TargetGroup>uapaot</TargetGroup>
@@ -81,7 +81,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreRT.cs" />
-    <Compile Include="System\IO\UnmanagedMemoryStreamInternal.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
   </ItemGroup>
