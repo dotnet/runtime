@@ -54,8 +54,6 @@
     <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)targetingpacks.props" />
-
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
