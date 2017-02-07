@@ -584,7 +584,45 @@ extern "C" int32_t SystemNative_Link(const char* source, const char* linkTarget)
 extern "C" intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
+#if HAVE_MKSTEMPS
     while (CheckInterrupted(result = mkstemps(pathTemplate, suffixLength)));
+#elif HAVE_MKSTEMP
+    // mkstemps is not available bionic/Android, but mkstemp is
+    // mkstemp doesn't allow the suffix that msktemps does allow, so we'll need to
+    // remove that before passing pathTemplate to mkstemp
+
+    int32_t pathTemplateLength = static_cast<int32_t>(strlen(pathTemplate));
+
+    // pathTemplate must include at least XXXXXX (6 characters) which are not part of
+    // the suffix
+    if (suffixLength < 0 || suffixLength > pathTemplateLength - 6)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // Make mkstemp ignore the suffix by setting the first char of the suffix to \0,
+    // if there is a suffix
+    int32_t firstSuffixIndex = 0;
+    char firstSuffixChar = 0;
+
+    if (suffixLength > 0)
+    {
+        firstSuffixIndex = pathTemplateLength - suffixLength;
+        firstSuffixChar = pathTemplate[firstSuffixIndex];
+        pathTemplate[firstSuffixIndex] = 0;
+    }
+
+    while (CheckInterrupted(result = mkstemp(pathTemplate)));
+
+    // Reset the first char of the suffix back to its original value, if there is a suffix
+    if (suffixLength > 0)
+    {
+        pathTemplate[firstSuffixIndex] = firstSuffixChar;
+    }
+#else
+#error "Cannot find mkstemps nor mkstemp on this platform"
+#endif
     return  result;
 }
 
