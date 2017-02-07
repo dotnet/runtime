@@ -8,7 +8,6 @@
     <AssemblyName>RemoteExecutorConsoleApp</AssemblyName>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
