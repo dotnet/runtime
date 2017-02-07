@@ -32,7 +32,7 @@ namespace System.IO {
     // This class is intended for character input, not bytes.  
     // There are methods on the Stream class for reading bytes. 
     [Serializable]
-    public abstract class TextReader : MarshalByRefObject, IDisposable {
+    internal abstract class TextReader : MarshalByRefObject, IDisposable {
 
         public static readonly TextReader Null = new NullTextReader();
     

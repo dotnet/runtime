@@ -21,7 +21,7 @@ namespace System.Collections.Concurrent
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
     [Serializable]
-    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
+    internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         // This implementation provides an unbounded, multi-producer multi-consumer queue
         // that supports the standard Enqueue/TryDequeue operations, as well as support for

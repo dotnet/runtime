@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices {
     [GuidAttribute("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]
     [CLSCompliant(false)]
-    public interface _Exception
+    internal interface _Exception
     {
         //
         // This method is intentionally included in CoreCLR to make Exception.get_InnerException "newslot virtual final".

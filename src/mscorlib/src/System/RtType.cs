@@ -4977,10 +4977,12 @@ namespace System
             return _CreateEnum(enumType, value);
         }
 
+#if FEATURE_COMINTEROP       
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
             String name, BindingFlags invokeAttr, Object target, Object[] args,
             bool[] byrefModifiers, int culture, String[] namedParameters);
+#endif // FEATURE_COMINTEROP        
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
