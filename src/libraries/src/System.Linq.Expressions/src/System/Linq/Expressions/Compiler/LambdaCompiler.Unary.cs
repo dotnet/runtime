@@ -201,14 +201,17 @@ namespace System.Linq.Expressions.Compiler
                         {
                             _ilg.Emit(OpCodes.Ldc_I4_0);
                             _ilg.Emit(OpCodes.Ceq);
+                            return;
                         }
-                        else
-                        {
-                            _ilg.Emit(OpCodes.Not);
-                        }
-                        break;
+
+                        goto case ExpressionType.OnesComplement;
                     case ExpressionType.OnesComplement:
                         _ilg.Emit(OpCodes.Not);
+                        if (!operandType.IsUnsigned())
+                        {
+                            // Guaranteed to fit within result type: no conversion
+                            return;
+                        }
                         break;
                     case ExpressionType.IsFalse:
                         _ilg.Emit(OpCodes.Ldc_I4_0);
@@ -221,12 +224,14 @@ namespace System.Linq.Expressions.Compiler
                         // Not an arithmetic operation -> no conversion
                         return;
                     case ExpressionType.UnaryPlus:
-                        _ilg.Emit(OpCodes.Nop);
-                        break;
+                        // Guaranteed to fit within result type: no conversion
+                        return;
                     case ExpressionType.Negate:
                     case ExpressionType.NegateChecked:
                         _ilg.Emit(OpCodes.Neg);
-                        break;
+                        // Guaranteed to fit within result type: no conversion
+                        // (integer NegateChecked was rewritten to 0 - operand and doesn't hit here).
+                        return;
                     case ExpressionType.TypeAs:
                         if (operandType.GetTypeInfo().IsValueType)
                         {
