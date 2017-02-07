@@ -613,4 +613,7 @@ mono_thread_info_wait_one_handle (MonoThreadHandle *handle, guint32 timeout, gbo
 MonoThreadInfoWaitRet
 mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize nhandles, MonoOSEvent *background_change_event, gboolean waitall, guint32 timeout, gboolean alertable);
 
+void mono_threads_join_lock (void);
+void mono_threads_join_unlock (void);
+
 #endif /* __MONO_THREADS_H__ */

@@ -75,6 +75,8 @@ static gboolean mono_threads_inited = FALSE;
 static MonoSemType suspend_semaphore;
 static size_t pending_suspends;
 
+static mono_mutex_t join_mutex;
+
 #define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & THREAD_STATE_MASK)
 
 /*warn at 50 ms*/
@@ -706,6 +708,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	mono_os_sem_init (&global_suspend_semaphore, 1);
 	mono_os_sem_init (&suspend_semaphore, 0);
+	mono_os_mutex_init (&join_mutex);
 
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
@@ -1231,6 +1234,7 @@ mono_thread_info_yield (void)
 {
 	return mono_threads_platform_yield ();
 }
+
 static mono_lazy_init_t sleep_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 static MonoCoopMutex sleep_mutex;
 static MonoCoopCond sleep_cond;
@@ -1688,4 +1692,27 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 		return MONO_THREAD_INFO_WAIT_RET_TIMEOUT;
 	else
 		g_error ("%s: unknown res value %d", __func__, res);
+}
+
+/*
+ * mono_threads_join_mutex:
+ *
+ *   This mutex is used to avoid races between pthread_create () and pthread_join () on osx, see
+ * https://bugzilla.xamarin.com/show_bug.cgi?id=50529
+ * The code inside the lock should not block.
+ */
+void
+mono_threads_join_lock (void)
+{
+#ifdef TARGET_OSX
+	mono_os_mutex_lock (&join_mutex);
+#endif
+}
+
+void
+mono_threads_join_unlock (void)
+{
+#ifdef TARGET_OSX
+	mono_os_mutex_unlock (&join_mutex);
+#endif
 }

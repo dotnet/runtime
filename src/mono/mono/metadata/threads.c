@@ -5085,7 +5085,9 @@ mono_threads_join_threads (void)
 			if (thread != pthread_self ()) {
 				MONO_ENTER_GC_SAFE;
 				/* This shouldn't block */
+				mono_threads_join_lock ();
 				mono_native_thread_join (thread);
+				mono_threads_join_unlock ();
 				MONO_EXIT_GC_SAFE;
 			}
 		} else {
