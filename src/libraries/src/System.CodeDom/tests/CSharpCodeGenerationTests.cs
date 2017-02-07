@@ -448,12 +448,30 @@ namespace System.CodeDom.Tests
                   }");
         }
 
-        [Fact]
-        public void ExplicitImplementation()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework outputs C# keywords rather than type names")]
+        [Theory]
+        [InlineData(typeof(byte), "void System.Byte.MyMethod() { }")]
+        [InlineData(typeof(short), "void System.Int16.MyMethod() { }")]
+        [InlineData(typeof(ushort), "void System.UInt16.MyMethod() { }")]
+        [InlineData(typeof(int), "void System.Int32.MyMethod() { }")]
+        [InlineData(typeof(uint), "void System.UInt32.MyMethod() { }")]
+        [InlineData(typeof(long), "void System.Int64.MyMethod() { }")]
+        [InlineData(typeof(ulong), "void System.UInt64.MyMethod() { }")]
+        [InlineData(typeof(string), "void System.String.MyMethod() { }")]
+        [InlineData(typeof(object), "void System.Object.MyMethod() { }")]
+        [InlineData(typeof(bool), "void System.Boolean.MyMethod() { }")]
+        [InlineData(typeof(void), "void System.Void.MyMethod() { }")]
+        [InlineData(typeof(char), "void System.Char.MyMethod() { }")]
+        [InlineData(typeof(float), "void System.Single.MyMethod() { }")]
+        [InlineData(typeof(double), "void System.Double.MyMethod() { }")]
+        [InlineData(typeof(decimal), "void System.Decimal.MyMethod() { }")]
+        public void ExplicitImplementation(Type type, string expectedResult)
         {
-            var m = new CodeMemberMethod() { Name = "MyMethod" };
-            m.PrivateImplementationType = new CodeTypeReference(typeof(System.Int64));
-            AssertEqual(m, @"void System.Int64.MyMethod() { }");
+            AssertEqual(new CodeMemberMethod()
+            {
+                Name = "MyMethod",
+                PrivateImplementationType = new CodeTypeReference(type)
+            }, expectedResult);
         }
 
         [Fact]
