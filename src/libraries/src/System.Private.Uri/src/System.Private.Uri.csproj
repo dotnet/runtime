@@ -5,8 +5,6 @@
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
-    <NoWarn>0436</NoWarn>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</SkipCommonResourcesIncludes>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);netstandard10</DefineConstants>
   </PropertyGroup>
