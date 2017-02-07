@@ -5388,6 +5388,9 @@ protected:
 
         treeStmtLstPtr csdTreeList; // list of matching tree nodes: head
         treeStmtLstPtr csdTreeLast; // list of matching tree nodes: tail
+
+        ValueNum defConservativeVN; // if all def occurrences share the same conservative value
+                                    // number, this will reflect it; otherwise, NoVN.
     };
 
     static const size_t s_optCSEhashSize;
