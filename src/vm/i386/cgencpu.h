@@ -208,6 +208,7 @@ struct ArgumentRegisters {
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
 
+#ifndef WIN64EXCEPTIONS
 // Sufficient context for Try/Catch restoration.
 struct EHContext {
     INT32       Eax;
@@ -256,6 +257,7 @@ struct EHContext {
         Eip = 0;
     }
 };
+#endif // !WIN64EXCEPTIONS
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
