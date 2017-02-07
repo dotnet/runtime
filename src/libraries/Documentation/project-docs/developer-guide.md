@@ -321,3 +321,7 @@ The CoreFX build and test suite is a work in progress, as are the [building and 
     5) Run the tests by any means you please - the binary shouldn't get overwritten.
 
 If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a debug runtime will execute much more slowly than with Release runtime bits.
+
+To collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
+
+`msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
