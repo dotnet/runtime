@@ -243,7 +243,7 @@ void CodeGen::genFloatSimple(GenTree* tree, RegSet::RegisterPreference* pref)
         case GT_COMMA:
         {
             GenTreePtr op1 = tree->gtOp.gtOp1;
-            GenTreePtr op2 = tree->gtGetOp2();
+            GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
             if (tree->gtFlags & GTF_REVERSE_OPS)
             {
@@ -318,7 +318,7 @@ void CodeGen::genFloatAssign(GenTree* tree)
 {
     var_types  type = tree->TypeGet();
     GenTreePtr op1  = tree->gtGetOp1();
-    GenTreePtr op2  = tree->gtGetOp2();
+    GenTreePtr op2  = tree->gtGetOp2IfPresent();
 
     regMaskTP needRegOp1 = RBM_ALLINT;
     regMaskTP addrReg    = RBM_NONE;
@@ -846,7 +846,7 @@ void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref
     var_types  type = tree->TypeGet();
     genTreeOps oper = tree->OperGet();
     GenTreePtr op1  = tree->gtGetOp1();
-    GenTreePtr op2  = tree->gtGetOp2();
+    GenTreePtr op2  = tree->gtGetOp2IfPresent();
 
     regNumber  tgtReg;
     unsigned   varNum;
