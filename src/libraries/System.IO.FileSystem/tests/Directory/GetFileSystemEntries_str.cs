@@ -268,7 +268,7 @@ namespace System.IO.Tests
                 Assert.NotEmpty(Directory.EnumerateFiles(Directory.GetCurrentDirectory(), "*", SearchOption.TopDirectoryOnly));
 
                 return SuccessExitCode;
-            }, testDir).Dispose();
+            }, $"\"{testDir}\"").Dispose();
         }
     }
 }
