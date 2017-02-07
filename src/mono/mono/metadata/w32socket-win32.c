@@ -237,6 +237,7 @@ BOOL mono_w32socket_transmit_file (SOCKET hSocket, gpointer hFile, TRANSMIT_FILE
 }
 #endif /* #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 gint
 mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 {
@@ -278,6 +279,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 
 	return ERROR_NOT_SUPPORTED;
 }
+#endif /* #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 gint
 mono_w32socket_set_blocking (SOCKET sock, gboolean blocking)
