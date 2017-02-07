@@ -19,8 +19,5 @@
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
