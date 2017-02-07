@@ -855,9 +855,12 @@ fgArgInfo::fgArgInfo(Compiler* comp, GenTreePtr call, unsigned numArgs)
     compiler = comp;
     callTree = call;
     assert(call->IsCall());
-    argCount     = 0; // filled in arg count, starts at zero
-    nextSlotNum  = INIT_ARG_STACK_SLOT;
-    stkLevel     = 0;
+    argCount    = 0; // filled in arg count, starts at zero
+    nextSlotNum = INIT_ARG_STACK_SLOT;
+    stkLevel    = 0;
+#if defined(UNIX_X86_ABI)
+    padStkAlign = 0;
+#endif
     argTableSize = numArgs; // the allocated table size
 
     hasRegArgs   = false;
@@ -897,9 +900,12 @@ fgArgInfo::fgArgInfo(GenTreePtr newCall, GenTreePtr oldCall)
     ;
     callTree = newCall;
     assert(newCall->IsCall());
-    argCount     = 0; // filled in arg count, starts at zero
-    nextSlotNum  = INIT_ARG_STACK_SLOT;
-    stkLevel     = oldArgInfo->stkLevel;
+    argCount    = 0; // filled in arg count, starts at zero
+    nextSlotNum = INIT_ARG_STACK_SLOT;
+    stkLevel    = oldArgInfo->stkLevel;
+#if defined(UNIX_X86_ABI)
+    padStkAlign = oldArgInfo->padStkAlign;
+#endif
     argTableSize = oldArgInfo->argTableSize;
     argsComplete = false;
     argTable     = nullptr;
@@ -1079,16 +1085,19 @@ fgArgTabEntryPtr fgArgInfo::AddRegArg(
 {
     fgArgTabEntryPtr curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
-    curArgTabEntry->argNum        = argNum;
-    curArgTabEntry->node          = node;
-    curArgTabEntry->parent        = parent;
-    curArgTabEntry->regNum        = regNum;
-    curArgTabEntry->slotNum       = 0;
-    curArgTabEntry->numRegs       = numRegs;
-    curArgTabEntry->numSlots      = 0;
-    curArgTabEntry->alignment     = alignment;
-    curArgTabEntry->lateArgInx    = (unsigned)-1;
-    curArgTabEntry->tmpNum        = (unsigned)-1;
+    curArgTabEntry->argNum     = argNum;
+    curArgTabEntry->node       = node;
+    curArgTabEntry->parent     = parent;
+    curArgTabEntry->regNum     = regNum;
+    curArgTabEntry->slotNum    = 0;
+    curArgTabEntry->numRegs    = numRegs;
+    curArgTabEntry->numSlots   = 0;
+    curArgTabEntry->alignment  = alignment;
+    curArgTabEntry->lateArgInx = (unsigned)-1;
+    curArgTabEntry->tmpNum     = (unsigned)-1;
+#if defined(UNIX_X86_ABI)
+    curArgTabEntry->padStkAlign = 0;
+#endif
     curArgTabEntry->isSplit       = false;
     curArgTabEntry->isTmp         = false;
     curArgTabEntry->needTmp       = false;
@@ -1154,16 +1163,19 @@ fgArgTabEntryPtr fgArgInfo::AddStkArg(unsigned   argNum,
     curArgTabEntry->isStruct = isStruct; // is this a struct arg
 #endif                                   // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-    curArgTabEntry->argNum        = argNum;
-    curArgTabEntry->node          = node;
-    curArgTabEntry->parent        = parent;
-    curArgTabEntry->regNum        = REG_STK;
-    curArgTabEntry->slotNum       = nextSlotNum;
-    curArgTabEntry->numRegs       = 0;
-    curArgTabEntry->numSlots      = numSlots;
-    curArgTabEntry->alignment     = alignment;
-    curArgTabEntry->lateArgInx    = (unsigned)-1;
-    curArgTabEntry->tmpNum        = (unsigned)-1;
+    curArgTabEntry->argNum     = argNum;
+    curArgTabEntry->node       = node;
+    curArgTabEntry->parent     = parent;
+    curArgTabEntry->regNum     = REG_STK;
+    curArgTabEntry->slotNum    = nextSlotNum;
+    curArgTabEntry->numRegs    = 0;
+    curArgTabEntry->numSlots   = numSlots;
+    curArgTabEntry->alignment  = alignment;
+    curArgTabEntry->lateArgInx = (unsigned)-1;
+    curArgTabEntry->tmpNum     = (unsigned)-1;
+#if defined(UNIX_X86_ABI)
+    curArgTabEntry->padStkAlign = 0;
+#endif
     curArgTabEntry->isSplit       = false;
     curArgTabEntry->isTmp         = false;
     curArgTabEntry->needTmp       = false;
@@ -1688,6 +1700,52 @@ void fgArgInfo::ArgsComplete()
 
     argsComplete = true;
 }
+
+#if defined(UNIX_X86_ABI)
+//  Get the stack alignment value for a Call holding this object
+//
+//  NOTE: This function will calculate number of padding slots, to align the
+//  stack before pushing arguments to the stack. Padding value is stored in
+//  the first argument in fgArgTabEntry structure padStkAlign member so that
+//  code (sub esp, n) can be emitted before generating argument push in
+//  fgArgTabEntry node. As of result stack will be aligned right before
+//  making a "Call".  After the Call, stack is re-adjusted to the value it
+//  was with fgArgInfo->padStkAlign value as we cann't use the one in fgArgTabEntry.
+//
+void fgArgInfo::ArgsAlignPadding()
+{
+    // To get the padding amount, sum up all the slots and get the remainder for padding
+    unsigned         curInx;
+    unsigned         numSlots         = 0;
+    fgArgTabEntryPtr firstArgTabEntry = nullptr;
+
+    for (curInx = 0; curInx < argCount; curInx++)
+    {
+        fgArgTabEntryPtr curArgTabEntry = argTable[curInx];
+        if (curArgTabEntry->numSlots > 0)
+        {
+            // The argument may be REG_STK or constant or register that goes to stack
+            assert(nextSlotNum >= curArgTabEntry->slotNum);
+
+            numSlots += curArgTabEntry->numSlots;
+            if (firstArgTabEntry == nullptr)
+            {
+                // First argument will be used to hold the padding amount
+                firstArgTabEntry = curArgTabEntry;
+            }
+        }
+    }
+
+    if (firstArgTabEntry != nullptr)
+    {
+        const int numSlotsAligned = STACK_ALIGN / TARGET_POINTER_SIZE;
+        // Set stack align pad for the first argument
+        firstArgTabEntry->padStkAlign = AlignmentPad(numSlots, numSlotsAligned);
+        // Set also for fgArgInfo that will be used to reset stack pointer after the Call
+        this->padStkAlign = firstArgTabEntry->padStkAlign;
+    }
+}
+#endif // UNIX_X86_ABI
 
 void fgArgInfo::SortArgs()
 {
@@ -4211,6 +4269,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     if (!reMorphing)
     {
         call->fgArgInfo->ArgsComplete();
+
+#if defined(UNIX_X86_ABI)
+        call->fgArgInfo->ArgsAlignPadding();
+#endif // UNIX_X86_ABI
+
 #ifdef LEGACY_BACKEND
         call->gtCallRegUsedMask = genIntAllRegArgMask(intArgRegNum);
 #if defined(_TARGET_ARM_)
