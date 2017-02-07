@@ -180,6 +180,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 throw Error.OperatorNotImplementedForType(op, leftType);
             }
+
             switch (op)
             {
                 case ExpressionType.Add:
@@ -251,31 +252,17 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Clt_Un : OpCodes.Clt);
                     break;
                 case ExpressionType.LessThanOrEqual:
-                    {
-                        Label labFalse = _ilg.DefineLabel();
-                        Label labEnd = _ilg.DefineLabel();
-                        _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Ble_Un_S : OpCodes.Ble_S, labFalse);
-                        _ilg.Emit(OpCodes.Ldc_I4_0);
-                        _ilg.Emit(OpCodes.Br_S, labEnd);
-                        _ilg.MarkLabel(labFalse);
-                        _ilg.Emit(OpCodes.Ldc_I4_1);
-                        _ilg.MarkLabel(labEnd);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() || leftType.IsFloatingPoint() ? OpCodes.Cgt_Un : OpCodes.Cgt);
+                    _ilg.Emit(OpCodes.Ldc_I4_0);
+                    _ilg.Emit(OpCodes.Ceq);
                     break;
                 case ExpressionType.GreaterThan:
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Cgt_Un : OpCodes.Cgt);
                     break;
                 case ExpressionType.GreaterThanOrEqual:
-                    {
-                        Label labFalse = _ilg.DefineLabel();
-                        Label labEnd = _ilg.DefineLabel();
-                        _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Bge_Un_S : OpCodes.Bge_S, labFalse);
-                        _ilg.Emit(OpCodes.Ldc_I4_0);
-                        _ilg.Emit(OpCodes.Br_S, labEnd);
-                        _ilg.MarkLabel(labFalse);
-                        _ilg.Emit(OpCodes.Ldc_I4_1);
-                        _ilg.MarkLabel(labEnd);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() || leftType.IsFloatingPoint() ? OpCodes.Clt_Un : OpCodes.Clt);
+                    _ilg.Emit(OpCodes.Ldc_I4_0);
+                    _ilg.Emit(OpCodes.Ceq);
                     break;
                 case ExpressionType.ExclusiveOr:
                     _ilg.Emit(OpCodes.Xor);
