@@ -587,7 +587,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
         [InlineData("", "#redirFragment", "#redirFragment", false)]
