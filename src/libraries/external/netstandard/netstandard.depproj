@@ -14,7 +14,7 @@
     <_NETStandardTFMFolder Condition="'$(NuGetTargetMoniker)' == '.NETStandard,Version=v2.0'">netstandard2.0</_NETStandardTFMFolder>
     <_NETStandardTFMFolder Condition="'$(IsNetFx)' == 'true'">net461</_NETStandardTFMFolder>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
     <BinplaceConfiguration Include="$(Configuration)">
@@ -23,19 +23,17 @@
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinplaceConfiguration>
   </ItemGroup>
-  
+
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"
           Condition="'$(_NETStandardTFMFolder)' != ''">
     <PropertyGroup>
-      <_NETStandardPackageId>NETStandard.Library</_NETStandardPackageId>
-      <_NETStandardPackageVersion>2.0.0-$(StandardExpectedPrerelease)</_NETStandardPackageVersion>
-      <_NETStandardRefFolder>$(PackagesDir)$(_NETStandardPackageId)\$(_NETStandardPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
+      <_NETStandardRefFolder>$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
     <ItemGroup>
       <Reference Include="$(_NETStandardRefFolder)\*.dll">
         <Private>False</Private>
-        <NuGetPackageId>NETStandard.Library</NuGetPackageId>
-        <NuGetPackageVersion>$(_NETStandardPackageVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(NETStandardPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(NETStandardPackageVersion)</NuGetPackageVersion>
       </Reference>
     </ItemGroup>
   </Target>
