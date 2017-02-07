@@ -38,7 +38,6 @@ namespace System.Reflection.Emit
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Security;
-    using System.Security.Permissions;
     using System.Security.Policy;
     using System.Threading;
 
@@ -235,9 +234,6 @@ namespace System.Reflection.Emit
                                  AssemblyBuilderAccess access,
                                  String dir,
                                  Evidence evidence,
-                                 PermissionSet requiredPermissions,
-                                 PermissionSet optionalPermissions,
-                                 PermissionSet refusedPermissions,
                                  ref StackCrawlMark stackMark,
                                  IEnumerable<CustomAttributeBuilder> unsafeAssemblyAttributes,
                                  SecurityContextSource securityContextSource)
@@ -298,9 +294,6 @@ namespace System.Reflection.Emit
                                                                                         name,
                                                                                         evidence,
                                                                                         ref stackMark,
-                                                                                        requiredPermissions,
-                                                                                        optionalPermissions,
-                                                                                        refusedPermissions,
                                                                                         securityRulesBlob,
                                                                                         aptcaBlob,
                                                                                         access,
@@ -311,10 +304,6 @@ namespace System.Reflection.Emit
                                                      name.Name,
                                                      access,
                                                      dir);
-            m_assemblyData.AddPermissionRequests(requiredPermissions,
-                                                 optionalPermissions,
-                                                 refusedPermissions);
-
 #if FEATURE_APPX
             if (AppDomain.ProfileAPICheck)
             {
@@ -371,7 +360,7 @@ namespace System.Reflection.Emit
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name, access, null,
-                                                 null, null, null, null, ref stackMark, null, SecurityContextSource.CurrentAssembly);
+                                                 null, ref stackMark, null, SecurityContextSource.CurrentAssembly);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
@@ -385,7 +374,7 @@ namespace System.Reflection.Emit
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 null, null, null, null, null,
+                                                 null, null,
                                                  ref stackMark,
                                                  assemblyAttributes, SecurityContextSource.CurrentAssembly);
         }
@@ -396,9 +385,6 @@ namespace System.Reflection.Emit
                                                               AssemblyName name,
                                                               Evidence identity,
                                                               ref StackCrawlMark stackMark,
-                                                              PermissionSet requiredPermissions,
-                                                              PermissionSet optionalPermissions,
-                                                              PermissionSet refusedPermissions,
                                                               byte[] securityRulesBlob,
                                                               byte[] aptcaBlob,
                                                               AssemblyBuilderAccess access,
@@ -412,9 +398,6 @@ namespace System.Reflection.Emit
             AssemblyBuilderAccess access,
             String dir,
             Evidence evidence,
-            PermissionSet requiredPermissions,
-            PermissionSet optionalPermissions,
-            PermissionSet refusedPermissions,
             ref StackCrawlMark stackMark,
             IEnumerable<CustomAttributeBuilder> unsafeAssemblyAttributes,
             SecurityContextSource securityContextSource)
@@ -427,9 +410,6 @@ namespace System.Reflection.Emit
                                            access,
                                            dir,
                                            evidence,
-                                           requiredPermissions,
-                                           optionalPermissions,
-                                           refusedPermissions,
                                            ref stackMark,
                                            unsafeAssemblyAttributes,
                                            securityContextSource);

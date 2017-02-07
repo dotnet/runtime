@@ -20,7 +20,6 @@ namespace System {
     using Microsoft.Win32;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
-    using System.Security.Permissions;
     using System.Security;
     using System.Diagnostics.Contracts;
 

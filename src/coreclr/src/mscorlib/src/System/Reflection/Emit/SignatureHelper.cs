@@ -14,7 +14,6 @@ namespace System.Reflection.Emit
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
-    using System.Security.Permissions;
     
     public sealed class SignatureHelper
     {

@@ -18,7 +18,6 @@
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading;

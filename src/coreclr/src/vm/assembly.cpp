@@ -924,23 +924,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     }
 
     // Start loading process
-
-#ifdef FEATURE_CAS_POLICY
-    // Get the security descriptor for the assembly.
-    IAssemblySecurityDescriptor *pSecDesc = pDomainAssembly->GetSecurityDescriptor();
-
-    // Propagate identity and permission request information into the assembly's
-    // security descriptor. Then when policy is resolved we'll end up with the
-    // correct grant set.
-    // If identity has not been provided then the caller's assembly will be
-    // calculated instead and we'll just copy the granted permissions from the
-    // caller to the new assembly and mark policy as resolved (done
-    // automatically by SetGrantedPermissionSet).
-    pSecDesc->SetRequestedPermissionSet(args->requiredPset,
-                                        args->optionalPset,
-                                        args->refusedPset);
-#endif // FEATURE_CAS_POLICY
-
     {
         // Create a concrete assembly
         // (!Do not remove scoping brace: order is important here: the Assembly holder must destruct before the AllocMemTracker!)

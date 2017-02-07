@@ -8,7 +8,6 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 
 namespace System.IO

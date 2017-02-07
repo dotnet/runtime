@@ -17,7 +17,6 @@ namespace System.Reflection
     using System.Threading;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.IO;
     using System.Globalization;
     using System.Runtime.Versioning;

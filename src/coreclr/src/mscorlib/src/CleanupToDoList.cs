@@ -13,24 +13,6 @@ namespace System.Security
         CurrentAppDomain = 0,
         CurrentAssembly
     }
-
-    internal sealed class PermissionSet
-    {
-    }
-}
-
-namespace System.Security.Permissions
-{
-    internal class HostProtectionAttribute : Attribute
-    {
-        public bool MayLeakOnAbort { get; set; }
-    }
-
-    internal enum PermissionState
-    {
-        Unrestricted = 1,
-        None = 0,
-    }
 }
 
 namespace System.Security.Policy
@@ -40,13 +22,6 @@ namespace System.Security.Policy
     }
 
     internal sealed class ApplicationTrust
-    {
-    }
-}
-
-namespace System.Security.Principal
-{
-    internal interface IPrincipal
     {
     }
 }

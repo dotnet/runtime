@@ -21,7 +21,6 @@ namespace System
     using System.Runtime.InteropServices.WindowsRuntime;
     using System.Runtime.CompilerServices;
     using System.Reflection;
-    using System.Security.Permissions;
 
     internal class __ComObject : MarshalByRefObject
     {

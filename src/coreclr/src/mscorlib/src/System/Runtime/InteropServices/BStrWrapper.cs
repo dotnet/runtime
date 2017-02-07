@@ -15,7 +15,6 @@ namespace System.Runtime.InteropServices {
    
     using System;
     using System.Security;
-    using System.Security.Permissions;
 
     [Serializable]
     public sealed class BStrWrapper

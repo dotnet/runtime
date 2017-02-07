@@ -13,7 +13,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Security;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
     using Calendar = System.Globalization.Calendar;

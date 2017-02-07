@@ -16,7 +16,6 @@
 namespace System.Collections.Generic {
     using System;
     using System.Collections.ObjectModel;
-    using System.Security.Permissions;
     using System.Diagnostics;    
     using System.Diagnostics.Contracts;
 

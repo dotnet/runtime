@@ -22,7 +22,6 @@ namespace System.Reflection
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Security;
     using System.Security.Policy;
-    using System.Security.Permissions;
     using System.IO;
     using StringBuilder = System.Text.StringBuilder;
     using System.Configuration.Assemblies;

@@ -125,24 +125,6 @@ namespace System.Reflection.Emit {
             //      }
         }
         
-        // add security permission requests
-        internal void AddPermissionRequests(
-            PermissionSet       required,
-            PermissionSet       optional,
-            PermissionSet       refused)
-        {
-            BCLDebug.Log("DYNIL","## DYNIL LOGGING: AssemblyBuilderData.AddPermissionRequests");
-            if (m_isSaved == true)
-            {
-                // assembly has been saved before!
-                throw new InvalidOperationException(Environment.GetResourceString(
-                    "InvalidOperation_CannotAlterAssembly"));
-            }        
-            m_RequiredPset = required;
-            m_OptionalPset = optional;
-            m_RefusedPset = refused;
-        }
-         
         internal List<ModuleBuilder>    m_moduleBuilderList;
         internal List<ResWriterData>    m_resWriterList;
         internal String                 m_strAssemblyName;
@@ -158,11 +140,6 @@ namespace System.Reflection.Emit {
 
         // hard coding the assembly def token
         internal const int              m_tkAssembly = 0x20000001;
-
-        // Security permission requests
-        internal PermissionSet          m_RequiredPset;
-        internal PermissionSet          m_OptionalPset;
-        internal PermissionSet          m_RefusedPset;
         
         // tracking AssemblyDef's CAs for persistence to disk
         internal CustomAttributeBuilder[] m_CABuilders;

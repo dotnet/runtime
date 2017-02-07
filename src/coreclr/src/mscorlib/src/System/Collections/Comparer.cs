@@ -17,7 +17,6 @@ namespace System.Collections {
     using System;
     using System.Globalization;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     [Serializable]

@@ -24,7 +24,6 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Security;
-using System.Security.Permissions;
 
 namespace System.Collections.Concurrent
 {

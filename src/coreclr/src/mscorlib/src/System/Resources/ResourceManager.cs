@@ -23,7 +23,6 @@ namespace System.Resources {
     using System.Reflection;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;

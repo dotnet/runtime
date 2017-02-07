@@ -11,7 +11,6 @@ namespace System.Reflection.Emit
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Reflection;
     using System.Security;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
@@ -270,7 +269,7 @@ namespace System.Reflection.Emit
                 AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
                     assemblyName,
                     AssemblyBuilderAccess.Run,
-                    null, null, null, null, null,
+                    null, null,
                     ref stackMark,
                     assemblyAttributes,
                     SecurityContextSource.CurrentAssembly);

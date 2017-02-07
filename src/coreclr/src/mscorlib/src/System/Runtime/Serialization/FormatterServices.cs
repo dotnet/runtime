@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization {
     using System.Collections;
     using System.Collections.Generic;
     using System.Security;    
-    using System.Security.Permissions;
     using System.Runtime.Remoting;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;

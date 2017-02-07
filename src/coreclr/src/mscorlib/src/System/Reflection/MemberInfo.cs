@@ -11,7 +11,6 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
     using System.Runtime;
     using System.Runtime.InteropServices;
-    using System.Security.Permissions;
 
     [Serializable]
     public abstract class MemberInfo : ICustomAttributeProvider

@@ -13,7 +13,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System;
-using System.Security.Permissions;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;

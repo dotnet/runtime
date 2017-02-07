@@ -16,7 +16,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using SecurityException = System.Security.SecurityException;
 using System.Globalization;
 

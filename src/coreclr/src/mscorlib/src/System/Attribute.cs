@@ -13,7 +13,6 @@ namespace System {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Security;
-    using System.Security.Permissions;
 
     [Serializable]
     [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple=false)] 

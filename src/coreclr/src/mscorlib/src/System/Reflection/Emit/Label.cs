@@ -16,7 +16,6 @@
 namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
 
     // The Label class is an opaque representation of a label used by the 

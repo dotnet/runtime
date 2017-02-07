@@ -13,7 +13,6 @@
 namespace System.Threading
 {    
     using Microsoft.Win32.SafeHandles;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;

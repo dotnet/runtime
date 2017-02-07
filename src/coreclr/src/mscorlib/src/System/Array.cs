@@ -20,7 +20,6 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Security;
     using System.Diagnostics;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 

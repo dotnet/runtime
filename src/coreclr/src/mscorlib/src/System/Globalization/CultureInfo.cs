@@ -36,7 +36,6 @@ namespace System.Globalization {
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
-    using System.Security.Permissions;
     using System.Reflection;
     using Microsoft.Win32;
     using System.Diagnostics;

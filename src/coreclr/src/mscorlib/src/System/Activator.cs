@@ -22,7 +22,6 @@ namespace System {
     using StackCrawlMark = System.Threading.StackCrawlMark;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
-    using System.Security.Permissions;
     using AssemblyHashAlgorithm = System.Configuration.Assemblies.AssemblyHashAlgorithm;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
