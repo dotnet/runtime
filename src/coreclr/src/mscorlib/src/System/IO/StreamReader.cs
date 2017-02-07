@@ -18,7 +18,7 @@ namespace System.IO
     // whereas the Stream class is designed for byte input and output.  
     // 
     [Serializable]
-    public class StreamReader : TextReader
+    internal class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.
         public new static readonly StreamReader Null = new NullStreamReader();

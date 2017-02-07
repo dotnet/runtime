@@ -619,7 +619,7 @@ namespace System.Threading {
         /*
          *  This returns a unique id to identify an appdomain.
          */
-        public static int GetDomainID()
+        internal static int GetDomainID()
         {
             return GetDomain().GetId();
         }
