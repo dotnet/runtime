@@ -22,6 +22,7 @@
     <ExternalCurrentRef>6ebb1923d44306ebc37fe819f95f54e547a38c46</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</ProjectNTfsCurrentRef>
     <SniCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</SniCurrentRef>
+    <StandardCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -30,7 +31,7 @@
     <CoreClrExpectedPrerelease>beta-25007-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25007-00</ProjectNTfsExpectedPrerelease>
-    <StandardExpectedPrerelease>beta-25003-02</StandardExpectedPrerelease>
+    <StandardExpectedPrerelease>beta-25006-01</StandardExpectedPrerelease>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-01</SniPackageVersion>
   </PropertyGroup>
@@ -65,6 +66,10 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)sni/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(SniCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="Standard">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
@@ -88,6 +93,11 @@
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="Standard">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>StandardExpectedPrerelease</ElementName>
+      <BuildInfoName>Standard</BuildInfoName>
     </XmlUpdateStep>
     <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
