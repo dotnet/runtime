@@ -166,7 +166,7 @@ private:
     // operands.
     //
     // Arguments:
-    //     tree  -  Gentree of a bininary operation.
+    //     tree  -  Gentree of a binary operation.
     //
     // Returns
     //     None.
