@@ -301,7 +301,7 @@ class ZapImportTable : public ZapNode
 
     ModuleReferenceEntry * GetModuleReference(CORINFO_MODULE_HANDLE handle);
 
-    static DWORD __stdcall EncodeModuleHelper(LPVOID referencingModule, CORINFO_MODULE_HANDLE referencedModule);
+    static DWORD EncodeModuleHelper(LPVOID referencingModule, CORINFO_MODULE_HANDLE referencedModule);
 
     ImportTable m_imports;          // Interned ZapImport *
     SHash< NoRemoveSHashTraits < ZapBlob::SHashTraits > > m_blobs; // Interned ZapBlos for signatures and fixups
