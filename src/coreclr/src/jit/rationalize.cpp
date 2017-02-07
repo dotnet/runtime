@@ -913,7 +913,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
                     op1->gtType = simdType;
                 }
 
-                GenTree* op2 = simdNode->gtGetOp2();
+                GenTree* op2 = simdNode->gtGetOp2IfPresent();
                 if (op2 != nullptr && op2->gtType == TYP_STRUCT)
                 {
                     op2->gtType = simdType;

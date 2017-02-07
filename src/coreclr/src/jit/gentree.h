@@ -1603,7 +1603,13 @@ public:
 
     inline GenTreePtr gtGetOp1();
 
+    // Directly return op2. Asserts the node is binary. Might return nullptr if the binary node allows
+    // a nullptr op2, such as GT_LIST. This is more efficient than gtGetOp2IfPresent() if you know what
+    // node type you have.
     inline GenTreePtr gtGetOp2();
+
+    // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
+    inline GenTreePtr gtGetOp2IfPresent();
 
     // Given a tree node, if this is a child of that node, return the pointer to the child node so that it
     // can be modified; otherwise, return null.
@@ -5010,7 +5016,7 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal)
     if ((gtOper == GT_SIMD) && (gtSIMD.gtSIMDIntrinsicID == SIMDIntrinsicInit) && gtGetOp1()->IsIntegralConst(constVal))
     {
         assert(varTypeIsIntegral(gtSIMD.gtSIMDBaseType));
-        assert(gtGetOp2() == nullptr);
+        assert(gtGetOp2IfPresent() == nullptr);
         return true;
     }
 #endif
@@ -5191,12 +5197,24 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
 
 inline GenTreePtr GenTree::gtGetOp2()
 {
+    assert(OperIsBinary());
+
+    GenTreePtr op2 = gtOp.gtOp2;
+
+    // Only allow null op2 if the node type allows it, e.g. GT_LIST.
+    assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
+
+    return op2;
+}
+
+inline GenTreePtr GenTree::gtGetOp2IfPresent()
+{
     /* gtOp.gtOp2 is only valid for GTK_BINOP nodes. */
 
     GenTreePtr op2 = OperIsBinary() ? gtOp.gtOp2 : nullptr;
 
     // This documents the genTreeOps for which gtOp.gtOp2 cannot be nullptr.
-    // This helps prefix in its analyis of code which calls gtGetOp2()
+    // This helps prefix in its analysis of code which calls gtGetOp2()
 
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
