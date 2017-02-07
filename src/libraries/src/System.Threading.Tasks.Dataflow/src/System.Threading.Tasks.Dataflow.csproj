@@ -4,8 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{2E2F7224-7C72-4A81-9625-A5241F8D836D}</ProjectGuid>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
-    <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
-    <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard'">$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
   </PropertyGroup>
