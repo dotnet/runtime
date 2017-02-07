@@ -333,6 +333,7 @@ mono_threadpool_worker_cleanup (MonoThreadPoolWorker *worker)
 	/* unpark all worker->parked_threads */
 	mono_coop_cond_broadcast (&worker->parked_threads_cond);
 
+#if 0
 	for (;;) {
 		ThreadPoolWorkerCounter counter;
 
@@ -349,6 +350,7 @@ mono_threadpool_worker_cleanup (MonoThreadPoolWorker *worker)
 
 		mono_coop_cond_wait (&worker->threads_exit_cond, &worker->threads_lock);
 	}
+#endif
 
 	mono_coop_mutex_unlock (&worker->threads_lock);
 

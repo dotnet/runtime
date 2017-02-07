@@ -187,6 +187,7 @@ cleanup (void)
 
 	mono_coop_mutex_unlock (&threadpool->threads_lock);
 
+#if 0
 	/* give a chance to the other threads to exit */
 	mono_thread_info_yield ();
 
@@ -205,6 +206,7 @@ cleanup (void)
 	}
 
 	mono_coop_mutex_unlock (&threadpool->threads_lock);
+#endif
 
 	mono_threadpool_worker_cleanup (threadpool->worker);
 
