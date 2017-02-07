@@ -99,6 +99,25 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="AddDefaultTestReferences" BeforeTargets="SetupDefaultReferences">
+    <ItemGroup Condition="'$(IsTestProject)'=='true' and '$(IncludeDefaultReferences)' == 'true'">
+      <TargetingPackExclusions Include="System.Runtime.WindowsRuntime.UI.Xaml" /> <!-- Harmless, but causes PRI targets to run -->
+      <TargetingPackExclusions Include="@(ReferenceFromRuntime)"/>
+
+      <!-- Whitelisted runtime assemblies that are OK to reference. -->
+      <ReferenceFromRuntime Include="xunit.core" />
+      <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
+      <ReferenceFromRuntime Include="xunit.assert" />
+      <ReferenceFromRuntime Include="xunit.abstractions" />
+      <ReferenceFromRuntime Include="xunit.performance.core" />
+
+      <!-- Reference everything in the targeting pack directory -->
+      <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*.dll" />
+
+      <DefaultReference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Generate the script to run the tests.  The script performs two high-level steps:
        1.  Copies the common test runtime dependencies calculated in DiscoverTestDependencies to the test
            execution directory. Each copy command no-ops if the file already exists in the test execution

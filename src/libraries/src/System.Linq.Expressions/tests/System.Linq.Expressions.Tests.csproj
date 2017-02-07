@@ -253,5 +253,8 @@
     <Compile Include="ILReader\LocalsSignatureParser.cs" />
     <Compile Include="ILReader\SigParser.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -16,7 +16,7 @@
     <Compile Include="JsonNetPerformanceTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <ReferenceFromRuntime Include="Newtonsoft.Json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

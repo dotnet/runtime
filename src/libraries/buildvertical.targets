@@ -27,7 +27,7 @@
       <_projectBuildConfigurations>
         <AdditionalProperties>Configuration=%(Identity);%(_projectBuildConfigurations.AdditionalProperties)</AdditionalProperties>
       </_projectBuildConfigurations>
-      
+
       <!-- transform back to project -->
       <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
@@ -83,7 +83,7 @@
 
   <!-- Runs in a leaf project (csproj) to determine best configuration for ProjectReferences -->
   <Target Name="AnnotateProjectReference"
-          BeforeTargets="BeforeResolveReferences"
+          BeforeTargets="AssignProjectConfiguration"
           Condition="'@(ProjectReference)' != ''"
           Inputs="%(ProjectReference.Identity)"
           Outputs="unused">
@@ -115,6 +115,11 @@
     <ItemGroup>
       <ProjectReference>
         <AdditionalProperties>Configuration=$(_projectReferenceConfiguration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
+      </ProjectReference>
+
+      <!-- Project references for non-test assemblies should never be copied to the output. -->
+      <ProjectReference Condition="'$(IsTestProject)' != 'true'">
+        <Private>false</Private>
       </ProjectReference>
     </ItemGroup>
   </Target>
