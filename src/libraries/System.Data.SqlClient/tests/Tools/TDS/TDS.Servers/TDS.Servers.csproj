@@ -24,7 +24,6 @@
     <Compile Include="RoutingTDSServerArguments.cs" />
     <Compile Include="ServerNameFilterType.cs" />
     <Compile Include="TDSServerArguments.cs" />
-    <None Include="project.json" />
     <None Include="TdsServerCertificate.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

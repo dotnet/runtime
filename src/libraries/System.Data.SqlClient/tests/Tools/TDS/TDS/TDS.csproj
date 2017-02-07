@@ -105,7 +105,6 @@
     <Compile Include="TDSUtilities.cs" />
     <Compile Include="TDSVersion.cs" />
     <Compile Include="TransactionIsolationLevelType.cs" />
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

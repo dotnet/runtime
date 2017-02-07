@@ -107,8 +107,5 @@
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

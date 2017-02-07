@@ -52,8 +52,5 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
