@@ -290,7 +290,6 @@ virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
 virtual bool IsInPrologOrEpilog(DWORD  relPCOffset,
                                 GCInfoToken gcInfoToken,
                                 size_t* prologSize) = 0;
-#endif
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized methods only)
@@ -299,6 +298,7 @@ virtual bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags) = 0;
+#endif // !USE_GC_INFO_DECODER
 
 /*
   Returns the size of a given function as reported in the GC info (does
@@ -313,10 +313,12 @@ Returns the ReturnKind of a given function as reported in the GC info.
 
 virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken) = 0;
 
+#ifndef USE_GC_INFO_DECODER
 /*
   Returns the size of the frame (barring localloc)
 */
 virtual unsigned int GetFrameSize(GCInfoToken gcInfoToken) = 0;
+#endif // USE_GC_INFO_DECODER
 
 #ifndef DACCESS_COMPILE
 
@@ -568,7 +570,6 @@ bool IsInPrologOrEpilog(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 size_t*     prologSize);
-#endif
 
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
@@ -578,6 +579,7 @@ bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
+#endif // !USE_GC_INFO_DECODER
 
 /*
   Returns the size of a given function.
@@ -590,11 +592,13 @@ Returns the ReturnKind of a given function.
 */
 virtual ReturnKind GetReturnKind(GCInfoToken gcInfotoken);
 
+#ifndef USE_GC_INFO_DECODER
 /*
   Returns the size of the frame (barring localloc)
 */
 virtual
 unsigned int GetFrameSize(GCInfoToken gcInfoToken);
+#endif // USE_GC_INFO_DECODER
 
 #ifndef DACCESS_COMPILE
 

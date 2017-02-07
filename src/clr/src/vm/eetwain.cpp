@@ -5562,7 +5562,6 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
     return ((info.prologOffs != hdrInfo::NOT_IN_PROLOG) || 
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
 }
-#endif // USE_GC_INFO_DECODER
 
 /*****************************************************************************
  *
@@ -5577,7 +5576,6 @@ bool  EECodeManager::IsInSynchronizedRegion(DWORD       relOffset,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, relOffset, &info);
@@ -5594,11 +5592,8 @@ bool  EECodeManager::IsInSynchronizedRegion(DWORD       relOffset,
         // Synchronized methods have at most one epilog. The epilog does not have to be at the end of the method though.
         // Everything after the epilog is also in synchronized region.
         (info.epilogCnt != 0 && info.syncEpilogStart + info.epilogSize <= relOffset);
-#else // USE_GC_INFO_DECODER
-    _ASSERTE(!"@NYI - EECodeManager::IsInSynchronizedRegion (EETwain.cpp)");
-    return false;
-#endif // USE_GC_INFO_DECODER
 }
+#endif // !USE_GC_INFO_DECODER
 
 /*****************************************************************************
  *
@@ -5669,6 +5664,7 @@ ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
 #endif
 }
 
+#ifndef USE_GC_INFO_DECODER
 /*****************************************************************************
  *
  *  Returns the size of the frame of the given function.
@@ -5680,7 +5676,6 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-#ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
@@ -5689,11 +5684,8 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
     // in all likelyhood
     _ASSERTE(!info.doubleAlign);
     return info.stackSize;
-#else // USE_GC_INFO_DECODER
-    PORTABILITY_ASSERT("EECodeManager::GetFrameSize is not implemented on this platform.");
-    return false;
-#endif // USE_GC_INFO_DECODER
 }
+#endif // USE_GC_INFO_DECODER
 
 #ifndef DACCESS_COMPILE
 
