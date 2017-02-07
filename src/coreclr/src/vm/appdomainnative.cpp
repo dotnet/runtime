@@ -580,7 +580,7 @@ void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatf
 
 #endif // FEATURE_VERSIONING
 
-FCIMPL12(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, Object* requiredPsetUNSAFE, Object* optionalPsetUNSAFE, Object* refusedPsetUNSAFE, U1Array *securityRulesBlobUNSAFE, U1Array *aptcaBlobUNSAFE, INT32 access, INT32 dwFlags, SecurityContextSource securityContextSource)
+FCIMPL9(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array *securityRulesBlobUNSAFE, U1Array *aptcaBlobUNSAFE, INT32 access, INT32 dwFlags, SecurityContextSource securityContextSource)
 {
     FCALL_CONTRACT;
 
@@ -594,9 +594,6 @@ FCIMPL12(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* r
     args.refThis                = (APPDOMAINREF)    refThisUNSAFE;
     args.assemblyName           = (ASSEMBLYNAMEREF) assemblyNameUNSAFE;
     args.identity               = (OBJECTREF)       identityUNSAFE;
-    args.requiredPset           = (OBJECTREF)       requiredPsetUNSAFE;
-    args.optionalPset           = (OBJECTREF)       optionalPsetUNSAFE;
-    args.refusedPset            = (OBJECTREF)       refusedPsetUNSAFE;
     args.securityRulesBlob      = (U1ARRAYREF)      securityRulesBlobUNSAFE;
     args.aptcaBlob              = (U1ARRAYREF)      aptcaBlobUNSAFE;
     args.loaderAllocator        = NULL;

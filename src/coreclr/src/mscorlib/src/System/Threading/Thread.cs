@@ -19,8 +19,6 @@ namespace System.Threading {
     using System.Runtime;
     using System.Runtime.InteropServices;
     using System;
-    using System.Security.Permissions;
-    using System.Security.Principal;
     using System.Globalization;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
@@ -283,8 +281,7 @@ namespace System.Threading {
                 t.SetExecutionContextHelper(ec);
             }
 
-            IPrincipal principal = null;
-            StartInternal(principal, ref stackMark);
+            StartInternal(ref stackMark);
         }
 
         internal ExecutionContext ExecutionContext
@@ -300,7 +297,7 @@ namespace System.Threading {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void StartInternal(IPrincipal principal, ref StackCrawlMark stackMark);
+        private extern void StartInternal(ref StackCrawlMark stackMark);
 
 
         // Helper method to get a logical thread ID for StringBuilder (for

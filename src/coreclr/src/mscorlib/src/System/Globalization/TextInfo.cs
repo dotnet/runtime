@@ -23,7 +23,6 @@ namespace System.Globalization {
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
-    using System.Security.Permissions;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 

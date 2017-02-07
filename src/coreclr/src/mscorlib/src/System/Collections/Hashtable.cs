@@ -17,7 +17,6 @@ namespace System.Collections {
     using System;
     using System.Runtime;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Diagnostics;
     using System.Threading; 
     using System.Runtime.CompilerServices;

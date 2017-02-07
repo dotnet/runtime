@@ -17,7 +17,6 @@ namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
     using System.Threading;
-    using System.Security.Permissions;
 
     [Serializable]
     public struct TypeToken {

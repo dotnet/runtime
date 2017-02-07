@@ -20,7 +20,6 @@ namespace System.Reflection.Emit {
     using System.Reflection;
     using System.Runtime.InteropServices;
     using CultureInfo = System.Globalization.CultureInfo;
-    using System.Security.Permissions;
 
     sealed public class EnumBuilder : TypeInfo
     {

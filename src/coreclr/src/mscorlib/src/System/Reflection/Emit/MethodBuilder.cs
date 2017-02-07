@@ -14,7 +14,6 @@ namespace System.Reflection.Emit
     using System.Security;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;

@@ -18,7 +18,6 @@ namespace System {
     using System.Globalization;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Security.Permissions;
     using System.Text;
     using System.Configuration.Assemblies;
     using System.Runtime.InteropServices;

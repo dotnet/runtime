@@ -48,7 +48,6 @@ namespace System.Collections.Generic {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
 
     [DebuggerTypeProxy(typeof(Mscorlib_DictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]

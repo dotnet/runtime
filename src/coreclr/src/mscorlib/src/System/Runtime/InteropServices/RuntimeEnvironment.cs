@@ -17,7 +17,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Reflection;
 using Microsoft.Win32;
 using System.Runtime.Versioning;

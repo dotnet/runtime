@@ -16,7 +16,6 @@ namespace System {
     //This class only static members and doesn't require the serializable keyword.
 
     using System;
-    using System.Security.Permissions;
     using System.Reflection;
     using System.Security;
     using System.Threading;

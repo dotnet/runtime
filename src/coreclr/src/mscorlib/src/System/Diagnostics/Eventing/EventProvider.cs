@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 using System;
 
@@ -43,7 +42,9 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a 
     /// controller callback)
     /// </summary>
+#if !CORECLR    
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
+#endif // CORECLR
     internal partial class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what

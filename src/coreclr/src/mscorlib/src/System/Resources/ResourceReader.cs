@@ -21,7 +21,6 @@ namespace System.Resources {
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Security;
     using System.Globalization;
     using System.Configuration.Assemblies;

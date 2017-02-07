@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Globalization {
-    using System.Security.Permissions;
     using System.Runtime.Serialization;
     using System.Text;
     using System;

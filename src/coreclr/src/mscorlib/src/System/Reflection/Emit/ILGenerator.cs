@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics.SymbolStore;
     using System.Runtime.InteropServices;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Globalization;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;

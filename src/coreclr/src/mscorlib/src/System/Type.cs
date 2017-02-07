@@ -19,7 +19,6 @@ namespace System
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.Collections;
     using System.Collections.Generic;
     using System.Runtime.Versioning;

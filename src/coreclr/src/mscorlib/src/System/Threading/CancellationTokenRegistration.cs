@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics.Contracts;
-using System.Security.Permissions;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading

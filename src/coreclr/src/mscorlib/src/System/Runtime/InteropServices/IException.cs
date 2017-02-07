@@ -17,7 +17,6 @@ namespace System.Runtime.InteropServices {
     using System;
     using System.Reflection;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     
     [GuidAttribute("b36b5c63-42ef-38bc-a07e-0b34c98f164a")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)]

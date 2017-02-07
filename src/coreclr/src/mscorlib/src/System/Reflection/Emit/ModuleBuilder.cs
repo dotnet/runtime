@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
     using System.IO;
     using System.Resources;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;

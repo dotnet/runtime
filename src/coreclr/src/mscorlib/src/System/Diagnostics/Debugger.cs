@@ -13,7 +13,6 @@ namespace System.Diagnostics
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.Versioning;
 
     // No data, does not need to be marked with the serializable attribute

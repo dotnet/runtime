@@ -20,7 +20,6 @@ namespace System
     using System.Runtime;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.Security.Policy;
     using System.Collections;
     using System.Collections.Generic;

@@ -20,7 +20,6 @@ namespace System.Collections.Generic {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Collections.ObjectModel;
-    using System.Security.Permissions;
 
     // Implements a variable-size List that uses an array of objects to store the
     // elements. A List has a capacity, which is the allocated length

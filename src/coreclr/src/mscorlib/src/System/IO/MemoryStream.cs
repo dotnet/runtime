@@ -23,7 +23,6 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Permissions;
 
 namespace System.IO {
     // A MemoryStream represents a Stream in memory (ie, it has no backing store).

@@ -44,7 +44,6 @@ using System.Diagnostics.Contracts;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Permissions;
 using System.Diagnostics.Tracing;
 
 // NOTE: For performance reasons, initialization is not verified.  If a developer

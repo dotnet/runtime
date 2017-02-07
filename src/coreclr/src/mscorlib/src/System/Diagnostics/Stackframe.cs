@@ -8,7 +8,6 @@ namespace System.Diagnostics {
     using System;
     using System.IO;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     // There is no good reason for the methods of this class to be virtual.

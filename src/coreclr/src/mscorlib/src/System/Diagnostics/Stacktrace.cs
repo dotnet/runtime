@@ -8,7 +8,6 @@ namespace System.Diagnostics {
     using System.Text;
     using System.Threading;
     using System.Security;
-    using System.Security.Permissions;
     using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;

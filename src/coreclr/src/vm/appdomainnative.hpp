@@ -34,7 +34,7 @@ public:
     static FCDECL2(void, UpdateLoaderOptimization, AppDomainBaseObject* refThisUNSAFE, DWORD optimization);
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-    static FCDECL12(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, Object* requiredPsetUNSAFE, Object* optionalPsetUNSAFE, Object* refusedPsetUNSAFE, U1Array* securityRulesBlobUNSAFE, U1Array* aptcaBlobUNSAFE, INT32 access, INT32 flags, SecurityContextSource securityContextSource);
+    static FCDECL9(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array* securityRulesBlobUNSAFE, U1Array* aptcaBlobUNSAFE, INT32 access, INT32 flags, SecurityContextSource securityContextSource);
 #ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
     static FCDECL0(FC_BOOL_RET, HasHost);
 #endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
