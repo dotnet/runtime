@@ -6,8 +6,6 @@
     <AssemblyName>System.Collections</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!-- 436 is thrown because BitArray conflict with corelib -->
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
