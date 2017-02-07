@@ -281,7 +281,6 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;=Length).
         /// </exception>
-        [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894
         public ReadOnlySpan<T> Slice(int start)
         {
             if ((uint)start > (uint)_length)
@@ -298,7 +297,6 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;=Length).
         /// </exception>
-        [MethodImpl(MethodImplOptions.NoOptimization)] // TODO-SPAN: Workaround for https://github.com/dotnet/coreclr/issues/7894
         public ReadOnlySpan<T> Slice(int start, int length)
         {
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
