@@ -1086,15 +1086,28 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
 
     // Now that the data from the file has been copied, copy over metadata
     // from the source file.  First copy the file times.
+    // If futimes nor futimes are available on this platform, file times will
+    // not be copied over.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
     if (ret == 0)
     {
+#if HAVE_FUTIMES
         struct timeval origTimes[2];
         origTimes[0].tv_sec = sourceStat.st_atime;
         origTimes[0].tv_usec = 0;
         origTimes[1].tv_sec = sourceStat.st_mtime;
         origTimes[1].tv_usec = 0;
         while (CheckInterrupted(ret = futimes(outFd, origTimes)));
+#elif HAVE_FUTIMENS
+        // futimes is not a POSIX function, and not available on Android,
+        // but futimens is
+        struct timespec origTimes[2];
+        origTimes[0].tv_sec = sourceStat.st_atime;
+        origTimes[0].tv_nsec = 0;
+        origTimes[1].tv_sec = sourceStat.st_mtime;
+        origTimes[1].tv_nsec = 0;
+        while (CheckInterrupted(ret = futimens(outFd, origTimes)));
+#endif
     }
     if (ret != 0)
     {
