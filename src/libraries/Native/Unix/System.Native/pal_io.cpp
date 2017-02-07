@@ -1193,7 +1193,13 @@ extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
     assert(wd >= 0);
 
 #if HAVE_INOTIFY
-    return inotify_rm_watch(ToFileDescriptor(fd), wd);
+    return inotify_rm_watch(
+        ToFileDescriptor(fd),
+#if INOTIFY_RM_WATCH_WD_UNSIGNED
+        static_cast<uint32_t>(wd));
+#else
+        wd);
+#endif
 #else
     (void)fd, (void)wd;
     errno = ENOTSUP;
