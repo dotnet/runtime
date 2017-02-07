@@ -70,6 +70,8 @@
 #cmakedefine01 HAVE_FUTIMENS
 #cmakedefine01 HAVE_MKSTEMPS
 #cmakedefine01 HAVE_MKSTEMP
+#cmakedefine01 IPV6MR_INTERFACE_UNSIGNED
+#cmakedefine01 BIND_ADDRLEN_UNSIGNED
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

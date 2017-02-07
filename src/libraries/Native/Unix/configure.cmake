@@ -329,6 +329,44 @@ check_function_exists(
     futimens
     HAVE_FUTIMENS)
 
+set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
+
+check_cxx_source_compiles(
+    "
+    #include <sys/socket.h>
+
+    int main()
+    {
+        int fd;
+        sockaddr* addr;
+        socklen_t addrLen;
+
+        int err = bind(fd, addr, addrLen);
+        return 0;
+    }
+    "
+    BIND_ADDRLEN_UNSIGNED
+)
+
+check_cxx_source_compiles(
+    "
+    #include <netinet/in.h>
+    #include <netinet/tcp.h>
+
+    int main()
+    {
+        ipv6_mreq opt;
+        unsigned int index = 0;
+        opt.ipv6mr_interface = index;
+        return 0;
+    }
+    "
+    IPV6MR_INTERFACE_UNSIGNED
+)
+
+set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+
 check_cxx_source_runs(
     "
     #include <sys/mman.h>
