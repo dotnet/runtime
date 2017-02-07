@@ -218,7 +218,7 @@ void genCallInstruction(GenTreePtr call);
 
 void genJmpMethod(GenTreePtr jmp);
 
-BasicBlock* genCallFinally(BasicBlock* block, BasicBlock* lblk);
+BasicBlock* genCallFinally(BasicBlock* block);
 
 #if FEATURE_EH_FUNCLETS
 void genEHCatchRet(BasicBlock* block);
