@@ -20,7 +20,6 @@ public class ConsoleEncoding
     }
 
     [Theory]
-    [PlatformSpecific(TestPlatforms.Windows)]
     [MemberData(nameof(InputData))]
     public void TestEncoding(string inputString)
     {
