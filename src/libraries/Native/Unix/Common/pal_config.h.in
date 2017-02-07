@@ -68,6 +68,8 @@
 #cmakedefine01 HAVE_UNAME
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_FUTIMENS
+#cmakedefine01 HAVE_MKSTEMPS
+#cmakedefine01 HAVE_MKSTEMP
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
