@@ -294,6 +294,10 @@ set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 0)
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CMAKE_REQUIRED_LIBRARIES rt)
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
+
+    if (CLR_CMAKE_PLATFORM_ANDROID)
+       set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 1)
+    endif()
 elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 1)
 endif ()
@@ -463,8 +467,11 @@ check_cxx_source_compiles(
     HAVE_TCP_VAR_H
 )
 
+# If sys/cdefs is not included on Android, this check will fail because
+# __BEGIN_DECLS is not defined
 check_cxx_source_compiles(
     "
+    #include <sys/cdefs.h>
     #include <netinet/tcp.h>
     int main() { int x = TCP_ESTABLISHED; return x; }
     "
