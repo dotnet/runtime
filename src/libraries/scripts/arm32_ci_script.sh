@@ -23,7 +23,9 @@ function usage {
     echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
     echo '                                         Any other value is not accepted'
     echo 'Optional Arguments:'
+    echo '    --arm                              : Build as arm (default)'
     echo '    --armel                            : Build as armel'
+    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -178,6 +180,64 @@ function cross_build_corefx {
     ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-managed.sh -$__buildConfig -skipTests -BuildPackages=false
 }
 
+# Cross builds corefx using Docker image
+function cross_build_corefx_with_docker {
+    __currentWorkingDirectory=`pwd`
+
+    # Check build configuration and choose Docker image
+    if [ "$__buildArch" == "arm" ]; then
+        # TODO: For arm, we are going to embed RootFS inside Docker image.
+        case $__linuxCodeName in
+        trusty)
+            __dockerImage=" chcosta/dotnetcore:ubuntu1404_cross_prereqs_v1"
+            __runtimeOS="ubuntu.14.04"
+        ;;
+        xenial)
+            __dockerImage=" chcosta/dotnetcore:ubuntu1604_cross_prereqs_v1"
+            __runtimeOS="ubuntu.16.04"
+        ;;
+        *)
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    elif [ "$__buildArch" == "armel" ]; then
+        # For armel Tizen, we are going to construct RootFS on the fly.
+        case $__linuxCodeName in
+        tizen)
+            __dockerImage=" t2wish/dotnetcore:ubuntu1404_cross_prereqs_v2"
+            __runtimeOS="tizen.4.0.0"
+        ;;
+        *)
+            echo "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch"
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    else
+        exit_with_error "ERROR: unknown buildArch $__buildArch" false
+    fi
+
+    # Build rootfs
+    __dockerCmd="sudo docker run --privileged -i --rm -v $__currentWorkingDirectory:/opt/corefx -w /opt/corefx $__dockerImage"
+    __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
+
+    (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
+    $__dockerCmd $__buildRootfsCmd
+    sudo chown -R $(id -u -n) cross/rootfs
+
+    # Cross building corefx with rootfs in Docker
+    __buildNativeCmd="/opt/corefx/build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag"
+    if [ "$__buildArch" == "arm" ]; then
+        __buildManagedCmd="./build-managed.sh -$__buildConfig -buildArch=$__buildArch -RuntimeOS=$__runtimeOS"
+    else
+        # TODO-armel: We can use same option to arm, i.e. -buildArch and -RuntimeOS options for armel,
+        #              when CoreCLR packages are also available at NuGet server for armel.
+        __buildManagedCmd="./build-managed.sh -$__buildConfig -BuildPackages=false"
+    fi
+    $__dockerCmd $__buildNativeCmd
+    $__dockerCmd $__buildManagedCmd
+    sudo chown -R $(id -u -n) ./bin
+}
+
 #Define script variables
 __ARMEmulPath=
 __ARMRootfsImageBase="rootfs-u1404.ext4"
@@ -185,6 +245,7 @@ __ARMRootfsMountPath=
 __buildConfig=
 __verboseFlag=
 __buildArch="arm"
+__linuxCodeName="trusty"
 __initialGitHead=`git rev-parse --verify HEAD`
 
 #Parse command line arguments
@@ -203,9 +264,17 @@ do
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
         ;;
+    --arm)
+        __ARMRootfsImageBase="rootfs-u1404.ext4"
+        __buildArch="arm"
+        ;;
     --armel)
         __ARMRootfsImageBase="rootfs-t30.ext4"
         __buildArch="armel"
+        __linuxCodeName="tizen"
+        ;;
+    --linuxCodeName=*)
+        __linuxCodeName=${arg#*=}
         ;;
     -v|--verbose)
         __verboseFlag="verbose"
@@ -241,13 +310,9 @@ set -e
 ## Begin cross build
 (set +x; echo "Git HEAD @ $__initialGitHead")
 
-#Mount the emulator
-(set +x; echo 'Mounting emulator...')
-mount_emulator
-
 #Complete the cross build
 (set +x; echo 'Building corefx...')
-cross_build_corefx
+cross_build_corefx_with_docker
 
 #Clean the environment
 (set +x; echo 'Cleaning environment...')
