@@ -52,9 +52,8 @@ struct SharedState
     OBJECTHANDLE    m_Threadable;
     OBJECTHANDLE    m_ThreadStartArg;
     Thread         *m_Internal;
-    OBJECTHANDLE    m_Principal;
 
-    SharedState(OBJECTREF threadable, OBJECTREF threadStartArg, Thread *internal, OBJECTREF principal)
+    SharedState(OBJECTREF threadable, OBJECTREF threadStartArg, Thread *internal)
     {
         CONTRACTL
         {
@@ -71,8 +70,6 @@ struct SharedState
         m_ThreadStartArg = ad->CreateHandle(threadStartArg);
 
         m_Internal = internal;
-
-        m_Principal = ad->CreateHandle(principal);
     }
 
     ~SharedState()
@@ -95,7 +92,6 @@ struct SharedState
         {
             DestroyHandle(m_Threadable);
             DestroyHandle(m_ThreadStartArg);
-            DestroyHandle(m_Principal);
         }
     }
 };
@@ -230,7 +226,6 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     // we are saving the delagate and result primarily for debugging
     struct _gc
     {
-        OBJECTREF orPrincipal;
         OBJECTREF orThreadStartArg;
         OBJECTREF orDelegate;
         OBJECTREF orResult;
@@ -243,22 +238,6 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     _ASSERTE(pThread);
     GCPROTECT_BEGIN(gc);
     BEGIN_SO_INTOLERANT_CODE(pThread);
-
-    gc.orPrincipal = ObjectFromHandle(args->share->m_Principal);
-
-#ifdef FEATURE_IMPERSONATION
-    // Push the initial security principal object (if any) onto the
-    // managed thread.
-    if (gc.orPrincipal != NULL)
-    {
-        gc.orThread = args->pThread->GetExposedObject();
-        MethodDescCallSite setPrincipalInternal(METHOD__THREAD__SET_PRINCIPAL_INTERNAL, &gc.orThread);
-        ARG_SLOT argsToSetPrincipal[2];
-        argsToSetPrincipal[0] = ObjToArgSlot(gc.orThread);
-        argsToSetPrincipal[1] = ObjToArgSlot(gc.orPrincipal);
-        setPrincipalInternal.Call(argsToSetPrincipal);
-    }
-#endif
 
     gc.orDelegate = ObjectFromHandle(args->share->m_Threadable);
     gc.orThreadStartArg = ObjectFromHandle(args->share->m_ThreadStartArg);
@@ -434,20 +413,20 @@ ULONG __stdcall ThreadNative::KickOffThread(void* pass)
 }
 
 
-FCIMPL3(void, ThreadNative::Start, ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark)
+FCIMPL2(void, ThreadNative::Start, ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
 
-    StartInner(pThisUNSAFE, pPrincipalUNSAFE, pStackMark);
+    StartInner(pThisUNSAFE, pStackMark);
 
     HELPER_METHOD_FRAME_END_POLL();
 }
 FCIMPLEND
 
 // Start up a thread, which by now should be in the ThreadStore's Unstarted list.
-void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark)
+void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark)
 {
     CONTRACTL
     {
@@ -459,11 +438,9 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE, Object* pPrincipalU
 
     struct _gc
     {
-        OBJECTREF       pPrincipal;
         THREADBASEREF   pThis;
     } gc;
 
-    gc.pPrincipal  = (OBJECTREF) pPrincipalUNSAFE;
     gc.pThis       = (THREADBASEREF) pThisUNSAFE;
 
     GCPROTECT_BEGIN(gc);
@@ -498,7 +475,7 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE, Object* pPrincipalU
 
         // Allocate this away from our stack, so we can unwind without affecting
         // KickOffThread.  It is inside a GCFrame, so we can enable GC now.
-        NewHolder<SharedState> share(new SharedState(threadable, threadStartArg, pNewThread, gc.pPrincipal));
+        NewHolder<SharedState> share(new SharedState(threadable, threadStartArg, pNewThread));
 
         pNewThread->IncExternalCount();
 

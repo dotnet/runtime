@@ -28,7 +28,6 @@ using System.Diagnostics.Contracts;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Permissions;
 
 namespace System.Runtime.CompilerServices
 {

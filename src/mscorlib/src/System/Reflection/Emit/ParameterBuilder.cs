@@ -16,7 +16,6 @@ namespace System.Reflection.Emit {
     using System.Runtime.InteropServices;
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     public class ParameterBuilder

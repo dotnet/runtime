@@ -14,7 +14,6 @@
 namespace System.Threading {
     
     using System;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
 
     public sealed class AutoResetEvent : EventWaitHandle

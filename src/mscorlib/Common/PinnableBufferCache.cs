@@ -11,7 +11,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Security.Permissions;
 
 #if PINNABLEBUFFERCACHE_MSCORLIB
 namespace System.Threading

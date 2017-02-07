@@ -17,7 +17,6 @@
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Security.Permissions;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Threading;

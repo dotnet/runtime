@@ -12,7 +12,6 @@ namespace System.Reflection.Emit
     using System.Collections.Generic;
     using System.Diagnostics.SymbolStore;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
     

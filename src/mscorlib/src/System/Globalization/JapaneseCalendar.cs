@@ -8,8 +8,6 @@ namespace System.Globalization {
     using System.Diagnostics.CodeAnalysis;
     using System.Diagnostics.Contracts;
     using Microsoft.Win32;
-    using PermissionSet = System.Security.PermissionSet;
-    using System.Security.Permissions;
 
     /*=================================JapaneseCalendar==========================
     **

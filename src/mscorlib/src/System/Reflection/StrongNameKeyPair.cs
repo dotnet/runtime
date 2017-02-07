@@ -22,7 +22,6 @@ namespace System.Reflection
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.Versioning;
     using Microsoft.Win32;
     using System.Diagnostics.Contracts;

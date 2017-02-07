@@ -13,7 +13,6 @@ namespace System.Reflection
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
-    using System.Security.Permissions;
     using System.Threading;
     using MdToken = System.Reflection.MetadataToken;
 

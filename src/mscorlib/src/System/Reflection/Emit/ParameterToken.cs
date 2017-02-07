@@ -16,7 +16,6 @@ namespace System.Reflection.Emit {
     
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
 
     // The ParameterToken class is an opaque representation of the Token returned
     // by the Metadata to represent the parameter. 

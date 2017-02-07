@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;

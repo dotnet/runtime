@@ -5,7 +5,6 @@
 namespace System.Diagnostics {
     using System.Runtime.Remoting;
     using System;
-    using System.Security.Permissions;
     using System.IO;
     using System.Collections;
     using System.Runtime.CompilerServices;

@@ -17,7 +17,6 @@ namespace System.Threading
     using System.Threading;
     using System.Runtime.Remoting;
     using System;
-    using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Win32.SafeHandles;

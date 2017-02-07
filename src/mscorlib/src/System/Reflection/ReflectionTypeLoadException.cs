@@ -19,7 +19,6 @@ namespace System.Reflection {
     
     using System;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     [Serializable]
     public sealed class ReflectionTypeLoadException : SystemException, ISerializable {

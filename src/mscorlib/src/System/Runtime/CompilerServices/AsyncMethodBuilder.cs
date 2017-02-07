@@ -18,7 +18,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 

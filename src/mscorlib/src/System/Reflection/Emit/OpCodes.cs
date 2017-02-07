@@ -13,7 +13,6 @@
 namespace System.Reflection.Emit {
 
 using System;
-using System.Security.Permissions;
 
 //
 // Internal enums for opcode values. Note that the value names are used to construct

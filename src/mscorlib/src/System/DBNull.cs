@@ -11,7 +11,6 @@ namespace System {
     using System;
     using System.Runtime.Remoting;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     [Serializable]
     public sealed class DBNull : ISerializable, IConvertible {
     

@@ -19,7 +19,6 @@ namespace System.Reflection.Emit {
     using System.Reflection;
     using System.IO;
     using System.Text;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Globalization;
     using System.Diagnostics;

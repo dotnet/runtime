@@ -18,7 +18,6 @@
 namespace System.Runtime.Serialization {
 
     using System;
-    using System.Security.Permissions;
     // Interface does not need to be marked with the serializable attribute
     public interface IObjectReference {
         Object GetRealObject(StreamingContext context);

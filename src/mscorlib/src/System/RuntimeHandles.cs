@@ -19,7 +19,6 @@ namespace System
     using System.Text;
     using System.Globalization;
     using System.Security;
-    using System.Security.Permissions;
     using Microsoft.Win32.SafeHandles;
     using System.Diagnostics.Contracts;
     using StackCrawlMark = System.Threading.StackCrawlMark;

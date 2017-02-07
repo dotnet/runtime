@@ -9,7 +9,6 @@ namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Collections.Generic;

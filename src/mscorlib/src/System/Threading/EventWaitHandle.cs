@@ -28,7 +28,6 @@ namespace System.Threading
     using System;
     using System.Threading;
     using System.Runtime.CompilerServices;
-    using System.Security.Permissions;
     using System.IO;
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;

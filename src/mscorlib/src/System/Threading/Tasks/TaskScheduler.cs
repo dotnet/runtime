@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Security;
-using System.Security.Permissions;
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;

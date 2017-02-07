@@ -73,9 +73,6 @@ enum DynamicAssemblyFlags
 struct CreateDynamicAssemblyArgsGC
 {
     APPDOMAINREF    refThis;
-    OBJECTREF       refusedPset;
-    OBJECTREF       optionalPset;
-    OBJECTREF       requiredPset;
     OBJECTREF       identity;
     ASSEMBLYNAMEREF assemblyName;
     U1ARRAYREF      securityRulesBlob;

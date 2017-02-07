@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Security;
-    using System.Security.Permissions;
     using System.Text;
     using System.Threading;
     using System.Runtime.Remoting;
