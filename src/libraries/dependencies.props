@@ -31,7 +31,8 @@
     <CoreClrExpectedPrerelease>beta-25007-01</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25007-00</ProjectNTfsExpectedPrerelease>
-    <StandardExpectedPrerelease>beta-25006-01</StandardExpectedPrerelease>
+    <NETStandardPackageVersion>2.0.0-beta-25006-01</NETStandardPackageVersion>
+    <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-01</SniPackageVersion>
   </PropertyGroup>
@@ -96,8 +97,8 @@
     </XmlUpdateStep>
     <XmlUpdateStep Include="Standard">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>StandardExpectedPrerelease</ElementName>
-      <BuildInfoName>Standard</BuildInfoName>
+      <ElementName>NETStandardPackageVersion</ElementName>
+      <PackageId>$(NETStandardPackageId)</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
