@@ -28,7 +28,7 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    public class Exception : ISerializable, _Exception
+    public class Exception : ISerializable
     {
         private void Init()
         {

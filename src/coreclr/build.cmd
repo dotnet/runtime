@@ -388,13 +388,15 @@ if %__BuildNativeCoreLib% EQU 1 (
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
-        echo     %__CrossGenCoreLibLog%
+        :: Put it in the same log, helpful for Jenkins
+        type %__CrossGenCoreLibLog%
         exit /b 1
     )
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.ni.dll" >> "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
-        echo     %__CrossGenCoreLibLog%
+        :: Put it in the same log, helpful for Jenkins
+        type %__CrossGenCoreLibLog%
         exit /b 1
     )
 
@@ -417,8 +419,9 @@ if %__BuildNativeCoreLib% EQU 1 (
     )
 
     if NOT !err! == 0 (
-        echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to the build log file for details:
-        echo     !__CrossGenCoreLibLog!
+        echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to !__CrossGenCoreLibLog!
+        :: Put it in the same log, helpful for Jenkins
+        type %__CrossGenCoreLibLog%        
         exit /b 1
     )
 )

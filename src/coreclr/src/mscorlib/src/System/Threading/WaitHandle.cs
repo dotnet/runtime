@@ -445,10 +445,11 @@ namespace System.Threading
         ==  SignalAndWait
         ==
         ==================================================*/
-
+#if !PLATFORM_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)] 
         private static extern int SignalAndWaitOne(SafeWaitHandle waitHandleToSignal,SafeWaitHandle waitHandleToWaitOn, int millisecondsTimeout,
                                             bool hasThreadAffinity,  bool exitContext);
+#endif // !PLATFORM_UNIX        
 
         public static bool SignalAndWait(
                                         WaitHandle toSignal,

@@ -1647,14 +1647,6 @@ namespace System.Reflection
             return retAssembly;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern RuntimeAssembly nLoadImage(byte[] rawAssembly,
-                                                          byte[] rawSymbolStore,
-                                                          Evidence evidence,
-                                                          ref StackCrawlMark stackMark,
-                                                          bool fIntrospection,
-                                                          SecurityContextSource securityContextSource);
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetModules(RuntimeAssembly assembly, 
