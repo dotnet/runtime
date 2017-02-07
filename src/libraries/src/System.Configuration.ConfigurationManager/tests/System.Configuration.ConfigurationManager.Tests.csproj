@@ -90,6 +90,7 @@
     <Compile Include="System\Configuration\TempConfig.cs" />
     <Compile Include="System\Configuration\TestData.cs" />
     <Compile Include="System\Configuration\TypeUtilTests.cs" />
+    <Compile Include="System\Configuration\UriSectionTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
