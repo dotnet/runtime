@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{2EF7D710-A7BD-4BB3-8EF6-3F0298CD4986}</ProjectGuid>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
