@@ -1186,13 +1186,45 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                contextString += " and Test"
             }
 
-            def arm64Users = ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard']
+            def arm64Users = [
+                'adiaaida',
+                'AndyAyersMS',
+                'briansull',
+                'BruceForstall',
+                'CarolEidt',
+                'cmckinsey',
+                'erozenfeld',
+                'jashook',
+                'JosephTremoulet',
+                'pgavlin',
+                'pkukol',
+                'russellhadley',
+                'RussKeldorph',
+                'sandreenko',
+                'sivarv',
+                'swaroop-sridhar',
+                'gkhanna79',
+                'jkotas',
+                'markwilkie',
+                'rahku',
+                'ramarag',
+                'tzwlai',
+                'weshaggard'
+            ]
+
             switch (os) {
                 case 'Windows_NT':
                     switch (scenario) {
                         case 'default':
-                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                            if (configuration == 'Release') {
+                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                            }
+                            else {
+                                // Add "Checked Build And Test" and "Debug Build" to the above users' PRs since many of them
+                                // are at higher risk of ARM64-breaking changes.
+                                Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
+                            }
                             break
                         case 'pri1r2r':
                         case 'gcstress0x3':
