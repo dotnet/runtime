@@ -67,6 +67,7 @@
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
     <!-- Generic tests -->
+    <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
