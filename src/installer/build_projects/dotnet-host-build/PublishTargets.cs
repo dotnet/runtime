@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult FinalizeBuild(BuildTargetContext c)
         {
-            if (CheckIfAllBuildsHavePublished())
+            if (CheckIfAllBuildsHavePublished(c))
             {
                 string targetContainer = $"{Channel}/Binaries/Latest/";
                 string targetVersionFile = $"{targetContainer}{CommitHash}";
@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.Host.Build
             repoUpdater.UpdatePublishedVersions(Dirs.PackagesNoRID, $"build-info/dotnet/core-setup/{Channel}/Latest").Wait();
         }
 
-        private static bool CheckIfAllBuildsHavePublished()
+        private static bool CheckIfAllBuildsHavePublished(BuildTargetContext c)
         {
             Dictionary<string, bool> badges = new Dictionary<string, bool>()
              {
@@ -195,9 +195,9 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_Windows_arm64", false },
                  { "sharedfx_Linux_x64", false },
                  { "sharedfx_Ubuntu_x64", false },
-                 // { "sharedfx_Ubuntu_14_04_arm", false },
+                 { "sharedfx_Ubuntu_14_04_arm", false },
                  { "sharedfx_Ubuntu_16_04_x64", false },
-                 // { "sharedfx_Ubuntu_16_04_arm", false },
+                 { "sharedfx_Ubuntu_16_04_arm", false },
                  { "sharedfx_Ubuntu_16_10_x64", false },
                  { "sharedfx_RHEL_x64", false },
                  { "sharedfx_OSX_x64", false },
@@ -212,7 +212,7 @@ namespace Microsoft.DotNet.Host.Build
 
             List<string> blobs = new List<string>(AzurePublisherTool.ListBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}/"));
 
-            var versionBadgeName = $"sharedfx_{Monikers.GetBadgeMoniker()}";
+            var versionBadgeName = $"sharedfx_{Monikers.GetBadgeMoniker(c)}";
             if (badges.ContainsKey(versionBadgeName) == false)
             {
                 throw new ArgumentException($"A new OS build ({versionBadgeName}) was added without adding the moniker to the {nameof(badges)} lookup");
