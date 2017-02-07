@@ -219,6 +219,7 @@ void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 #endif // #ifndef DACCESS_COMPILE
 
 
+#ifndef WIN64EXCEPTIONS
 //---------------------------------------------------------------------------------------
 //
 // Initialize the EHContext using the resume PC and the REGDISPLAY.  The EHContext is currently used in two
@@ -240,10 +241,10 @@ void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
 
     // EAX ECX EDX are scratch
     this->Esp  = regs->SP;
-    this->Ebx = *regs->GetEbxLocation();
-    this->Esi = *regs->GetEsiLocation();
-    this->Edi = *regs->GetEdiLocation();
-    this->Ebp = *regs->GetEbpLocation();
+    this->Ebx = *regs->pEbx;
+    this->Esi = *regs->pEsi;
+    this->Edi = *regs->pEdi;
+    this->Ebp = *regs->pEbp;
 
     this->Eip = (ULONG)(size_t)resumePC;
 }
@@ -272,16 +273,17 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
     // EAX ECX EDX are scratch. 
     // No need to update ESP as unwinder takes care of that for us
 
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBX: *%p= %p\n", regs->GetEbxLocation(), this->Ebx));
-    LOG((LF_EH, LL_INFO1000, "Updating saved ESI: *%p= %p\n", regs->GetEsiLocation(), this->Esi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EDI: *%p= %p\n", regs->GetEdiLocation(), this->Edi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBP: *%p= %p\n", regs->GetEbpLocation(), this->Ebp));
+    LOG((LF_EH, LL_INFO1000, "Updating saved EBX: *%p= %p\n", regs->pEbx, this->Ebx));
+    LOG((LF_EH, LL_INFO1000, "Updating saved ESI: *%p= %p\n", regs->pEsi, this->Esi));
+    LOG((LF_EH, LL_INFO1000, "Updating saved EDI: *%p= %p\n", regs->pEdi, this->Edi));
+    LOG((LF_EH, LL_INFO1000, "Updating saved EBP: *%p= %p\n", regs->pEbp, this->Ebp));
     
-    *regs->GetEbxLocation() = this->Ebx;
-    *regs->GetEsiLocation() = this->Esi;
-    *regs->GetEdiLocation() = this->Edi;
-    *regs->GetEbpLocation() = this->Ebp;
+    *regs->pEbx = this->Ebx;
+    *regs->pEsi = this->Esi;
+    *regs->pEdi = this->Edi;
+    *regs->pEbp = this->Ebp;
 }
+#endif // WIN64EXCEPTIONS
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
