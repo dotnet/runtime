@@ -50,7 +50,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //------------------------------------------------------------------------
 // genCallFinally: Generate a call to the finally block.
 //
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
+BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     NYI("ARM genCallFinally");
     return block;
