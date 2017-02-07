@@ -2,15 +2,14 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup Condition="'$(ResolveMatchingContract)' == 'true'">
-    <ResolveReferencesDependsOn>
+    <AddProjectReferencesDynamicallyDependsOn>
       ResolveMatchingContract;
+      $(AddProjectReferencesDynamicallyDependsOn);
+    </AddProjectReferencesDynamicallyDependsOn>
+    <ResolveReferencesDependsOn>
       $(ResolveReferencesDependsOn);
       VerifyMatchingContract
     </ResolveReferencesDependsOn>
-    <CleanDependsOn>
-      ResolveMatchingContract;
-      $(CleanDependsOn);
-    </CleanDependsOn>
   </PropertyGroup>
 
   <Target Name="ResolveMatchingContract">
