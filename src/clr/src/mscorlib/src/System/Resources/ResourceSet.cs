@@ -17,7 +17,6 @@ namespace System.Resources {
     using System.Collections;
     using System.IO;
     using System.Globalization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Reflection;
     using System.Runtime.Serialization;

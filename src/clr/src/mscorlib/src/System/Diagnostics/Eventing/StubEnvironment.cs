@@ -350,7 +350,6 @@ namespace System.Security
 }
 namespace System.Security.Permissions
 {
-    class HostProtectionAttribute : Attribute { public bool MayLeakOnAbort { get; set; } }
     class PermissionSetAttribute : Attribute
     { 
         public PermissionSetAttribute(System.Security.SecurityAction action) { }

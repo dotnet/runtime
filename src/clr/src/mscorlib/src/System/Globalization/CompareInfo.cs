@@ -29,7 +29,6 @@ namespace System.Globalization {
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Threading;
-    using System.Security.Permissions;
     using Microsoft.Win32;
     using System.Security;
     using System.Diagnostics;

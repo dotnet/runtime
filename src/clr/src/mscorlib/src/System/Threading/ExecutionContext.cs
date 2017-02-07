@@ -19,7 +19,6 @@ namespace System.Threading
     using System.Reflection;
     using System.Runtime.ExceptionServices;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;

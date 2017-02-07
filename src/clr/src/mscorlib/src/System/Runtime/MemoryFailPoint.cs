@@ -20,7 +20,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Security.Permissions;
 using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;

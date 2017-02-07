@@ -14,7 +14,6 @@
 **
 ===========================================================*/
 
-using System.Security.Permissions;
 using Win32Native = Microsoft.Win32.Win32Native;
 using System.Runtime.InteropServices;
 using System.Security;

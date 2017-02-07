@@ -334,8 +334,6 @@ public:
 #ifdef FEATURE_CAS_POLICY
     virtual HRESULT LoadSignature( COR_TRUST **ppSignature = NULL) = 0;
 
-    virtual void SetRequestedPermissionSet(OBJECTREF RequiredPermissionSet, OBJECTREF OptionalPermissionSet, OBJECTREF DeniedPermissionSet) = 0;
-
     virtual void SetAdditionalEvidence(OBJECTREF evidence) = 0;
     virtual BOOL HasAdditionalEvidence() = 0;
     virtual OBJECTREF GetAdditionalEvidence()  = 0;

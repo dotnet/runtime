@@ -4,7 +4,6 @@
 
 namespace System.Diagnostics {
     using System;
-    using System.Security.Permissions;
     using System.IO;
     using System.Reflection;
     using System.Runtime.CompilerServices;

@@ -64,11 +64,11 @@ public:
     static LPVOID F_CALL_CONV FastGetCurrentThread();
     static LPVOID F_CALL_CONV FastGetDomain();
 
-    static void StartInner(ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark);
+    static void StartInner(ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark);
 
     static FCDECL1(void, Abort, ThreadBaseObject* pThis);
     static FCDECL1(void, ResetAbort, ThreadBaseObject* pThis);
-    static FCDECL3(void,    Start,             ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark);
+    static FCDECL2(void,    Start,             ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark);
 #ifndef FEATURE_CORECLR
     static FCDECL1(void,    Suspend,           ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(void,    Resume,            ThreadBaseObject* pThisUNSAFE);

@@ -8,7 +8,6 @@ namespace System.Threading
 {
     using System;
     using System.Security;
-    using System.Security.Permissions;
     using Microsoft.Win32;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;

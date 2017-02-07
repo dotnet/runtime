@@ -20,7 +20,6 @@ namespace System.Reflection {
     using System.Runtime.CompilerServices;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;

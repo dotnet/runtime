@@ -17,7 +17,6 @@
 namespace System.Threading {
 
     using System;
-    using System.Security.Permissions;
     using System.Runtime;
     using System.Runtime.Remoting;
     using System.Threading;

@@ -16,7 +16,6 @@ namespace System.Reflection
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Text;
     using System.Threading;
     using MemberListType = System.RuntimeType.MemberListType;

@@ -18,7 +18,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Security.Permissions;
     using System.Security;
     using System.IO;
     using System.Text;

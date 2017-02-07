@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
     using System;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     
     public sealed class FieldBuilder : FieldInfo

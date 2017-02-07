@@ -115,10 +115,6 @@ public:
 
     OBJECTREF GetRequestedPermissionSet(OBJECTREF *pOptionalPermissionSet, OBJECTREF *pDeniedPermissionSet);
 
-    virtual void SetRequestedPermissionSet(OBJECTREF RequiredPermissionSet,
-                                          OBJECTREF OptionalPermissionSet,
-                                          OBJECTREF DeniedPermissionSet);
-
 #ifndef DACCESS_COMPILE
     virtual void SetAdditionalEvidence(OBJECTREF evidence);
     virtual BOOL HasAdditionalEvidence();

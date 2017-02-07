@@ -12,7 +12,6 @@ namespace System.Text
     using System.Runtime.Serialization;
     using System.Globalization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Text;
     using System.Diagnostics;

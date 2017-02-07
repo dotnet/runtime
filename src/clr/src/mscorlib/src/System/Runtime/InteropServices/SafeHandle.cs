@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices {
 using System;
 using System.Reflection;
 using System.Threading;
-using System.Security.Permissions;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.IO;

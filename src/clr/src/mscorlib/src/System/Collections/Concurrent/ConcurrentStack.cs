@@ -20,7 +20,6 @@ using System.Diagnostics.Contracts;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Security.Permissions;
 using System.Threading;
 
 namespace System.Collections.Concurrent

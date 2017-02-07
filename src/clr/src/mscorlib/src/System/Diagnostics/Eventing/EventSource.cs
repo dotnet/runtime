@@ -187,7 +187,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Security;
-using System.Security.Permissions;
 
 using System.Text;
 using System.Threading;
@@ -3047,7 +3046,7 @@ namespace System.Diagnostics.Tracing
             }
             if (s_currentPid == 0)
             {
-#if ES_BUILD_STANDALONE && !ES_BUILD_PCL
+#if ES_BUILD_STANDALONE && !ES_BUILD_PCL && !CORECLR
                 // for non-BCL EventSource we must assert SecurityPermission
                 new SecurityPermission(PermissionState.Unrestricted).Assert();
 #endif

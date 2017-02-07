@@ -17,7 +17,6 @@ using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using System.Security.Permissions;
 using System.Threading;
 
 // Disable the "reference to volatile field not treated as volatile" error.

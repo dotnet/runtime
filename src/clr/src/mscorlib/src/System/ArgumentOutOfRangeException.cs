@@ -17,7 +17,6 @@ namespace System {
     using System.Runtime.Remoting;
     using System.Runtime.Serialization;
     using System.Globalization;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
         
     // The ArgumentOutOfRangeException is thrown when an argument 

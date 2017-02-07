@@ -6,7 +6,6 @@
 namespace System.Threading
 {
     using System;
-    using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;

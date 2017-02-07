@@ -18,7 +18,6 @@ namespace System.Runtime.CompilerServices {
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;

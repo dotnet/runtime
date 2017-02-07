@@ -35,7 +35,6 @@ using System.Runtime.ConstrainedExecution;
 #endif
 #if FEATURE_UNTRUSTED_CALLERS
 using System.Security;
-using System.Security.Permissions;
 #endif
 
 namespace System.Diagnostics.Contracts {

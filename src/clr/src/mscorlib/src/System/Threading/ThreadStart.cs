@@ -14,7 +14,6 @@
 =============================================================================*/
 
 namespace System.Threading {
-    using System.Security.Permissions;
     using System.Threading;
 
     // Define the delegate
