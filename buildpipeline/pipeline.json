@@ -132,7 +132,10 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_Architecture": "arm"
+            "PB_DockerTag": "ubuntu1404_cross_prereqs_v1",
+            "PB_Architecture": "arm",
+            "CrossToolsetVersion": "trusty",
+            "TargetRid": "ubuntu.14.04-arm"
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
