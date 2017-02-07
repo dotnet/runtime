@@ -16,9 +16,6 @@
     <Compile Include="ResourceAssemblyLoadContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="System.Runtime.Loader.Test.Assembly.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
