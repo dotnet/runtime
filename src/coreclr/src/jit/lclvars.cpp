@@ -5773,6 +5773,7 @@ void Compiler::lvaAlignFrame()
 
 #elif defined(_TARGET_X86_)
 
+#if DOUBLE_ALIGN
     if (genDoubleAlign())
     {
         // Double Frame Alignement for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
@@ -5781,6 +5782,30 @@ void Compiler::lvaAlignFrame()
         {
             // This can only happen with JitStress=1 or JitDoubleAlign=2
             lvaIncrementFrameSize(sizeof(void*));
+        }
+    }
+#endif
+
+    if (STACK_ALIGN > REGSIZE_BYTES)
+    {
+        if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+        {
+            // If we are not doing final layout, we don't know the exact value of compLclFrameSize
+            // and thus do not know how much we will need to add in order to be aligned.
+            // We add the maximum pad that we could ever have (which is 12)
+            lvaIncrementFrameSize(STACK_ALIGN - REGSIZE_BYTES);
+        }
+
+        // Align the stack with STACK_ALIGN value.
+        int adjustFrameSize = compLclFrameSize;
+#if defined(UNIX_X86_ABI)
+        // we need to consider spilled register(s) plus return address and/or EBP
+        int adjustCount = compCalleeRegsPushed + 1 + (codeGen->isFramePointerUsed() ? 1 : 0);
+        adjustFrameSize += (adjustCount * REGSIZE_BYTES) % STACK_ALIGN;
+#endif
+        if ((adjustFrameSize % STACK_ALIGN) != 0)
+        {
+            lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
         }
     }
 

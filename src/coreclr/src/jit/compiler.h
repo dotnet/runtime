@@ -1186,6 +1186,11 @@ struct fgArgTabEntry
     unsigned alignment;  // 1 or 2 (slots/registers)
     unsigned lateArgInx; // index into gtCallLateArgs list
     unsigned tmpNum;     // the LclVar number if we had to force evaluation of this arg
+#if defined(UNIX_X86_ABI)
+    unsigned padStkAlign; // Count of number of padding slots for stack alignment. For each Call, only the first
+                          // argument may have a value to emit "sub esp, n" to adjust the stack before pushing
+                          // the argument.
+#endif
 
     bool isSplit : 1;       // True when this argument is split between the registers and OutArg area
     bool needTmp : 1;       // True when we force this argument's evaluation into a temp LclVar
@@ -1263,6 +1268,10 @@ class fgArgInfo
     unsigned   argCount;    // Updatable arg count value
     unsigned   nextSlotNum; // Updatable slot count value
     unsigned   stkLevel;    // Stack depth when we make this call (for x86)
+#if defined(UNIX_X86_ABI)
+    unsigned padStkAlign; // Count of number of padding slots for stack alignment. This value is used to turn back
+                          // stack pointer before it was adjusted after each Call
+#endif
 
     unsigned          argTableSize; // size of argTable array (equal to the argCount when done with fgMorphArgs)
     bool              hasRegArgs;   // true if we have one or more register arguments
@@ -1312,6 +1321,10 @@ public:
 
     void ArgsComplete();
 
+#if defined(UNIX_X86_ABI)
+    void ArgsAlignPadding();
+#endif
+
     void SortArgs();
 
     void EvalArgsToTemps();
@@ -1331,6 +1344,12 @@ public:
     {
         return nextSlotNum;
     }
+#if defined(UNIX_X86_ABI)
+    unsigned GetPadStackAlign()
+    {
+        return padStkAlign;
+    }
+#endif
     bool HasRegArgs()
     {
         return hasRegArgs;
