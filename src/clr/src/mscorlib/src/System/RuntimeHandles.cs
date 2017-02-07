@@ -990,11 +990,6 @@ namespace System
         static extern internal uint GetSpecialSecurityFlags(IRuntimeMethodInfo method);
 
 #endregion
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]        
-        internal extern static void SerializationInvoke(IRuntimeMethodInfo method,
-            Object target, SerializationInfo info, ref StreamingContext context);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 		[SuppressUnmanagedCodeSecurity]
