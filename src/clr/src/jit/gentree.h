@@ -4546,6 +4546,9 @@ struct GenTreePhiArg : public GenTreeLclVarCommon
 struct GenTreePutArgStk : public GenTreeUnOp
 {
     unsigned gtSlotNum; // Slot number of the argument to be passed on stack
+#if defined(UNIX_X86_ABI)
+    unsigned gtPadAlign; // Number of padding slots for stack alignment
+#endif
 
 #if FEATURE_FASTTAILCALL
     bool putInIncomingArgArea; // Whether this arg needs to be placed in incoming arg area.
@@ -4561,6 +4564,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
+#if defined(UNIX_X86_ABI)
+        , gtPadAlign(0)
+#endif
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
@@ -4582,6 +4588,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
+#if defined(UNIX_X86_ABI)
+        , gtPadAlign(0)
+#endif
         , putInIncomingArgArea(_putInIncomingArgArea)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
@@ -4603,6 +4612,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
                          DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
+#if defined(UNIX_X86_ABI)
+        , gtPadAlign(0)
+#endif
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
@@ -4622,6 +4634,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
                          DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
+#if defined(UNIX_X86_ABI)
+        , gtPadAlign(0)
+#endif
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
         , gtNumSlots(numSlots)
@@ -4639,6 +4654,18 @@ struct GenTreePutArgStk : public GenTreeUnOp
     {
         return gtSlotNum * TARGET_POINTER_SIZE;
     }
+
+#if defined(UNIX_X86_ABI)
+    unsigned getArgPadding()
+    {
+        return gtPadAlign;
+    }
+
+    void setArgPadding(unsigned padAlign)
+    {
+        gtPadAlign = padAlign;
+    }
+#endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     unsigned getArgSize()
