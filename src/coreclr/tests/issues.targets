@@ -25,9 +25,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
             <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\delete_next_card_table\*">
-            <Issue>9064</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\getgeneration\*">
             <Issue>3392</Issue>
         </ExcludeList>
