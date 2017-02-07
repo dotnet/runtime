@@ -55,7 +55,7 @@ namespace System.Drawing
         ///    the specified location and size.
         /// </summary>
         public static Rectangle FromLTRB(int left, int top, int right, int bottom) =>
-            new Rectangle(left, top, right - left, bottom - top);
+            new Rectangle(left, top, unchecked(right - left), unchecked(bottom - top));
 
         /// <summary>
         ///    <para>
@@ -148,7 +148,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
-        public int Right => X + Width;
+        public int Right => unchecked(X + Width);
 
         /// <summary>
         ///    <para>
@@ -156,7 +156,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
-        public int Bottom => Y + Height;
+        public int Bottom => unchecked(Y + Height);
 
         /// <summary>
         ///    <para>
@@ -197,34 +197,49 @@ namespace System.Drawing
         ///   Converts a RectangleF to a Rectangle by performing a ceiling operation on
         ///   all the coordinates.
         /// </summary>
-        public static Rectangle Ceiling(RectangleF value) =>
-            new Rectangle(
-                (int)Math.Ceiling(value.X),
-                (int)Math.Ceiling(value.Y),
-                (int)Math.Ceiling(value.Width),
-                (int)Math.Ceiling(value.Height));
+        public static Rectangle Ceiling(RectangleF value)
+        {
+            unchecked
+            {
+                return new Rectangle(
+                    (int)Math.Ceiling(value.X),
+                    (int)Math.Ceiling(value.Y),
+                    (int)Math.Ceiling(value.Width),
+                    (int)Math.Ceiling(value.Height));
+            }
+        }
 
         /// <summary>
         ///   Converts a RectangleF to a Rectangle by performing a truncate operation on
         ///   all the coordinates.
         /// </summary>
-        public static Rectangle Truncate(RectangleF value) =>
-            new Rectangle(
-                (int)value.X,
-                (int)value.Y,
-                (int)value.Width,
-                (int)value.Height);
+        public static Rectangle Truncate(RectangleF value)
+        {
+            unchecked
+            {
+                return new Rectangle(
+                    (int)value.X,
+                    (int)value.Y,
+                    (int)value.Width,
+                    (int)value.Height);
+            }
+        }
 
         /// <summary>
         ///   Converts a RectangleF to a Rectangle by performing a round operation on
         ///   all the coordinates.
         /// </summary>
-        public static Rectangle Round(RectangleF value) =>
-            new Rectangle(
-                (int)Math.Round(value.X),
-                (int)Math.Round(value.Y),
-                (int)Math.Round(value.Width),
-                (int)Math.Round(value.Height));
+        public static Rectangle Round(RectangleF value)
+        {
+            unchecked
+            {
+                return new Rectangle(
+                    (int)Math.Round(value.X),
+                    (int)Math.Round(value.Y),
+                    (int)Math.Round(value.Width),
+                    (int)Math.Round(value.Height));
+            }
+        }
 
         /// <summary>
         ///    <para>
@@ -267,10 +282,14 @@ namespace System.Drawing
         /// </summary>
         public void Inflate(int width, int height)
         {
-            X -= width;
-            Y -= height;
-            Width += 2 * width;
-            Height += 2 * height;
+            unchecked
+            {
+                X -= width;
+                Y -= height;
+
+                Width += 2 * width;
+                Height += 2 * height;
+            }
         }
 
         /// <summary>
@@ -359,8 +378,11 @@ namespace System.Drawing
         /// </summary>
         public void Offset(int x, int y)
         {
-            X += x;
-            Y += y;
+            unchecked
+            {
+                X += x;
+                Y += y;
+            }
         }
 
         /// <summary>

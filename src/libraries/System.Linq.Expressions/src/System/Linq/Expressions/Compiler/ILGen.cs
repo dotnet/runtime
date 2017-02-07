@@ -431,7 +431,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitUInt(this ILGenerator il, uint value)
         {
-            il.EmitInt((int)value);
+            il.EmitInt(unchecked((int)value));
             il.Emit(OpCodes.Conv_U4);
         }
 
@@ -450,7 +450,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitULong(this ILGenerator il, ulong value)
         {
-            il.Emit(OpCodes.Ldc_I8, (long)value);
+            il.Emit(OpCodes.Ldc_I8, unchecked((long)value));
             il.Emit(OpCodes.Conv_U8);
         }
 
@@ -1127,7 +1127,7 @@ namespace System.Linq.Expressions.Compiler
             il.EmitInt(bits[1]);
             il.EmitInt(bits[2]);
             il.EmitBoolean((bits[3] & 0x80000000) != 0);
-            il.EmitByte((byte)(bits[3] >> 16));
+            il.EmitByte(unchecked((byte)(bits[3] >> 16)));
             il.EmitNew(Decimal_Ctor_Int32_Int32_Int32_Bool_Byte);
         }
 
