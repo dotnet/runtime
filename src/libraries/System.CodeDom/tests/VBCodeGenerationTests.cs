@@ -416,6 +416,32 @@ namespace System.CodeDom.Tests
                   End Namespace");
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework outputs C# keywords rather than type names")]
+        [Theory]
+        [InlineData(typeof(byte), "Sub System_[Byte]_MyMethod() Implements Byte.MyMethod End Sub")]
+        [InlineData(typeof(short), "Sub System_Int16_MyMethod() Implements Short.MyMethod End Sub")]
+        [InlineData(typeof(ushort), "Sub System_UInt16_MyMethod() Implements UShort.MyMethod End Sub")]
+        [InlineData(typeof(int), "Sub System_Int32_MyMethod() Implements Integer.MyMethod End Sub")]
+        [InlineData(typeof(uint), "Sub System_UInt32_MyMethod() Implements UInteger.MyMethod End Sub")]
+        [InlineData(typeof(long), "Sub System_Int64_MyMethod() Implements Long.MyMethod End Sub")]
+        [InlineData(typeof(ulong), "Sub System_UInt64_MyMethod() Implements ULong.MyMethod End Sub")]
+        [InlineData(typeof(string), "Sub System_[String]_MyMethod() Implements String.MyMethod End Sub")]
+        [InlineData(typeof(object), "Sub System_[Object]_MyMethod() Implements Object.MyMethod End Sub")]
+        [InlineData(typeof(bool), "Sub System_[Boolean]_MyMethod() Implements Boolean.MyMethod End Sub")]
+        [InlineData(typeof(void), "Sub System_Void_MyMethod() Implements System.Void.MyMethod End Sub")]
+        [InlineData(typeof(char), "Sub System_[Char]_MyMethod() Implements Char.MyMethod End Sub")]
+        [InlineData(typeof(float), "Sub System_[Single]_MyMethod() Implements Single.MyMethod End Sub")]
+        [InlineData(typeof(double), "Sub System_[Double]_MyMethod() Implements Double.MyMethod End Sub")]
+        [InlineData(typeof(decimal), "Sub System_[Decimal]_MyMethod() Implements Decimal.MyMethod End Sub")]
+        public void ExplicitImplementation_BuiltIns_UsesTypeNamesForBetterCompilerHandling(Type type, string expectedResult)
+        {
+            AssertEqual(new CodeMemberMethod()
+            {
+                Name = "MyMethod",
+                PrivateImplementationType = new CodeTypeReference(type)
+            }, expectedResult);
+        }
+
         [Fact]
         public void Arrays_SingleDimensional_PrimitiveTypes()
         {
