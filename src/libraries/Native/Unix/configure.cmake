@@ -365,6 +365,19 @@ check_cxx_source_compiles(
     IPV6MR_INTERFACE_UNSIGNED
 )
 
+check_cxx_source_compiles(
+    "
+    #include <sys/inotify.h>
+
+    int main()
+    {
+        intptr_t fd;
+        uint32_t wd;
+        return inotify_rm_watch(fd, wd);
+    }
+    "
+    INOTIFY_RM_WATCH_WD_UNSIGNED)
+
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 check_cxx_source_runs(
