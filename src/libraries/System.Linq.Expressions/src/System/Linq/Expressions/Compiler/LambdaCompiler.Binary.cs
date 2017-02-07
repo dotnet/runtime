@@ -544,19 +544,24 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Stloc, locLeft);
 
             // test for null
-            // use short circuiting
+            // don't use short circuiting
             if (leftIsNullable)
             {
                 _ilg.Emit(OpCodes.Ldloca, locLeft);
                 _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
             }
+
             if (rightIsNullable)
             {
                 _ilg.Emit(OpCodes.Ldloca, locRight);
                 _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
+                if (leftIsNullable)
+                {
+                    _ilg.Emit(OpCodes.And);
+                }
             }
+
+            _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
 
             // do op on values
             if (leftIsNullable)
