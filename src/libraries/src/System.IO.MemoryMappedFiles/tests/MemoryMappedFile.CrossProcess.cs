@@ -22,7 +22,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 long capacity = acc.Capacity;
                 for (int i = 0; i < capacity; i++)
                 {
-                    acc.Write(i, (byte)i);
+                    acc.Write(i, unchecked((byte)i));
                 }
                 acc.Flush();
 

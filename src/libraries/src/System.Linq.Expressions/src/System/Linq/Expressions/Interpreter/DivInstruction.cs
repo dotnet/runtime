@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (short)((short)l / (short)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l / (short)r));
                 }
                 frame.StackIndex--;
                 return 1;

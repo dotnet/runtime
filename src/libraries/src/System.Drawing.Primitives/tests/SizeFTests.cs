@@ -130,7 +130,7 @@ namespace System.Drawing.PrimitivesTest
         {
             SizeF s1 = new SizeF(width, height);
             PointF p1 = (PointF)s1;
-            Size s2 = new Size((int)width, (int)height);
+            Size s2 = new Size(unchecked((int)width), unchecked((int)height));
 
             Assert.Equal(new PointF(width, height), p1);
             Assert.Equal(p1, s1.ToPointF());

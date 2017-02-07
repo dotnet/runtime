@@ -987,7 +987,7 @@ namespace System.Xml.Schema
                         while (++start < _length)
                         {
                             int d = _text[start] - '0';
-                            if (9u < (uint)d)
+                            if (9u < unchecked((uint)d))
                             { // d < 0 || 9 < d
                                 break;
                             }

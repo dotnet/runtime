@@ -527,7 +527,7 @@ namespace System.Collections
                     Array.Copy(m_array, 0, intArray, index, GetArrayLength(m_length, BitsPerInt32) - 1);
 
                     // the last int needs to be masked
-                    intArray[index + last] = m_array[last] & ((1 << extraBits) - 1);
+                    intArray[index + last] = m_array[last] & unchecked((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[])

@@ -493,7 +493,7 @@ namespace System.IO.Compression
 
             for (int i = 0; i < runningLength / 8; i++)
             {
-                crc32 ^= (uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24);
+                crc32 ^= unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
                 offset += 4;
                 term1 = s_crcTable_7[crc32 & 0x000000FF] ^
                         s_crcTable_6[(crc32 >> 8) & 0x000000FF];
@@ -503,7 +503,7 @@ namespace System.IO.Compression
                         s_crcTable_4[(term2 >> 8) & 0x000000FF];
 
 
-                term3 = (uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24);
+                term3 = unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
                 offset += 4;
                 term1 = s_crcTable_3[term3 & 0x000000FF] ^
                         s_crcTable_2[(term3 >> 8) & 0x000000FF];

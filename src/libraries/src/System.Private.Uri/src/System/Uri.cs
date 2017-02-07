@@ -2690,9 +2690,9 @@ namespace System
         private string GetEscapedParts(UriComponents uriParts)
         {
             // Which Uri parts are not escaped canonically ?
-            // Notice that public UriPart and private Flags must me in Sync so below code can work
+            // Notice that public UriPart and private Flags must be in Sync so below code can work
             //
-            ushort nonCanonical = (ushort)(((ushort)_flags & ((ushort)Flags.CannotDisplayCanonical << 7)) >> 6);
+            ushort nonCanonical = unchecked((ushort)(((ushort)_flags & ((ushort)Flags.CannotDisplayCanonical << 7)) >> 6));
             if (InFact(Flags.SchemeNotCanonical))
             {
                 nonCanonical |= (ushort)Flags.SchemeNotCanonical;
@@ -2712,7 +2712,7 @@ namespace System
                 }
             }
 
-            if (((ushort)uriParts & nonCanonical) == 0)
+            if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string ret = GetUriPartsFromUserString(uriParts);
                 if ((object)ret != null)
@@ -2745,7 +2745,7 @@ namespace System
                 }
             }
 
-            if (((ushort)uriParts & nonCanonical) == 0)
+            if ((unchecked((ushort)uriParts) & nonCanonical) == 0)
             {
                 string ret = GetUriPartsFromUserString(uriParts);
                 if ((object)ret != null)
