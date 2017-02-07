@@ -43,15 +43,9 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PackDotnetDebTool))]
         public static BuildTargetResult Init(BuildTargetContext c)
         {
-            var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
             string platformEnv = c.BuildContext.Get<string>("Platform");
             
             string targetFramework = Environment.GetEnvironmentVariable("TARGETFRAMEWORK") ?? "netcoreapp2.0";
-
-            if (string.IsNullOrEmpty(configEnv))
-            {
-                configEnv = "Debug";
-            }
 
             string crossEnv = Environment.GetEnvironmentVariable("CROSS") ?? "0";
             if (string.Equals(crossEnv, "1"))
@@ -64,7 +58,6 @@ namespace Microsoft.DotNet.Host.Build
                 }
             }
 
-            c.BuildContext["Configuration"] = configEnv;
             c.BuildContext["Channel"] = Environment.GetEnvironmentVariable("CHANNEL");
             
             c.BuildContext["TargetFramework"] = targetFramework;
@@ -88,6 +81,13 @@ namespace Microsoft.DotNet.Host.Build
         public static BuildTargetResult CommonInit(BuildTargetContext c)
         {
             string platformEnv = Environment.GetEnvironmentVariable("TARGETPLATFORM") ?? RuntimeEnvironment.RuntimeArchitecture.ToString();
+            
+            var configEnv = Environment.GetEnvironmentVariable("CONFIGURATION");
+            if (string.IsNullOrEmpty(configEnv))
+            {
+                configEnv = "Debug";
+            }
+            c.BuildContext["Configuration"] = configEnv;
             
             string targetRID = Environment.GetEnvironmentVariable("TARGETRID");
             string realTargetRID = targetRID;
@@ -245,8 +245,8 @@ namespace Microsoft.DotNet.Host.Build
         [Target]
         public static BuildTargetResult ExpectedBuildArtifacts(BuildTargetContext c)
         {
-            var config = Environment.GetEnvironmentVariable("CONFIGURATION");
-            var versionBadgeName = $"sharedfx_{Monikers.GetBadgeMoniker()}_{config}_version_badge.svg";
+            var config = c.BuildContext.Get<string>("Configuration");
+            var versionBadgeName = $"sharedfx_{Monikers.GetBadgeMoniker(c)}_{config}_version_badge.svg";
             c.BuildContext["VersionBadge"] = Path.Combine(Dirs.Output, versionBadgeName);
 
             var sharedFrameworkVersion = c.BuildContext.Get<string>("SharedFrameworkNugetVersion");
