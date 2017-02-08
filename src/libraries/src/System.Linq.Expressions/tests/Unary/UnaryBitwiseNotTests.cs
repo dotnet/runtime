@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Not(Expression.Constant(value, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
-            Assert.Equal((byte)(~value), f());
+            Assert.Equal(unchecked((byte)(~value)), f());
         }
 
         private static void VerifyBitwiseNotInt(int value, bool useInterpreter)
@@ -198,7 +198,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Not(Expression.Constant(value, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
-            Assert.Equal((ushort)(~value), f());
+            Assert.Equal(unchecked((ushort)(~value)), f());
         }
 
         #endregion

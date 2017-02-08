@@ -214,7 +214,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(a * b), f());
+            Assert.Equal(unchecked((ushort)(a * b)), f());
         }
 
         private static void VerifyUShortMultiplyOvf(ushort a, ushort b, bool useInterpreter)
@@ -251,7 +251,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)(a * b), f());
+            Assert.Equal(unchecked((short)(a * b)), f());
         }
 
         private static void VerifyShortMultiplyOvf(short a, short b, bool useInterpreter)
@@ -289,7 +289,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyUIntMultiplyOvf(uint a, uint b, bool useInterpreter)
@@ -327,7 +327,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyIntMultiplyOvf(int a, int b, bool useInterpreter)
@@ -365,7 +365,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyULongMultiplyOvf(ulong a, ulong b, bool useInterpreter)
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a * b, f());
+            Assert.Equal(unchecked(a * b), f());
         }
 
         private static void VerifyLongMultiplyOvf(long a, long b, bool useInterpreter)

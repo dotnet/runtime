@@ -419,9 +419,9 @@ namespace System.Linq.Expressions.Tests
         public static readonly Number MinValue = new Number(int.MinValue);
         public static readonly Number MaxValue = new Number(int.MaxValue);
 
-        public static Number operator +(Number l, Number r) => new Number(l._value + r._value);
+        public static Number operator +(Number l, Number r) => new Number(unchecked(l._value + r._value));
         public static Number operator -(Number l, Number r) => new Number(l._value - r._value);
-        public static Number operator *(Number l, Number r) => new Number(l._value * r._value);
+        public static Number operator *(Number l, Number r) => new Number(unchecked(l._value * r._value));
         public static Number operator /(Number l, Number r) => new Number(l._value / r._value);
         public static Number operator %(Number l, Number r) => new Number(l._value % r._value);
 

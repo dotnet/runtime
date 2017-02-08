@@ -17,7 +17,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VerifyInstructions_Simple()
         {
-            Expression<Func<string, bool>> f = s => s != null && s.Substring(1).Length * 2 > 0;
+            // Using an unchecked multiplication to ensure that a mul instruction is emitted (and not mul.ovf)
+            Expression<Func<string, bool>> f = s => s != null && unchecked(s.Substring(1).Length * 2) > 0;
 
             f.VerifyInstructions(
                 @"object lambda_method(object[])

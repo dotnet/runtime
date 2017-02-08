@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddByte(byte a, byte b, bool useInterpreter)
         {
-            byte expected = (byte)(a + b);
+            byte expected = unchecked((byte)(a + b));
 
             ParameterExpression p0 = Expression.Parameter(typeof(int), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(int), "p1");
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f1 = e1.Compile(useInterpreter);
 
-            Assert.Equal(expected, (byte)f1());
+            Assert.Equal(expected, unchecked((byte)f1()));
 
             // verify with values passed to make parameters
             Expression<Func<int, int, Func<int>>> e2 =
@@ -179,7 +179,7 @@ namespace System.Linq.Expressions.Tests
                     new ParameterExpression[] { p0, p1 });
             Func<int, int, Func<int>> f2 = e2.Compile(useInterpreter);
 
-            Assert.Equal(expected, (byte)f2(a, b)());
+            Assert.Equal(expected, unchecked((byte)f2(a, b)()));
 
             // verify with values directly passed
             Expression<Func<Func<int, int, int>>> e3 =
@@ -194,7 +194,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int, int, int> f3 = e3.Compile(useInterpreter)();
 
-            Assert.Equal(expected, (byte)f3(a, b));
+            Assert.Equal(expected, unchecked((byte)f3(a, b)));
 
             // verify as a function generator
             Expression<Func<Func<int, int, int>>> e4 =
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<Func<int, int, int>> f4 = e4.Compile(useInterpreter);
 
-            Assert.Equal(expected, (byte)f4()(a, b));
+            Assert.Equal(expected, unchecked((byte)f4()(a, b)));
 
             // verify with currying
             Expression<Func<int, Func<int, int>>> e5 =
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions.Tests
                     new ParameterExpression[] { p0 });
             Func<int, Func<int, int>> f5 = e5.Compile(useInterpreter);
 
-            Assert.Equal(expected, (byte)f5(a)(b));
+            Assert.Equal(expected, unchecked((byte)f5(a)(b)));
 
             // verify with one parameter
             Expression<Func<Func<int, int>>> e6 =
@@ -231,7 +231,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int, int> f6 = e6.Compile(useInterpreter)();
 
-            Assert.Equal(expected, (byte)f6(b));
+            Assert.Equal(expected, unchecked((byte)f6(b)));
         }
 
         #endregion
@@ -573,7 +573,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddInt(int a, int b, bool useInterpreter)
         {
-            int expected = a + b;
+            int expected = unchecked(a + b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(int), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(int), "p1");
@@ -666,7 +666,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddLong(long a, long b, bool useInterpreter)
         {
-            long expected = a + b;
+            long expected = unchecked(a + b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(long), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(long), "p1");
@@ -759,7 +759,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddShort(short a, short b, bool useInterpreter)
         {
-            short expected = (short)(a + b);
+            short expected = unchecked((short)(a + b));
 
             ParameterExpression p0 = Expression.Parameter(typeof(short), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(short), "p1");
@@ -852,7 +852,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddUInt(uint a, uint b, bool useInterpreter)
         {
-            uint expected = a + b;
+            uint expected = unchecked(a + b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(uint), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(uint), "p1");
@@ -954,7 +954,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddULong(ulong a, ulong b, bool useInterpreter)
         {
-            ulong expected = a + b;
+            ulong expected = unchecked(a + b);
 
             ParameterExpression p0 = Expression.Parameter(typeof(ulong), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ulong), "p1");
@@ -1047,7 +1047,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void VerifyAddUShort(ushort a, ushort b, bool useInterpreter)
         {
-            ushort expected = (ushort)(a + b);
+            ushort expected = unchecked((ushort)(a + b));
 
             ParameterExpression p0 = Expression.Parameter(typeof(ushort), "p0");
             ParameterExpression p1 = Expression.Parameter(typeof(ushort), "p1");

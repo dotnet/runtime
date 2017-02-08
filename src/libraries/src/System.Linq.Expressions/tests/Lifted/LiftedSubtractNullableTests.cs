@@ -186,12 +186,12 @@ namespace System.Linq.Expressions.Tests
 
         public static byte SubtractNullableByte(byte a, byte b)
         {
-            return (byte)(a - b);
+            return unchecked((byte)(a - b));
         }
 
         public static char SubtractNullableChar(char a, char b)
         {
-            return (char)(a - b);
+            return unchecked((char)(a - b));
         }
 
         public static decimal SubtractNullableDecimal(decimal a, decimal b)
@@ -211,37 +211,37 @@ namespace System.Linq.Expressions.Tests
 
         public static int SubtractNullableInt(int a, int b)
         {
-            return (int)(a - b);
+            return unchecked((int)(a - b));
         }
 
         public static long SubtractNullableLong(long a, long b)
         {
-            return (long)(a - b);
+            return unchecked((long)(a - b));
         }
 
         public static sbyte SubtractNullableSByte(sbyte a, sbyte b)
         {
-            return (sbyte)(a - b);
+            return unchecked((sbyte)(a - b));
         }
 
         public static short SubtractNullableShort(short a, short b)
         {
-            return (short)(a - b);
+            return unchecked((short)(a - b));
         }
 
         public static uint SubtractNullableUInt(uint a, uint b)
         {
-            return (uint)(a - b);
+            return unchecked((uint)(a - b));
         }
 
         public static ulong SubtractNullableULong(ulong a, ulong b)
         {
-            return (ulong)(a - b);
+            return unchecked((ulong)(a - b));
         }
 
         public static ushort SubtractNullableUShort(ushort a, ushort b)
         {
-            return (ushort)(a - b);
+            return unchecked((ushort)(a - b));
         }
 
         #endregion
@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableByte")));
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)(a - b), f());
+            Assert.Equal(unchecked((byte?)(a - b)), f());
         }
 
         private static void VerifySubtractNullableChar(char? a, char? b, bool useInterpreter)
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableChar")));
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)(a - b), f());
+            Assert.Equal(unchecked((char?)(a - b)), f());
         }
 
         private static void VerifySubtractNullableDecimal(decimal? a, decimal? b, bool useInterpreter)
@@ -334,7 +334,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableInt")));
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifySubtractNullableLong(long? a, long? b, bool useInterpreter)
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableLong")));
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifySubtractNullableSByte(sbyte? a, sbyte? b, bool useInterpreter)
@@ -360,7 +360,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableSByte")));
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)(a - b), f());
+            Assert.Equal(unchecked((sbyte?)(a - b)), f());
         }
 
         private static void VerifySubtractNullableShort(short? a, short? b, bool useInterpreter)
@@ -373,7 +373,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableShort")));
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)(a - b), f());
+            Assert.Equal(unchecked((short?)(a - b)), f());
         }
 
         private static void VerifySubtractNullableUInt(uint? a, uint? b, bool useInterpreter)
@@ -386,7 +386,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableUInt")));
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifySubtractNullableULong(ulong? a, ulong? b, bool useInterpreter)
@@ -399,7 +399,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableULong")));
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifySubtractNullableUShort(ushort? a, ushort? b, bool useInterpreter)
@@ -412,7 +412,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(LiftedSubtractNullableTests).GetTypeInfo().GetDeclaredMethod("SubtractNullableUShort")));
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)(a - b), f());
+            Assert.Equal(unchecked((ushort?)(a - b)), f());
         }
 
         private static void VerifySubtractNullableNumber(Number? a, Number? b, bool useInterpreter)

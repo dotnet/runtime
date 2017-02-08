@@ -158,7 +158,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Negate(Expression.Constant(value, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
-            Assert.Equal((int)(-value), f());
+            Assert.Equal(unchecked((int)(-value)), f());
         }
 
         private static void VerifyArithmeticNegateLong(long value, bool useInterpreter)
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Negate(Expression.Constant(value, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
-            Assert.Equal((long)(-value), f());
+            Assert.Equal(unchecked((long)(-value)), f());
         }
 
         private static void VerifyArithmeticNegateSByte(sbyte value)
@@ -183,7 +183,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Negate(Expression.Constant(value, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
-            Assert.Equal((short)(-value), f());
+            Assert.Equal(unchecked((short)(-value)), f());
         }
 
         #endregion

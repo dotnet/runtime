@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Tests
 
             public int Value { get; }
 
-            public static Decrementable operator --(Decrementable operand) => new Decrementable(operand.Value - 1);
+            public static Decrementable operator --(Decrementable operand) => new Decrementable(unchecked(operand.Value - 1));
         }
 
         public struct Incrementable
@@ -29,16 +29,16 @@ namespace System.Linq.Expressions.Tests
 
             public int Value { get; }
 
-            public static Incrementable operator ++(Incrementable operand) => new Incrementable(operand.Value + 1);
+            public static Incrementable operator ++(Incrementable operand) => new Incrementable(unchecked(operand.Value + 1));
         }
 
-        public static Incrementable DoublyIncrement(Incrementable operand) => new Incrementable(operand.Value + 2);
+        public static Incrementable DoublyIncrement(Incrementable operand) => new Incrementable(unchecked(operand.Value + 2));
 
-        public static int DoublyIncrementInt32(int operand) => operand + 2;
+        public static int DoublyIncrementInt32(int operand) => unchecked(operand + 2);
 
-        public static Decrementable DoublyDecrement(Decrementable operand) => new Decrementable(operand.Value - 2);
+        public static Decrementable DoublyDecrement(Decrementable operand) => new Decrementable(unchecked(operand.Value - 2));
 
-        public static int DoublyDecrementInt32(int operand) => operand - 2;
+        public static int DoublyDecrementInt32(int operand) => unchecked(operand - 2);
 
         protected static IEnumerable<object[]> NonArithmeticObjects(bool includeReferenceTypes)
         {

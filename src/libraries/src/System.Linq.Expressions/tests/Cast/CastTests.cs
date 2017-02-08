@@ -2230,7 +2230,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Convert(Expression.Constant(value, typeof(El)), typeof(E)));
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyEnumCastLongEnum(E value, bool useInterpreter)
@@ -2248,7 +2248,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Convert(Expression.Constant(value, typeof(Eu)), typeof(E)));
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyUnsignedEnumInObjectCastEnum(Eu value, bool useInterpreter)
