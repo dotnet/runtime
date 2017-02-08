@@ -135,12 +135,21 @@ inline PCODE GetControlPC(REGDISPLAY *display) {
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef WIN64EXCEPTIONS
+    return stackPointer < ((LPVOID)(display->SP));
+#else
     return (TADDR)stackPointer < display->PCTAddr;
+#endif
 }
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef WIN64EXCEPTIONS
+    _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
+    return GetRegdisplaySP(display);
+#else
     return display->PCTAddr;
+#endif
 }
 
 #elif defined(_WIN64)
