@@ -170,7 +170,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path cause ArgumentException
+        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path, wild chars are normal chars on Unix
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));

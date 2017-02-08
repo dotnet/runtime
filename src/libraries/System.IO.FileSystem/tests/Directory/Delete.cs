@@ -108,14 +108,9 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        #endregion
-
-        #region PlatformSpecific
-
         [ConditionalFact(nameof(UsingNewNormalization))]
         [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended directory with subdirectories throws IOException
-        public void WindowsExtendedDirectoryWithSubdirectories()
+        public void ExtendedDirectoryWithSubdirectories()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
             testDir.CreateSubdirectory(GetTestFileName());
@@ -125,13 +120,16 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting long path extended directory succeeds
-        public void WindowsLongPathExtendedDirectory()
+        public void LongPathExtendedDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);
             Delete(testDir.FullName);
             Assert.False(testDir.Exists);
         }
+
+        #endregion
+
+        #region PlatformSpecific
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting readonly directory throws IOException

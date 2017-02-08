@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get the process Id
+        [PlatformSpecific(TestPlatforms.Windows)]  // Needs to get the process Id from OS
         [Fact]
         public void TestRespondingWindows()
         {
@@ -66,7 +66,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get the process Id
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Needs to get the process Id from OS
         [Fact]
         private void TestWindowApisUnix()
         {
