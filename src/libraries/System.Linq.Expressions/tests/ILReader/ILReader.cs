@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Tests
             foreach (FieldInfo fi in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static))
             {
                 OpCode opCode = (OpCode)fi.GetValue(null);
-                ushort value = (ushort)opCode.Value;
+                ushort value = unchecked((ushort)opCode.Value);
                 if (value < 0x100)
                 {
                     s_OneByteOpCodes[value] = opCode;

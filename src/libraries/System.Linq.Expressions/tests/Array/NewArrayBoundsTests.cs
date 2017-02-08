@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Tests
             }
             else
             {
-                VerifyArrayGenerator(f, arrayType, size == null ? (long?)null : (long)Convert.ToUInt64(size), defaultValue);
+                VerifyArrayGenerator(f, arrayType, size == null ? (long?)null : unchecked((long)Convert.ToUInt64(size)), defaultValue);
             }
         }
 
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Tests
             {
                 Assert.Throws<InvalidOperationException>(() => func());
             }
-            else if ((ulong)size > int.MaxValue)
+            else if (unchecked((ulong)size) > int.MaxValue)
             {
                 Assert.Throws<OverflowException>(() => func());
             }

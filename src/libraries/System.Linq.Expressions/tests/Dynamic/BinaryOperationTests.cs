@@ -134,7 +134,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x + y, dX + dY);
+            Assert.Equal(unchecked(x + y), unchecked(dX + dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -251,7 +251,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x * y, dX * dY);
+            Assert.Equal(unchecked(x * y), unchecked(dX * dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -302,7 +302,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x - y, dX - dY);
+            Assert.Equal(unchecked(x - y), unchecked(dX - dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -329,8 +329,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX += dY;
-            Assert.Equal(x + y, dX);
+
+            unchecked
+            {
+                dX += dY;
+                Assert.Equal(x + y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -420,8 +424,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX *= dY;
-            Assert.Equal(x * y, dX);
+
+            unchecked
+            {
+                dX *= dY;
+                Assert.Equal(x * y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -468,8 +476,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX -= dY;
-            Assert.Equal(x - y, dX);
+
+            unchecked
+            {
+                dX -= dY;
+                Assert.Equal(x - y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]

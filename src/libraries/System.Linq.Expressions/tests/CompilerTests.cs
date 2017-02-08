@@ -334,7 +334,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VerifyIL_Closure3()
         {
-            Expression<Func<int, Func<int, int>>> f = x => y => x + y;
+            // Using an unchecked addition to ensure that an add instruction is emitted (and not add.ovf)
+            Expression<Func<int, Func<int, int>>> f = x => y => unchecked(x + y);
 
             f.VerifyIL(
                 @".method class [System.Private.CoreLib]System.Func`2<int32,int32> ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32)

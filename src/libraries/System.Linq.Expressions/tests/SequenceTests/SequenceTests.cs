@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void CheckedExpressions()
         {
-            Expression<Func<int, int, int>> exp = (a, b) => a + b;
+            Expression<Func<int, int, int>> exp = (a, b) => unchecked(a + b);
             BinaryExpression bex = exp.Body as BinaryExpression;
             Assert.NotNull(bex);
             Assert.Equal(bex.NodeType, ExpressionType.Add);
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(bex);
             Assert.Equal(bex.NodeType, ExpressionType.AddChecked);
 
-            exp = (a, b) => a * b;
+            exp = (a, b) => unchecked(a * b);
             bex = exp.Body as BinaryExpression;
             Assert.NotNull(bex);
             Assert.Equal(bex.NodeType, ExpressionType.Multiply);
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(bex);
             Assert.Equal(bex.NodeType, ExpressionType.MultiplyChecked);
 
-            Expression<Func<double, int>> exp2 = (a) => (int)a;
+            Expression<Func<double, int>> exp2 = (a) => unchecked((int)a);
             UnaryExpression uex = exp2.Body as UnaryExpression;
             Assert.NotNull(uex);
             Assert.Equal(uex.NodeType, ExpressionType.Convert);
@@ -2780,7 +2780,8 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void TestConvertToNullable(bool useInterpreter)
         {
-            Expression<Func<int, int?>> f = x => (int?)x;
+            // Using an unchecked cast to ensure that a Convert expression is used (and not ConvertChecked)
+            Expression<Func<int, int?>> f = x => unchecked((int?)x);
             Assert.Equal(f.Body.NodeType, ExpressionType.Convert);
             Func<int, int?> d = f.Compile(useInterpreter);
             Assert.Equal(2, d(2));
