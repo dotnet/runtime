@@ -36,6 +36,7 @@ public class ReadTimeout_Property : PortsTest
 
     #region Test Cases
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Default_Read_byte_int_int()
     {
@@ -43,6 +44,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Read_byte_int_int, false);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Default_Read_char_int_int()
     {
@@ -50,6 +52,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Read_char_int_int, false);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Default_ReadByte()
     {
@@ -57,6 +60,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadByte, false);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Default_ReadLine()
     {
@@ -64,6 +68,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadLine, false);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Default_ReadTo()
     {
@@ -71,6 +76,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadTo, false);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Infinite_Read_byte_int_int()
     {
@@ -78,6 +84,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Read_byte_int_int, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Infinite_Read_char_int_int()
     {
@@ -85,6 +92,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Read_char_int_int, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Infinite_ReadByte()
     {
@@ -92,6 +100,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadByte, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Infinite_ReadLine()
     {
@@ -99,6 +108,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadLine, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void ReadTimeout_Infinite_ReadTo()
     {
@@ -106,6 +116,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyInfiniteTimeout(ReadTo, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_Read_byte_int_int_BeforeOpen()
     {
@@ -113,6 +124,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutBeforeOpen(Read_byte_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_Read_char_int_int_BeforeOpen()
     {
@@ -120,6 +132,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutBeforeOpen(Read_char_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadByte_BeforeOpen()
     {
@@ -127,6 +140,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutBeforeOpen(ReadByte);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadLine_BeforeOpen()
     {
@@ -134,6 +148,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutBeforeOpen(ReadLine);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadTo_BeforeOpen()
     {
@@ -141,6 +156,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutBeforeOpen(ReadTo);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_Read_byte_int_int_AfterOpen()
     {
@@ -148,6 +164,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutAfterOpen(Read_byte_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_Read_char_int_int_AfterOpen()
     {
@@ -155,6 +172,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutAfterOpen(Read_char_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadByte_AfterOpen()
     {
@@ -162,6 +180,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutAfterOpen(ReadByte);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadLine_AfterOpen()
     {
@@ -169,6 +188,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutAfterOpen(ReadLine);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_0_ReadTo_AfterOpen()
     {
@@ -176,6 +196,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyZeroTimeoutAfterOpen(ReadTo);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_Int32MinValue()
     {
@@ -184,6 +205,7 @@ public class ReadTimeout_Property : PortsTest
         VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadTimeout_NEG2()
     {
