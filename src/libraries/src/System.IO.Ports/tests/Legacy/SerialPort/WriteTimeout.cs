@@ -36,6 +36,7 @@ public class WriteTimeout_Property : PortsTest
 
     #region Test Cases
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Default_Write_byte_int_int()
@@ -44,6 +45,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_byte_int_int, false);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Default_Write_char_int_int()
@@ -52,6 +54,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_char_int_int, false);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Default_Write_str()
@@ -60,6 +63,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_str, false);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Default_WriteLine()
@@ -68,6 +72,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(WriteLine, false);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Infinite_Write_byte_int_int()
@@ -76,6 +81,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_byte_int_int, true);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Infinite_Write_char_int_int()
@@ -84,6 +90,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_char_int_int, true);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Infinite_Write_str()
@@ -92,6 +99,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(Write_str, true);
     }
 
+    [ActiveIssue(15961)]
     [ActiveIssue(15752)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Infinite_WriteLine()
@@ -100,6 +108,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyInfiniteTimeout(WriteLine, true);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_byte_int_int_BeforeOpen()
     {
@@ -107,6 +116,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutBeforeOpen(Write_byte_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_char_int_int_BeforeOpen()
     {
@@ -114,6 +124,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutBeforeOpen(Write_char_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_str_BeforeOpen()
     {
@@ -122,6 +133,7 @@ public class WriteTimeout_Property : PortsTest
     }
 
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_WriteLine_BeforeOpen()
     {
@@ -129,6 +141,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutBeforeOpen(WriteLine);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_byte_int_int_AfterOpen()
     {
@@ -136,6 +149,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutAfterOpen(Write_byte_int_int);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_char_int_int_AfterOpen()
     {
@@ -143,6 +157,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutAfterOpen(Write_char_int_int);
    }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_Write_str_AfterOpen()
     {
@@ -150,6 +165,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutAfterOpen(Write_str);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_1_WriteLine_AfterOpen()
     {
@@ -157,6 +173,7 @@ public class WriteTimeout_Property : PortsTest
         Verify1TimeoutAfterOpen(WriteLine);
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_Int32MinValue()
     {
@@ -164,6 +181,7 @@ public class WriteTimeout_Property : PortsTest
         VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
+    [ActiveIssue(15961)]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void WriteTimeout_NEG2()
     {
