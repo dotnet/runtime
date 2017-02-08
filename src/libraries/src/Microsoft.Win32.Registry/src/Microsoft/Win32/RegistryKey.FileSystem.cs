@@ -4,7 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Security.AccessControl;
 
 namespace Microsoft.Win32
 {
@@ -13,7 +12,7 @@ namespace Microsoft.Win32
 #else
     internal
 #endif
-    sealed partial class RegistryKey : IDisposable
+    sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
         private void ClosePerfDataKey()
         {
@@ -27,7 +26,7 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException();
         }
 
-        private RegistryKey CreateSubKeyInternalCore(string subkey, bool writable, RegistryOptions registryOptions)
+        private RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
         {
             // TODO: Implement this
             throw new PlatformNotSupportedException();
@@ -62,7 +61,19 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.Security_RegistryPermission); // remote stores not supported on Unix
         }
 
-        private RegistryKey InternalOpenSubKeyCore(string name, RegistryRights rights, bool throwOnPermissionFailure)
+        private RegistryKey InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights, bool throwOnPermissionFailure)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        private RegistryKey InternalOpenSubKeyCore(string name, bool writable, bool throwOnPermissionFailure)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        internal RegistryKey InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
         {
             // TODO: Implement this
             throw new PlatformNotSupportedException();
@@ -114,6 +125,30 @@ namespace Microsoft.Win32
         }
 
         private void SetValueCore(string name, Object value, RegistryValueKind valueKind)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        private bool ContainsRegistryValueCore(string name)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        private static bool IsWritable(int rights)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        private static int GetRegistryKeyAccess(bool isWritable)
+        {
+            // TODO: Implement this
+            throw new PlatformNotSupportedException();
+        }
+
+        private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)
         {
             // TODO: Implement this
             throw new PlatformNotSupportedException();
