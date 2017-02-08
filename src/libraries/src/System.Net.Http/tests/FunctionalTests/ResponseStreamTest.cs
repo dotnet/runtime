@@ -108,7 +108,11 @@ namespace System.Net.Http.Functional.Tests
 
                 // Verify that the task completes successfully or is canceled.
                 Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
-                Assert.True(task.Status == TaskStatus.RanToCompletion || task.Status == TaskStatus.Canceled);
+                Assert.True(task.IsCompleted, "Task was not yet completed");
+                if (task.IsFaulted)
+                {
+                    task.GetAwaiter().GetResult();
+                }
             }
         }
 
