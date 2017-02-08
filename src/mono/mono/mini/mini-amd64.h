@@ -476,7 +476,7 @@ mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;
 gpointer
 mono_amd64_handler_block_trampoline_helper (void);
 
-#ifdef TARGET_WIN32
+#if defined(TARGET_WIN32) && !defined(DISABLE_JIT)
 
 void mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
 void mono_arch_unwindinfo_add_set_fpreg (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
