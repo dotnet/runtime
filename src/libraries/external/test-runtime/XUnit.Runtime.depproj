@@ -7,7 +7,8 @@
     -->
     <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
     <OutputPath>$(RuntimePath)</OutputPath>
-    <XUnitConsoleRunnerVersion>2.2.0-beta4-build3444</XUnitConsoleRunnerVersion>
+    <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
+    <XUnitRunnerPackageId Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.console</XUnitRunnerPackageId>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -21,27 +22,20 @@
     <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
     <PackageToInclude Include="Microsoft.DotNet.xunit.performance.run.core"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
-    <PackageToInclude Include="xunit.console.netcore"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <PackageToInclude Include="xunit.runner.console"/>
+    <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netfx'">
-    <Error Condition="!Exists('$(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion)\tools\xunit.console.exe')"
-            Text="Error: looks the package $(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion) not restored or missing xunit.console.exe."
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion)\tools\*.*">
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*">
         <Private>false</Private>
-        <NuGetPackageId>xunit.runner.console</NuGetPackageId>
-        <NuGetPackageVersion>$(XUnitConsoleRunnerVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
   </Target>
