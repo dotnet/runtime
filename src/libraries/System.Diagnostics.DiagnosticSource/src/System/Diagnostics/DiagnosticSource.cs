@@ -42,5 +42,19 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the event being written.</param>
         public abstract bool IsEnabled(string name);
+
+        /// <summary>
+        /// Optional: if there is expensive setup for the notification, you can call IsEnabled
+        /// before doing this setup with context 
+        /// </summary>
+        /// <param name="name">The name of the event being written.</param>
+        /// <param name="arg1">An object that represents the additional context for IsEnabled</param>
+        /// <param name="arg2">An object that represents the additional context for IsEnabled</param>
+        /// <seealso cref="IsEnabled(string)"/>
+        public virtual bool IsEnabled(string name, object arg1, object arg2)
+        {
+            return IsEnabled(name);
+        }
+
     }
 }
