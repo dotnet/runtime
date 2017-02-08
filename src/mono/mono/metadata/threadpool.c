@@ -309,11 +309,11 @@ static ThreadPoolDomain *
 tpdomain_get_next (ThreadPoolDomain *current)
 {
 	ThreadPoolDomain *tpdomain = NULL;
-	guint len;
+	gint len;
 
 	len = threadpool.domains->len;
 	if (len > 0) {
-		guint i, current_idx = -1;
+		gint i, current_idx = -1;
 		if (current) {
 			for (i = 0; i < len; ++i) {
 				if (current == g_ptr_array_index (threadpool.domains, i)) {
@@ -321,7 +321,6 @@ tpdomain_get_next (ThreadPoolDomain *current)
 					break;
 				}
 			}
-			g_assert (current_idx != (guint)-1);
 		}
 		for (i = current_idx + 1; i < len + current_idx + 1; ++i) {
 			ThreadPoolDomain *tmp = (ThreadPoolDomain *)g_ptr_array_index (threadpool.domains, i % len);
@@ -388,9 +387,12 @@ worker_callback (gpointer unused)
 	while (!mono_runtime_is_shutting_down ()) {
 		gboolean retire = FALSE;
 
-		if ((thread->state & (ThreadState_AbortRequested | ThreadState_SuspendRequested)) != 0) {
+		if (thread->state & (ThreadState_AbortRequested | ThreadState_SuspendRequested)) {
 			domains_unlock ();
-			mono_thread_interruption_checkpoint ();
+			if (mono_thread_interruption_checkpoint ()) {
+				domains_lock ();
+				continue;
+			}
 			domains_lock ();
 		}
 
