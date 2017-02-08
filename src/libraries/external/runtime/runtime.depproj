@@ -11,12 +11,11 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <SkipFilterTargetingPackResolvedNugetPackages>false</SkipFilterTargetingPackResolvedNugetPackages>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-    <TargetingPackReference Include="System.Private.Interop" />
-    <TargetingPackReference Include="System.Private.Threading" />
+    <FileToExclude Include="System.Private.CoreLib.Augments" />
+    <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
+    <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
