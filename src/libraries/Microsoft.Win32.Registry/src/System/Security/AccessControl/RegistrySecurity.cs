@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -84,7 +83,7 @@ namespace System.Security.AccessControl
     }
 
 
-    public sealed class RegistrySecurity : NativeObjectSecurity
+    public sealed partial class RegistrySecurity : NativeObjectSecurity
     {
         public RegistrySecurity()
             : base(true, ResourceType.RegistryKey)
@@ -100,27 +99,7 @@ namespace System.Security.AccessControl
         [SecurityCritical]
         private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
         {
-            Exception exception = null;
-
-            switch (errorCode)
-            {
-                case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                    exception = new IOException(SR.Format(SR.Arg_RegKeyNotFound, errorCode));
-                    break;
-
-                case Interop.Errors.ERROR_INVALID_NAME:
-                    exception = new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(name)));
-                    break;
-
-                case Interop.Errors.ERROR_INVALID_HANDLE:
-                    exception = new ArgumentException(SR.AccessControl_InvalidHandle);
-                    break;
-
-                default:
-                    break;
-            }
-
-            return exception;
+            return _HandleErrorCodeCore(errorCode, name, handle, context);
         }
 
         public override AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)
