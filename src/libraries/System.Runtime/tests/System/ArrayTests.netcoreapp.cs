@@ -139,5 +139,13 @@ namespace System.Tests
         {
             Assert.Throws<ArgumentException>(null, () => Array.Reverse(new string[arrayLength], index, length));
         }
+
+        [Fact]
+        public static void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0));
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1]));
+            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1], new int[1]));
+        }
     }
 }

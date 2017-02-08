@@ -40,7 +40,6 @@ namespace System.Tests
             Assert.Equal(innerException.HResult, exception.InnerException.HResult);
         }
 
-#if netstandard17
         [Fact]
         public static void Ctor_String_String()
         {
@@ -50,6 +49,5 @@ namespace System.Tests
             Assert.True(exception.Message.Contains(className));
             Assert.True(exception.Message.Contains(memberName));
         }
-#endif
     }
 }

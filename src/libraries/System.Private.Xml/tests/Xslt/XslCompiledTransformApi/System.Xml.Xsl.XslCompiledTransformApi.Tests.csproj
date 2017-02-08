@@ -5,15 +5,17 @@
     <ProjectGuid>{B01E2AE1-1B52-4518-B32E-016070356A7F}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="XslCompiledTransform.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Errata4.cs" />
     <Compile Include="OutputSettings.cs" />
     <Compile Include="TempFiles.cs" />
-    <Compile Include="XslCompiledTransform.cs" />
     <Compile Include="XsltApiV2.cs" />
     <Compile Include="XsltArgumentList.cs" />
     <Compile Include="XsltArgumentListMultith.cs" />

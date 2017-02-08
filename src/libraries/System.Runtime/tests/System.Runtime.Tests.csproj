@@ -5,16 +5,17 @@
     <ProjectGuid>{B1BF7CE0-CAB5-4FA2-A39C-450B05D5DB1C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup>
+  <ItemGroup  Condition="'$(TargetGroup)' == 'netcoreapp'">
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
-    <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
+    <!-- EnumBuilder type is defined in netcoreapp and not in netstandard -->    
+    <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs"/>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
@@ -119,6 +120,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="ArrayTests.netcoreapp.cs" />
+    <Compile Include="Helpers.netcoreapp.cs" />
+    <Compile Include="System\ActivatorTests.netcoreapp.cs" />
     <Compile Include="System\ArrayTests.netcoreapp.cs" />
     <Compile Include="System\EnumTests.netcoreapp.cs" />
     <Compile Include="System\GCTests.netcoreapp.cs" />

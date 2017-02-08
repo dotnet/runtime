@@ -17,8 +17,6 @@
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -27,8 +25,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
@@ -52,7 +48,7 @@
     <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.3' And '$(TargetGroup)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />    
+    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

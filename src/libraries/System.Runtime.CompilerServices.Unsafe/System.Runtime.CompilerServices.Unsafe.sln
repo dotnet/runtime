@@ -19,10 +19,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{04BA3E3C-6979-4792-B19E-C797AD607F42}.Debug|Any CPU.ActiveCfg = netstandard1.0-Windows_NT-Debug|Any CPU
 		{04BA3E3C-6979-4792-B19E-C797AD607F42}.Debug|Any CPU.Build.0 = netstandard1.0-Windows_NT-Debug|Any CPU
 		{04BA3E3C-6979-4792-B19E-C797AD607F42}.Release|Any CPU.ActiveCfg = netstandard1.0-Windows_NT-Release|Any CPU

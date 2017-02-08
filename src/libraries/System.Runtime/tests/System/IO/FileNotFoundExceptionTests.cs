@@ -78,7 +78,6 @@ namespace System.IO.Tests
             }
         }
 
-#if netstandard17
         [Fact]
         public static void FusionLogTest()
         {
@@ -89,6 +88,5 @@ namespace System.IO.Tests
 
             Assert.Null(exception.FusionLog);
         }
-#endif
     }
 }

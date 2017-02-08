@@ -9,11 +9,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="AppendPrependTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
+    <Compile Include="SkipLastTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
     <Compile Include="AnyTests.cs" />
-    <Compile Include="AppendPrependTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
     <Compile Include="ConcatTests.cs" />
@@ -48,11 +52,9 @@
     <Compile Include="SequenceEqualTests.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
-    <Compile Include="SkipLastTests.cs" />
     <Compile Include="SkipTests.cs" />
     <Compile Include="SkipWhileTests.cs" />
     <Compile Include="SumTests.cs" />
-    <Compile Include="TakeLastTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
