@@ -69,7 +69,7 @@ static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedCl
 static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klass);
 static MonoMethod* find_method_in_metadata (MonoClass *klass, const char *name, int param_count, int flags);
 static int generic_array_methods (MonoClass *klass);
-static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos);
+static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 
 static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
@@ -2363,8 +2363,10 @@ mono_class_setup_methods (MonoClass *klass)
 		amethod = create_array_method (klass, "Set", sig);
 		methods [method_num++] = amethod;
 
+		GHashTable *cache = g_hash_table_new (NULL, NULL);
 		for (i = 0; i < klass->interface_count; i++)
-			setup_generic_array_ifaces (klass, klass->interfaces [i], methods, first_generic + i * count_generic);
+			setup_generic_array_ifaces (klass, klass->interfaces [i], methods, first_generic + i * count_generic, cache);
+		g_hash_table_destroy (cache);
 	} else if (mono_class_has_static_metadata (klass)) {
 		MonoError error;
 		int first_idx = mono_class_get_first_method_idx (klass);
@@ -4742,7 +4744,7 @@ generic_array_methods (MonoClass *klass)
 }
 
 static void
-setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos)
+setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache)
 {
 	MonoGenericContext tmp_context;
 	int i;
@@ -4754,11 +4756,16 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 	for (i = 0; i < generic_array_method_num; i++) {
 		MonoError error;
 		MonoMethod *m = generic_array_method_info [i].array_method;
-		MonoMethod *inflated;
+		MonoMethod *inflated, *helper;
 
 		inflated = mono_class_inflate_generic_method_checked (m, &tmp_context, &error);
-		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
-		methods [pos++] = mono_marshal_get_generic_array_helper (klass, iface, generic_array_method_info [i].name, inflated);
+		mono_error_assert_ok (&error);
+		helper = g_hash_table_lookup (cache, inflated);
+		if (!helper) {
+			helper = mono_marshal_get_generic_array_helper (klass, generic_array_method_info [i].name, inflated);
+			g_hash_table_insert (cache, inflated, helper);
+		}
+		methods [pos ++] = helper;
 	}
 }
 
@@ -10409,14 +10416,13 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		MonoType *args [1];
 
 		/* generic IList, ICollection, IEnumerable */
-		interface_count = mono_defaults.generic_ireadonlylist_class ? 2 : 1;
+		interface_count = 2;
 		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count);
 
 		args [0] = &klass->element_class->byval_arg;
 		interfaces [0] = mono_class_bind_generic_parameters (
 			mono_defaults.generic_ilist_class, 1, args, FALSE);
-		if (interface_count > 1)
-			interfaces [1] = mono_class_bind_generic_parameters (
+		interfaces [1] = mono_class_bind_generic_parameters (
 			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
