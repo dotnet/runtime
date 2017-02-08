@@ -77,7 +77,7 @@
   <PropertyGroup Condition="'$(IsTestProject)'=='true'">
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)'==''">$(TestPath)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)'==''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)'==''">$(TestSharedFxDir)\dotnet.exe</StartProgram>
+    <StartProgram Condition="'$(StartProgram)'==''">$(TestSharedFxDir)dotnet.exe</StartProgram>
     <StartArguments Condition="'$(StartArguments)'==''">$(TestArguments) -wait -parallel none</StartArguments>
   </PropertyGroup>
 

@@ -18,4 +18,29 @@
     <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Setup the testing shared framework host -->
+  <Target Name="SetupTestingHost" AfterTargets="ResolveNuGetPackages" Condition="'$(BinplaceTestSharedFramework)' == 'true'">
+
+    <PropertyGroup>
+      <HostFxrFileName Condition="'$(OSGroup)'=='Windows_NT'">hostfxr</HostFxrFileName>
+      <HostFxrFileName Condition="'$(OSGroup)'!='Windows_NT'">libhostfxr</HostFxrFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(NETCoreAppTestRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
 </Project>
