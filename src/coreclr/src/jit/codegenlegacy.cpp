@@ -12680,30 +12680,7 @@ void CodeGen::genCodeForBBlist()
 
 #if FEATURE_EH_FUNCLETS
 #if defined(_TARGET_ARM_)
-        // If this block is the target of a finally return, we need to add a preceding NOP, in the same EH region,
-        // so the unwinder doesn't get confused by our "movw lr, xxx; movt lr, xxx; b Lyyy" calling convention that
-        // calls the funclet during non-exceptional control flow.
-        if (block->bbFlags & BBF_FINALLY_TARGET)
-        {
-            assert(block->bbFlags & BBF_JMP_TARGET);
-
-#ifdef DEBUG
-            if (compiler->verbose)
-            {
-                printf("\nEmitting finally target NOP predecessor for BB%02u\n", block->bbNum);
-            }
-#endif
-            // Create a label that we'll use for computing the start of an EH region, if this block is
-            // at the beginning of such a region. If we used the existing bbEmitCookie as is for
-            // determining the EH regions, then this NOP would end up outside of the region, if this
-            // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
-            // would be executed, which we would prefer not to do.
-
-            block->bbUnwindNopEmitCookie =
-                getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-
-            instGen(INS_nop);
-        }
+        genInsertNopForUnwinder(block);
 #endif // defined(_TARGET_ARM_)
 
         genUpdateCurrentFunclet(block);

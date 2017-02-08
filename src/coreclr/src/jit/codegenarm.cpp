@@ -78,14 +78,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // jump target using bbJumpDest - that is already used to point
     // to the finally block. So just skip past the BBJ_ALWAYS unless the
     // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
-
-        lblk  = block;
-        block = block->bbNext;
-    }
-    return block;
+    assert(!(block->bbFlags & BBF_RETLESS_CALL));
+    assert(block->isBBCallAlwaysPair());
+    return block->bbNext;
 }
 
 //------------------------------------------------------------------------
