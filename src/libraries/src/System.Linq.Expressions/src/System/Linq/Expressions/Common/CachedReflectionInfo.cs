@@ -15,6 +15,11 @@ namespace System.Linq.Expressions
                               s_ArrayOfType_Bool ??
                              (s_ArrayOfType_Bool = new[] { typeof(bool) });
 
+        private static ConstructorInfo s_Nullable_Boolean_Ctor;
+
+        public static ConstructorInfo Nullable_Boolean_Ctor
+            => s_Nullable_Boolean_Ctor ?? (s_Nullable_Boolean_Ctor = typeof(bool?).GetConstructor(new[] {typeof(bool)}));
+
         private static ConstructorInfo s_Decimal_Ctor_Int32;
         public  static ConstructorInfo   Decimal_Ctor_Int32 =>
                                        s_Decimal_Ctor_Int32 ??
