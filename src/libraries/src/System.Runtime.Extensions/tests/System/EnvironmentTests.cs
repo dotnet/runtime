@@ -98,7 +98,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         public void Is64BitOperatingSystem_Unix_TrueIff64BitProcess()
         {
             Assert.Equal(Environment.Is64BitProcess, Environment.Is64BitOperatingSystem);
@@ -161,7 +161,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         public void UserDomainName_Unix_MatchesMachineName()
         {
             Assert.Equal(Environment.MachineName, Environment.UserDomainName);
@@ -198,7 +198,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
@@ -213,7 +213,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         [InlineData(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.None)]
         [InlineData(Environment.SpecialFolder.Personal, Environment.SpecialFolderOption.None)]
         [InlineData(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.None)]
@@ -240,7 +240,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]  // Tests OS-specific environment
         [InlineData(Environment.SpecialFolder.Favorites, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.InternetCache, Environment.SpecialFolderOption.DoNotVerify)]
         [InlineData(Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolderOption.None)]
@@ -302,7 +302,7 @@ namespace System.Tests
         // [InlineData(Environment.SpecialFolder.LocalizedResources)]
         [InlineData(Environment.SpecialFolder.SystemX86)]
         [InlineData(Environment.SpecialFolder.Windows)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests OS-specific environment
         public unsafe void GetFolderPath_Windows(Environment.SpecialFolder folder)
         {
             string knownFolder = Environment.GetFolderPath(folder);
@@ -316,7 +316,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
         {
             string[] drives = Environment.GetLogicalDrives();
@@ -327,7 +327,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public void GetLogicalDrives_Windows_MatchesExpectedLetters()
         {
             string[] drives = Environment.GetLogicalDrives();

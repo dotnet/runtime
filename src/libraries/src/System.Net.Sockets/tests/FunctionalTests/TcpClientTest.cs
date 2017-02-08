@@ -150,7 +150,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
         public void ExclusiveAddressUse_NullClient_Windows()
         {
             using (TcpClient client = new TcpClient())
@@ -163,7 +163,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
         public void ExclusiveAddressUse_NullClient_NonWindows()
         {
             using (TcpClient client = new TcpClient())
@@ -185,7 +185,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
@@ -197,7 +197,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // ExclusiveAddressUse=false only supported on Windows
         public void ExclusiveAddressUse_Set_False_NotSupported()
         {
             using (TcpClient client = new TcpClient())

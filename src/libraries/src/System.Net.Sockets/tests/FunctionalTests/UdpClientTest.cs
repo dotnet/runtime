@@ -118,7 +118,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Udp.AllowNatTraversal only supported on Windows
         [InlineData(true, IPProtectionLevel.Unrestricted)]
         [InlineData(false, IPProtectionLevel.EdgeRestricted)]
         public void AllowNatTraversal_Windows(bool allow, IPProtectionLevel resultLevel)
@@ -132,7 +132,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Udp.AllowNatTraversal throws PNSE on Unix
         [InlineData(true)]
         [InlineData(false)]
         public void AllowNatTraversal_AnyUnix(bool allow)

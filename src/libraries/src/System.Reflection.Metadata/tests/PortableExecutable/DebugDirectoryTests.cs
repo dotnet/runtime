@@ -36,14 +36,14 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get module handles
         public void CodeView_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get module handles
         public void CodeView_Loaded_FromStream()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Debug, ValidateCodeView, useStream: true);
@@ -86,7 +86,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get module handles
         public void Deterministic_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(Misc.Deterministic, ValidateDeterministic);
@@ -134,14 +134,14 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get module handles
         public void EmbeddedPortablePdb_Loaded()
         {
             LoaderUtilities.LoadPEAndValidate(PortablePdbs.DocumentsEmbeddedDll, ValidateEmbeddedPortablePdb);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get module handles
         public void EmbeddedPortablePdb_Loaded_FromStream()
         {
             LoaderUtilities.LoadPEAndValidate(PortablePdbs.DocumentsEmbeddedDll, ValidateEmbeddedPortablePdb, useStream: true);

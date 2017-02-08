@@ -50,7 +50,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // UNC shares
         public void UNCShares()
         {
             string root = Directory.GetDirectoryRoot(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Test1", "test2", "test3"));

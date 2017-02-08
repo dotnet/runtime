@@ -145,7 +145,7 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {
             string testDir = GetTestFilePath();
@@ -170,7 +170,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path, wild chars are normal chars on Unix
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
@@ -180,7 +180,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Wild characters in path are allowed
         public void UnixWildCharacterPath()
         {
             // Wildcards are allowed in paths for Unix move commands as literals as well as functional wildcards,
@@ -206,7 +206,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace path causes ArgumentException
         public void WindowsWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -220,7 +220,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace path allowed
         public void UnixWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -235,7 +235,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Moving to existing directory causes IOException
         public void WindowsExistingDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -250,7 +250,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // drive labels
         public void BetweenDriveLabels()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -262,7 +262,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Moving to existing directory allowed for empty directory, but causes IOException for non-empty directory
         public void UnixExistingDirectory()
         {
             // Moving to an-empty directory is supported on Unix, but moving to a non-empty directory is not

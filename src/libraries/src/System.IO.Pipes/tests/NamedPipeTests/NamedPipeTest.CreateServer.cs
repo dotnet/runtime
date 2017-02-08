@@ -205,7 +205,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Unix_GetHandleOfNewServerStream_Throws_InvalidOperationException()
         {
             using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte))

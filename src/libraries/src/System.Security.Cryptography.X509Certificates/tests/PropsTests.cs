@@ -269,7 +269,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // MsCertificate not supported on Unix
         public static void TestArchive_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -285,7 +285,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // MsCertificate not supported on Unix
         public static void TestArchive_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -301,7 +301,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // MsCertificate not supported on Unix
         public static void TestFriendlyName_Windows()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -317,7 +317,7 @@ Wry5FNNo
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // MsCertificate not supported on Unix
         public static void TestFriendlyName_Unix()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
