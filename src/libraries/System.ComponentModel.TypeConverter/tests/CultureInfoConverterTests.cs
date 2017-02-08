@@ -65,7 +65,6 @@ namespace System.ComponentModel.Tests
             Assert.Equal(CultureInfo.InvariantCulture, c);
         }
 
-        [ActiveIssue(11611, TestPlatforms.AnyUnix)]
         [Fact]
         public void ConvertFrom_String_IncompleteName()
         {

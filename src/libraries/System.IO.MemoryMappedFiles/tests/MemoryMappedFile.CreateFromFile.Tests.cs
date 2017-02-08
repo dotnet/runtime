@@ -119,7 +119,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Windows.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Windows, permission errors come from CreateFromFile
         [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Tests various values of FileAccess used to construct a FileStream and MemoryMappedFileAccess used
         /// to construct a map over that stream on Unix.  The combinations should all be invalid, resulting in exception.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, permission errors come from CreateView*
         [Theory]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadWrite)]
         [InlineData(FileAccess.Read, MemoryMappedFileAccess.ReadExecute)]
@@ -192,7 +192,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Check map names are unsupported on Unix
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
@@ -836,7 +836,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests reusability of map names on Windows
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void ReusingNames_Windows(string name)

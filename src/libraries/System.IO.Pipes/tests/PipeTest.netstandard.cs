@@ -24,7 +24,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Null handle throws on Windows only
         public void TestCheckPipePropertyOperations_Unix()
         {
             // handle is null - throws on Windows but not Unix.
@@ -32,7 +32,7 @@ namespace System.IO.Pipes.Tests
         }
             
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Null handle throws on Windows only
         public void TestCheckPipePropertyOperations_Windows()
         {
             // handle is null - throws on Windows but not Unix

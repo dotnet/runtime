@@ -698,7 +698,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_Connect_DnsEndPoint_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -726,7 +726,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_Connect_StringHost_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -772,7 +772,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_Connect_MultipleAddresses_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -782,7 +782,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_ConnectAsync_DnsEndPoint_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -809,7 +809,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_ConnectAsync_StringHost_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -853,7 +853,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Socket_ConnectAsync_MultipleAddresses_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -863,7 +863,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void Connect_ConnectTwice_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -882,7 +882,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void ConnectAsync_ConnectTwice_NotSupported()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -954,7 +954,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void BeginConnect_EndPoint_AddressFamily_Throws_NotSupported()
         {
             Assert.Throws<NotSupportedException>(() => GetSocket(AddressFamily.InterNetwork).BeginConnect(new DnsEndPoint("localhost", 1, AddressFamily.InterNetworkV6), TheAsyncCallback, null));
@@ -974,7 +973,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void BeginConnect_Host_ListeningSocket_Throws_InvalidOperation()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -1024,7 +1022,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void BeginConnect_IPAddresses_ListeningSocket_Throws_InvalidOperation()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -1288,7 +1285,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void TcpClient_ConnectAsync_StringHost_NotSupportedAfterClientAccess()
         {
             using (TcpClient client = new TcpClient())
@@ -1299,7 +1296,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         public void TcpClient_ConnectAsync_ArrayOfAddresses_NotSupportedAfterClientAccess()
         {
             using (TcpClient client = new TcpClient())

@@ -57,7 +57,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix
         [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "dos device path support added in 4.6.2")]
         public void ValidCreation_ExtendedSyntax()
         {
@@ -73,7 +73,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
         public void ValidCreation_LongPathExtendedSyntax()
         {
@@ -197,7 +197,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Invalid file name with wildcard characters on Windows
         public void WindowsWildCharacterPath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -208,7 +208,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Invalid file name with whitespace on Windows
         public void WindowsWhitespacePath()
         {
             Assert.Throws<ArgumentException>(() => Create("         "));
@@ -221,7 +221,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Valid file name with Whitespace on Unix
         public void UnixWhitespacePath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

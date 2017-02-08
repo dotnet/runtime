@@ -180,7 +180,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix doesn't support SignalAndWait
         public static void SignalAndWait_PlatformNotSupported()
         {
             var toSignal = new ManualResetEvent(false);

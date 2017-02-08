@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.Environment.Contains(new KeyValuePair<string,string>("NewKey3", "NewValue3")));            
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Test case is specific to Windows
         [Fact]
         public void TestVerbsProperty()
         {
@@ -88,7 +88,7 @@ namespace System.Diagnostics.Tests
             Assert.DoesNotContain("closed", psi.Verbs, StringComparer.OrdinalIgnoreCase);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Test case is specific to Unix
         [Fact]
         public void TestEnvironmentVariablesPropertyUnix(){
             ProcessStartInfo psi = new ProcessStartInfo();

@@ -121,7 +121,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Non-existing file returns default values
         public void Windows_FileDoesntExist_ReturnDefaultValues()
         {
             string path = GetTestFilePath();
@@ -150,7 +150,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Non-existing file throws FileNotFoundException
         public void Unix_FileDoesntExist_Throws_FileNotFoundException()
         {
             string path = GetTestFilePath();

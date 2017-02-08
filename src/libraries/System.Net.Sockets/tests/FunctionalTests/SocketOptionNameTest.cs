@@ -281,7 +281,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse option is a Windows-specific option (when set to "true," tells Windows not to allow reuse of same local address)
         [InlineData(false, null, null, true)]
         [InlineData(false, null, false, true)]
         [InlineData(false, false, null, true)]
@@ -296,7 +296,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // SetIPProtectionLevel not supported on Unix
         [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
         [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
         [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
@@ -316,7 +316,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // SetIPProtectionLevel not supported on Unix
         [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork)]
         [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork)]
         [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork)]
