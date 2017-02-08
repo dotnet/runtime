@@ -7578,7 +7578,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             simdTmpReg = genRegNumFromMask(rsvdRegs & RBM_ALLFLOAT);
             assert(genIsValidFloatReg(simdTmpReg));
         }
-        assert(genCountBits(rsvdRegs) == ((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
+        assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
     }
 
     for (GenTreeFieldList* current = fieldList; current != nullptr; current = current->Rest())
