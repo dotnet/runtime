@@ -164,8 +164,8 @@ private:
     // block of those handlers.
     void AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigned count);
 
-    // Same as above, for "Heap".
-    void AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count);
+    // Same as above, for memory.
+    void AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* block, unsigned count);
 
     // Requires "block" to be non-NULL.  Requires "pRenameState" to be non-NULL and be currently used
     // for variables renaming. Assigns the rhs arguments to the phi, i.e., block's phi node arguments.
