@@ -207,12 +207,6 @@ const gint8 ins_sreg_counts[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
-#define MONO_INIT_VARINFO(vi,id) do { \
-	(vi)->range.first_use.pos.bid = 0xffff; \
-	(vi)->reg = -1; \
-	(vi)->idx = (id); \
-} while (0)
-
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
 {
