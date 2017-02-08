@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.IO.PortsTests;
 using System.Threading;
+using Legacy.Support;
+using Xunit;
 
-public class Handshake_Property
+public class Handshake_Property : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/21 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.Handshake";
-    public static readonly String s_strTFName = "Handshake.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //The default number of bytes to read/write to verify the speed of the port
     //and that the bytes were transfered successfully
     public static readonly int DEFAULT_BYTE_SIZE = 8;
@@ -35,293 +33,135 @@ public class Handshake_Property
 
     private enum ThrowAt { Set, Open };
 
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        Handshake_Property objTest = new Handshake_Property();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_Default), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_None_BeforeOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_XOnXOff_BeforeOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSend_BeforeOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSendXOnXOff_BeforeOpen), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_None_AfterOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_XOnXOff_AfterOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSend_AfterOpen), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSendXOnXOff_AfterOpen), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_Int32MinValue), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_Neg1), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_4), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_Int32MaxValue), TCSupport.SerialPortRequirements.OneSerialPort);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
-
     #region Test Cases
-    public bool Handshake_Default()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_Default()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying default Handshake");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyHandshake(com1);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_001!!! Verifying default Handshake FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying default Handshake");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyHandshake(com1);
+
+            com1.DiscardInBuffer();
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
-
-        com1.DiscardInBuffer();
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
     }
 
 
-    public bool Handshake_None_BeforeOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_None_BeforeOpen()
     {
-        Console.WriteLine("Verifying None Handshake before open");
-        if (!VerifyHandshakeBeforeOpen((int)Handshake.None))
-        {
-            Console.WriteLine("Err_002!!! Verifying None Handshake before open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying None Handshake before open");
+        VerifyHandshakeBeforeOpen((int)Handshake.None);
     }
 
 
-    public bool Handshake_XOnXOff_BeforeOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_XOnXOff_BeforeOpen()
     {
-        Console.WriteLine("Verifying XOnXOff Handshake before open");
-        if (!VerifyHandshakeBeforeOpen((int)Handshake.XOnXOff))
-        {
-            Console.WriteLine("Err_003!!! Verifying XOnXOff Handshake before open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying XOnXOff Handshake before open");
+        VerifyHandshakeBeforeOpen((int)Handshake.XOnXOff);
     }
 
 
-    public bool Handshake_RequestToSend_BeforeOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSend_BeforeOpen()
     {
-        Console.WriteLine("Verifying RequestToSend Handshake before open");
-        if (!VerifyHandshakeBeforeOpen((int)Handshake.RequestToSend))
-        {
-            Console.WriteLine("Err_004!!! Verifying RequestToSend Handshake before open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying RequestToSend Handshake before open");
+        VerifyHandshakeBeforeOpen((int)Handshake.RequestToSend);
     }
 
-
-    public bool Handshake_RequestToSendXOnXOff_BeforeOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSendXOnXOff_BeforeOpen()
     {
-        Console.WriteLine("Verifying RequestToSendXOnXOff Handshake before open");
-        if (!VerifyHandshakeBeforeOpen((int)Handshake.RequestToSendXOnXOff))
-        {
-            Console.WriteLine("Err_005!!! Verifying RequestToSendXOnXOff Handshake before open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake before open");
+        VerifyHandshakeBeforeOpen((int)Handshake.RequestToSendXOnXOff);
     }
 
-
-    public bool Handshake_None_AfterOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_None_AfterOpen()
     {
-        Console.WriteLine("Verifying None Handshake after open");
-        if (!VerifyHandshakeAfterOpen((int)Handshake.None))
-        {
-            Console.WriteLine("Err_006!!! Verifying None Handshake after open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying None Handshake after open");
+        VerifyHandshakeAfterOpen((int)Handshake.None);
     }
 
-
-    public bool Handshake_XOnXOff_AfterOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_XOnXOff_AfterOpen()
     {
-        Console.WriteLine("Verifying XOnXOff Handshake after open");
-        if (!VerifyHandshakeAfterOpen((int)Handshake.XOnXOff))
-        {
-            Console.WriteLine("Err_007!!! Verifying XOnXOff Handshake after open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying XOnXOff Handshake after open");
+        VerifyHandshakeAfterOpen((int)Handshake.XOnXOff);
     }
 
-
-    public bool Handshake_RequestToSend_AfterOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSend_AfterOpen()
     {
-        Console.WriteLine("Verifying RequestToSend Handshake after open");
-        if (!VerifyHandshakeAfterOpen((int)Handshake.RequestToSend))
-        {
-            Console.WriteLine("Err_008!!! Verifying RequestToSend Handshake after open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying RequestToSend Handshake after open");
+        VerifyHandshakeAfterOpen((int)Handshake.RequestToSend);
     }
 
-
-    public bool Handshake_RequestToSendXOnXOff_AfterOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSendXOnXOff_AfterOpen()
     {
-        Console.WriteLine("Verifying RequestToSendXOnXOff Handshake after open");
-        if (!VerifyHandshakeAfterOpen((int)Handshake.RequestToSendXOnXOff))
-        {
-            Console.WriteLine("Err_009!!! Verifying RequestToSendXOnXOff Handshake after open FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake after open");
+        VerifyHandshakeAfterOpen((int)Handshake.RequestToSendXOnXOff);
     }
 
-
-    public bool Handshake_Int32MinValue()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void Handshake_Int32MinValue()
     {
-        Console.WriteLine("Verifying Int32.MinValue Handshake");
-        if (!VerifyException(Int32.MinValue, ThrowAt.Set, typeof(System.ArgumentOutOfRangeException)))
-        {
-            Console.WriteLine("Err_010!!! Verifying Int32.MinValue Handshake FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying Int32.MinValue Handshake");
+        VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
-
-    public bool Handshake_Neg1()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void Handshake_Neg1()
     {
-        Console.WriteLine("Verifying -1 Handshake");
-        if (!VerifyException(-1, ThrowAt.Set, typeof(System.ArgumentOutOfRangeException)))
-        {
-            Console.WriteLine("Err_011!!! Verifying -1 Handshake FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying -1 Handshake");
+        VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
-
-    public bool Handshake_4()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void Handshake_4()
     {
-        Console.WriteLine("Verifying 4 Handshake");
-        if (!VerifyException(4, ThrowAt.Set, typeof(System.ArgumentOutOfRangeException)))
-        {
-            Console.WriteLine("Err_012!!! Verifying 4 Handshake FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying 4 Handshake");
+        VerifyException(4, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
-
-    public bool Handshake_Int32MaxValue()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void Handshake_Int32MaxValue()
     {
-        Console.WriteLine("Verifying Int32.MaxValue Handshake");
-        if (!VerifyException(Int32.MaxValue, ThrowAt.Set, typeof(System.ArgumentOutOfRangeException)))
-        {
-            Console.WriteLine("Err_013!!! Verifying Int32.MaxValue Handshake FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying Int32.MaxValue Handshake");
+        VerifyException(int.MaxValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
     #endregion
 
     #region Verification for Test Cases
-    private bool VerifyException(int handshake, ThrowAt throwAt, System.Type expectedException)
+    private void VerifyException(int handshake, ThrowAt throwAt, Type expectedException)
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        bool retValue = true;
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            VerifyExceptionAtOpen(com, handshake, throwAt, expectedException);
 
-        retValue &= VerifyExceptionAtOpen(com, handshake, throwAt, expectedException);
+            if (com.IsOpen)
+                com.Close();
 
-        if (com.IsOpen)
-            com.Close();
-
-        retValue &= VerifyExceptionAfterOpen(com, handshake, expectedException);
-
-        if (com.IsOpen)
-            com.Close();
-
-        return retValue;
+            VerifyExceptionAfterOpen(com, handshake, expectedException);
+        }
     }
 
 
-    private bool VerifyExceptionAtOpen(SerialPort com, int handshake, ThrowAt throwAt, System.Type expectedException)
+    private void VerifyExceptionAtOpen(SerialPort com, int handshake, ThrowAt throwAt, Type expectedException)
     {
         int origHandshake = (int)com.Handshake;
-        bool retValue = true;
+        
         SerialPortProperties serPortProp = new SerialPortProperties();
 
         serPortProp.SetAllPropertiesToDefaults();
@@ -339,33 +179,26 @@ public class Handshake_Property
 
             if (null != expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected Open() to throw {0} and nothing was thrown", expectedException);
-                retValue = false;
+                Fail("ERROR!!! Expected Open() to throw {0} and nothing was thrown", expectedException);
             }
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             if (null == expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected Open() NOT to throw an exception and {0} was thrown", e.GetType());
-                retValue = false;
+                Fail("ERROR!!! Expected Open() NOT to throw an exception and {0} was thrown", e.GetType());
             }
             else if (e.GetType() != expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected Open() throw {0} and {1} was thrown", expectedException, e.GetType());
-                retValue = false;
+                Fail("ERROR!!! Expected Open() throw {0} and {1} was thrown", expectedException, e.GetType());
             }
         }
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com);
+        serPortProp.VerifyPropertiesAndPrint(com);
         com.Handshake = (Handshake)origHandshake;
-
-        return retValue;
     }
 
-
-    private bool VerifyExceptionAfterOpen(SerialPort com, int handshake, System.Type expectedException)
+    private void VerifyExceptionAfterOpen(SerialPort com, int handshake, Type expectedException)
     {
-        bool retValue = true;
         SerialPortProperties serPortProp = new SerialPortProperties();
 
         com.Open();
@@ -377,109 +210,87 @@ public class Handshake_Property
             com.Handshake = (Handshake)handshake;
             if (null != expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected setting the Handshake after Open() to throw {0} and nothing was thrown", expectedException);
-                retValue = false;
+                Fail("ERROR!!! Expected setting the Handshake after Open() to throw {0} and nothing was thrown", expectedException);
             }
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             if (null == expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected setting the Handshake after Open() NOT to throw an exception and {0} was thrown", e.GetType());
-                retValue = false;
+                Fail("ERROR!!! Expected setting the Handshake after Open() NOT to throw an exception and {0} was thrown", e.GetType());
             }
             else if (e.GetType() != expectedException)
             {
-                Console.WriteLine("ERROR!!! Expected setting the Handshake after Open() throw {0} and {1} was thrown", expectedException, e.GetType());
-                retValue = false;
+                Fail("ERROR!!! Expected setting the Handshake after Open() throw {0} and {1} was thrown", expectedException, e.GetType());
             }
         }
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com);
-
-        return retValue;
+        serPortProp.VerifyPropertiesAndPrint(com);
     }
 
-
-    private bool VerifyHandshakeBeforeOpen(int handshake)
+    private void VerifyHandshakeBeforeOpen(int handshake)
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            SerialPortProperties serPortProp = new SerialPortProperties();
 
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 
-        com1.Handshake = (Handshake)handshake;
-        com1.Open();
+            com1.Handshake = (Handshake)handshake;
+            com1.Open();
 
-        serPortProp.SetProperty("Handshake", (Handshake)handshake);
+            serPortProp.SetProperty("Handshake", (Handshake)handshake);
 
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyHandshake(com1);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyHandshake(com1);
+            serPortProp.VerifyPropertiesAndPrint(com1);
+        }
     }
 
-
-    private bool VerifyHandshakeAfterOpen(int handshake)
+    private void VerifyHandshakeAfterOpen(int handshake)
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            SerialPortProperties serPortProp = new SerialPortProperties();
 
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 
-        com1.Open();
-        com1.Handshake = (Handshake)handshake;
+            com1.Open();
+            com1.Handshake = (Handshake)handshake;
 
-        serPortProp.SetProperty("Handshake", (Handshake)handshake);
+            serPortProp.SetProperty("Handshake", (Handshake)handshake);
 
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyHandshake(com1);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyHandshake(com1);
+            serPortProp.VerifyPropertiesAndPrint(com1);
+        }
     }
 
-
-    private bool VerifyHandshake(SerialPort com1)
+    private void VerifyHandshake(SerialPort com1)
     {
-        bool retValue = true;
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        int origWriteTimeout = com1.WriteTimeout;
-        int origReadTimeout = com1.ReadTimeout;
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+        {
+            int origWriteTimeout = com1.WriteTimeout;
+            int origReadTimeout = com1.ReadTimeout;
 
-        com2.Open();
-        com1.WriteTimeout = 250;
-        com1.ReadTimeout = 250;
+            com2.Open();
+            com1.WriteTimeout = 250;
+            com1.ReadTimeout = 250;
 
-        retValue &= VerifyRTSHandshake(com1, com2);
-        retValue &= VerifyXOnXOffHandshake(com1, com2);
-        retValue &= VerifyRTSXOnXOffHandshake(com1, com2);
-        retValue &= VerirfyRTSBufferFull(com1, com2);
-        retValue &= VerirfyXOnXOffBufferFull(com1, com2);
+            VerifyRTSHandshake(com1, com2);
+            VerifyXOnXOffHandshake(com1, com2);
+            VerifyRTSXOnXOffHandshake(com1, com2);
+            VerirfyRTSBufferFull(com1, com2);
+            VerirfyXOnXOffBufferFull(com1, com2);
 
-        com1.WriteTimeout = origWriteTimeout;
-        com1.ReadTimeout = origReadTimeout;
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
+            com1.WriteTimeout = origWriteTimeout;
+            com1.ReadTimeout = origReadTimeout;
+        }
     }
 
-
-    private bool VerifyRTSHandshake(SerialPort com1, SerialPort com2)
+    private void VerifyRTSHandshake(SerialPort com1, SerialPort com2)
     {
-        bool retValue = true;
         bool origRtsEnable = com2.RtsEnable;
 
         try
@@ -490,10 +301,9 @@ public class Handshake_Property
             {
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
-                Console.WriteLine("Err_103948aooh!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                retValue = false;
+                Fail("Err_103948aooh!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
             }
 
             com2.RtsEnable = false;
@@ -503,16 +313,14 @@ public class Handshake_Property
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
                 if (Handshake.RequestToSend == com1.Handshake || Handshake.RequestToSendXOnXOff == com1.Handshake)
                 {
-                    Console.WriteLine("Err_15397lkjh!!! TimeoutException NOT thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_15397lkjh!!! TimeoutException NOT thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
                 if (Handshake.RequestToSend != com1.Handshake && Handshake.RequestToSendXOnXOff != com1.Handshake)
                 {
-                    Console.WriteLine("Err_1341pawh!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_1341pawh!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
 
@@ -522,10 +330,9 @@ public class Handshake_Property
             {
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
-                Console.WriteLine("Err_143987aqaih!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                retValue = false;
+                Fail("Err_143987aqaih!!! TimeoutException thrown when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
             }
         }
         finally
@@ -533,18 +340,15 @@ public class Handshake_Property
             com2.RtsEnable = origRtsEnable;
             com2.DiscardInBuffer();
         }
-
-        return retValue;
     }
 
 
-    private bool VerifyRTSXOnXOffHandshake(SerialPort com1, SerialPort com2)
+    private void VerifyRTSXOnXOffHandshake(SerialPort com1, SerialPort com2)
     {
         bool origRtsEnable = com2.RtsEnable;
         Random rndGen = new Random();
         byte[] xmitXOnBytes = new byte[DEFAULT_BYTE_SIZE_XON_XOFF];
         byte[] xmitXOffBytes = new byte[DEFAULT_BYTE_SIZE_XON_XOFF];
-        bool retValue = true;
 
         try
         {
@@ -596,16 +400,14 @@ public class Handshake_Property
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
                 if (Handshake.RequestToSend == com1.Handshake || Handshake.RequestToSendXOnXOff == com1.Handshake)
                 {
-                    Console.WriteLine("Err_1253aasyo!!! TimeoutException NOT thrown after XOff and XOn char sent when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_1253aasyo!!! TimeoutException NOT thrown after XOff and XOn char sent when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
                 if (Handshake.RequestToSend != com1.Handshake && Handshake.RequestToSendXOnXOff != com1.Handshake)
                 {
-                    Console.WriteLine("Err_51390awi!!! TimeoutException thrown after XOff and XOn char sent when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_51390awi!!! TimeoutException thrown after XOff and XOn char sent when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
 
@@ -629,16 +431,14 @@ public class Handshake_Property
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
                 if (Handshake.XOnXOff == com1.Handshake || Handshake.RequestToSendXOnXOff == com1.Handshake)
                 {
-                    Console.WriteLine("Err_2457awez!!! TimeoutException NOT thrown after RTSEnable set to false then true when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_2457awez!!! TimeoutException NOT thrown after RTSEnable set to false then true when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
                 if (Handshake.XOnXOff != com1.Handshake && Handshake.RequestToSendXOnXOff != com1.Handshake)
                 {
-                    Console.WriteLine("Err_3240aw4er!!! TimeoutException thrown RTSEnable set to false then true when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_3240aw4er!!! TimeoutException thrown RTSEnable set to false then true when CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
 
@@ -660,18 +460,15 @@ public class Handshake_Property
             com2.RtsEnable = origRtsEnable;
             com2.DiscardInBuffer();
         }
-
-        return retValue;
     }
 
 
-    private bool VerifyXOnXOffHandshake(SerialPort com1, SerialPort com2)
+    private void VerifyXOnXOffHandshake(SerialPort com1, SerialPort com2)
     {
         bool origRtsEnable = com2.RtsEnable;
         Random rndGen = new Random();
         byte[] xmitXOnBytes = new byte[DEFAULT_BYTE_SIZE_XON_XOFF];
         byte[] xmitXOffBytes = new byte[DEFAULT_BYTE_SIZE_XON_XOFF];
-        bool retValue = true;
 
         try
         {
@@ -707,7 +504,7 @@ public class Handshake_Property
             xmitXOnBytes[XOnIndex] = (byte)17;
             xmitXOffBytes[XOffIndex] = (byte)19;
 
-            Console.WriteLine("XOnIndex={0} XOffIndex={1}", XOnIndex, XOffIndex);
+            Debug.WriteLine("XOnIndex={0} XOffIndex={1}", XOnIndex, XOffIndex);
 
             com2.Write(xmitXOnBytes, 0, xmitXOnBytes.Length);
             com2.Write(xmitXOnBytes, 0, xmitXOnBytes.Length);
@@ -727,10 +524,9 @@ public class Handshake_Property
             {
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
-                Console.WriteLine("Err_2357pquaz!!! TimeoutException thrown after XOn char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                retValue = false;
+                Fail("Err_2357pquaz!!! TimeoutException thrown after XOn char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
             }
 
             com2.Write(xmitXOffBytes, 0, xmitXOffBytes.Length);
@@ -752,16 +548,14 @@ public class Handshake_Property
 
                 if (Handshake.XOnXOff == com1.Handshake || Handshake.RequestToSendXOnXOff == com1.Handshake)
                 {
-                    Console.WriteLine("Err_1349znpq!!! TimeoutException NOT thrown after XOff char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_1349znpq!!! TimeoutException NOT thrown after XOff char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
                 if (Handshake.XOnXOff != com1.Handshake && Handshake.RequestToSendXOnXOff != com1.Handshake)
                 {
-                    Console.WriteLine("Err_2507pqzhn!!! TimeoutException thrown after XOff char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                    retValue = false;
+                    Fail("Err_2507pqzhn!!! TimeoutException thrown after XOff char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
                 }
             }
 
@@ -782,10 +576,9 @@ public class Handshake_Property
             {
                 com1.Write(new byte[DEFAULT_BYTE_SIZE], 0, DEFAULT_BYTE_SIZE);
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
-                Console.WriteLine("Err_2570aqpa!!! TimeoutException thrown after XOn char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
-                retValue = false;
+                Fail("Err_2570aqpa!!! TimeoutException thrown after XOn char sent and CtsHolding={0} with Handshake={1}", com1.CtsHolding, com1.Handshake);
             }
         }
         finally
@@ -793,14 +586,11 @@ public class Handshake_Property
             com2.RtsEnable = origRtsEnable;
             com2.DiscardInBuffer();
         }
-
-        return retValue;
     }
 
 
-    private bool VerirfyRTSBufferFull(SerialPort com1, SerialPort com2)
+    private void VerirfyRTSBufferFull(SerialPort com1, SerialPort com2)
     {
-        bool retValue = true;
         int com1BaudRate = com1.BaudRate;
         int com2BaudRate = com2.BaudRate;
         int com1ReadBufferSize = com1.ReadBufferSize;
@@ -823,16 +613,14 @@ public class Handshake_Property
             {
                 if (!com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_548458ahiede Expected RTS to be set");
-                    retValue = false;
+                    Fail("Err_548458ahiede Expected RTS to be set");
                 }
             }
             else
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_028538aieoz Expected RTS to be cleared");
-                    retValue = false;
+                    Fail("Err_028538aieoz Expected RTS to be cleared");
                 }
             }
 
@@ -844,16 +632,14 @@ public class Handshake_Property
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_508845aueid Expected RTS to be cleared");
-                    retValue = false;
+                    Fail("Err_508845aueid Expected RTS to be cleared");
                 }
             }
             else
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_48848ajeoid Expected RTS to be set");
-                    retValue = false;
+                    Fail("Err_48848ajeoid Expected RTS to be set");
                 }
             }
 
@@ -865,16 +651,14 @@ public class Handshake_Property
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_952085aizpea Expected RTS to be cleared");
-                    retValue = false;
+                    Fail("Err_952085aizpea Expected RTS to be cleared");
                 }
             }
             else
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_725527ahjiuzp Expected RTS to be set");
-                    retValue = false;
+                    Fail("Err_725527ahjiuzp Expected RTS to be set");
                 }
             }
 
@@ -886,16 +670,14 @@ public class Handshake_Property
             {
                 if (!com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_652820aopea Expected RTS to be set");
-                    retValue = false;
+                    Fail("Err_652820aopea Expected RTS to be set");
                 }
             }
             else
             {
                 if (com2.CtsHolding)
                 {
-                    Console.WriteLine("Err_35585ajuei Expected RTS to be cleared");
-                    retValue = false;
+                    Fail("Err_35585ajuei Expected RTS to be cleared");
                 }
             }
         }
@@ -909,13 +691,10 @@ public class Handshake_Property
             Thread.Sleep(DEFAULT_WAIT_AFTER_READ_OR_WRITE);
             com2.DiscardInBuffer();
         }
-
-        return retValue;
     }
 
-    private bool VerirfyXOnXOffBufferFull(SerialPort com1, SerialPort com2)
+    private void VerirfyXOnXOffBufferFull(SerialPort com1, SerialPort com2)
     {
-        bool retValue = true;
         int com1BaudRate = com1.BaudRate;
         int com2BaudRate = com2.BaudRate;
         int com1ReadBufferSize = com1.ReadBufferSize;
@@ -948,16 +727,14 @@ public class Handshake_Property
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_81919aniee Did not expect anything to be sent");
-                    retValue = false;
+                    Fail("Err_81919aniee Did not expect anything to be sent");
                 }
             }
             else
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_5258aieodpo Did not expect anything to be sent com2.BytesToRead={0}", com2.BytesToRead);
-                    retValue = false;
+                    Fail("Err_5258aieodpo Did not expect anything to be sent com2.BytesToRead={0}", com2.BytesToRead);
                 }
             }
 
@@ -969,21 +746,18 @@ public class Handshake_Property
             {
                 if (com2.BytesToRead != 1)
                 {
-                    Console.WriteLine("Err_12558aoed Expected XOff to be sent and nothing was sent");
-                    retValue = false;
+                    Fail("Err_12558aoed Expected XOff to be sent and nothing was sent");
                 }
                 else if (XOFF_BYTE != (byteRead = com2.ReadByte()))
                 {
-                    Console.WriteLine("Err_0188598aoepad Expected XOff to be sent actually sent={0}", byteRead);
-                    retValue = false;
+                    Fail("Err_0188598aoepad Expected XOff to be sent actually sent={0}", byteRead);
                 }
             }
             else
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_2258ajoe Did not expect anything to be sent");
-                    retValue = false;
+                    Fail("Err_2258ajoe Did not expect anything to be sent");
                 }
             }
 
@@ -995,16 +769,14 @@ public class Handshake_Property
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_22808aiuepa Did not expect anything to be sent");
-                    retValue = false;
+                    Fail("Err_22808aiuepa Did not expect anything to be sent");
                 }
             }
             else
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_12508aieap Did not expect anything to be sent");
-                    retValue = false;
+                    Fail("Err_12508aieap Did not expect anything to be sent");
                 }
             }
 
@@ -1017,21 +789,18 @@ public class Handshake_Property
             {
                 if (com2.BytesToRead != 1)
                 {
-                    Console.WriteLine("Err_6887518adizpa Expected XOn to be sent and nothing was sent");
-                    retValue = false;
+                    Fail("Err_6887518adizpa Expected XOn to be sent and nothing was sent");
                 }
                 else if (XON_BYTE != (byteRead = com2.ReadByte()))
                 {
-                    Console.WriteLine("Err_58145auead Expected XOn to be sent actually sent={0}", byteRead);
-                    retValue = false;
+                    Fail("Err_58145auead Expected XOn to be sent actually sent={0}", byteRead);
                 }
             }
             else
             {
                 if (com2.BytesToRead != 0)
                 {
-                    Console.WriteLine("Err_256108aipeg Did not expect anything to be sent");
-                    retValue = false;
+                    Fail("Err_256108aipeg Did not expect anything to be sent");
                 }
             }
         }
@@ -1047,8 +816,6 @@ public class Handshake_Property
 
             com2.RtsEnable = com2RtsEnable;
         }
-
-        return retValue;
     }
 
     private bool IsRequestToSend(SerialPort com)

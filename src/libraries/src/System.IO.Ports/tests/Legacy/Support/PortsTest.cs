@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Legacy.Support;
+using Xunit;
 
 namespace System.IO.PortsTests
 {
@@ -17,5 +18,10 @@ namespace System.IO.PortsTests
         public static bool HasNullModem => TCSupport.SufficientHardwareRequirements(TCSupport.SerialPortRequirements.NullModem);
 
         public static bool HasLoopbackOrNullModem => TCSupport.SufficientHardwareRequirements(TCSupport.SerialPortRequirements.LoopbackOrNullModem);
+
+        protected static void Fail(string format, params object[] args)
+        {
+            Assert.True(false, string.Format(format, args));
+        }
     }
 }

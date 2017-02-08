@@ -5,190 +5,72 @@
 using System;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class DiscardOutBuffer
+public class DiscardOutBuffer_Generic : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/19 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.DiscardOutBuffer()";
-    public static readonly String s_strTFName = "DiscardOutBuffer_Generic.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        DiscardOutBuffer objTest = new DiscardOutBuffer();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(DiscardWithoutOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(DiscardAfterFailedOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(DiscardAfterClose), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(DiscardAfterOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-        return retValue;
-    }
-
     #region Test Cases
-    public bool DiscardWithoutOpen()
+
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void DiscardWithoutOpen()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        Console.WriteLine("Verifying Discard method throws exception without a call to Open()");
-        if (!VerifyDiscardException(com, typeof(System.InvalidOperationException)))
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_001!!! Verifying Discard method throws exception without a call to Open() FAILED");
-            return false;
+            Debug.WriteLine("Verifying Discard method throws exception without a call to Open()");
+            VerifyDiscardException(com, typeof(InvalidOperationException));
         }
-
-        return true;
     }
 
 
-    public bool DiscardAfterFailedOpen()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void DiscardAfterFailedOpen()
     {
-        SerialPort com = new SerialPort("BAD_PORT_NAME");
-
-        Console.WriteLine("Verifying read Discard throws exception with a failed call to Open()");
-
-        //Since the PortName is set to a bad port name Open will thrown an exception
-        //however we don't care what it is since we are verfifying a read method
-        try
+        using (SerialPort com = new SerialPort("BAD_PORT_NAME"))
         {
+            Debug.WriteLine("Verifying read Discard throws exception with a failed call to Open()");
+
+            //Since the PortName is set to a bad port name Open will thrown an exception
+            //however we don't care what it is since we are verifying a read method
+            Assert.ThrowsAny<Exception>(() => com.Open());
+            VerifyDiscardException(com, typeof(InvalidOperationException));
+        }
+    }
+
+
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void DiscardAfterClose()
+    {
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            Debug.WriteLine("Verifying Discard method throws exception after a call to Cloes()");
             com.Open();
-        }
-        catch (System.Exception)
-        {
-        }
-        if (!VerifyDiscardException(com, typeof(System.InvalidOperationException)))
-        {
-            Console.WriteLine("Err_002!!! Verifying Discard method throws exception with a failed call to Open() FAILED");
-            return false;
-        }
+            com.Close();
 
-        return true;
+            VerifyDiscardException(com, typeof(InvalidOperationException));
+        }
     }
 
 
-    public bool DiscardAfterClose()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void DiscardAfterOpen()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        Console.WriteLine("Verifying Discard method throws exception after a call to Cloes()");
-        com.Open();
-        com.Close();
-
-        if (!VerifyDiscardException(com, typeof(System.InvalidOperationException)))
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_003!!! Verifying Discard method throws exception after a call to Cloes() FAILED");
-            return false;
+            Debug.WriteLine("Verifying Discard method does not throw an exception after a call to Open()");
+            com.Open();
+            com.DiscardOutBuffer();
+
+            Assert.Equal(0, com.BytesToRead);
         }
-
-        return true;
-    }
-
-
-    public bool DiscardAfterOpen()
-    {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        bool retValue = true;
-
-        Console.WriteLine("Verifying Discard method does not throw an exception after a call to Open()");
-        com.Open();
-        retValue &= VerifyDiscardException(com, null);
-
-        if (0 != com.BytesToRead)
-        {
-            Console.WriteLine("Error!!! BytesToRead is not 0");
-            retValue = false;
-        }
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_004!!! Verifying Discard method does not throw an exception after a call to Open() FAILED");
-            retValue = false;
-        }
-
-        return retValue;
     }
     #endregion
 
     #region Verification for Test Cases
-    private bool VerifyDiscardException(SerialPort com, Type expectedException)
+    private void VerifyDiscardException(SerialPort com, Type expectedException)
     {
-        bool retValue = true;
-
-        try
-        {
-            com.DiscardOutBuffer();
-            if (null != expectedException)
-            {
-                Console.WriteLine("ERROR!!!: No Excpetion was thrown");
-                retValue = false;
-            }
-        }
-        catch (System.Exception e)
-        {
-            if (null == expectedException)
-            {
-                Console.WriteLine("ERROR!!!: No Excpetion was expected and {0} was thrown", e.GetType());
-                retValue = false;
-            }
-
-            if (e.GetType() != expectedException)
-            {
-                Console.WriteLine("ERROR!!!: {0} exception was thrown expected {1}", e.GetType(), expectedException);
-                retValue = false;
-            }
-        }
-        return retValue;
+        Assert.Throws(expectedException, () => com.DiscardOutBuffer());
     }
     #endregion
 }

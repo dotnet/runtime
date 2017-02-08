@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public class DosDevices : IEnumerable<KeyValuePair<string, string>>
 {
@@ -16,27 +17,28 @@ public class DosDevices : IEnumerable<KeyValuePair<string, string>>
         Initialize();
     }
 
+/*
     public static void Main()
     {
         DosDevices dosDevices = new DosDevices();
 
         foreach (KeyValuePair<string, string> keyValuePair in dosDevices)
         {
-            Console.WriteLine("'{0}'='{1}'", keyValuePair.Key, keyValuePair.Value.Trim());
+            Debug.WriteLine("'{0}'='{1}'", keyValuePair.Key, keyValuePair.Value.Trim());
         }
 
-        Console.WriteLine("CommonNameExists(\"LPT1\")={0}", dosDevices.CommonNameExists("LPT1"));
-        Console.WriteLine("CommonNameExists(\"A:\")={0}", dosDevices.CommonNameExists("A:"));
+        Debug.WriteLine("CommonNameExists(\"LPT1\")={0}", dosDevices.CommonNameExists("LPT1"));
+        Debug.WriteLine("CommonNameExists(\"A:\")={0}", dosDevices.CommonNameExists("A:"));
 
-        Console.WriteLine("CommonNameExists(\"LPT\")={0}", dosDevices.CommonNameExists("LPT"));
+        Debug.WriteLine("CommonNameExists(\"LPT\")={0}", dosDevices.CommonNameExists("LPT"));
 
         string s = dosDevices["LPT1"];
         for (int i = 0; i < s.Length; ++i)
         {
-            Console.WriteLine("{0}({1})", (int)s[i], s[i]);
+            Debug.WriteLine("{0}({1})", (int)s[i], s[i]);
         }
     }
-
+    */
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
     {
         return _dosDevices.GetEnumerator();
@@ -134,25 +136,22 @@ public class DosDevices : IEnumerable<KeyValuePair<string, string>>
         return s.Substring(0, count);
     }
 
-    private static unsafe char[] CallQueryDosDevice(string name, out int dataSize)
+    private static char[] CallQueryDosDevice(string name, out int dataSize)
     {
         char[] buffer = new char[1024];
 
-        fixed (char* bufferPtr = buffer)
+        dataSize = QueryDosDevice(name, buffer, buffer.Length);
+        while (dataSize <= 0)
         {
-            dataSize = QueryDosDevice(name, buffer, buffer.Length);
-            while (dataSize <= 0)
+            int lastError = Marshal.GetLastWin32Error();
+            if (lastError == ERROR_INSUFFICIENT_BUFFER || lastError == ERROR_MORE_DATA)
             {
-                int lastError = Marshal.GetLastWin32Error();
-                if (lastError == ERROR_INSUFFICIENT_BUFFER || lastError == ERROR_MORE_DATA)
-                {
-                    buffer = new char[buffer.Length * 2];
-                    dataSize = QueryDosDevice(null, buffer, buffer.Length);
-                }
-                else
-                {
-                    throw new Exception("Unkown Win32 Error: " + lastError);
-                }
+                buffer = new char[buffer.Length * 2];
+                dataSize = QueryDosDevice(null, buffer, buffer.Length);
+            }
+            else
+            {
+                throw new Exception("Unkown Win32 Error: " + lastError);
             }
         }
         return buffer;

@@ -25,13 +25,14 @@
 //   at System.IO.Ports.SerialStream.Finalize()
 
 using System;
+using System.Diagnostics;
 using System.IO.Ports;
 
 public class Test
 {
     public static void UnhandledExceptionHandler(Object sender, UnhandledExceptionEventArgs eventArgs)
     {
-        Console.WriteLine("Exception caught in UnhandledExceptionHandler:  {0}", eventArgs.ExceptionObject);
+        Debug.WriteLine("Exception caught in UnhandledExceptionHandler:  {0}", eventArgs.ExceptionObject);
         Environment.ExitCode = 97;
     }
 
@@ -41,7 +42,7 @@ public class Test
 
         try
         {
-            Console.WriteLine("Connect the USB/serial adapter to a USB port and press Enter to continue...");
+            Debug.WriteLine("Connect the USB/serial adapter to a USB port and press Enter to continue...");
             Console.ReadLine();
 
             // Get the port name, if one is passed in.
@@ -49,7 +50,7 @@ public class Test
             if (args.Length > 0)
                 portName = args[0];
             SerialPort port = new SerialPort(portName);
-            Console.WriteLine("Using {0}", portName);
+            Debug.WriteLine("Using {0}", portName);
 
             try
             {
@@ -57,7 +58,7 @@ public class Test
             }
             catch (System.IO.IOException)
             {
-                Console.WriteLine("Error opening serial port.  This can happen if the adapter was just connected.  Sleeping 5 seconds before trying again...");
+                Debug.WriteLine("Error opening serial port.  This can happen if the adapter was just connected.  Sleeping 5 seconds before trying again...");
                 System.Threading.Thread.Sleep(5000);
                 try
                 {
@@ -65,24 +66,24 @@ public class Test
                 }
                 catch (System.IO.IOException ex)
                 {
-                    Console.WriteLine("Error opening serial port.  Make sure the USB serial adapter is plugged into a USB port and that the port name is correct.");
-                    Console.WriteLine(ex);
+                    Debug.WriteLine("Error opening serial port.  Make sure the USB serial adapter is plugged into a USB port and that the port name is correct.");
+                    Debug.WriteLine(ex);
 
                     Environment.ExitCode = 98;
                 }
             }
 
-            Console.WriteLine("{0} opened.", port.PortName);
-            Console.WriteLine("Disconnect USB serial adapter and press Enter to continue...");
+            Debug.WriteLine("{0} opened.", port.PortName);
+            Debug.WriteLine("Disconnect USB serial adapter and press Enter to continue...");
             Console.ReadLine();
             // Calling port.Close() after the adapter is disconnected will still get an 
             // UnauthorizedAccessException, so don't do it.
-            Console.WriteLine("Pass if no exception and exitcode==100.");
+            Debug.WriteLine("Pass if no exception and exitcode==100.");
             Environment.ExitCode = 100;
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Exception caught in Main() - {0}", ex);
+            Debug.WriteLine("Exception caught in Main() - {0}", ex);
             Environment.ExitCode = 99;
         }
     }

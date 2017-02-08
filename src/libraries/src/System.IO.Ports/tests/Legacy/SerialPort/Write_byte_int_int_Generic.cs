@@ -5,15 +5,12 @@
 using System;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class Write_byte_int_int
+public class Write_byte_int_int_generic : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/17 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.Write(byte[], int, int)";
-    public static readonly String s_strTFName = "Write_byte_int_int_Generic.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //Set bounds fore random timeout values.
     //If the min is to low write will not timeout accurately and the testcase will fail
     public static int minRandomTimeout = 250;
@@ -39,495 +36,333 @@ public class Write_byte_int_int
     public static readonly int BYTE_SIZE_HANDSHAKE = 8;
     public static readonly int NUM_TRYS = 5;
 
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        Write_byte_int_int objTest = new Write_byte_int_int();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(WriteWithoutOpen), TCSupport.SerialPortRequirements.None);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(WriteAfterFailedOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(WriteAfterClose), TCSupport.SerialPortRequirements.OneSerialPort);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Timeout), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SuccessiveReadTimeout), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SuccessiveReadTimeoutWithWriteSucceeding), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BytesToWrite), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BytesToWriteSuccessive),
-            TCSupport.SerialPortRequirements.OneSerialPort, TCSupport.OperatingSystemRequirements.NotWin9X);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_None), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSend), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_XOnXOff), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Handshake_RequestToSendXOnXOff), TCSupport.SerialPortRequirements.NullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
-
     #region Test Cases
-    public bool WriteWithoutOpen()
+
+    [Fact]
+    public void WriteWithoutOpen()
     {
-        SerialPort com = new SerialPort();
-
-        Console.WriteLine("Verifying write method throws exception without a call to Open()");
-        if (!VerifyWriteException(com, typeof(System.InvalidOperationException)))
+        using (SerialPort com = new SerialPort())
         {
-            Console.WriteLine("Err_001!!! Verifying write method throws exception without a call to Open() FAILED");
-            return false;
+            Debug.WriteLine("Verifying write method throws exception without a call to Open()");
+            VerifyWriteException(com, typeof(InvalidOperationException));
         }
-
-        return true;
     }
 
-
-    public bool WriteAfterFailedOpen()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void WriteAfterFailedOpen()
     {
-        SerialPort com = new SerialPort("BAD_PORT_NAME");
-
-        Console.WriteLine("Verifying write method throws exception with a failed call to Open()");
-
-        //Since the PortName is set to a bad port name Open will thrown an exception
-        //however we don't care what it is since we are verfifying a write method
-        try
+        using (SerialPort com = new SerialPort("BAD_PORT_NAME"))
         {
+            Debug.WriteLine("Verifying write method throws exception with a failed call to Open()");
+
+            //Since the PortName is set to a bad port name Open will thrown an exception
+            //however we don't care what it is since we are verfifying a write method
+            Assert.ThrowsAny<Exception>(() => com.Open());
+
+            VerifyWriteException(com, typeof(InvalidOperationException));
+        }
+    }
+
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void WriteAfterClose()
+    {
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            Debug.WriteLine("Verifying write method throws exception after a call to Cloes()");
             com.Open();
-        }
-        catch (System.Exception)
-        {
-        }
-        if (!VerifyWriteException(com, typeof(System.InvalidOperationException)))
-        {
-            Console.WriteLine("Err_002!!! Verifying write method throws exception with a failed call to Open() FAILED");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool WriteAfterClose()
-    {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        Console.WriteLine("Verifying write method throws exception after a call to Cloes()");
-        com.Open();
-        com.Close();
-
-        if (!VerifyWriteException(com, typeof(System.InvalidOperationException)))
-        {
-            Console.WriteLine("Err_003!!! Verifying write method throws exception after a call to Cloes() FAILED");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool Timeout()
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        Random rndGen = new Random(-55);
-        byte[] XOffBuffer = new Byte[1];
-
-        XOffBuffer[0] = 19;
-
-        com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-        com1.Handshake = Handshake.XOnXOff;
-
-        Console.WriteLine("Verifying WriteTimeout={0}", com1.WriteTimeout);
-
-        com1.Open();
-        com2.Open();
-
-        com2.Write(XOffBuffer, 0, 1);
-        System.Threading.Thread.Sleep(250);
-        com2.Close();
-
-        if (!VerifyTimeout(com1))
-        {
-            Console.WriteLine("Err_004!!! Verifying timeout FAILED");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool SuccessiveReadTimeout()
-    {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        Random rndGen = new Random(-55);
-        bool retValue = true;
-
-        com.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-        com.Handshake = Handshake.RequestToSendXOnXOff;
-        com.Encoding = System.Text.Encoding.Unicode;
-
-        Console.WriteLine("Verifying WriteTimeout={0} with successive call to write method", com.WriteTimeout);
-        com.Open();
-
-        try
-        {
-            com.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT);
-        }
-        catch (System.TimeoutException)
-        {
-        }
-        catch (System.Exception e)
-        {
-            Console.WriteLine("The following exception was thrown: {0}", e.GetType());
-            retValue = false;
-        }
-
-        retValue &= VerifyTimeout(com);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_005!!! Verifying WriteTimeout with successive call to write method FAILED");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool SuccessiveReadTimeoutWithWriteSucceeding()
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        Random rndGen = new Random(-55);
-        AsyncEnableRts asyncEnableRts = new AsyncEnableRts();
-        System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(asyncEnableRts.EnableRTS));
-        bool retValue = true;
-        int waitTime;
-
-        com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-        com1.Handshake = Handshake.RequestToSend;
-        com1.Encoding = new System.Text.UTF8Encoding();
-
-        Console.WriteLine("Verifying WriteTimeout={0} with successive call to write method with the write succeeding sometime before it's timeout", com1.WriteTimeout);
-        com1.Open();
-
-        //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
-        //before the timeout is reached
-        t.Start();
-        waitTime = 0;
-
-        while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        try
-        {
-            com1.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT);
-        }
-        catch (System.TimeoutException)
-        {
-        }
-        catch (System.Exception e)
-        {
-            Console.WriteLine("The following exception was thrown: {0}", e.GetType());
-            retValue = false;
-        }
-
-        asyncEnableRts.Stop();
-
-        while (t.IsAlive)
-            System.Threading.Thread.Sleep(100);
-
-        retValue &= VerifyTimeout(com1);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_006!!! Verifying WriteTimeout with  successive call to write method FAILED");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    private bool BytesToWrite()
-    {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_BYTES_TO_WRITE);
-        System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(asyncWriteRndByteArray.WriteRndByteArray));
-        bool retValue = true;
-        int waitTime = 0;
-
-        Console.WriteLine("Verifying BytesToWrite with one call to Write");
-
-        com.Handshake = Handshake.RequestToSend;
-        com.Open();
-        com.WriteTimeout = 500;
-
-        //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-        t.Start();
-        waitTime = 0;
-
-        while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        waitTime = 0;
-        while (BYTE_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
-        {
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        if (BYTE_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
-        {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", BYTE_SIZE_BYTES_TO_WRITE, com.BytesToWrite);
-        }
-
-        //Wait for write method to timeout
-        while (t.IsAlive)
-            System.Threading.Thread.Sleep(100);
-
-        if (com.IsOpen)
             com.Close();
 
-        if (!retValue)
-            Console.WriteLine("Err_007!!! Verifying BytesToWrite with one call to Write FAILED");
-
-        return retValue;
+            VerifyWriteException(com, typeof(InvalidOperationException));
+        }
     }
 
-
-    private bool BytesToWriteSuccessive()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Timeout()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_BYTES_TO_WRITE);
-        System.Threading.Thread t1 = new System.Threading.Thread(new System.Threading.ThreadStart(asyncWriteRndByteArray.WriteRndByteArray));
-        System.Threading.Thread t2 = new System.Threading.Thread(new System.Threading.ThreadStart(asyncWriteRndByteArray.WriteRndByteArray));
-        bool retValue = true;
-        int waitTime = 0;
-
-        Console.WriteLine("Verifying BytesToWrite with successive calls to Write");
-        com.Handshake = Handshake.RequestToSend;
-        com.Open();
-        com.WriteTimeout = 1000;
-
-        //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-        t1.Start();
-        waitTime = 0;
-
-        while (t1.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        waitTime = 0;
-        while (BYTE_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
+            Random rndGen = new Random(-55);
+            byte[] XOffBuffer = new byte[1];
 
-        if (BYTE_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
+            XOffBuffer[0] = 19;
+
+            com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            com1.Handshake = Handshake.XOnXOff;
+
+            Debug.WriteLine("Verifying WriteTimeout={0}", com1.WriteTimeout);
+
+            com1.Open();
+            com2.Open();
+
+            com2.Write(XOffBuffer, 0, 1);
+            System.Threading.Thread.Sleep(250);
+            com2.Close();
+
+            VerifyTimeout(com1);
+        }
+    }
+
+    [ActiveIssue(15752)]
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void SuccessiveReadTimeout()
+    {
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", BYTE_SIZE_BYTES_TO_WRITE, com.BytesToWrite);
-        }
+            Random rndGen = new Random(-55);
 
-        //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-        t2.Start();
-        waitTime = 0;
-        while (t2.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
+            com.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            com.Handshake = Handshake.RequestToSendXOnXOff;
+            com.Encoding = System.Text.Encoding.Unicode;
 
-        waitTime = 0;
-        while (BYTE_SIZE_BYTES_TO_WRITE * 2 > com.BytesToWrite && waitTime < 500)
+            Debug.WriteLine("Verifying WriteTimeout={0} with successive call to write method", com.WriteTimeout);
+            com.Open();
+
+            try
+            {
+                com.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT);
+            }
+            catch (TimeoutException)
+            {
+            }
+
+            VerifyTimeout(com);
+        }
+    }
+
+    [ConditionalFact(nameof(HasNullModem))]
+    public void SuccessiveReadTimeoutWithWriteSucceeding()
+    {
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
+            Random rndGen = new Random(-55);
+            AsyncEnableRts asyncEnableRts = new AsyncEnableRts();
+            System.Threading.Thread t = new System.Threading.Thread(asyncEnableRts.EnableRTS);
+        
+            int waitTime;
 
-        if (BYTE_SIZE_BYTES_TO_WRITE * 2 != com.BytesToWrite)
+            com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            com1.Handshake = Handshake.RequestToSend;
+            com1.Encoding = new System.Text.UTF8Encoding();
+
+            Debug.WriteLine("Verifying WriteTimeout={0} with successive call to write method with the write succeeding sometime before its timeout", com1.WriteTimeout);
+            com1.Open();
+
+            //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+            //before the timeout is reached
+            t.Start();
+            waitTime = 0;
+
+            while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            {
+                //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            try
+            {
+                com1.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT);
+            }
+            catch (TimeoutException)
+            {
+            }
+         
+            asyncEnableRts.Stop();
+
+            while (t.IsAlive)
+                System.Threading.Thread.Sleep(100);
+
+            VerifyTimeout(com1);
+        }
+    }
+
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BytesToWrite()
+    {
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite={0} actual {1} after second write", BYTE_SIZE_BYTES_TO_WRITE * 2, com.BytesToWrite);
+            AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_BYTES_TO_WRITE);
+            System.Threading.Thread t = new System.Threading.Thread(asyncWriteRndByteArray.WriteRndByteArray);
+        
+            int waitTime;
+
+            Debug.WriteLine("Verifying BytesToWrite with one call to Write");
+
+            com.Handshake = Handshake.RequestToSend;
+            com.Open();
+            com.WriteTimeout = 500;
+
+            //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+            t.Start();
+            waitTime = 0;
+
+            while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            { //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            waitTime = 0;
+            while (BYTE_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
+            {
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            if (BYTE_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
+            {
+                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", BYTE_SIZE_BYTES_TO_WRITE, com.BytesToWrite);
+            }
+
+            //Wait for write method to timeout
+            while (t.IsAlive)
+                System.Threading.Thread.Sleep(100);
         }
-
-        //Wait for both write methods to timeout
-        while (t1.IsAlive || t2.IsAlive)
-            System.Threading.Thread.Sleep(100);
-
-        if (com.IsOpen)
-            com.Close();
-
-        if (!retValue)
-            Console.WriteLine("Err_008!!! Verifying BytesToWrite with successive calls to Write FAILED");
-
-        return retValue;
     }
 
 
-    public bool Handshake_None()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BytesToWriteSuccessive()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_HANDSHAKE);
-        System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(asyncWriteRndByteArray.WriteRndByteArray));
-        bool retValue = true;
-        int waitTime;
-
-        //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-        Console.WriteLine("Verifying Handshake=None");
-
-        com.Open();
-        t.Start();
-        waitTime = 0;
-
-        while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        //Wait for write method to timeout
-        while (t.IsAlive)
-            System.Threading.Thread.Sleep(100);
-
-        if (0 != com.BytesToWrite)
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite=0 actual {0}", com.BytesToWrite);
+            AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_BYTES_TO_WRITE);
+            System.Threading.Thread t1 = new System.Threading.Thread(asyncWriteRndByteArray.WriteRndByteArray);
+            System.Threading.Thread t2 = new System.Threading.Thread(asyncWriteRndByteArray.WriteRndByteArray);
+        
+            int waitTime;
+
+            Debug.WriteLine("Verifying BytesToWrite with successive calls to Write");
+            com.Handshake = Handshake.RequestToSend;
+            com.Open();
+            com.WriteTimeout = 1000;
+
+            //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+            t1.Start();
+            waitTime = 0;
+
+            while (t1.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            { //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            waitTime = 0;
+            while (BYTE_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
+            {
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            if (BYTE_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
+            {
+                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", BYTE_SIZE_BYTES_TO_WRITE, com.BytesToWrite);
+            }
+
+            //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+            t2.Start();
+            waitTime = 0;
+            while (t2.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            { //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            waitTime = 0;
+            while (BYTE_SIZE_BYTES_TO_WRITE * 2 > com.BytesToWrite && waitTime < 500)
+            {
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            if (BYTE_SIZE_BYTES_TO_WRITE * 2 != com.BytesToWrite)
+            {
+                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after second write", BYTE_SIZE_BYTES_TO_WRITE * 2, com.BytesToWrite);
+            }
+
+            //Wait for both write methods to timeout
+            while (t1.IsAlive || t2.IsAlive)
+                System.Threading.Thread.Sleep(100);
         }
-
-        if (!retValue)
-            Console.WriteLine("Err_009!!! Verifying Handshake=None FAILED");
-
-        if (com.IsOpen)
-            com.Close();
-
-        return retValue;
     }
 
-
-    public bool Handshake_RequestToSend()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_None()
     {
-        bool retValue = true;
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com, BYTE_SIZE_HANDSHAKE);
+            System.Threading.Thread t = new System.Threading.Thread(asyncWriteRndByteArray.WriteRndByteArray);
+        
+            int waitTime;
 
-        retValue &= Verify_Handshake(Handshake.RequestToSend);
-        if (!retValue)
-            Console.WriteLine("Err_010!!! Verifying Handshake=RequestToSend FAILED");
+            //Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+            Debug.WriteLine("Verifying Handshake=None");
 
-        return retValue;
+            com.Open();
+            t.Start();
+            waitTime = 0;
+
+            while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            { //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            //Wait for write method to timeout
+            while (t.IsAlive)
+                System.Threading.Thread.Sleep(100);
+
+            if (0 != com.BytesToWrite)
+            {
+                Fail("ERROR!!! Expcted BytesToWrite=0 actual {0}", com.BytesToWrite);
+            }
+        }
     }
 
-
-    public bool Handshake_XOnXOff()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSend()
     {
-        bool retValue = true;
-
-        retValue &= Verify_Handshake(Handshake.XOnXOff);
-        if (!retValue)
-            Console.WriteLine("Err_011!!! Verifying Handshake=XOnXOff FAILED");
-
-        return retValue;
+        Verify_Handshake(Handshake.RequestToSend);
     }
 
-
-    public bool Handshake_RequestToSendXOnXOff()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_XOnXOff()
     {
-        bool retValue = true;
-
-        retValue &= Verify_Handshake(Handshake.RequestToSendXOnXOff);
-        if (!retValue)
-            Console.WriteLine("Err_012!!! Verifying Handshake=RequestToSendXOnXOff FAILED");
-
-        return retValue;
+        Verify_Handshake(Handshake.XOnXOff);
     }
 
-
-
-    public class AsyncEnableRts
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Handshake_RequestToSendXOnXOff()
     {
-        private bool _stop = false;
+        Verify_Handshake(Handshake.RequestToSendXOnXOff);
+    }
 
+    private class AsyncEnableRts
+    {
+        private bool _stop;
 
         public void EnableRTS()
         {
             lock (this)
             {
-                SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-                Random rndGen = new Random(-55);
-                int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
+                using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+                {
+                    Random rndGen = new Random(-55);
+                    int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
 
-                //Sleep some random period with of a maximum duration of half the largest possible timeout value for a write method on COM1
-                System.Threading.Thread.Sleep(sleepPeriod);
+                    //Sleep some random period with of a maximum duration of half the largest possible timeout value for a write method on COM1
+                    System.Threading.Thread.Sleep(sleepPeriod);
 
-                com2.Open();
-                com2.RtsEnable = true;
+                    com2.Open();
+                    com2.RtsEnable = true;
 
-                while (!_stop)
-                    System.Threading.Monitor.Wait(this);
+                    while (!_stop)
+                        System.Threading.Monitor.Wait(this);
 
-                com2.RtsEnable = false;
-
-                if (com2.IsOpen)
-                    com2.Close();
+                    com2.RtsEnable = false;
+                }
             }
         }
 
@@ -542,20 +377,16 @@ public class Write_byte_int_int
         }
     }
 
-
-
-    public class AsyncWriteRndByteArray
+    class AsyncWriteRndByteArray
     {
-        private SerialPort _com;
-        private int _byteLength;
-
+        private readonly SerialPort _com;
+        private readonly int _byteLength;
 
         public AsyncWriteRndByteArray(SerialPort com, int byteLength)
         {
-            this._com = com;
-            this._byteLength = byteLength;
+            _com = com;
+            _byteLength = byteLength;
         }
-
 
         public void WriteRndByteArray()
         {
@@ -571,7 +402,7 @@ public class Write_byte_int_int
             {
                 _com.Write(buffer, 0, buffer.Length);
             }
-            catch (System.TimeoutException)
+            catch (TimeoutException)
             {
             }
         }
@@ -579,44 +410,23 @@ public class Write_byte_int_int
     #endregion
 
     #region Verification for Test Cases
-    public static bool VerifyWriteException(SerialPort com, Type expectedException)
+    private static void VerifyWriteException(SerialPort com, Type expectedException)
     {
-        bool retValue = true;
-
-        try
-        {
-            com.Write(new byte[BYTE_SIZE_EXCEPTION], 0, BYTE_SIZE_EXCEPTION);
-            Console.WriteLine("ERROR!!!: No Excpetion was thrown");
-            retValue = false;
-        }
-        catch (System.Exception e)
-        {
-            if (e.GetType() != expectedException)
-            {
-                Console.WriteLine("ERROR!!!: {0} exception was thrown expected {1}", e.GetType(), expectedException);
-                retValue = false;
-            }
-        }
-        if (com.IsOpen)
-            com.Close();
-
-        return retValue;
+        Assert.Throws(expectedException, () => com.Write(new byte[BYTE_SIZE_EXCEPTION], 0, BYTE_SIZE_EXCEPTION));
     }
 
-
-    private bool VerifyTimeout(SerialPort com)
+    private void VerifyTimeout(SerialPort com)
     {
-        System.Diagnostics.Stopwatch timer = new Stopwatch();
+        Stopwatch timer = new Stopwatch();
         int expectedTime = com.WriteTimeout;
         int actualTime = 0;
         double percentageDifference;
-        bool retValue = true;
 
         try
         {
             com.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT); //Warm up write method
         }
-        catch (System.TimeoutException) { }
+        catch (TimeoutException) { }
 
         System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
 
@@ -627,12 +437,7 @@ public class Write_byte_int_int
             {
                 com.Write(new byte[BYTE_SIZE_TIMEOUT], 0, BYTE_SIZE_TIMEOUT);
             }
-            catch (System.TimeoutException) { }
-            catch (System.Exception e)
-            {
-                Console.WriteLine("The following exception was thrown: {0}", e.GetType());
-                retValue = false;
-            }
+            catch (TimeoutException) { }
 
             timer.Stop();
             actualTime += (int)timer.ElapsedMilliseconds;
@@ -641,120 +446,101 @@ public class Write_byte_int_int
 
         System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
         actualTime /= NUM_TRYS;
-        percentageDifference = System.Math.Abs((expectedTime - actualTime) / (double)expectedTime);
+        percentageDifference = Math.Abs((expectedTime - actualTime) / (double)expectedTime);
 
         //Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
         if (maxPercentageDifference < percentageDifference)
         {
-            Console.WriteLine("ERROR!!!: The write method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
-            retValue = false;
+            Fail("ERROR!!!: The write method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
         }
-
-        if (com.IsOpen)
-            com.Close();
-
-        return retValue;
     }
 
-
-    public bool Verify_Handshake(Handshake handshake)
+    private void Verify_Handshake(Handshake handshake)
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, BYTE_SIZE_HANDSHAKE);
-        System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(asyncWriteRndByteArray.WriteRndByteArray));
-        bool retValue = true;
-        byte[] XOffBuffer = new Byte[1];
-        byte[] XOnBuffer = new Byte[1];
-        int waitTime = 0;
-
-        XOffBuffer[0] = 19;
-        XOnBuffer[0] = 17;
-
-        Console.WriteLine("Verifying Handshake={0}", handshake);
-
-        com1.Handshake = handshake;
-        com1.Open();
-        com2.Open();
-
-        //Setup to ensure write will bock with type of handshake method being used
-        if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            com2.RtsEnable = false;
+            AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, BYTE_SIZE_HANDSHAKE);
+            System.Threading.Thread t = new System.Threading.Thread(asyncWriteRndByteArray.WriteRndByteArray);
+
+            byte[] XOffBuffer = new byte[1];
+            byte[] XOnBuffer = new byte[1];
+            int waitTime;
+
+            XOffBuffer[0] = 19;
+            XOnBuffer[0] = 17;
+
+            Debug.WriteLine("Verifying Handshake={0}", handshake);
+
+            com1.Handshake = handshake;
+            com1.Open();
+            com2.Open();
+
+            //Setup to ensure write will bock with type of handshake method being used
+            if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+            {
+                com2.RtsEnable = false;
+            }
+
+            if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+            {
+                com2.Write(XOffBuffer, 0, 1);
+                System.Threading.Thread.Sleep(250);
+            }
+
+            //Write a random byte asynchronously so we can verify some things while the write call is blocking
+            t.Start();
+            waitTime = 0;
+            while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            {
+                //Wait for the thread to start
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            waitTime = 0;
+            while (BYTE_SIZE_HANDSHAKE > com1.BytesToWrite && waitTime < 500)
+            {
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
+            }
+
+            //Verify that the correct number of bytes are in the buffer
+            if (BYTE_SIZE_HANDSHAKE != com1.BytesToWrite)
+            {
+                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1}", BYTE_SIZE_HANDSHAKE, com1.BytesToWrite);
+            }
+
+            //Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
+            if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && com1.CtsHolding)
+            {
+                Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", false, com1.CtsHolding);
+            }
+
+            //Setup to ensure write will succeed
+            if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+            {
+                com2.RtsEnable = true;
+            }
+
+            if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+            {
+                com2.Write(XOnBuffer, 0, 1);
+            }
+
+            //Wait till write finishes
+            while (t.IsAlive)
+                System.Threading.Thread.Sleep(100);
+
+            Assert.Equal(0, com1.BytesToWrite);
+
+            //Verify that CtsHolding is true if the RequestToSend or RequestToSendXOnXOff handshake method is used
+            if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
+                !com1.CtsHolding)
+            {
+                Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", true, com1.CtsHolding);
+            }
         }
-
-        if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
-        {
-            com2.Write(XOffBuffer, 0, 1);
-            System.Threading.Thread.Sleep(250);
-        }
-
-        //Write a random byte asynchronously so we can verify some things while the write call is blocking
-        t.Start();
-        waitTime = 0;
-        while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
-        { //Wait for the thread to start
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        waitTime = 0;
-        while (BYTE_SIZE_HANDSHAKE > com1.BytesToWrite && waitTime < 500)
-        {
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        //Verify that the correct number of bytes are in the buffer
-        if (BYTE_SIZE_HANDSHAKE != com1.BytesToWrite)
-        {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite={0} actual {1}", BYTE_SIZE_HANDSHAKE, com1.BytesToWrite);
-        }
-
-        //Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
-        if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && com1.CtsHolding)
-        {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted CtsHolding={0} actual {1}", false, com1.CtsHolding);
-        }
-
-        //Setup to ensure write will succeed
-        if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
-        {
-            com2.RtsEnable = true;
-        }
-
-        if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
-        {
-            com2.Write(XOnBuffer, 0, 1);
-        }
-
-        //Wait till write finishes
-        while (t.IsAlive)
-            System.Threading.Thread.Sleep(100);
-
-        //Verify that the correct number of bytes are in the buffer
-        if (0 != com1.BytesToWrite)
-        {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted BytesToWrite=0 actual {0}", com1.BytesToWrite);
-        }
-
-        //Verify that CtsHolding is true if the RequestToSend or RequestToSendXOnXOff handshake method is used
-        if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && !com1.CtsHolding)
-        {
-            retValue = false;
-            Console.WriteLine("ERROR!!! Expcted CtsHolding={0} actual {1}", true, com1.CtsHolding);
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
     #endregion

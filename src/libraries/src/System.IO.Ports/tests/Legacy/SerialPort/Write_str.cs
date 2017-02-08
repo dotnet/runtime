@@ -5,291 +5,151 @@
 using System;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class Write_str
+public class Write_str : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/05 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.Write(string)";
-    public static readonly String s_strTFName = "Write_str_Generic.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //The string size used when veryifying encoding 
     public static readonly int ENCODING_STRING_SIZE = 4;
 
     //The string size used for large string testing
     public static readonly int LARGE_STRING_SIZE = 2048;
 
-    //Delegate to start asynchronous write on the SerialPort com with string of size strSize
-    public delegate void AsyncWriteDelegate(SerialPort com, int strSize);
-
     //The default number of times the write method is called when verifying write
     public static readonly int DEFAULT_NUM_WRITES = 3;
 
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        Write_str objTest = new Write_str();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ASCIIEncoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        //		retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF7Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF8Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF32Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UnicodeEncoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NullString), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(EmptyString), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(String_Null_Char), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(LargeString), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
-
     #region Test Cases
-    public bool ASCIIEncoding()
-    {
-        Console.WriteLine("Verifying write method with ASCIIEncoding");
-        if (!VerifyWrite(new System.Text.ASCIIEncoding(), ENCODING_STRING_SIZE))
-        {
-            Console.WriteLine("Err_001!!! Verifying write method with ASCIIEncoding FAILED");
-            return false;
-        }
 
-        return true;
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ASCIIEncoding()
+    {
+        Debug.WriteLine("Verifying write method with ASCIIEncoding");
+        VerifyWrite(new System.Text.ASCIIEncoding(), ENCODING_STRING_SIZE);
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UTF8Encoding()
+    {
+        Debug.WriteLine("Verifying write method with UTF8Encoding");
+        VerifyWrite(new System.Text.UTF8Encoding(), ENCODING_STRING_SIZE);
     }
 
 
-    public bool UTF7Encoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UTF32Encoding()
     {
-        Console.WriteLine("Verifying write method with UTF7Encoding");
-        if (!VerifyWrite(new System.Text.UTF7Encoding(), ENCODING_STRING_SIZE))
-        {
-            Console.WriteLine("Err_002!!! Verifying write method with UTF7Encoding FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying write method with UTF32Encoding");
+        VerifyWrite(new System.Text.UTF32Encoding(), ENCODING_STRING_SIZE);
     }
 
-
-    public bool UTF8Encoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UnicodeEncoding()
     {
-        Console.WriteLine("Verifying write method with UTF8Encoding");
-        if (!VerifyWrite(new System.Text.UTF8Encoding(), ENCODING_STRING_SIZE))
-        {
-            Console.WriteLine("Err_003!!! Verifying write method with UTF8Encoding FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying write method with UnicodeEncoding");
+        VerifyWrite(new System.Text.UnicodeEncoding(), ENCODING_STRING_SIZE);
     }
 
-
-    public bool UTF32Encoding()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void NullString()
     {
-        Console.WriteLine("Verifying write method with UTF32Encoding");
-        if (!VerifyWrite(new System.Text.UTF32Encoding(), ENCODING_STRING_SIZE))
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_004!!! Verifying write method with UTF32Encoding FAILED");
-            return false;
-        }
+            Debug.WriteLine("Verifying Write with a null string");
+            com.Open();
 
-        return true;
+            try
+            {
+                com.Write(null);
+            }
+            catch (ArgumentNullException)
+            {
+            }
+        }
     }
 
-
-    public bool UnicodeEncoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void EmptyString()
     {
-        Console.WriteLine("Verifying write method with UnicodeEncoding");
-        if (!VerifyWrite(new System.Text.UnicodeEncoding(), ENCODING_STRING_SIZE))
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_005!!! Verifying write method with UnicodeEncoding FAILED");
-            return false;
-        }
+            Debug.WriteLine("Verifying Write with an empty string");
 
-        return true;
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            VerifyWriteStr(com1, com2, "");
+        }
     }
 
-
-    public bool NullString()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void String_Null_Char()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        bool retValue = true;
-
-        Console.WriteLine("Verifying Write with a null string");
-        com.Open();
-
-        try
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            com.Write(null);
-        }
-        catch (System.ArgumentNullException)
-        {
-        }
-        catch (System.Exception e)
-        {
-            Console.WriteLine("Write threw {0} expected System.ArgumentNullException", e.GetType());
-            retValue = false;
-        }
 
-        if (!retValue)
-            Console.WriteLine("Err_006!!! Verifying Write with a null string FAILED");
+            Debug.WriteLine("Verifying Write with an string containing only the null character");
 
-        if (com.IsOpen)
-            com.Close();
+            com1.Open();
 
-        return retValue;
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            VerifyWriteStr(com1, com2, "\0");
+        }
     }
 
-
-    public bool EmptyString()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void LargeString()
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        bool retValue = true;
-
-        Console.WriteLine("Verifying Write with an empty string");
-
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        retValue &= VerifyWriteStr(com1, com2, "");
-
-        if (!retValue)
-            Console.WriteLine("Err_007!!! Verifying Write with an empty string FAILED");
-
-        return retValue;
-    }
-
-
-    public bool String_Null_Char()
-    {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        bool retValue = true;
-
-        Console.WriteLine("Verifying Write with an string containing only the null character");
-
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        retValue &= VerifyWriteStr(com1, com2, "\0");
-
-        if (!retValue)
-            Console.WriteLine("Err_008!!! Verifying Write with an string containing only the null character FAILED");
-
-        return retValue;
-    }
-
-
-    public bool LargeString()
-    {
-        Console.WriteLine("Verifying write method with a large string size");
-        if (!VerifyWrite(new System.Text.UnicodeEncoding(), LARGE_STRING_SIZE, 1))
-        {
-            Console.WriteLine("Err_009!!! Verifying write method with a large string size FAILED");
-            return false;
-        }
-
-        return true;
+        Debug.WriteLine("Verifying write method with a large string size");
+        VerifyWrite(new System.Text.UnicodeEncoding(), LARGE_STRING_SIZE, 1);
     }
     #endregion
 
     #region Verification for Test Cases
 
-    public bool VerifyWrite(System.Text.Encoding encoding, int strSize)
+    public void VerifyWrite(System.Text.Encoding encoding, int strSize)
     {
-        return VerifyWrite(encoding, strSize, DEFAULT_NUM_WRITES);
+        VerifyWrite(encoding, strSize, DEFAULT_NUM_WRITES);
     }
 
-
-    public bool VerifyWrite(System.Text.Encoding encoding, int strSize, int numWrites)
+    public void VerifyWrite(System.Text.Encoding encoding, int strSize, int numWrites)
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        string stringToWrite = TCSupport.GetRandomString(strSize, TCSupport.CharacterOptions.Surrogates);
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
+        {
+            string stringToWrite = TCSupport.GetRandomString(strSize, TCSupport.CharacterOptions.Surrogates);
 
-        com1.Encoding = encoding;
-        com1.Open();
+            com1.Encoding = encoding;
+            com1.Open();
 
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
 
-        return VerifyWriteStr(com1, com2, stringToWrite, numWrites);
+            VerifyWriteStr(com1, com2, stringToWrite, numWrites);
+        }
     }
 
-
-    public bool VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite)
+    public void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite)
     {
-        return VerifyWriteStr(com1, com2, stringToWrite, DEFAULT_NUM_WRITES);
+        VerifyWriteStr(com1, com2, stringToWrite, DEFAULT_NUM_WRITES);
     }
-
-
-    public bool VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite, int numWrites)
+    
+    public void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite, int numWrites)
     {
-        bool retValue = true;
-        char[] expectedChars, actualChars;
+        char[] actualChars;
         byte[] expectedBytes, actualBytes;
         int byteRead;
         int index = 0;
 
         expectedBytes = com1.Encoding.GetBytes(stringToWrite.ToCharArray());
-        expectedChars = com1.Encoding.GetChars(expectedBytes);
+        char[] expectedChars = com1.Encoding.GetChars(expectedBytes);
         actualBytes = new byte[expectedBytes.Length * numWrites];
 
         for (int i = 0; i < numWrites; i++)
@@ -316,9 +176,7 @@ public class Write_str
             if (actualBytes.Length <= index)
             {
                 //If we have read in more bytes then we expect
-                Console.WriteLine("ERROR!!!: We have received more bytes then were sent");
-                retValue = false;
-                break;
+                Fail("ERROR!!!: We have received more bytes then were sent");
             }
 
             actualBytes[index] = (byte)byteRead;
@@ -326,8 +184,7 @@ public class Write_str
 
             if (actualBytes.Length - index != com2.BytesToRead)
             {
-                System.Console.WriteLine("ERROR!!!: Expected BytesToRead={0} actual={1}", actualBytes.Length - index, com2.BytesToRead);
-                retValue = false;
+                Fail("ERROR!!!: Expected BytesToRead={0} actual={1}", actualBytes.Length - index, com2.BytesToRead);
             }
         }
 
@@ -335,8 +192,8 @@ public class Write_str
 
         if (actualChars.Length != expectedChars.Length * numWrites)
         {
-            System.Console.WriteLine("ERROR!!!: Expected to read {0} chars actually read {1}", expectedChars.Length * numWrites, actualChars.Length);
-            retValue = false;
+            Fail("ERROR!!!: Expected to read {0} chars actually read {1}", expectedChars.Length * numWrites,
+                actualChars.Length);
         }
         else
         {
@@ -347,8 +204,8 @@ public class Write_str
                 {
                     if (expectedChars[i] != actualChars[i + expectedChars.Length * j])
                     {
-                        System.Console.WriteLine("ERROR!!!: Expected to read {0}  actual read {1} at {2}", (int)expectedChars[i], (int)actualChars[i + expectedChars.Length * j], i);
-                        retValue = false;
+                        Fail("ERROR!!!: Expected to read {0}  actual read {1} at {2}", (int)expectedChars[i],
+                            (int)actualChars[i + expectedChars.Length * j], i);
                     }
                 }
             }
@@ -361,19 +218,11 @@ public class Write_str
             {
                 if (expectedBytes[i] != actualBytes[i + expectedBytes.Length * j])
                 {
-                    System.Console.WriteLine("ERROR!!!: Expected to read byte {0}  actual read {1} at {2}", (int)expectedBytes[i], (int)actualBytes[i + expectedBytes.Length * j], i);
-                    retValue = false;
+                    Fail("ERROR!!!: Expected to read byte {0}  actual read {1} at {2}", (int)expectedBytes[i],
+                        (int)actualBytes[i + expectedBytes.Length * j], i);
                 }
             }
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
     #endregion
 }
