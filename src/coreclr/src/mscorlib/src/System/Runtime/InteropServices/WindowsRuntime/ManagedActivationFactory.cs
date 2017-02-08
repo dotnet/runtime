@@ -27,6 +27,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     //
     // In order to be activatable via the ManagedActivationFactory type, the type must be decorated with either
     // ActivatableAttribute, or StaticAttribute.
+    [ComVisible(true)]
     [ClassInterface(ClassInterfaceType.None)]
     internal sealed class ManagedActivationFactory : IActivationFactory, IManagedActivationFactory
     {
