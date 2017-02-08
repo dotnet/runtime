@@ -81,7 +81,6 @@ namespace Microsoft.DotNet.Cli.Build
             {
                return new string[]
                {
-                    "unzip",
                     "libunwind",
                     "gettext",
                     "libcurl-devel",
