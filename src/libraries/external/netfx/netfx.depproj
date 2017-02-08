@@ -22,6 +22,7 @@
       <RefPath Condition="'$(ForShims)' == 'true'">$(NetFxRefPath)</RefPath>
     </BinplaceConfiguration>
     
+    <FileToExclude Include="System.EnterpriseServices" />
     <FileToExclude Include="System.EnterpriseServices.Thunk" />
     <FileToExclude Include="System.EnterpriseServices.Wrapper" />
   </ItemGroup>

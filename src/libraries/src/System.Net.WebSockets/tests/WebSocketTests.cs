@@ -83,6 +83,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WebSocket.RegisterPrefixes());
         }
 
+#if netcoreapp
         [Fact]
         public static void IsApplicationTargeting45_AlwaysTrue()
         {
@@ -90,6 +91,7 @@ namespace System.Net.WebSockets.Tests
             Assert.True(WebSocket.IsApplicationTargeting45());
 #pragma warning restore 0618
         }
+#endif // netcoreapp 
 
         [Theory]
         [InlineData(WebSocketState.None)]

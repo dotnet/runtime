@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-#if netstandard17
+#if netcoreapp
         [Fact]
         public static void SafeNCryptKeyHandle_ParentHandle_Invalid()
         {

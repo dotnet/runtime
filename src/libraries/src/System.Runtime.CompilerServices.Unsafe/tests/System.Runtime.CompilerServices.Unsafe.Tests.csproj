@@ -6,8 +6,8 @@
     <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
     <ProjectGuid>{8012DD70-A6D7-45C0-BC8E-DFFB48D86E08}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="UnsafeTests.cs" />
   </ItemGroup>

@@ -1228,7 +1228,6 @@ namespace System.Tests
 
 #if netcoreapp11
         [Fact]
-#endif
         public static void ValueTupleSerialization()
         {
             VerifySerialization(new ValueTuple());
@@ -1247,6 +1246,7 @@ namespace System.Tests
             T clone = BinaryFormatterHelpers.Clone(tuple);
             Assert.Equal(tuple, clone);
         }
+#endif
 
         private class TestClass : IComparable
         {
