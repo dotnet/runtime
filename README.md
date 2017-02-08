@@ -41,7 +41,7 @@ Daily Builds
 |   **Ubuntu 14.04**   |   [![][ubuntu-14.04-badge-master]][ubuntu-14.04-version-master]<br>[Host][ubuntu-14.04-host-master]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-master]<br>[Shared Framework][ubuntu-14.04-sharedfx-master]<br>[tar.gz][ubuntu-14.04-targz-master]   |   [![][ubuntu-14.04-badge-1.1.X]][ubuntu-14.04-version-1.1.X]<br>[Host][ubuntu-14.04-host-1.1.X]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-14.04-sharedfx-1.1.X]<br>[tar.gz][ubuntu-14.04-targz-1.1.X]   |   [![][ubuntu-14.04-badge-preview]][ubuntu-14.04-version-preview]<br>[Host][ubuntu-14.04-host-preview]<br>[Host FX Resolver][ubuntu-14.04-hostfxr-preview]<br>[Shared Framework][ubuntu-14.04-sharedfx-preview]<br>[tar.gz][ubuntu-14.04-targz-preview]   |
 |   **Ubuntu 16.04**   |   [![][ubuntu-16.04-badge-master]][ubuntu-16.04-version-master]<br>[Host][ubuntu-16.04-host-master]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-master]<br>[Shared Framework][ubuntu-16.04-sharedfx-master]<br>[tar.gz][ubuntu-16.04-targz-master]   |   [![][ubuntu-16.04-badge-1.1.X]][ubuntu-16.04-version-1.1.X]<br>[Host][ubuntu-16.04-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.04-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.04-targz-1.1.X]   |   [![][ubuntu-16.04-badge-preview]][ubuntu-16.04-version-preview]<br>[Host][ubuntu-16.04-host-preview]<br>[Host FX Resolver][ubuntu-16.04-hostfxr-preview]<br>[Shared Framework][ubuntu-16.04-sharedfx-preview]<br>[tar.gz][ubuntu-16.04-targz-preview]   |
 |   **Ubuntu 16.10**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master]<br>[Shared Framework][ubuntu-16.10-sharedfx-master]<br>[tar.gz][ubuntu-16.10-targz-master]   |   [![][ubuntu-16.10-badge-1.1.X]][ubuntu-16.10-version-1.1.X]<br>[Host][ubuntu-16.10-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.10-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.10-targz-1.1.X]   |   N/A   |
-|   **Debian 8.2**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[tar.gz][debian-8.2-targz-master]   |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
+|   **Debian 8.2**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Host][debian-8.2-host-master]<br>[Host FX Resolver][debian-8.2-hostfxr-master]<br>[Shared Framework][debian-8.2-sharedfx-master]<br>[tar.gz][debian-8.2-targz-master]   |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **CentOS 7.1**     |   [![][centos-badge-master]][centos-version-master]<br>[tar.gz][centos-targz-master]   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
 |   **RHEL 7.2**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23**      |   [![][fedora-23-badge-master]][fedora-23-version-master]<br>[tar.gz][fedora-23-targz-master]   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
@@ -180,14 +180,23 @@ Daily Builds
 
 [debian-8.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_Debian_x64_Release_version_badge.svg
 [debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.debian.x64.version
+[debian-8.2-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-host-debian-x64.latest.deb
+[debian-8.2-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-hostfxr-debian-x64.latest.deb
+[debian-8.2-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Installers/Latest/dotnet-sharedframework-debian-x64.latest.deb
 [debian-8.2-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-debian-x64.latest.tar.gz
 
 [debian-8.2-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Debian_x64_Release_version_badge.svg
 [debian-8.2-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.debian.x64.version
+[debian-8.2-host-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Installers/Latest/dotnet-host-debian-x64.latest.deb
+[debian-8.2-hostfxr-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Installers/Latest/dotnet-hostfxr-debian-x64.latest.deb
+[debian-8.2-sharedfx-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Installers/Latest/dotnet-sharedframework-debian-x64.latest.deb
 [debian-8.2-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-debian-x64.latest.tar.gz
 
 [debian-8.2-badge-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/sharedfx_Debian_x64_Release_version_badge.svg
 [debian-8.2-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.debian.x64.version
+[debian-8.2-host-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-host-debian-x64.latest.deb
+[debian-8.2-hostfxr-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-hostfxr-debian-x64.latest.deb
+[debian-8.2-sharedfx-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-sharedframework-debian-x64.latest.deb
 [debian-8.2-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-debian-x64.latest.tar.gz
 
 
