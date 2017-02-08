@@ -79,8 +79,6 @@ typedef struct {
 
 	gint32 limit_io_min;
 	gint32 limit_io_max;
-
-	MonoThreadPoolWorker *worker;
 } ThreadPool;
 
 static mono_lazy_init_t status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
@@ -150,7 +148,7 @@ initialize (void)
 	threadpool.limit_io_min = mono_cpu_count ();
 	threadpool.limit_io_max = CLAMP (threadpool.limit_io_min * 100, MIN (threadpool.limit_io_min, 200), MAX (threadpool.limit_io_min, 200));
 
-	mono_threadpool_worker_init (&threadpool.worker);
+	mono_threadpool_worker_init ();
 }
 
 static void
@@ -197,7 +195,7 @@ cleanup (void)
 	mono_coop_mutex_unlock (&threadpool.threads_lock);
 #endif
 
-	mono_threadpool_worker_cleanup (threadpool.worker);
+	mono_threadpool_worker_cleanup ();
 
 	mono_refcount_dec (&threadpool);
 }
@@ -666,14 +664,14 @@ void
 mono_threadpool_suspend (void)
 {
 	if (mono_lazy_is_initialized (&status))
-		mono_threadpool_worker_set_suspended (threadpool.worker, TRUE);
+		mono_threadpool_worker_set_suspended (TRUE);
 }
 
 void
 mono_threadpool_resume (void)
 {
 	if (mono_lazy_is_initialized (&status))
-		mono_threadpool_worker_set_suspended (threadpool.worker, FALSE);
+		mono_threadpool_worker_set_suspended (FALSE);
 }
 
 void
@@ -688,7 +686,7 @@ ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_
 
 	counter = COUNTER_READ ();
 
-	*worker_threads = MAX (0, mono_threadpool_worker_get_max (threadpool.worker) - counter._.working);
+	*worker_threads = MAX (0, mono_threadpool_worker_get_max () - counter._.working);
 	*completion_port_threads = threadpool.limit_io_max;
 }
 
@@ -700,7 +698,7 @@ ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_thread
 
 	mono_lazy_initialize (&status, initialize);
 
-	*worker_threads = mono_threadpool_worker_get_min (threadpool.worker);
+	*worker_threads = mono_threadpool_worker_get_min ();
 	*completion_port_threads = threadpool.limit_io_min;
 }
 
@@ -712,7 +710,7 @@ ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_thread
 
 	mono_lazy_initialize (&status, initialize);
 
-	*worker_threads = mono_threadpool_worker_get_max (threadpool.worker);
+	*worker_threads = mono_threadpool_worker_get_max ();
 	*completion_port_threads = threadpool.limit_io_max;
 }
 
@@ -724,7 +722,7 @@ ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads
 	if (completion_port_threads <= 0 || completion_port_threads > threadpool.limit_io_max)
 		return FALSE;
 
-	if (!mono_threadpool_worker_set_min (threadpool.worker, worker_threads))
+	if (!mono_threadpool_worker_set_min (worker_threads))
 		return FALSE;
 
 	threadpool.limit_io_min = completion_port_threads;
@@ -742,7 +740,7 @@ ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads
 	if (completion_port_threads < threadpool.limit_io_min || completion_port_threads < cpu_count)
 		return FALSE;
 
-	if (!mono_threadpool_worker_set_max (threadpool.worker, worker_threads))
+	if (!mono_threadpool_worker_set_max (worker_threads))
 		return FALSE;
 
 	threadpool.limit_io_max = completion_port_threads;
@@ -767,13 +765,13 @@ ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (void)
 	if (mono_domain_is_unloading (mono_domain_get ()) || mono_runtime_is_shutting_down ())
 		return FALSE;
 
-	return mono_threadpool_worker_notify_completed (threadpool.worker);
+	return mono_threadpool_worker_notify_completed ();
 }
 
 void
 ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (void)
 {
-	mono_threadpool_worker_notify_completed (threadpool.worker);
+	mono_threadpool_worker_notify_completed ();
 }
 
 void
@@ -827,7 +825,10 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 		counter._.starting ++;
 	});
 
-	mono_threadpool_worker_enqueue (threadpool.worker, worker_callback, NULL);
+	mono_threadpool_worker_enqueue (worker_callback, NULL);
+
+	/* we do not decrement the threadpool refcount,
+	 * as it's going to be done in the worker_callback */
 
 	return TRUE;
 }
