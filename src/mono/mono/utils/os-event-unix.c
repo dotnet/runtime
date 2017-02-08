@@ -88,9 +88,9 @@ mono_os_event_reset (MonoOSEvent *event)
 }
 
 MonoOSEventWaitRet
-mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout)
+mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable)
 {
-	return mono_os_event_wait_multiple (&event, 1, TRUE, timeout);
+	return mono_os_event_wait_multiple (&event, 1, TRUE, timeout, alertable);
 }
 
 typedef struct {
@@ -113,7 +113,7 @@ signal_and_unref (gpointer user_data)
 }
 
 MonoOSEventWaitRet
-mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout)
+mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable)
 {
 	MonoOSEventWaitRet ret;
 	mono_cond_t signal_cond;
@@ -131,16 +131,18 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	for (i = 0; i < nevents; ++i)
 		g_assert (events [i]);
 
-	data = g_new0 (OSEventWaitData, 1);
-	data->ref = 2;
-	mono_os_event_init (&data->event, FALSE);
+	if (alertable) {
+		data = g_new0 (OSEventWaitData, 1);
+		data->ref = 2;
+		mono_os_event_init (&data->event, FALSE);
 
-	alerted = FALSE;
-	mono_thread_info_install_interrupt (signal_and_unref, data, &alerted);
-	if (alerted) {
-		mono_os_event_destroy (&data->event);
-		g_free (data);
-		return MONO_OS_EVENT_WAIT_RET_ALERTED;
+		alerted = FALSE;
+		mono_thread_info_install_interrupt (signal_and_unref, data, &alerted);
+		if (alerted) {
+			mono_os_event_destroy (&data->event);
+			g_free (data);
+			return MONO_OS_EVENT_WAIT_RET_ALERTED;
+		}
 	}
 
 	if (timeout != MONO_INFINITE_WAIT)
@@ -153,7 +155,8 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	for (i = 0; i < nevents; ++i)
 		g_ptr_array_add (events [i]->conds, &signal_cond);
 
-	g_ptr_array_add (data->event.conds, &signal_cond);
+	if (alertable)
+		g_ptr_array_add (data->event.conds, &signal_cond);
 
 	for (;;) {
 		gint count, lowest;
@@ -170,7 +173,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 			}
 		}
 
-		if (mono_os_event_is_signalled (&data->event))
+		if (alertable && mono_os_event_is_signalled (&data->event))
 			signalled = TRUE;
 		else if (waitall)
 			signalled = (count == nevents);
@@ -206,23 +209,26 @@ done:
 	for (i = 0; i < nevents; ++i)
 		g_ptr_array_remove (events [i]->conds, &signal_cond);
 
-	g_ptr_array_remove (data->event.conds, &signal_cond);
+	if (alertable)
+		g_ptr_array_remove (data->event.conds, &signal_cond);
 
 	mono_os_mutex_unlock (&signal_mutex);
 
 	mono_os_cond_destroy (&signal_cond);
 
-	mono_thread_info_uninstall_interrupt (&alerted);
-	if (alerted) {
-		if (InterlockedDecrement ((gint32*) &data->ref) == 0) {
-			mono_os_event_destroy (&data->event);
-			g_free (data);
+	if (alertable) {
+		mono_thread_info_uninstall_interrupt (&alerted);
+		if (alerted) {
+			if (InterlockedDecrement ((gint32*) &data->ref) == 0) {
+				mono_os_event_destroy (&data->event);
+				g_free (data);
+			}
+			return MONO_OS_EVENT_WAIT_RET_ALERTED;
 		}
-		return MONO_OS_EVENT_WAIT_RET_ALERTED;
-	}
 
-	mono_os_event_destroy (&data->event);
-	g_free (data);
+		mono_os_event_destroy (&data->event);
+		g_free (data);
+	}
 
 	return ret;
 }

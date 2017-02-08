@@ -64,14 +64,14 @@ mono_os_event_reset (MonoOSEvent *event)
 }
 
 MonoOSEventWaitRet
-mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout)
+mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable)
 {
 	DWORD res;
 
 	g_assert (event);
 	g_assert (event->handle);
 
-	res = WaitForSingleObjectEx (event->handle, timeout, TRUE);
+	res = WaitForSingleObjectEx (event->handle, timeout, alertable);
 	if (res == WAIT_OBJECT_0)
 		return MONO_OS_EVENT_WAIT_RET_SUCCESS_0;
 	else if (res == WAIT_IO_COMPLETION)
@@ -85,7 +85,7 @@ mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout)
 }
 
 MonoOSEventWaitRet
-mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout)
+mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable)
 {
 	DWORD res;
 	gpointer handles [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS];
@@ -96,7 +96,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	g_assert (nevents <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS);
 
 	if (nevents == 1)
-		return mono_os_event_wait_one (events [0], timeout);
+		return mono_os_event_wait_one (events [0], timeout, alertable);
 
 	for (i = 0; i < nevents; ++i) {
 		g_assert (events [i]);
@@ -104,7 +104,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 		handles [i] = events [i]->handle;
 	}
 
-	res = WaitForMultipleObjectsEx (nevents, handles, waitall, timeout, TRUE);
+	res = WaitForMultipleObjectsEx (nevents, handles, waitall, timeout, alertable);
 	if (res >= WAIT_OBJECT_0 && res < WAIT_OBJECT_0 + MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS)
 		return MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0);
 	else if (res == WAIT_IO_COMPLETION)
