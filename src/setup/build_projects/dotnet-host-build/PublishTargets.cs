@@ -135,7 +135,6 @@ namespace Microsoft.DotNet.Host.Build
                         "centos.x64.version",
                         "fedora.23.x64.version",
                         "fedora.24.x64.version",
-                        "opensuse.13.2.x64.version",
                         "opensuse.42.1.x64.version"
                     };
                     
@@ -206,7 +205,6 @@ namespace Microsoft.DotNet.Host.Build
                  { "sharedfx_CentOS_x64", false },
                  { "sharedfx_Fedora_23_x64", false },
                  { "sharedfx_Fedora_24_x64", false },
-                 { "sharedfx_openSUSE_13_2_x64", false },
                  { "sharedfx_openSUSE_42_1_x64", false }
              };
 

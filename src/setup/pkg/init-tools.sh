@@ -52,10 +52,6 @@ get_current_linux_name() {
             return 0
         fi
     elif [ "$(cat /etc/*-release | grep -cim1 opensuse)" -eq 1 ]; then
-        if [ "$(cat /etc/*-release | grep -cim1 13.2)" -eq 1 ]; then
-            echo "opensuse.13.2"
-            return 0
-        fi
         if [ "$(cat /etc/*-release | grep -cim1 42.1)" -eq 1 ]; then
             echo "opensuse.42.1"
             return 0

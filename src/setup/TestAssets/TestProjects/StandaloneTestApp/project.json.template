@@ -612,46 +612,6 @@
           "version": "4.3.0",
           "exclude": "all"
         },
-        "runtime.opensuse.13.2-x64.Microsoft.NETCore.DotNetHost": {
-          "version": "1.1.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.Microsoft.NETCore.DotNetHostPolicy": {
-          "version": "1.1.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.Microsoft.NETCore.DotNetHostResolver": {
-          "version": "1.1.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.Microsoft.NETCore.Jit": {
-          "version": "1.1.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.Microsoft.NETCore.Runtime.CoreCLR": {
-          "version": "1.1.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.runtime.native.System": {
-          "version": "4.3.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.runtime.native.System.IO.Compression": {
-          "version": "4.3.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.runtime.native.System.Net.Http": {
-          "version": "4.3.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.runtime.native.System.Net.Security": {
-          "version": "4.3.0",
-          "exclude": "all"
-        },
-        "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
-          "version": "4.3.0",
-          "exclude": "all"
-        },
         "runtime.opensuse.42.1-x64.Microsoft.NETCore.DotNetHost": {
           "version": "1.1.0",
           "exclude": "all"
