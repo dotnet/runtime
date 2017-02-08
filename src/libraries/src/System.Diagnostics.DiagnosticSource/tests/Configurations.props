@@ -3,9 +3,10 @@
   <PropertyGroup>
     <BuildConfigurations>
       net45-Windows_NT;
-      netstandard;
       netstandard1.1;
       netstandard1.3;
+      netstandard1.5;      
+      netstandard;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
