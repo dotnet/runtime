@@ -1375,15 +1375,13 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
-            // Simple regression test; previous code returned wrong result for this argument
             yield return new object[] { 0.0, 750.0, 0.0, 1.0 };
 
         }
 
         public static IEnumerable<object[]> Tan_Legacy_TestData()
         {
-            // These tests assert previous behavior which is not mathematically correct.
-            // They are superceded by Tan_Advanced_TestData.
+            // These tests validate legacy .NET behavior.
 
             yield return new object[] { double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue), 0 };
             yield return new object[] { double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue), 0 };
@@ -1449,14 +1447,12 @@ namespace System.Numerics.Tests
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
-            // Simple regression test; previous code returned wrong result for this argument
             yield return new object[] { -750.0, 0.0, -1.0, 0.0 };
         }
 
         public static IEnumerable<object[]> Tanh_Legacy_TestData()
         {
-            // These tests assert previous behavior which is not mathematically correct.
-            // They are superceded by Tanh_Advanced_TestData.
+            // These tests validate legacy .NET behavior.
 
             // Boundary values
             yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };

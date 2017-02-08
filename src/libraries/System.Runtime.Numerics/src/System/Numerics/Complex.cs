@@ -230,9 +230,10 @@ namespace System.Numerics
             double sinh = (p - q) * 0.5;
             double cosh = (p + q) * 0.5;
             return new Complex(Math.Sin(value._real) * cosh, Math.Cos(value._real) * sinh);
-            // There is a small region where sinh and/or cosh (correctly) overflow, while sin and/or cos are small enough
-            // that the product is representable, but since small * infinity = infinity, we still (incorrectly) return
-            // infinity. We have not attempted to fix this problem.
+            // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
+            // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
+            // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
+            // instead produces (PositiveInfinity, PositiveInfinity). 
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sinh", Justification = "Sinh is the name of a mathematical function.")]
@@ -282,9 +283,8 @@ namespace System.Numerics
             //   tan z = (sin(2x) + i sinh(2y)) / (cos(2x) + cosh(2y))
             // (see Abramowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
 
-            // Even this can only be used for |y| not-too-big, beacuse sinh and cosh (correctly) overflow
-            // for quite moderate y, even though their ratio does not. In that case, divide
-            // through by cosh to get:
+            // This approach does not work for |y| > ~355, because sinh(2y) and cosh(2y) overflow,
+            // even though their ratio does not. In that case, divide through by cosh to get:
             //   tan z = (sin(2x) / cosh(2y) + i \tanh(2y)) / (1 + cos(2x) / cosh(2y))
             // which correctly computes the (tiny) real part and the (normal-sized) imaginary part.
             
