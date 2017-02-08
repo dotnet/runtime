@@ -1655,7 +1655,7 @@ mono_thread_info_wait_one_handle (MonoThreadHandle *thread_handle, guint32 timeo
 {
 	MonoOSEventWaitRet res;
 
-	res = mono_os_event_wait_one (&thread_handle->event, timeout, alertable);
+	res = mono_os_event_wait_one (&thread_handle->event, timeout);
 	if (res == MONO_OS_EVENT_WAIT_RET_SUCCESS_0)
 		return MONO_THREAD_INFO_WAIT_RET_SUCCESS_0;
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
@@ -1683,7 +1683,7 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 	if (background_change_event)
 		thread_events [nhandles ++] = background_change_event;
 
-	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout, alertable);
+	res = mono_os_event_wait_multiple (thread_events, nhandles, waitall, timeout);
 	if (res >= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 && res <= MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + nhandles - 1)
 		return MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + (res - MONO_OS_EVENT_WAIT_RET_SUCCESS_0);
 	else if (res == MONO_OS_EVENT_WAIT_RET_ALERTED)
