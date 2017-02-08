@@ -1216,7 +1216,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Windows_NT':
                     switch (scenario) {
                         case 'default':
-                            if (configuration == 'Release') {
+                            // For now only run Debug jobs on PR Trigger.
+                            if (configuration != 'Debug') {
                                 Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
                                 "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
                             }
