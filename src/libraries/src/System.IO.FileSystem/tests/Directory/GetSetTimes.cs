@@ -149,7 +149,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Non-exsisting directory causes FileNotFoundException
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Non-existing directory causes FileNotFoundException
         public void Unix_DirectoryDoesntExist_Throws()
         {
             string path = GetTestFilePath();

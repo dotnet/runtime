@@ -108,7 +108,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting non-exsistent path throws
+        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting non-existent path throws
         public void Windows_NonExistentPath_Throws_DirectoryNotFoundException()
         {
             Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(TestDirectory, GetTestFileName(), "C")));

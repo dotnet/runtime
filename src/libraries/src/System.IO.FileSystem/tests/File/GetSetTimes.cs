@@ -150,7 +150,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Non-exsisting file throws FileNotFoundException
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Non-existing file throws FileNotFoundException
         public void Unix_FileDoesntExist_Throws_FileNotFoundException()
         {
             string path = GetTestFilePath();

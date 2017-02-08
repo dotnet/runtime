@@ -87,7 +87,7 @@ public class TermInfo
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.OSX)]  // Read the comment below
+    [PlatformSpecific(TestPlatforms.OSX)]  // The file being tested is available by default only on OSX
     public void EmuTermInfoDoesntBreakParser()
     {
         // This file (available by default on OS X) is called out specifically since it contains a format where it has %i

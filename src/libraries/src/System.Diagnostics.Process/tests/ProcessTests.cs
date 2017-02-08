@@ -751,7 +751,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get permissions
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
         [Fact]
         public void TestStartOnUnixWithBadPermissions()
         {
@@ -763,7 +763,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get permissions
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
         [Fact]
         public void TestStartOnUnixWithBadFormat()
         {

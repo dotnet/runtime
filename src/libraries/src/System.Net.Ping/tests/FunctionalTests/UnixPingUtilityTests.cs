@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(1)]
         [InlineData(50)]
         [InlineData(1000)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests un-previledged Ping support on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests un-priviledged Ping support on Unix
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             IPAddress localAddress = await TestSettings.GetLocalIPAddress();
