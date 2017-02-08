@@ -226,7 +226,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     genPopRegs(pushedRegs, byrefPushedRegs, norefPushedRegs);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
+BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
 #if FEATURE_EH_FUNCLETS
     // Generate a call to the finally, like this:
@@ -354,8 +354,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-
-        lblk  = block;
         block = block->bbNext;
     }
     return block;
