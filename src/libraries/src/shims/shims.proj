@@ -78,6 +78,7 @@
       <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/lib" />
       <PackageOutputPaths Include="$(RefPath)" />
       <PackageOutputPaths Include="$(RuntimePath)" />
+      <PackageOutputPaths Condition="'$(BinplaceTestSharedFramework)' == 'true'" Include="$(NETCoreAppTestSharedFrameworkPath)" />
       <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
       <FileWrites Include="@(ProducedFacades)" />
     </ItemGroup>
