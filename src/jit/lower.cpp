@@ -548,7 +548,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
     // transformation.
-    else if (jumpCnt < minSwitchTabJumpCnt)
+    else if ((jumpCnt < minSwitchTabJumpCnt) || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
     {
         // Lower the switch into a series of compare and branch IR trees.
         //
@@ -638,7 +638,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
                 GenTreePtr gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
                 LIR::Range caseRange    = LIR::SeqTree(comp, gtCaseBranch);
-                currentBBRange->InsertAtEnd(std::move(condRange));
+                currentBBRange->InsertAtEnd(std::move(caseRange));
             }
         }
 

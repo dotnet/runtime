@@ -7875,11 +7875,22 @@ public:
         /* These should not be exhaustively used as they might */                               \
         /* hide/trivialize other areas */                                                       \
                                                                                                 \
-        STRESS_MODE(REGS) STRESS_MODE(DBL_ALN) STRESS_MODE(LCL_FLDS) STRESS_MODE(UNROLL_LOOPS)  \
-        STRESS_MODE(MAKE_CSE) STRESS_MODE(LEGACY_INLINE) STRESS_MODE(CLONE_EXPR)                \
-        STRESS_MODE(USE_FCOMI) STRESS_MODE(USE_CMOV) STRESS_MODE(FOLD)                          \
-        STRESS_MODE(BB_PROFILE) STRESS_MODE(OPT_BOOLS_GC) STRESS_MODE(REMORPH_TREES)            \
-        STRESS_MODE(64RSLT_MUL) STRESS_MODE(DO_WHILE_LOOPS) STRESS_MODE(MIN_OPTS)               \
+        STRESS_MODE(REGS)                                                                       \
+        STRESS_MODE(DBL_ALN)                                                                    \
+        STRESS_MODE(LCL_FLDS)                                                                   \
+        STRESS_MODE(UNROLL_LOOPS)                                                               \
+        STRESS_MODE(MAKE_CSE)                                                                   \
+        STRESS_MODE(LEGACY_INLINE)                                                              \
+        STRESS_MODE(CLONE_EXPR)                                                                 \
+        STRESS_MODE(USE_FCOMI)                                                                  \
+        STRESS_MODE(USE_CMOV)                                                                   \
+        STRESS_MODE(FOLD)                                                                       \
+        STRESS_MODE(BB_PROFILE)                                                                 \
+        STRESS_MODE(OPT_BOOLS_GC)                                                               \
+        STRESS_MODE(REMORPH_TREES)                                                              \
+        STRESS_MODE(64RSLT_MUL)                                                                 \
+        STRESS_MODE(DO_WHILE_LOOPS)                                                             \
+        STRESS_MODE(MIN_OPTS)                                                                   \
         STRESS_MODE(REVERSE_FLAG)     /* Will set GTF_REVERSE_OPS whenever we can */            \
         STRESS_MODE(REVERSE_COMMA)    /* Will reverse commas created  with gtNewCommaNode */    \
         STRESS_MODE(TAILCALL)         /* Will make the call as a tailcall whenever legal */     \
@@ -7888,17 +7899,23 @@ public:
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(PINVOKE_RESTORE_ESP)                                                        \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
+        STRESS_MODE(GENERIC_VARN)                                                               \
                                                                                                 \
-        STRESS_MODE(GENERIC_VARN) STRESS_MODE(COUNT_VARN)                                       \
+        /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
+                                                                                                \
+        STRESS_MODE(COUNT_VARN)                                                                 \
                                                                                                 \
         /* "Check" stress areas that can be exhaustively used if we */                          \
         /*  dont care about performance at all */                                               \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
         STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
-        STRESS_MODE(EMITTER) STRESS_MODE(CHK_REIMPORT) STRESS_MODE(FLATFP)                      \
-                                                                                                \
-        STRESS_MODE(GENERIC_CHECK) STRESS_MODE(COUNT)                                           \
+        STRESS_MODE(EMITTER)                                                                    \
+        STRESS_MODE(CHK_REIMPORT)                                                               \
+        STRESS_MODE(FLATFP)                                                                     \
+        STRESS_MODE(GENERIC_CHECK)                                                              \
+        STRESS_MODE(COUNT)
 
     enum                compStressArea
     {
