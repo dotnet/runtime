@@ -22,7 +22,7 @@
 
   <PropertyGroup>
     <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' != 'true'">$(PackagesBinDir)**\*.nupkg</PublishPattern>
-    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' == 'true'">$(OutputPath)\tests\src\**</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == '' and '$(PublishTestNativeBins)' == 'true'">$(OutputPath)\bin\**</PublishPattern>
   </PropertyGroup>
 
   <Target Name="CreateContainerName"
