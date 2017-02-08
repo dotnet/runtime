@@ -116,6 +116,7 @@
       <ReferenceFromRuntime Include="xunit.assert" />
       <ReferenceFromRuntime Include="xunit.abstractions" />
       <ReferenceFromRuntime Include="xunit.performance.core" />
+      <ReferenceFromRuntime Include="xunit.performance.api" />
 
       <!-- Reference everything in the targeting pack directory -->
       <TargetingPackItems Include="%(TargetingPackDirs.Identity)/*.dll" />

@@ -27,7 +27,6 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>PerfRunner</Name>
     </ProjectReference>
-    <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
