@@ -1360,14 +1360,34 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tan_Advanced_TestData()
         {
+
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex trig functions with large real parts.
+
+            yield return new object[] { 0.0, double.MaxValue, 0.0, 1.0 };
+            yield return new object[] { 0.0, -double.MaxValue, 0.0, -1.0 };
+
+            yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 1.0 };
+            yield return new object[] { 0.0, double.NegativeInfinity, 0.0, -1.0 };
+
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
+            yield return new object[] { 0.0, 750.0, 0.0, 1.0 };
+
+        }
+
+        public static IEnumerable<object[]> Tan_Legacy_TestData()
+        {
+            // These tests validate legacy .NET behavior.
+
             yield return new object[] { double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue), 0 };
             yield return new object[] { double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue), 0 };
 
             yield return new object[] { 0, double.MaxValue, double.NaN, double.NaN };
             yield return new object[] { 0, double.MinValue, double.NaN, double.NaN };
-
-            yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
 
             foreach (double invalidReal in s_invalidDoubleValues)
             {
@@ -1381,6 +1401,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("Tan_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tan_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1388,16 +1409,15 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tanh_Basic_TestData()
-        {
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
+        [Theory, MemberData("Tan_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Tan_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Tan(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
         [Theory]
-        [MemberData(nameof(Tanh_Basic_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Tanh_Basic(double real, double imaginary)
@@ -1413,10 +1433,32 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tanh_Advanced_TestData()
         {
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex hyperbolic trig functions with large imaginary parts.
+
+            yield return new object[] { double.MaxValue, 0.0, 1.0, 0.0 };
+            yield return new object[] { -double.MaxValue, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
+            yield return new object[] { double.NegativeInfinity, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
+            yield return new object[] { -750.0, 0.0, -1.0, 0.0 };
+        }
+
+        public static IEnumerable<object[]> Tanh_Legacy_TestData()
+        {
+            // These tests validate legacy .NET behavior.
+
             // Boundary values
             yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
             yield return new object[] { 0, double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue) };
             yield return new object[] { 0, double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue) };
+
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1431,8 +1473,17 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("Tanh_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tanh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Tanh(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+        [Theory, MemberData("Tanh_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Tanh_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Tanh(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
