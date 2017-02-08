@@ -7,6 +7,7 @@
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
+    <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
 
     <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
 
@@ -29,6 +30,10 @@
     <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true'" Include="netcoreapp-$(OSGroup)">
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
       <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
+    </BinplaceConfiguration>
+    <BinplaceConfiguration Condition="'$(IsUAP)' == 'true'" Include="uap-$(OSGroup)">
+      <RefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</RefPath>
+      <RuntimePath>$(UAPPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">

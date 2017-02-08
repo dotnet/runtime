@@ -253,8 +253,10 @@
     <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(ProjectDir)\external\runtime\runtime.depproj</RuntimeProjectFile>
     
     <!-- Paths to binplace package content -->
-    <NETCoreAppPackageRefPath>$(BinDir)netcoreapp\pkg\ref</NETCoreAppPackageRefPath>
-    <NETCoreAppPackageRuntimePath>$(BinDir)netcoreapp\pkg\lib</NETCoreAppPackageRuntimePath>
+    <NETCoreAppPackageRefPath>$(BinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(BinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
+    <UAPPackageRefPath>$(BinDir)pkg\uap\ref</UAPPackageRefPath>
+    <UAPPackageRuntimePath>$(BinDir)pkg\uap\lib</UAPPackageRuntimePath>
 
     <!-- Constructed shared fx path for testing -->
     <TestSharedFxDir>$(ToolsDir)testdotnetcli</TestSharedFxDir>

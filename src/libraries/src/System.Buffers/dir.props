@@ -4,5 +4,7 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <IsNETCoreApp>true</IsNETCoreApp>
+    <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>
