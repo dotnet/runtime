@@ -2577,7 +2577,6 @@ AGAIN:
             inst_RV_IV(ins, reg, tree->gtIntCon.gtIconVal, emitActualTypeSize(tree->TypeGet()), flags);
             break;
 
-#if CPU_LONG_USES_REGPAIR
         case GT_CNS_LNG:
 
             assert(size == EA_4BYTE || size == EA_8BYTE);
@@ -2598,8 +2597,7 @@ AGAIN:
                 constVal = (ssize_t)(tree->gtLngCon.gtLconVal >> 32);
                 size     = EA_4BYTE;
             }
-#ifndef LEGACY_BACKEND
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) && CPU_LONG_USES_REGPAIR
             if ((ins != INS_mov) && !arm_Valid_Imm_For_Instr(ins, constVal, flags))
             {
                 regNumber constReg = (offs == 0) ? genRegPairLo(tree->gtRegPair) : genRegPairHi(tree->gtRegPair);
@@ -2607,12 +2605,10 @@ AGAIN:
                 getEmitter()->emitIns_R_R(ins, size, reg, constReg, flags);
                 break;
             }
-#endif // _TARGET_ARM_
-#endif // !LEGACY_BACKEND
+#endif // _TARGET_ARM_ && CPU_LONG_USES_REGPAIR
 
             inst_RV_IV(ins, reg, constVal, size, flags);
             break;
-#endif // CPU_LONG_USES_REGPAIR
 
         case GT_COMMA:
             tree = tree->gtOp.gtOp2;
