@@ -113,6 +113,10 @@
     </XmlUpdateStep>
   </ItemGroup>
 
+  <PropertyGroup>
+    <XUnitPackageVersion>2.2.0-beta4-build3444</XUnitPackageVersion>
+  </PropertyGroup>
+
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
   <ItemGroup>
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5" />
@@ -133,7 +137,7 @@
     <XUnitDependency Include="xunit.runner.utility"/>
     <XUnitDependency Include="xunit.runner.console"/>
     <StaticDependency Include="@(XUnitDependency)">
-      <Version>2.2.0-beta4-build3444</Version>
+      <Version>$(XUnitPackageVersion)</Version>
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
