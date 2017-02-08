@@ -229,6 +229,7 @@ virtual unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                   GCInfoToken gcInfoToken) = 0;
 #endif // _TARGET_AMD64_ && _DEBUG
 
+#ifndef CROSSGEN_COMPILE
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -242,6 +243,7 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         GCEnumCallback  pCallback,
                         LPVOID          hCallBack,
                         DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
+#endif // !CROSSGEN_COMPILE
 
 /*
     Return the address of the local security object reference
@@ -478,6 +480,7 @@ unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                           GCInfoToken gcInfoToken);
 #endif // _TARGET_AMD64_ && _DEBUG
 
+#ifndef CROSSGEN_COMPILE
 /*
     Enumerate all live object references in that function using
     the virtual register set. Same reference location cannot be enumerated
@@ -492,6 +495,7 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
                 GCEnumCallback  pCallback,
                 LPVOID          hCallBack,
                 DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
+#endif // !CROSSGEN_COMPILE
 
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have

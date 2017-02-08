@@ -4119,7 +4119,8 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
 
 INDEBUG(void* forceStack1;)
 
-#if defined(_TARGET_X86_)
+#ifndef CROSSGEN_COMPILE
+#ifndef USE_GC_INFO_DECODER
 
 /*****************************************************************************
  *
@@ -4760,7 +4761,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
     return true;
 }
 
-#elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE) // !defined(_TARGET_X86_)
+#else // !USE_GC_INFO_DECODER
 
 
 /*****************************************************************************
@@ -4800,7 +4801,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
 #if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-#ifdef USE_GC_INFO_DECODER
     // When we simulate a hijack during gcstress
     //  we start with ActiveStackFrame and the offset
     //  after the call
@@ -4823,7 +4823,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
             flags &= ~((unsigned)ActiveStackFrame);
         }
     }
-#endif // USE_GC_INFO_DECODER
 #endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 #ifdef _DEBUG
@@ -4838,7 +4837,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     }
 #endif
 
-#ifdef USE_GC_INFO_DECODER
     /* If we are not in the active method, we are currently pointing
          * to the return address; at the return address stack variables
          * can become dead if the call is the last instruction of a try block
@@ -4898,7 +4896,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
             methodName, curOffs));
     }
 
-#endif  // USE_GC_INFO_DECODER
 
 #if defined(WIN64EXCEPTIONS)   // funclets
     if (pCodeInfo->GetJitManager()->IsFilterFunclet(pCodeInfo))
@@ -4996,11 +4993,11 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
         _ASSERTE(prevSP + VASigCookieOffset >= dac_cast<PTR_BYTE>(GetSP(pRD->pCurrentContext)));        
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
         // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
         extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
         _ASSERTE((void*) GcEnumObject == pCallBack);
-#endif
+#endif // _DEBUG && !DACCESS_COMPILE
         GCCONTEXT   *pCtx = (GCCONTEXT *) hCallBack;
 
         // For varargs, look up the signature using the varArgSig token passed on the stack
@@ -5013,20 +5010,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
 }
 
-#else // !defined(_TARGET_X86_) && !(defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE))
-
-bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
-                                EECodeInfo     *pCodeInfo,
-                                unsigned        flags,
-                                GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack,
-                                DWORD           relOffsetOverride)
-{
-    PORTABILITY_ASSERT("EECodeManager::EnumGcRefs is not implemented on this platform.");
-    return false;
-}
-
-#endif // _TARGET_X86_
+#endif // USE_GC_INFO_DECODER
+#endif // !CROSSGEN_COMPILE
 
 #ifdef _TARGET_X86_
 /*****************************************************************************
