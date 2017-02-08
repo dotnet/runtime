@@ -11,9 +11,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security;
-#if NET_NATIVE
-using Internal.Runtime.Augments;
-#endif
 
 namespace System.Runtime.Serialization
 {
@@ -929,11 +926,7 @@ namespace System.Runtime.Serialization
 
         internal static object UnsafeGetUninitializedObject(Type type)
         {
-#if !NET_NATIVE
             return FormatterServices.GetUninitializedObject(type);
-#else
-            return RuntimeAugments.NewObject(type.TypeHandle);
-#endif
         }
 
         /// <SecurityNote>
