@@ -45,7 +45,6 @@ namespace Microsoft.DotNet.Host.Build
             { "debian.8-x64", "debian.8-x64" },
             { "fedora.23-x64", "fedora.23-x64" },
             { "fedora.24-x64", "fedora.24-x64" },
-            { "opensuse.13.2-x64", "opensuse.13.2-x64" },
             { "opensuse.42.1-x64", "opensuse.42.1-x64" },
             { "tizen.4.0.0-armel", "tizen.4.0.0-armel" }
         };
