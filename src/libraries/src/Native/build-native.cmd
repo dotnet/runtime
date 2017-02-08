@@ -42,16 +42,16 @@ goto :Arg_Loop
 if not defined VisualStudioVersion (
     if defined VS140COMNTOOLS (
         goto :VS2015
-    ) 
+    )
     goto :MissingVersion
-) 
+)
 if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
-) 
+)
 
 :MissingVersion
 :: Can't find VS 2013+
-echo Error: Visual Studio 2015 required  
+echo Error: Visual Studio 2015 required
 echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
 exit /b 1
 
@@ -59,7 +59,7 @@ exit /b 1
 :: Setup vars for VS2015
 set __VSVersion=vs2015
 set __PlatformToolset=v140
-if NOT "%__BuildArch%" == "arm64" ( 
+if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
     call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 )
@@ -79,6 +79,7 @@ if %__IntermediatesDir% == "" (
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 set "__RuntimePath=%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%\"
+set "__TestSharedFrameworkPath=%__binDir%\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%\testhost\shared\Microsoft.NETCore.App\9.9.9\"
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
@@ -98,7 +99,7 @@ exit /b 1
 :GenVSSolution
 :: Regenerate the VS solution
 
-if /i "%__BuildArch%" == "arm64" ( 
+if /i "%__BuildArch%" == "arm64" (
     REM arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
     call :PrivateToolSet
@@ -128,6 +129,7 @@ IF ERRORLEVEL 1 (
 
 :: Copy to vertical runtime directory
 xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\*" "%__RuntimePath%"
+xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\*" "%__TestSharedFrameworkPath%"
 
 echo Done building Native components
 
