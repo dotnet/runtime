@@ -596,7 +596,9 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
 		mono_domain_code_foreach (mono_get_root_domain (), find_code_region, &udata);
-	g_assert (udata.found);
+	if (!udata.found)
+		/* Can happen with AOT */
+		return;
 
 	region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);
 
