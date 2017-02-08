@@ -22,7 +22,6 @@ def static getOSGroup(def os) {
         'Windows_NT':'Windows_NT',
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
-        'OpenSUSE13.2': 'Linux',
         'OpenSUSE42.1': 'Linux',
         'LinuxARMEmulator': 'Linux']
     def osGroup = osGroupMap.get(os, null) 
@@ -45,7 +44,6 @@ class Constants {
                'Windows_NT_BuildOnly',
                'FreeBSD',
                'CentOS7.1',
-               'OpenSUSE13.2',
                'OpenSUSE42.1',
                'RHEL7.2',
                'LinuxARMEmulator',
@@ -53,7 +51,7 @@ class Constants {
                'Ubuntu16.10',
                'Fedora23']
 
-    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
+    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4']
 
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -590,7 +588,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         return
     }
     
-    def bidailyCrossList = ['RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
+    def bidailyCrossList = ['RHEL7.2', 'Debian8.4']
     // Non pull request builds.
     if (!isPR) {
         addNonPRTriggers(job, branch, isPR, architecture, os, configuration, scenario, isFlowJob, isWindowsBuildOnlyJob, isLinuxEmulatorBuild, bidailyCrossList)
@@ -619,7 +617,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
-                case 'OpenSUSE13.2':
                 case 'Debian8.4':
                 case 'RHEL7.2':
                     if (scenario == 'default') {
@@ -2060,7 +2057,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
         case 'FreeBSD':
         case 'CentOS7.1':
         case 'RHEL7.2':
-        case 'OpenSUSE13.2':
         case 'OpenSUSE42.1':
         case 'Fedora23': // editor brace matching: {
             switch (architecture) {
@@ -2087,7 +2083,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     if (!enableCorefxTesting) {
                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                         // only on supported OS platforms.
-                        if ((os == 'FreeBSD') || (os == 'OpenSUSE13.2'))
+                        if (os == 'FreeBSD')
                         {
                             buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch} ${standaloneGc}"
                         }
@@ -2542,7 +2538,7 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         //Skip stress modes for these scenarios
-                        if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
+                        if (os == 'RHEL7.2' || os == 'Debian8.4') {
                             return
                         }
                     }
@@ -2564,8 +2560,8 @@ combinedScenarios.each { scenario ->
                             return
                         }
                     }
-                    // For RedHat, Debian, and OpenSUSE, we only do Release pri1 builds.
-                    else if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
+                    // For RedHat and Debian, we only do Release pri1 builds.
+                    else if (os == 'RHEL7.2' || os == 'Debian8.4') {
                         if (scenario != 'pri1') {
                             return
                         }
