@@ -396,7 +396,17 @@ namespace System.Linq.Expressions.Compiler
                 case ExpressionType.GreaterThanOrEqual:
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
-                    EmitLiftedRelational(op, leftType, rightType, resultType, liftedToNull);
+                    Debug.Assert(leftType == rightType);
+                    if (liftedToNull)
+                    {
+                        Debug.Assert(resultType == typeof(bool?));
+                        EmitLiftedToNullRelational(op, leftType);
+                    }
+                    else
+                    {
+                        Debug.Assert(resultType == typeof(bool));
+                        EmitLiftedRelational(op, leftType);
+                    }
                     break;
                 case ExpressionType.AndAlso:
                 case ExpressionType.OrElse:
@@ -405,123 +415,74 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-
-        private void EmitLiftedRelational(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull)
+        private void EmitLiftedRelational(ExpressionType op, Type type)
         {
-            Debug.Assert(leftType.IsNullableType());
+            // Equal is (left.GetValueOrDefault() == right.GetValueOrDefault()) & (left.HasValue == right.HasValue)
+            // NotEqual is !((left.GetValueOrDefault() == right.GetValueOrDefault()) & (left.HasValue == right.HasValue))
+            // Others are (left.GetValueOrDefault() op right.GetValueOrDefault()) & (left.HasValue & right.HasValue)
 
-            Label shortCircuit = _ilg.DefineLabel();
-            LocalBuilder locLeft = GetLocal(leftType);
-            LocalBuilder locRight = GetLocal(rightType);
+            bool invert = op == ExpressionType.NotEqual;
+            if (invert)
+            {
+                op = ExpressionType.Equal;
+            }
 
-            // store values (reverse order since they are already on the stack)
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
+
             _ilg.Emit(OpCodes.Stloc, locRight);
             _ilg.Emit(OpCodes.Stloc, locLeft);
-
-            if (op == ExpressionType.Equal)
-            {
-                // test for both null -> true
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
-                _ilg.Emit(OpCodes.And);
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brtrue_S, shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-
-                // test for either is null -> false
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.And);
-
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brfalse_S, shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-            }
-            else if (op == ExpressionType.NotEqual)
-            {
-                // test for both null -> false
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.Or);
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brfalse_S, shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-
-                // test for either is null -> true
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
-                _ilg.Emit(OpCodes.Or);
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brtrue_S, shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-            }
-            else
-            {
-                // test for either is null -> false
-                _ilg.Emit(OpCodes.Ldloca, locLeft);
-                _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Ldloca, locRight);
-                _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.And);
-                _ilg.Emit(OpCodes.Dup);
-                _ilg.Emit(OpCodes.Brfalse_S, shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-            }
-
-            // do op on values
             _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitGetValueOrDefault(leftType);
+            _ilg.EmitGetValueOrDefault(type);
             _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitGetValueOrDefault(rightType);
-
-            //RELEASING locLeft locRight
+            _ilg.EmitGetValueOrDefault(type);
+            Type unnullable = type.GetNonNullableType();
+            EmitUnliftedBinaryOp(op, unnullable, unnullable);
+            _ilg.Emit(OpCodes.Ldloca, locLeft);
+            _ilg.EmitHasValue(type);
+            _ilg.Emit(OpCodes.Ldloca, locRight);
+            _ilg.EmitHasValue(type);
             FreeLocal(locLeft);
             FreeLocal(locRight);
-
-            EmitBinaryOperator(
-                op,
-                leftType.GetNonNullableType(),
-                rightType.GetNonNullableType(),
-                resultType.GetNonNullableType(),
-                liftedToNull: false
-            );
-
-            if (!liftedToNull)
+            _ilg.Emit(op == ExpressionType.Equal ? OpCodes.Ceq : OpCodes.And);
+            _ilg.Emit(OpCodes.And);
+            if (invert)
             {
-                _ilg.MarkLabel(shortCircuit);
+                _ilg.Emit(OpCodes.Ldc_I4_0);
+                _ilg.Emit(OpCodes.Ceq);
             }
+        }
 
-            if (!TypeUtils.AreEquivalent(resultType, resultType.GetNonNullableType()))
-            {
-                _ilg.EmitConvertToType(resultType.GetNonNullableType(), resultType, isChecked: true, locals: this);
-            }
+        private void EmitLiftedToNullRelational(ExpressionType op, Type type)
+        {
+            // (left.HasValue & right.HasValue) ? left.GetValueOrDefault() op right.GetValueOrDefault() : default(bool?)
+            Label notNull = _ilg.DefineLabel();
+            Label end = _ilg.DefineLabel();
 
-            if (liftedToNull)
-            {
-                Label labEnd = _ilg.DefineLabel();
-                _ilg.Emit(OpCodes.Br, labEnd);
-                _ilg.MarkLabel(shortCircuit);
-                _ilg.Emit(OpCodes.Pop);
-                _ilg.Emit(OpCodes.Ldnull);
-                _ilg.Emit(OpCodes.Unbox_Any, resultType);
-                _ilg.MarkLabel(labEnd);
-            }
+            LocalBuilder locLeft = GetLocal(type);
+            LocalBuilder locRight = GetLocal(type);
+
+            _ilg.Emit(OpCodes.Stloc, locRight);
+            _ilg.Emit(OpCodes.Stloc, locLeft);
+            _ilg.Emit(OpCodes.Ldloca, locLeft);
+            _ilg.EmitHasValue(type);
+            _ilg.Emit(OpCodes.Ldloca, locRight);
+            _ilg.EmitHasValue(type);
+            _ilg.Emit(OpCodes.And);
+            _ilg.Emit(OpCodes.Brtrue_S, notNull);
+            _ilg.EmitDefault(typeof(bool?), this);
+            _ilg.Emit(OpCodes.Br_S, end);
+            _ilg.MarkLabel(notNull);
+            _ilg.Emit(OpCodes.Ldloca, locLeft);
+            _ilg.EmitGetValueOrDefault(type);
+            _ilg.Emit(OpCodes.Ldloca, locRight);
+            _ilg.EmitGetValueOrDefault(type);
+            FreeLocal(locLeft);
+            FreeLocal(locRight);
+            Type unnullable = type.GetNonNullableType();
+            EmitUnliftedBinaryOp(op, unnullable, unnullable);
+            _ilg.Emit(OpCodes.Newobj, Nullable_Boolean_Ctor);
+            _ilg.MarkLabel(end);
         }
 
 
