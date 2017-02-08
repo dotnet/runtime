@@ -66,15 +66,6 @@ public class ctor_str : PortsTest
     }
 
     [Fact]
-    public void SlashSlash()
-    {
-        // This throws on NetFX (Desktop) - in keeping with other device path changes
-        // we don't block on \\.\ or \\?\ paths in CoreFX.
-        string portName = "\\\\";
-        VerifyCtor(portName);
-    }
-
-    [Fact]
     public void COM257()
     {
         string portName = "COM257";
@@ -122,20 +113,26 @@ public class ctor_str : PortsTest
     {
         SerialPortProperties serPortProp = new SerialPortProperties();
 
-        Debug.WriteLine("Verifying properties where PortName={0}", portName);
+        Debug.WriteLine($"Verifying properties where PortName={portName}");
         try
         {
-            SerialPort com = new SerialPort(portName);
-
-            if (null != expectedException && throwAt == ThrowAt.Set)
+            using (SerialPort com = new SerialPort(portName))
             {
-                Assert.True(false, $"Err_7212ahsdj Expected Ctor to throw {expectedException}");
+                if (null != expectedException && throwAt == ThrowAt.Set)
+                {
+                    Assert.True(false, $"Err_7212ahsdj Expected Ctor to throw {expectedException}");
+                }
+
+                serPortProp.SetAllPropertiesToDefaults();
+                serPortProp.SetProperty("PortName", portName);
+
+                serPortProp.VerifyPropertiesAndPrint(com);
             }
-
-            serPortProp.SetAllPropertiesToDefaults();
-            serPortProp.SetProperty("PortName", portName);
-
-            serPortProp.VerifyPropertiesAndPrint(com);
+        }
+        catch (Xunit.Sdk.TrueException)
+        {
+            // This is an inner failure
+            throw;
         }
         catch (Exception e)
         {

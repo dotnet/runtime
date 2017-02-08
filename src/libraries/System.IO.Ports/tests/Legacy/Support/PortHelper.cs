@@ -22,13 +22,11 @@ namespace Legacy.Support
             List<string> ports = new List<string>();
             int returnSize = 0;
             int maxSize = 1000000;
-            string allDevices = null;
-            IntPtr mem;
             string[] retval = null;
             const int ERROR_INSUFFICIENT_BUFFER = 122;
             while (returnSize == 0)
             {
-                mem = Marshal.AllocHGlobal(maxSize);
+                IntPtr mem = Marshal.AllocHGlobal(maxSize);
                 if (mem != IntPtr.Zero)
                 {
                     // mem points to memory that needs freeing
@@ -37,7 +35,7 @@ namespace Legacy.Support
                         returnSize = QueryDosDevice(null, mem, maxSize);
                         if (returnSize != 0)
                         {
-                            allDevices = Marshal.PtrToStringAnsi(mem, returnSize);
+                            string allDevices = Marshal.PtrToStringAnsi(mem, returnSize);
                             retval = allDevices.Split('\0');
                             break;    // not really needed, but makes it more clear...
                         }
@@ -61,12 +59,15 @@ namespace Legacy.Support
                 }
             }
 
-            foreach (string str in retval)
+            if (retval != null)
             {
-                if (str.StartsWith("COM"))
+                foreach (string str in retval)
                 {
-                    ports.Add(str);
-                    Debug.WriteLine("Ports on the device :" + str);
+                    if (str.StartsWith("COM"))
+                    {
+                        ports.Add(str);
+                        Debug.WriteLine("Installed serial ports :" + str);
+                    }
                 }
             }
 

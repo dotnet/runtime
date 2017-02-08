@@ -3,328 +3,195 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class BreakState_Property
+public class BreakState_Property : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/21 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.BreakState";
-    public static readonly String s_strTFName = "BreakState.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //The maximum time we will wait for the pin changed event to get firered for the break state
-    public static readonly int MAX_WAIT_FOR_BREAK = 800;
-
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        BreakState_Property objTest = new BreakState_Property();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_Default), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_BeforeOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_true), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_false), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_true_false), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(BreakState_true_false_true), TCSupport.SerialPortRequirements.NullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
+    static readonly int MAX_WAIT_FOR_BREAK = 800;
 
     #region Test Cases
-    public bool BreakState_Default()
+
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void BreakState_Default()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying default BreakState");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_001!!! Verifying default BreakState FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying default BreakState");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
+    }
 
-        if (com1.IsOpen)
-            com1.Close();
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void BreakState_BeforeOpen()
+    {
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            SerialPortProperties serPortProp = new SerialPortProperties();
+ 
+            Debug.WriteLine("Verifying setting BreakState before open");
+            serPortProp.SetAllPropertiesToDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 
-        return retValue;
+            Assert.Throws<InvalidOperationException>(() => com1.BreakState = true);
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+        }
     }
 
 
-    public bool BreakState_BeforeOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BreakState_true()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting BreakState before open");
-        serPortProp.SetAllPropertiesToDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        try
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            com1.BreakState = true;
-            Console.WriteLine("Errr_7092zaqjh Expected setting BreakState before calling open to throw InvalidOperationException");
-            retValue = false;
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying true BreakState");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            SetBreakStateandVerify(com1);
+
+            serPortProp.SetProperty("BreakState", true);
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
-        catch (InvalidOperationException) { }
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_25412ppyh!!! Verifying setting BreakState before open FAILED");
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
     }
 
 
-    public bool BreakState_true()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BreakState_false()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying true BreakState");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= SetBreakStateandVerify(com1);
-
-        serPortProp.SetProperty("BreakState", true);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_002!!! Verifying true BreakState FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying false BreakState");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+
+            SetBreakStateandVerify(com1);
+            serPortProp.SetProperty("BreakState", false);
+
+            com1.BreakState = false;
+            serPortProp.VerifyPropertiesAndPrint(com1);
+
+            Assert.False(GetCurrentBreakState());
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
     }
 
 
-    public bool BreakState_false()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BreakState_true_false()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying false BreakState");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-
-        retValue &= SetBreakStateandVerify(com1);
-        serPortProp.SetProperty("BreakState", false);
-
-        com1.BreakState = false;
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        retValue &= !GetCurrentBreakState();
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_003!!! Verifying false BreakState FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying setting BreakState to true then false");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+
+            com1.Open();
+            serPortProp.VerifyPropertiesAndPrint(com1);
+
+            SetBreakStateandVerify(com1);
+            serPortProp.SetProperty("BreakState", true);
+            serPortProp.VerifyPropertiesAndPrint(com1);
+
+            serPortProp.SetProperty("BreakState", false);
+            com1.BreakState = false;
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
 
-        if (com1.IsOpen)
-            com1.Close();
+        Assert.False(GetCurrentBreakState());
 
-        return retValue;
     }
 
 
-    public bool BreakState_true_false()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void BreakState_true_false_true()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting BreakState to true then false");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        com1.Open();
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        retValue &= SetBreakStateandVerify(com1);
-        serPortProp.SetProperty("BreakState", true);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        serPortProp.SetProperty("BreakState", false);
-        com1.BreakState = false;
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        retValue &= !GetCurrentBreakState();
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_004!!! Verifying setting BreakState to true then false FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+        
+            Debug.WriteLine("Verifying setting BreakState to true then false then true again");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            SetBreakStateandVerify(com1);
+
+            serPortProp.SetProperty("BreakState", true);
+            serPortProp.VerifyPropertiesAndPrint(com1);
+
+            serPortProp.SetProperty("BreakState", false);
+            com1.BreakState = false;
+            serPortProp.VerifyPropertiesAndPrint(com1);
+
+            Assert.False(GetCurrentBreakState());
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            SetBreakStateandVerify(com1);
+            serPortProp.SetProperty("BreakState", true);
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
-    }
-
-
-    public bool BreakState_true_false_true()
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting BreakState to true then false then true again");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= SetBreakStateandVerify(com1);
-
-        serPortProp.SetProperty("BreakState", true);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        serPortProp.SetProperty("BreakState", false);
-        com1.BreakState = false;
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        retValue &= !GetCurrentBreakState();
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= SetBreakStateandVerify(com1);
-        serPortProp.SetProperty("BreakState", true);
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_005!!! Verifying setting BreakState to true then false then true again FAILED");
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
     }
     #endregion
 
     #region Verification for Test Cases
-    public bool SetBreakStateandVerify(SerialPort com1)
+
+    private void SetBreakStateandVerify(SerialPort com1)
     {
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        bool retValue = true;
-        BreakStateEventHandler breakState = new BreakStateEventHandler();
-
-        com2.PinChanged += new SerialPinChangedEventHandler(breakState.HandleEvent);
-        com2.Open();
-        com1.BreakState = true;
-
-        if (!breakState.WaitForBreak(MAX_WAIT_FOR_BREAK))
+        BreakStateEventHandler breakState;
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_2078aspznd!!!: The PinChangedEvent handler never got called with SerialPinChanges.Break event type");
-            retValue = false;
+            breakState = new BreakStateEventHandler();
+
+            com2.PinChanged += breakState.HandleEvent;
+            com2.Open();
+
+            com1.BreakState = true;
+            Assert.True(breakState.WaitForBreak(MAX_WAIT_FOR_BREAK));
         }
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
 
-    public bool GetCurrentBreakState()
+    private bool GetCurrentBreakState()
     {
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        bool retValue = true;
-        BreakStateEventHandler breakState = new BreakStateEventHandler();
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+        {
+            BreakStateEventHandler breakState = new BreakStateEventHandler();
 
-        com2.PinChanged += new SerialPinChangedEventHandler(breakState.HandleEvent);
-        com2.Open();
-        retValue = breakState.WaitForBreak(MAX_WAIT_FOR_BREAK);
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
+            com2.PinChanged += breakState.HandleEvent;
+            com2.Open();
+            return breakState.WaitForBreak(MAX_WAIT_FOR_BREAK);
+        }
     }
 
-
-
-    public class BreakStateEventHandler
+    private class BreakStateEventHandler
     {
-        private bool _breakOccured = false;
-
+        private bool _breakOccurred;
 
         public void HandleEvent(object source, SerialPinChangedEventArgs e)
         {
@@ -332,18 +199,17 @@ public class BreakState_Property
             {
                 if (SerialPinChange.Break == e.EventType)
                 {
-                    _breakOccured = true;
+                    _breakOccurred = true;
                     System.Threading.Monitor.Pulse(this);
                 }
             }
         }
 
-
         public void WaitForBreak()
         {
             lock (this)
             {
-                if (!_breakOccured)
+                if (!_breakOccurred)
                 {
                     System.Threading.Monitor.Wait(this);
                 }
@@ -355,11 +221,10 @@ public class BreakState_Property
         {
             lock (this)
             {
-                if (!_breakOccured)
+                if (!_breakOccurred)
                 {
                     return System.Threading.Monitor.Wait(this, timeout);
                 }
-
                 return true;
             }
         }

@@ -10,6 +10,7 @@ using System;
 using System.Threading;
 using System.IO.Ports;
 using System.Diagnostics;
+using Legacy.Support;
 
 internal class Test_CLRS
 {
@@ -18,7 +19,7 @@ internal class Test_CLRS
     public static void gc_food()
     {
         object[] bah = new object[100];
-        System.Random r = new System.Random(-55);
+        Random r = new Random(-55);
         while (!s_done)
         {
             int i = r.Next(100);
@@ -34,7 +35,7 @@ internal class Test_CLRS
             String[] portNames = PortHelper.GetPorts();
             if (portNames.Length == 0)
             {
-                Console.WriteLine("No serial ports available.  Not running test.");
+                Debug.WriteLine("No serial ports available.  Not running test.");
             }
             else
             {
@@ -45,7 +46,7 @@ internal class Test_CLRS
 
                 foreach (String portName in portNames)
                 {
-                    Console.WriteLine(portName);
+                    Debug.WriteLine(portName);
                     OpenClose(portName);
                     LeaveOpen(portName);
                 }
@@ -56,14 +57,14 @@ internal class Test_CLRS
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Unexpected exception!  " + ex.ToString());
+            Debug.WriteLine("Unexpected exception!  " + ex.ToString());
             return 99;
         }
     }
 
     private static void OpenClose(String portName)
     {
-        Console.WriteLine("OpenClose (should finish quickly)");
+        Debug.WriteLine("OpenClose (should finish quickly)");
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
         SerialPort Port = new SerialPort(portName);
@@ -78,12 +79,12 @@ internal class Test_CLRS
         Port.Open();
         Port.Close();
         stopwatch.Stop();
-        Console.WriteLine("Elapsed time: {0:mm'm'ss'.'fff's'}", stopwatch.Elapsed);
+        Debug.WriteLine("Elapsed time: {0:mm'm'ss'.'fff's'}", stopwatch.Elapsed);
     }
 
     private static void LeaveOpen(String portName)
     {
-        Console.WriteLine("LeaveOpen (runs for 1 minute)");
+        Debug.WriteLine("LeaveOpen (runs for 1 minute)");
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
         Thread.Sleep(100);
@@ -95,6 +96,6 @@ internal class Test_CLRS
         }
         Port.Close();
         stopwatch.Stop();
-        Console.WriteLine("Elapsed time: {0:mm'm'ss'.'fff's'}", stopwatch.Elapsed);
+        Debug.WriteLine("Elapsed time: {0:mm'm'ss'.'fff's'}", stopwatch.Elapsed);
     }
 }

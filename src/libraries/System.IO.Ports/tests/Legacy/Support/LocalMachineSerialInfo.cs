@@ -21,10 +21,10 @@ namespace Legacy.Support
             _secondAvailablePortName = secondAvailablePortName;
             _loopbackPortName = loopBackPortName;
             _nullModemPresent = nullModemPresent;
-            Debug.WriteLine("First available port name  : " + firstAvailablePortName);
-            Debug.WriteLine("Second available port name : " + secondAvailablePortName);
-            Debug.WriteLine("Loopback port name         : " + loopBackPortName);
-            Debug.WriteLine("NUllModem present          : " + nullModemPresent);
+            Console.WriteLine("First available port name  : " + firstAvailablePortName);
+            Console.WriteLine("Second available port name : " + secondAvailablePortName);
+            Console.WriteLine("Loopback port name         : " + loopBackPortName);
+            Console.WriteLine("NullModem present          : " + nullModemPresent);
         }
 
         public string FirstAvailablePortName

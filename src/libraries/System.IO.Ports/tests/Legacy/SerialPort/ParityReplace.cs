@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class ParityReplace_Property
+public class ParityReplace_Property : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/21 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.ParityReplace";
-    public static readonly String s_strTFName = "ParityReplace.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //The default number of chars to write with when testing timeout with Read(char[], int, int)
     public static readonly int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
 
@@ -22,415 +20,209 @@ public class ParityReplace_Property
 
     public delegate char[] ReadMethodDelegate(SerialPort com);
 
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        ParityReplace_Property objTest = new ParityReplace_Property();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        //See individual read methods for further testing
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityReplace_Default_BeforeOpen), TCSupport.SerialPortRequirements.None);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityReplace_Default_AfterOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_byte_int_int_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_char_int_int_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadByte_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadChar_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLine_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadTo_str_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_byte_int_int_RNDParityReplace), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityReplace_After_Parity), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityReplace_After_ParityReplace), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityReplace_After_ParityReplaceAndParity), TCSupport.SerialPortRequirements.NullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
-
     #region Test Cases
-    public bool ParityReplace_Default_BeforeOpen()
+    [Fact]
+    public void ParityReplace_Default_BeforeOpen()
     {
-        SerialPort com1 = new SerialPort();
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying default ParityReplace before Open");
-
-        serPortProp.SetAllPropertiesToDefaults();
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort())
         {
-            Console.WriteLine("Err_001!!! Verifying default ParityReplace before Open FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying default ParityReplace before Open");
+
+            serPortProp.SetAllPropertiesToDefaults();
+            serPortProp.VerifyPropertiesAndPrint(com1);
         }
+    }
 
-        if (com1.IsOpen)
-            com1.Close();
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void ParityReplace_Default_AfterOpen()
+    {
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            SerialPortProperties serPortProp = new SerialPortProperties();
 
-        return retValue;
+            Debug.WriteLine("Verifying default ParityReplace after Open");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+            com1.Open();
+            serPortProp.VerifyPropertiesAndPrint(com1);
+        }
     }
 
 
-    public bool ParityReplace_Default_AfterOpen()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Read_byte_int_int_RNDParityReplace()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying default ParityReplace after Open");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        com1.Open();
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_002!!! Verifying default ParityReplace after Open FAILED");
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with Read(byte[], int, int)");
+        VerifyParityReplaceByte(Read_byte_int_int, false);
     }
 
-
-    private bool Read_byte_int_int_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void Read_char_int_int_RNDParityReplace()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with Read(byte[], int, int)");
-        retValue &= VerifyParityReplaceByte(new ReadMethodDelegate(Read_byte_int_int), false);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_003!!! Verifying random ParityReplace with Read(byte[], int, int) FAILED");
-        }
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with Read(char[], int, int)");
+        VerifyParityReplaceByte(Read_char_int_int, false);
     }
 
-
-    private bool Read_char_int_int_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ReadByte_RNDParityReplace()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with Read(char[], int, int)");
-        retValue &= VerifyParityReplaceByte(new ReadMethodDelegate(Read_char_int_int), false);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_004!!! Verifying random ParityReplace with Read(char[], int, int) FAILED");
-        }
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with ReadByte()");
+        VerifyParityReplaceByte(ReadByte, false);
     }
 
-
-    private bool ReadByte_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ReadChar_RNDParityReplace()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with ReadByte()");
-        retValue &= VerifyParityReplaceByte(new ReadMethodDelegate(ReadByte), false);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_005!!! Verifying random ParityReplace with ReadByte() FAILED");
-        }
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with ReadChar()");
+        VerifyParityReplaceByte(ReadChar, false);
     }
 
-
-    private bool ReadChar_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ReadLine_RNDParityReplace()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with ReadChar()");
-        retValue &= VerifyParityReplaceByte(new ReadMethodDelegate(ReadChar), false);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_006!!! Verifying random ParityReplace with ReadChar() FAILED");
-        }
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with ReadLine()");
+        VerifyParityReplaceByte(17, ReadLine, true);
     }
 
-
-    private bool ReadLine_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ReadTo_str_RNDParityReplace()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with ReadLine()");
-
-        retValue &= VerifyParityReplaceByte(17, new ReadMethodDelegate(ReadLine), true);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_007!!! Verifying random ParityReplace with ReadLine() FAILED");
-        }
-
-        return retValue;
+        Debug.WriteLine("Verifying random ParityReplace with ReadTo(string)");
+        VerifyParityReplaceByte(ReadTo, true);
     }
 
-
-    private bool ReadTo_str_RNDParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ParityReplace_After_Parity()
     {
-        bool retValue = true;
-
-        Console.WriteLine("Verifying random ParityReplace with ReadTo(string)");
-        retValue &= VerifyParityReplaceByte(new ReadMethodDelegate(ReadTo), true);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_008!!! Verifying random ParityReplace with ReadTo(string) FAILED");
-        }
+            SerialPortProperties serPortProp = new SerialPortProperties();
+            
+            Debug.WriteLine("Verifying setting ParityReplace after Parity has been set");
 
-        return retValue;
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+
+            com1.Open();
+            com2.Open();
+
+            com1.Parity = Parity.Even;
+            com1.ParityReplace = 1;
+
+            serPortProp.SetProperty("Parity", Parity.Even);
+            serPortProp.SetProperty("ParityReplace", (byte)1);
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyParityReplaceByte(com1, com2, Read_byte_int_int, false);
+        }
     }
 
-    public bool ParityReplace_After_Parity()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ParityReplace_After_ParityReplace()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting ParityReplace after Parity has been set");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        com1.Open();
-        com2.Open();
-
-        com1.Parity = Parity.Even;
-        com1.ParityReplace = 1;
-
-        serPortProp.SetProperty("Parity", Parity.Even);
-        serPortProp.SetProperty("ParityReplace", (byte)1);
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyParityReplaceByte(com1, com2, new ReadMethodDelegate(Read_byte_int_int), false);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_04748ajoied!!! Verifying setting ParityReplace after Parity has been set FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+            
+            Debug.WriteLine("Verifying setting ParityReplace after ParityReplace has aready been set");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+
+            com1.Open();
+            com2.Open();
+
+            com1.ParityReplace = 1;
+            com1.ParityReplace = 2;
+            com1.Parity = Parity.Odd;
+
+            serPortProp.SetProperty("Parity", Parity.Odd);
+            serPortProp.SetProperty("ParityReplace", (byte)2);
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyParityReplaceByte(com1, com2, Read_byte_int_int, false);
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
-    public bool ParityReplace_After_ParityReplace()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ParityReplace_After_ParityReplaceAndParity()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting ParityReplace after ParityReplace has aready been set");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        com1.Open();
-        com2.Open();
-
-        com1.ParityReplace = 1;
-        com1.ParityReplace = 2;
-        com1.Parity = Parity.Odd;
-
-        serPortProp.SetProperty("Parity", Parity.Odd);
-        serPortProp.SetProperty("ParityReplace", (byte)2);
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyParityReplaceByte(com1, com2, new ReadMethodDelegate(Read_byte_int_int), false);
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_51848ajhied!!! Verifying setting ParityReplace after ParityReplace has aready been set FAILED");
+            SerialPortProperties serPortProp = new SerialPortProperties();
+
+            Debug.WriteLine("Verifying setting ParityReplace after ParityReplace and Parity have aready been set");
+
+            serPortProp.SetAllPropertiesToOpenDefaults();
+            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+
+            com1.Open();
+            com2.Open();
+
+            com1.Parity = Parity.Mark;
+            com1.ParityReplace = 1;
+            com1.ParityReplace = 2;
+
+            serPortProp.SetProperty("Parity", Parity.Mark);
+            serPortProp.SetProperty("ParityReplace", (byte)2);
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
+            VerifyParityReplaceByte(com1, com2, Read_byte_int_int, false);
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
-    }
-
-    public bool ParityReplace_After_ParityReplaceAndParity()
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        SerialPortProperties serPortProp = new SerialPortProperties();
-        bool retValue = true;
-
-        Console.WriteLine("Verifying setting ParityReplace after ParityReplace and Parity have aready been set");
-
-        serPortProp.SetAllPropertiesToOpenDefaults();
-        serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        com1.Open();
-        com2.Open();
-
-        com1.Parity = Parity.Mark;
-        com1.ParityReplace = 1;
-        com1.ParityReplace = 2;
-
-        serPortProp.SetProperty("Parity", Parity.Mark);
-        serPortProp.SetProperty("ParityReplace", (byte)2);
-
-        retValue &= serPortProp.VerifyPropertiesAndPrint(com1);
-        retValue &= VerifyParityReplaceByte(com1, com2, new ReadMethodDelegate(Read_byte_int_int), false);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_50848ajoied!!! Verifying setting ParityReplace after ParityReplace and Parity have aready been set FAILED");
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
     #endregion
 
     #region Verification for Test Cases
 
-
-    private bool VerifyParityReplaceByte(ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyParityReplaceByte(ReadMethodDelegate readMethod, bool newLine)
     {
         Random rndGen = new Random();
 
-        return VerifyParityReplaceByte(rndGen.Next(1, 128), readMethod, newLine);
+        VerifyParityReplaceByte(rndGen.Next(1, 128), readMethod, newLine);
     }
 
 
-    private bool VerifyParityReplaceByte(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyParityReplaceByte(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
     {
-        bool retValue = true;
-
-        retValue &= VerifyParityReplaceByteBeforeOpen(parityReplace, readMethod, newLine);
-        retValue &= VerifyParityReplaceByteAfterOpen(parityReplace, readMethod, newLine);
-
-        return retValue;
+        VerifyParityReplaceByteBeforeOpen(parityReplace, readMethod, newLine);
+        VerifyParityReplaceByteAfterOpen(parityReplace, readMethod, newLine);
     }
 
 
-    private bool VerifyParityReplaceByteBeforeOpen(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyParityReplaceByteBeforeOpen(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
     {
-        bool retValue = true;
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-
-        com1.ParityReplace = (byte)parityReplace;
-        com1.Open();
-        com2.Open();
-
-        retValue &= VerifyParityReplaceByte(com1, com2, readMethod, newLine);
-
-        com1.Close();
-        com2.Close();
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_2509pqzhz Verifying setting ParityReplaceByte BEFORE calling Open failed ParityReplace={0}", parityReplace);
-        }
+            com1.ParityReplace = (byte)parityReplace;
+            com1.Open();
+            com2.Open();
 
-        return retValue;
+            VerifyParityReplaceByte(com1, com2, readMethod, newLine);
+        }
     }
 
-
-    private bool VerifyParityReplaceByteAfterOpen(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyParityReplaceByteAfterOpen(int parityReplace, ReadMethodDelegate readMethod, bool newLine)
     {
-        bool retValue = true;
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-
-        com1.Open();
-        com2.Open();
-
-        com1.ParityReplace = (byte)parityReplace;
-        retValue &= VerifyParityReplaceByte(com1, com2, readMethod, newLine);
-
-        com1.Close();
-        com2.Close();
-
-        if (!retValue)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_0825qnza Verifying setting ParityReplaceByte AFTER calling Open failed ParityReplace={0}", parityReplace);
-        }
+            com1.Open();
+            com2.Open();
 
-        return retValue;
+            com1.ParityReplace = (byte)parityReplace;
+            VerifyParityReplaceByte(com1, com2, readMethod, newLine);
+        }
     }
 
-
-    private bool VerifyParityReplaceByte(SerialPort com1, SerialPort com2, ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyParityReplaceByte(SerialPort com1, SerialPort com2, ReadMethodDelegate readMethod, bool newLine)
     {
         byte[] bytesToWrite = new byte[s_numRndBytesPairty];
         char[] expectedChars = new char[s_numRndBytesPairty];
@@ -459,58 +251,48 @@ public class ParityReplace_Property
         bytesToWrite[parityErrorIndex] |= (byte)0x80;
         expectedChars[parityErrorIndex] = (char)com1.ParityReplace;
 
-        return VerifyRead(com1, com2, bytesToWrite, expectedChars, readMethod, newLine);
+        VerifyRead(com1, com2, bytesToWrite, expectedChars, readMethod, newLine);
     }
 
 
-    private bool VerifyRead(SerialPort com1, SerialPort com2, byte[] bytesToWrite, char[] expectedChars, ReadMethodDelegate readMethod, bool newLine)
+    private void VerifyRead(SerialPort com1, SerialPort com2, byte[] bytesToWrite, char[] expectedChars, ReadMethodDelegate readMethod, bool newLine)
     {
-        bool retValue = true;
-        char[] actualChars;
-
         com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
         if (newLine)
         {
             com2.Write(com1.NewLine);
-            while (bytesToWrite.Length + com1.NewLine.Length > com1.BytesToRead) ;
+            while (bytesToWrite.Length + com1.NewLine.Length > com1.BytesToRead)
+            {
+                
+            }
         }
         else
         {
-            while (bytesToWrite.Length > com1.BytesToRead) ;
+            while (bytesToWrite.Length > com1.BytesToRead)
+            {
+            }
         }
 
-        actualChars = readMethod(com1);
+        char[] actualChars = readMethod(com1);
 
         //Compare the chars that were written with the ones we expected to read
         for (int i = 0; i < expectedChars.Length; i++)
         {
             if (actualChars.Length <= i)
             {
-                System.Console.WriteLine("ERROR!!!: Expected more characters then were actually read");
-                retValue = false;
-                break;
+                Fail("ERROR!!!: Expected more characters then were actually read");
             }
             else if (expectedChars[i] != actualChars[i])
             {
-                System.Console.WriteLine("ERROR!!!: Expected to read {0}  actual read  {1} at {2}", (int)expectedChars[i], (int)actualChars[i], i);
-                retValue = false;
+                Fail("ERROR!!!: Expected to read {0}  actual read  {1} at {2}", (int)expectedChars[i], (int)actualChars[i], i);
             }
         }
 
         if (actualChars.Length > expectedChars.Length)
         {
-            System.Console.WriteLine("ERROR!!!: Read in more characters then expected");
-            retValue = false;
+            Fail("ERROR!!!: Read in more characters then expected");
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
 
@@ -519,10 +301,10 @@ public class ParityReplace_Property
         System.Collections.ArrayList receivedBytes = new System.Collections.ArrayList();
         byte[] buffer = new byte[DEFAULT_READ_BYTE_ARRAY_SIZE];
         int totalBytesRead = 0;
-        int numBytes;
 
         while (true)
         {
+            int numBytes;
             try
             {
                 numBytes = com.Read(buffer, 0, buffer.Length);

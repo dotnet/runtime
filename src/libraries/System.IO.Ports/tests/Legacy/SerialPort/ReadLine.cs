@@ -3,17 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO.Ports;
 using System.Diagnostics;
+using System.IO.Ports;
+using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
+using Legacy.Support;
+using Xunit;
 
-public class ReadLine
+public class ReadLine : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/05 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.ReadLine()";
-    public static readonly String s_strTFName = "ReadLine.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //The number of random bytes to receive for read method testing
     public static readonly int DEFAULT_NUM_CHARS_TO_READ = 8;
 
@@ -25,1075 +24,698 @@ public class ReadLine
     public static readonly int MIN_NUM_NEWLINE_CHARS = 1;
     public static readonly int MAX_NUM_NEWLINE_CHARS = 5;
 
-    public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
-
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
+    private enum ReadDataFromEnum
     {
-        ReadLine objTest = new ReadLine();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_Contains_nullChar), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_CR), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_LF), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_CRLF_RndStr), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_CRLF_CRStr), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_CRLF_LFStr), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_END), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLine_Surrogate), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ASCIIEncoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        //		retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF7Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF8Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UTF32Encoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(UnicodeEncoding), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(LargeInputBuffer), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLineWriteLine_ASCII), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        //		retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLineWriteLine_UTF7), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLineWriteLine_UTF8), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLineWriteLine_UTF32), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadLineWriteLine_Unicode), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SerialPort_ReadBufferedData), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SerialPort_IterativeReadBufferedData), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SerialPort_IterativeReadBufferedAndNonBufferedData), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SerialPort_ReadBufferedAndNonBufferedData), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(GreedyRead), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NewLineSubstring), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_DataReceivedBeforeTimeout), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_Timeout), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_LargeBuffer), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Read_SurrogateCharacter), TCSupport.SerialPortRequirements.LoopbackOrNullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
+        NonBuffered,
+        Buffered,
+        BufferedAndNonBuffered
+    };
 
     #region Test Cases
-    public bool NewLine_Contains_nullChar()
-    {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), "\0"))
-        {
-            Console.WriteLine("Err_001!!! Verifying read method with NewLine containing just the null character");
-            return false;
-        }
 
-        return true;
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_Contains_nullChar()
+    {
+        VerifyRead(new ASCIIEncoding(), "\0");
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_CR()
+    {
+        VerifyRead(new ASCIIEncoding(), "\r");
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_LF()
+    {
+        VerifyRead(new ASCIIEncoding(), "\n");
     }
 
 
-    public bool NewLine_CR()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_CRLF_RndStr()
     {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), "\r"))
-        {
-            Console.WriteLine("Err_002!!! Verifying read method with \\r NewLine");
-            return false;
-        }
-
-        return true;
+        VerifyRead(new ASCIIEncoding(), "\r\n");
     }
 
-
-    public bool NewLine_LF()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_CRLF_CRStr()
     {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), "\n"))
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_003!!! Verifying read method with \\n NewLine");
-            return false;
-        }
+            Debug.WriteLine("Verifying read method with \\r\\n NewLine and a string containing just \\r");
 
-        return true;
+            com1.Open();
+            if (!com2.IsOpen)
+            {
+                com2.Open();
+            }
+            com1.NewLine = "\r\n";
+
+            VerifyReadLine(com1, com2, "TEST\r");
+        }
     }
 
-
-    public bool NewLine_CRLF_RndStr()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_CRLF_LFStr()
     {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), "\r\n"))
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_004!!! Verifying read method with \\r\\n NewLine and a random string");
-            return false;
-        }
+            Debug.WriteLine("Verifying read method with \\r\\n NewLine and a string containing just \\n");
 
-        return true;
+            com1.Open();
+            if (!com2.IsOpen)
+            {
+                com2.Open();
+            }
+            com1.NewLine = "\r\n";
+
+            VerifyReadLine(com1, com2, "TEST\n");
+        }
+    }
+    
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_END()
+    {
+        VerifyRead(new ASCIIEncoding(), "END");
     }
 
-
-    public bool NewLine_CRLF_CRStr()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLine_Surrogate()
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-
-        Console.WriteLine("Verifying read method with \\r\\n NewLine and a string containing just \\r");
-
-        com1.Open();
-        com2.Open();
-        com1.NewLine = "\r\n";
-
-        if (!VerifyReadLine(com1, com2, "TEST\r"))
-        {
-            Console.WriteLine("Err_005!!! Verifying read method with \\r\\n NewLine and a string containing just \\r");
-            return false;
-        }
-
-        return true;
+        VerifyRead(Encoding.UTF8, "\uD800\uDC00");
     }
 
-
-    public bool NewLine_CRLF_LFStr()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ASCIIEncoding()
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-
-        Console.WriteLine("Verifying read method with \\r\\n NewLine and a string containing just \\n");
-
-        com1.Open();
-        com2.Open();
-        com1.NewLine = "\r\n";
-
-        if (!VerifyReadLine(com1, com2, "TEST\n"))
-        {
-            Console.WriteLine("Err_006!!! Verifying read method with \\r\\n NewLine and a string containing just \\n");
-            return false;
-        }
-
-        return true;
+        VerifyRead(new ASCIIEncoding(), GenRandomNewLine(true));
     }
 
-
-    public bool NewLine_END()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UTF8Encoding()
     {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), "END"))
-        {
-            Console.WriteLine("Err_007!!! Verifying read method with END NewLine");
-            return false;
-        }
-
-        return true;
+        VerifyRead(new UTF8Encoding(), GenRandomNewLine(false));
+    }
+    
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UTF32Encoding()
+    {
+        VerifyRead(new UTF32Encoding(), GenRandomNewLine(false));
     }
 
-    public bool NewLine_Surrogate()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void UnicodeEncoding()
     {
-        if (!VerifyRead(System.Text.Encoding.UTF8, "\uD800\uDC00"))
-        {
-            Console.WriteLine("Err_007a!!! Verifying read method with surrogate as the newline");
-            return false;
-        }
-
-        return true;
+        VerifyRead(new UnicodeEncoding(), GenRandomNewLine(false));
     }
 
-
-    public bool ASCIIEncoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void LargeInputBuffer()
     {
-        if (!VerifyRead(new System.Text.ASCIIEncoding(), GenRandomNewLine(true)))
-        {
-            Console.WriteLine("Err_08!!! Verifying read method with ASCIIEncoding");
-            return false;
-        }
-
-        return true;
+        VerifyRead(LARGE_NUM_CHARS_TO_READ);
     }
 
-
-    public bool UTF7Encoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ReadLineWriteLine_ASCII()
     {
-        if (!VerifyRead(new System.Text.UTF7Encoding(), GenRandomNewLine(false)))
-        {
-            Console.WriteLine("Err_009!!! Verifying read method with UTF7Encoding");
-            return false;
-        }
-
-        return true;
+        VerifyReadLineWithWriteLine(new ASCIIEncoding(), GenRandomNewLine(true));
     }
 
-
-    public bool UTF8Encoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ReadLineWriteLine_UTF8()
     {
-        if (!VerifyRead(new System.Text.UTF8Encoding(), GenRandomNewLine(false)))
-        {
-            Console.WriteLine("Err_010!!! Verifying read method with UTF8Encoding");
-            return false;
-        }
-
-        return true;
+        VerifyReadLineWithWriteLine(new UTF8Encoding(), GenRandomNewLine(true));
     }
 
-
-    public bool UTF32Encoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ReadLineWriteLine_UTF32()
     {
-        if (!VerifyRead(new System.Text.UTF32Encoding(), GenRandomNewLine(false)))
-        {
-            Console.WriteLine("Err_011!!! Verifying read method with UTF32Encoding");
-            return false;
-        }
-
-        return true;
+        VerifyReadLineWithWriteLine(new UTF32Encoding(), GenRandomNewLine(true));
     }
 
-
-    public bool UnicodeEncoding()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void ReadLineWriteLine_Unicode()
     {
-        if (!VerifyRead(new System.Text.UnicodeEncoding(), GenRandomNewLine(false)))
-        {
-            Console.WriteLine("Err_012!!! Verifying read method with Unicode");
-            return false;
-        }
-
-        return true;
+        VerifyReadLineWithWriteLine(new UnicodeEncoding(), GenRandomNewLine(true));
     }
 
-
-    public bool LargeInputBuffer()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void SerialPort_ReadBufferedData()
     {
-        if (!VerifyRead(LARGE_NUM_CHARS_TO_READ))
+        var numBytesToRead = 32;
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_013!!! Verifying read method with large input buffer");
-            return false;
-        }
+            var rndGen = new Random(-55);
+            var strBldrToWrite = new StringBuilder();
 
-        return true;
+            //Genrate random characters
+            for (var i = 0; i < numBytesToRead; i++)
+            {
+                strBldrToWrite.Append((char)rndGen.Next(40, 60));
+            }
+
+            int newLineIndex;
+
+            while (-1 != (newLineIndex = strBldrToWrite.ToString().IndexOf(com1.NewLine)))
+            {
+                strBldrToWrite[newLineIndex] = (char)rndGen.Next(40, 60);
+            }
+
+            com1.ReadTimeout = 500;
+            com1.Open();
+
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            strBldrToWrite.Append(com1.NewLine);
+
+            BufferData(com1, com2, strBldrToWrite.ToString());
+            PerformReadOnCom1FromCom2(com1, com2, strBldrToWrite.ToString(), com1.NewLine);
+        }
     }
 
-
-    public bool ReadLineWriteLine_ASCII()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void SerialPort_IterativeReadBufferedData()
     {
-        if (!VerifyReadLineWithWriteLine(new System.Text.ASCIIEncoding(), GenRandomNewLine(true)))
-        {
-            Console.WriteLine("Err_014!!! Verifying ReadLine with WriteLine and ASCIIEncoding");
-            return false;
-        }
+        var numBytesToRead = 32;
 
-        return true;
+        VerifyRead(Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.Buffered);
     }
 
-
-    public bool ReadLineWriteLine_UTF7()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void SerialPort_ReadBufferedAndNonBufferedData()
     {
-        if (!VerifyReadLineWithWriteLine(new System.Text.UTF7Encoding(), GenRandomNewLine(true)))
+        var numBytesToRead = 32;
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_015!!! Verifying ReadLine with WriteLine and UTF7Encoding");
-            return false;
-        }
+            var rndGen = new Random(-55);
+            var strBldrToWrite = new StringBuilder();
+            var strBldrExpected = new StringBuilder();
 
-        return true;
+
+            //Genrate random characters
+            for (var i = 0; i < numBytesToRead; i++)
+            {
+                strBldrToWrite.Append((char)rndGen.Next(0, 256));
+            }
+
+            int newLineIndex;
+
+            while (-1 != (newLineIndex = strBldrToWrite.ToString().IndexOf(com1.NewLine)))
+            {
+                strBldrToWrite[newLineIndex] = (char)rndGen.Next(0, 256);
+            }
+
+            com1.ReadTimeout = 500;
+            com1.Open();
+
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            BufferData(com1, com2, strBldrToWrite.ToString());
+
+            strBldrExpected.Append(strBldrToWrite);
+            strBldrToWrite.Append(com1.NewLine);
+            strBldrExpected.Append(strBldrToWrite);
+
+            VerifyReadLine(com1, com2, strBldrToWrite.ToString(), strBldrExpected.ToString(), com1.NewLine);
+        }
     }
 
-
-    public bool ReadLineWriteLine_UTF8()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void SerialPort_IterativeReadBufferedAndNonBufferedData()
     {
-        if (!VerifyReadLineWithWriteLine(new System.Text.UTF8Encoding(), GenRandomNewLine(true)))
-        {
-            Console.WriteLine("Err_016!!! Verifying ReadLine with WriteLine and UTF8Encoding");
-            return false;
-        }
+        var numBytesToRead = 3;
 
-        return true;
+        VerifyRead(Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.BufferedAndNonBuffered);
     }
-
-
-    public bool ReadLineWriteLine_UTF32()
+    
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void GreedyRead()
     {
-        if (!VerifyReadLineWithWriteLine(new System.Text.UTF32Encoding(), GenRandomNewLine(true)))
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_017!!! Verifying ReadLine with WriteLine and UTF32Encoding");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool ReadLineWriteLine_Unicode()
-    {
-        if (!VerifyReadLineWithWriteLine(new System.Text.UnicodeEncoding(), GenRandomNewLine(true)))
-        {
-            Console.WriteLine("Err_018!!! Verifying ReadLine with WriteLine and UnicodeEncoding");
-            return false;
-        }
-
-        return true;
-    }
+            char[] charXmitBuffer = TCSupport.GetRandomChars(128, TCSupport.CharacterOptions.Surrogates);
+            var byteXmitBuffer = new byte[1024];
+            char[] expectedChars;
+            string rcvString;
+            char[] actualChars;
+            char utf32Char = TCSupport.GenerateRandomCharNonSurrogate();
+            byte[] utf32CharBytes = Encoding.UTF32.GetBytes(new char[] {utf32Char});
+            int numBytes;
 
 
-    public bool SerialPort_ReadBufferedData()
-    {
-        int numBytesToRead = 32;
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        Random rndGen = new Random(-55);
-        System.Text.StringBuilder strBldrToWrite = new System.Text.StringBuilder();
+            Debug.WriteLine("Verifying that ReadLine() will read everything from internal buffer and drivers buffer");
 
-        bool retValue = true;
+            //Put the first byte of the utf32 encoder char in the last byte of this buffer
+            //when we read this later the buffer will have to be resized
+            byteXmitBuffer[byteXmitBuffer.Length - 1] = utf32CharBytes[0];
 
-        //Genrate random characters
-        for (int i = 0; i < numBytesToRead; i++)
-        {
-            strBldrToWrite.Append((char)rndGen.Next(40, 60));
-        }
+            com1.Open();
+            
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
 
-        int newLineIndex;
+            com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
 
-        while (-1 != (newLineIndex = strBldrToWrite.ToString().IndexOf(com1.NewLine)))
-        {
-            strBldrToWrite[newLineIndex] = (char)rndGen.Next(40, 60);
-        }
+            while (com1.BytesToRead < byteXmitBuffer.Length)
+                Thread.Sleep(50);
 
-        com1.ReadTimeout = 500;
-        com1.Open();
+            //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
+            //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+            //the other 3 bytes of the ut32 encoded char can be in the buffer
+            com1.Read(new char[1023], 0, 1023);
+            Assert.Equal(1, com1.BytesToRead);
+            
 
+            com1.Encoding = Encoding.UTF32;
+            com2.Encoding = Encoding.UTF32;
 
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
+            com2.Write(utf32CharBytes, 1, 3);
+            com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
+            com2.WriteLine(string.Empty);
 
-        strBldrToWrite.Append(com1.NewLine);
+            numBytes = Encoding.UTF32.GetByteCount(charXmitBuffer);
 
-        retValue &= BufferData(com1, com2, strBldrToWrite.ToString());
-        retValue &= PerformReadOnCom1FromCom2(com1, com2, strBldrToWrite.ToString(), com1.NewLine);
+            byte[] byteBuffer = Encoding.UTF32.GetBytes(charXmitBuffer);
 
-        if (!retValue)
-        {
-            Console.WriteLine("Err_2507ajlsp!!! Verifying read method with reading all of the buffered data in one call");
-            return false;
-        }
+            expectedChars = new char[1 + Encoding.UTF32.GetCharCount(byteBuffer)];
+            expectedChars[0] = utf32Char;
 
-        if (com1.IsOpen)
-            com1.Close();
+            Encoding.UTF32.GetChars(byteBuffer, 0, byteBuffer.Length, expectedChars, 1);
 
-        if (com2.IsOpen)
-            com2.Close();
+            while (com1.BytesToRead < 4 + numBytes)
+            {
+                Thread.Sleep(50);
+            }
 
-        return retValue;
-    }
+            rcvString = com1.ReadLine();
 
+            Assert.NotNull(rcvString);
 
-    public bool SerialPort_IterativeReadBufferedData()
-    {
-        int numBytesToRead = 32;
-
-        if (!VerifyRead(System.Text.Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.Buffered))
-        {
-            Console.WriteLine("Err_1659akl!!! Verifying read method with reading the buffered data in several calls");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool SerialPort_ReadBufferedAndNonBufferedData()
-    {
-        int numBytesToRead = 32;
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        Random rndGen = new Random(-55);
-        System.Text.StringBuilder strBldrToWrite = new System.Text.StringBuilder();
-        System.Text.StringBuilder strBldrExpected = new System.Text.StringBuilder();
-        bool retValue = true;
-
-        //Genrate random characters
-        for (int i = 0; i < numBytesToRead; i++)
-        {
-            strBldrToWrite.Append((char)rndGen.Next(0, 256));
-        }
-
-        int newLineIndex;
-
-        while (-1 != (newLineIndex = strBldrToWrite.ToString().IndexOf(com1.NewLine)))
-        {
-            strBldrToWrite[newLineIndex] = (char)rndGen.Next(0, 256);
-        }
-
-        com1.ReadTimeout = 500;
-        com1.Open();
-
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        retValue &= BufferData(com1, com2, strBldrToWrite.ToString());
-
-        strBldrExpected.Append(strBldrToWrite);
-        strBldrToWrite.Append(com1.NewLine);
-        strBldrExpected.Append(strBldrToWrite);
-
-        retValue &= VerifyReadLine(com1, com2, strBldrToWrite.ToString(), strBldrExpected.ToString(), com1.NewLine);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_2082aspzh!!! Verifying read method with reading all of the buffered an non buffered data in one call");
-            return false;
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
-    }
-
-
-    public bool SerialPort_IterativeReadBufferedAndNonBufferedData()
-    {
-        int numBytesToRead = 3;
-
-        if (!VerifyRead(System.Text.Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.BufferedAndNonBuffered))
-        {
-            Console.WriteLine("Err_5687nhnhl!!! Verifying read method with reading the buffered and non buffereddata in several calls");
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public bool GreedyRead()
-    {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        char[] charXmitBuffer = TCSupport.GetRandomChars(128, TCSupport.CharacterOptions.Surrogates);
-        byte[] byteXmitBuffer = new byte[1024];
-        char[] expectedChars;
-        string rcvString;
-        char[] actualChars;
-        char utf32Char = TCSupport.GenerateRandomCharNonSurrogate();
-        byte[] utf32CharBytes = System.Text.Encoding.UTF32.GetBytes(new char[] { utf32Char });
-        int numBytes;
-        bool retValue = true;
-
-        Console.WriteLine("Verifying that ReadLine() will read everything from internal buffer and drivers buffer");
-
-        //Put the first byte of the utf32 encoder char in the last byte of this buffer
-        //when we read this later the buffer will have to be resized
-        byteXmitBuffer[byteXmitBuffer.Length - 1] = utf32CharBytes[0];
-
-        com1.Open();
-
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
-
-        while (com1.BytesToRead < byteXmitBuffer.Length)
-            System.Threading.Thread.Sleep(50);
-
-        //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-        //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
-        //the other 3 bytes of the ut32 encoded char can be in the buffer
-        com1.Read(new char[1023], 0, 1023);
-        if (1 != com1.BytesToRead)
-        {
-            Console.WriteLine("Err_9416sapz ExpectedByteToRead={0} actual={1}", 1, com1.BytesToRead);
-            retValue = false;
-        }
-
-        com1.Encoding = System.Text.Encoding.UTF32;
-        com2.Encoding = System.Text.Encoding.UTF32;
-
-        com2.Write(utf32CharBytes, 1, 3);
-        com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
-        com2.WriteLine(String.Empty);
-
-        numBytes = System.Text.Encoding.UTF32.GetByteCount(charXmitBuffer);
-
-        byte[] byteBuffer = System.Text.Encoding.UTF32.GetBytes(charXmitBuffer);
-
-        expectedChars = new char[1 + System.Text.Encoding.UTF32.GetCharCount(byteBuffer)];
-        expectedChars[0] = utf32Char;
-
-        System.Text.Encoding.UTF32.GetChars(byteBuffer, 0, byteBuffer.Length, expectedChars, 1);
-
-        while (com1.BytesToRead < 4 + numBytes)
-        {
-            System.Threading.Thread.Sleep(50);
-        }
-
-        if (null == (rcvString = com1.ReadLine()))
-        {
-            Console.WriteLine("Err_6481sfadw ReadLine returned null");
-            retValue = false;
-        }
-        else
-        {
             actualChars = rcvString.ToCharArray();
-            if (actualChars.Length != expectedChars.Length)
+            Assert.Equal(expectedChars, actualChars);
+
+            Assert.Equal(0, com1.BytesToRead);
+        }
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void NewLineSubstring()
+    {
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
+        {
+
+            Debug.WriteLine("Verifying read method with sub strings of the new line appearing in the string being read");
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            com1.NewLine = "asfg";
+
+            string newLineSubStrings = "a" + "as" + "asf" + "sfg" + "fg" + "g"; //All the substrings of newLine
+            string testStr = newLineSubStrings + "asfg" + newLineSubStrings;
+
+            VerifyReadLine(com1, com2, testStr);
+        }
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void Read_DataReceivedBeforeTimeout()
+    {
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
+        {
+            char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
+            var asyncRead = new ASyncRead(com1);
+            var asyncReadThread = new Thread(new ThreadStart(asyncRead.Read));
+
+            char endLineChar = com1.NewLine[0];
+            char notEndLineChar = TCSupport.GetRandomOtherChar(endLineChar, TCSupport.CharacterOptions.None);
+
+            Debug.WriteLine(
+                "Verifying that Read(char[], int, int) will read characters that have been received after the call to Read was made");
+
+            //Ensure the new line is not in charXmitBuffer
+            for (var i = 0; i < charXmitBuffer.Length; ++i)
             {
-                Console.WriteLine("Err_0872watr Expected to read {0} chars actually read {1} chars", expectedChars.Length, actualChars.Length);
-                retValue = false;
+                //Se any appearances of a character in the new line string to some other char
+                if (endLineChar == charXmitBuffer[i])
+                {
+                    charXmitBuffer[i] = notEndLineChar;
+                }
+            }
+
+            com1.Encoding = Encoding.UTF8;
+            com2.Encoding = Encoding.UTF8;
+            com1.ReadTimeout = 20000; // 20 seconds
+
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            asyncReadThread.Start();
+            asyncRead.ReadStartedEvent.WaitOne();
+            //This only tells us that the thread has started to execute code in the method
+            Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+            com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
+            com2.WriteLine(string.Empty);
+
+            asyncRead.ReadCompletedEvent.WaitOne();
+
+            Assert.Null(asyncRead.Exception);
+
+            if (null == asyncRead.Result || 0 == asyncRead.Result.Length)
+            {
+                Fail("Err_0158ahei Expected Read to read at least one character");
             }
             else
             {
-                for (int i = 0; i < expectedChars.Length; i++)
+                Assert.Equal(charXmitBuffer, asyncRead.Result.ToCharArray());
+            }
+
+            VerifyReadLine(com1, com2, new string(charXmitBuffer));
+        }
+    }
+
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void Read_Timeout()
+    {
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
+        {
+            char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
+
+            char endChar = com1.NewLine[0];
+            char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
+
+            Debug.WriteLine("Verifying that ReadLine(string) works appropriately after TimeoutException has been thrown");
+
+            //Ensure the new line is not in charXmitBuffer
+            for (var i = 0; i < charXmitBuffer.Length; ++i)
+            {
+                // Set any appearances of a character in the new line string to some other char
+                if (endChar == charXmitBuffer[i])
                 {
-                    if (expectedChars[i] != actualChars[i])
-                    {
-                        Console.WriteLine("Err_70782apzh Expected to read {0} actually read {1}", (int)expectedChars[i], (int)actualChars[i]);
-                        retValue = false;
-                        break;
-                    }
+                    charXmitBuffer[i] = notEndChar;
                 }
             }
+
+            com1.Encoding = Encoding.Unicode;
+            com2.Encoding = Encoding.Unicode;
+            com1.ReadTimeout = 500; // 20 seconds
+
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
+
+            Assert.Throws<TimeoutException>(() => com1.ReadLine());
+
+            Assert.Equal(2 * charXmitBuffer.Length, com1.BytesToRead);
+
+            com2.WriteLine(string.Empty);
+            string result = com1.ReadLine();
+            char[] charRcvBuffer = result.ToCharArray();
+
+            Assert.Equal(charXmitBuffer, charRcvBuffer);
+
+            VerifyReadLine(com1, com2, new string(charXmitBuffer));
         }
-
-        if (0 != com1.BytesToRead)
-        {
-            Console.WriteLine("Err_78028asdf ExpectedByteToRead={0} actual={1}", 0, com1.BytesToRead);
-            retValue = false;
-        }
-
-        if (!retValue)
-            Console.WriteLine("Err_1389 Verifying that ReadChar() will read everything from internal buffer and drivers buffer failed");
-
-        com1.Close();
-        com2.Close();
-
-        return retValue;
     }
 
-
-    public bool NewLineSubstring()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void Read_LargeBuffer()
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-
-        Console.WriteLine("Verifying read method with sub strings of the new line appearing in the string being read");
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        com1.NewLine = "asfg";
-
-        string newLineSubStrings = "a" + "as" + "asf" + "sfg" + "fg" + "g"; //All the substrings of newLine
-        string testStr = newLineSubStrings + "asfg" + newLineSubStrings;
-
-        if (!VerifyReadLine(com1, com2, testStr))
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            Console.WriteLine("Err_019!!! Verifying read method with sub strings of the new line appearing in the string being read FAILED");
-            return false;
-        }
+            char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
 
-        return true;
-    }
-
-    public bool Read_DataReceivedBeforeTimeout()
-    {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
-        char[] charRcvBuffer;
-        ASyncRead asyncRead = new ASyncRead(com1);
-        System.Threading.Thread asyncReadThread = new System.Threading.Thread(new System.Threading.ThreadStart(asyncRead.Read));
-        bool retValue = true;
-        char endLineChar = com1.NewLine[0];
-        char notEndLineChar = TCSupport.GetRandomOtherChar(endLineChar, TCSupport.CharacterOptions.None);
-
-        Console.WriteLine("Verifying that Read(char[], int, int) will read characters that have been received after the call to Read was made");
-
-        //Ensure the new line is not in charXmitBuffer
-        for (int i = 0; i < charXmitBuffer.Length; ++i)
-        {//Se any appearances of a character in the new line string to some other char
-            if (endLineChar == charXmitBuffer[i])
+            var continueRunning = true;
+            var numberOfIterations = 0;
+            var writeToCom2Thread = new Thread(delegate()
             {
-                charXmitBuffer[i] = notEndLineChar;
+                while (continueRunning)
+                {
+                    com1.Write(charXmitBuffer, 0, charXmitBuffer.Length);
+                    ++numberOfIterations;
+                }
+            });
+
+
+            char endChar = com1.NewLine[0];
+            char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
+
+            //Ensure the new line is not in charXmitBuffer
+            for (var i = 0; i < charXmitBuffer.Length; ++i)
+            {
+                //Se any appearances of a character in the new line string to some other char
+                if (endChar == charXmitBuffer[i])
+                {
+                    charXmitBuffer[i] = notEndChar;
+                }
             }
-        }
 
-        com1.Encoding = System.Text.Encoding.UTF8;
-        com2.Encoding = System.Text.Encoding.UTF8;
-        com1.ReadTimeout = 20000; // 20 seconds
+            com1.BaudRate = 115200;
+            com2.BaudRate = 115200;
 
-        com1.Open();
+            com1.Encoding = Encoding.Unicode;
+            com2.Encoding = Encoding.Unicode;
 
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
+            com2.ReadTimeout = 10000;
 
-        asyncReadThread.Start();
-        asyncRead.ReadStartedEvent.WaitOne(); //This only tells us that the thread has started to execute code in the method
-        System.Threading.Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
-        com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
-        com2.WriteLine(String.Empty);
+            com1.Open();
 
-        asyncRead.ReadCompletedEvent.WaitOne();
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
 
-        if (null != asyncRead.Exception)
-        {
-            retValue = false;
-            Console.WriteLine("Err_04448ajhied Unexpected exception thrown from async read:\n{0}", asyncRead.Exception);
-        }
-        else if (null == asyncRead.Result || 0 == asyncRead.Result.Length)
-        {
-            retValue = false;
-            Console.WriteLine("Err_0158ahei Expected Read to read at least one character");
-        }
-        else
-        {
-            charRcvBuffer = asyncRead.Result.ToCharArray();
+            writeToCom2Thread.Start();
 
-            if (charRcvBuffer.Length != charXmitBuffer.Length)
+            Assert.Throws<TimeoutException>(() => com2.ReadLine());
+
+            continueRunning = false;
+            writeToCom2Thread.Join();
+
+            com1.Write(com1.NewLine);
+
+            string stringRcvBuffer = com2.ReadLine();
+
+            if (charXmitBuffer.Length * numberOfIterations == stringRcvBuffer.Length)
             {
-                retValue = false;
-                Console.WriteLine("Err_051884ajoedo Expected Read to read {0} cahracters actually read {1}",
-                    charXmitBuffer.Length, charRcvBuffer.Length);
+                for (var i = 0; i < charXmitBuffer.Length * numberOfIterations; ++i)
+                {
+                    if (stringRcvBuffer[i] != charXmitBuffer[i % charXmitBuffer.Length])
+                    {
+                        Fail("Err_292aneid Expected to read {0} actually read {1}", charXmitBuffer[i % charXmitBuffer.Length], stringRcvBuffer[i]);
+                    }
+                }
             }
             else
             {
-                for (int i = 0; i < charXmitBuffer.Length; ++i)
-                {
-                    if (charRcvBuffer[i] != charXmitBuffer[i])
-                    {
-                        retValue = false;
-                        Console.WriteLine("Err_018956ahiaz Characters differ at {0} expected:{1}({2:X}) actual:{3}({4:X})",
-                            i, charXmitBuffer[i], (int)charXmitBuffer[i], charRcvBuffer[i], (int)charRcvBuffer[i]);
-                    }
-                }
+                Fail("Err_292haie Expected to read {0} characters actually read {1}",
+                    charXmitBuffer.Length * numberOfIterations, stringRcvBuffer.Length);
             }
+
         }
-
-        if (!VerifyReadLine(com1, com2, new string(charXmitBuffer)))
-        {
-            Console.WriteLine("Err_05188ajied Verify ReadLine after read failed");
-            retValue = false;
-        }
-
-        if (!retValue)
-            Console.WriteLine("Err_018068ajkid Verifying that Read(char[], int, int) will read characters that have been received after the call to Read was made failed");
-
-        com1.Close();
-        com2.Close();
-
-        return retValue;
     }
 
-    public bool Read_Timeout()
+    [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+    public void Read_SurrogateCharacter()
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
-        char[] charRcvBuffer;
-        bool retValue = true;
-        char endChar = com1.NewLine[0];
-        char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
-        string result;
-
-        Console.WriteLine("Verifying that ReadLine(string) works appropriately after TimeoutException has been thrown");
-
-        //Ensure the new line is not in charXmitBuffer
-        for (int i = 0; i < charXmitBuffer.Length; ++i)
-        {//Se any appearances of a character in the new line string to some other char
-            if (endChar == charXmitBuffer[i])
-            {
-                charXmitBuffer[i] = notEndChar;
-            }
-        }
-
-        com1.Encoding = System.Text.Encoding.Unicode;
-        com2.Encoding = System.Text.Encoding.Unicode;
-        com1.ReadTimeout = 500; // 20 seconds
-
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
-
-        try
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            com1.ReadLine();
-            Console.WriteLine("Err_29299aize Expected ReadLine to throw TimeoutException");
-            retValue = false;
+            Debug.WriteLine("Verifying read method with surrogate pair in the input and a surrogate pair for the newline");
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            var surrogatePair = "\uD800\uDC00";
+            var newLine = "\uD801\uDC01";
+            string input = TCSupport.GetRandomString(256, TCSupport.CharacterOptions.None) + surrogatePair + newLine;
+
+            com1.NewLine = newLine;
+
+            VerifyReadLine(com1, com2, input, newLine);
         }
-        catch (TimeoutException) { }//Expected
-
-        if (2 * charXmitBuffer.Length != com1.BytesToRead)
-        {
-            Console.WriteLine("Err_0585haieidp Expected BytesToRead: {0} actual: {1}", 2 * charXmitBuffer.Length, com1.BytesToRead);
-            retValue = false;
-        }
-
-        com2.WriteLine(String.Empty);
-        result = com1.ReadLine();
-        charRcvBuffer = result.ToCharArray();
-
-        if (charRcvBuffer.Length != charXmitBuffer.Length)
-        {
-            retValue = false;
-            Console.WriteLine("Err_051884ajoedo Expected Read to read {0} cahracters actually read {1}",
-                charXmitBuffer.Length, charRcvBuffer.Length);
-        }
-        else
-        {
-            for (int i = 0; i < charXmitBuffer.Length; ++i)
-            {
-                if (charRcvBuffer[i] != charXmitBuffer[i])
-                {
-                    retValue = false;
-                    Console.WriteLine("Err_8988auzobn Characters differ at {0} expected:{1}({2:X}) actual:{3}({4:X})",
-                        i, charXmitBuffer[i], (int)charXmitBuffer[i], charRcvBuffer[i], (int)charRcvBuffer[i]);
-                }
-            }
-        }
-
-        if (!VerifyReadLine(com1, com2, new string(charXmitBuffer)))
-        {
-            Console.WriteLine("Err_05188ajied Verify ReadLine after read failed");
-            retValue = false;
-        }
-
-        if (!retValue)
-            Console.WriteLine("Err_05498352aiiueid Verifying that ReadLine(string) works appropriately after TimeoutException has been thrown failed");
-
-        com1.Close();
-        com2.Close();
-
-        return retValue;
     }
 
-    public bool Read_LargeBuffer()
-    {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
-        string stringRcvBuffer;
-        bool retValue = true;
-
-        bool continueRunning = true;
-        int numberOfIterations = 0;
-        System.Threading.Thread writeToCom2Thread = new System.Threading.Thread(delegate ()
-        {
-            while (continueRunning)
-            {
-                com1.Write(charXmitBuffer, 0, charXmitBuffer.Length);
-                ++numberOfIterations;
-            }
-        });
-
-
-        char endChar = com1.NewLine[0];
-        char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
-
-        //Ensure the new line is not in charXmitBuffer
-        for (int i = 0; i < charXmitBuffer.Length; ++i)
-        {//Se any appearances of a character in the new line string to some other char
-            if (endChar == charXmitBuffer[i])
-            {
-                charXmitBuffer[i] = notEndChar;
-            }
-        }
-
-        com1.BaudRate = 115200;
-        com2.BaudRate = 115200;
-
-        com1.Encoding = System.Text.Encoding.Unicode;
-        com2.Encoding = System.Text.Encoding.Unicode;
-
-        com2.ReadTimeout = 10000;
-
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        writeToCom2Thread.Start();
-
-        try
-        {
-            com2.ReadLine();
-            retValue = false;
-            Console.WriteLine("Err_2928aneieud Expected ReadLine() to throw timeoutException()");
-        }
-        catch (TimeoutException) { };
-
-        continueRunning = false;
-        writeToCom2Thread.Join();
-
-        com1.Write(com1.NewLine);
-
-        stringRcvBuffer = com2.ReadLine();
-
-        if (charXmitBuffer.Length * numberOfIterations == stringRcvBuffer.Length)
-        {
-            for (int i = 0; i < charXmitBuffer.Length * numberOfIterations; ++i)
-            {
-                if (stringRcvBuffer[i] != charXmitBuffer[i % charXmitBuffer.Length])
-                {
-                    retValue = false;
-                    Console.WriteLine("Err_292aneid Expected to read {0} actually read {1}", charXmitBuffer[i % charXmitBuffer.Length], stringRcvBuffer[i]);
-                    break;
-                }
-            }
-        }
-        else
-        {
-            retValue = false;
-            Console.WriteLine("Err_292haie Expected to read {0} characters actually read {1}", charXmitBuffer.Length * numberOfIterations, stringRcvBuffer.Length);
-        }
-
-        com1.Close();
-        com2.Close();
-
-        return retValue;
-    }
-
-    public bool Read_SurrogateCharacter()
-    {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-
-        Console.WriteLine("Verifying read method with surrogate pair in the input and a surrogate pair for the newline");
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        string surrogatePair = "\uD800\uDC00";
-        string newLine = "\uD801\uDC01";
-        string input = TCSupport.GetRandomString(256, TCSupport.CharacterOptions.None) + surrogatePair + newLine;
-
-        com1.NewLine = newLine;
-
-        if (!VerifyReadLine(com1, com2, input, newLine))
-        {
-            Console.WriteLine("Err_342882haue!!! Verifying read method with surrogate pair in the input and a surrogate pair for the newline FAILED");
-            return false;
-        }
-
-        return true;
-    }
     #endregion
 
     #region Verification for Test Cases
-    public bool VerifyRead(int numberOfBytesToRead)
+
+    private void VerifyRead(int numberOfBytesToRead)
     {
-        return VerifyRead(new System.Text.ASCIIEncoding(), "\n", numberOfBytesToRead, DEFAULT_NUMBER_NEW_LINES, ReadDataFromEnum.NonBuffered);
+        VerifyRead(new ASCIIEncoding(), "\n", numberOfBytesToRead, DEFAULT_NUMBER_NEW_LINES,
+            ReadDataFromEnum.NonBuffered);
     }
 
-
-    public bool VerifyRead(System.Text.Encoding encoding)
+    private void VerifyRead(Encoding encoding)
     {
-        return VerifyRead(encoding, "\n", DEFAULT_NUM_CHARS_TO_READ, DEFAULT_NUMBER_NEW_LINES, ReadDataFromEnum.NonBuffered);
+        VerifyRead(encoding, "\n", DEFAULT_NUM_CHARS_TO_READ, DEFAULT_NUMBER_NEW_LINES,
+            ReadDataFromEnum.NonBuffered);
     }
 
-
-    public bool VerifyRead(System.Text.Encoding encoding, string newLine)
+    private void VerifyRead(Encoding encoding, string newLine)
     {
-        return VerifyRead(encoding, newLine, DEFAULT_NUM_CHARS_TO_READ, DEFAULT_NUMBER_NEW_LINES, ReadDataFromEnum.NonBuffered);
+        VerifyRead(encoding, newLine, DEFAULT_NUM_CHARS_TO_READ, DEFAULT_NUMBER_NEW_LINES,
+            ReadDataFromEnum.NonBuffered);
     }
 
-
-    public bool VerifyRead(System.Text.Encoding encoding, string newLine, int numBytesRead, int numNewLines, ReadDataFromEnum readDataFrom)
+    private void VerifyRead(Encoding encoding, string newLine, int numBytesRead, int numNewLines, ReadDataFromEnum readDataFrom)
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        Random rndGen = new Random(-55);
-        System.Text.StringBuilder strBldrToWrite;
-        int numNewLineChars = newLine.ToCharArray().Length;
-        int minLength = (1 + numNewLineChars) * numNewLines;
-
-        if (minLength < numBytesRead)
-            strBldrToWrite = TCSupport.GetRandomStringBuilder(numBytesRead, TCSupport.CharacterOptions.None);
-        else
-            strBldrToWrite = TCSupport.GetRandomStringBuilder(rndGen.Next(minLength, minLength * 2), TCSupport.CharacterOptions.None);
-
-        //We need place the newLine so that they do not write over eachother
-        int divisionLength = strBldrToWrite.Length / numNewLines;
-        int range = divisionLength - numNewLineChars;
-
-        for (int i = 0; i < numNewLines; i++)
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            int newLineIndex = rndGen.Next(0, range + 1);
+            var rndGen = new Random(-55);
+            StringBuilder strBldrToWrite;
+            int numNewLineChars = newLine.ToCharArray().Length;
+            int minLength = (1 + numNewLineChars) * numNewLines;
 
-            strBldrToWrite.Insert(newLineIndex + (i * divisionLength) + (i * numNewLineChars), newLine);
+            if (minLength < numBytesRead)
+                strBldrToWrite = TCSupport.GetRandomStringBuilder(numBytesRead, TCSupport.CharacterOptions.None);
+            else
+                strBldrToWrite = TCSupport.GetRandomStringBuilder(rndGen.Next(minLength, minLength * 2),
+                    TCSupport.CharacterOptions.None);
+
+            //We need place the newLine so that they do not write over eachother
+            int divisionLength = strBldrToWrite.Length / numNewLines;
+            int range = divisionLength - numNewLineChars;
+
+            for (var i = 0; i < numNewLines; i++)
+            {
+                int newLineIndex = rndGen.Next(0, range + 1);
+
+                strBldrToWrite.Insert(newLineIndex + (i * divisionLength) + (i * numNewLineChars), newLine);
+            }
+
+            Debug.WriteLine("Verifying ReadLine encoding={0}, newLine={1}, numBytesRead={2}, numNewLines={3}", encoding,
+                newLine, numBytesRead, numNewLines);
+
+            com1.ReadTimeout = 500;
+            com1.Encoding = encoding;
+            com1.NewLine = newLine;
+
+            com1.Open();
+
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
+
+            switch (readDataFrom)
+            {
+                case ReadDataFromEnum.NonBuffered:
+                    VerifyReadNonBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
+                    break;
+                case ReadDataFromEnum.Buffered:
+                    VerifyReadBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
+                    break;
+                case ReadDataFromEnum.BufferedAndNonBuffered:
+                    VerifyReadBufferedAndNonBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(readDataFrom), readDataFrom, null);
+            }
         }
-
-        Console.WriteLine("Verifying ReadLine encoding={0}, newLine={1}, numBytesRead={2}, numNewLines={3}", encoding, newLine, numBytesRead, numNewLines);
-
-        com1.ReadTimeout = 500;
-        com1.Encoding = encoding;
-        com1.NewLine = newLine;
-
-        com1.Open();
-
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        switch (readDataFrom)
-        {
-            case ReadDataFromEnum.NonBuffered:
-                return VerifyReadNonBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
-
-            case ReadDataFromEnum.Buffered:
-                return VerifyReadBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
-
-            case ReadDataFromEnum.BufferedAndNonBuffered:
-                return VerifyReadBufferedAndNonBuffered(com1, com2, strBldrToWrite.ToString(), newLine);
-        }
-        return false;
     }
 
-
-    private bool VerifyReadNonBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
+    private void VerifyReadNonBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
     {
-        return VerifyReadLine(com1, com2, strToWrite, newLine);
+        VerifyReadLine(com1, com2, strToWrite, newLine);
     }
 
 
-    private bool VerifyReadBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
+    private void VerifyReadBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
     {
         BufferData(com1, com2, strToWrite);
-        return PerformReadOnCom1FromCom2(com1, com2, strToWrite, newLine);
+        PerformReadOnCom1FromCom2(com1, com2, strToWrite, newLine);
     }
 
 
-    private bool VerifyReadBufferedAndNonBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
+    private void VerifyReadBufferedAndNonBuffered(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
     {
         BufferData(com1, com2, strToWrite);
-        return VerifyReadLine(com1, com2, strToWrite, strToWrite + strToWrite, newLine);
+        VerifyReadLine(com1, com2, strToWrite, strToWrite + strToWrite, newLine);
     }
 
 
-    private bool BufferData(SerialPort com1, SerialPort com2, string strToWrite)
+    private void BufferData(SerialPort com1, SerialPort com2, string strToWrite)
     {
-        bool retValue = true;
-        char[] charsToWrite;
-        byte[] bytesToWrite;
+        char[] charsToWrite = strToWrite.ToCharArray();
+        byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
 
-        charsToWrite = strToWrite.ToCharArray();
-        bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
-
-        com2.Write(bytesToWrite, 0, 1); // Write one byte at the begining because we are going to read this to buffer the rest of the data    
+        com2.Write(bytesToWrite, 0, 1);
+            // Write one byte at the begining because we are going to read this to buffer the rest of the data    
         com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
         while (com1.BytesToRead < bytesToWrite.Length)
         {
-            System.Threading.Thread.Sleep(50);
+            Thread.Sleep(50);
         }
 
         com1.Read(new char[1], 0, 1); // This should put the rest of the bytes in SerialPorts own internal buffer
 
-        if (com1.BytesToRead != bytesToWrite.Length)
-        {
-            Console.WriteLine("Err_7083zaz Expected com1.BytesToRead={0} actual={1}", bytesToWrite.Length, com1.BytesToRead);
-            retValue = false;
-        }
+        Assert.Equal(bytesToWrite.Length, com1.BytesToRead);
+    }
 
-        return retValue;
+    private void VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite)
+    {
+        VerifyReadLine(com1, com2, strToWrite, strToWrite, com1.NewLine);
     }
 
 
-    private bool VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite)
+    private void VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
     {
-        return VerifyReadLine(com1, com2, strToWrite, strToWrite, com1.NewLine);
+        VerifyReadLine(com1, com2, strToWrite, strToWrite, newLine);
     }
 
 
-    private bool VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
+    private void VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite, string expectedString,string newLine)
     {
-        return VerifyReadLine(com1, com2, strToWrite, strToWrite, newLine);
-    }
-
-
-    private bool VerifyReadLine(SerialPort com1, SerialPort com2, string strToWrite, string expectedString, string newLine)
-    {
-        char[] charsToWrite;
-        byte[] bytesToWrite;
-
-        charsToWrite = strToWrite.ToCharArray();
-        bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
+        char[] charsToWrite = strToWrite.ToCharArray();
+        byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
 
         com2.Write(bytesToWrite, 0, bytesToWrite.Length);
         com1.ReadTimeout = 500;
-        System.Threading.Thread.Sleep((int)((((bytesToWrite.Length + 1) * 10.0) / com1.BaudRate) * 1000) + 250);
+        Thread.Sleep((int)((((bytesToWrite.Length + 1) * 10.0) / com1.BaudRate) * 1000) + 250);
 
-        return PerformReadOnCom1FromCom2(com1, com2, expectedString, newLine);
+        PerformReadOnCom1FromCom2(com1, com2, expectedString, newLine);
     }
 
 
-    private bool PerformReadOnCom1FromCom2(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
+    private void PerformReadOnCom1FromCom2(SerialPort com1, SerialPort com2, string strToWrite, string newLine)
     {
-        bool retValue = true;
-        char[] charsToWrite;
-        byte[] bytesToWrite;
-        string rcvString;
-        System.Text.StringBuilder strBldrRead = new System.Text.StringBuilder();
-        char[] rcvCharBuffer;
+        var strBldrRead = new StringBuilder();
         int newLineStringLength = newLine.Length;
         int numNewLineChars = newLine.ToCharArray().Length;
         int numNewLineBytes = com1.Encoding.GetByteCount(newLine.ToCharArray());
         int bytesRead, totalBytesRead, charsRead, totalCharsRead;
         int indexOfNewLine, lastIndexOfNewLine = -newLineStringLength;
-        string expectedString;
-        bool isUTF7Encoding = com1.Encoding.EncodingName == System.Text.Encoding.UTF7.EncodingName;
 
-        charsToWrite = strToWrite.ToCharArray();
-        bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
-        expectedString = new string(com1.Encoding.GetChars(bytesToWrite));
+        char[] charsToWrite = strToWrite.ToCharArray();
+        byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
+        var expectedString = new string(com1.Encoding.GetChars(bytesToWrite));
 
         totalBytesRead = 0;
         totalCharsRead = 0;
 
         while (true)
         {
+            string rcvString;
             try
             {
                 rcvString = com1.ReadLine();
@@ -1104,38 +726,31 @@ public class ReadLine
             }
 
             //While their are more characters to be read
-            rcvCharBuffer = rcvString.ToCharArray();
+            char[] rcvCharBuffer = rcvString.ToCharArray();
             charsRead = rcvCharBuffer.Length;
 
-            if (isUTF7Encoding)
-            {
-                totalBytesRead = GetUTF7EncodingBytes(charsToWrite, 0, totalCharsRead + charsRead + numNewLineChars);
-            }
-            else
-            {
-                bytesRead = com1.Encoding.GetByteCount(rcvCharBuffer, 0, charsRead);
-                totalBytesRead += bytesRead + numNewLineBytes;
-            }
+            bytesRead = com1.Encoding.GetByteCount(rcvCharBuffer, 0, charsRead);
+            totalBytesRead += bytesRead + numNewLineBytes;
 
             //			indexOfNewLine = strToWrite.IndexOf(com1.NewLine, lastIndexOfNewLine + newLineStringLength);
-            indexOfNewLine = TCSupport.OrdinalIndexOf(expectedString, lastIndexOfNewLine + newLineStringLength, newLine);//SerialPort does a Ordinal comparison
+            indexOfNewLine = TCSupport.OrdinalIndexOf(expectedString, lastIndexOfNewLine + newLineStringLength, newLine);
+                //SerialPort does a Ordinal comparison
 
             if ((indexOfNewLine - (lastIndexOfNewLine + newLineStringLength)) != charsRead)
             {
                 //If we have not read all of the characters that we should have
-                Console.WriteLine("Err_1707ahsp!!!: Read did not return all of the characters that were in SerialPort buffer");
-                Console.WriteLine("indexOfNewLine={0} lastIndexOfNewLine={1} charsRead={2} numNewLineChars={3} newLineStringLength={4} strToWrite.Length={5}",
-                    indexOfNewLine, lastIndexOfNewLine, charsRead, numNewLineChars, newLineStringLength, strToWrite.Length);
-                Console.WriteLine(strToWrite);
-                retValue = false;
+                Debug.WriteLine(
+                    "indexOfNewLine={0} lastIndexOfNewLine={1} charsRead={2} numNewLineChars={3} newLineStringLength={4} strToWrite.Length={5}",
+                    indexOfNewLine, lastIndexOfNewLine, charsRead, numNewLineChars, newLineStringLength,
+                    strToWrite.Length);
+                Debug.WriteLine(strToWrite);
+                Fail("Err_1707ahsp!!!: Read did not return all of the characters that were in SerialPort buffer");
             }
 
             if (charsToWrite.Length < totalCharsRead + charsRead)
             {
                 //If we have read in more characters then we expect
-                Console.WriteLine("Err_21707adad!!!: We have received more characters then were sent");
-                retValue = false;
-                break;
+                Fail("Err_21707adad!!!: We have received more characters then were sent");
             }
 
             strBldrRead.Append(rcvString);
@@ -1147,158 +762,93 @@ public class ReadLine
 
             if (bytesToWrite.Length - totalBytesRead != com1.BytesToRead)
             {
-                System.Console.WriteLine("Err_99087ahpbx!!!: Expected BytesToRead={0} actual={1}", bytesToWrite.Length - totalBytesRead, com1.BytesToRead);
-                retValue = false;
+                Fail("Err_99087ahpbx!!!: Expected BytesToRead={0} actual={1}",
+                    bytesToWrite.Length - totalBytesRead, com1.BytesToRead);
             }
-        }//End while there are more characters to read
+        } //End while there are more characters to read
 
         if (0 != com1.BytesToRead)
         {
             //If there are more bytes to read but there must not be a new line char at the end
-            int charRead;
 
             while (true)
             {
                 try
                 {
-                    charRead = com1.ReadChar();
+                    int charRead = com1.ReadChar();
                     strBldrRead.Append((char)charRead);
                 }
-                catch (TimeoutException) { break; }
-                catch (Exception e)
+                catch (TimeoutException)
                 {
-                    Console.WriteLine("Err_15054akjeid!!!: The following exception was thrown while reading remaining chars");
-                    Console.WriteLine(e);
-                    retValue = false;
+                    break;
                 }
             }
         }
 
-        if (0 != com1.BytesToRead && (!isUTF7Encoding || 1 != com1.BytesToRead))
-        {
-            System.Console.WriteLine("Err_558596ahbpa!!!: BytesToRead is not zero");
-            retValue = false;
-        }
+        Assert.Equal(0, com1.BytesToRead);
 
-        if (0 != expectedString.CompareTo(strBldrRead.ToString()))
-        {
-            System.Console.WriteLine("Err_7797ajpba!!!: Expected to read \"{0}\"  actual read  \"{1}\"", expectedString, strBldrRead.ToString());
-            retValue = false;
-        }
-
-        if (!retValue)
-        {
-            Console.WriteLine("\nstrToWrite = ");
-            TCSupport.PrintChars(strToWrite.ToCharArray());
-
-            Console.WriteLine("\nnewLine = ");
-            TCSupport.PrintChars(newLine.ToCharArray());
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
+        Assert.Equal(expectedString, strBldrRead.ToString());
     }
 
-
-    private bool VerifyReadLineWithWriteLine(System.Text.Encoding encoding, string newLine)
+    private void VerifyReadLineWithWriteLine(Encoding encoding, string newLine)
     {
-        SerialPort com1 = TCSupport.InitFirstSerialPort();
-        SerialPort com2 = TCSupport.InitSecondSerialPort(com1);
-        Random rndGen = new Random(-55);
-        System.Text.StringBuilder strBldrToWrite = new System.Text.StringBuilder();
-        string strRead, strWrite;
-        string strExpected;
-        bool retValue = true;
-        bool isUTF7Encoding = encoding.EncodingName == System.Text.Encoding.UTF7.EncodingName;
-
-        Console.WriteLine("Verifying ReadLine with WriteLine encoding={0}, newLine={1}", encoding, newLine);
-
-        com1.ReadTimeout = 500;
-        com1.NewLine = newLine;
-        com2.NewLine = newLine;
-        com1.Encoding = encoding;
-        com2.Encoding = encoding;
-
-        //Genrate random characters
-        do
+        using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+        using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            strBldrToWrite = new System.Text.StringBuilder();
-            for (int i = 0; i < DEFAULT_NUM_CHARS_TO_READ; i++)
+            var rndGen = new Random(-55);
+            StringBuilder strBldrToWrite;
+
+            Debug.WriteLine("Verifying ReadLine with WriteLine encoding={0}, newLine={1}", encoding, newLine);
+
+            com1.ReadTimeout = 500;
+            com1.NewLine = newLine;
+            com2.NewLine = newLine;
+            com1.Encoding = encoding;
+            com2.Encoding = encoding;
+
+            //Genrate random characters
+            do
             {
-                strBldrToWrite.Append((char)rndGen.Next(0, 128));
-            }
-        } while (-1 != TCSupport.OrdinalIndexOf(strBldrToWrite.ToString(), newLine));//SerialPort does a Ordinal comparison
+                strBldrToWrite = new StringBuilder();
+                for (var i = 0; i < DEFAULT_NUM_CHARS_TO_READ; i++)
+                {
+                    strBldrToWrite.Append((char)rndGen.Next(0, 128));
+                }
+            } while (-1 != TCSupport.OrdinalIndexOf(strBldrToWrite.ToString(), newLine));
+            //SerialPort does a Ordinal comparison
 
-        strWrite = strBldrToWrite.ToString();
-        strExpected = new string(com1.Encoding.GetChars(com1.Encoding.GetBytes(strWrite.ToCharArray())));
+            com1.Open();
+            if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
+                com2.Open();
 
-        com1.Open();
+            com2.WriteLine(strBldrToWrite.ToString());
+            string strRead = com1.ReadLine();
 
+            Assert.Equal(strBldrToWrite.ToString(), strRead);
 
-        if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
-            com2.Open();
-
-        com2.WriteLine(strBldrToWrite.ToString());
-        strRead = com1.ReadLine();
-
-        if (0 != strBldrToWrite.ToString().CompareTo(strRead))
-        {
-            Console.WriteLine("ERROR!!! The string written: \"{0}\" and the string read \"{1}\" differ", strBldrToWrite, strRead);
-            retValue = false;
+            Assert.Equal(0, com1.BytesToRead);
         }
-
-        if (0 != com1.BytesToRead && (!isUTF7Encoding || 1 != com1.BytesToRead))
-        {
-            Console.WriteLine("ERROR!!! BytesToRead={0} expected 0", com1.BytesToRead);
-            retValue = false;
-        }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
 
 
     private string GenRandomNewLine(bool validAscii)
     {
-        Random rndGen = new Random(-55);
+        var rndGen = new Random(-55);
         int newLineLength = rndGen.Next(MIN_NUM_NEWLINE_CHARS, MAX_NUM_NEWLINE_CHARS);
 
         if (validAscii)
-            return new String(TCSupport.GetRandomChars(newLineLength, TCSupport.CharacterOptions.ASCII));
+            return new string(TCSupport.GetRandomChars(newLineLength, TCSupport.CharacterOptions.ASCII));
         else
-            return new String(TCSupport.GetRandomChars(newLineLength, TCSupport.CharacterOptions.Surrogates));
+            return new string(TCSupport.GetRandomChars(newLineLength, TCSupport.CharacterOptions.Surrogates));
     }
 
-    private int GetUTF7EncodingBytes(char[] chars, int index, int count)
+    private class ASyncRead
     {
-        byte[] bytes = System.Text.Encoding.UTF7.GetBytes(chars, index, count);
-        int byteCount = bytes.Length;
-
-        while (System.Text.Encoding.UTF7.GetCharCount(bytes, 0, byteCount) == count)
-        {
-            --byteCount;
-        }
-
-        return byteCount + 1;
-    }
-
-    public class ASyncRead
-    {
-        private SerialPort _com;
+        private readonly SerialPort _com;
         private string _result;
 
-        private System.Threading.AutoResetEvent _readCompletedEvent;
-        private System.Threading.AutoResetEvent _readStartedEvent;
+        private readonly AutoResetEvent _readCompletedEvent;
+        private readonly AutoResetEvent _readStartedEvent;
 
         private Exception _exception;
 
@@ -1308,8 +858,8 @@ public class ReadLine
 
             _result = null;
 
-            _readCompletedEvent = new System.Threading.AutoResetEvent(false);
-            _readStartedEvent = new System.Threading.AutoResetEvent(false);
+            _readCompletedEvent = new AutoResetEvent(false);
+            _readStartedEvent = new AutoResetEvent(false);
 
             _exception = null;
         }
@@ -1331,37 +881,14 @@ public class ReadLine
             }
         }
 
-        public System.Threading.AutoResetEvent ReadStartedEvent
-        {
-            get
-            {
-                return _readStartedEvent;
-            }
-        }
+        public AutoResetEvent ReadStartedEvent => _readStartedEvent;
 
-        public System.Threading.AutoResetEvent ReadCompletedEvent
-        {
-            get
-            {
-                return _readCompletedEvent;
-            }
-        }
+        public AutoResetEvent ReadCompletedEvent => _readCompletedEvent;
 
-        public string Result
-        {
-            get
-            {
-                return _result;
-            }
-        }
+        public string Result => _result;
 
-        public Exception Exception
-        {
-            get
-            {
-                return _exception;
-            }
-        }
+        public Exception Exception => _exception;
     }
+
     #endregion
 }

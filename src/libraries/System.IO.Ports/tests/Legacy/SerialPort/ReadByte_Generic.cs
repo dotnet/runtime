@@ -5,15 +5,12 @@
 using System;
 using System.IO.Ports;
 using System.Diagnostics;
+using System.IO.PortsTests;
+using Legacy.Support;
+using Xunit;
 
-public class ReadByte
+public class ReadByte_Generic : PortsTest
 {
-    public static readonly String s_strDtTmVer = "MsftEmpl, 2003/02/05 15:37 MsftEmpl";
-    public static readonly String s_strClassMethod = "SerialPort.ReadByte()";
-    public static readonly String s_strTFName = "ReadByte_Generic.cs";
-    public static readonly String s_strTFAbbrev = s_strTFName.Substring(0, 6);
-    public static readonly String s_strTFPath = Environment.CurrentDirectory;
-
     //Set bounds fore random timeout values.
     //If the min is to low read will not timeout accurately and the testcase will fail
     public static int minRandomTimeout = 250;
@@ -30,408 +27,264 @@ public class ReadByte
     //The number of random bytes to receive
     public static int numRndByte = 8;
 
-    private int _numErrors = 0;
-    private int _numTestcases = 0;
-    private int _exitValue = TCSupport.PassExitCode;
-
-    public static void Main(string[] args)
-    {
-        ReadByte objTest = new ReadByte();
-        AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(objTest.AppDomainUnhandledException_EventHandler);
-
-        Console.WriteLine(s_strTFPath + " " + s_strTFName + " , for " + s_strClassMethod + " , Source ver : " + s_strDtTmVer);
-
-        try
-        {
-            objTest.RunTest();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(s_strTFAbbrev + " : FAIL The following exception was thorwn in RunTest(): \n" + e.ToString());
-            objTest._numErrors++;
-            objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        ////	Finish Diagnostics
-        if (objTest._numErrors == 0)
-        {
-            Console.WriteLine("PASS.	 " + s_strTFPath + " " + s_strTFName + " ,numTestcases==" + objTest._numTestcases);
-        }
-        else
-        {
-            Console.WriteLine("FAIL!	 " + s_strTFPath + " " + s_strTFName + " ,numErrors==" + objTest._numErrors);
-
-            if (TCSupport.PassExitCode == objTest._exitValue)
-                objTest._exitValue = TCSupport.FailExitCode;
-        }
-
-        Environment.ExitCode = objTest._exitValue;
-    }
-
-    private void AppDomainUnhandledException_EventHandler(Object sender, UnhandledExceptionEventArgs e)
-    {
-        _numErrors++;
-        Console.WriteLine("\nAn unhandled exception was thrown and not caught in the app domain: \n{0}", e.ExceptionObject);
-        Console.WriteLine("Test FAILED!!!\n");
-
-        Environment.ExitCode = 101;
-    }
-
-    public bool RunTest()
-    {
-        bool retValue = true;
-        TCSupport tcSupport = new TCSupport();
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadWithoutOpen), TCSupport.SerialPortRequirements.None);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadAfterFailedOpen), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ReadAfterClose), TCSupport.SerialPortRequirements.OneSerialPort);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(Timeout), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SuccessiveReadTimeoutNoData), TCSupport.SerialPortRequirements.OneSerialPort);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(SuccessiveReadTimeoutSomeData), TCSupport.SerialPortRequirements.NullModem);
-
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(DefaultParityReplaceByte), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(NoParityReplaceByte), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(RNDParityReplaceByte), TCSupport.SerialPortRequirements.NullModem);
-        retValue &= tcSupport.BeginTestcase(new TestDelegate(ParityErrorOnLastByte), TCSupport.SerialPortRequirements.NullModem);
-
-        _numErrors += tcSupport.NumErrors;
-        _numTestcases = tcSupport.NumTestcases;
-        _exitValue = tcSupport.ExitValue;
-
-        return retValue;
-    }
-
     #region Test Cases
-    public bool ReadWithoutOpen()
+
+    [Fact]
+    public void ReadWithoutOpen()
     {
-        SerialPort com = new SerialPort();
-
-        Console.WriteLine("Verifying read method throws exception without a call to Open()");
-        if (!VerifyReadException(com, typeof(System.InvalidOperationException)))
+        using (SerialPort com = new SerialPort())
         {
-            Console.WriteLine("Err_001!!! Verifying read method throws exception without a call to Open() FAILED");
-            return false;
+            Debug.WriteLine("Verifying read method throws exception without a call to Open()");
+            VerifyReadException(com, typeof(InvalidOperationException));
         }
-
-        return true;
     }
 
-
-    public bool ReadAfterFailedOpen()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void ReadAfterFailedOpen()
     {
-        SerialPort com = new SerialPort("BAD_PORT_NAME");
-
-        Console.WriteLine("Verifying read method throws exception with a failed call to Open()");
-
-        //Since the PortName is set to a bad port name Open will thrown an exception
-        //however we don't care what it is since we are verfifying a read method
-        try
+        using (SerialPort com = new SerialPort("BAD_PORT_NAME"))
         {
+            Debug.WriteLine("Verifying read method throws exception with a failed call to Open()");
+
+            //Since the PortName is set to a bad port name Open will thrown an exception
+            //however we don't care what it is since we are verifying a read method
+            Assert.ThrowsAny<Exception>(() => com.Open());
+            VerifyReadException(com, typeof(InvalidOperationException));
+        }
+    }
+
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void ReadAfterClose()
+    {
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        {
+            Debug.WriteLine("Verifying read method throws exception after a call to Cloes()");
             com.Open();
-        }
-        catch (System.Exception)
-        {
-        }
-        if (!VerifyReadException(com, typeof(System.InvalidOperationException)))
-        {
-            Console.WriteLine("Err_002!!! Verifying read method throws exception with a failed call to Open() FAILED");
-            return false;
-        }
+            com.Close();
 
-        return true;
+            VerifyReadException(com, typeof(InvalidOperationException));
+        }
     }
 
-
-    public bool ReadAfterClose()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void Timeout()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-        Console.WriteLine("Verifying read method throws exception after a call to Cloes()");
-        com.Open();
-        com.Close();
-
-        if (!VerifyReadException(com, typeof(System.InvalidOperationException)))
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_003!!! Verifying read method throws exception after a call to Cloes() FAILED");
-            return false;
-        }
+            Random rndGen = new Random(-55);
 
-        return true;
+            com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+
+            Debug.WriteLine("Verifying ReadTimeout={0}", com.ReadTimeout);
+            com.Open();
+
+            VerifyTimeout(com);
+        }
     }
 
-
-    public bool Timeout()
+    [ConditionalFact(nameof(HasOneSerialPort))]
+    public void SuccessiveReadTimeoutNoData()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        Random rndGen = new Random(-55);
-
-        com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-
-        Console.WriteLine("Verifying ReadTimeout={0}", com.ReadTimeout);
-        com.Open();
-
-        if (!VerifyTimeout(com))
+        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            Console.WriteLine("Err_004!!! Verifying timeout FAILED");
-            return false;
-        }
+            Random rndGen = new Random(-55);
 
-        return true;
+            com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            //		com.Encoding = new System.Text.UTF7Encoding();
+            com.Encoding = System.Text.Encoding.Unicode;
+
+            Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);
+            com.Open();
+
+            Assert.Throws<TimeoutException>(() => com.ReadByte());
+
+            VerifyTimeout(com);
+        }
     }
 
-
-    public bool SuccessiveReadTimeoutNoData()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void SuccessiveReadTimeoutSomeData()
     {
-        SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        Random rndGen = new Random(-55);
-        bool retValue = true;
-
-        com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-        //		com.Encoding = new System.Text.UTF7Encoding();
-        com.Encoding = System.Text.Encoding.Unicode;
-
-        Console.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);
-        com.Open();
-
-        try
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
-            com.ReadByte();
-            Console.WriteLine("Err_702872ahps!!!: Read did not throw TimeoutException when it timed out");
-            retValue = false;
+            Random rndGen = new Random(-55);
+            System.Threading.Thread t = new System.Threading.Thread(WriteToCom1);
+        
+            com1.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            com1.Encoding = new System.Text.UTF8Encoding();
+
+            Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and some data being received in the first call", com1.ReadTimeout);
+            com1.Open();
+
+            //Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
+            //to a read method times out
+            t.Start();
+            try
+            {
+                com1.ReadByte();
+            }
+            catch (TimeoutException)
+            {
+            }
+
+            //Wait for the thread to finish
+            while (t.IsAlive)
+                System.Threading.Thread.Sleep(50);
+
+            //Make sure there is no bytes in the buffer so the next call to read will timeout
+            com1.DiscardInBuffer();
+            VerifyTimeout(com1);
         }
-        catch (TimeoutException) { }
-
-        retValue &= VerifyTimeout(com);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_005!!! Verifying with successive call to read method and no data FAILED");
-        }
-
-        return retValue;
-    }
-
-
-    public bool SuccessiveReadTimeoutSomeData()
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        Random rndGen = new Random(-55);
-        System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(WriteToCom1));
-        bool retValue = true;
-
-        com1.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-        com1.Encoding = new System.Text.UTF8Encoding();
-
-        Console.WriteLine("Verifying ReadTimeout={0} with successive call to read method and some data being received in the first call", com1.ReadTimeout);
-        com1.Open();
-
-        //Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
-        //to a read method times out
-        t.Start();
-        try
-        {
-            com1.ReadByte();
-        }
-        catch (TimeoutException) { }
-
-        //Wait for the thread to finish
-        while (t.IsAlive)
-            System.Threading.Thread.Sleep(50);
-
-        //Make sure there is no bytes in the buffer so the next call to read will timeout
-        com1.DiscardInBuffer();
-        retValue &= VerifyTimeout(com1);
-
-        if (!retValue)
-        {
-            Console.WriteLine("Err_006!!! Verifying with with successive call to read method and some data being received in the first call FAILED");
-        }
-
-        return retValue;
     }
 
 
     private void WriteToCom1()
     {
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        Random rndGen = new Random(-55);
-        byte[] xmitBuffer = new byte[1];
-        int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
-
-        //Sleep some random period with of a maximum duration of half the largest possible timeout value for a read method on COM1
-        System.Threading.Thread.Sleep(sleepPeriod);
-
-        com2.Open();
-        com2.Write(xmitBuffer, 0, xmitBuffer.Length);
-
-        if (com2.IsOpen)
-            com2.Close();
-    }
-
-
-    public bool DefaultParityReplaceByte()
-    {
-        if (!VerifyParityReplaceByte(-1, numRndByte - 2))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            Console.WriteLine("Err_007!!! Verifying default ParityReplace byte FAILED");
-            return false;
+            Random rndGen = new Random(-55);
+            byte[] xmitBuffer = new byte[1];
+            int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
+
+            //Sleep some random period with of a maximum duration of half the largest possible timeout value for a read method on COM1
+            System.Threading.Thread.Sleep(sleepPeriod);
+
+            com2.Open();
+            com2.Write(xmitBuffer, 0, xmitBuffer.Length);
         }
-
-        return true;
     }
-
-
-    public bool NoParityReplaceByte()
+    
+    [ConditionalFact(nameof(HasNullModem))]
+    public void DefaultParityReplaceByte()
+    {
+        VerifyParityReplaceByte(-1, numRndByte - 2);
+    }
+    
+    [ConditionalFact(nameof(HasNullModem))]
+    public void NoParityReplaceByte()
     {
         Random rndGen = new Random(-55);
 
         //		if(!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF7Encoding())){
-        if (!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF32Encoding()))
-        {
-            Console.WriteLine("Err_008!!! Verifying no ParityReplace byte FAILED");
-            return false;
-        }
-
-        return true;
+        VerifyParityReplaceByte('\0', rndGen.Next(0, numRndByte - 1), new System.Text.UTF32Encoding());
     }
 
 
-    public bool RNDParityReplaceByte()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void RNDParityReplaceByte()
     {
         Random rndGen = new Random(-55);
 
-        if (!VerifyParityReplaceByte(rndGen.Next(0, 128), 0, new System.Text.UTF8Encoding()))
-        {
-            Console.WriteLine("Err_009!! Verifying random ParityReplace byte FAILED");
-            return false;
-        }
-
-        return true;
+        VerifyParityReplaceByte(rndGen.Next(0, 128), 0, new System.Text.UTF8Encoding());
     }
 
 
-    public bool ParityErrorOnLastByte()
+    [ConditionalFact(nameof(HasNullModem))]
+    public void ParityErrorOnLastByte()
     {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        Random rndGen = new Random(15);
-        byte[] bytesToWrite = new byte[numRndByte];
-        byte[] expectedBytes = new byte[numRndByte];
-        byte[] actualBytes = new byte[numRndByte + 1];
-        int byteRead;
-        int actualByteIndex = 0;
-        bool retValue = true;
-        int waitTime;
-
-        /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
-             We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
-        Console.WriteLine("Verifying default ParityReplace byte with a parity error on the last byte");
-
-        //Genrate random characters without an parity error
-        for (int i = 0; i < bytesToWrite.Length; i++)
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            byte randByte = (byte)rndGen.Next(0, 128);
+            Random rndGen = new Random(15);
+            byte[] bytesToWrite = new byte[numRndByte];
+            byte[] expectedBytes = new byte[numRndByte];
+            byte[] actualBytes = new byte[numRndByte + 1];
+            int actualByteIndex = 0;
 
-            bytesToWrite[i] = randByte;
-            expectedBytes[i] = randByte;
-        }
+            int waitTime;
 
-        bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] | 0x80); //Create a parity error on the last byte
-        expectedBytes[expectedBytes.Length - 1] = com1.ParityReplace; // Set the last expected byte to be the ParityReplace Byte
+            /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
+                 We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
+            Debug.WriteLine("Verifying default ParityReplace byte with a parity error on the last byte");
 
-        com1.Parity = Parity.Space;
-        com1.DataBits = 7;
-        com1.ReadTimeout = 250;
-
-        com1.Open();
-        com2.Open();
-
-        com2.Write(bytesToWrite, 0, bytesToWrite.Length);
-        waitTime = 0;
-
-        while (bytesToWrite.Length + 1 > com1.BytesToRead && waitTime < 500)
-        {
-            System.Threading.Thread.Sleep(50);
-            waitTime += 50;
-        }
-
-        while (true)
-        {
-            try
+            //Genrate random characters without an parity error
+            for (int i = 0; i < bytesToWrite.Length; i++)
             {
-                byteRead = com1.ReadByte();
-            }
-            catch (TimeoutException)
-            {
-                break;
+                byte randByte = (byte)rndGen.Next(0, 128);
+
+                bytesToWrite[i] = randByte;
+                expectedBytes[i] = randByte;
             }
 
-            actualBytes[actualByteIndex] = (byte)byteRead;
-            actualByteIndex++;
-        }
+            bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] | 0x80);
+                //Create a parity error on the last byte
+            expectedBytes[expectedBytes.Length - 1] = com1.ParityReplace;
+                // Set the last expected byte to be the ParityReplace Byte
 
-        //Compare the chars that were written with the ones we expected to read
-        for (int i = 0; i < expectedBytes.Length; i++)
-        {
-            if (expectedBytes[i] != actualBytes[i])
+            com1.Parity = Parity.Space;
+            com1.DataBits = 7;
+            com1.ReadTimeout = 250;
+
+            com1.Open();
+            com2.Open();
+
+            com2.Write(bytesToWrite, 0, bytesToWrite.Length);
+            waitTime = 0;
+
+            while (bytesToWrite.Length + 1 > com1.BytesToRead && waitTime < 500)
             {
-                System.Console.WriteLine("ERROR!!!: Expected to read {0}  actual read  {1}", (int)expectedBytes[i], (int)actualBytes[i]);
-                retValue = false;
+                System.Threading.Thread.Sleep(50);
+                waitTime += 50;
             }
+
+            while (true)
+            {
+                int byteRead;
+                try
+                {
+                    byteRead = com1.ReadByte();
+                }
+                catch (TimeoutException)
+                {
+                    break;
+                }
+
+                actualBytes[actualByteIndex] = (byte)byteRead;
+                actualByteIndex++;
+            }
+
+            //Compare the chars that were written with the ones we expected to read
+            for (int i = 0; i < expectedBytes.Length; i++)
+            {
+                if (expectedBytes[i] != actualBytes[i])
+                {
+                    Fail("ERROR!!!: Expected to read {0}  actual read  {1}", (int)expectedBytes[i], (int)actualBytes[i]);
+                }
+            }
+
+            if (1 < com1.BytesToRead)
+            {
+                Debug.WriteLine("ByteRead={0}, {1}", com1.ReadByte(), bytesToWrite[bytesToWrite.Length - 1]);
+                Fail("ERROR!!!: Expected BytesToRead=0 actual={0}", com1.BytesToRead);
+            }
+
+            bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] & 0x7F);
+                //Clear the parity error on the last byte
+            expectedBytes[expectedBytes.Length - 1] = bytesToWrite[bytesToWrite.Length - 1];
+
+            VerifyRead(com1, com2, bytesToWrite, expectedBytes, System.Text.Encoding.ASCII);
         }
-
-        if (1 < com1.BytesToRead)
-        {
-            Console.WriteLine("ERROR!!!: Expected BytesToRead=0 actual={0}", com1.BytesToRead);
-            Console.WriteLine("ByteRead={0}, {1}", com1.ReadByte(), bytesToWrite[bytesToWrite.Length - 1]);
-            retValue = false;
-        }
-
-        bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] & 0x7F); //Clear the parity error on the last byte
-        expectedBytes[expectedBytes.Length - 1] = bytesToWrite[bytesToWrite.Length - 1];
-
-        retValue &= VerifyRead(com1, com2, bytesToWrite, expectedBytes, System.Text.Encoding.ASCII);
-
-        com1.Close();
-        com2.Close();
-
-        if (!retValue)
-            Console.WriteLine("Err_010!!! Verifying default ParityReplace byte with a parity error on the last byte failed");
-
-        return retValue;
     }
     #endregion
 
     #region Verification for Test Cases
-    private bool VerifyTimeout(SerialPort com)
+    private void VerifyTimeout(SerialPort com)
     {
-        System.Diagnostics.Stopwatch timer = new Stopwatch();
+        Stopwatch timer = new Stopwatch();
         int expectedTime = com.ReadTimeout;
         int actualTime = 0;
         double percentageDifference;
-        bool retValue = true;
 
-        try
-        {
-            com.ReadByte(); //Warm up read method
-            Console.WriteLine("Err_6941814ahbpa!!!: Read did not throw Timeout Exception when it timed out for the first time");
-            retValue = false;
-        }
-        catch (TimeoutException) { }
+        //Warm up read method
+        Assert.Throws<TimeoutException>(() => com.ReadByte());
 
         System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
 
         for (int i = 0; i < NUM_TRYS; i++)
         {
             timer.Start();
-            try
-            {
-                com.ReadByte();
-                Console.WriteLine("Err_17087ahps!!!: Read did not reuturn 0 when it timed out");
-                retValue = false;
-            }
-            catch (TimeoutException) { }
+
+            Assert.Throws<TimeoutException>(() => com.ReadByte());
 
             timer.Stop();
             actualTime += (int)timer.ElapsedMilliseconds;
@@ -440,108 +293,85 @@ public class ReadByte
 
         System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
         actualTime /= NUM_TRYS;
-        percentageDifference = System.Math.Abs((expectedTime - actualTime) / (double)expectedTime);
+        percentageDifference = Math.Abs((expectedTime - actualTime) / (double)expectedTime);
 
         //Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
         if (maxPercentageDifference < percentageDifference)
         {
-            Console.WriteLine("ERROR!!!: The read method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
-            retValue = false;
+            Fail("ERROR!!!: The read method timed-out in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
         }
-
-        if (com.IsOpen)
-            com.Close();
-
-        return retValue;
     }
 
-
-    private bool VerifyReadException(SerialPort com, Type expectedException)
+    private void VerifyReadException(SerialPort com, Type expectedException)
     {
-        bool retValue = true;
+        Assert.Throws(expectedException, () => com.ReadByte());
+    }
 
-        try
+    private void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex)
+    {
+        VerifyParityReplaceByte(parityReplace, parityErrorIndex, new System.Text.ASCIIEncoding());
+    }
+
+    private void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, System.Text.Encoding encoding)
+    {
+        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            com.ReadByte();
-            Console.WriteLine("ERROR!!!: No Excpetion was thrown");
-            retValue = false;
-        }
-        catch (System.Exception e)
-        {
-            if (e.GetType() != expectedException)
+            Random rndGen = new Random(-55);
+            byte[] byteBuffer = new byte[numRndByte];
+            byte[] expectedBytes = new byte[numRndByte];
+            int expectedChar;
+
+            //Genrate random bytes without an parity error
+            for (int i = 0; i < byteBuffer.Length; i++)
             {
-                Console.WriteLine("ERROR!!!: {0} exception was thrown expected {1}", e.GetType(), expectedException);
-                retValue = false;
+                int randChar = rndGen.Next(0, 128);
+
+                byteBuffer[i] = (byte)randChar;
+                expectedBytes[i] = (byte)randChar;
             }
+
+            if (-1 == parityReplace)
+            {
+                //If parityReplace is -1 and we should just use the default value
+                expectedChar = com1.ParityReplace;
+            }
+            else if ('\0' == parityReplace)
+            {
+                //If parityReplace is the null charachater and parity replacement should not occur
+                com1.ParityReplace = (byte)parityReplace;
+                expectedChar = expectedBytes[parityErrorIndex];
+            }
+            else
+            {
+                //Else parityReplace was set to a value and we should expect this value to be returned on a parity error
+                com1.ParityReplace = (byte)parityReplace;
+                expectedChar = parityReplace;
+            }
+
+            //Create an parity error by setting the highest order bit to true
+            byteBuffer[parityErrorIndex] = (byte)(byteBuffer[parityErrorIndex] | 0x80);
+            expectedBytes[parityErrorIndex] = (byte)expectedChar;
+
+            Debug.WriteLine("Verifying ParityReplace={0} with an ParityError at: {1} ", com1.ParityReplace,
+                parityErrorIndex);
+
+            com1.Parity = Parity.Space;
+            com1.DataBits = 7;
+
+            com1.Open();
+            com2.Open();
+
+            VerifyRead(com1, com2, byteBuffer, expectedBytes, encoding);
         }
-        return retValue;
     }
 
 
-    public bool VerifyParityReplaceByte(int parityReplace, int parityErrorIndex)
+    private void VerifyRead(SerialPort com1, SerialPort com2, byte[] bytesToWrite, byte[] expectedBytes,
+        System.Text.Encoding encoding)
     {
-        return VerifyParityReplaceByte(parityReplace, parityErrorIndex, new System.Text.ASCIIEncoding());
-    }
-
-
-    public bool VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, System.Text.Encoding encoding)
-    {
-        SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-        SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName);
-        Random rndGen = new Random(-55);
-        byte[] byteBuffer = new byte[numRndByte];
-        byte[] expectedBytes = new byte[numRndByte];
-        int expectedChar;
-
-        //Genrate random bytes without an parity error
-        for (int i = 0; i < byteBuffer.Length; i++)
-        {
-            int randChar = rndGen.Next(0, 128);
-
-            byteBuffer[i] = (byte)randChar;
-            expectedBytes[i] = (byte)randChar;
-        }
-
-        if (-1 == parityReplace)
-        {
-            //If parityReplace is -1 and we should just use the default value
-            expectedChar = com1.ParityReplace;
-        }
-        else if ('\0' == parityReplace)
-        {
-            //If parityReplace is the null charachater and parity replacement should not occur
-            com1.ParityReplace = (byte)parityReplace;
-            expectedChar = expectedBytes[parityErrorIndex];
-        }
-        else
-        {
-            //Else parityReplace was set to a value and we should expect this value to be returned on a parity error
-            com1.ParityReplace = (byte)parityReplace;
-            expectedChar = parityReplace;
-        }
-
-        //Create an parity error by setting the highest order bit to true
-        byteBuffer[parityErrorIndex] = (byte)(byteBuffer[parityErrorIndex] | 0x80);
-        expectedBytes[parityErrorIndex] = (byte)expectedChar;
-
-        Console.WriteLine("Verifying ParityReplace={0} with an ParityError at: {1} ", com1.ParityReplace, parityErrorIndex);
-
-        com1.Parity = Parity.Space;
-        com1.DataBits = 7;
-
-        com1.Open();
-        com2.Open();
-
-        return VerifyRead(com1, com2, byteBuffer, expectedBytes, encoding);
-    }
-
-
-    private bool VerifyRead(SerialPort com1, SerialPort com2, byte[] bytesToWrite, byte[] expectedBytes, System.Text.Encoding encoding)
-    {
-        bool retValue = true;
         byte[] byteRcvBuffer = new byte[expectedBytes.Length];
         int rcvBufferSize = 0;
-        int readInt;
         int i;
         int waitTime = 0;
 
@@ -558,6 +388,7 @@ public class ReadByte
         i = 0;
         while (true)
         {
+            int readInt;
             try
             {
                 readInt = com1.ReadByte();
@@ -571,9 +402,7 @@ public class ReadByte
             if (expectedBytes.Length <= i)
             {
                 //If we have read in more bytes then we expecte
-                Console.WriteLine("ERROR!!!: We have received more bytes then were sent");
-                retValue = false;
-                break;
+                Fail("ERROR!!!: We have received more bytes then were sent");
             }
 
             byteRcvBuffer[i] = (byte)readInt;
@@ -581,15 +410,14 @@ public class ReadByte
 
             if (bytesToWrite.Length - rcvBufferSize != com1.BytesToRead)
             {
-                System.Console.WriteLine("ERROR!!!: Expected BytesToRead={0} actual={1}", bytesToWrite.Length - rcvBufferSize, com1.BytesToRead);
-                retValue = false;
+                Fail("ERROR!!!: Expected BytesToRead={0} actual={1}", bytesToWrite.Length - rcvBufferSize,
+                    com1.BytesToRead);
             }
 
             if (readInt != expectedBytes[i])
             {
                 //If the bytes read is not the expected byte
-                System.Console.WriteLine("ERROR!!!: Expected to read {0}  actual read byte {1}", expectedBytes[i], (byte)readInt);
-                retValue = false;
+                Fail("ERROR!!!: Expected to read {0}  actual read byte {1}", expectedBytes[i], (byte)readInt);
             }
 
             i++;
@@ -597,17 +425,9 @@ public class ReadByte
 
         if (rcvBufferSize != expectedBytes.Length)
         {
-            Console.WriteLine("ERROR!!! Expected to read {0} char actually read {1} chars", bytesToWrite.Length, rcvBufferSize);
-            retValue = false;
+            Fail("ERROR!!! Expected to read {0} char actually read {1} chars", bytesToWrite.Length, rcvBufferSize);
         }
-
-        if (com1.IsOpen)
-            com1.Close();
-
-        if (com2.IsOpen)
-            com2.Close();
-
-        return retValue;
     }
+
     #endregion
 }

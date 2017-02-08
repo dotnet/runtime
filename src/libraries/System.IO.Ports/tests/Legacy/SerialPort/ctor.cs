@@ -8,16 +8,18 @@ using System.IO.Ports;
 using System.IO.PortsTests;
 using Xunit;
 
+
 public class ctor : PortsTest
 {
     [Fact]
     public void Verify()
     {
         SerialPortProperties serPortProp = new SerialPortProperties();
-        SerialPort com = new SerialPort();
-
-        serPortProp.SetAllPropertiesToDefaults();
-        Debug.WriteLine("Verifying properties is called");
-        serPortProp.VerifyPropertiesAndPrint(com);
+        using (SerialPort com = new SerialPort())
+        {
+            serPortProp.SetAllPropertiesToDefaults();
+            Debug.WriteLine("Verifying properties is called");
+            serPortProp.VerifyPropertiesAndPrint(com);
+        }
     }
 }
