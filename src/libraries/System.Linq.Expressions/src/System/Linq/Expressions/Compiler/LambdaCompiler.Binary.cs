@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Compiler
             if (isLiftedToNull)
             {
                 EmitExpressionAsVoid(e);
-                _ilg.EmitDefault(typeof(bool?));
+                _ilg.EmitDefault(typeof(bool?), this);
             }
             else
             {
@@ -497,7 +497,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (!TypeUtils.AreEquivalent(resultType, resultType.GetNonNullableType()))
             {
-                _ilg.EmitConvertToType(resultType.GetNonNullableType(), resultType, isChecked: true);
+                _ilg.EmitConvertToType(resultType.GetNonNullableType(), resultType, isChecked: true, locals: this);
             }
 
             if (liftedToNull)

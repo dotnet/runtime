@@ -207,7 +207,7 @@
     <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.Storage.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\HoistedLocals.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\ILGen.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\KeyedQueue.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\KeyedStack.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LabelInfo.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Address.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Binary.cs" />
