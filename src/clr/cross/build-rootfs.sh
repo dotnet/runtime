@@ -7,26 +7,40 @@ usage()
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
-
     exit 1
 }
 
 __LinuxCodeName=trusty
-
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
 __BuildArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
-__UbuntuPackagesBase="build-essential libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
 __LLDB_Package="lldb-3.6-dev"
-__UnprocessedBuildArgs=
 __SkipUnmount=0
 
-for i in "$@"
-    do
-        lowerI="$(echo $i | awk '{print tolower($0)}')"
-        case $lowerI in
+# base development support
+__UbuntuPackages="build-essential"
+
+# symlinks fixer
+__UbuntuPackages+=" symlinks"
+
+# CoreCLR and CoreFX dependencies
+__UbuntuPackages+=" gettext"
+__UbuntuPackages+=" libunwind8-dev"
+__UbuntuPackages+=" liblttng-ust-dev"
+__UbuntuPackages+=" libicu-dev"
+
+# CoreFX dependencies
+__UbuntuPackages+=" libcurl4-openssl-dev"
+__UbuntuPackages+=" libkrb5-dev"
+__UbuntuPackages+=" libssl-dev"
+__UbuntuPackages+=" zlib1g-dev"
+
+__UnprocessedBuildArgs=
+for i in "$@" ; do
+    lowerI="$(echo $i | awk '{print tolower($0)}')"
+    case $lowerI in
         -?|-h|--help)
             usage
             exit 1
@@ -94,12 +108,16 @@ for i in "$@"
     esac
 done
 
+if [[ "$__BuildArch" == "arm" ]]; then
+    __UbuntuPackages+=" ${__LLDB_Package:-}"
+fi
+
 if [ "$__BuildArch" == "armel" ]; then
-     __LLDB_Package="lldb-3.5-dev"
+    __LLDB_Package="lldb-3.5-dev"
+    __UbuntuPackages+=" ${__LLDB_Package:-}"
 fi
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
-__UbuntuPackages="$__UbuntuPackagesBase $__LLDB_Package"
 
 if [[ -n "$ROOTFS_DIR" ]]; then
     __RootfsDir=$ROOTFS_DIR
