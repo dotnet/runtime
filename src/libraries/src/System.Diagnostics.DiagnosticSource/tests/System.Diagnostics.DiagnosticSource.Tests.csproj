@@ -16,5 +16,8 @@
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
     <Compile Include="DiagnosticSourceTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="ActivityTests.cs" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

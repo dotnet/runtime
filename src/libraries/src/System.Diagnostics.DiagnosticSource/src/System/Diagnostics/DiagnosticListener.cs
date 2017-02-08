@@ -59,24 +59,27 @@ namespace System.Diagnostics
         /// Add a subscriber (Observer).  If 'IsEnabled' == null (or not present), then the Source's IsEnabled 
         /// will always return true.  
         /// </summary>
-        virtual public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
-            // If we have been disposed, we silently ignore any subscriptions.  
-            if (_disposed)
-            {
-                return new DiagnosticSubscription() { Owner = this };
-            }
-            DiagnosticSubscription newSubscription = new DiagnosticSubscription() { Observer = observer, IsEnabled = isEnabled, Owner = this, Next = _subscriptions };
-            while (Interlocked.CompareExchange(ref _subscriptions, newSubscription, newSubscription.Next) != newSubscription.Next)
-                newSubscription.Next = _subscriptions;
-            return newSubscription;
+            return SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => isEnabled(name));
         }
+
+        // Subscription implementation 
+        /// <summary>
+        /// Add a subscriber (Observer).  If 'IsEnabled' == null (or not present), then the Source's IsEnabled 
+        /// will always return true.  
+        /// </summary>
+        public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
+        {
+            return SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled);
+        }
+
         /// <summary>
         /// Same as other Subscribe overload where the predicate is assumed to always return true.  
         /// </summary>
         public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
         {
-            return Subscribe(observer, null);
+            return SubscribeInternal(observer, null, null);
         }
 
         /// <summary>
@@ -183,6 +186,20 @@ namespace System.Diagnostics
             return false;
         }
 
+        // NotificationSource implementation
+        /// <summary>
+        /// Override abstract method
+        /// </summary>
+        public override bool IsEnabled(string name, object arg1, object arg2)
+        {
+            for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            {
+                if (curSubscription.IsEnabledExt == null || curSubscription.IsEnabledExt(name, arg1, arg2))
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// Override abstract method
         /// </summary>
@@ -196,7 +213,9 @@ namespace System.Diagnostics
         private class DiagnosticSubscription : IDisposable
         {
             internal IObserver<KeyValuePair<string, object>> Observer;
+
             internal Predicate<string> IsEnabled;
+            internal Func<string, object, object, bool> IsEnabledExt;
             internal DiagnosticListener Owner;          // The DiagnosticListener this is a subscription for.  
             internal DiagnosticSubscription Next;                // Linked list of subscribers
 
@@ -340,6 +359,27 @@ namespace System.Diagnostics
             #endregion
         }
         #endregion
+
+        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled, Func<string, object, object, bool> isEnabledExt)
+        {
+            // If we have been disposed, we silently ignore any subscriptions.  
+            if (_disposed)
+            {
+                return new DiagnosticSubscription() { Owner = this };
+            }
+            DiagnosticSubscription newSubscription = new DiagnosticSubscription()
+            {
+                Observer = observer,
+                IsEnabled = isEnabled,
+                IsEnabledExt = isEnabledExt,
+                Owner = this,
+                Next = _subscriptions
+            };
+
+            while (Interlocked.CompareExchange(ref _subscriptions, newSubscription, newSubscription.Next) != newSubscription.Next)
+                newSubscription.Next = _subscriptions;
+            return newSubscription;
+        }
 
         private volatile DiagnosticSubscription _subscriptions;
         private DiagnosticListener _next;               // We keep a linked list of all NotificationListeners (s_allListeners)

@@ -124,10 +124,43 @@ namespace System.Diagnostics.Tests
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate))
                 {
                     Assert.False(source.IsEnabled("Uninteresting"));
+                    Assert.False(source.IsEnabled("Uninteresting", "arg1", "arg2"));
                     Assert.True(source.IsEnabled("StructPayload"));
-
+                    Assert.True(source.IsEnabled("StructPayload", "arg1", "arg2"));
                     Assert.True(seenUninteresting);
                     Assert.True(seenStructPayload);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Simple tests for the IsEnabled method.
+        /// </summary>
+        [Fact]
+        public void IsEnabledMultipleArgs()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("Testing"))
+            {
+                DiagnosticSource source = listener;
+                var result = new List<KeyValuePair<string, object>>();
+                Func<string, object, object, bool> isEnabled = (name, arg1, arg2) =>
+                {
+                    if (arg1 != null)
+                        return (bool) arg1;
+                    if (arg2 != null)
+                        return (bool) arg2;
+                    return true;
+                };
+
+                using (listener.Subscribe(new ObserverToList<TelemData>(result), isEnabled))
+                {
+                    Assert.True(source.IsEnabled("event"));
+                    Assert.True(source.IsEnabled("event", null, null));
+                    Assert.True(source.IsEnabled("event", null, true));
+
+                    Assert.False(source.IsEnabled("event", false, false));
+                    Assert.False(source.IsEnabled("event", false, null));
+                    Assert.False(source.IsEnabled("event", null, false));
                 }
             }
         }
