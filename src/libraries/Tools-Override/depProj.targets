@@ -97,7 +97,7 @@ See the LICENSE file in the project root for more information.
 
   <PropertyGroup>
     <!-- don't use TargetingPackReference, we do our own filtering -->
-    <SkipFilterTargetingPackResolvedNugetPackages>true</SkipFilterTargetingPackResolvedNugetPackages>
+    <SkipFilterTargetingPackResolvedNugetPackages Condition="'$(SkipFilterTargetingPackResolvedNugetPackages)'==''">true</SkipFilterTargetingPackResolvedNugetPackages>
   </PropertyGroup>
   
   <!-- Support filtering to a subset of packages or files -->
