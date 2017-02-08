@@ -160,7 +160,7 @@ def main(argv):
 
     # Run bootstrap
 
-    my_env["PATH"] += os.pathsep + dotnetcliPath
+    my_env["PATH"] = dotnetcliPath + os.pathsep + my_env["PATH"]
     if platform == 'Linux' or platform == 'OSX':
         print("Running bootstrap")
         proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
@@ -173,7 +173,7 @@ def main(argv):
 
     returncode = 0
     jitutilsBin = os.path.join(coreclr, "jitutils", "bin")
-    my_env["PATH"] += os.pathsep + jitutilsBin
+    my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
     current_dir = os.getcwd()
 
     if not os.path.isdir(jitutilsBin):
