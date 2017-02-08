@@ -74,8 +74,8 @@
     <!-- Copy the facades to the package ref and lib folders to be included in the packages -->
     <!-- TODO: replace with BinPlacing targets -->
     <ItemGroup>
-      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/ref" />
-      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/lib" />
+      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/ref" />
+      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/lib" />
       <PackageOutputPaths Include="$(RefPath)" />
       <PackageOutputPaths Include="$(RuntimePath)" />
       <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
