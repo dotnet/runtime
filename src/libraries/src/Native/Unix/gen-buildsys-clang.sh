@@ -48,13 +48,6 @@ else
 fi
 
 cmake_extra_defines="-DCMAKE_BUILD_TYPE=$buildtype"
-
-if [[ -n "$LLDB_LIB_DIR" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_LIBS=$LLDB_LIB_DIR"
-fi
-if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
-    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_INCLUDES=$LLDB_INCLUDE_DIR"
-fi
 if [[ -n "$CROSSCOMPILE" ]]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
