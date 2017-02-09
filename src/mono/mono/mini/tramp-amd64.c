@@ -982,11 +982,12 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
-	guint8 *start = NULL, *code, *exits[4], *leave_tramp;
+	const int gregs_num = 6;
+	guint8 *start = NULL, *code, *exits [gregs_num], *leave_tramp;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
-	int i;
+	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4, AMD64_R8, AMD64_R9};
+	int i, offset = 0;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);
 
@@ -1007,16 +1008,29 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	/* load pointer to iregs into R11 */ // TODO: struct offset
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 8, 8);
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < gregs_num; i++) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		exits [i] = code;
 		x86_branch8 (code, X86_CC_Z, 0, FALSE);
 
-		amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+#ifdef TARGET_WIN32
+		if (i < 4) {
+#else
+		if (i < 6) {
+#endif
+			amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		} else {
+			g_error ("not tested yet.");
+			amd64_push_reg (code, AMD64_RAX);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, i * sizeof (gpointer), 8);
+			amd64_mov_membase_reg (code, AMD64_RBP, offset, AMD64_RAX, sizeof (gpointer));
+			offset += sizeof (gpointer);
+			amd64_pop_reg (code, AMD64_RAX);
+		}
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < gregs_num; i++) {
 		x86_patch (exits [i], code);
 	}
 

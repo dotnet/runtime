@@ -745,6 +745,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
 			margs->ilen++;
 			break;
 		default:
@@ -755,8 +756,8 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
-	if (margs->ilen > 3)
-		g_error ("build_args_from_sig: TODO, more than two iregs: %d\n", margs->ilen);
+	if (margs->ilen > 6)
+		g_error ("build_args_from_sig: TODO, more than 6 iregs: %d\n", margs->ilen);
 
 	if (margs->flen > 0)
 		g_error ("build_args_from_sig: TODO, allocate floats: %d\n", margs->flen);
@@ -788,6 +789,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
