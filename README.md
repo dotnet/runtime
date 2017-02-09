@@ -46,7 +46,6 @@ Daily Builds
 |   **RHEL 7.2**       |   [![][rhel-badge-master]][rhel-version-master]<br>[tar.gz][rhel-targz-master]   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23**      |   [![][fedora-23-badge-master]][fedora-23-version-master]<br>[tar.gz][fedora-23-targz-master]   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24**      |   [![][fedora-24-badge-master]][fedora-24-version-master]<br>[tar.gz][fedora-24-targz-master]   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
-|   **OpenSUSE 13.2**  |   [![][opensuse-13.2-badge-master]][opensuse-13.2-version-master]<br>[tar.gz][opensuse-13.2-targz-master]   |   [![][opensuse-13.2-badge-1.1.X]][opensuse-13.2-version-1.1.X]<br>[tar.gz][opensuse-13.2-targz-1.1.X]   |   [![][opensuse-13.2-badge-preview]][opensuse-13.2-version-preview]<br>[tar.gz][opensuse-13.2-targz-preview]   |
 |   **OpenSUSE 42.1**  |   [![][opensuse-42.1-badge-master]][opensuse-42.1-version-master]<br>[tar.gz][opensuse-42.1-targz-master]   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
@@ -247,18 +246,6 @@ Daily Builds
 [fedora-24-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.24.x64.version
 [fedora-24-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
 
-
-[opensuse-13.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_openSUSE_13_2_x64_Release_version_badge.svg
-[opensuse-13.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.opensuse.13.2.x64.version
-[opensuse-13.2-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-opensuse.13.2-x64.latest.tar.gz
-
-[opensuse-13.2-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_openSUSE_13_2_x64_Release_version_badge.svg
-[opensuse-13.2-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.opensuse.13.2.x64.version
-[opensuse-13.2-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-opensuse.13.2-x64.latest.tar.gz
-
-[opensuse-13.2-badge-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/sharedfx_openSUSE_13_2_x64_Release_version_badge.svg
-[opensuse-13.2-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.opensuse.13.2.x64.version
-[opensuse-13.2-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-opensuse.13.2-x64.latest.tar.gz
 
 [opensuse-42.1-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_openSUSE_42_1_x64_Release_version_badge.svg
 [opensuse-42.1-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.opensuse.42.1.x64.version
