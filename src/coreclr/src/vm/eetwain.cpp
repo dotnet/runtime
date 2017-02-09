@@ -5620,21 +5620,18 @@ ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
         return RT_Illegal;
     }
 
-#if defined(_TARGET_X86_)
+#ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     return info.returnKind;
-#elif defined(USE_GC_INFO_DECODER)
+#else // !USE_GC_INFO_DECODER
 
     GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_RETURN_KIND);
     return gcInfoDecoder.GetReturnKind();
 
-#else // !_TARGET_X86_ && !USE_GC_INFO_DECODER
-    PORTABILITY_ASSERT("EECodeManager::GetReturnKind is not implemented on this platform.");
-    return 0;
-#endif
+#endif // USE_GC_INFO_DECODER
 }
 
 #ifndef USE_GC_INFO_DECODER
