@@ -22,7 +22,6 @@ namespace System.Net.Security.Tests
 
         protected abstract bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream);
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
@@ -38,7 +37,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
@@ -63,7 +61,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
@@ -101,7 +98,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Successive_ClientWrite_WithZeroBytes_Success()
         {
@@ -142,7 +138,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -191,7 +186,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
@@ -233,7 +227,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Write_ReadByte_Success()
         {
@@ -258,7 +251,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SslStream_StreamToStream_WriteAsync_ReadByte_Success()
         {
@@ -283,7 +275,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SslStream_StreamToStream_WriteAsync_ReadAsync_Pending_Success()
         {
@@ -327,7 +318,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_Flush_Propagated()
         {
@@ -342,7 +332,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SslStream_StreamToStream_FlushAsync_Propagated()
         {
