@@ -10,8 +10,19 @@
 
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
 
+  <ItemGroup>
+    <WindowsNativeLocation Include="$(NativeBinDir)\clrcompression.dll" />
+    <WindowsNativeLocation Include="$(NativeBinDir)_aot\clrcompression.dll" />
+  </ItemGroup>
+  
+  <Target Name="GenerateSignForWindowsNative">
+    <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
+                          MarkerFile="%(WindowsNativeLocation.Identity).requires_signing" />
+  </Target>
+
   <!-- populates item group FilesToSign with the list of files to sign -->
-  <Target Name="GetFilesToSignItems">
+  <Target Name="GetFilesToSignItems"
+          DependsOnTargets="GenerateSignForWindowsNative">
     <!-- read all of the marker files and populate the FilesToSign item group -->
     <ItemGroup>
       <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
