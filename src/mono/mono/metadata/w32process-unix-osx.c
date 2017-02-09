@@ -54,10 +54,15 @@ mono_w32process_get_name (pid_t pid)
 	g_free (pi);
 #else
 	gchar buf[256];
+	gint res;
 
 	/* No proc name on OSX < 10.5 nor ppc nor iOS */
 	memset (buf, '\0', sizeof(buf));
-	proc_name (pid, buf, sizeof(buf));
+	res = proc_name (pid, buf, sizeof(buf));
+	if (res == 0) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: proc_name failed, error (%d) \"%s\"", __func__, errno, g_strerror (errno));
+		return NULL;
+	}
 
 	// Fixes proc_name triming values to 15 characters #32539
 	if (strlen (buf) >= MAXCOMLEN - 1) {
