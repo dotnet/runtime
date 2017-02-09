@@ -1465,6 +1465,30 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
+static MonoMethod *method_pointers [2] = {0};
+
+static MonoObject *
+mp_tramp_0 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
+	MonoError error;
+	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
+	MonoObject *ret = interp_mono_runtime_invoke (method_pointers [0], NULL, params_real, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return ret;
+}
+
+static MonoObject *
+mp_tramp_1 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
+	MonoError error;
+	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
+	MonoObject *ret = interp_mono_runtime_invoke (method_pointers [1], NULL, params_real, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return ret;
+}
+
+gpointer *mp_tramps[] = {(gpointer) mp_tramp_0, (gpointer) mp_tramp_1};
+
+static int tramps_used = 0;
+
 gpointer
 interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
@@ -1496,10 +1520,13 @@ interp_create_method_pointer (MonoMethod *method, MonoError *error)
 		mono_jit_info_table_add (mono_get_root_domain (), ji);
 	}		
 	else {
-		g_error ("FIXME: not available? figure out new API");
-#if 0
-		addr = mono_arch_create_method_pointer (method);
-#endif
+		g_assert (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE);
+		g_assert (tramps_used < 2);
+
+		/* FIXME: needs locking */
+		method_pointers [tramps_used] = method;
+		addr = mp_tramps [tramps_used];
+		tramps_used++;
 	}
 
 	g_hash_table_insert (method_pointer_hash, method, addr);
