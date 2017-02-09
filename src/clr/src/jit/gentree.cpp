@@ -678,7 +678,7 @@ Compiler::fgWalkResult Compiler::fgWalkTreePreRec(GenTreePtr* pTree, fgWalkData*
 
         if (kind & GTK_SMPOP)
         {
-            if (tree->gtGetOp2())
+            if (tree->gtGetOp2IfPresent())
             {
                 if (tree->gtOp.gtOp1 != nullptr)
                 {
@@ -1301,7 +1301,7 @@ Compiler::fgWalkResult Compiler::fgWalkTreeRec(GenTreePtr* pTree, fgWalkData* fg
             }
         }
 
-        if (tree->gtGetOp2())
+        if (tree->gtGetOp2IfPresent())
         {
             result = fgWalkTreeRec<doPreOrder, doPostOrder>(&tree->gtOp.gtOp2, fgWalkData);
             if (result == WALK_ABORT)
@@ -2447,7 +2447,7 @@ AGAIN:
 
     if (kind & GTK_SMPOP)
     {
-        if (tree->gtGetOp2())
+        if (tree->gtGetOp2IfPresent())
         {
             if (gtHasRef(tree->gtOp.gtOp1, lclNum, defOnly))
             {
@@ -3181,7 +3181,7 @@ AGAIN:
             }
         }
 
-        if (tree->gtGetOp2())
+        if (tree->gtGetOp2IfPresent())
         {
             /* It's a binary operator */
             if (!lvaLclVarRefsAccum(tree->gtOp.gtOp1, findPtr, refsPtr, &allVars, &trkdVars))
@@ -4151,7 +4151,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         unsigned lvl2; // scratch variable
 
         GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2();
+        GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
         costEx = 0;
         costSz = 0;
@@ -5766,7 +5766,7 @@ void Compiler::gtComputeFPlvls(GenTreePtr tree)
     if (kind & GTK_SMPOP)
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2();
+        GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
         /* Check for some special cases */
 
@@ -8085,7 +8085,7 @@ GenTreePtr Compiler::gtCloneExpr(
             case GT_SIMD:
             {
                 GenTreeSIMD* simdOp = tree->AsSIMD();
-                copy                = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtGetOp1(), simdOp->gtGetOp2(),
+                copy                = gtNewSIMDNode(simdOp->TypeGet(), simdOp->gtGetOp1(), simdOp->gtGetOp2IfPresent(),
                                      simdOp->gtSIMDIntrinsicID, simdOp->gtSIMDBaseType, simdOp->gtSIMDSize);
             }
             break;
@@ -8133,7 +8133,7 @@ GenTreePtr Compiler::gtCloneExpr(
             }
         }
 
-        if (tree->gtGetOp2())
+        if (tree->gtGetOp2IfPresent())
         {
             copy->gtOp.gtOp2 = gtCloneExpr(tree->gtOp.gtOp2, addFlags, deepVarNum, deepVarVal);
         }
@@ -8184,7 +8184,7 @@ GenTreePtr Compiler::gtCloneExpr(
         {
             copy->gtFlags |= (copy->gtOp.gtOp1->gtFlags & GTF_ALL_EFFECT);
         }
-        if (copy->gtGetOp2() != nullptr)
+        if (copy->gtGetOp2IfPresent() != nullptr)
         {
             copy->gtFlags |= (copy->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
         }
@@ -11317,7 +11317,7 @@ void Compiler::gtDispTree(GenTreePtr   tree,
     {
         if (!topOnly)
         {
-            if (tree->gtGetOp2())
+            if (tree->gtGetOp2IfPresent())
             {
                 // Label the childMsgs of the GT_COLON operator
                 // op2 is the then part
@@ -12681,7 +12681,7 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
     assert(kind & (GTK_UNOP | GTK_BINOP));
 
     GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtGetOp2();
+    GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
     if (!opts.OptEnabled(CLFLG_CONSTANTFOLD))
     {
@@ -14573,7 +14573,7 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
     if (kind & GTK_SMPOP)
     {
         GenTreePtr op1 = expr->gtOp.gtOp1;
-        GenTreePtr op2 = expr->gtGetOp2();
+        GenTreePtr op2 = expr->gtGetOp2IfPresent();
 
         if (flags & GTF_EXCEPT)
         {

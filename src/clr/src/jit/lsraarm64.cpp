@@ -107,7 +107,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             else if (kind & (GTK_SMPOP))
             {
-                if (tree->gtGetOp2() != nullptr)
+                if (tree->gtGetOp2IfPresent() != nullptr)
                 {
                     info->srcCount = 2;
                 }
@@ -1492,9 +1492,10 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             // The result is baseType of SIMD struct.
             info->srcCount = 2;
 
-            op2 = tree->gtGetOp2()
-                  // If the index is a constant, mark it as contained.
-                  if (CheckImmedAndMakeContained(tree, op2))
+            op2 = tree->gtGetOp2();
+
+            // If the index is a constant, mark it as contained.
+            if (CheckImmedAndMakeContained(tree, op2))
             {
                 info->srcCount = 1;
             }
