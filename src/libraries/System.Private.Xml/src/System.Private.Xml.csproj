@@ -119,7 +119,6 @@
     <Compile Include="System\Xml\Core\XmlSubtreeReader.cs" />
     <Compile Include="System\Xml\Core\XmlSubtreeReaderAsync.cs" />
     <Compile Include="System\Xml\Core\XmlTextEncoder.cs" />
-    <Compile Include="System\Xml\Core\BinaryCompatibility.cs" />
     <Compile Include="System\Xml\Core\XmlTextReader.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImpl.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImplAsync.cs" />
@@ -504,7 +503,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\src\System.Threading.Tasks.Extensions.csproj" />
-    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

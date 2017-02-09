@@ -318,14 +318,7 @@ namespace System.Xml
             _nameTable = nt;
             nt.Add(string.Empty);
 
-            if (!System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
-            {
-                _xmlResolver = null;
-            }
-            else
-            {
-                _xmlResolver = new XmlUrlResolver();
-            }
+            _xmlResolver = null;
 
             _xml = nt.Add("xml");
             _xmlNs = nt.Add("xmlns");
@@ -828,11 +821,7 @@ namespace System.Xml
                 settings.DtdProcessing = _dtdProcessing;
                 settings.MaxCharactersInDocument = _maxCharactersInDocument;
                 settings.MaxCharactersFromEntities = _maxCharactersFromEntities;
-
-                if (!System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
-                {
-                    settings.XmlResolver = _xmlResolver;
-                }
+                settings.XmlResolver = _xmlResolver;
                 settings.ReadOnly = true;
                 return settings;
             }

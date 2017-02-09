@@ -1065,8 +1065,7 @@ namespace System.Xml
         {
             XmlResolver tempResolver = _coreReaderImpl.GetResolver();
 
-            if (tempResolver == null && !_coreReaderImpl.IsResolverSet &&
-                !System.Xml.XmlReaderSettings.EnableLegacyXmlSettings())
+            if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
                 // it is safe to return valid resolver as it'll be used in the schema validation 
                 if (s_tempResolver == null)
