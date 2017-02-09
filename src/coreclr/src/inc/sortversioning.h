@@ -32,8 +32,9 @@ namespace SortVersioning
         __in int cchSrc,
         __out_bcount_opt(cbDest) LPBYTE pDest,
         __in int cbDest,
-        __reserved LPVOID lpReserved,
-        __reserved LPARAM lParam);
+
+        __clr_reserved LPVOID lpReserved,
+        __clr_reserved LPARAM lParam);
 
     typedef int (*SORTCHANGECASE) (
         __in PSORTHANDLE pSortHandle,
@@ -42,8 +43,8 @@ namespace SortVersioning
         __in int cchSrc,
         __out_ecount_opt(cchDest) LPWSTR pDest,
         __in int cchDest,
-        __reserved LPVOID lpReserved,
-        __reserved LPARAM lParam);
+        __clr_reserved LPVOID lpReserved,
+        __clr_reserved LPARAM lParam);
 
     typedef int (*SORTCOMPARESTRING) (
         __in PSORTHANDLE pSortHandle,
@@ -52,8 +53,8 @@ namespace SortVersioning
         __in int cchCount1,
         __in LPCWSTR lpString2,
         __in int cchCount2,
-        __reserved LPVOID lpReserved,
-        __reserved LPARAM lParam);
+        __clr_reserved LPVOID lpReserved,
+        __clr_reserved LPARAM lParam);
 
     typedef int (*SORTFINDSTRING) (
         __in                    PSORTHANDLE pSortHandle,
@@ -63,8 +64,8 @@ namespace SortVersioning
         __in_ecount(cchValue)   LPCWSTR lpStringValue,
         __in                    int cchValue,
         __out_opt               LPINT pcchFound,
-        __reserved              LPVOID lpReserved,
-        __reserved              LPARAM lParam);
+        __clr_reserved          LPVOID lpReserved,
+        __clr_reserved          LPARAM lParam);
 
     typedef BOOL (*SORTISDEFINEDSTRING) (
         __in                PSORTHANDLE     pSortHandle,
@@ -78,8 +79,8 @@ namespace SortVersioning
         __in DWORD dwFlags,
         __in_ecount(cchSrc) LPCWSTR pSrc,
         __in int cchSrc,
-        __reserved LPVOID lpReserved,
-        __reserved LPARAM lParam);
+        __clr_reserved LPVOID lpReserved,
+        __clr_reserved LPARAM lParam);
 
 #define SORT_NAME_SIZE 85
 
@@ -114,8 +115,8 @@ namespace SortVersioning
                                __in_ecount(cchCount2) LPCWSTR lpString2,
                                __in int cchCount2,
                                __in_opt CONST NLSVERSIONINFO * lpVersionInformation,
-                               __reserved LPVOID lpReserved,
-                               __reserved LPARAM lParam );
+                               __clr_reserved LPVOID lpReserved,
+                               __clr_reserved LPARAM lParam );
     __success(return != 0) int WINAPI SortDllCompareString(
         __in PSORTHANDLE pSort,
         __in DWORD dwCmpFlags,
@@ -134,8 +135,8 @@ namespace SortVersioning
                            __out_ecount_opt(cchDest)  LPWSTR lpDestStr, // really this should be __out_awcount_opt(dwMapFlags & LCMAP_SORTKEY, cchDest)
                            __in int cchDest,
                            __in_opt CONST NLSVERSIONINFO * lpVersionInformation,
-                           __reserved LPVOID lpReserved,
-                           __reserved LPARAM lParam );    
+                           __clr_reserved LPVOID lpReserved,
+                           __clr_reserved LPARAM lParam );    
 
    __success(return != 0) int WINAPI SortDllChangeCase(
         __in PSORTHANDLE pSort,
@@ -165,8 +166,8 @@ namespace SortVersioning
                         __in int cchValue,
                         __out_opt LPINT pcchFound,
                         __in_opt CONST NLSVERSIONINFO * lpVersionInformation,
-                        __reserved LPVOID lpReserved,
-                        __reserved LPARAM lParam);
+                        __clr_reserved LPVOID lpReserved,
+                        __clr_reserved LPARAM lParam);
 
     __success(return != 0) int WINAPI SortDllFindString(
         __in PSORTHANDLE pSort,
