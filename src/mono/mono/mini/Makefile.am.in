@@ -391,6 +391,7 @@ if ENABLE_INTERPRETER
 interpreter_sources =	\
 	interpreter/hacks.h		\
 	interpreter/interp.h	\
+	interpreter/interp-internals.h	\
 	interpreter/interp.c	\
 	interpreter/mintops.h	\
 	interpreter/mintops.def	\

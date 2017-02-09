@@ -89,6 +89,10 @@
 #endif
 #endif
 
+#ifdef ENABLE_INTERPRETER
+#include "interpreter/interp.h"
+#endif
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
@@ -1769,7 +1773,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 
 #ifdef ENABLE_INTERPRETER
 	if (mono_use_interpreter)
-		return interp_create_method_pointer (method, error);
+		return mono_interp_create_method_pointer (method, error);
 #endif
 
 	if (mono_llvm_only)
@@ -2359,7 +2363,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 #ifdef ENABLE_INTERPRETER
 	if (mono_use_interpreter)
-		return interp_mono_runtime_invoke (method, obj, params, exc, error);
+		return mono_interp_runtime_invoke (method, obj, params, exc, error);
 #endif
 
 	mono_error_init (error);

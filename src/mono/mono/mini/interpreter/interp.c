@@ -58,6 +58,7 @@
 #include <mono/metadata/mono-debug.h>
 
 #include "interp.h"
+#include "interp-internals.h"
 #include "mintops.h"
 #include "hacks.h"
 
@@ -1214,7 +1215,7 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 #endif
 
 MonoObject*
-interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
+mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoInvocation frame;
 	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
@@ -1471,7 +1472,7 @@ static MonoObject *
 mp_tramp_0 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
 	MonoError error;
 	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
-	MonoObject *ret = interp_mono_runtime_invoke (method_pointers [0], NULL, params_real, NULL, &error);
+	MonoObject *ret = mono_interp_runtime_invoke (method_pointers [0], NULL, params_real, NULL, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return ret;
 }
@@ -1480,7 +1481,7 @@ static MonoObject *
 mp_tramp_1 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
 	MonoError error;
 	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
-	MonoObject *ret = interp_mono_runtime_invoke (method_pointers [1], NULL, params_real, NULL, &error);
+	MonoObject *ret = mono_interp_runtime_invoke (method_pointers [1], NULL, params_real, NULL, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return ret;
 }
@@ -1490,7 +1491,7 @@ gpointer *mp_tramps[] = {(gpointer) mp_tramp_0, (gpointer) mp_tramp_1};
 static int tramps_used = 0;
 
 gpointer
-interp_create_method_pointer (MonoMethod *method, MonoError *error)
+mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoJitInfo *ji;
@@ -4428,7 +4429,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, &error); */
 					mono_error_cleanup (&error);
 					MonoMethod *getter = mono_class_get_method_from_name (klass, "get_Category", -1);
-					MonoObject *str = interp_mono_runtime_invoke (getter, obj, NULL, &exc, &error);
+					MonoObject *str = mono_interp_runtime_invoke (getter, obj, NULL, &exc, &error);
 					mono_error_cleanup (&error);
 					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, &error);
 					mono_error_cleanup (&error);
@@ -4443,7 +4444,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			MonoError interp_error;
 			MonoObject *exc = NULL;
 
-			result_obj = interp_mono_runtime_invoke (method, NULL, NULL, &exc, &interp_error);
+			result_obj = mono_interp_runtime_invoke (method, NULL, NULL, &exc, &interp_error);
 			if (!mono_error_ok (&interp_error)) {
 				cfailed++;
 				g_print ("Test '%s' execution failed.\n", method->name);
@@ -4507,7 +4508,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 }
 
 int
-interp_regression_list (int verbose, int count, char *images [])
+mono_interp_regression_list (int verbose, int count, char *images [])
 {
 	int i, total, total_run, run;
 	

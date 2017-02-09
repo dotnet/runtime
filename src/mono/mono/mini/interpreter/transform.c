@@ -18,6 +18,7 @@
 #include <mono/mini/mini.h>
 
 #include "mintops.h"
+#include "interp-internals.h"
 #include "interp.h"
 
 // TODO: export from marshal.c
