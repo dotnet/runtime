@@ -7018,7 +7018,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 // return address for hijacking.
                 if (!pES->m_IsInterruptible)
                 {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) 
+#ifdef WIN64EXCEPTIONS
                     PREGDISPLAY pRDT = pCF->GetRegisterSet();
                     _ASSERTE(pRDT != NULL);
 
@@ -7075,15 +7075,17 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // in the caller of the current non-interruptible frame.
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
                         }
-#else
-                        pES->m_ppvRetAddrPtr = (void **) ((size_t)GetSP(pRDT->pCallerContext) - sizeof(void*));
-#endif
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+                        pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+#else // _TARGET_X86_ || _TARGET_AMD64_
+                        PORTABILITY_ASSERT("Platform NYI");
+#endif // _TARGET_???_
                     }
-#else
+#else // WIN64EXCEPTIONS
                     // peel off the next frame to expose the return address on the stack
                     pES->m_FirstPass = FALSE;
                     action = SWA_CONTINUE;
-#endif // _TARGET_AMD64_ || _TARGET_ARM_ || _TARGET_ARM64_
+#endif // !WIN64EXCEPTIONS
                 }
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
             }
@@ -7112,7 +7114,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
     else
     {
-#ifdef _TARGET_X86_
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
         // Second pass, looking for the address of the return address so we can
         // hijack:
 
