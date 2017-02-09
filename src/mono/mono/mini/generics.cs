@@ -233,6 +233,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_generic_get_value_optimization_vtype () {
 		TestStruct[] arr = new TestStruct[] { new TestStruct (100, 200), new TestStruct (300, 400) };
 		IEnumerator<TestStruct> enumerator = GenericClass<TestStruct>.Y (arr);
@@ -426,6 +427,7 @@ class Tests
 	}
 #endif
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_ldvirtftn_generic_method () {
 		new GenericsTests ().ldvirtftn<string> ();
 
@@ -452,6 +454,7 @@ class Tests
 	// This cannot be made to work with full-aot, since there it is impossible to
 	// statically determine that Foo<string>.Bar <int> is needed, the code only
 	// references IFoo.Bar<int>
+	[Category ("!INTERPRETER")]
 	[Category ("!FULLAOT")]
 	public static int test_0_generic_virtual_on_interfaces () {
 		Foo<string>.count1 = 0;
@@ -477,6 +480,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_generic_virtual_on_interfaces_ref () {
 		Foo<string>.count1 = 0;
 		Foo<string>.count2 = 0;
@@ -516,6 +520,7 @@ class Tests
 		Value_2 = 2
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_regress_550964_constrained_enum_long () {
         MyEnumUlong a = MyEnumUlong.Value_2;
         MyEnumUlong b = MyEnumUlong.Value_2;
@@ -534,6 +539,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_fullaot_linq () {
 		var allWords = new XElement [] { new XElement { Value = "one" } };
 		var filteredWords = allWords.Where(kw => kw.Value.StartsWith("T"));
@@ -556,6 +562,7 @@ class Tests
 		int c = ((ICollection<T>)arr).Count;
 	}
 
+	[Category ("!INTERPRETER")]
 	/* Test that treating arrays as generic collections works with full-aot */
 	public static int test_0_fullaot_array_wrappers () {
 		GenericsTests[] arr = new GenericsTests [10];
@@ -615,6 +622,7 @@ class Tests
 		return typeof (T);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_gshared_delegate_rgctx () {
 		Func<Type> t = new Func<Type> (get_type<string>);
 
@@ -624,6 +632,7 @@ class Tests
 			return 1;
 	}
 
+	[Category ("!INTERPRETER")]
 	// Creating a delegate from a generic method from gshared code
 	public static int test_0_gshared_delegate_from_gshared () {
 		if (gshared_delegate_from_gshared <object> () != 0)
@@ -655,6 +664,7 @@ class Tests
 		public delegate TRet Transform<TRet> (TKey key, TValue value);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_bug_620864 () {
 		var d = new Pair<string, Type>.Transform<KeyValuePair<string, Type>> (Pair<string, Type>.make_pair);
 
@@ -711,6 +721,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	[Category ("GSHAREDVT")]
 	public static int test_6_partial_sharing_linq () {
 		var messages = new List<Message> ();
@@ -721,6 +732,7 @@ class Tests
 		return messages.Max(i => i.MessageID);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_partial_shared_method_in_nonshared_class () {
 		var c = new Class1<double> ();
 		return (c.Foo<string> (5).GetType () == typeof (Class1<string>)) ? 0 : 1;
@@ -897,6 +909,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	[Category ("!FULLAOT")]
 	[Category ("!BITCODE")]
 	public static int test_0_regress_668095_synchronized_gshared () {
@@ -915,6 +928,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	[Category ("GSHAREDVT")]
 	static int test_0_synchronized_gshared () {
 		var c = new SyncClass<string> ();
@@ -951,6 +965,7 @@ class Tests
 	}
 
 	// #2155
+	[Category ("!INTERPRETER")]
 	[Category ("GSHAREDVT")]
 	public static int test_0_fullaot_sflda_cctor () {
 		List<Doc> documents = new List<Doc>();
@@ -976,6 +991,7 @@ class Tests
     static List<A> sources = new List<A>();
 
 	// #6112
+	[Category ("!INTERPRETER")]
     public static int test_0_fullaot_imt () {
         sources.Add(null);
         sources.Add(null);
@@ -997,6 +1013,7 @@ class Tests
 	class BClass : AClass {
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_fullaot_variant_iface () {
 		var arr = new BClass [10];
 		var enumerable = (IEnumerable<AClass>)arr;
@@ -1028,6 +1045,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_1_regress_constrained_iface_call_7571 () {
         var r = new Record [10];
         Foo2<Record>.Extract (r);
@@ -1038,6 +1056,7 @@ class Tests
 		Val = 1
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_regress_constrained_iface_call_enum () {
 		var r = new ConstrainedEnum [10];
 		return Foo3<ConstrainedEnum>.CompareTo (r);
@@ -1097,6 +1116,7 @@ class Tests
 	}
 #endif
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_delegate_callvirt_fullaot () {
 		Func<string> f = delegate () { return "A"; };
         var f2 = (Func<Func<string>, string>)Delegate.CreateDelegate (typeof
@@ -1179,6 +1199,7 @@ class Tests
 		return t.GetHashCode ();
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_constrained_partial_sharing () {
 		string s;
 
@@ -1235,6 +1256,7 @@ class Tests
 
 	static object delegate_8_args_res;
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_delegate_8_args () {
 		delegate_8_args_res = null;
 		Action<string, string, string, string, string, string, string,
