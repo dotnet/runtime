@@ -305,6 +305,8 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		return ret;
 	}
 
+	mono_class_setup_vtable (obj->vtable->klass);
+
 	int slot = mono_method_get_vtable_slot (m);
 	if (mono_class_is_interface (m->klass)) {
 		g_assert (obj->vtable->klass != m->klass);
