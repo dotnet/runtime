@@ -50,9 +50,9 @@ if "%VisualStudioVersion%"=="14.0" (
 )
 
 :MissingVersion
-:: Can't find VS 2013+
-echo Error: Visual Studio 2015 required
-echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+:: Can't find VS 2015
+echo Error: Visual Studio 2015 required  
+echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
 
 :VS2015
