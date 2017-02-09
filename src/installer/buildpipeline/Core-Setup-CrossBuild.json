@@ -85,7 +85,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid)\"",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid), PUBLISH_TO_AZURE_BLOB=$(PUBLISH_TO_AZURE_BLOB)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
