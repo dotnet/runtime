@@ -99,7 +99,6 @@ public class Encoding_Property : PortsTest
     }
     
     [ConditionalFact(nameof(HasOneSerialPort))]
-    [ActiveIssue(15949)]
     public void Encoding_ISCIIAssemese()
     {
         Debug.WriteLine("Verifying ISCIIAssemese Encoding");
@@ -128,7 +127,6 @@ public class Encoding_Property : PortsTest
     }
 
     [ConditionalFact(nameof(HasOneSerialPort))]
-    [ActiveIssue(15949)]
     public void Encoding_Japanese_JIS()
     {
         Debug.WriteLine("Verifying Japanese (JIS) Encoding before open");
@@ -140,52 +138,6 @@ public class Encoding_Property : PortsTest
     {
         Debug.WriteLine("Verifying Chinese Simplified (GB18030) Encoding before open");
         VerifyEncodingBeforeOpen(System.Text.Encoding.GetEncoding(54936));
-    }
-
-    [ConditionalFact(nameof(HasOneSerialPort))]
-    [ActiveIssue(15949)]
-    public void Encoding_Custom()
-    {
-        Debug.WriteLine("Verifying Custom Encoding before open");
-        VerifyException(new MyEncoding(1047), ThrowAt.Set, typeof(ArgumentException));
-    }
-
-    class MyEncoding : System.Text.Encoding
-    {
-        public MyEncoding(int codePage)
-            : base(codePage)
-        {
-        }
-
-        public override int GetByteCount(char[] chars, int index, int count)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int GetCharCount(byte[] bytes, int index, int count)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int GetMaxByteCount(int charCount)
-        {
-            throw new NotSupportedException();
-        }
-
-        public override int GetMaxCharCount(int byteCount)
-        {
-            throw new NotSupportedException();
-        }
     }
 
     #endregion
