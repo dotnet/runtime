@@ -295,6 +295,7 @@ OPDEF(MINT_LDELEM_I8, "ldelem.i8", 1, MintOpNoArgs)
 OPDEF(MINT_LDELEM_R4, "ldelem.r4", 1, MintOpNoArgs)
 OPDEF(MINT_LDELEM_R8, "ldelem.r8", 1, MintOpNoArgs)
 OPDEF(MINT_LDELEM_REF, "ldelem.ref", 1, MintOpNoArgs)
+OPDEF(MINT_LDELEM_VT, "ldelem.vt", 4, MintOpShortAndInt)
 
 OPDEF(MINT_LDELEMA, "ldelema", 2, MintOpClassToken)
 
@@ -306,6 +307,7 @@ OPDEF(MINT_STELEM_I8, "stelem.i8", 1, MintOpNoArgs)
 OPDEF(MINT_STELEM_R4, "stelem.r4", 1, MintOpNoArgs)
 OPDEF(MINT_STELEM_R8, "stelem.r8", 1, MintOpNoArgs)
 OPDEF(MINT_STELEM_REF, "stelem.ref", 1, MintOpNoArgs)
+OPDEF(MINT_STELEM_VT, "stelem.vt", 4, MintOpShortAndInt)
 
 OPDEF(MINT_LDLEN, "ldlen", 1, MintOpNoArgs)
 
