@@ -384,15 +384,8 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		if (type->data.klass->enumtype) {
 			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
 			return;
-		} else {
-			int size;
-			
-			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-			memcpy (result->data.vt, data, size);
-		}
+		} else
+			mono_value_copy (result->data.vt, data, type->data.klass);
 		return;
 	default:
 		g_warning ("got type 0x%02x", type->type);
@@ -479,16 +472,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		if (type->data.klass->enumtype) {
 			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
 			return;
-		} else {
-			int size;
-
-			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-
-			memcpy (data, val->data.p, size);
-		}
+		} else
+			mono_value_copy (data, val->data.vt, type->data.klass);
 		return;
 	case MONO_TYPE_GENERICINST:
 		stackval_to_data (&type->data.generic_class->container_class->byval_arg, val, data, pinvoke);
