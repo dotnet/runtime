@@ -422,6 +422,9 @@ worker_callback (gpointer unused)
 
 		domains_unlock ();
 
+		mono_thread_set_name_internal (thread, mono_string_new (mono_get_root_domain (), "Threadpool worker"), FALSE, TRUE, &error);
+		mono_error_assert_ok (&error);
+
 		mono_thread_clr_state (thread, (MonoThreadState)~ThreadState_Background);
 		if (!mono_thread_test_state (thread , ThreadState_Background))
 			ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);

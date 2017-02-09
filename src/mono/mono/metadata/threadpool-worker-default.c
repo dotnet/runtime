@@ -546,7 +546,6 @@ static gsize WINAPI
 worker_thread (gpointer data)
 {
 	MonoThreadPoolWorker *worker;
-	MonoError error;
 	MonoInternalThread *thread;
 	ThreadPoolWorkerCounter counter;
 
@@ -566,9 +565,6 @@ worker_thread (gpointer data)
 	mono_coop_mutex_lock (&worker->threads_lock);
 	g_ptr_array_add (worker->threads, thread);
 	mono_coop_mutex_unlock (&worker->threads_lock);
-
-	mono_thread_set_name_internal (thread, mono_string_new (mono_get_root_domain (), "Threadpool worker"), FALSE, &error);
-	mono_error_assert_ok (&error);
 
 	while (!mono_runtime_is_shutting_down ()) {
 		ThreadPoolWorkItem work_item;
