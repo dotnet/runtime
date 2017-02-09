@@ -56,7 +56,7 @@
 extern CoreCLRLoader *g_loader;
 extern char *g_pszExeFile;
 #endif
-typedef int(*MetaDataGetDispenserFunc) (
+typedef int(STDAPICALLTYPE *MetaDataGetDispenserFunc) (
     REFCLSID    rclsid,                 // The class to desired.
     REFIID      riid,                   // Interface wanted on class factory.
     LPVOID FAR  *ppv);                  // Return interface pointer here.
