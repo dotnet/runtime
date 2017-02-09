@@ -617,6 +617,8 @@
 #define MAX_PATH_FNAME   MAX_PATH /* max. length of full pathname */
 #endif
 
+#define __clr_reserved __reserved
+
 #endif // __PALCLR_H__
 
 #include "palclr_win.h"
