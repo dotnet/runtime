@@ -234,7 +234,7 @@ nameof(name));
 
                     if ((_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclProtected) != 0)
                     {
-                        securityInfo = (SecurityInfos)((uint)securityInfo | ProtectedDiscretionaryAcl);
+                        securityInfo = unchecked((SecurityInfos)((uint)securityInfo | ProtectedDiscretionaryAcl));
                     }
                     else
                     {

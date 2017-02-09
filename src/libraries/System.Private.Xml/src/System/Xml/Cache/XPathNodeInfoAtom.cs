@@ -138,7 +138,7 @@ namespace MS.Internal.Xml.Cache
             _hashCode = 0;
             _localNameHash = 0;
             for (int i = 0; i < _localName.Length; i++)
-                _localNameHash += (_localNameHash << 7) ^ _localName[i];
+                unchecked { _localNameHash += (_localNameHash << 7) ^ _localName[i]; }
         }
 
         /// <summary>
@@ -259,14 +259,17 @@ namespace MS.Internal.Xml.Cache
                 hashCode = _localNameHash;
 
                 // Add page indexes
-                if (_pageSibling != null)
-                    hashCode += (hashCode << 7) ^ _pageSibling[0].PageInfo.PageNumber;
+                unchecked
+                {
+                    if (_pageSibling != null)
+                        hashCode += (hashCode << 7) ^ _pageSibling[0].PageInfo.PageNumber;
 
-                if (_pageParent != null)
-                    hashCode += (hashCode << 7) ^ _pageParent[0].PageInfo.PageNumber;
+                    if (_pageParent != null)
+                        hashCode += (hashCode << 7) ^ _pageParent[0].PageInfo.PageNumber;
 
-                if (_pageSimilar != null)
-                    hashCode += (hashCode << 7) ^ _pageSimilar[0].PageInfo.PageNumber;
+                    if (_pageSimilar != null)
+                        hashCode += (hashCode << 7) ^ _pageSimilar[0].PageInfo.PageNumber;
+                }
 
                 // Save hashcode.  Don't save 0, so that it won't ever be recomputed.
                 _hashCode = ((hashCode == 0) ? 1 : hashCode);

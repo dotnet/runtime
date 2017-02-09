@@ -69,10 +69,13 @@ namespace Microsoft.SqlServer.TDS
         /// </summary>
         public static void WriteUInt(Stream destination, uint value)
         {
-            destination.WriteByte((byte)value);
-            destination.WriteByte((byte)(value >> 8));
-            destination.WriteByte((byte)(value >> 16));
-            destination.WriteByte((byte)(value >> 24));
+            unchecked
+            {
+                destination.WriteByte((byte)value);
+                destination.WriteByte((byte)(value >> 8));
+                destination.WriteByte((byte)(value >> 16));
+                destination.WriteByte((byte)(value >> 24));
+            }
         }
 
         /// <summary>
@@ -110,7 +113,7 @@ namespace Microsoft.SqlServer.TDS
         /// </summary>
         internal static void WriteUShort(Stream destination, ushort value)
         {
-            destination.WriteByte((byte)value);
+            destination.WriteByte(unchecked((byte)value));
             destination.WriteByte((byte)(value >> 8));
         }
 

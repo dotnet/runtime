@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((ushort)(~(ushort)obj));
+                    frame.Push(unchecked((ushort)(~(ushort)obj)));
                 }
                 return 1;
             }
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((byte)(~(byte)obj));
+                    frame.Push(unchecked((byte)(~(byte)obj)));
                 }
                 return 1;
             }

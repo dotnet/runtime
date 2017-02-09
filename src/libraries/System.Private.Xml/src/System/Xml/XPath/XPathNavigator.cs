@@ -2006,7 +2006,7 @@ namespace System.Xml.XPath
         internal static bool IsText(XPathNodeType type)
         {
             //return ((1 << (int) type) & TextMask) != 0;
-            return (uint)(type - XPathNodeType.Text) <= (XPathNodeType.Whitespace - XPathNodeType.Text);
+            return unchecked((uint)(type - XPathNodeType.Text)) <= (XPathNodeType.Whitespace - XPathNodeType.Text);
         }
 
         // Lax check for potential child item.

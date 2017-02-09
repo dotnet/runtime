@@ -392,7 +392,7 @@ nameof(identifierAuthority),
                 byte shift;
                 for (shift = 0; shift < 4; shift += 1)
                 {
-                    _binaryForm[8 + 4 * i + shift] = (byte)(((ulong)_subAuthorities[i]) >> (shift * 8));
+                    _binaryForm[8 + 4 * i + shift] = unchecked((byte)(((ulong)_subAuthorities[i]) >> (shift * 8)));
                 }
             }
         }

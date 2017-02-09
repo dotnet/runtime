@@ -501,8 +501,11 @@ namespace System
                                     ++j;
                                 }
                                 number = IPv4AddressHelper.ParseHostNumber(address, i, j);
-                                numbers[index++] = (ushort)(number >> 16);
-                                numbers[index++] = (ushort)number;
+                                unchecked
+                                {
+                                    numbers[index++] = (ushort)(number >> 16);
+                                    numbers[index++] = (ushort)number;
+                                }
                                 i = j;
 
                                 //

@@ -372,19 +372,22 @@ namespace System.Xml.Xsl
                 XmlSchemaType schemaType;
 
                 hash = (int)TypeCode;
-
                 schemaType = SchemaType;
-                if (schemaType != null)
-                    hash += (hash << 7) ^ schemaType.GetHashCode();
 
-                hash += (hash << 7) ^ (int)NodeKinds;
-                hash += (hash << 7) ^ Cardinality.GetHashCode();
-                hash += (hash << 7) ^ (IsStrict ? 1 : 0);
+                unchecked
+                {
+                    if (schemaType != null)
+                        hash += (hash << 7) ^ schemaType.GetHashCode();
 
-                // Mix hash code a bit more
-                hash -= hash >> 17;
-                hash -= hash >> 11;
-                hash -= hash >> 5;
+                    hash += (hash << 7) ^ (int)NodeKinds;
+                    hash += (hash << 7) ^ Cardinality.GetHashCode();
+                    hash += (hash << 7) ^ (IsStrict ? 1 : 0);
+
+                    // Mix hash code a bit more
+                    hash -= hash >> 17;
+                    hash -= hash >> 11;
+                    hash -= hash >> 5;
+                }
 
                 // Save hashcode.  Don't save 0, so that it won't ever be recomputed.
                 _hashCode = (hash == 0) ? 1 : hash;
