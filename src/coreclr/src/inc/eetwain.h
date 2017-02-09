@@ -251,6 +251,7 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
 */
 virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
 
+#ifndef CROSSGEN_COMPILE
 /*
     For a non-static method, "this" pointer is passed in as argument 0.
     However, if there is a "ldarga 0" or "starg 0" in the IL, 
@@ -263,6 +264,7 @@ virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
 */
 virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
                               EECodeInfo*     pCodeInfo) = 0;
+#endif // !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 /*
@@ -523,10 +525,12 @@ static OBJECTREF* GetAddrOfSecurityObjectFromCachedInfo(
 virtual
 OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) DAC_UNEXPECTED();
 
+#ifndef CROSSGEN_COMPILE
 virtual
 OBJECTREF GetInstance(
                 PREGDISPLAY     pContext,
                 EECodeInfo *    pCodeInfo);
+#endif // !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 /*
