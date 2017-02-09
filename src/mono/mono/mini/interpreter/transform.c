@@ -1963,13 +1963,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			} else {
 				if (mt == MINT_TYPE_O) 
 					klass = mono_class_from_mono_type (field->type);
-				if (!domain->special_static_fields || !g_hash_table_lookup (domain->special_static_fields, field)) {
-					if (mt == MINT_TYPE_O)
-						td.new_ip [-2] = MINT_LDSFLD_O;
-					else if (mt == MINT_TYPE_I4)
-						td.new_ip [-2] = MINT_LDSFLD_I4;
-				}
-				ADD_CODE(&td, get_data_item_index (&td, mono_class_vtable (domain, field->parent)));
 			}
 			td.ip += 5;
 			PUSH_TYPE(&td, stack_type [mt], klass);

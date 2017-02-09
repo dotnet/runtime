@@ -62,6 +62,7 @@
 #include "hacks.h"
 
 #include <mono/mini/mini.h>
+#include <mono/mini/jit-icalls.h>
 
 
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
@@ -3021,94 +3022,24 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = mono_class_vtable (context->domain, field->parent);
-			gpointer addr;
-
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
+			sp->data.p = mono_class_static_field_address (context->domain, field);
 			ip += 2;
-
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				sp->data.p = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				sp->data.p = (char*)(vt->vtable) + field->offset;
 			++sp;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			gpointer addr;
-
-			field = rtm->data_items[*(guint16 *)(ip + 1)];
-			vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			ip += 3;
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
-
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
 			stackval_from_data (field->type, sp, addr, FALSE);
-			++sp;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSFLD_I4) {
-			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			ip += 3;
-			sp->data.i = * (gint32 *)((char*)(vt->vtable) + field->offset);
-			++sp;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSFLD_O) {
-			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			ip += 3;
-			sp->data.p = * (gpointer *)((char*)(vt->vtable) + field->offset);
+			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			guint32 token;
-			gpointer addr;
-			int size;
-
-			token = * (guint16 *)(ip + 1);
-			size = READ32(ip + 2);
-			field = rtm->data_items[token];
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
+			int size = READ32 (ip + 2);
 			ip += 4;
-						
-			vt = mono_class_vtable (context->domain, field->parent);
-			if (!vt->initialized) {
-				frame->ip = ip - 2;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
 
 			sp->data.p = vt_sp;
 			vt_sp += (size + 7) & ~7;
@@ -3117,54 +3048,19 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STSFLD) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			guint32 token;
-			gpointer addr;
-
-			token = * (guint16 *)(ip + 1);
-			field = rtm->data_items[token];
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
 			ip += 2;
 			--sp;
-
-			vt = mono_class_vtable (context->domain, field->parent);
-			if (!vt->initialized) {
-				frame->ip = ip - 2;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
-
 			stackval_to_data (field->type, sp, addr, FALSE);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STSFLD_VT) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			guint32 token;
-			gpointer addr;
-			int size;
-
-			token = * (guint16 *)(ip + 1);
-			size = READ32(ip + 2);
-			field = rtm->data_items[token];
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
+			int size = READ32 (ip + 2);
 			ip += 4;
-						
-			vt = mono_class_vtable (context->domain, field->parent);
-			if (!vt->initialized) {
-				frame->ip = ip - 2;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
+
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_sp -= (size + 7) & ~7;
