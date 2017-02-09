@@ -5034,7 +5034,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(PREGDISPLAY pRD,
 }
 #endif // _TARGET_X86_
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
 {
     CONTRACTL {
@@ -5052,7 +5052,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
 
     _ASSERTE(sizeof(CodeManStateBuf) <= sizeof(pState->stateBuf));
 
-#if defined(_TARGET_X86_)
+#ifndef USE_GC_INFO_DECODER
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
 
     /* Extract the necessary information from the info block header */
@@ -5070,7 +5070,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
             return (OBJECTREF *)(size_t)(*pRD->GetEbpLocation() - GetSecurityObjectOffset(&stateBuf->hdrInfoBody));
         }
     }
-#elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#else // !USE_GC_INFO_DECODER
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
@@ -5105,13 +5105,11 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
         OBJECTREF* pSlot = (OBJECTREF*) (spOffset + uCallerSP);
         return pSlot;
     }
-#else // !_TARGET_X86_ && !(USE_GC_INFO_DECODER && !CROSSGEN_COMPILE)
-    PORTABILITY_ASSERT("EECodeManager::GetAddrOfSecurityObject is not implemented on this platform.");
-#endif
+#endif // USE_GC_INFO_DECODER
 
     return NULL;
 }
-#endif
+#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 /*****************************************************************************
