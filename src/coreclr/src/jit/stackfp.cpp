@@ -1376,7 +1376,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
     emitAttr   size;
     unsigned   offs;
     GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtGetOp2();
+    GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
     assert(tree->OperGet() == GT_ASG);
 
@@ -1693,14 +1693,14 @@ void CodeGen::genCodeForTreeStackFP_Arithm(GenTreePtr tree)
     if (tree->gtFlags & GTF_REVERSE_OPS)
     {
         bReverse = true;
-        op1      = tree->gtGetOp2();
+        op1      = tree->gtGetOp2IfPresent();
         op2      = tree->gtOp.gtOp1;
     }
     else
     {
         bReverse = false;
         op1      = tree->gtOp.gtOp1;
-        op2      = tree->gtGetOp2();
+        op2      = tree->gtGetOp2IfPresent();
     }
 
     regNumber result;
@@ -1928,7 +1928,7 @@ void CodeGen::genCodeForTreeStackFP_AsgArithm(GenTreePtr tree)
     GenTreePtr op1, op2;
 
     op1 = tree->gtOp.gtOp1;
-    op2 = tree->gtGetOp2();
+    op2 = tree->gtGetOp2IfPresent();
 
     genSetupForOpStackFP(op1, op2, (tree->gtFlags & GTF_REVERSE_OPS) ? true : false, true, false, true);
 
@@ -2208,7 +2208,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
         case GT_COMMA:
         {
             GenTreePtr op1 = tree->gtOp.gtOp1;
-            GenTreePtr op2 = tree->gtGetOp2();
+            GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
             if (tree->gtFlags & GTF_REVERSE_OPS)
             {
