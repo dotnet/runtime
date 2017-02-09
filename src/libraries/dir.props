@@ -257,6 +257,7 @@
     <NETCoreAppPackageRuntimePath>$(BinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
     <UAPPackageRefPath>$(BinDir)pkg\uap\ref</UAPPackageRefPath>
     <UAPPackageRuntimePath>$(BinDir)pkg\uap\lib</UAPPackageRuntimePath>
+    <UAPAOTPackageRuntimePath>$(BinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>
 
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinplaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinplaceTestSharedFramework>
