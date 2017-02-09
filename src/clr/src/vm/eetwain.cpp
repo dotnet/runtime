@@ -5315,6 +5315,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 #endif // _TARGET_X86_
 }
 
+#ifndef CROSSGEN_COMPILE
 /*****************************************************************************
  *
  *  Returns the extra argument passed to to shared generic code if it is still alive.
@@ -5326,7 +5327,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef _TARGET_X86_
+#ifndef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     PTR_VOID    methodInfoPtr = pCodeInfo->GetGCInfo();
     unsigned    relOffset = pCodeInfo->GetRelOffset();
@@ -5349,14 +5350,12 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     TADDR taParamTypeArg = *PTR_TADDR(fp - GetParamTypeArgOffset(&info));
     return PTR_VOID(taParamTypeArg);
 
-#elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#else // !USE_GC_INFO_DECODER
     return EECodeManager::GetExactGenericsToken(pContext, pCodeInfo);
 
-#else // !_TARGET_X86_ && !(USE_GC_INFO_DECODER && !CROSSGEN_COMPILE)
-    PORTABILITY_ASSERT("Port: EECodeManager::GetInstance is not implemented on this platform.");
-    return NULL;
-#endif // _TARGET_X86_
+#endif // USE_GC_INFO_DECODER
 }
+#endif // !CROSSGEN_COMPILE
 
 #if defined(WIN64EXCEPTIONS) && !defined(CROSSGEN_COMPILE)
 /*
