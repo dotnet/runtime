@@ -387,6 +387,9 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		} else
 			mono_value_copy (result->data.vt, data, type->data.klass);
 		return;
+	case MONO_TYPE_GENERICINST:
+		stackval_from_data (&type->data.generic_class->container_class->byval_arg, result, data, pinvoke);
+		return;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
