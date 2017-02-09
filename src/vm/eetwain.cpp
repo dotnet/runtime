@@ -5451,7 +5451,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
 #endif
 
-#if defined(_TARGET_X86_)
+#ifndef USE_GC_INFO_DECODER
     CodeManStateBuf * stateBuf = (CodeManStateBuf*)pState->stateBuf;
     
     /* Extract the necessary information from the info block header */
@@ -5489,7 +5489,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
         return PVOID(SIZE_T(pContext->SP + argSize + info->gsCookieOffset));
     }
 
-#elif defined(USE_GC_INFO_DECODER)
+#else // !USE_GC_INFO_DECODER
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
             DECODE_GS_COOKIE
@@ -5507,12 +5507,9 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     }
     return NULL;
 
-#else
-    PORTABILITY_WARNING("EECodeManager::GetGSCookieAddr is not implemented on this platform.");
-    return NULL;
-#endif
+#endif // USE_GC_INFO_DECODER
 }
-#endif
+#endif // !CROSSGEN_COMPILE
 
 #ifndef USE_GC_INFO_DECODER
 /*****************************************************************************
