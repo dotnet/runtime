@@ -6239,7 +6239,10 @@ ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegate *delegate)
 {
 	MonoReflectionMethod *ret = NULL;
 	MonoError error;
-	ret = mono_method_get_object_checked (mono_domain_get (), mono_object_get_virtual_method (delegate->target, delegate->method), mono_object_class (delegate->target), &error);
+	MonoMethod *m;
+
+	m = mono_object_get_virtual_method (delegate->target, delegate->method);
+	ret = mono_method_get_object_checked (mono_domain_get (), m, m->klass, &error);
 	mono_error_set_pending_exception (&error);
 	return ret;
 }
