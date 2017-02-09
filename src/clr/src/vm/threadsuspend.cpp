@@ -816,7 +816,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     EE_ILEXCEPTION_CLAUSE EHClause;
 
     StackWalkAction action = SWA_CONTINUE;
-#ifdef _TARGET_X86_
+#ifndef WIN64EXCEPTIONS
     // On X86, the EH encoding for catch clause is completely mess.
     // If catch clause is in its own basic block, the end of catch includes everything in the basic block.
     // For nested catch, the end of catch may include several jmp instructions after JIT_EndCatch call.
@@ -830,7 +830,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         fAtJitEndCatch = TRUE;
         offs -= 1;
     }
-#endif  // _TARGET_X86_
+#endif  // !WIN64EXCEPTIONS
 
 #if _TARGET_AMD64_ 
     STRESS_LOG1(LF_EH, LL_INFO10, "AMD64 - in TAStackCrawlCallBack 0x%x offset\n", offs);
@@ -898,7 +898,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         if (offs >= EHClause.HandlerStartPC &&
             offs < EHClause.HandlerEndPC)
         {
-#ifdef _TARGET_X86_
+#ifndef WIN64EXCEPTIONS
             if (fAtJitEndCatch)
             {
                 // On X86, JIT's EH info may include the instruction after JIT_EndCatch inside the same catch
@@ -911,7 +911,7 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
                     continue;
                 }
             }
-#endif
+#endif // !WIN64EXCEPTIONS
             pData->fWithinEHClause = true;
             // We're within an EH clause. If we're asking about CERs too then stop the stack walk if we've reached a conclusive
             // result or continue looking otherwise. Else we can stop the stackwalk now.
@@ -927,14 +927,14 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     }
     }
 
-#ifdef _TARGET_X86_
+#ifndef WIN64EXCEPTIONS
 #ifdef _DEBUG
     if (fAtJitEndCatch)
     {
         _ASSERTE (countInCatch > 0);
     }
 #endif   // _DEBUG
-#endif   // _TARGET_X86_
+#endif   // !WIN64EXCEPTIONS_
     return action;
 }
 
