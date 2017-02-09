@@ -97,27 +97,29 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
+                case TypeCode.Byte:
+                    il.Emit(OpCodes.Ldind_I1);
+                    break;
+                case TypeCode.Boolean:
+                case TypeCode.SByte:
+                    il.Emit(OpCodes.Ldind_U1);
+                    break;
+                case TypeCode.Int16:
+                    il.Emit(OpCodes.Ldind_I2);
+                    break;
+                case TypeCode.Char:
+                case TypeCode.UInt16:
+                    il.Emit(OpCodes.Ldind_U2);
+                    break;
                 case TypeCode.Int32:
                     il.Emit(OpCodes.Ldind_I4);
                     break;
                 case TypeCode.UInt32:
                     il.Emit(OpCodes.Ldind_U4);
                     break;
-                case TypeCode.Int16:
-                    il.Emit(OpCodes.Ldind_I2);
-                    break;
-                case TypeCode.UInt16:
-                    il.Emit(OpCodes.Ldind_U2);
-                    break;
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     il.Emit(OpCodes.Ldind_I8);
-                    break;
-                case TypeCode.Char:
-                    il.Emit(OpCodes.Ldind_I2);
-                    break;
-                case TypeCode.Boolean:
-                    il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Single:
                     il.Emit(OpCodes.Ldind_R4);
@@ -148,21 +150,23 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Int32:
-                    il.Emit(OpCodes.Stind_I4);
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                    il.Emit(OpCodes.Stind_I1);
                     break;
+                case TypeCode.Char:
                 case TypeCode.Int16:
+                case TypeCode.UInt16:
                     il.Emit(OpCodes.Stind_I2);
+                    break;
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                    il.Emit(OpCodes.Stind_I4);
                     break;
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
                     il.Emit(OpCodes.Stind_I8);
-                    break;
-                case TypeCode.Char:
-                    il.Emit(OpCodes.Stind_I2);
-                    break;
-                case TypeCode.Boolean:
-                    il.Emit(OpCodes.Stind_I1);
                     break;
                 case TypeCode.Single:
                     il.Emit(OpCodes.Stind_R4);
