@@ -2337,7 +2337,8 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task completingTask)
             {
-                if (Interlocked.CompareExchange(ref m_firstTaskAlreadyCompleted, 1, 0) == 0)
+                if (m_firstTaskAlreadyCompleted == 0 &&
+                    Interlocked.Exchange(ref m_firstTaskAlreadyCompleted, 1) == 0)
                 {
                     if (AsyncCausalityTracer.LoggingOn)
                     {
