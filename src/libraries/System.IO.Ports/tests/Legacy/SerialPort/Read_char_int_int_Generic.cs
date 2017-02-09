@@ -80,7 +80,7 @@ public class Read_char_int_int_Generic : PortsTest
         }
     }
 
-
+    [OuterLoop("Slow test")]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void Timeout()
     {
@@ -96,7 +96,7 @@ public class Read_char_int_int_Generic : PortsTest
         }
     }
 
-
+    [OuterLoop("Slow test")]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void SuccessiveReadTimeoutNoData()
     {

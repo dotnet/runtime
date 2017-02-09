@@ -105,6 +105,7 @@ public class Write_str_Generic : PortsTest
     }
 
     [ActiveIssue(15752)]
+    [OuterLoop("Slow test")]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void SuccessiveReadTimeout()
     {

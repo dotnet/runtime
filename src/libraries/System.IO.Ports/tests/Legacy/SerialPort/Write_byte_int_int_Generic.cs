@@ -76,6 +76,7 @@ public class Write_byte_int_int_generic : PortsTest
         }
     }
 
+    [OuterLoop("Slow test")]
     [ConditionalFact(nameof(HasNullModem))]
     public void Timeout()
     {
@@ -104,6 +105,7 @@ public class Write_byte_int_int_generic : PortsTest
     }
 
     [ActiveIssue(15752)]
+    [OuterLoop("Slow test")]
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void SuccessiveReadTimeout()
     {
