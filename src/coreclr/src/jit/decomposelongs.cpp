@@ -1642,49 +1642,83 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
     assert(varTypeIsSIMD(simdTree->gtOp.gtOp1->gtType));
     assert(simdTree->gtOp.gtOp2->gtType == TYP_INT);
 
+    bool    indexIsConst = simdTree->gtOp.gtOp2->IsCnsIntOrI();
+    ssize_t index        = 0;
+    if (indexIsConst)
+    {
+        index = simdTree->gtOp.gtOp2->gtIntCon.gtIconVal;
+    }
+
     LIR::Use op1(Range(), &simdTree->gtOp.gtOp1, simdTree);
     unsigned simdTmpVarNum = op1.ReplaceWithLclVar(m_compiler, m_blockWeight);
     JITDUMP("[DecomposeSimdGetItem]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), op1.Def());
 
-    LIR::Use op2(Range(), &simdTree->gtOp.gtOp2, simdTree);
-    unsigned indexTmpVarNum = op2.ReplaceWithLclVar(m_compiler, m_blockWeight);
-    JITDUMP("[DecomposeSimdGetItem]: Saving op2 tree to a temp var:\n");
-    DISPTREERANGE(Range(), op2.Def());
-
-    // TODO-CQ: if the index is constant, we don't need to do the computation dynamically.
+    unsigned indexTmpVarNum = 0;
+    if (!indexIsConst)
+    {
+        LIR::Use op2(Range(), &simdTree->gtOp.gtOp2, simdTree);
+        indexTmpVarNum = op2.ReplaceWithLclVar(m_compiler, m_blockWeight);
+        JITDUMP("[DecomposeSimdGetItem]: Saving op2 tree to a temp var:\n");
+        DISPTREERANGE(Range(), op2.Def());
+    }
 
     // Create:
-    //      loResult = GT_SIMD{get_item}[int](tmp_simd_var, tmp_index * 2)
+    //      loResult = GT_SIMD{get_item}[int](tmp_simd_var, index * 2)
 
-    GenTree* simdTmpVar1    = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->gtOp.gtOp1->gtType);
-    GenTree* indexTmpVar1   = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
-    GenTree* two1           = m_compiler->gtNewIconNode(2, TYP_INT);
-    GenTree* indexTimesTwo1 = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar1, two1);
+    GenTree* simdTmpVar1 = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->gtOp.gtOp1->gtType);
+    GenTree* indexTimesTwo1;
+
+    if (indexIsConst)
+    {
+        // Reuse the existing index constant node.
+        indexTimesTwo1 = simdTree->gtOp.gtOp2;
+        Range().Remove(indexTimesTwo1);
+        indexTimesTwo1->gtIntCon.gtIconVal = index * 2;
+
+        Range().InsertBefore(simdTree, simdTmpVar1, indexTimesTwo1);
+    }
+    else
+    {
+        GenTree* indexTmpVar1 = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
+        GenTree* two1         = m_compiler->gtNewIconNode(2, TYP_INT);
+        indexTimesTwo1        = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar1, two1);
+        Range().InsertBefore(simdTree, simdTmpVar1, indexTmpVar1, two1, indexTimesTwo1);
+    }
 
     GenTree* loResult =
         m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar1, indexTimesTwo1, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+    Range().InsertBefore(simdTree, loResult);
 
     // Create:
-    //      hiResult = GT_SIMD{get_item}[int](tmp_simd_var, tmp_index * 2 + 1)
+    //      hiResult = GT_SIMD{get_item}[int](tmp_simd_var, index * 2 + 1)
 
-    GenTree* simdTmpVar2          = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->gtOp.gtOp1->gtType);
-    GenTree* indexTmpVar2         = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
-    GenTree* two2                 = m_compiler->gtNewIconNode(2, TYP_INT);
-    GenTree* indexTimesTwo2       = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar2, two2);
-    GenTree* one                  = m_compiler->gtNewIconNode(1, TYP_INT);
-    GenTree* indexTimesTwoPlusOne = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo2, one);
+    GenTree* simdTmpVar2 = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTree->gtOp.gtOp1->gtType);
+    GenTree* indexTimesTwoPlusOne;
+
+    if (indexIsConst)
+    {
+        indexTimesTwoPlusOne = m_compiler->gtNewIconNode(index * 2 + 1, TYP_INT);
+        Range().InsertBefore(simdTree, simdTmpVar2, indexTimesTwoPlusOne);
+    }
+    else
+    {
+        GenTree* indexTmpVar2   = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
+        GenTree* two2           = m_compiler->gtNewIconNode(2, TYP_INT);
+        GenTree* indexTimesTwo2 = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar2, two2);
+        GenTree* one            = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwoPlusOne    = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo2, one);
+        Range().InsertBefore(simdTree, simdTmpVar2, indexTmpVar2, two2, indexTimesTwo2);
+        Range().InsertBefore(simdTree, one, indexTimesTwoPlusOne);
+    }
 
     GenTree* hiResult =
         m_compiler->gtNewSIMDNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne, SIMDIntrinsicGetItem, TYP_INT, simdSize);
+    Range().InsertBefore(simdTree, hiResult);
 
-    // Put all the new nodes in execution order.
+    // Done with the original tree; remove it.
 
-    Range().InsertBefore(tree, simdTmpVar1, indexTmpVar1, two1, indexTimesTwo1);
-    Range().InsertBefore(tree, loResult, simdTmpVar2, indexTmpVar2, two2);
-    Range().InsertBefore(tree, indexTimesTwo2, one, indexTimesTwoPlusOne, hiResult);
-
-    Range().Remove(tree);
+    Range().Remove(simdTree);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
