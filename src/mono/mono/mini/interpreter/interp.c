@@ -4384,6 +4384,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoObject *exc = NULL;
 		MonoError error;
 		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
 		if (!method) {
@@ -4406,8 +4407,37 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			} else {
 				filter = strcmp (method->name, name) == 0;
 			}
-		} else { // no filter
+		} else { /* no filter, check for `Category' attribute on method */
 			filter = TRUE;
+			MonoCustomAttrInfo* ainfo = mono_custom_attrs_from_method_checked (method, &error);
+			mono_error_cleanup (&error);
+
+			if (ainfo) {
+				int j;
+				for (j = 0; j < ainfo->num_attrs && filter; ++j) {
+					MonoCustomAttrEntry *centry = &ainfo->attrs [j];
+					if (centry->ctor == NULL)
+						continue;
+
+					MonoClass *klass = centry->ctor->klass;
+					if (strcmp (klass->name, "CategoryAttribute"))
+						continue;
+
+					MonoObject *obj = mono_custom_attrs_get_attr_checked (ainfo, klass, &error);
+					/* FIXME: there is an ordering problem if there're multiple attributes, do this instead:
+					 * MonoObject *obj = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, &error); */
+					mono_error_cleanup (&error);
+					MonoMethod *getter = mono_class_get_method_from_name (klass, "get_Category", -1);
+					MonoObject *str = interp_mono_runtime_invoke (getter, obj, NULL, &exc, &error);
+					mono_error_cleanup (&error);
+					char *utf8_str = mono_string_to_utf8_checked ((MonoString *) str, &error);
+					mono_error_cleanup (&error);
+					if (!strcmp (utf8_str, "!INTERPRETER")) {
+						g_print ("skip %s...\n", method->name);
+						filter = FALSE;
+					}
+				}
+			}
 		}
 		if (strncmp (method->name, "test_", 5) == 0 && filter) {
 			MonoError interp_error;
