@@ -2009,8 +2009,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
 				klass = field->type->data.klass;
@@ -2029,10 +2029,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
-				POP_VT(&td, size);
-				WRITE32(&td, &size);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
+				POP_VT (&td, size);
+				WRITE32 (&td, &size);
 			}
 			td.ip += 5;
 			--td.sp;
@@ -2108,14 +2108,13 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
-			g_assert (klass->valuetype);
 
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
 			} else {
-				if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->enumtype) {
+				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT && !klass->enumtype) {
 					size = mono_class_value_size (klass, NULL);
 					size = (size + 7) & ~7;
 					td.vt_sp -= size;
