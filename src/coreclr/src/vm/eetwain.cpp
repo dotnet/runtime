@@ -5260,7 +5260,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef _TARGET_X86_
+#ifndef USE_GC_INFO_DECODER
     /* Extract the necessary information from the info block header */
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     PTR_VOID    methodInfoPtr = pCodeInfo->GetGCInfo();
@@ -5278,16 +5278,16 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
     {
         return GENERIC_PARAM_CONTEXT_NONE;
     }
-    else if (info.genericsContextIsMethodDesc)
+
+    if (info.genericsContextIsMethodDesc)
     {
         return GENERIC_PARAM_CONTEXT_METHODDESC;
     }
-    else
-    {
-        return GENERIC_PARAM_CONTEXT_METHODTABLE;
-    }
+
+    return GENERIC_PARAM_CONTEXT_METHODTABLE;
+
     // On x86 the generic param context parameter is never this.
-#elif defined(USE_GC_INFO_DECODER)
+#else // !USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
     GcInfoDecoder gcInfoDecoder(
@@ -5309,10 +5309,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
         return GENERIC_PARAM_CONTEXT_THIS;
     }
     return GENERIC_PARAM_CONTEXT_NONE;
-#else // !_TARGET_X86_ && !USE_GC_INFO_DECODER
-    PORTABILITY_ASSERT("Port: EECodeManager::GetParamContextType is not implemented on this platform.");
-    return GENERIC_PARAM_CONTEXT_NONE;
-#endif // _TARGET_X86_
+#endif // USE_GC_INFO_DECODER
 }
 
 #ifndef CROSSGEN_COMPILE
