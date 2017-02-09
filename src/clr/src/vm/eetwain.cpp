@@ -5113,6 +5113,7 @@ OBJECTREF* EECodeManager::GetAddrOfSecurityObject(CrawlFrame *pCF)
 }
 #endif
 
+#ifndef CROSSGEN_COMPILE
 /*****************************************************************************
  *
  *  Returns "this" pointer if it is a non-static method
@@ -5134,7 +5135,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#ifndef USE_GC_INFO_DECODER
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned    relOffset = pCodeInfo->GetRelOffset();
 
@@ -5242,18 +5243,15 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 #endif
 
     return NULL;
-#elif defined(USE_GC_INFO_DECODER) && !defined(CROSSGEN_COMPILE)
+#else // !USE_GC_INFO_DECODER
     PTR_VOID token = EECodeManager::GetExactGenericsToken(pContext, pCodeInfo);
 
     OBJECTREF oRef = ObjectToOBJECTREF(PTR_Object(dac_cast<TADDR>(token)));
     VALIDATEOBJECTREF(oRef);
     return oRef;
-#else // !_TARGET_X86_ && !(USE_GC_INFO_DECODER && !CROSSGEN_COMPILE)
-    PORTABILITY_ASSERT("Port: EECodeManager::GetInstance is not implemented on this platform.");
-    return NULL;
-#endif // _TARGET_X86_
+#endif // USE_GC_INFO_DECODER
 }
-
+#endif // !CROSSGEN_COMPILE
 
 GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pContext,
                                                            EECodeInfo *    pCodeInfo)
