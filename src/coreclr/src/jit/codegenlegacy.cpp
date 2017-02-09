@@ -2593,7 +2593,7 @@ regMaskTP CodeGen::genRestoreAddrMode(GenTreePtr addr, GenTreePtr tree, bool loc
 
             if (tree->gtOp.gtOp1)
                 regMask |= genRestoreAddrMode(addr, tree->gtOp.gtOp1, lockPhase);
-            if (tree->gtGetOp2())
+            if (tree->gtGetOp2IfPresent())
                 regMask |= genRestoreAddrMode(addr, tree->gtOp.gtOp2, lockPhase);
         }
         else if (tree->gtOper == GT_ARR_ELEM)
@@ -3042,7 +3042,7 @@ AGAIN:
 
     noway_assert(kind & GTK_SMPOP);
 
-    if (tree->gtGetOp2())
+    if (tree->gtGetOp2IfPresent())
     {
         genEvalSideEffects(tree->gtOp.gtOp1);
 
@@ -9692,7 +9692,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
     const genTreeOps oper     = tree->OperGet();
     const var_types  treeType = tree->TypeGet();
     GenTreePtr       op1      = tree->gtOp.gtOp1;
-    GenTreePtr       op2      = tree->gtGetOp2();
+    GenTreePtr       op2      = tree->gtGetOp2IfPresent();
     regNumber        reg      = DUMMY_INIT(REG_CORRUPT);
     regMaskTP        regs     = regSet.rsMaskUsed;
     regMaskTP        needReg  = destReg;
@@ -13397,7 +13397,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
         int         helper;
 
         GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2();
+        GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
         switch (oper)
         {

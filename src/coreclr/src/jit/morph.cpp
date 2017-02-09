@@ -9280,7 +9280,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
         // Therefore, we insert a GT_ADDR just above the node, and wrap it in an obj or ind.
         // TODO-1stClassStructs: Consider whether this can be improved.
         // Also consider whether some of this can be included in gtNewBlockVal (though note
-        // that doing so may cause us to query the type system before we otherwise would.
+        // that doing so may cause us to query the type system before we otherwise would).
         GenTree* lastComma = nullptr;
         for (GenTree* next = tree; next != nullptr && next->gtOper == GT_COMMA; next = next->gtGetOp2())
         {
@@ -10318,31 +10318,46 @@ _Done:
 // FP architectures
 GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
 {
-    GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtGetOp2();
-
-    if (tree->OperIsArithmetic() && varTypeIsFloating(tree))
+    if (tree->OperIsArithmetic())
     {
-        if (op1->TypeGet() != tree->TypeGet())
+        if (varTypeIsFloating(tree))
         {
-            tree->gtOp.gtOp1 = gtNewCastNode(tree->TypeGet(), tree->gtOp.gtOp1, tree->TypeGet());
-        }
-        if (op2->TypeGet() != tree->TypeGet())
-        {
-            tree->gtOp.gtOp2 = gtNewCastNode(tree->TypeGet(), tree->gtOp.gtOp2, tree->TypeGet());
+            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTreePtr op2 = tree->gtGetOp2();
+
+            if (op1->TypeGet() != tree->TypeGet())
+            {
+                tree->gtOp.gtOp1 = gtNewCastNode(tree->TypeGet(), op1, tree->TypeGet());
+            }
+            if (op2->TypeGet() != tree->TypeGet())
+            {
+                tree->gtOp.gtOp2 = gtNewCastNode(tree->TypeGet(), op2, tree->TypeGet());
+            }
         }
     }
-    else if (tree->OperIsCompare() && varTypeIsFloating(op1) && op1->TypeGet() != op2->TypeGet())
+    else if (tree->OperIsCompare())
     {
-        // both had better be floating, just one bigger than other
-        assert(varTypeIsFloating(op2));
-        if (op1->TypeGet() == TYP_FLOAT)
+        GenTreePtr op1 = tree->gtOp.gtOp1;
+
+        if (varTypeIsFloating(op1))
         {
-            tree->gtOp.gtOp1 = gtNewCastNode(TYP_DOUBLE, tree->gtOp.gtOp1, TYP_DOUBLE);
-        }
-        else if (op2->TypeGet() == TYP_FLOAT)
-        {
-            tree->gtOp.gtOp2 = gtNewCastNode(TYP_DOUBLE, tree->gtOp.gtOp2, TYP_DOUBLE);
+            GenTreePtr op2 = tree->gtGetOp2();
+            assert(varTypeIsFloating(op2));
+
+            if (op1->TypeGet() != op2->TypeGet())
+            {
+                // both had better be floating, just one bigger than other
+                if (op1->TypeGet() == TYP_FLOAT)
+                {
+                    assert(op2->TypeGet() == TYP_DOUBLE);
+                    tree->gtOp.gtOp1 = gtNewCastNode(TYP_DOUBLE, op1, TYP_DOUBLE);
+                }
+                else if (op2->TypeGet() == TYP_FLOAT)
+                {
+                    assert(op1->TypeGet() == TYP_DOUBLE);
+                    tree->gtOp.gtOp2 = gtNewCastNode(TYP_DOUBLE, op2, TYP_DOUBLE);
+                }
+            }
         }
     }
 
@@ -10635,7 +10650,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
         genTreeOps oper = tree->OperGet();
         var_types  typ  = tree->TypeGet();
         GenTreePtr op1  = tree->gtOp.gtOp1;
-        GenTreePtr op2  = tree->gtGetOp2();
+        GenTreePtr op2  = tree->gtGetOp2IfPresent();
 
         /*-------------------------------------------------------------------------
          * First do any PRE-ORDER processing
@@ -11260,7 +11275,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 }
                 fgMorphRecognizeBoxNullable(tree);
                 op1 = tree->gtOp.gtOp1;
-                op2 = tree->gtGetOp2();
+                op2 = tree->gtGetOp2IfPresent();
 
                 break;
 
@@ -11653,7 +11668,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
         /* gtFoldExpr could have changed op1 and op2 */
         op1 = tree->gtOp.gtOp1;
-        op2 = tree->gtGetOp2();
+        op2 = tree->gtGetOp2IfPresent();
 
         // Do we have an integer compare operation?
         //
@@ -14369,7 +14384,7 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
     genTreeOps oper = tree->OperGet();
     var_types  typ  = tree->TypeGet();
     GenTreePtr op1  = tree->gtOp.gtOp1;
-    GenTreePtr op2  = tree->gtGetOp2();
+    GenTreePtr op2  = tree->gtGetOp2IfPresent();
 
     /*
         We have to use helper calls for all FP operations:
@@ -16006,7 +16021,6 @@ void Compiler::fgMorphBlocks()
                     // genReturnLocal
                     noway_assert(ret->OperGet() == GT_RETURN);
                     noway_assert(ret->gtGetOp1() != nullptr);
-                    noway_assert(ret->gtGetOp2() == nullptr);
 
                     GenTreePtr tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1());
 
@@ -16025,7 +16039,6 @@ void Compiler::fgMorphBlocks()
                     // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn block
                     noway_assert(ret->TypeGet() == TYP_VOID);
                     noway_assert(ret->gtGetOp1() == nullptr);
-                    noway_assert(ret->gtGetOp2() == nullptr);
 
                     fgRemoveStmt(block, last);
                 }

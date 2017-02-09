@@ -990,7 +990,7 @@ void Lowering::TreeNodeInfoInitSimple(GenTree* tree)
     }
     else if (kind & (GTK_SMPOP))
     {
-        if (tree->gtGetOp2() != nullptr)
+        if (tree->gtGetOp2IfPresent() != nullptr)
         {
             info->srcCount = 2;
         }
