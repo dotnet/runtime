@@ -1963,6 +1963,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				int size = mono_class_value_size (klass, NULL);
 				size = (size + 7) & ~7;
 				td.vt_sp -= size;
+				ADD_CODE (&td, MINT_VTRESULT);
+				ADD_CODE (&td, 0);
+				WRITE32 (&td, &size);
 			}
 			td.ip += 5;
 			SET_TYPE(td.sp - 1, stack_type [mt], field_klass);
