@@ -14,12 +14,25 @@ namespace System.CodeDom.Compiler
         private readonly StringCollection _output = new StringCollection();
         private Assembly _compiledAssembly;
 
+        [NonSerialized]
+        private TempFileCollection _tempFiles;
+
         public CompilerResults(TempFileCollection tempFiles)
         {
-            TempFiles = tempFiles;
+            _tempFiles = tempFiles;
         }
 
-        public TempFileCollection TempFiles { get; set; }
+        public TempFileCollection TempFiles
+        {
+            get
+            {
+                return _tempFiles;
+            }
+            set
+            {
+                _tempFiles = value;
+            }
+        }
 
         public Assembly CompiledAssembly
         {
