@@ -464,10 +464,17 @@ load_arg(TransformData *td, int n)
 			WRITE32 (td, &size);
 		}
 	} else {
-		ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
-		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-		if (mt == MINT_TYPE_O)
-			klass = mono_class_from_mono_type (type);
+		if (hasthis && n == 0) {
+			mt = MINT_TYPE_P;
+			ADD_CODE (td, MINT_LDARG_P);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			klass = NULL;
+		} else {
+			ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
+			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			if (mt == MINT_TYPE_O)
+				klass = mono_class_from_mono_type (type);
+		}
 	}
 	PUSH_TYPE(td, stack_type[mt], klass);
 }
@@ -516,12 +523,12 @@ store_inarg(TransformData *td, int n)
 		type = mono_method_signature (td->method)->params [n - !!hasthis];
 
 	int mt = mint_type (type);
+	if (hasthis && n == 0) {
+		ADD_CODE (td, MINT_STINARG_P);
+		ADD_CODE (td, n);
+		return;
+	}
 	if (mt == MINT_TYPE_VT) {
-		if (hasthis && n == 0) {
-			ADD_CODE (td, MINT_STINARG_P);
-			ADD_CODE (td, n);
-			return;
-		}
 		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)
@@ -1022,6 +1029,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			td.ip += 2;
 			break;
 		case CEE_LDARGA_S: {
+			/* NOTE: n includes this */
 			int n = ((guint8 *)td.ip)[1];
 			if (n == 0 && signature->hasthis) {
 				g_error ("LDTHISA: NOPE");
@@ -1029,7 +1037,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			}
 			else {
 				ADD_CODE(&td, MINT_LDARGA);
-				ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]);
+				ADD_CODE(&td, td.rtm->arg_offsets [n]);
 			}
 			PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 			td.ip += 2;
@@ -2824,7 +2832,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 				else {
 					ADD_CODE(&td, MINT_LDARGA);
-					ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]); /* FIX for large offsets */
+					ADD_CODE(&td, td.rtm->arg_offsets [n]); /* FIX for large offsets */
 				}
 				PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 				td.ip += 3;
