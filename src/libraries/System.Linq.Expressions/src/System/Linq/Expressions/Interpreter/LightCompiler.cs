@@ -1121,7 +1121,7 @@ namespace System.Linq.Expressions.Interpreter
 
             // use numeric conversions for both numeric types and enums
             if ((nonNullableFrom.IsNumericOrBool() || nonNullableFrom.GetTypeInfo().IsEnum)
-                 && (nonNullableTo.IsNumeric() || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
+                 && (nonNullableTo.IsNumericOrBool() || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
             {
                 Type enumTypeTo = null;
 
@@ -1138,13 +1138,28 @@ namespace System.Linq.Expressions.Interpreter
                 TypeCode from = nonNullableFrom.GetTypeCode();
                 TypeCode to = nonNullableTo.GetTypeCode();
 
-                if (isChecked)
+                if (from == to && (object)enumTypeTo != null)
                 {
-                    _instructions.EmitNumericConvertChecked(from, to, isLiftedToNull);
+                    // If casting between enums of the same underlying type or to enum from the underlying
+                    // type, there's no need for the numeric conversion, so just include a null-check if
+                    // appropriate.
+                    // Casting to the underlying check still needs a numeric conversion to force the type
+                    // change that EmitCastToEnum provides for enums.
+                    if (typeFrom.IsNullableType() && !typeTo.IsNullableType())
+                    {
+                        _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
+                    }
                 }
                 else
                 {
-                    _instructions.EmitNumericConvertUnchecked(from, to, isLiftedToNull);
+                    if (isChecked)
+                    {
+                        _instructions.EmitNumericConvertChecked(from, to, isLiftedToNull);
+                    }
+                    else
+                    {
+                        _instructions.EmitNumericConvertUnchecked(from, to, isLiftedToNull);
+                    }
                 }
 
                 if ((object)enumTypeTo != null)
