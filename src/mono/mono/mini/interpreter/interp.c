@@ -105,7 +105,7 @@ static char* dump_args (MonoInvocation *inv);
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
+static int global_tracing = 2;
 
 static int debug_indent_level = 0;
 
