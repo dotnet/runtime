@@ -23,7 +23,6 @@ namespace System.Net.Security.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void EventSource_EventsRaisedAsExpected()
         {

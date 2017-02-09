@@ -32,7 +32,6 @@ namespace System.Net.Security.Tests
             return true;  // allow everything
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ServerNoEncryption_ClientRequireEncryption_NoConnect()
         {
@@ -50,7 +49,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(SupportsNullEncryption))]
         public async Task ServerNoEncryption_ClientAllowNoEncryption_ConnectWithNoEncryption()
         {
@@ -74,7 +72,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
