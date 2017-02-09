@@ -70,7 +70,6 @@ namespace System.Runtime.InteropServices
         // Used in the conversion functions below.
         internal GCHandle(IntPtr handle)
         {
-            InternalCheckDomain(handle);
             m_handle = handle;
         }
 
@@ -291,8 +290,6 @@ namespace System.Runtime.InteropServices
         internal static extern Object InternalCompareExchange(IntPtr handle, Object value, Object oldValue, bool isPinned);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr InternalAddrOfPinnedObject(IntPtr handle);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalCheckDomain(IntPtr handle);
 
         // The actual integer handle value that the EE uses internally.
         private IntPtr m_handle;
