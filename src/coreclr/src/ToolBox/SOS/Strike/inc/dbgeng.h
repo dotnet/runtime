@@ -42,7 +42,11 @@ typedef struct _MEMORY_BASIC_INFORMATION64* PMEMORY_BASIC_INFORMATION64;
 #define __out_xcount(x)
 #define __inout
 #define __inout_opt
-#define __reserved
+// Android defines various fields on struct which are named __reserved[x]; for example, in wchar.h,
+// so we must prefix __reserved with __clr_
+#define __clr_reserved
+#else
+#define __clr_reserved __reserved
 #endif
 
 #ifdef __cplusplus
@@ -1509,7 +1513,7 @@ DECLARE_INTERFACE_(IDebugClient, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServer)(
         THIS_
@@ -1937,7 +1941,7 @@ DECLARE_INTERFACE_(IDebugClient2, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServer)(
         THIS_
@@ -2394,7 +2398,7 @@ DECLARE_INTERFACE_(IDebugClient3, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServer)(
         THIS_
@@ -2902,7 +2906,7 @@ DECLARE_INTERFACE_(IDebugClient4, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServer)(
         THIS_
@@ -3449,7 +3453,7 @@ DECLARE_INTERFACE_(IDebugClient5, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServer)(
         THIS_
@@ -3961,7 +3965,7 @@ DECLARE_INTERFACE_(IDebugClient5, IUnknown)
         THIS_
         __in ULONG Flags,
         __in PCWSTR Options,
-        __in_opt __reserved PVOID Reserved
+        __in_opt __clr_reserved PVOID Reserved
         ) PURE;
     STDMETHOD(ConnectProcessServerWide)(
         THIS_
