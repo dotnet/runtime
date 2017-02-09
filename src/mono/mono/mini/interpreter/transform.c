@@ -2113,6 +2113,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
+			} else if (!klass->valuetype) {
+				/* already boxed, do nothing. */
+				td.ip += 5;
 			} else {
 				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT && !klass->enumtype) {
 					size = mono_class_value_size (klass, NULL);
