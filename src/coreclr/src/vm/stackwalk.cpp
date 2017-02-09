@@ -52,6 +52,7 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
+#ifndef DACCESS_COMPILE
 OBJECTREF* CrawlFrame::GetAddrOfSecurityObject()
 {
     CONTRACTL {
@@ -98,6 +99,7 @@ OBJECTREF* CrawlFrame::GetAddrOfSecurityObject()
     }
     return NULL;
 }
+#endif
 
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
