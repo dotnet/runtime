@@ -2353,10 +2353,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			++ip;
 			sp[-1].data.l = *(gint64*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I)
-			++ip;
-			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+		MINT_IN_CASE(MINT_LDIND_I) {
+			guint16 offset = * (guint16 *)(ip + 1);
+			sp[-1 - offset].data.p = *(gpointer*)sp[-1 - offset].data.p;
+			ip += 2;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDIND_R4)
 			++ip;
 			sp[-1].data.f = *(gfloat*)sp[-1].data.p;
@@ -3118,23 +3120,24 @@ array_constructed:
 			sp [-1].data.i = (mono_u)sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BOX)
+		MINT_IN_CASE(MINT_BOX) {
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
+			guint16 offset = * (guint16 *)(ip + 2);
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
-				sp [-1].data.p = mono_value_box_checked (context->domain, c, sp [-1].data.p, &error);
+				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, sp [-1 - offset].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				size = (size + 7) & ~7;
 				vt_sp -= size;
-			}				
-			else {
-				stackval_to_data (&c->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
-				sp [-1].data.p = mono_value_box_checked (context->domain, c, &sp [-1], &error);
+			} else {
+				stackval_to_data (&c->byval_arg, &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
+				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, &sp [-1 - offset], &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
-			ip += 2;
+			ip += 3;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_NEWARR)
 			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */

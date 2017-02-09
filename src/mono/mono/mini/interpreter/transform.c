@@ -1333,6 +1333,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_LDIND_I:
 			CHECK_STACK (&td, 1);
 			SIMPLE_OP (td, MINT_LDIND_I);
+			ADD_CODE (&td, 0);
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I);
 			break;
 		case CEE_LDIND_R4:
@@ -2068,6 +2069,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 				ADD_CODE(&td, MINT_BOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
+				ADD_CODE (&td, 0);
 				SET_TYPE(td.sp - 1, STACK_TYPE_O, klass);
 				td.ip += 5;
 			}
