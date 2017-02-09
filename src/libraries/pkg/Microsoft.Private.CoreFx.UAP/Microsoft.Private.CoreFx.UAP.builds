@@ -4,9 +4,9 @@
 
   <Import Project="$(MSBuildProjectName).props" />
 
-  <ItemGroup Condition="'$(TargetGroup)'=='uap'">
-    <!-- identity project, runtime specific projects are included by props above -->
-    <Project Include="$(MSBuildProjectName).pkgproj" />
+  <ItemGroup>
+    <!-- identity project, runtime specific projects are included by props above. Will not be includded on uapaot builds. -->
+    <Project Include="$(MSBuildProjectName).pkgproj" Condition="'$(TargetGroup)'=='uap'" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

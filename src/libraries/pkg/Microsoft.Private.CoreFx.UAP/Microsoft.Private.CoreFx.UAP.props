@@ -13,6 +13,9 @@
         <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)</PackageRID>
         <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)</PackageRID>
         <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="('$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64') And '$(TargetGroup)' == 'uapaot'">win7-$(ArchGroup)-aot</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm' And '$(TargetGroup)' == 'uapaot'">win8-$(ArchGroup)-aot</PackageRID>
+        <PackageRID Condition="'$(ArchGroup)' == 'arm64' And '$(TargetGroup)' == 'uapaot'">win10-$(ArchGroup)-aot</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
@@ -31,6 +34,16 @@
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win10-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win7-x86-aot">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win7-x64-aot" />
+    <OfficialBuildRID Include="win8-arm-aot">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win10-arm64-aot">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
 
