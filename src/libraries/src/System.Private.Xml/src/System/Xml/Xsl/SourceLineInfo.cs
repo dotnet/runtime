@@ -12,7 +12,7 @@ namespace System.Xml.Xsl
         private ulong _value;
 
         public int Line { get { return (int)(_value >> 32); } }
-        public int Pos { get { return (int)(_value); } }
+        public int Pos { get { return unchecked((int)(_value)); } }
 
         public Location(int line, int pos)
         {

@@ -43,10 +43,13 @@ namespace System.Net
 
         public static unsafe uint GetIPv4Address(byte[] buffer)
         {
-            return (uint)((buffer[4] & 0x000000FF) |
-                (buffer[5] << 8 & 0x0000FF00) |
-                (buffer[6] << 16 & 0x00FF0000) |
-                (buffer[7] << 24));
+            unchecked
+            {
+                return (uint)((buffer[4] & 0x000000FF) |
+                    (buffer[5] << 8 & 0x0000FF00) |
+                    (buffer[6] << 16 & 0x00FF0000) |
+                    (buffer[7] << 24));
+            }
         }
 
         public static unsafe void GetIPv6Address(byte[] buffer, byte[] address, out uint scope)

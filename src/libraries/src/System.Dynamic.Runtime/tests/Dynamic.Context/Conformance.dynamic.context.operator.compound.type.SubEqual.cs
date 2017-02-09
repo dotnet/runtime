@@ -77,10 +77,10 @@ namespace Dynamic.Operator.Tests
             Assert.Throws<RuntimeBinderException>(() => d -= s_string);
 
             d = (byte)1;
-            d -= s_uint;
+            unchecked { d -= s_uint; }
 
             d = (byte)1;
-            d -= s_ulong;
+            unchecked { d -= s_ulong; }
 
             d = (byte)1;
             d -= s_ushort;
@@ -534,7 +534,7 @@ namespace Dynamic.Operator.Tests
             d -= s_byte;
 
             d = (uint)10;
-            d -= s_char;
+            unchecked { d -= s_char; }
 
             d = (uint)10;
             d -= s_decimal;
@@ -564,7 +564,7 @@ namespace Dynamic.Operator.Tests
             Assert.Throws<RuntimeBinderException>(() => d -= s_string);
 
             d = (uint)10;
-            d -= s_uint;
+            unchecked { d -= s_uint; }
 
             d = (uint)10;
             d -= s_ulong;
@@ -583,7 +583,7 @@ namespace Dynamic.Operator.Tests
             d -= s_byte;
 
             d = (ulong)10;
-            d -= s_char;
+            unchecked { d -= s_char; }
 
             d = (ulong)10;
             d -= s_decimal;
@@ -605,7 +605,7 @@ namespace Dynamic.Operator.Tests
             Assert.Throws<RuntimeBinderException>(() => d -= s_string);
 
             d = (ulong)10;
-            d -= s_uint;
+            unchecked { d -= s_uint; }
 
             d = (ulong)10;
             d -= s_ulong;
@@ -654,7 +654,7 @@ namespace Dynamic.Operator.Tests
             Assert.Throws<RuntimeBinderException>(() => d -= s_string);
 
             d = (ushort)10;
-            d -= s_uint;
+            unchecked { d -= s_uint; }
 
             d = (ushort)10;
             d -= s_ulong;

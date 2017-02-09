@@ -857,7 +857,7 @@ namespace System.Text.RegularExpressions
             int end = i + myCategoryLength;
             while (i < end)
             {
-                int curcat = (short)set[i];
+                int curcat = unchecked((short)set[i]);
 
                 if (curcat == 0)
                 {
@@ -918,7 +918,7 @@ namespace System.Text.RegularExpressions
         {
             i++;
 
-            int curcat = (short)category[i];
+            int curcat = unchecked((short)category[i]);
             if (curcat > 0)
             {
                 // positive case - the character must be in ANY of the categories in the group
@@ -953,7 +953,7 @@ namespace System.Text.RegularExpressions
                             answer = false;
                     }
                     i++;
-                    curcat = (short)category[i];
+                    curcat = unchecked((short)category[i]);
                 }
                 return answer;
             }
@@ -969,7 +969,7 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < category.Length; i++)
             {
                 short ch = (short)category[i];
-                sb.Append((char)-ch);
+                sb.Append(unchecked((char)-ch));
             }
             return StringBuilderCache.GetStringAndRelease(sb);
         }

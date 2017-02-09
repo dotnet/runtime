@@ -280,10 +280,14 @@ namespace System.Net
             {
                 uint address = PrivateAddress;
                 bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
-                bytes[0] = (byte)(address);
-                bytes[1] = (byte)(address >> 8);
-                bytes[2] = (byte)(address >> 16);
-                bytes[3] = (byte)(address >> 24);
+
+                unchecked
+                {
+                    bytes[0] = (byte)(address);
+                    bytes[1] = (byte)(address >> 8);
+                    bytes[2] = (byte)(address >> 16);
+                    bytes[3] = (byte)(address >> 24);
+                }
             }
             return bytes;
         }

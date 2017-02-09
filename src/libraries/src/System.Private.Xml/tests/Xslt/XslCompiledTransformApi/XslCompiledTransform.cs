@@ -3129,7 +3129,7 @@ namespace System.Xml.Tests
             XmlReader xmlReader = XmlReader.Create(xmlFile);
             //Let's select randomly how to create navigator
             IXPathNavigable navigator = null;
-            Random randGenerator = new Random((int)DateTime.Now.Ticks);
+            Random randGenerator = new Random(unchecked((int)DateTime.Now.Ticks));
             switch (randGenerator.Next(2))
             {
                 case 0:

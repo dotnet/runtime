@@ -1623,10 +1623,13 @@ nameof(qualifier),
             // Store the access mask in the big-endian format
             //
 
-            binaryForm[baseOffset + 0] = (byte)(AccessMask >> 0);
-            binaryForm[baseOffset + 1] = (byte)(AccessMask >> 8);
-            binaryForm[baseOffset + 2] = (byte)(AccessMask >> 16);
-            binaryForm[baseOffset + 3] = (byte)(AccessMask >> 24);
+            unchecked
+            {
+                binaryForm[baseOffset + 0] = (byte)(AccessMask >> 0);
+                binaryForm[baseOffset + 1] = (byte)(AccessMask >> 8);
+                binaryForm[baseOffset + 2] = (byte)(AccessMask >> 16);
+                binaryForm[baseOffset + 3] = (byte)(AccessMask >> 24);
+            }
 
             offsetLocal += AccessMaskLength;
 

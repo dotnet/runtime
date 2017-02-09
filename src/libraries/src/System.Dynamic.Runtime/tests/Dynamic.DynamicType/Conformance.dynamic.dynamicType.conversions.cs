@@ -5273,13 +5273,20 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
         public static int MainMethod(string[] args)
         {
+            ulong i, j;
             double x = ulong.MaxValue;
-            dynamic d = x;
-            ulong i = (ulong)x;
-            ulong j = (ulong)d;
-            Expression<Func<object, ulong>> lambda = foo => (ulong)(double)foo;
+            dynamic d;
+
+            unchecked
+            {
+                d = x;
+                i = (ulong)x;
+                j = (ulong)d;
+            }
+
+            Expression<Func<object, ulong>> lambda = foo => unchecked((ulong)(double)foo);
             ulong res = lambda.Compile()(x);
-            Func<object, ulong> lambda2 = foo => (ulong)(double)foo;
+            Func<object, ulong> lambda2 = foo => unchecked((ulong)(double)foo);
             ulong res2 = lambda2(x);
             if (i != j)
                 return 1;

@@ -1524,21 +1524,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (sbyte)(valueInt & 0xFF);
+                    valueInt = unchecked((sbyte)(valueInt & 0xFF));
                     break;
                 case FUNDTYPE.FT_I2:
                     if (!srcIntegral)
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (short)(valueInt & 0xFFFF);
+                    valueInt = unchecked((short)(valueInt & 0xFFFF));
                     break;
                 case FUNDTYPE.FT_I4:
                     if (!srcIntegral)
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (int)(valueInt & 0xFFFFFFFF);
+                    valueInt = unchecked((int)(valueInt & 0xFFFFFFFF));
                     break;
                 case FUNDTYPE.FT_I8:
                     if (!srcIntegral)

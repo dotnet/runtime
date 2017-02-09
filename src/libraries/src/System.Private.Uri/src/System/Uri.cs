@@ -2384,7 +2384,7 @@ namespace System
                         //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
                         if (++idx < info.Offset.End)
                         {
-                            port = (ushort)(userString[idx] - '0');
+                            port = unchecked((ushort)(userString[idx] - '0'));
                             if (!(port == unchecked((ushort)('/' - '0')) || port == (ushort)('?' - '0') ||
                                 port == unchecked((ushort)('#' - '0'))))
                             {
@@ -2395,7 +2395,7 @@ namespace System
                                 }
                                 for (++idx; idx < info.Offset.End; ++idx)
                                 {
-                                    ushort val = (ushort)((ushort)userString[idx] - (ushort)'0');
+                                    ushort val = unchecked((ushort)((ushort)userString[idx] - (ushort)'0'));
                                     if (val == unchecked((ushort)('/' - '0')) || val == (ushort)('?' - '0') ||
                                         val == unchecked((ushort)('#' - '0')))
                                     {
@@ -4193,7 +4193,7 @@ namespace System
                     int startPort = end;
                     for (idx = (ushort)(end + 1); idx < length; ++idx)
                     {
-                        ushort val = (ushort)((ushort)pString[idx] - (ushort)'0');
+                        ushort val = unchecked((ushort)((ushort)pString[idx] - (ushort)'0'));
                         if ((val >= 0) && (val <= 9))
                         {
                             if ((port = (port * 10 + val)) > 0xFFFF)
