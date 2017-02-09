@@ -39,7 +39,6 @@ namespace System {
     using Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
-    using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
     [Pure]
@@ -125,8 +124,12 @@ namespace System {
             throw GetArgumentException(resource, argument);
         }
 
+        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument) {
+            return new ArgumentNullException(GetArgumentName(argument));
+        }
+
         internal static void ThrowArgumentNullException(ExceptionArgument argument) {
-            throw new ArgumentNullException(GetArgumentName(argument));
+            throw GetArgumentNullException(argument);
         }
 
         internal static void ThrowArgumentNullException(ExceptionResource resource) {
@@ -207,6 +210,22 @@ namespace System {
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen() {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
+        }
+
+        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count) {
+            throw GetArraySegmentCtorValidationFailedException(array, offset, count);
+        }
+
+        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count) {
+            if (array == null)
+                return GetArgumentNullException(ExceptionArgument.array);
+            if (offset < 0)
+                return GetArgumentOutOfRangeException(ExceptionArgument.offset, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                return GetArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            Debug.Assert(array.Length - offset < count);
+            return GetArgumentException(ExceptionResource.Argument_InvalidOffLen);
         }
 
         private static ArgumentException GetArgumentException(ExceptionResource resource) {
