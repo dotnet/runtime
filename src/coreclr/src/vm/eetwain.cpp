@@ -5583,13 +5583,13 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-#if defined(_TARGET_X86_)
+#ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     return info.methodSize;
-#elif defined(USE_GC_INFO_DECODER)
+#else // !USE_GC_INFO_DECODER
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
@@ -5600,10 +5600,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
     _ASSERTE( codeLength > 0 );
     return codeLength;
 
-#else // !_TARGET_X86_ && !USE_GC_INFO_DECODER
-    PORTABILITY_ASSERT("EECodeManager::GetFunctionSize is not implemented on this platform.");
-    return 0;
-#endif
+#endif // USE_GC_INFO_DECODER
 }
 
 /*****************************************************************************
