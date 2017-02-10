@@ -484,16 +484,13 @@ namespace Microsoft.Win32 {
         }
 
         [DllImport(KERNEL32, EntryPoint="LocalAlloc")]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal static extern IntPtr LocalAlloc_NoSafeHandle(int uFlags, UIntPtr sizetdwBytes);
 
         [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern IntPtr LocalFree(IntPtr handle);
 
         // MSDN says the length is a SIZE_T.
         [DllImport(NTDLL, EntryPoint = "RtlZeroMemory")]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern void ZeroMemory(IntPtr address, UIntPtr length);
 
         internal static bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX buffer)
@@ -512,11 +509,9 @@ namespace Microsoft.Win32 {
         // the MemoryFailPoint implementation (within a CER) to increase the 
         // size of the page file, ignoring any host memory allocators.
         [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         unsafe internal static extern void * VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
 
         [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         unsafe internal static extern bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
 
         [DllImport(KERNEL32, CharSet=CharSet.Ansi, ExactSpelling=true, EntryPoint="lstrlenA")]
@@ -526,24 +521,19 @@ namespace Microsoft.Win32 {
         internal static extern int lstrlenW(IntPtr ptr);
 
         [DllImport(Win32Native.OLEAUT32, CharSet = CharSet.Unicode)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal static extern IntPtr SysAllocStringLen(String src, int len);  // BSTR
 
         [DllImport(Win32Native.OLEAUT32)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SysStringLen(IntPtr bstr);
 
         [DllImport(Win32Native.OLEAUT32)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern void SysFreeString(IntPtr bstr);
 
 #if FEATURE_COMINTEROP
         [DllImport(Win32Native.OLEAUT32)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]            
         internal static extern IntPtr SysAllocStringByteLen(byte[] str, uint len);  // BSTR
 
         [DllImport(Win32Native.OLEAUT32)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SysStringByteLen(IntPtr bstr);
 
 #endif
@@ -561,18 +551,15 @@ namespace Microsoft.Win32 {
         internal static extern SafeWaitHandle OpenEvent(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]            
         internal static extern SafeWaitHandle CreateMutex(SECURITY_ATTRIBUTES lpSecurityAttributes, bool initialOwner, String name);
 
         [DllImport(KERNEL32, SetLastError=true, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal static extern SafeWaitHandle OpenMutex(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
   
         [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]            
         internal static extern bool ReleaseMutex(SafeWaitHandle handle);
 
         [DllImport(KERNEL32, SetLastError=true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport(KERNEL32, SetLastError=true)]
@@ -582,7 +569,6 @@ namespace Microsoft.Win32 {
         internal static extern SafeWaitHandle CreateSemaphore(SECURITY_ATTRIBUTES lpSecurityAttributes, int initialCount, int maximumCount, String name);
 
         [DllImport(KERNEL32, SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
 
@@ -765,7 +751,6 @@ namespace Microsoft.Win32 {
                     WIN32_FIND_DATA lpFindFileData);
 
         [DllImport(KERNEL32)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool FindClose(IntPtr handle);
 
         [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]

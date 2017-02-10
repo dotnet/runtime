@@ -70,7 +70,6 @@ namespace System {
             // Is this thread currently doing infinite resource lookups?
             private int infinitelyRecursingCount;
             
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             internal String GetResourceString(String key)  {
                 if (key == null || key.Length == 0) {
                     Debug.Assert(false, "Environment::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
@@ -175,7 +174,6 @@ namespace System {
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
         private static Object InternalSyncObject {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get {
                 if (s_InternalSyncObject == null) {
                     Object o = new Object();
@@ -669,7 +667,6 @@ namespace System {
         }
         public static int CurrentManagedThreadId
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get
             {
                 return Thread.CurrentThread.ManagedThreadId;

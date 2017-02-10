@@ -45,7 +45,6 @@ namespace System
         // Stored as a long because we need to use Interlocked.Add.
         private long _memFailPointReservedMemory;
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static long AddMemoryFailPointReservation(long size)
         {
             // Size can legitimately be negative - see Dispose.

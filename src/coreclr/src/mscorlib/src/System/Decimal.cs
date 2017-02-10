@@ -354,13 +354,11 @@ namespace System {
         // Compares two Decimal values, returning an integer that indicates their
         // relationship.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int Compare(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern int FCallCompare(ref Decimal d1, ref Decimal d2);
     
         // Compares this object to another object, returning an integer that
@@ -621,14 +619,12 @@ namespace System {
     
         // Returns the larger of two Decimal values.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static Decimal Max(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2) >= 0? d1: d2;
         }
     
         // Returns the smaller of two Decimal values.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static Decimal Min(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2) < 0? d1: d2;
         }

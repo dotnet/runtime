@@ -39,14 +39,12 @@ namespace System.Runtime {
         
         public static GCLatencyMode LatencyMode
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get 
             {
                 return (GCLatencyMode)(GC.GetGCLatencyMode());
             }
 
             // We don't want to allow this API when hosted.
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {
                 if ((value < GCLatencyMode.Batch) || (value > GCLatencyMode.SustainedLowLatency))
@@ -62,14 +60,12 @@ namespace System.Runtime {
 
         public static GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get 
             {
                 return (GCLargeObjectHeapCompactionMode)(GC.GetLOHCompactionMode());
             }
 
             // We don't want to allow this API when hosted.
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {
                 if ((value < GCLargeObjectHeapCompactionMode.Default) || 

@@ -24,13 +24,11 @@ namespace System.Threading
          *                        long
          *****************************/
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int Increment(ref int location)
         {
             return Add(ref location, 1);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static long Increment(ref long location)
         {
             return Add(ref location, 1);
@@ -42,7 +40,6 @@ namespace System.Threading
          *                        long
          *****************************/
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int Decrement(ref int location)
         {
             return Add(ref location, -1);
@@ -64,7 +61,6 @@ namespace System.Threading
          *****************************/
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern int Exchange(ref int location1, int value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -77,14 +73,11 @@ namespace System.Threading
         public static extern double Exchange(ref double location1, double value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern Object Exchange(ref Object location1, Object value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
             _Exchange(__makeref(location1), __makeref(value));
@@ -96,7 +89,6 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void _Exchange(TypedReference location1, TypedReference value);
 
         /******************************
@@ -110,7 +102,6 @@ namespace System.Threading
          *****************************/
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);    
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -123,11 +114,9 @@ namespace System.Threading
         public static extern double CompareExchange(ref double location1, double value, double comparand);    
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern Object CompareExchange(ref Object location1, Object value, Object comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
 
         /*****************************************************************
@@ -154,7 +143,6 @@ namespace System.Threading
          * for details.
          *****************************************************************/
         
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
             // _CompareExchange() passes back the value read from location1 via local named 'value'
@@ -163,12 +151,10 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void _CompareExchange(TypedReference location1, TypedReference value, Object comparand);
 
         // BCL-internal overload that returns success via a ref bool param, useful for reliable spin locks.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
 
         /******************************
@@ -178,19 +164,16 @@ namespace System.Threading
          *****************************/
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern int ExchangeAdd(ref int location1, int value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern long ExchangeAdd(ref long location1, long value);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int Add(ref int location1, int value) 
         {
             return ExchangeAdd(ref location1, value) + value;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static long Add(ref long location1, long value) 
         {
             return ExchangeAdd(ref location1, value) + value;

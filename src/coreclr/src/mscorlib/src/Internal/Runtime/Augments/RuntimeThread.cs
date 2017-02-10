@@ -148,11 +148,9 @@ namespace Internal.Runtime.Augments
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern void DisableComObjectEagerCleanup();
 #else // !FEATURE_COMINTEROP
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void DisableComObjectEagerCleanup()
         {
             Debug.Assert(false); // the Thread class in CoreFX should have handled this case

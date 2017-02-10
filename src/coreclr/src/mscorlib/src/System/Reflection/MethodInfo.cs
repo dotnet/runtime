@@ -265,7 +265,6 @@ namespace System.Reflection
             return sbName.ToString();
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o) 
         { 
             RuntimeMethodInfo m = o as RuntimeMethodInfo;

@@ -82,7 +82,6 @@ namespace System {
         }
 
         [Pure]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNaN(double d)
         {
