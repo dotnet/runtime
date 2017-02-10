@@ -3615,10 +3615,12 @@ public:
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
                                            EECodeInfo * pCodeInfo = NULL);
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
+#ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
     static PCODE VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
         PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = NULL);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
+#endif // DACCESS_COMPILE
 #endif // WIN64EXCEPTIONS
 
     // During a <clinit>, this thread must not be asynchronously
