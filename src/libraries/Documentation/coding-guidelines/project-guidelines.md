@@ -144,6 +144,16 @@ Project configurations that are unique for a few different target frameworks and
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101-Release|AnyCPU'" />
 ```
 
+##Updating Configurations
+
+We have a build task that you can run to automatically update all the projects with the above boilerplate as well as updating all the solution files for the libraries. Whenever you change the list of configurations for a project you can regenerate all these for the entire repo by running:
+
+```
+msbuild build.proj /t:UpdateVSConfigurations
+```
+
+If you want to scope the geneneration you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/corefx/blob/master/build.proj
+
 #Library project guidelines
 Library projects should use the following directory layout.
 
