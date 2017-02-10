@@ -6519,7 +6519,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (mflags & CORINFO_FLG_DONT_INLINE_CALLER)
             {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_STACK_CRAWL_MARK);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NOINLINE_CALLEE);
                 return callRetTyp;
             }
 
