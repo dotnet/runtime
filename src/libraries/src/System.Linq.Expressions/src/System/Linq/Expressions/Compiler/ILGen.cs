@@ -405,7 +405,7 @@ namespace System.Linq.Expressions.Compiler
         {
             if (int.MinValue <= value & value <= uint.MaxValue)
             {
-                il.EmitPrimitive((int)value);
+                il.EmitPrimitive(unchecked((int)value));
                 // While often not of consequence depending on what follows, there are cases where this
                 // casting matters. Values [0, int.MaxValue] can use either safely, but negative values
                 // must use conv.i8 and those (int.MaxValue, uint.MaxValue] must use conv.u8, or else
