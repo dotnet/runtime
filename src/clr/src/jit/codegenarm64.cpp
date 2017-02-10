@@ -3378,7 +3378,14 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
+    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
+    {
+        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
+    }
+    else
+    {
+        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
+    }
 
 // TODO-ARM64-CQ: When initblk loop unrolling is implemented
 //                put this assert back on.
