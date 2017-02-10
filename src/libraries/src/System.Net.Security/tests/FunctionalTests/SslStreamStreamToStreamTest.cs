@@ -161,7 +161,7 @@ namespace System.Net.Security.Tests
                 {
                     for (int i = 0; i < largeMsg.Length; i++)
                     {
-                        largeMsg[i] = (byte)i; // very compressible
+                        largeMsg[i] = unchecked((byte)i); // very compressible
                     }
                 }
                 byte[] receivedLargeMsg = new byte[largeMsg.Length];

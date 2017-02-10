@@ -155,11 +155,11 @@ namespace System.IO.Tests
             using (HGlobalSafeBuffer buffer = new HGlobalSafeBuffer(length))
             {
                 for (ulong i = 0; i < length; i++)
-                    buffer.Write(i, (byte)i);
+                    buffer.Write(i, unchecked((byte)i));
 
                 Action validateData = () => {
                     for (int i = 0; i < length; i++)
-                        Assert.Equal((byte)i, data[i]);
+                        Assert.Equal(unchecked((byte)i), data[i]);
                 };
 
                 using (var stream = new UnmanagedMemoryStream(buffer, 0, length, FileAccess.Read))

@@ -23,13 +23,13 @@ namespace System.Tests
                 IEnumerable<int> source = Enumerable.Range(1, length).Select(_ => r.Next());
                 
                 data = data.Concat(GenerateFillData(source, r.Next(), i => i))
-                    .Concat(GenerateFillData(source, r.Next(), i => (byte)i))
-                    .Concat(GenerateFillData(source, r.Next(), i => (short)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => unchecked((byte)i)))
+                    .Concat(GenerateFillData(source, r.Next(), i => unchecked((short)i)))
                     .Concat(GenerateFillData(source, r.Next(), i => (long)i))
                     .Concat(GenerateFillData(source, r.Next(), i => new StrongBox<int>(i)))
                     .Concat(GenerateFillData(source, r.Next(), i => i.ToString()))
-                    .Concat(GenerateFillData(source, r.Next(), i => (ByteEnum)i))
-                    .Concat(GenerateFillData(source, r.Next(), i => (Int16Enum)i))
+                    .Concat(GenerateFillData(source, r.Next(), i => unchecked((ByteEnum)i)))
+                    .Concat(GenerateFillData(source, r.Next(), i => unchecked((Int16Enum)i)))
                     .Concat(GenerateFillData(source, r.Next(), i => (Int32Enum)i))
                     .Concat(GenerateFillData(source, r.Next(), i => (Int64Enum)i))
                     .Concat(GenerateFillData(source, r.Next(), i => new object()));

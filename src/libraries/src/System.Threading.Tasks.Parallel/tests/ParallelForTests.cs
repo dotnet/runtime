@@ -351,7 +351,7 @@ namespace System.Threading.Tasks.Tests
             int expectCounter = 0;
             for (int i = 0; i < count; i++)
             {
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -463,7 +463,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = i;
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -523,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = i;
-                expectCounter += i;
+                expectCounter = unchecked(expectCounter + i);
             }
 
             int counter = 0;
@@ -557,7 +557,7 @@ namespace System.Threading.Tasks.Tests
                         0,
                         count,
                         () => 0,
-                        (i, state, local) => local += i,
+                        (i, state, local) => unchecked(local += i),
                         (local) => Interlocked.Add(ref sum, local)
                     );
                 });
@@ -566,7 +566,7 @@ namespace System.Threading.Tasks.Tests
             // check that the average is correct.  (if the totals are correct, the avgs will also be correct.)
             int expectedTotal = 0;
             for (int i = 0; i < count; i++)
-                expectedTotal += i;
+                expectedTotal = unchecked(expectedTotal + i);
             Assert.Equal(expectedTotal, sum);
         }
 

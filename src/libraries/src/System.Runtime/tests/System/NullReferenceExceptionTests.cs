@@ -19,7 +19,7 @@ namespace System.Tests
         public static void NullReferenceException_Ctor_Empty()
         {
             NullReferenceException i = new NullReferenceException();
-            Assert.Equal(E_POINTER, (uint)i.HResult);
+            Assert.Equal(E_POINTER, unchecked((uint)i.HResult));
         }
 
         [Fact]
@@ -27,7 +27,7 @@ namespace System.Tests
         {
             NullReferenceException i = new NullReferenceException(exceptionMessage);
             Assert.Equal(exceptionMessage, i.Message);
-            Assert.Equal(E_POINTER, (uint)i.HResult);
+            Assert.Equal(E_POINTER, unchecked((uint)i.HResult));
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace System.Tests
             Assert.Equal(exceptionMessage, i.Message);
             Assert.Equal(i.InnerException.Message, innerExceptionMessage);
             Assert.Equal(i.InnerException.HResult, ex.HResult);
-            Assert.Equal(E_POINTER, (uint)i.HResult);
+            Assert.Equal(E_POINTER, unchecked((uint)i.HResult));
         }
     }
 }

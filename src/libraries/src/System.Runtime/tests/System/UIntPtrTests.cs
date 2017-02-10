@@ -150,7 +150,7 @@ namespace System.Tests
         {
             Assert.Equal(expected, ptr.ToUInt64());
 
-            uint expected32 = (uint)expected;
+            uint expected32 = unchecked((uint)expected);
             if (expected32 != expected)
             {
                 Assert.Throws<OverflowException>(() => ptr.ToUInt32());

@@ -958,7 +958,7 @@ namespace System.Text.Tests
         {
             var builder = new StringBuilder("Hello", 10);
             Assert.Throws<ArgumentOutOfRangeException>("capacity", () => builder.EnsureCapacity(-1)); // Capacity < 0
-            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => builder.EnsureCapacity(builder.MaxCapacity + 1)); // Capacity > builder.MaxCapacity
+            Assert.Throws<ArgumentOutOfRangeException>("capacity", () => builder.EnsureCapacity(unchecked(builder.MaxCapacity + 1))); // Capacity > builder.MaxCapacity
         }
 
         public static IEnumerable<object[]> Equals_TestData()

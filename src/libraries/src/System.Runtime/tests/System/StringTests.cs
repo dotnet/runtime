@@ -49,7 +49,7 @@ namespace System.Tests
             fixed (byte* pBytes = bytes)
             {
                 // The address of a fixed byte[] should always be even
-                Debug.Assert((int)pBytes % 2 == 0);
+                Debug.Assert(unchecked((int)pBytes) % 2 == 0);
                 char* pCh = (char*)(pBytes + 1);
                 
                 // This should handle the odd address when trying to get
