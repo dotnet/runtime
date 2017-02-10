@@ -883,7 +883,7 @@ namespace System.Net.Http
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
-                uint optionData = (uint)_receiveDataTimeout.TotalMilliseconds;
+                uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
                 HttpResponseMessage responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
