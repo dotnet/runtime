@@ -202,7 +202,7 @@ namespace Microsoft.DotNet.Host.Build
                 List<string> cmakeArgList = new List<string>();
 
                 string cmakeBaseRid, visualStudio, archMacro, arch;
-                string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING={rid}";
+                string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING=win10-{platform.ToLower()}";
                 string cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
                 string cmakeAppHostVer = $"-DCLI_CMAKE_APPHOST_VER:STRING={hostVersion.LatestAppHostVersion.ToString()}";
                 string cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
