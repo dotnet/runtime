@@ -160,7 +160,6 @@ namespace System.Linq.Expressions.Compiler
             else
             {
                 EmitUnliftedBinaryOp(op, leftType, rightType);
-                EmitConvertArithmeticResult(op, resultType);
             }
         }
 
@@ -211,6 +210,8 @@ namespace System.Linq.Expressions.Compiler
                     else if (leftType.IsUnsigned())
                     {
                         _ilg.Emit(OpCodes.Sub_Ovf_Un);
+                        // Guaranteed to fit within result type: no conversion
+                        return;
                     }
                     else
                     {
@@ -239,34 +240,42 @@ namespace System.Linq.Expressions.Compiler
                     break;
                 case ExpressionType.Modulo:
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Rem_Un : OpCodes.Rem);
-                    break;
+                    // Guaranteed to fit within result type: no conversion
+                    return;
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
                     _ilg.Emit(OpCodes.And);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.Or:
                 case ExpressionType.OrElse:
                     _ilg.Emit(OpCodes.Or);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.LessThan:
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Clt_Un : OpCodes.Clt);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.LessThanOrEqual:
                     _ilg.Emit(leftType.IsUnsigned() || leftType.IsFloatingPoint() ? OpCodes.Cgt_Un : OpCodes.Cgt);
                     _ilg.Emit(OpCodes.Ldc_I4_0);
                     _ilg.Emit(OpCodes.Ceq);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.GreaterThan:
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Cgt_Un : OpCodes.Cgt);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.GreaterThanOrEqual:
                     _ilg.Emit(leftType.IsUnsigned() || leftType.IsFloatingPoint() ? OpCodes.Clt_Un : OpCodes.Clt);
                     _ilg.Emit(OpCodes.Ldc_I4_0);
                     _ilg.Emit(OpCodes.Ceq);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.ExclusiveOr:
                     _ilg.Emit(OpCodes.Xor);
-                    break;
+                    // Not an arithmetic operation: no conversion
+                    return;
                 case ExpressionType.LeftShift:
                     if (rightType != typeof(int))
                     {
@@ -282,10 +291,13 @@ namespace System.Linq.Expressions.Compiler
                     }
                     EmitShiftMask(leftType);
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
-                    break;
+                    // Guaranteed to fit within result type: no conversion
+                    return;
                 default:
                     throw Error.UnhandledBinary(op, nameof(op));
             }
+
+            EmitConvertArithmeticResult(op, leftType);
         }
 
         // Shift operations have undefined behavior if the shift amount exceeds
