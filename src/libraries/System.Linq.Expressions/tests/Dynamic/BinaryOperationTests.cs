@@ -712,6 +712,26 @@ namespace System.Dynamic.Tests
             Assert.Throws<RuntimeBinderException>(() => dX && dY);
         }
 
+        [Fact]
+        public void LiteralDoubleNaN()
+        {
+            dynamic d = double.NaN;
+            Assert.False(d == double.NaN);
+            Assert.True(d != double.NaN);
+            d = 3.0;
+            Assert.True(double.IsNaN(d + double.NaN));
+        }
+
+        [Fact]
+        public void LiteralSingleNaN()
+        {
+            dynamic d = float.NaN;
+            Assert.False(d == float.NaN);
+            Assert.True(d != float.NaN);
+            d = 3.0F;
+            Assert.True(float.IsNaN(d + float.NaN));
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public void BinaryCallSiteBinder_DynamicExpression(bool useInterpreter)
