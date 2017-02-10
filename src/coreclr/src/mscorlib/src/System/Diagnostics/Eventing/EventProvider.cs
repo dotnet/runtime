@@ -8,6 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
+#if !CORECLR
+using System.Security.Permissions;
+#endif // !CORECLR
 using System.Threading;
 using System;
 

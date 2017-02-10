@@ -187,6 +187,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using System.Security;
+#if !CORECLR
+using System.Security.Permissions;
+#endif // !CORECLR
 
 using System.Text;
 using System.Threading;
