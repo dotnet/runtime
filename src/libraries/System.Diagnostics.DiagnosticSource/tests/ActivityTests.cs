@@ -143,9 +143,8 @@ namespace System.Diagnostics.Tests
             var child1 = new Activity("child1");
             var child2 = new Activity("child2");
             //start 2 children in different execution contexts
-            var t1 = Task.Run(() => child1.Start());
-            var t2 = Task.Run(() => child2.Start());
-            Task.WhenAll(t1, t2).Wait();
+            Task.Run(() => child1.Start()).Wait();
+            Task.Run(() => child2.Start()).Wait();
 #if DEBUG
             Assert.Equal($"{parent.Id}.{child1.OperationName}_1", child1.Id);
             Assert.Equal($"{parent.Id}.{child2.OperationName}_2", child2.Id);
