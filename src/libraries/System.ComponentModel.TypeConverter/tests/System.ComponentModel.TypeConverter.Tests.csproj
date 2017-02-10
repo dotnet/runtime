@@ -65,8 +65,6 @@
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard'">
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
     <Compile Include="TimerTests.cs" />
     <Compile Include="BindingListTests.cs" />
