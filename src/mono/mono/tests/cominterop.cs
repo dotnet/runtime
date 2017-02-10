@@ -251,6 +251,9 @@ public class Tests
 	[DllImport ("libtest")]
 	public static extern int mono_test_marshal_ccw_itest ([MarshalAs (UnmanagedType.Interface)]ITestPresSig itest);
 
+	[DllImport ("libtest")]
+	public static extern int mono_test_marshal_array_ccw_itest (int count, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] ITest[] ppUnk);
+
 	[DllImport("libtest")]
 	public static extern int mono_test_marshal_safearray_out_1dim_vt_bstr_empty ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
@@ -563,6 +566,11 @@ public class Tests
 			ManagedTestPresSig test_pres_sig = new ManagedTestPresSig ();
 
 			mono_test_marshal_ccw_itest (test_pres_sig);
+
+			// test for Xamarin-47560
+			var tests = new[] { test.Test };
+			if (mono_test_marshal_array_ccw_itest (1, tests) != 0)
+				return 201;
 
 			#endregion // COM Callable Wrapper Tests
 

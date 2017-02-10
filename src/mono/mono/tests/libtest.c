@@ -3581,6 +3581,28 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 	return 0;
 }
 
+// Xamarin-47560
+LIBTEST_API int STDCALL
+mono_test_marshal_array_ccw_itest (int count, MonoComObject ** ppUnk)
+{
+	int hr = 0;
+
+	if (!ppUnk)
+		return 1;
+
+	if (count < 1)
+		return 2;
+
+	if (!ppUnk[0])
+		return 3;
+
+	hr = ppUnk[0]->vtbl->SByteIn (ppUnk[0], -100);
+	if (hr != 0)
+		return 4;
+
+	return 0;
+}
+
 /*
  * mono_method_get_unmanaged_thunk tests
  */
