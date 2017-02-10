@@ -76,5 +76,18 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementationForUnsafe for how this happens.  
             throw new InvalidOperationException();
         }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value 
+        /// without assuming architecture dependent alignment of the address.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            throw new InvalidOperationException();
+        }
     }
 }
