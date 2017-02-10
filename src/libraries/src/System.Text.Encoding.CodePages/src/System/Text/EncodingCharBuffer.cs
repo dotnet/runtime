@@ -125,7 +125,7 @@ namespace System.Text
             [System.Security.SecurityCritical]  // auto-generated
             get
             {
-                return (int)(_bytes - _byteStart);
+                return unchecked((int)(_bytes - _byteStart));
             }
         }
 

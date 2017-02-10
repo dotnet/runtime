@@ -4290,7 +4290,7 @@ namespace System.Numerics
                     SByte* dataPtr = stackalloc SByte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (SByte)Math.Sqrt((SByte)(object)value[g]);
+                        dataPtr[g] = unchecked((SByte)Math.Sqrt((SByte)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4308,7 +4308,7 @@ namespace System.Numerics
                     Int16* dataPtr = stackalloc Int16[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int16)Math.Sqrt((Int16)(object)value[g]);
+                        dataPtr[g] = unchecked((Int16)Math.Sqrt((Int16)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4326,7 +4326,7 @@ namespace System.Numerics
                     Int32* dataPtr = stackalloc Int32[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int32)Math.Sqrt((Int32)(object)value[g]);
+                        dataPtr[g] = unchecked((Int32)Math.Sqrt((Int32)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4344,7 +4344,7 @@ namespace System.Numerics
                     Int64* dataPtr = stackalloc Int64[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Int64)Math.Sqrt((Int64)(object)value[g]);
+                        dataPtr[g] = unchecked((Int64)Math.Sqrt((Int64)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4640,31 +4640,31 @@ namespace System.Numerics
         {
             if (typeof(T) == typeof(Byte))
             {
-                return (T)(object)(Byte)((Byte)(object)left + (Byte)(object)right);
+                return (T)(object)unchecked((Byte)((Byte)(object)left + (Byte)(object)right));
             }
             else if (typeof(T) == typeof(SByte))
             {
-                return (T)(object)(SByte)((SByte)(object)left + (SByte)(object)right);
+                return (T)(object)unchecked((SByte)((SByte)(object)left + (SByte)(object)right));
             }
             else if (typeof(T) == typeof(UInt16))
             {
-                return (T)(object)(UInt16)((UInt16)(object)left + (UInt16)(object)right);
+                return (T)(object)unchecked((UInt16)((UInt16)(object)left + (UInt16)(object)right));
             }
             else if (typeof(T) == typeof(Int16))
             {
-                return (T)(object)(Int16)((Int16)(object)left + (Int16)(object)right);
+                return (T)(object)unchecked((Int16)((Int16)(object)left + (Int16)(object)right));
             }
             else if (typeof(T) == typeof(UInt32))
             {
-                return (T)(object)(UInt32)((UInt32)(object)left + (UInt32)(object)right);
+                return (T)(object)(UInt32)unchecked((UInt32)(object)left + (UInt32)(object)right);
             }
             else if (typeof(T) == typeof(Int32))
             {
-                return (T)(object)(Int32)((Int32)(object)left + (Int32)(object)right);
+                return (T)(object)(Int32)unchecked((Int32)(object)left + (Int32)(object)right);
             }
             else if (typeof(T) == typeof(UInt64))
             {
-                return (T)(object)(UInt64)((UInt64)(object)left + (UInt64)(object)right);
+                return (T)(object)(UInt64)unchecked((UInt64)(object)left + (UInt64)(object)right);
             }
             else if (typeof(T) == typeof(Int64))
             {
@@ -4738,31 +4738,31 @@ namespace System.Numerics
         {
             if (typeof(T) == typeof(Byte))
             {
-                return (T)(object)(Byte)((Byte)(object)left * (Byte)(object)right);
+                return (T)(object)unchecked((Byte)((Byte)(object)left * (Byte)(object)right));
             }
             else if (typeof(T) == typeof(SByte))
             {
-                return (T)(object)(SByte)((SByte)(object)left * (SByte)(object)right);
+                return (T)(object)unchecked((SByte)((SByte)(object)left * (SByte)(object)right));
             }
             else if (typeof(T) == typeof(UInt16))
             {
-                return (T)(object)(UInt16)((UInt16)(object)left * (UInt16)(object)right);
+                return (T)(object)unchecked((UInt16)((UInt16)(object)left * (UInt16)(object)right));
             }
             else if (typeof(T) == typeof(Int16))
             {
-                return (T)(object)(Int16)((Int16)(object)left * (Int16)(object)right);
+                return (T)(object)unchecked((Int16)((Int16)(object)left * (Int16)(object)right));
             }
             else if (typeof(T) == typeof(UInt32))
             {
-                return (T)(object)(UInt32)((UInt32)(object)left * (UInt32)(object)right);
+                return (T)(object)(UInt32)unchecked((UInt32)(object)left * (UInt32)(object)right);
             }
             else if (typeof(T) == typeof(Int32))
             {
-                return (T)(object)(Int32)((Int32)(object)left * (Int32)(object)right);
+                return (T)(object)(Int32)unchecked((Int32)(object)left * (Int32)(object)right);
             }
             else if (typeof(T) == typeof(UInt64))
             {
-                return (T)(object)(UInt64)((UInt64)(object)left * (UInt64)(object)right);
+                return (T)(object)(UInt64)unchecked((UInt64)(object)left * (UInt64)(object)right);
             }
             else if (typeof(T) == typeof(Int64))
             {

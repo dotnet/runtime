@@ -491,12 +491,15 @@ nameof(binaryForm));
 
             for (byte i = 0; i < binaryForm[offset + 1]; i++)
             {
-                SubAuthorities[i] =
-                    (int)(
-                    (((uint)binaryForm[offset + 8 + 4 * i + 0]) << 0) +
-                    (((uint)binaryForm[offset + 8 + 4 * i + 1]) << 8) +
-                    (((uint)binaryForm[offset + 8 + 4 * i + 2]) << 16) +
-                    (((uint)binaryForm[offset + 8 + 4 * i + 3]) << 24));
+                unchecked
+                {
+                    SubAuthorities[i] =
+                        (int)(
+                        (((uint)binaryForm[offset + 8 + 4 * i + 0]) << 0) +
+                        (((uint)binaryForm[offset + 8 + 4 * i + 1]) << 8) +
+                        (((uint)binaryForm[offset + 8 + 4 * i + 2]) << 16) +
+                        (((uint)binaryForm[offset + 8 + 4 * i + 3]) << 24));
+                }
             }
 
             CreateFromParts(Authority, SubAuthorities);
