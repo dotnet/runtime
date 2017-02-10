@@ -23,6 +23,9 @@
     <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" /> 
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="CompilerTests.cs" />
     <Compile Include="DebugViewTests.cs" />
     <Compile Include="Array\ArrayAccessTests.cs" />
