@@ -1318,17 +1318,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto SetMemo;
                 }
 
-#if UNSUPPORTEDAPI
                 result = assemblyThatDefinesAttribute.GetCustomAttributes()
                     .OfType<InternalsVisibleToAttribute>()
                     .Select(ivta => new AssemblyName(ivta.AssemblyName))
                     .Any(an => AssemblyName.ReferenceMatchesDefinition(an, assyName));
-#else
-                result = Enumerable.Any(assemblyThatDefinesAttribute.GetCustomAttributes()
-                                        .OfType<InternalsVisibleToAttribute>()
-                                        .Select(ivta => new AssemblyName(ivta.AssemblyName)),
-                                        an => an.Equals(assyName));
-#endif
+
             SetMemo:
                 _internalsVisibleToCalculated[key] = result;
             }
