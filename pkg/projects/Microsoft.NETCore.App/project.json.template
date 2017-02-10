@@ -9,11 +9,11 @@
       "exclude": "compile"
     },
     "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-25007-02",
-    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25010-01",
+    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25010-02",
     "Microsoft.DiaSymReader.Native": "1.4.0",
     "Libuv": "1.10.0-preview1-22036",
     "Microsoft.NETCore.Platforms": "2.0.0-beta-25007-02",
-    "NETStandard.Library": "2.0.0-beta-25009-01"
+    "NETStandard.Library": "2.0.0-beta-25010-01"
   },
   "frameworks": {
     "netcoreapp2.0": {}
