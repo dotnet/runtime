@@ -758,6 +758,14 @@ namespace System.Linq.Expressions.Compiler
             else
             {
                 TypeCode tc = typeTo.GetTypeCode();
+                if (tc == typeFrom.GetTypeCode())
+                {
+                    // Between enums of same underlying type, or between such an enum and the underlying type itself.
+                    // Includes bool-backed enums, which is the only valid conversion to or from bool.
+                    // Just leave the value on the stack, and treat it as the wanted type.
+                    return;
+                }
+
                 if (isChecked)
                 {
                     // Overflow checking needs to know if the source value on the IL stack is unsigned or not.
@@ -863,10 +871,6 @@ namespace System.Linq.Expressions.Compiler
                             {
                                 il.Emit(OpCodes.Conv_I8);
                             }
-                            break;
-                        case TypeCode.Boolean:
-                            il.Emit(OpCodes.Ldc_I4_0);
-                            il.Emit(OpCodes.Cgt_Un);
                             break;
                         default:
                             throw Error.UnhandledConvert(typeTo);
