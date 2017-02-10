@@ -24205,7 +24205,7 @@ private:
         var_types    pointerType;
         bool         doesReturnValue;
 
-        const int FAT_POINTER_MASK = 0b00000010;
+        const int FAT_POINTER_MASK = 0x2;
         const int HIGH_PROBABILITY = 80;
     };
 
