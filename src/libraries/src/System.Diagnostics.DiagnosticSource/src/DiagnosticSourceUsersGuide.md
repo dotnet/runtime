@@ -384,22 +384,22 @@ Producers may call DiagnosticSource.IsEnabled() overloads and supply additional 
 And consumers may use such properties to filter events more precisely.
 
 ```C#
-	// Create a predicate (asks only for Requests for certains URIs)
-	Func<string, object, bool> predicate = (string eventName, object context, object activity) => 
-	{
-		if (eventName == "RequestStart")
-		{
+    // Create a predicate (asks only for Requests for certains URIs)
+    Func<string, object, object, bool> predicate = (string eventName, object context, object activity) => 
+    {
+        if (eventName == "RequestStart")
+        {
 		    HttpRequestMessage request = context as HttpRequestMessage;
 		    if (request != null)
-			{
-				return IsUriEnabled(request.RequestUri);
-			}
-		}
-		return false;
-	}
+            {
+                return IsUriEnabled(request.RequestUri);
+            }
+        }
+        return false;
+    }
 
-	// Subscribe with a filter predicate
-	IDisposable subscription = listener.Subscribe(observer, predicate);
+    // Subscribe with a filter predicate
+    IDisposable subscription = listener.Subscribe(observer, predicate);
 ```
 
 Note that producer is not aware of filter consumer has provided. DiagnosticListener 

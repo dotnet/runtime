@@ -48,10 +48,15 @@ namespace System.Diagnostics
         /// before doing this setup with context 
         /// </summary>
         /// <param name="name">The name of the event being written.</param>
-        /// <param name="arg1">An object that represents the additional context for IsEnabled</param>
-        /// <param name="arg2">An object that represents the additional context for IsEnabled</param>
+        /// <param name="arg1">An object that represents the additional context for IsEnabled.
+        /// Consumers should expect to receive null which may indicate that producer called pure 
+        /// IsEnabled(string)  to check if consumer wants to get notifications for such events at all. 
+        /// Based on it, producer may call IsEnabled(string, object, object) again with non-null context </param>
+        /// <param name="arg2">Optional. An object that represents the additional context for IsEnabled. 
+        /// Null by default. Consumers shoud expect to receive null which may indicate that producer 
+        /// called pure IsEnabled(string) or producer passed all necessary context in arg1</param>
         /// <seealso cref="IsEnabled(string)"/>
-        public virtual bool IsEnabled(string name, object arg1, object arg2)
+        public virtual bool IsEnabled(string name, object arg1, object arg2 = null)
         {
             return IsEnabled(name);
         }
