@@ -47,6 +47,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void InsertChildNoGrow(Symbol child)
         {
+            switch (child.getKind())
+            {
+                case SYMKIND.SK_Scope:
+                case SYMKIND.SK_LocalVariableSymbol:
+                    return;
+            }
+
             Key k = new Key(child.name, child.parent);
             Symbol sym;
 
@@ -60,7 +67,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 Debug.Assert(sym != null && sym.nextSameName == null);
                 sym.nextSameName = child;
-                return;
             }
             else
             {
