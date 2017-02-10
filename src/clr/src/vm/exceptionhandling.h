@@ -389,7 +389,7 @@ public:
 
     bool IsStackOverflowException();
 
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && !defined(CROSS_COMPILE)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex)
     {
         _ASSERTE(ex->GetExceptionRecord() == m_ptrs.ExceptionRecord);
@@ -397,7 +397,7 @@ public:
         ex->Clear();
         m_fOwnsExceptionPointers = TRUE;
     }
-#endif // FEATURE_PAL
+#endif // FEATURE_PAL && !CROSS_COMPILE
 
 private:
     DWORD_PTR
@@ -428,7 +428,7 @@ private:
 
         m_hThrowable = NULL;
     }
-#endif
+#endif // !DACCESS_COMPILE
 
     void SaveStackTrace();
 

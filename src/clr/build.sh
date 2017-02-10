@@ -277,6 +277,8 @@ build_cross_arch_component()
     
     export __CMakeBinDir="$__CrossComponentBinDir"
     export CROSSCOMPONENT=1
+    __IncludeTests=
+
     if [ $CROSSCOMPILE == 1 ]; then
         TARGET_ROOTFS="$ROOTFS_DIR"
         if [ -n "$CAC_ROOTFS_DIR" ]; then
