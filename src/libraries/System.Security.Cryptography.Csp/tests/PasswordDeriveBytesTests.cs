@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 // Right now we know that at least one of the constructor and get_Salt made a copy, if it was
                 // only get_Salt then this next part would fail.
 
-                saltIn[0] = (byte)~saltIn[0];
+                saltIn[0] = unchecked((byte)~saltIn[0]);
 
                 // Have to read the property again to prove it's detached.
                 Assert.NotEqual(saltIn, deriveBytes.Salt);

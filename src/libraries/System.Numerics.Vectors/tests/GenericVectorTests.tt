@@ -334,8 +334,11 @@ namespace System.Numerics.Tests
             int expected = 0;
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                uint shift5 = ((uint)expected << 5) | ((uint)expected >> 27);
-                expected = ((int)shift5 + expected) ^ v1[g].GetHashCode();
+                unchecked
+                {
+                    uint shift5 = ((uint)expected << 5) | ((uint)expected >> 27);
+                    expected = ((int)shift5 + expected) ^ v1[g].GetHashCode();
+                }
             }
 
             Assert.Equal(expected, hash);
@@ -809,7 +812,7 @@ namespace System.Numerics.Tests
             T[] values2 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values2[g] = (T)(dynamic)(g * 5 + 9);
+                values2[g] = unchecked((T)(dynamic)(g * 5 + 9));
             }
             Vector<T> vec2 = new Vector<T>(values2);
 
@@ -848,7 +851,7 @@ namespace System.Numerics.Tests
             T[] values2 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values2[g] = (T)(dynamic)(g * 5 + 9);
+                values2[g] = unchecked((T)(dynamic)(g * 5 + 9));
             }
             Vector<T> vec2 = new Vector<T>(values2);
 

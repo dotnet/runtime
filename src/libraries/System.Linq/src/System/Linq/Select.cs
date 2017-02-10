@@ -300,7 +300,7 @@ namespace System.Linq
 
             public TResult TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)_source.Length)
+                if (unchecked((uint)index < (uint)_source.Length))
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -438,7 +438,7 @@ namespace System.Linq
 
             public TResult TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)_source.Count)
+                if (unchecked((uint)index < (uint)_source.Count))
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -596,7 +596,7 @@ namespace System.Linq
 
             public TResult TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)_source.Count)
+                if (unchecked((uint)index < (uint)_source.Count))
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -847,7 +847,7 @@ namespace System.Linq
                 // Having a separate field for the index would be more readable. However, we save it
                 // into _state with a bias to minimize field size of the iterator.
                 int index = _state - 1;
-                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
+                if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
                 {
                     _current = _selector(_source[_minIndexInclusive + index]);
                     ++_state;

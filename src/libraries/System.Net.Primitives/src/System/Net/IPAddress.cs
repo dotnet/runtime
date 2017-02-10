@@ -359,8 +359,8 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((long)HostToNetworkOrder((int)host) & 0xFFFFFFFF) << 32)
-                    | ((long)HostToNetworkOrder((int)(host >> 32)) & 0xFFFFFFFF);
+            return (((long)HostToNetworkOrder(unchecked((int)host)) & 0xFFFFFFFF) << 32)
+                    | ((long)HostToNetworkOrder(unchecked((int)(host >> 32))) & 0xFFFFFFFF);
 #endif
         }
 
@@ -369,8 +369,8 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((int)HostToNetworkOrder((short)host) & 0xFFFF) << 16)
-                    | ((int)HostToNetworkOrder((short)(host >> 16)) & 0xFFFF);
+            return (((int)HostToNetworkOrder(unchecked((short)host)) & 0xFFFF) << 16)
+                    | ((int)HostToNetworkOrder(unchecked((short)(host >> 16))) & 0xFFFF);
 #endif
         }
 
@@ -516,7 +516,7 @@ namespace System.Net
                     if (PrivateAddress != value)
                     {
                         _toString = null;
-                        PrivateAddress = (uint)value;
+                        PrivateAddress = unchecked((uint)value);
                     }
                 }
             }

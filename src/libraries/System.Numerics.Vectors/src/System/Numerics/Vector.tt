@@ -1454,7 +1454,7 @@ namespace System.Numerics
                     <#=type.Name#>* dataPtr = stackalloc <#=type.Name#>[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (<#=type.Name#>)Math.Sqrt((<#=type.Name#>)(object)value[g]);
+                        dataPtr[g] = unchecked((<#=type.Name#>)Math.Sqrt((<#=type.Name#>)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -1560,7 +1560,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)(<#=type.Name#>)((<#=type.Name#>)(object)left + (<#=type.Name#>)(object)right);
+                return (T)(object)unchecked((<#=type.Name#>)((<#=type.Name#>)(object)left + (<#=type.Name#>)(object)right));
             }
 <#
    }
@@ -1598,7 +1598,7 @@ namespace System.Numerics
 #>
             <#=GenerateIfStatementHeader(type)#>
             {
-                return (T)(object)(<#=type.Name#>)((<#=type.Name#>)(object)left * (<#=type.Name#>)(object)right);
+                return (T)(object)unchecked((<#=type.Name#>)((<#=type.Name#>)(object)left * (<#=type.Name#>)(object)right));
             }
 <#
    }
