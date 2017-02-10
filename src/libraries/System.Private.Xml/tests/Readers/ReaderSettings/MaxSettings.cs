@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     [TestCase(Name = "MaxCharacters Settings", Desc = "MaxCharacters Settings")]
     public partial class TCMaxSettings : TCXMLReaderBaseGeneral
     {
-        private long _defaultCharsEnt = 0;
+        private long _defaultCharsEnt = (long)1e7;  // By default, entity resolving is limited to 10 million characters (On full .NET the default used to be zero (=unlimited) as LegacyXmlSettings was enabled)
         private long _defaultCharsDoc = 0;
         private long _maxVal = Int64.MaxValue;
         private long _bigVal = 100000;
@@ -330,8 +330,8 @@ namespace System.Xml.Tests
             using (XmlReader reader = ReaderHelper.Create(new StringReader(xml), rs))
             {
                 while (reader.Read()) ;
-                CError.Compare((int)reader.Settings.MaxCharactersFromEntities, 0, "Error");
-                CError.Compare((int)reader.Settings.MaxCharactersInDocument, 0, "Error");
+                CError.Compare((long)reader.Settings.MaxCharactersFromEntities, _defaultCharsEnt, "Error");
+                CError.Compare((long)reader.Settings.MaxCharactersInDocument, _defaultCharsDoc, "Error");
             }
             return TEST_PASS;
         }
