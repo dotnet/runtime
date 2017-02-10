@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -49,7 +51,6 @@ namespace System.Net.Http.Functional.Tests
                 Guid requestGuid = Guid.Empty;
                 bool responseLogged = false;
                 Guid responseGuid = Guid.Empty;
-
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
                     if (kvp.Key.Equals("System.Net.Http.Request"))
@@ -57,7 +58,6 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(kvp.Value);
                         GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
                         requestGuid = GetPropertyValueFromAnonymousTypeInstance<Guid>(kvp.Value, "LoggingRequestId");
-
                         requestLogged = true;
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Response"))
@@ -66,6 +66,8 @@ namespace System.Net.Http.Functional.Tests
 
                         GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Response");
                         responseGuid = GetPropertyValueFromAnonymousTypeInstance<Guid>(kvp.Value, "LoggingRequestId");
+                        var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
+                        Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
 
                         responseLogged = true;
                     }
@@ -168,6 +170,89 @@ namespace System.Net.Http.Functional.Tests
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SendAsync_ExpectedDiagnosticExceptionLogging()
+        {
+            RemoteInvoke(() =>
+            {
+                bool exceptionLogged = false;
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.Response"))
+                    {
+                        Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<Exception>(kvp.Value, "Exception");
+                        var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
+                        Assert.Equal(TaskStatus.Faulted, requestStatus);
+
+                        exceptionLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable();
+                    using (var client = new HttpClient())
+                    {
+                        Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
+                    }
+                    // Poll with a timeout since logging response is not synchronized with returning a response.
+                    WaitForTrue(() => exceptionLogged, TimeSpan.FromSeconds(1),
+                        "Exception was not logged within 1 second timeout.");
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SendAsync_ExpectedDiagnosticCancelledLogging()
+        {
+            RemoteInvoke(() =>
+            {
+                bool cancelLogged = false;
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.Response"))
+                    {
+                        Assert.NotNull(kvp.Value);
+                        var status = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
+                        Assert.Equal(TaskStatus.Canceled, status);
+                        cancelLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable();
+                    using (var client = new HttpClient())
+                    {
+                        LoopbackServer.CreateServerAsync(async (server, url) =>
+                        {
+                            CancellationTokenSource tcs = new CancellationTokenSource();
+                            Task request = LoopbackServer.AcceptSocketAsync(server,
+                                (s, stream, reader, writer) =>
+                                {
+                                    tcs.Cancel();
+                                    return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
+                                });
+                            Task response = client.GetAsync(url, tcs.Token);
+                            await Assert.ThrowsAsync<IOException>(() => Task.WhenAll(response, request));
+                        }).Wait();
+                    }
+                }
+                // Poll with a timeout since logging response is not synchronized with returning a response.
+                WaitForTrue(() => cancelLogged, TimeSpan.FromSeconds(1),
+                    "Cancellation was not logged within 1 second timeout.");
+                diagnosticListenerObserver.Disable();
 
                 return SuccessExitCode;
             }).Dispose();
