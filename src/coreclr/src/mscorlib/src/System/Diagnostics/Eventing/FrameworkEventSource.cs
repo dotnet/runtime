@@ -87,6 +87,9 @@ namespace System.Diagnostics.Tracing {
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string arg3, bool arg4)
         {
@@ -111,6 +114,9 @@ namespace System.Diagnostics.Tracing {
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string arg3)
         {
@@ -133,6 +139,9 @@ namespace System.Diagnostics.Tracing {
 
         // optimized for common signatures (used by the BeginGetResponse/BeginGetRequestStream events)
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEvent(int eventId, long arg1, string arg2, bool arg3, bool arg4)
         {
@@ -157,6 +166,9 @@ namespace System.Diagnostics.Tracing {
 
         // optimized for common signatures (used by the EndGetRequestStream event)
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEvent(int eventId, long arg1, bool arg2, bool arg3)
         {
@@ -175,6 +187,9 @@ namespace System.Diagnostics.Tracing {
 
         // optimized for common signatures (used by the EndGetResponse event)
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEvent(int eventId, long arg1, bool arg2, bool arg3, int arg4)
         {
@@ -480,6 +495,9 @@ namespace System.Diagnostics.Tracing {
             WriteEvent(30, workID);
         }
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void ThreadPoolEnqueueWorkObject(object workID) {
             // convert the Object Id to a long
             ThreadPoolEnqueueWork((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref workID)));
@@ -491,6 +509,9 @@ namespace System.Diagnostics.Tracing {
         }
 
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void ThreadPoolDequeueWorkObject(object workID) {
             // convert the Object Id to a long
             ThreadPoolDequeueWork((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref workID)));
@@ -525,24 +546,36 @@ namespace System.Diagnostics.Tracing {
         }
 
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void BeginGetResponse(object id, string uri, bool success, bool synchronous) {
             if (IsEnabled())
                 GetResponseStart(IdForObject(id), uri, success, synchronous);
         }
             
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void EndGetResponse(object id, bool success, bool synchronous, int statusCode) {
             if (IsEnabled())
                 GetResponseStop(IdForObject(id), success, synchronous, statusCode);
         }
 
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void BeginGetRequestStream(object id, string uri, bool success, bool synchronous) {
             if (IsEnabled())
                 GetRequestStreamStart(IdForObject(id), uri, success, synchronous);
         }
 
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void EndGetRequestStream(object id, bool success, bool synchronous) {
             if (IsEnabled())
                 GetRequestStreamStop(IdForObject(id), success, synchronous);
@@ -564,6 +597,9 @@ namespace System.Diagnostics.Tracing {
         //      keep track of GC movements in order to correlate the value passed to XyzSend with the
         //      (possibly changed) value passed to XyzReceive
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues) {
             ThreadTransferSend((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues);
         }
@@ -584,6 +620,9 @@ namespace System.Diagnostics.Tracing {
         //      keep track of GC movements in order to correlate the value passed to XyzSend with the
         //      (possibly changed) value passed to XyzReceive
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void ThreadTransferReceiveObj(object id, int kind, string info) {
             ThreadTransferReceive((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
         }
@@ -604,6 +643,9 @@ namespace System.Diagnostics.Tracing {
         //      keep track of GC movements in order to correlate the value passed to XyzSend with the
         //      (possibly changed) value passed to XyzReceive
         [NonEvent]
+#if !CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif // !CORECLR
         public unsafe void ThreadTransferReceiveHandledObj(object id, int kind, string info) {
             ThreadTransferReceive((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
         }
