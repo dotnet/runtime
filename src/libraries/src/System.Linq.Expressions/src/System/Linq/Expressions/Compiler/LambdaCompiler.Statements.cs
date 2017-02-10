@@ -550,7 +550,7 @@ namespace System.Linq.Expressions.Compiler
                 // explicit guard
                 Label secondHalf = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(buckets[mid - 1].Last().Constant, this);
+                EmitConstant(buckets[mid - 1].Last().Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
                 EmitSwitchBuckets(info, buckets, first, mid - 1);
                 _ilg.MarkLabel(secondHalf);
@@ -565,7 +565,7 @@ namespace System.Linq.Expressions.Compiler
             if (bucket.Count == 1)
             {
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket[0].Constant, this);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(OpCodes.Beq, bucket[0].Label);
                 return;
             }
@@ -580,10 +580,10 @@ namespace System.Linq.Expressions.Compiler
             {
                 after = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket.Last().Constant, this);
+                EmitConstant(bucket.Last().Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, after.Value);
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                _ilg.EmitConstant(bucket[0].Constant, this);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Blt_Un : OpCodes.Blt, after.Value);
             }
 
@@ -593,7 +593,7 @@ namespace System.Linq.Expressions.Compiler
             decimal key = bucket[0].Key;
             if (key != 0)
             {
-                _ilg.EmitConstant(bucket[0].Constant, this);
+                EmitConstant(bucket[0].Constant);
                 _ilg.Emit(OpCodes.Sub);
             }
 

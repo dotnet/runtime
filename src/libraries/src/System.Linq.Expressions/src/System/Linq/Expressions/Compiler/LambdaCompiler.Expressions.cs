@@ -563,16 +563,19 @@ namespace System.Linq.Expressions.Compiler
             EmitConstant(node.Value, node.Type);
         }
 
+        private void EmitConstant(object value)
+        {
+            Debug.Assert(value != null);
+            EmitConstant(value, value.GetType());
+        }
+
         private void EmitConstant(object value, Type type)
         {
             // Try to emit the constant directly into IL
-            if (ILGen.CanEmitConstant(value, type))
+            if (!_ilg.TryEmitConstant(value, type, this))
             {
-                _ilg.EmitConstant(value, type, this);
-                return;
+                _boundConstants.EmitConstant(this, value, type);
             }
-
-            _boundConstants.EmitConstant(this, value, type);
         }
 
         private void EmitDynamicExpression(Expression expr)
