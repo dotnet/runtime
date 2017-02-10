@@ -467,16 +467,28 @@ check_cxx_source_compiles(
     HAVE_TCP_VAR_H
 )
 
+check_include_files(
+    sys/cdefs.h
+    HAVE_SYS_CDEFS_H)
+
+if (HAVE_SYS_CDEFS_H)
+    set(CMAKE_REQUIRED_DEFINITIONS "-DHAVE_SYS_CDEFS_H")
+endif()
+
 # If sys/cdefs is not included on Android, this check will fail because
 # __BEGIN_DECLS is not defined
 check_cxx_source_compiles(
     "
+#ifdef HAVE_SYS_CDEFS_H
     #include <sys/cdefs.h>
+#endif
     #include <netinet/tcp.h>
     int main() { int x = TCP_ESTABLISHED; return x; }
     "
     HAVE_TCP_H_TCPSTATE_ENUM
 )
+
+set(CMAKE_REQUIRED_DEFINITIONS)
 
 check_symbol_exists(
     TCPS_ESTABLISHED
