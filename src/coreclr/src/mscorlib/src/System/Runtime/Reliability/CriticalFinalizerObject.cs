@@ -23,12 +23,10 @@ namespace System.Runtime.ConstrainedExecution
 {
     public abstract class CriticalFinalizerObject
     {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected CriticalFinalizerObject()
         {
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         ~CriticalFinalizerObject()
         {
         }

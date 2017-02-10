@@ -293,7 +293,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Assume(bool condition)
         {
@@ -314,7 +313,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Assume(bool condition, String userMessage)
         {
@@ -335,7 +333,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Assert(bool condition)
         {
@@ -352,7 +349,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Assert(bool condition, String userMessage)
         {
@@ -376,7 +372,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Requires(bool condition)
         {
@@ -396,7 +391,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Requires(bool condition, String userMessage)
         {
@@ -416,7 +410,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter")]
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Requires<TException>(bool condition) where TException : Exception
         {
@@ -438,7 +431,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter")]
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Requires<TException>(bool condition, String userMessage) where TException : Exception
         {
@@ -461,7 +453,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Ensures(bool condition)
         {
@@ -481,7 +472,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Ensures(bool condition, String userMessage)
         {
@@ -502,7 +492,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("CONTRACTS_FULL")]
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Exception type used in tools.")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void EnsuresOnThrow<TException>(bool condition) where TException : Exception
         {
@@ -524,7 +513,6 @@ namespace System.Diagnostics.Contracts {
         [Conditional("CONTRACTS_FULL")]
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Exception type used in tools.")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void EnsuresOnThrow<TException>(bool condition, String userMessage) where TException : Exception
         {
@@ -544,7 +532,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "Not intended to be called at runtime.")]
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static T Result<T>() { return default(T); }
 
@@ -560,7 +547,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "0#", Justification = "Not intended to be called at runtime.")]
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static T ValueAtReturn<T>(out T value) { value = default(T); return value; }
 
@@ -576,7 +562,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value")]
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static T OldValue<T>(T value) { return default(T); }
 
@@ -598,7 +583,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Invariant(bool condition)
         {
@@ -618,7 +602,6 @@ namespace System.Diagnostics.Contracts {
         [Pure]
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static void Invariant(bool condition, String userMessage)
         {
@@ -643,7 +626,6 @@ namespace System.Diagnostics.Contracts {
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]  // Assumes predicate obeys CER rules.
 #endif
         public static bool ForAll(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
@@ -674,7 +656,6 @@ namespace System.Diagnostics.Contracts {
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]  // Assumes predicate & collection enumerator obey CER rules.
 #endif
         public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
@@ -705,7 +686,6 @@ namespace System.Diagnostics.Contracts {
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]  // Assumes predicate obeys CER rules.
 #endif
         public static bool Exists(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
@@ -735,7 +715,6 @@ namespace System.Diagnostics.Contracts {
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]  // Assumes predicate & collection enumerator obey CER rules.
 #endif
         public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
@@ -764,7 +743,6 @@ namespace System.Diagnostics.Contracts {
         /// </summary>
         [Conditional("CONTRACTS_FULL")]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static void EndContractBlock() { }
 
@@ -825,7 +803,6 @@ namespace System.Diagnostics.Contracts.Internal
         [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
         {
@@ -837,7 +814,6 @@ namespace System.Diagnostics.Contracts.Internal
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
         {
@@ -864,7 +840,6 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
         {
@@ -879,7 +854,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #endif
         public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
         {

@@ -713,7 +713,6 @@ namespace System.Threading
             registeredWaitHandle = handle;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal void SetWaitObject(WaitHandle waitObject)
         {
             // needed for DangerousAddRef
@@ -731,7 +730,6 @@ namespace System.Threading
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal bool Unregister(
              WaitHandle     waitObject          // object to be notified when all callbacks to delegates have completed
              )
@@ -1515,7 +1513,6 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
     }
 }

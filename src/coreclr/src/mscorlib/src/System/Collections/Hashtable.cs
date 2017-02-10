@@ -273,7 +273,6 @@ namespace System.Collections {
         }
 
         // Removes all entries from this hashtable.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public virtual void Clear() {
             Debug.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
@@ -512,7 +511,6 @@ namespace System.Collections {
             version++;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private void rehash( int newsize, bool forceNewHashCode ) {
 
             // reset occupancy
@@ -645,7 +643,6 @@ namespace System.Collections {
         // Inserts an entry into this hashtable. This method is called from the Set
         // and Add methods. If the add parameter is true and the given key already
         // exists in the hashtable, an exception is thrown.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private void Insert (Object key, Object nvalue, bool add) {
             if (key == null) {
                 throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
@@ -779,7 +776,6 @@ namespace System.Collections {
         // key exists in the hashtable, it is removed. An ArgumentException is
         // thrown if the key is null.
         // 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public virtual void Remove(Object key) {
             if (key == null) {
                 throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
@@ -1363,7 +1359,6 @@ namespace System.Collections {
 
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static bool IsPrime(int candidate) 
         {
             if ((candidate & 1) != 0) 
@@ -1379,7 +1374,6 @@ namespace System.Collections {
             return (candidate == 2);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int GetPrime(int min) 
         {
             if (min < 0)

@@ -449,7 +449,6 @@ namespace System.Reflection
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RtFieldInfo m = o as RtFieldInfo;
@@ -752,7 +751,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             MdFieldInfo m = o as MdFieldInfo;

@@ -92,7 +92,6 @@ namespace System.Diagnostics.Contracts {
         [SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework", MessageId = "System.Security.SecuritySafeCriticalAttribute")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         static partial void ReportFailure(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
         {
@@ -144,7 +143,6 @@ namespace System.Diagnostics.Contracts {
         internal Exception thrownDuringHandler;
 
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         public ContractFailedEventArgs(ContractFailureKind failureKind, String message, String condition, Exception originalException)
         {
@@ -421,7 +419,6 @@ namespace System.Runtime.CompilerServices
         }
 
 #if FEATURE_RELIABILITY_CONTRACTS
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
         private static String GetDisplayMessage(ContractFailureKind failureKind, String userMessage, String conditionText)
         {

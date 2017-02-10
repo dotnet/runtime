@@ -211,7 +211,6 @@ namespace System.Reflection
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimeConstructorInfo m = o as RuntimeConstructorInfo;

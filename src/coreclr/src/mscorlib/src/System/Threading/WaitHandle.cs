@@ -100,7 +100,6 @@ namespace System.Threading
 
         public SafeWaitHandle SafeWaitHandle 
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get
             {
                 if (safeWaitHandle == null)
@@ -110,7 +109,6 @@ namespace System.Threading
                 return safeWaitHandle;
             }
 
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set
             {
                  // Set safeWaitHandle and waitHandle in a CER so we won't take
@@ -243,7 +241,6 @@ namespace System.Threading
         ========================================================================*/
         
         [MethodImplAttribute(MethodImplOptions.InternalCall)] 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern int WaitMultiple(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext, bool WaitAll);
 
         public static bool WaitAll(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext)
@@ -348,7 +345,6 @@ namespace System.Threading
         ** (if in a synchronized context) is exited before the wait and reacquired 
         ========================================================================*/
         
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout, bool exitContext)
         {
             if (waitHandles==null)
@@ -404,7 +400,6 @@ namespace System.Threading
                 return ret;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(
                                     WaitHandle[] waitHandles, 
                                     TimeSpan timeout,
@@ -417,7 +412,6 @@ namespace System.Threading
             }
             return WaitAny(waitHandles,(int)tm, exitContext);
         }
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(WaitHandle[] waitHandles, TimeSpan timeout)
         {
             return WaitAny(waitHandles, timeout, true); 
@@ -427,13 +421,11 @@ namespace System.Threading
         /*========================================================================
         ** Shorthand for WaitAny with timeout = Timeout.Infinite and exitContext = true
         ========================================================================*/
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(WaitHandle[] waitHandles)
         {
             return WaitAny(waitHandles, Timeout.Infinite, true);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout)
         {
             return WaitAny(waitHandles, millisecondsTimeout, true); 

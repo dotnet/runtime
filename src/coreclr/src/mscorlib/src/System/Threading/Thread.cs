@@ -211,7 +211,6 @@ namespace System.Threading {
 
         extern public new int ManagedThreadId
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
@@ -339,10 +338,8 @@ namespace System.Threading {
            a explict busy loop because the hardware can be informed that it is busy waiting. */
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void SpinWaitInternal(int iterations);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static new void SpinWait(int iterations)
         {
             SpinWaitInternal(iterations);
@@ -350,17 +347,14 @@ namespace System.Threading {
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern bool YieldInternal();
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static new bool Yield()
         {
             return YieldInternal();
         }
         
         public static new Thread CurrentThread {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             get {
                 Contract.Ensures(Contract.Result<Thread>() != null);
                 return GetCurrentThreadNative();
@@ -394,14 +388,12 @@ namespace System.Threading {
         /*=========================================================================
         ** Clean up the thread when it goes away.
         =========================================================================*/
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         ~Thread()
         {
             // Delegate to the unmanaged portion.
             InternalFinalize();
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
 

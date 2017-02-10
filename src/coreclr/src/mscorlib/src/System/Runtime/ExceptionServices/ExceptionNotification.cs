@@ -29,7 +29,6 @@ namespace System.Runtime.ExceptionServices {
         // Returns the exception object pertaining to the first chance exception
         public Exception Exception
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get { return m_Exception; }
         }
 
