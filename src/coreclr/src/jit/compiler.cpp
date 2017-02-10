@@ -3031,25 +3031,37 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
-    if (compIsForInlining() || compIsForImportOnly())
+    if (compIsForImportOnly())
     {
         return;
     }
+
+#if FEATURE_TAILCALL_OPT
+    // By default opportunistic tail call optimization is enabled.
+    // Recognition is done in the importer so this must be set for
+    // inlinees as well.
+    opts.compTailCallOpt = true;
+#endif // FEATURE_TAILCALL_OPT
+
+    if (compIsForInlining())
+    {
+        return;
+    }
+
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if FEATURE_TAILCALL_OPT
+    opts.compTailCallLoopOpt = true;
+#endif // FEATURE_TAILCALL_OPT
 
     opts.genFPorder = true;
     opts.genFPopt   = true;
 
     opts.instrCount = 0;
     opts.lvRefCount = 0;
-
-#if FEATURE_TAILCALL_OPT
-    // By default opportunistic tail call optimization is enabled
-    opts.compTailCallOpt     = true;
-    opts.compTailCallLoopOpt = true;
-#endif
 
 #ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;
