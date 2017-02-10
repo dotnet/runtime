@@ -16710,5 +16710,103 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(int*)));
         }
+
+        public static IEnumerable<object[]> Conversions()
+        {
+            yield return new object[] { 3, 3 };
+            yield return new object[] { (byte)3, 3 };
+            yield return new object[] { 3, 3.0 };
+            yield return new object[] { 3.0, 3 };
+            yield return new object[] { 12345678, (short)24910 };
+        }
+
+        [Theory, PerCompilationType(nameof(Conversions))]
+        public static void ConvertMakeUnary(object source, object result, bool useInterpreter)
+        {
+            LambdaExpression lambda = Expression.Lambda(
+                Expression.MakeUnary(ExpressionType.Convert, Expression.Constant(source), result.GetType())
+                );
+            Delegate del = lambda.Compile(useInterpreter);
+            Assert.Equal(result, del.DynamicInvoke());
+        }
+
+        private class CustomConversions
+        {
+            public int Value { get; set; }
+
+            public static int ConvertToInt(CustomConversions cc) => cc.Value;
+
+            public static CustomConversions ConvertFromInt(int x) => new CustomConversions {Value = x};
+
+            public static void DoNothing(CustomConversions cc)
+            {
+            }
+
+            public static CustomConversions Create() => new CustomConversions();
+
+            public static CustomConversions FromAddition(int x, int y) => new CustomConversions {Value = x + y};
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameTo(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertToInt));
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(
+                Expression.Convert(operand, typeof(int), method));
+            Func<int> func = lambda.Compile(useInterpreter);
+            Assert.Equal(9, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameFrom(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(4);
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Expression<Func<CustomConversions>> lambda = Expression.Lambda<Func<CustomConversions>>(
+                Expression.Convert(operand, typeof(CustomConversions), method));
+            Func<CustomConversions> func = lambda.Compile(useInterpreter);
+            Assert.Equal(4, func().Value);
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToWrongType()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertToInt));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(operand, typeof(long), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameFromWrongType()
+        {
+            Expression operand = Expression.Constant(4L);
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(operand, typeof(CustomConversions), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToVoidReturn()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.DoNothing));
+            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToNullary()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.Create));
+            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToExcessiveArity()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.FromAddition));
+            Assert.Throws<ArgumentException>(() => Expression.Convert(operand, typeof(int), method));
+        }
     }
 }

@@ -83,7 +83,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/sync.sh",
-        "arguments": "-p -- /p:ArchGroup=$(PB_Platform)",
+        "arguments": "$(PB_SyncArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -119,7 +119,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build.sh",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup)",
+        "arguments": "$(PB_BuildArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -137,8 +137,26 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build-tests.sh",
-        "arguments": "-buildArch=$(PB_Platform) -$(PB_ConfigurationGroup) -SkipTests",
+        "arguments": "$(PB_BuildTestsArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Create Helix Test Jobs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Agent.BuildDirectory)/s/corefx/Tools/msbuild.sh",
+        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/tests.builds $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:\"TargetQueue=$(PB_TargetQueue)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
+        "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
@@ -219,14 +237,6 @@
       "value": "false",
       "allowOverride": true
     },
-    "PB_Platform": {
-      "value": "x64",
-      "allowOverride": true
-    },
-    "PB_ConfigurationGroup": {
-      "value": "Release",
-      "allowOverride": true
-    },
     "PB_CloudDropAccountName": {
       "value": "dotnetbuildoutput"
     },
@@ -262,6 +272,22 @@
     },
     "Build.Clean": {
       "value": "all"
+    },
+    "PB_BuildArguments": {
+      "value": "-buildArch=x64 -Release",
+      "allowOverride": true
+    },
+    "PB_BuildTestsArguments": {
+      "value": "-buildArch=x64 -Release -SkipTests",
+      "allowOverride": true
+    },
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=x64",
+      "allowOverride": true
+    },
+    "PB_CreateHelixArguments": {
+      "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=OSX\" /p:FilterToOSGroup=OSX",
+      "allowOverride": true
     }
   },
   "demands": [
@@ -303,7 +329,6 @@
     "checkoutSubmodules": false
   },
   "quality": "definition",
-  "defaultBranch": "refs/heads/master",
   "queue": {
     "pool": {
       "id": 39,

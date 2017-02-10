@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRARRINIT : EXPR
+    internal sealed class EXPRARRINIT : EXPR
     {
         private EXPR _OptionalArguments;
         public EXPR GetOptionalArguments() { return _OptionalArguments; }

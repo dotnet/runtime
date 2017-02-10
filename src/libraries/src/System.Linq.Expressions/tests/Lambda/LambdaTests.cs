@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Xunit;
 
@@ -728,6 +730,55 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Equal(42, i());
             Assert.Equal(84, i());
+        }
+
+        private static IEnumerable<object[]> LambdaTypes() =>
+            from parCount in Enumerable.Range(0, 6)
+            from name in new[] {null, "Lambda"}
+            from tailCall in new[] {false, true}
+            select new object[] {parCount, name, tailCall};
+
+        [Theory, MemberData(nameof(LambdaTypes))]
+        public void ParameterListBehavior(int parCount, string name, bool tailCall)
+        {
+            // This method contains a lot of assertions, which amount to one large assertion that
+            // the result of the Parameters property behaves correctly.
+            ParameterExpression[] pars =
+                Enumerable.Range(0, parCount).Select(_ => Expression.Parameter(typeof(int))).ToArray();
+            LambdaExpression lamda = Expression.Lambda(Expression.Empty(), name, tailCall, pars);
+            ReadOnlyCollection<ParameterExpression> parameters = lamda.Parameters;
+            Assert.Equal(parCount, parameters.Count);
+            using (var en = parameters.GetEnumerator())
+            {
+                IEnumerator nonGenEn = ((IEnumerable)parameters).GetEnumerator();
+                for (int i = 0; i != parCount; ++i)
+                {
+                    Assert.True(en.MoveNext());
+                    Assert.True(nonGenEn.MoveNext());
+                    Assert.Same(pars[i], parameters[i]);
+                    Assert.Same(pars[i], en.Current);
+                    Assert.Same(pars[i], nonGenEn.Current);
+                    Assert.Equal(i, parameters.IndexOf(pars[i]));
+                    Assert.True(parameters.Contains(pars[i]));
+                }
+
+                Assert.False(en.MoveNext());
+                Assert.False(nonGenEn.MoveNext());
+                (nonGenEn as IDisposable)?.Dispose();
+            }
+
+            ParameterExpression[] copyToTest = new ParameterExpression[parCount + 1];
+            Assert.Throws<ArgumentNullException>(() => parameters.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => parameters.CopyTo(copyToTest, -1));
+            Assert.All(copyToTest, Assert.Null); // assert partial copy didn't happen before exception
+            Assert.Throws<ArgumentException>(() => parameters.CopyTo(copyToTest, 2));
+            Assert.All(copyToTest, Assert.Null);
+            parameters.CopyTo(copyToTest, 1);
+            Assert.Equal(copyToTest, pars.Prepend(null));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => parameters[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => parameters[parCount]);
+            Assert.Equal(-1, parameters.IndexOf(Expression.Parameter(typeof(int))));
+            Assert.False(parameters.Contains(Expression.Parameter(typeof(int))));
         }
 
         private static int Add(ref int var, int val)

@@ -25,7 +25,8 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'OpenSUSE13.2': 'Linux',
                   'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
-                  'LinuxARMEmulator': 'Linux']
+                  'LinuxARMEmulator': 'Linux',
+                  'PortableLinux': 'Linux']
 
 def osShortName = ['Windows 10': 'win10',
                    'Windows 7' : 'win7',
@@ -41,7 +42,8 @@ def osShortName = ['Windows 10': 'win10',
                    'OpenSUSE42.1' : 'opensuse42.1',
                    'Fedora23' : 'fedora23',
                    'Fedora24' : 'fedora24',
-                   'RHEL7.2' : 'rhel7.2']
+                   'RHEL7.2' : 'rhel7.2',
+                   'PortableLinux' : 'portablelinux']
 
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
@@ -206,8 +208,14 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX', 'PortableLinux'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
+
+            def osForMachineAffinity = osName
+            if (osForMachineAffinity == 'PortableLinux') {
+                // Portable Linux builds happen on RHEL7.2
+                osForMachineAffinity = "RHEL7.2"
+            }
 
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
@@ -222,7 +230,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                         shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                     else {
-                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                        def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                        shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:WithoutCategories=IgnoreForCI")
                     }
                 }
@@ -230,12 +239,12 @@ def buildArchConfiguration = ['Debug': 'x86',
 
             // Set the affinity.  OS name matches the machine affinity.
             if (osName == 'Windows_NT' || osName == 'OSX') {
-                Utilities.setMachineAffinity(newJob, osName, "latest-or-auto-elevated")
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
             }
             else if (osGroupMap[osName] == 'Linux') {
-                Utilities.setMachineAffinity(newJob, osName, 'outer-latest-or-auto')
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'outer-latest-or-auto')
             } else {
-                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto');
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto');
             }
 
             // Set up standard options.
@@ -290,14 +299,56 @@ def buildArchConfiguration = ['Debug': 'x86',
 }
 
 // **************************
+// Define uap and uapaot vertical builds that will run on every merge.
+// **************************
+[true, false].each { isPR ->
+    ['uap', 'uapaot'].each { targetGroup ->
+        ['Debug'].each { configurationGroup ->
+            ['Windows_NT'].each { osName ->
+                def osGroup = osGroupMap[osName]
+                def osForMachineAffinity = osName
+
+                def newJobName = "${targetGroup}_${configurationGroup.toLowerCase()}"
+
+                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                    // On Windows we use the packer to put together everything. On *nix we use tar
+                    steps {
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -framework:${targetGroup}")
+                    }
+                }
+                // Set the affinity.
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
+                // Set up standard options.
+                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                // Set up triggers
+                if (isPR) {
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Vertical ${targetGroup} Build")
+                }
+                else {
+                    // Set a push trigger
+                    Utilities.addGithubPushTrigger(newJob)
+                }
+            }
+        }
+    }
+}
+
+// **************************
 // Define innerloop testing.  These jobs run on every merge and a subset of them run on every PR, the ones
 // that don't run per PR can be requested via a magic phrase.
 // **************************
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX'].each { osName ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX', 'PortableLinux'].each { osName ->
                 def osGroup = osGroupMap[osName]
+                def osForMachineAffinity = osName
+                
+                if (osForMachineAffinity == 'PortableLinux') {
+                    // Portable Linux builds happen on RHEL7.2
+                    osForMachineAffinity = "RHEL7.2"
+                }
+
                 def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -311,21 +362,17 @@ def buildArchConfiguration = ['Debug': 'x86',
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup}")
+                            def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} ${portableLinux}")
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:WithoutCategories=IgnoreForCI")
-                            // Tar up the appropriate bits.  On OSX the tarring is a different syntax for exclusion.
-                            if (osName == 'OSX') {
-                                shell("tar -czf bin/build.tar.gz --exclude *.Tests bin/*.${configurationGroup} bin/ref")
-                            }
-                            else {
-                                shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
-                            }
+                            // Tar up the appropriate bits.
+                            shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
                     }
                 }
 
                 // Set the affinity.
-                Utilities.setMachineAffinity(newJob, osName, 'latest-or-auto')
+                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
                 // Set up standard options.
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 // Add the unit test results
@@ -342,8 +389,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                 Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
                 // Set up triggers
                 if (isPR) {
-                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1 and OSX on every PR.
-                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' ) {
+                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1, PortableLinux and OSX on every PR.
+                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' || osName== 'PortableLinux') {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
                     }
                     else {

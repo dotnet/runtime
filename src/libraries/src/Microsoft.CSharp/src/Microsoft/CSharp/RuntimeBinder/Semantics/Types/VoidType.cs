@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // VoidType - represents the type "void".
     // ----------------------------------------------------------------------------
 
-    internal class VoidType : CType
+    internal sealed class VoidType : CType
     {
     }
 }

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -74,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(2048, alg.KeySize);
 
             Assert.IsAssignableFrom(typeof(RSA), alg);
-            VerifyKey_RSA((RSA)alg);
+            VerifyKey_RSA(/* cert */ null, (RSA)alg);
         }
 
         [Fact]
@@ -188,11 +189,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 RSA rsa = cert.GetRSAPublicKey();
-                VerifyKey_RSA(rsa);
+
+                VerifyKey_RSA(cert, rsa);
             }
         }
 
-        private static void VerifyKey_RSA(RSA rsa)
+        private static void VerifyKey_RSA(X509Certificate2 cert, RSA rsa)
         {
             RSAParameters rsaParameters = rsa.ExportParameters(false);
 
@@ -208,8 +210,37 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             byte[] expectedExponent = new byte[] { 0x01, 0x00, 0x01 };
 
-            Assert.Equal(expectedModulus, rsaParameters.Modulus);
-            Assert.Equal(expectedExponent, rsaParameters.Exponent);
+            byte[] originalModulus = rsaParameters.Modulus;
+            byte[] originalExponent = rsaParameters.Exponent;
+
+            if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+            {
+                Console.WriteLine("Modulus or Exponent not equal");
+
+                rsaParameters = rsa.ExportParameters(false);
+
+                if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                    !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+                {
+                    Console.WriteLine("Second call to ExportParameters did not produce valid data either");
+                }
+
+                if (cert != null)
+                {
+                    rsa = cert.GetRSAPublicKey();
+                    rsaParameters = rsa.ExportParameters(false);
+
+                    if (!expectedModulus.SequenceEqual(rsaParameters.Modulus) ||
+                        !expectedExponent.SequenceEqual(rsaParameters.Exponent))
+                    {
+                        Console.WriteLine("New key handle ExportParameters was not successful either");
+                    }    
+                }
+            }
+
+            Assert.Equal(expectedModulus, originalModulus);
+            Assert.Equal(expectedExponent, originalExponent);
         }
 
         [Fact]

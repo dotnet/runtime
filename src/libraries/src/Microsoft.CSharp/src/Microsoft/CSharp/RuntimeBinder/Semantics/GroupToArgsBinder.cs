@@ -15,9 +15,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // to the best applicable method in the group.
     // ----------------------------------------------------------------------------
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
-        internal class GroupToArgsBinder
+        internal sealed class GroupToArgsBinder
         {
             private enum Result
             {
@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _pExprBinder.GetErrorContext();
             }
-            public static CType GetTypeQualifier(EXPRMEMGRP pGroup)
+            private static CType GetTypeQualifier(EXPRMEMGRP pGroup)
             {
                 Debug.Assert(pGroup != null);
 

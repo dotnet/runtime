@@ -951,7 +951,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedValue = optionValue)
+                fixed (byte* pinnedValue = &optionValue[0])
                 {
                     err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
                 }
@@ -1071,7 +1071,7 @@ namespace System.Net.Sockets
                 SocketError returnError = GetSockOpt(handle, optionLevel, optionName, out outError);
                 if (returnError == SocketError.Success)
                 {
-                    fixed (byte* pinnedValue = optionValue)
+                    fixed (byte* pinnedValue = &optionValue[0])
                     {
                         Debug.Assert(BitConverter.IsLittleEndian, "Expected little endian");
                         *((int*)pinnedValue) = outError;
@@ -1082,7 +1082,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedValue = optionValue)
+                fixed (byte* pinnedValue = &optionValue[0])
                 {
                     err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, pinnedValue, &optLen);
                 }
@@ -1213,7 +1213,7 @@ namespace System.Net.Sockets
             else
             {
                 var eventsOnHeap = new Interop.Sys.PollEvent[count];
-                fixed (Interop.Sys.PollEvent* eventsOnHeapPtr = eventsOnHeap)
+                fixed (Interop.Sys.PollEvent* eventsOnHeapPtr = &eventsOnHeap[0])
                 {
                     return SelectViaPoll(
                         checkRead, checkReadInitialCount,

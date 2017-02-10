@@ -402,4 +402,7 @@
   <data name="net_invalid_port" xml:space="preserve">
     <value>Invalid port in prefix.</value>
   </data>
+  <data name="net_WebSockets_InvalidState" xml:space="preserve">
+    <value>The WebSocket is in an invalid state ('{0}') for this operation. Valid states are: '{1}'</value>
+  </data>
 </root>

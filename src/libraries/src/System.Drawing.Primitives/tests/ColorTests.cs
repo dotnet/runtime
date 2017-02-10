@@ -505,11 +505,17 @@ namespace System.Drawing.Primitives.Tests
             Assert.True(left.Equals(left), "left should always Equals itself");
             Assert.True(right.Equals(right), "right should always Equals itself");
 
+            Assert.True(left.Equals((object)left), "left should always Equals itself");
+            Assert.True(right.Equals((object)right), "right should always Equals itself");
+
             Assert.Equal(expected, left == right);
             Assert.Equal(expected, right == left);
 
             Assert.Equal(expected, left.Equals(right));
             Assert.Equal(expected, right.Equals(left));
+
+            Assert.Equal(expected, left.Equals((object)right));
+            Assert.Equal(expected, right.Equals((object)left));
 
             Assert.Equal(!expected, left != right);
             Assert.Equal(!expected, right != left);

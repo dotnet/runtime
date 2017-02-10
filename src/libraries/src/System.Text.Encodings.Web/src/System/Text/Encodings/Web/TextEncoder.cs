@@ -109,7 +109,7 @@ namespace System.Text.Encodings.Web
                     else
                     {
                         char[] wholebuffer = new char[bufferSize];
-                        fixed(char* buffer = wholebuffer)
+                        fixed(char* buffer = &wholebuffer[0])
                         {
                             int totalWritten = EncodeIntoBuffer(buffer, bufferSize, valuePointer, value.Length, firstCharacterToEncode);
                             result = new string(wholebuffer, 0, totalWritten);                            

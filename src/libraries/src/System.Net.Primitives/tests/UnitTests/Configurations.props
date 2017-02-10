@@ -4,7 +4,8 @@
     <BuildConfigurations>
       netstandard-Windows_NT;
       netstandard-Unix;
-      netstandard1.3-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

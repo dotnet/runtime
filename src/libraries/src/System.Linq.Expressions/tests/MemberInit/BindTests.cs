@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -254,6 +255,27 @@ namespace System.Linq.Expressions.Tests
         {
             MemberAssignment bind = Expression.Bind(typeof(PropertyAndFields).GetProperty("StringProperty"), Expression.Constant("Hello Property"));
             Assert.Equal(MemberBindingType.Assignment, bind.BindingType);
+        }
+
+        [Fact]
+        public void GlobalMethod()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new [] {typeof(int)});
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(globalMethodInfo, Expression.Constant(2)));
+        }
+
+        [Fact]
+        public void GlobalField()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            FieldBuilder fieldBuilder = module.DefineInitializedData("GlobalField", new byte[4], FieldAttributes.Public);
+            module.CreateGlobalFunctions();
+            FieldInfo globalField = module.GetField(fieldBuilder.Name);
+            Assert.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
         }
     }
 }

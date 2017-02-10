@@ -152,7 +152,7 @@ namespace System.Net
             if (listener == null)
                 return false;
 
-            context.Listener = listener;
+            context._listener = listener;
             context.Connection.Prefix = prefix;
             return true;
         }
@@ -162,7 +162,7 @@ namespace System.Net
             if (context == null || context.Request == null)
                 return;
 
-            context.Listener.UnregisterContext(context);
+            context._listener.UnregisterContext(context);
         }
 
         private HttpListener SearchListener(Uri uri, out ListenerPrefix prefix)

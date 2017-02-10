@@ -421,6 +421,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public void Precancellation()
         {
             var ms = new MemoryStream();
@@ -443,6 +444,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task RoundTripWithFlush()
         {
             await RoundTripWithFlush(useAsync: false, useGzip: false, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
@@ -450,6 +452,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task WriteAfterFlushing()
         {
             await WriteAfterFlushing(useAsync: false, useGzip: false, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
@@ -457,6 +460,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task FlushBeforeFirstWrites()
         {
             await FlushBeforeFirstWrites(useAsync: false, useGzip: false, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
@@ -510,6 +514,7 @@ namespace System.IO.Compression.Tests
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task RoundTripWithFlush(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -539,6 +544,7 @@ namespace System.IO.Compression.Tests
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task WriteAfterFlushing(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -574,6 +580,7 @@ namespace System.IO.Compression.Tests
         [OuterLoop]
         [Theory]
         [MemberData(nameof(RoundtripCompressDecompressOuterData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task FlushBeforeFirstWrites(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
         {
             byte[] data = new byte[totalSize];
@@ -679,6 +686,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task WrapNullReturningTasksStream()
         {
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnNullTasks), CompressionMode.Decompress))
@@ -686,6 +694,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task WrapStreamReturningBadReadValues()
         {
             using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
@@ -862,6 +871,7 @@ namespace System.IO.Compression.Tests
         protected static string gzTestFile(string fileName) { return Path.Combine("GZTestData", fileName); }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task OverlappingFlushAsync_DuringFlushAsync()
         {
             byte[] buffer = null;
@@ -896,6 +906,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task OverlappingFlushAsync_DuringWriteAsync()
         {
             byte[] buffer = null;
@@ -926,6 +937,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task OverlappingWriteAsync()
         {
             byte[] buffer = null;
@@ -956,6 +968,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework Flush is a no-op.")]
         public async Task OverlappingReadAsync()
         {
             byte[] buffer = new byte[32];

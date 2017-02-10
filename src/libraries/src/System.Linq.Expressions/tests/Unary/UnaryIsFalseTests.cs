@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -41,7 +42,34 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal((bool)(value == false), f());
         }
 
-
         #endregion
+
+        private static IEnumerable<object[]> Truthinesses()
+        {
+            yield return new object[] { new Truthiness(true), false };
+            yield return new object[] { new Truthiness(false), true };
+        }
+
+        [Theory, PerCompilationType(nameof(Truthinesses))]
+        private static void VerifyMakeUnaryExplicitMethodIsFalseBool(Truthiness argument, bool expected, bool useInterpreter)
+        {
+            Expression<Func<bool>> e =
+                Expression.Lambda<Func<bool>>(
+                    Expression.MakeUnary(
+                        ExpressionType.IsFalse, Expression.Constant(argument), null, typeof(Truthiness).GetMethod("op_False")));
+            Func<bool> f = e.Compile(useInterpreter);
+            Assert.Equal(expected, f());
+        }
+
+        [Theory, PerCompilationType(nameof(Truthinesses))]
+        private static void VerifyMakeUnaryDeduceMethodIsFalseBool(Truthiness argument, bool expected, bool useInterpreter)
+        {
+            Expression<Func<bool>> e =
+                Expression.Lambda<Func<bool>>(
+                    Expression.MakeUnary(
+                        ExpressionType.IsFalse, Expression.Constant(argument), null, null));
+            Func<bool> f = e.Compile(useInterpreter);
+            Assert.Equal(expected, f());
+        }
     }
 }

@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     // This object is the implementation of ICSError for all compiler errors,
     // including lexer, parser, and compiler errors.
 
-    internal class CError
+    internal sealed class CError
     {
         private string _text;
 

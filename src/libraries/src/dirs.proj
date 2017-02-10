@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <Project Include="ref.builds" />
-    <Project Include="src.builds" />
     <Project Include="shims\shims.proj" />
+    <Project Include="src.builds" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />

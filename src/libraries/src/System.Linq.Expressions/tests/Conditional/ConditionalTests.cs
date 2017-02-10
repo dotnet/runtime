@@ -255,24 +255,6 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { false, ce, be, be, typeof(Expression) };
         }
 
-        private class Truthiness
-        {
-            private bool Value { get; }
-
-            public Truthiness(bool value)
-            {
-                Value = value;
-            }
-
-            public static implicit operator bool(Truthiness truth) => truth.Value;
-
-            public static bool operator true(Truthiness truth) => truth.Value;
-
-            public static bool operator false(Truthiness truth) => !truth.Value;
-
-            public static Truthiness operator !(Truthiness truth) => new Truthiness(!truth.Value);
-        }
-
         private static class Unreadable<T>
         {
             public static T WriteOnly

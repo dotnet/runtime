@@ -37,7 +37,6 @@ namespace System.Collections.Specialized.Tests
         protected override object CreateTValue(int seed) => CreateTKey(seed);
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_0, "dotnet/corefx#11566")]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {

@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     // must be deferred, thus causing the error formatting/reporting subsystem to understand a 
     // whole host of types, many of which may not be relevant to the EE. 
 
-    internal class ErrorHandling
+    internal sealed class ErrorHandling
     {
         private readonly IErrorSink _errorSink;
         private readonly UserStringBuilder _userStringBuilder;
@@ -50,17 +50,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        public void MakeErrorLocArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
+        private void MakeErrorLocArgs(out CParameterizedError error, ErrorCode id, ErrArg[] prgarg)
         {
             error = new CParameterizedError();
             error.Initialize(id, prgarg);
         }
 
-        public virtual void AddRelatedSymLoc(CParameterizedError err, Symbol sym)
+        public void AddRelatedSymLoc(CParameterizedError err, Symbol sym)
         {
         }
 
-        public virtual void AddRelatedTypeLoc(CParameterizedError err, CType pType)
+        public void AddRelatedTypeLoc(CParameterizedError err, CType pType)
         {
         }
 

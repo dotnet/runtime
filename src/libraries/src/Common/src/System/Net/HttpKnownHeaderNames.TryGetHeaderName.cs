@@ -173,6 +173,7 @@ namespace System.Net
                         case 'c': potentialHeader = AcceptPatch; goto TryMatch; // Ac[c]ept-Patch
                         case 'n': potentialHeader = ContentType; goto TryMatch; // Co[n]tent-Type
                         case 'x': potentialHeader = MaxForwards; goto TryMatch; // Ma[x]-Forwards
+                        case 'M': potentialHeader = XMSEdgeRef; goto TryMatch;  // X-[M]SEdge-Ref
                         case 'P': potentialHeader = XPoweredBy; goto TryMatch;  // X-[P]owered-By
                         case 'R': potentialHeader = XRequestID; goto TryMatch;  // X-[R]equest-ID
                     }

@@ -1,0 +1,10 @@
+# The .NET 4.6.3 targeting pack (1.0.1) doesn't have the new members added for ECDsa import/export yet.
+MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'Microsoft.Win32.SafeHandles.SafeNCryptKeyHandle..ctor(System.IntPtr, System.Runtime.InteropServices.SafeHandle)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.AesCng' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDiffieHellman.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.CngAlgorithm.ECDsa.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPrivateBlob.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.CngKeyBlobFormat.EccFullPublicBlob.get()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.DSACng' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.TripleDESCng' does not exist in the implementation but it does exist in the contract.

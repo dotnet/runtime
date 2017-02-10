@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class SymFactory : SymFactoryBase
+    internal sealed class SymFactory : SymFactoryBase
     {
         public SymFactory(
             SYMTBL symtable,
@@ -84,7 +84,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (sym);
         }
 
-        public AggregateSymbol CreateUnresolvedAggregate(Name name, ParentSymbol parent, TypeManager typeManager)
+        private AggregateSymbol CreateUnresolvedAggregate(Name name, ParentSymbol parent, TypeManager typeManager)
         {
             Debug.Assert(name != null);
 

@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRBINOP : EXPR
+    internal sealed class EXPRBINOP : EXPR
     {
         private EXPR _OptionalLeftChild;
         public EXPR GetOptionalLeftChild() { return _OptionalLeftChild; }

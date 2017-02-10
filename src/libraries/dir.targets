@@ -35,6 +35,7 @@
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
 
   <Import Project="$(MSBuildThisFileDirectory)binplace.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip

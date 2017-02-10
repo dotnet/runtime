@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{20A2BA2C-5517-483F-8FFE-643441A59852}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -20,6 +20,7 @@
     <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
+    <Compile Include="RegistryKey\RegistryKey_Close.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree.cs" />
@@ -29,6 +30,8 @@
     <Compile Include="RegistryKey\RegistryKey_DeleteValue_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_DeleteValue_Str_Bln.cs" />
     <Compile Include="RegistryKey\RegistryKey_Flush.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetAccessControl.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetAccessControl_acs.cs" />
     <Compile Include="RegistryKey\RegistryKey_GetSubKeyCount.cs" />
     <Compile Include="RegistryKey\RegistryKey_GetSubKeyNames.cs" />
     <Compile Include="RegistryKey\RegistryKey_GetValueCount.cs" />
@@ -39,9 +42,15 @@
     <Compile Include="RegistryKey\RegistryKey_GetValue_str_obj_b.cs" />
     <Compile Include="RegistryKey\RegistryKey_ToString.cs" />
     <Compile Include="RegistryKey\RegistryKey_Get_Name.cs" />
+    <Compile Include="RegistryKey\RegistryKey_Get_View.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenRemoteBaseKey_rh_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenRemoteBaseKey_rh_str_rv.cs" />
     <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_b.cs" />
     <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_rkpc.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_rkpc_rr.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_rr.cs" />
+    <Compile Include="RegistryKey\RegistryKey_SetAccessControl_rs.cs" />
     <Compile Include="RegistryKey\RegistryKey_SetValueKind_str_obj_valueKind.cs" />
     <Compile Include="RegistryKey\RegistryKey_SetValue_str_obj.cs" />
     <Compile Include="RegistryKey\RegistryKeyCreateSubKeyTestsBase.cs" />

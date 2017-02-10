@@ -14,7 +14,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class TypeManager
+    internal sealed class TypeManager
     {
         private BSYMMGR _BSymmgr;
         private PredefinedTypes _predefTypes;
@@ -126,9 +126,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private class StdTypeVarColl
+        private sealed class StdTypeVarColl
         {
-            public readonly List<TypeParameterType> prgptvs;
+            private readonly List<TypeParameterType> prgptvs;
 
             public StdTypeVarColl()
             {
@@ -451,7 +451,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _nullType;
         }
 
-        public OpenTypePlaceholderType GetUnitType()
+        private OpenTypePlaceholderType GetUnitType()
         {
             return _typeUnit;
         }
@@ -481,7 +481,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return this.GetOptPredefAgg(PredefinedType.PT_G_OPTIONAL);
         }
 
-        public CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
+        private CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
             if (typeSrc == null)
                 return null;
@@ -495,7 +495,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return SubstType(typeSrc, typeArgsCls, null, SubstTypeFlags.NormNone);
         }
 
-        public CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
+        private CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
         {
             return SubstType(typeSrc, typeArgsCls, typeArgsMeth, SubstTypeFlags.NormNone);
         }
@@ -513,7 +513,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _BSymmgr.AllocParams(taSrc.size, prgpts);
         }
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
+        private TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
             if (taSrc == null || taSrc.Size == 0)
                 return taSrc;
@@ -681,7 +681,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        public bool SubstEqualTypesCore(CType typeDst, CType typeSrc, SubstContext pctx)
+        private bool SubstEqualTypesCore(CType typeDst, CType typeSrc, SubstContext pctx)
         {
         LRecurse:  // Label used for "tail" recursion.
 
@@ -1051,7 +1051,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return this.SubstTypeArray(taSrc, atsCls, (TypeArray)null);
         }
 
-        public bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls, TypeArray typeArgsMeth)
+        private bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls, TypeArray typeArgsMeth)
         {
             return SubstEqualTypes(typeDst, typeSrc, typeCls.IsAggregateType() ? typeCls.AsAggregateType().GetTypeArgsAll() : null, typeArgsMeth, SubstTypeFlags.NormNone);
         }
@@ -1071,7 +1071,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _stvcMethod.GetTypeVarSym(iv, this, true);
         }
 
-        public TypeParameterType GetStdClsTypeVar(int iv)
+        private TypeParameterType GetStdClsTypeVar(int iv)
         {
             return _stvcClass.GetTypeVarSym(iv, this, false);
         }

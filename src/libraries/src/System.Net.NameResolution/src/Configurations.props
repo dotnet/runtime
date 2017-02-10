@@ -2,10 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      netcore50-Windows_NT;
-      netstandard1.3-Windows_NT;
-      netstandard1.3-Unix;
-      net46-Windows_NT;
+      uap-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

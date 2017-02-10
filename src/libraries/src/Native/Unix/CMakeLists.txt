@@ -86,7 +86,11 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
       set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
-    add_compile_options (-O3)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l AND DEFINED ENV{CROSSCOMPILE})
+        add_compile_options (-O1)
+    else()
+        add_compile_options (-O3)
+    endif()
     add_definitions(-DNDEBUG)
 else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
@@ -164,7 +168,7 @@ endif ()
 
 function(strip_symbols targetName outputFilename)
     if(CLR_CMAKE_PLATFORM_UNIX)
-        if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+        if(STRIP_SYMBOLS)
 
             # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
             # generator expression doesn't work correctly returning the wrong path and on
@@ -201,7 +205,7 @@ function(strip_symbols targetName outputFilename)
             endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
             set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-        endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+        endif(STRIP_SYMBOLS)
     endif(CLR_CMAKE_PLATFORM_UNIX)
 endfunction()
 

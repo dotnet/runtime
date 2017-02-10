@@ -1078,9 +1078,9 @@ namespace System.Net.Http
                 if (sts != null)
                 {
                     // Is there a previous read that may still have data to be consumed?
-                    if (sts._task != null)
+                    if (sts.Task != null)
                     {
-                        if (!sts._task.IsCompleted)
+                        if (!sts.Task.IsCompleted)
                         {
                             // We have a previous read that's not yet completed.  This should be quite rare, but it can
                             // happen when we're unpaused prematurely, potentially due to the request still finishing
@@ -1096,8 +1096,8 @@ namespace System.Net.Http
                         // Determine how many bytes were read on the last asynchronous read.
                         // If nothing was read, then we're done and can simply return 0 to indicate
                         // the end of the stream.
-                        int bytesRead = sts._task.GetAwaiter().GetResult(); // will throw if read failed
-                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, $"ReadAsync returned an invalid result length: {bytesRead}");
+                        int bytesRead = sts.Task.GetAwaiter().GetResult(); // will throw if read failed
+                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts.Buffer.Length, $"ReadAsync returned an invalid result length: {bytesRead}");
                         if (bytesRead == 0)
                         {
                             sts.SetTaskOffsetCount(null, 0, 0);
@@ -1106,26 +1106,26 @@ namespace System.Net.Http
 
                         // If Count is still 0, then this is the first time after the task completed
                         // that we're examining the data: transfer the bytesRead to the Count.
-                        if (sts._count == 0)
+                        if (sts.Count == 0)
                         {
                             multi.EventSourceTrace("ReadAsync completed with bytes: {0}", bytesRead, easy: easy);
-                            sts._count = bytesRead;
+                            sts.Count = bytesRead;
                         }
 
                         // Now Offset and Count are both accurate.  Determine how much data we can copy to libcurl...
-                        int availableData = sts._count - sts._offset;
+                        int availableData = sts.Count - sts.Offset;
                         Debug.Assert(availableData > 0, "There must be some data still available.");
 
                         // ... and copy as much of that as libcurl will allow.
                         int bytesToCopy = Math.Min(availableData, length);
-                        Marshal.Copy(sts._buffer, sts._offset, buffer, bytesToCopy);
+                        Marshal.Copy(sts.Buffer, sts.Offset, buffer, bytesToCopy);
                         multi.EventSourceTrace("Copied {0} bytes from request stream", bytesToCopy, easy: easy);
 
                         // Update the offset.  If we've gone through all of the data, reset the state 
                         // so that the next time we're called back we'll do a new read.
-                        sts._offset += bytesToCopy;
-                        Debug.Assert(sts._offset <= sts._count, "Offset should never exceed count");
-                        if (sts._offset == sts._count)
+                        sts.Offset += bytesToCopy;
+                        Debug.Assert(sts.Offset <= sts.Count, "Offset should never exceed count");
+                        if (sts.Offset == sts.Count)
                         {
                             sts.SetTaskOffsetCount(null, 0, 0);
                         }
@@ -1151,9 +1151,9 @@ namespace System.Net.Http
                 }
 
                 Debug.Assert(sts != null, "By this point we should have a transfer object");
-                Debug.Assert(sts._task == null, "There shouldn't be a task now.");
-                Debug.Assert(sts._count == 0, "Count should be zero.");
-                Debug.Assert(sts._offset == 0, "Offset should be zero.");
+                Debug.Assert(sts.Task == null, "There shouldn't be a task now.");
+                Debug.Assert(sts.Count == 0, "Count should be zero.");
+                Debug.Assert(sts.Offset == 0, "Offset should be zero.");
 
                 // If we get here, there was no previously read data available to copy.
 
@@ -1164,38 +1164,22 @@ namespace System.Net.Http
                 if (easy._requestContentStream == null)
                 {
                     multi.EventSourceTrace("Calling ReadAsStreamAsync to get new request stream", easy: easy);
-                    asyncRead = easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((readStream, s) =>
-                    {
-                        var stateAndRequest = (Tuple<EasyRequest.SendTransferState, EasyRequest>)s;
-                        EasyRequest.SendTransferState innerSts = stateAndRequest.Item1;
-                        EasyRequest innerEasy = stateAndRequest.Item2;
-                        MultiAgent innerMulti = innerEasy._associatedMultiAgent;
-
-                        innerMulti.EventSourceTrace("ReadAsStreamAsync completed: {0}", readStream.Status, easy: innerEasy);
-
-                        // Get and store the resulting stream
-                        innerEasy._requestContentStream = readStream.GetAwaiter().GetResult();
-                        innerMulti.EventSourceTrace("Got stream: {0}", innerEasy._requestContentStream.GetType(), easy: innerEasy);
-
-                        // If the stream is seekable, store its original position.  We'll use this any time we need to seek
-                        // back to the "beginning", as it's possible the stream isn't at position 0.
-                        if (innerEasy._requestContentStream.CanSeek)
+                    Task<Stream> readAsStreamTask = easy._requestMessage.Content.ReadAsStreamAsync();
+                    asyncRead = readAsStreamTask.IsCompleted ?
+                        StoreRetrievedContentStreamAndReadAsync(readAsStreamTask, easy, sts, length) :
+                        easy._requestMessage.Content.ReadAsStreamAsync().ContinueWith((t, s) =>
                         {
-                            long startingPos = innerEasy._requestContentStream.Position;
-                            innerEasy._requestContentStreamStartingPosition = startingPos;
-                            CurlHandler.EventSourceTrace("Stream starting position: {0}", startingPos, easy: innerEasy);
-                        }
-
-                        // Now that we have a stream, do the desired read
-                        innerMulti.EventSourceTrace("Starting async read", easy: innerEasy);
-                        return innerEasy._requestContentStream.ReadAsync(innerSts._buffer, 0, Math.Min(innerSts._buffer.Length, length), innerEasy._cancellationToken);
-                    }, Tuple.Create(sts, easy), easy._cancellationToken, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
+                            var stateAndRequest = (Tuple<int, EasyRequest.SendTransferState, EasyRequest>)s;
+                            return StoreRetrievedContentStreamAndReadAsync(t,
+                                stateAndRequest.Item3, stateAndRequest.Item2, stateAndRequest.Item1);
+                        }, Tuple.Create(length, sts, easy), CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).Unwrap();
                 }
                 else
                 {
                     multi.EventSourceTrace("Starting async read", easy: easy);
                     asyncRead = easy._requestContentStream.ReadAsync(
-                       sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                       sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
                 }
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
@@ -1215,8 +1199,8 @@ namespace System.Net.Http
 
                     // Copy as much as we can.
                     int bytesToCopy = Math.Min(bytesRead, length);
-                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
-                    Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
+                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts.Buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
+                    Marshal.Copy(sts.Buffer, 0, buffer, bytesToCopy);
                     multi.EventSourceTrace("Read {0} bytes", bytesToCopy, easy: easy);
 
                     // If we read more than we were able to copy, stash it away for the next read.
@@ -1242,6 +1226,48 @@ namespace System.Net.Http
                 // Then pause the connection.
                 multi.EventSourceTrace("Pausing transfer from request stream", easy: easy);
                 return Interop.Http.CURL_READFUNC_PAUSE;
+            }
+
+            /// <summary>
+            /// Given a completed task used to retrieve the content stream asynchronously, extracts the stream,
+            /// stores it into <see cref="EasyRequest._requestContentStream"/>, and does an initial read on it.
+            /// </summary>
+            private static Task<int> StoreRetrievedContentStreamAndReadAsync(
+                Task<Stream> readAsStreamTask, EasyRequest easy, EasyRequest.SendTransferState sts, int length)
+            {
+                Debug.Assert(readAsStreamTask.IsCompleted, $"Expected {nameof(readAsStreamTask)} to be completed, got {readAsStreamTask.Status}");
+                try
+                {
+                    MultiAgent multi = easy._associatedMultiAgent;
+                    multi.EventSourceTrace("Async operation completed: {0}", readAsStreamTask.Status, easy: easy);
+
+                    // Get and store the resulting stream
+                    easy._requestContentStream = readAsStreamTask.GetAwaiter().GetResult();
+                    multi.EventSourceTrace("Got stream: {0}", easy._requestContentStream.GetType(), easy: easy);
+
+                    // If the stream is seekable, store its original position.  We'll use this any time we need to seek
+                    // back to the "beginning", as it's possible the stream isn't at position 0.
+                    if (easy._requestContentStream.CanSeek)
+                    {
+                        long startingPos = easy._requestContentStream.Position;
+                        easy._requestContentStreamStartingPosition = startingPos;
+                        CurlHandler.EventSourceTrace("Stream starting position: {0}", startingPos, easy: easy);
+                    }
+
+                    // Now that we have a stream, do the desired read
+                    multi.EventSourceTrace("Starting async read", easy: easy);
+                    return easy._requestContentStream.ReadAsync(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
+                }
+                catch (OperationCanceledException oce)
+                {
+                    return oce.CancellationToken.IsCancellationRequested ?
+                        Task.FromCanceled<int>(oce.CancellationToken) :
+                        Task.FromCanceled<int>(new CancellationToken(true));
+                }
+                catch (Exception exc)
+                {
+                    return Task.FromException<int>(exc);
+                }
             }
 
             /// <summary>Callback invoked by libcurl to seek to a position within the request stream.</summary>

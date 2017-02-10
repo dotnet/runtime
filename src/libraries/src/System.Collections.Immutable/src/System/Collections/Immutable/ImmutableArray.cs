@@ -106,14 +106,18 @@ namespace System.Collections.Immutable
             var immutableArray = items as IImmutableArray;
             if (immutableArray != null)
             {
-                immutableArray.ThrowInvalidOperationIfNotInitialized();
+                Array array = immutableArray.Array;
+                if (array == null)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
+                }
 
-                // immutableArray.Array must not be null at this point, and we know it's an
+                // `array` must not be null at this point, and we know it's an
                 // ImmutableArray<T> or ImmutableArray<SomethingDerivedFromT> as they are
                 // the only types that could be both IEnumerable<T> and IImmutableArray.
                 // As such, we know that items is either an ImmutableArray<T> or
                 // ImmutableArray<TypeDerivedFromT>, and we can cast the array to T[].
-                return new ImmutableArray<T>((T[])immutableArray.Array);
+                return new ImmutableArray<T>((T[])array);
             }
 
             // We don't recognize the source as an array that is safe to use.

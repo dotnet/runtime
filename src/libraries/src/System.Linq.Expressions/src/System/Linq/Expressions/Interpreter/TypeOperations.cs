@@ -84,14 +84,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object value = frame.Pop();
-            if (_type.IsInstanceOfType(value))
-            {
-                frame.Push(value);
-            }
-            else
-            {
-                frame.Push(null);
-            }
+            frame.Push(_type.IsInstanceOfType(value) ? value : null);
             return 1;
         }
 
@@ -162,9 +155,10 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (frame.Peek() == null)
                 {
-                    frame.Pop();
-                    throw new InvalidOperationException();
+                    // Trigger InvalidOperationException with same localized method as if we'd called the Value getter.
+                    return (int)default(int?);
                 }
+
                 return 1;
             }
         }
@@ -231,14 +225,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push("");
-                }
-                else
-                {
-                    frame.Push(obj.ToString());
-                }
+                frame.Push(obj == null ? "" : obj.ToString());
                 return 1;
             }
         }
@@ -248,14 +235,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object obj = frame.Pop();
-                if (obj == null)
-                {
-                    frame.Push(0);
-                }
-                else
-                {
-                    frame.Push(obj.GetHashCode());
-                }
+                frame.Push(obj?.GetHashCode() ?? 0);
                 return 1;
             }
         }
@@ -449,13 +429,12 @@ namespace System.Linq.Expressions.Interpreter
         {
             object from = frame.Pop();
             Debug.Assert(from != null);
-            Type underlying = Enum.GetUnderlyingType(_t);
 
             // If from is neither a T nor a type assignable to T (viz. an T-backed enum)
             // this will cause an InvalidCastException, which is what this operation should
             // throw in this case.
 
-            switch (underlying.GetTypeCode())
+            switch (_t.GetTypeCode())
             {
                 case TypeCode.Int32:
                     frame.Push(Enum.ToObject(_t, (int)from));
@@ -488,7 +467,7 @@ namespace System.Linq.Expressions.Interpreter
                 default:
                     // Only remaining possible type.
                     // Disallowed in C#, but allowed in CIL
-                    Debug.Assert(underlying == typeof(bool));
+                    Debug.Assert(_t.GetTypeCode() == TypeCode.Boolean);
                     frame.Push(Enum.ToObject(_t, (bool)from));
                     break;
             }

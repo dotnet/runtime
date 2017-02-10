@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Errors;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class CNullable
+    internal sealed class CNullable
     {
         private readonly SymbolLoader _pSymbolLoader;
         private readonly ExprFactory _exprFactory;
@@ -25,7 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _pErrorContext;
         }
-        public static bool IsNullableConstructor(EXPR expr)
+        private static bool IsNullableConstructor(EXPR expr)
         {
             Debug.Assert(expr != null);
 
@@ -142,10 +142,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // Create an expr for exprSrc.Value where exprSrc.type is a NullableType.
-        internal EXPR BindNubValue(EXPR exprSrc)
+        private EXPR BindNubValue(EXPR exprSrc)
         {
             return m_nullable.BindValue(exprSrc);
         }

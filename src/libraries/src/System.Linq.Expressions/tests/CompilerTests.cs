@@ -38,11 +38,11 @@ namespace System.Linq.Expressions.Tests
                 e = Expression.Add(e, Expression.Constant(1));
 
             Func<int> f = null;
-            // Request a stack size of 1 to get the minimum size allowed.
+            // Request a stack size of 64K to get very small stack.
             // This reduces the size of tree needed to risk a stack overflow.
             // This though will only risk overflow once, so the outerloop test
             // above is still needed.
-            Thread t = new Thread(() => f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter), 1);
+            Thread t = new Thread(() => f = Expression.Lambda<Func<int>>(e).Compile(useInterpreter), 65536);
             t.Start();
             t.Join();
 

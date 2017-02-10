@@ -234,24 +234,10 @@ namespace System.Linq.Expressions.Compiler
                     }
                     break;
                 case ExpressionType.Divide:
-                    if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Div_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Div);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Div_Un : OpCodes.Div);
                     break;
                 case ExpressionType.Modulo:
-                    if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Rem_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Rem);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Rem_Un : OpCodes.Rem);
                     break;
                 case ExpressionType.And:
                 case ExpressionType.AndAlso:
@@ -262,27 +248,13 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(OpCodes.Or);
                     break;
                 case ExpressionType.LessThan:
-                    if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Clt_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Clt);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Clt_Un : OpCodes.Clt);
                     break;
                 case ExpressionType.LessThanOrEqual:
                     {
                         Label labFalse = _ilg.DefineLabel();
                         Label labEnd = _ilg.DefineLabel();
-                        if (leftType.IsUnsigned())
-                        {
-                            _ilg.Emit(OpCodes.Ble_Un_S, labFalse);
-                        }
-                        else
-                        {
-                            _ilg.Emit(OpCodes.Ble_S, labFalse);
-                        }
+                        _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Ble_Un_S : OpCodes.Ble_S, labFalse);
                         _ilg.Emit(OpCodes.Ldc_I4_0);
                         _ilg.Emit(OpCodes.Br_S, labEnd);
                         _ilg.MarkLabel(labFalse);
@@ -291,27 +263,13 @@ namespace System.Linq.Expressions.Compiler
                     }
                     break;
                 case ExpressionType.GreaterThan:
-                    if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Cgt_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Cgt);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Cgt_Un : OpCodes.Cgt);
                     break;
                 case ExpressionType.GreaterThanOrEqual:
                     {
                         Label labFalse = _ilg.DefineLabel();
                         Label labEnd = _ilg.DefineLabel();
-                        if (leftType.IsUnsigned())
-                        {
-                            _ilg.Emit(OpCodes.Bge_Un_S, labFalse);
-                        }
-                        else
-                        {
-                            _ilg.Emit(OpCodes.Bge_S, labFalse);
-                        }
+                        _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Bge_Un_S : OpCodes.Bge_S, labFalse);
                         _ilg.Emit(OpCodes.Ldc_I4_0);
                         _ilg.Emit(OpCodes.Br_S, labEnd);
                         _ilg.MarkLabel(labFalse);
@@ -336,14 +294,7 @@ namespace System.Linq.Expressions.Compiler
                         throw ContractUtils.Unreachable;
                     }
                     EmitShiftMask(leftType);
-                    if (leftType.IsUnsigned())
-                    {
-                        _ilg.Emit(OpCodes.Shr_Un);
-                    }
-                    else
-                    {
-                        _ilg.Emit(OpCodes.Shr);
-                    }
+                    _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
                     break;
                 default:
                     throw Error.UnhandledBinary(op, nameof(op));
@@ -593,19 +544,24 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Stloc, locLeft);
 
             // test for null
-            // use short circuiting
+            // don't use short circuiting
             if (leftIsNullable)
             {
                 _ilg.Emit(OpCodes.Ldloca, locLeft);
                 _ilg.EmitHasValue(leftType);
-                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
             }
+
             if (rightIsNullable)
             {
                 _ilg.Emit(OpCodes.Ldloca, locRight);
                 _ilg.EmitHasValue(rightType);
-                _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
+                if (leftIsNullable)
+                {
+                    _ilg.Emit(OpCodes.And);
+                }
             }
+
+            _ilg.Emit(OpCodes.Brfalse_S, labIfNull);
 
             // do op on values
             if (leftIsNullable)

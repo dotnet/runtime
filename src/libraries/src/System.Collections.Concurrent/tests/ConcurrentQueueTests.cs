@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Collections.Concurrent.Tests
 {
-    public class ConcurrentQueueTests : ProducerConsumerCollectionTests
+    public partial class ConcurrentQueueTests : ProducerConsumerCollectionTests
     {
         protected override IProducerConsumerCollection<T> CreateProducerConsumerCollection<T>() => new ConcurrentQueue<T>();
         protected override IProducerConsumerCollection<int> CreateProducerConsumerCollection(IEnumerable<int> collection) => new ConcurrentQueue<int>(collection);

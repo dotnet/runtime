@@ -64,6 +64,22 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        public void Quote_Lambda_Action_MakeUnary(bool useInterpreter)
+        {
+            Expression<Action> e = () => Nop();
+            UnaryExpression q = MakeUnary(ExpressionType.Quote, e, null);
+            Expression<Func<LambdaExpression>> f = Lambda<Func<LambdaExpression>>(q);
+
+            var quote = f.Compile(useInterpreter)();
+
+            Assert.Equal(0, quote.Parameters.Count);
+            Assert.Equal(ExpressionType.Call, quote.Body.NodeType);
+
+            var call = (MethodCallExpression)quote.Body;
+            Assert.Equal(typeof(UnaryQuoteTests).GetMethod(nameof(Nop)), call.Method);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void Quote_Lambda_IdentityFunc(bool useInterpreter)
         {
             Expression<Func<LambdaExpression>> f = () => GetQuote<Func<int, int>>(x => x);

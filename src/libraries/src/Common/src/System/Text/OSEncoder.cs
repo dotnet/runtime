@@ -125,7 +125,7 @@ namespace System.Text
                 return 0;
             
             fixed (char* pChars = chars)
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &bytes[0])
             {
                 char dummyChar;
                 char* pBuffer = pChars == null ? &dummyChar : pChars + charIndex;
@@ -200,7 +200,7 @@ namespace System.Text
             }
 
             fixed (char* pChars = chars)
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &bytes[0])
             {
                 char dummyChar;
                 char* pBuffer = pChars == null ? &dummyChar : pChars + charIndex;

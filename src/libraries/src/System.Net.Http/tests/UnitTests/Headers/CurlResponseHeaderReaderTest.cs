@@ -15,6 +15,7 @@ namespace System.Net.Http.Tests
         private const string MissingSpaceFormat = "HTTP/1.1 {0}InvalidPhrase";
 
         private const string StatusCodeVersionFormat = "HTTP/{0}.{1} 200 OK";
+        private const string StatusCodeMajorVersionOnlyFormat = "HTTP/{0} 200 OK";
 
         private const string ValidHeader = "Content-Type: text/xml; charset=utf-8";
         private const string HeaderNameWithInvalidChar = "Content{0}Type: text/xml; charset=utf-8";
@@ -23,7 +24,7 @@ namespace System.Net.Http.Tests
 
         public static readonly IEnumerable<object[]> ValidStatusCodeLines = GetStatusCodeLines(StatusCodeTemplate);
         public static readonly IEnumerable<object[]> InvalidStatusCodeLines = GetStatusCodeLines(MissingSpaceFormat);
-        public static readonly IEnumerable<object[]> StatusCodeVersionLines = GetStatusCodeLinesForVersions(1, 10);
+        public static readonly IEnumerable<object[]> StatusCodeVersionLines = GetStatusCodeLinesForMajorVersions(1, 10).Concat(GetStatusCodeLinesForMajorMinorVersions(1, 10));
         public static readonly IEnumerable<object[]> InvalidHeaderLines = GetInvalidHeaderLines();
 
         private static IEnumerable<object[]> GetStatusCodeLines(string template)
@@ -35,7 +36,15 @@ namespace System.Net.Http.Tests
             }
         }
 
-        private static IEnumerable<object[]> GetStatusCodeLinesForVersions(int min, int max)
+        private static IEnumerable<object[]> GetStatusCodeLinesForMajorVersions(int min, int max)
+        {
+            for(int major = min; major < max; major++)
+            {
+                yield return new object[] { string.Format(StatusCodeMajorVersionOnlyFormat, major), major, 0 };
+            }
+        }
+
+        private static IEnumerable<object[]> GetStatusCodeLinesForMajorMinorVersions(int min, int max)
         {
             for(int major = min; major < max; major++)
             {
@@ -104,6 +113,11 @@ namespace System.Net.Http.Tests
                     {
                         expectedMajor = 1;
                         expectedMinor = minor;
+                    }
+                    else if (major == 2 && minor == 0)
+                    {
+                        expectedMajor = 2;
+                        expectedMinor = 0;
                     }
 
                     Assert.Equal(expectedMajor, response.Version.Major);

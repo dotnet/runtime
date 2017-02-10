@@ -1991,10 +1991,10 @@ namespace System.Data
                     segmentPos = _nextFreeSlotLine;
                     while (segmentPos < _slotMap.Length)
                     {
-                        if (((uint)_slotMap[segmentPos]) < 0xFFFFFFFF)
+                        if (unchecked((uint)_slotMap[segmentPos]) < 0xFFFFFFFF)
                         {
                             freeSlotId = 0;
-                            freeSlot = (~(_slotMap[segmentPos])) & (_slotMap[segmentPos] + 1);
+                            freeSlot = (~(_slotMap[segmentPos])) & unchecked(_slotMap[segmentPos] + 1);
 
                             // avoid string concat to allow debug code to run faster
                             Debug.Assert((_slotMap[segmentPos] & freeSlot) == 0, "Slot position segment[segmentPos ]: [freeSlot] is in use. Expected to be empty");
@@ -2006,7 +2006,7 @@ namespace System.Data
                             tree._inUseNodeCount++;
 
                             // convert freeSlotPos to int value giving number of 0's to its right i.e. freeSlotId
-                            freeSlotId = GetIntValueFromBitMap((uint)freeSlot);
+                            freeSlotId = GetIntValueFromBitMap(unchecked((uint)freeSlot));
 
                             _nextFreeSlotLine = segmentPos;
                             freeSlotId = (segmentPos * TreePage.slotLineSize) + freeSlotId;
