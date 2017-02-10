@@ -24,7 +24,6 @@
   <ItemGroup>
     <Reference Include="mscorlib" Condition="'$(TargetGroup)' == 'netfx'" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetGroup)' != 'netfx'" />
-    <ProjectReference Condition="'$(TargetGroup)'=='uapaot'" Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

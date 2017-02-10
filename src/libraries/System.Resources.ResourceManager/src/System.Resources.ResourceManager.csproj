@@ -3,10 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'uapaot'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'uapaot'">None</ResourcesSourceOutputDirectory>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uapaot'">true</SkipCommonResourcesIncludes>
-    <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'uapaot'">true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{3E7810B2-2802-4867-B223-30427F3F2D5B}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -18,23 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="System\Resources\MissingManifestResourceException.cs" />
-    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" />
-    <Compile Include="System\Resources\ResourceManager.cs" />
-    <Compile Include="System\Resources\SatelliteContractVersionAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
-      <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-    <Reference Include="mscorlib" />
-    <Reference Include="Windows" />
-    <Reference Include="System.Resources.Reader" />
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <Reference Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

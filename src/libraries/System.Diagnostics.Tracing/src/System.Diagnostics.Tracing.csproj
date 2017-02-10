@@ -27,7 +27,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Contracts\src\System.Diagnostics.Contracts.csproj" />
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

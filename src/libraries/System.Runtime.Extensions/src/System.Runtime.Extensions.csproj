@@ -21,10 +21,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
     <Compile Include="System\Context.cs" />
@@ -302,7 +298,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <Compile Include="System\IO\BinaryWriter.cs" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\StringNormalizationExtensions.cs" />

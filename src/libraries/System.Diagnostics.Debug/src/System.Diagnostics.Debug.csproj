@@ -89,7 +89,6 @@
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <Compile Include="System\Diagnostics\DebuggerStepperBoundaryAttribute.cs" />
     <Compile Include="System\Diagnostics\DebuggerVisualizerAttribute.cs" />
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

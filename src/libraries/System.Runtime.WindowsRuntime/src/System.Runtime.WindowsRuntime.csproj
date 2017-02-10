@@ -60,9 +60,6 @@
       <Aliases>System_Runtime_Extensions</Aliases>
       <TargetGroup>uapaot</TargetGroup>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj">
-      <TargetGroup>uapaot</TargetGroup>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
