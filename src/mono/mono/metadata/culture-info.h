@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef _MONO_METADATA_CULTURE_INFO_H_
 #define _MONO_METADATA_CULTURE_INFO_H_ 1

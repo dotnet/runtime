@@ -1,5 +1,6 @@
-/*
- * method-builder.c: Functions for creating IL methods at runtime.
+/**
+ * \file
+ * Functions for creating IL methods at runtime.
  * 
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

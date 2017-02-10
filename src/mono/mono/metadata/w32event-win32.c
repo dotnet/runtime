@@ -1,5 +1,6 @@
-/*
- * w32event-win32.c: Runtime support for managed Event on Win32
+/**
+ * \file
+ * Runtime support for managed Event on Win32
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

@@ -1,5 +1,6 @@
-/*
- * sre-save.c: Routine for saving an image to a file.
+/**
+ * \file
+ * Routine for saving an image to a file.
  *   
  * 
  * Author:

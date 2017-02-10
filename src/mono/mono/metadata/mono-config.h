@@ -1,5 +1,5 @@
-/*
- * mono-config.h
+/**
+ * \file
  *
  * Author: Paolo Molaro (lupus@ximian.com)
  *

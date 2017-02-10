@@ -1,5 +1,6 @@
-/*
- * w32semaphore-win32.c: Runtime support for managed Semaphore on Win32
+/**
+ * \file
+ * Runtime support for managed Semaphore on Win32
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

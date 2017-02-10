@@ -1,6 +1,6 @@
-/*
- *
- * sgen-toggleref.h: toggleref support for sgen
+/**
+ * \file
+ * toggleref support for sgen
  *
  * Copyright 2011 Xamarin, Inc.
  *

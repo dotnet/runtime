@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #if defined(HAVE_EPOLL)
 

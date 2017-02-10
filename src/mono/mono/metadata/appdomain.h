@@ -1,5 +1,6 @@
-/*
- * appdomain.h: AppDomain functions
+/**
+ * \file
+ * AppDomain functions
  *
  * Author:
  *	Dietmar Maurer (dietmar@ximian.com)

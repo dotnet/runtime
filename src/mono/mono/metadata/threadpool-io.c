@@ -1,5 +1,6 @@
-/*
- * threadpool-io.c: Microsoft IO threadpool runtime support
+/**
+ * \file
+ * Microsoft IO threadpool runtime support
  *
  * Author:
  *	Ludovic Henry (ludovic.henry@xamarin.com)

@@ -1,5 +1,6 @@
-/*
- * threads.h: Threading API
+/**
+ * \file
+ * Threading API
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

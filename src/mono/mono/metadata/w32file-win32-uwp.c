@@ -1,5 +1,6 @@
-/*
- * w32file-win32-uwp.c: UWP w32file support for Mono.
+/**
+ * \file
+ * UWP w32file support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

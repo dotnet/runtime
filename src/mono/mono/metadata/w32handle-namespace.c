@@ -1,5 +1,6 @@
-/*
- * w32handle-namespace.c: namespace for w32handles
+/**
+ * \file
+ * namespace for w32handles
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * This file contains the default set of the mono internal calls.
  * Each type that has internal call methods must be declared here
  * with the ICALL_TYPE macro as follows:

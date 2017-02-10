@@ -1,5 +1,6 @@
-/*
- * image.c: Routines for manipulating an image stored in an
+/**
+ * \file
+ * Routines for manipulating an image stored in an
  * extended PE/COFF file.
  * 
  * Authors:

@@ -1,16 +1,17 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
-// Copyright 2015 Xamarin Inc
-//
-// File: decimal.c
-//
-// Ported from C++ to C and adjusted to Mono runtime
-//
-// Pending:
-//   DoToCurrency (they look like new methods we do not have)
-//
+/**
+ * \file
+ * Copyright (c) Microsoft. All rights reserved.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ *
+ * Copyright 2015 Xamarin Inc
+ *
+ * File: decimal.c
+ *
+ * Ported from C++ to C and adjusted to Mono runtime
+ *
+ * Pending:
+ *   DoToCurrency (they look like new methods we do not have)
+ */
 #ifndef DISABLE_DECIMAL
 #include "config.h"
 #include <stdint.h>

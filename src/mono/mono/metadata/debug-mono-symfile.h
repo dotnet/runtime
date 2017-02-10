@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * This header is only installed for use by the debugger:
  * the structures and the API declared here are not supported.
  * Copyright 2012 Xamarin Inc (http://www.xamarin.com)

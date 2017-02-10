@@ -1,5 +1,6 @@
-/*
- * console-io.h: Console IO internal calls
+/**
+ * \file
+ * Console IO internal calls
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)

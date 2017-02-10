@@ -1,5 +1,6 @@
-/*
- * rand.h: System.Security.Cryptography.RNGCryptoServiceProvider support
+/**
+ * \file
+ * System.Security.Cryptography.RNGCryptoServiceProvider support
  *
  * Author:
  *      Mark Crichton (crichton@gimp.org)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_METADATA_VERIFY_H__
 #define __MONO_METADATA_VERIFY_H__
 

@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef _MONO_METADATA_W32EVENT_H_
 #define _MONO_METADATA_W32EVENT_H_

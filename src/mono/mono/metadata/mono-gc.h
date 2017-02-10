@@ -1,5 +1,6 @@
-/*
- * mono-gc.h: GC related public interface
+/**
+ * \file
+ * GC related public interface
  *
  */
 #ifndef __METADATA_MONO_GC_H__

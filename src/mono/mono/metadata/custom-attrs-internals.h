@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_METADATA_CUSTOM_ATTRS_INTERNALS_H__
 #define __MONO_METADATA_CUSTOM_ATTRS_INTERNALS_H__
 

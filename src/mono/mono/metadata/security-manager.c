@@ -1,5 +1,6 @@
-/*
- * security-manager.c:  Security Manager (Unmanaged side)
+/**
+ * \file
+ * Security Manager (Unmanaged side)
  *
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>

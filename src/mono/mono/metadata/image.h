@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONONET_METADATA_IMAGE_H_ 
 #define _MONONET_METADATA_IMAGE_H_
 

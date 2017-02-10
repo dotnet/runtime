@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_CLI_CLASS_H_
 #define _MONO_CLI_CLASS_H_
 

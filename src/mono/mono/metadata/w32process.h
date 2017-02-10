@@ -1,5 +1,6 @@
-/*
- * w32process.h: System.Diagnostics.Process support
+/**
+ * \file
+ * System.Diagnostics.Process support
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

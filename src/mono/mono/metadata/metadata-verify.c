@@ -1,5 +1,6 @@
-/*
- * metadata-verify.c: Metadata verfication support
+/**
+ * \file
+ * Metadata verfication support
  *
  * Author:
  *	Mono Project (http://www.mono-project.com)

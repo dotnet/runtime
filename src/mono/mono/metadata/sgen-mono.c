@@ -1,5 +1,6 @@
-/*
- * sgen-mono.c: SGen features specific to Mono.
+/**
+ * \file
+ * SGen features specific to Mono.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

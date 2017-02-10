@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_METADATA_MONO_MLIST_H__
 #define __MONO_METADATA_MONO_MLIST_H__
 

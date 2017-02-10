@@ -1,5 +1,6 @@
-/*
- * sgen-toggleref.c: toggleref support for sgen
+/**
+ * \file
+ * toggleref support for sgen
  *
  * Author:
  *  Rodrigo Kumpera (kumpera@gmail.com)

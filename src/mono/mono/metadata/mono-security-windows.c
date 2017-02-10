@@ -1,5 +1,6 @@
-/*
- * mono-security-windows.c: Windows security support.
+/**
+ * \file
+ * Windows security support.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

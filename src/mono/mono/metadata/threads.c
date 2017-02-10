@@ -1,5 +1,6 @@
-/*
- * threads.c: Thread support internal calls
+/**
+ * \file
+ * Thread support internal calls
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

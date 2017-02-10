@@ -1,6 +1,7 @@
-/*
- * mono-route.c: Read the network routing tables using sysctl(3) calls
- *               Required for Unix-like systems that don't have Linux's /proc/net/route
+/**
+ * \file
+ * Read the network routing tables using sysctl(3) calls
+ * Required for Unix-like systems that don't have Linux's /proc/net/route
  *
  * Author:
  *   Ben Woods (woodsb02@gmail.com)

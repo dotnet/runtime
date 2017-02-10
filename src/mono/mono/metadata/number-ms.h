@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_NUMBER_MS_H__
 #define __MONO_NUMBER_MS_H__
 

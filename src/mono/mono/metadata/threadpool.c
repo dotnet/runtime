@@ -1,5 +1,6 @@
-/*
- * threadpool.c: Microsoft threadpool runtime support
+/**
+ * \file
+ * Microsoft threadpool runtime support
  *
  * Author:
  *	Ludovic Henry (ludovic.henry@xamarin.com)

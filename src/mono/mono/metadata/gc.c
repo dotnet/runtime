@@ -1,5 +1,6 @@
-/*
- * metadata/gc.c: GC icalls.
+/**
+ * \file
+ * GC icalls.
  *
  * Author: Paolo Molaro <lupus@ximian.com>
  *

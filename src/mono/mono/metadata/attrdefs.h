@@ -1,5 +1,6 @@
-/*
- * attredefs.h: This file contains the various definitions for constants
+/**
+ * \file
+ * This file contains the various definitions for constants
  * found on the metadata tables
  *
  * Author:

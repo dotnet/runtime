@@ -1,5 +1,6 @@
-/*
- * remoting.c: Remoting support
+/**
+ * \file
+ * Remoting support
  * 
  * Copyright 2002-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)

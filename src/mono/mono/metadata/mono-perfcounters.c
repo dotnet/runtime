@@ -1,5 +1,5 @@
-/*
- * mono-perfcounters.c
+/**
+ * \file
  *
  * Performance counters support.
  *

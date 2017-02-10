@@ -1,5 +1,6 @@
-/*
- * file-mmap-windows.c: MemoryMappedFile internal calls for Windows
+/**
+ * \file
+ * MemoryMappedFile internal calls for Windows
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

@@ -1,5 +1,6 @@
-/*
- * locales.h: Culture-sensitive handling
+/**
+ * \file
+ * Culture-sensitive handling
  *
  * Authors:
  *	Dick Porter (dick@ximian.com)

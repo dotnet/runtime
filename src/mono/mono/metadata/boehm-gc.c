@@ -1,5 +1,6 @@
-/*
- * boehm-gc.c: GC implementation using either the installed or included Boehm GC.
+/**
+ * \file
+ * GC implementation using either the installed or included Boehm GC.
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2011 Novell, Inc (http://www.novell.com)

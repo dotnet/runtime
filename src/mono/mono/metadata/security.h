@@ -1,5 +1,6 @@
-/*
- * security.c:  Security internal calls
+/**
+ * \file
+ * Security internal calls
  *
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>

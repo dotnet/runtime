@@ -1,5 +1,6 @@
-/*
- * filewatcher.c: File System Watcher internal calls
+/**
+ * \file
+ * File System Watcher internal calls
  *
  * Authors:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)

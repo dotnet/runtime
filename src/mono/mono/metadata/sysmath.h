@@ -1,5 +1,5 @@
-/*
- * math.h
+/**
+ * \file
  *
  * Author:
  *   Dan Lewis (dihlewis@yahoo.co.uk)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_DEBUG_HELPERS_H__
 #define __MONO_DEBUG_HELPERS_H__
 

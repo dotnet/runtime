@@ -1,5 +1,6 @@
-/*
- * assembly.c: Routines for loading assemblies.
+/**
+ * \file
+ * Routines for loading assemblies.
  * 
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)

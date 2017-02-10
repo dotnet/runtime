@@ -1,5 +1,6 @@
-/*
- * threadpool-worker.c: native threadpool worker
+/**
+ * \file
+ * native threadpool worker
  *
  * Author:
  *	Ludovic Henry (ludovic.henry@xamarin.com)

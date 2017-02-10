@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_ATTACH_H__
 #define __MONO_ATTACH_H__
 

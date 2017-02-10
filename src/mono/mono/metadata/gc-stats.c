@@ -1,5 +1,6 @@
-/*
- * gc-stats.c: GC statistics.
+/**
+ * \file
+ * GC statistics.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

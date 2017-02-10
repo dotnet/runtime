@@ -1,7 +1,8 @@
 /*	$OpenBSD: glob.h,v 1.10 2005/12/13 00:35:22 millert Exp $	*/
 /*	$NetBSD: glob.h,v 1.5 1994/10/26 00:55:56 cgd Exp $	*/
 
-/*
+/**
+ * \file
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
  *

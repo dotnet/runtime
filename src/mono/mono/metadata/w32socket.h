@@ -1,5 +1,6 @@
-/*
- * w32socket.h: System.Net.Sockets.Socket support
+/**
+ * \file
+ * System.Net.Sockets.Socket support
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

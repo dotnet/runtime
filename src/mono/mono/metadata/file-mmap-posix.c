@@ -1,5 +1,6 @@
-/*
- * file-mmap-posix.c: File mmap internal calls
+/**
+ * \file
+ * File mmap internal calls
  *
  * Author:
  *	Rodrigo Kumpera

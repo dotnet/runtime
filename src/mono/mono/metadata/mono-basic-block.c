@@ -1,5 +1,6 @@
-/*
- * mono-basic-block.c: Routines for parsing basic blocks from the IL stream
+/**
+ * \file
+ * Routines for parsing basic blocks from the IL stream
  *
  * Authors:
  *   Rodrigo Kumpera (rkumpera@novell.com)

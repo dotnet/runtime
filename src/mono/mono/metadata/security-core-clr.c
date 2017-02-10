@@ -1,5 +1,6 @@
-/*
- * security-core-clr.c: CoreCLR security
+/**
+ * \file
+ * CoreCLR security
  *
  * Authors:
  *	Mark Probst <mark.probst@gmail.com>

@@ -1,5 +1,6 @@
-/*
- * icall-windows.c: Windows icall support.
+/**
+ * \file
+ * Windows icall support.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

@@ -1,5 +1,6 @@
-/*
- * mempool.c: efficient memory allocation
+/**
+ * \file
+ * efficient memory allocation
  *
  * MonoMemPool is for fast allocation of memory. We free
  * all memory when the pool is destroyed.

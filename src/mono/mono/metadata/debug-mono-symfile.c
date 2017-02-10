@@ -1,5 +1,5 @@
-/*
- * debug-mono-symfile.c: 
+/**
+ * \file
  *
  *   Support for reading debug info from .mdb files.
  *

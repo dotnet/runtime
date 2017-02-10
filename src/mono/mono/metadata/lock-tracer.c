@@ -1,5 +1,6 @@
-/*
- * lock-tracer.c: Runtime simple lock tracer
+/**
+ * \file
+ * Runtime simple lock tracer
  *
  * Authors:
  *	Rodrigo Kumpera (rkumpera@novell.com)

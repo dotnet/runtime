@@ -1,5 +1,6 @@
-/*
- * loader.c: Image Loader 
+/**
+ * \file
+ * Image Loader
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

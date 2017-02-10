@@ -1,5 +1,6 @@
-/*
- * monitor.c:  Monitor locking functions
+/**
+ * \file
+ * Monitor locking functions
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

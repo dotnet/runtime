@@ -1,5 +1,6 @@
-/*
- * process-windows-uwp.c: UWP process support for Mono.
+/**
+ * \file
+ * UWP process support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

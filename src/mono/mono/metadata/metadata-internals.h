@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_METADATA_INTERNALS_H__
 #define __MONO_METADATA_INTERNALS_H__

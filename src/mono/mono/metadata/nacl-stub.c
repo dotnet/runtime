@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #if defined(__native_client__)
 
 #include "nacl-stub.h"

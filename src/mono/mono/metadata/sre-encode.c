@@ -1,6 +1,7 @@
-/*
- * sre-encode.c: Routines for encoding SRE builders into a
- *    MonoDynamicImage and generating tokens.
+/**
+ * \file
+ * Routines for encoding SRE builders into a
+ * MonoDynamicImage and generating tokens.
  *   
  * 
  * Author:

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_METADATA_LOCK_TRACER_H__
 #define __MONO_METADATA_LOCK_TRACER_H__
 

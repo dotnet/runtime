@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_METADATA_NUMBER_FORMATTER_H_
 #define _MONO_METADATA_NUMBER_FORMATTER_H_ 1
 

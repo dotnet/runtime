@@ -1,6 +1,6 @@
-/*
- * threads-types.h: Generic thread typedef support (includes
- * system-specific files)
+/**
+ * \file
+ * Generic thread typedef support (includes system-specific files)
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

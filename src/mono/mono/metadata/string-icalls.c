@@ -1,5 +1,6 @@
-/*
- * string-icalls.c: String internal calls for the corlib
+/**
+ * \file
+ * String internal calls for the corlib
  *
  * Author:
  *   Patrik Torstensson (patrik.torstensson@labs2.com)

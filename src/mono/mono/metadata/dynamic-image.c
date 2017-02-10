@@ -1,5 +1,6 @@
-/*
- * dynamic-image.c: Images created at runtime.
+/**
+ * \file
+ * Images created at runtime.
  *   
  * 
  * Author:

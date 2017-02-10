@@ -1,5 +1,6 @@
-/*
- * object.c: Object creation for the Mono runtime
+/**
+ * \file
+ * Object creation for the Mono runtime
  *
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)

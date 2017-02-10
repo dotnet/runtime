@@ -1,5 +1,6 @@
-/*
- * custom-attrs.c: Custom attributes.
+/**
+ * \file
+ * Custom attributes.
  * 
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

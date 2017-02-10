@@ -1,5 +1,6 @@
-/*
- * coree-windows-uwp.c: UWP coree support for Mono.
+/**
+ * \file
+ * UWP coree support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

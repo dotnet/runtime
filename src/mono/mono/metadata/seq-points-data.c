@@ -1,5 +1,6 @@
-/*
- * seq-points-data.c: Sequence Points functions
+/**
+ * \file
+ * Sequence Points functions
  *
  * Authors:
  *   Marcos Henrich (marcos.henrich@xamarin.com)

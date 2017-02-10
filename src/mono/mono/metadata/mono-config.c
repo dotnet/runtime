@@ -1,5 +1,5 @@
-/*
- * mono-config.c
+/**
+ * \file
  *
  * Runtime and assembly configuration file support routines.
  *

@@ -1,5 +1,6 @@
-/*
- * number-ms.c: System.Double, System.Single and System.Number runtime support
+/**
+ * \file
+ * System.Double, System.Single and System.Number runtime support
  *
  * Author:
  *	Ludovic Henry (ludovic@xamarin.com)

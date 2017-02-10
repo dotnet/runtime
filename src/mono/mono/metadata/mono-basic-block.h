@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_METADATA_BASIC_BLOCK_H__
 #define __MONO_METADATA_BASIC_BLOCK_H__
 

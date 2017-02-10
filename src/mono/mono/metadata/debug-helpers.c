@@ -1,5 +1,5 @@
-/*
- * debug-helpers.c:
+/**
+ * \file
  *
  * Author:
  *	Mono Project (http://www.mono-project.com)

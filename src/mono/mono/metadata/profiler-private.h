@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_PROFILER_PRIVATE_H__
 #define __MONO_PROFILER_PRIVATE_H__

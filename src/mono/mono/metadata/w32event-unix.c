@@ -1,5 +1,6 @@
-/*
- * w32event-unix.c: Runtime support for managed Event on Unix
+/**
+ * \file
+ * Runtime support for managed Event on Unix
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_CLI_STRING_ICALLS_H_
 #define _MONO_CLI_STRING_ICALLS_H_
 

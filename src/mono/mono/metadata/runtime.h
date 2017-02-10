@@ -1,5 +1,6 @@
-/*
- * runtime.h: Runtime functions
+/**
+ * \file
+ * Runtime functions
  *
  * Author:
  *	Jonathan Pryor

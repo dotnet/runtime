@@ -1,5 +1,6 @@
-/*
- * exception.c: Exception handling
+/**
+ * \file
+ * Exception handling
  *
  * Authors:
  *	Paolo Molaro    (lupus@ximian.com)

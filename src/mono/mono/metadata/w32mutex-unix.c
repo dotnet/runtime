@@ -1,5 +1,6 @@
-/*
- * w32mutex-unix.c: Runtime support for managed Mutex on Unix
+/**
+ * \file
+ * Runtime support for managed Mutex on Unix
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

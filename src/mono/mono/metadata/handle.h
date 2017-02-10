@@ -1,5 +1,6 @@
-/*
- * handle.h: Handle to object in native code
+/**
+ * \file
+ * Handle to object in native code
  *
  * Authors:
  *  - Ludovic Henry <ludovic@xamarin.com>

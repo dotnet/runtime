@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef _MONO_METADATA_W32HANDLE_NAMESPACE_H_
 #define _MONO_METADATA_W32HANDLE_NAMESPACE_H_

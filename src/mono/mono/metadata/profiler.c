@@ -1,5 +1,6 @@
-/*
- * profiler.c: Profiler interface for Mono
+/**
+ * \file
+ * Profiler interface for Mono
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

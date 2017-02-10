@@ -1,5 +1,6 @@
-/*
- * console-io.c: ConsoleDriver internal calls for Unix systems.
+/**
+ * \file
+ * ConsoleDriver internal calls for Unix systems.
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)

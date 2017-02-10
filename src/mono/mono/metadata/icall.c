@@ -1,5 +1,5 @@
-/*
- * icall.c:
+/**
+ * \file
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * console-null.c: Null driver, does nothing.
+/**
+ * \file
+ * Null driver, does nothing.
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)

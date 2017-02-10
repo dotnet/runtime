@@ -1,5 +1,6 @@
-/*
- * mono-mlist.c: Managed object list implementation
+/**
+ * \file
+ * Managed object list implementation
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

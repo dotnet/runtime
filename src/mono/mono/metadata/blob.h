@@ -1,5 +1,6 @@
-/*
- * blob.h: Definitions used to pull information out of the Blob
+/**
+ * \file
+ * Definitions used to pull information out of the Blob
  *
  */
 #ifndef _MONO_METADATA_BLOB_H_

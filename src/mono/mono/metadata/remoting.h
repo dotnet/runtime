@@ -1,5 +1,6 @@
-/*
- * remoting.h: Remoting support
+/**
+ * \file
+ * Remoting support
  *
  * (C) 2014 Xamarin, Inc.  http://www.xamarin.com
  *

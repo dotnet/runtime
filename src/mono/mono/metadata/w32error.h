@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef _MONO_METADATA_W32ERROR_H_
 #define _MONO_METADATA_W32ERROR_H_

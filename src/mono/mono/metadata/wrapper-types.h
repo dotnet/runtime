@@ -1,4 +1,6 @@
-/* NOTE NOTE NOTE
+/**
+ * \file
+ * NOTE NOTE NOTE
  * No additional wrapper types should be added.
  * If a new wrapper is asolutely necessary, an existing one needs
  * to be removed first (with all the change that implies).

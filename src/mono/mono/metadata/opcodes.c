@@ -1,5 +1,6 @@
-/*
- * opcodes.c: CIL instruction information
+/**
+ * \file
+ * CIL instruction information
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

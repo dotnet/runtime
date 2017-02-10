@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #include "w32process.h"
 #include "w32process-unix-internals.h"

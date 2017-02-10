@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_METADATA_THREADPOOL_H_
 #define _MONO_METADATA_THREADPOOL_H_
 

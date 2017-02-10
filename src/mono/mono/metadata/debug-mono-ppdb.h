@@ -1,6 +1,6 @@
-/*
- * debug-mono-ppdb.c: Support for the portable PDB symbol
- * file format
+/**
+ * \file
+ * Support for the portable PDB symbol file format
  *
  *
  * Author:

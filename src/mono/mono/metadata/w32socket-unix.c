@@ -1,5 +1,6 @@
-/*
- * w32socket-unix.c: Unix specific socket code.
+/**
+ * \file
+ * Unix specific socket code.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

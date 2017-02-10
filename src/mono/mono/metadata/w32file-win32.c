@@ -1,5 +1,6 @@
-/*
- * w32file-win32.c: Windows File IO internal calls.
+/**
+ * \file
+ * Windows File IO internal calls.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

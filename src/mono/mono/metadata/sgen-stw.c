@@ -1,5 +1,6 @@
-/*
- * sgen-stw.c: Stop the world functionality
+/**
+ * \file
+ * Stop the world functionality
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)

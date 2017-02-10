@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #include "w32error.h"
 

@@ -1,6 +1,6 @@
-
-/*
- * property-bag.c: Linearizable property bag.
+/**
+ * \file
+ * Linearizable property bag.
  *
  * Authors:
  *   Rodrigo Kumpera (kumpera@gmail.com)

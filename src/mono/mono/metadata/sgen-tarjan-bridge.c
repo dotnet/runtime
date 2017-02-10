@@ -1,5 +1,6 @@
-/*
- * sgen-tarjan-bridge.c: Tarjan-based bridge implementation.
+/**
+ * \file
+ * Tarjan-based bridge implementation.
  *
  * Copyright 2011 Novell, Inc (http://www.novell.com)
  * Copyright 2014 Xamarin Inc (http://www.xamarin.com)

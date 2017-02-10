@@ -1,5 +1,6 @@
-/*
- * metadata.c: Routines for accessing the metadata
+/**
+ * \file
+ * Routines for accessing the metadata
  *
  * Authors:
  *   Miguel de Icaza (miguel@ximian.com)

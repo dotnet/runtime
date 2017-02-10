@@ -1,5 +1,6 @@
-/*
- * w32semaphore-unix.c: Runtime support for managed Semaphore on Unix
+/**
+ * \file
+ * Runtime support for managed Semaphore on Unix
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

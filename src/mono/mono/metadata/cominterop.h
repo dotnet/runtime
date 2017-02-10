@@ -1,5 +1,6 @@
-/*
- * cominterop.h: COM Interop Support
+/**
+ * \file
+ * COM Interop Support
  * 
  *
  * (C) 2002 Ximian, Inc.  http://www.ximian.com

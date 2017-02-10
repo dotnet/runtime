@@ -1,5 +1,6 @@
-/*
- * dynamic-stream.c: MonoDynamicStream
+/**
+ * \file
+ * MonoDynamicStream
  * Copyright 2016 Microsoft
  *
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

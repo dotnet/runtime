@@ -1,5 +1,6 @@
-/*
- * attach.c: Support for attaching to the runtime from other processes.
+/**
+ * \file
+ * Support for attaching to the runtime from other processes.
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

@@ -1,5 +1,6 @@
 
-/*
+/**
+\file
 This is a parameterized header. It's supposed/ok to be included multiple times.
 
 Input defines: (those to be defined by the includer file)

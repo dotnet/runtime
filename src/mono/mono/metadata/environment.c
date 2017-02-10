@@ -1,5 +1,6 @@
-/*
- * environment.c: System.Environment support internal calls
+/**
+ * \file
+ * System.Environment support internal calls
  *
  * Authors:
  *	Dick Porter (dick@ximian.com)

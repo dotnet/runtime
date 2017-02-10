@@ -1,6 +1,7 @@
-/*
- * sre.c: Routines for creating an image at runtime
- *   and related System.Reflection.Emit icalls
+/**
+ * \file
+ * Routines for creating an image at runtime
+ * and related System.Reflection.Emit icalls
  *   
  * 
  * Author:

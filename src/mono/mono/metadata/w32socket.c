@@ -1,5 +1,6 @@
-/*
- * socket-io.c: Socket IO internal calls
+/**
+ * \file
+ * Socket IO internal calls
  *
  * Authors:
  *	Dick Porter (dick@ximian.com)

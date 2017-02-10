@@ -1,5 +1,6 @@
-/*
- * file-mmap.h: Managed mmap wrappers.
+/**
+ * \file
+ * Managed mmap wrappers.
  *
  * Authors:
  *	Rodrigo Kumpera

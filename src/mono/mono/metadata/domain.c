@@ -1,5 +1,6 @@
-/*
- * domain.c: MonoDomain functions
+/**
+ * \file
+ * MonoDomain functions
  *
  * Author:
  *	Dietmar Maurer (dietmar@ximian.com)

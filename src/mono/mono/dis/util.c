@@ -1,5 +1,6 @@
-/*
- * util.c: Assorted utilities for the disassembler
+/**
+ * \file util.c
+ * Assorted utilities for the disassembler
  *
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)

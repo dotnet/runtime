@@ -1,5 +1,6 @@
-/*
- * mono-hash.c: GC-aware hashtable, based on Eglib's Hashtable
+/**
+ * \file
+ * GC-aware hashtable, based on Eglib's Hashtable
  *
  * Authors:
  *   Paolo Molaro (lupus@xamarin.com)

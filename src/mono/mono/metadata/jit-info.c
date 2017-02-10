@@ -1,5 +1,6 @@
-/*
- * jit-info.c: MonoJitInfo functionality
+/**
+ * \file
+ * MonoJitInfo functionality
  *
  * Author:
  *	Dietmar Maurer (dietmar@ximian.com)

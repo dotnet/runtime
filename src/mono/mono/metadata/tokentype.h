@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_METADATA_TOKENTYPE_H_
 #define _MONO_METADATA_TOKENTYPE_H_
 

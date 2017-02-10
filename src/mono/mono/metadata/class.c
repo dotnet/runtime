@@ -1,5 +1,6 @@
-/*
- * class.c: Class management for the Mono runtime
+/**
+ * \file
+ * Class management for the Mono runtime
  *
  * Author:
  *   Miguel de Icaza (miguel@ximian.com)

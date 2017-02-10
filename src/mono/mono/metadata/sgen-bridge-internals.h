@@ -1,5 +1,6 @@
-/*
- * sgen-bridge-internals.h: The cross-GC bridge.
+/**
+ * \file
+ * The cross-GC bridge.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

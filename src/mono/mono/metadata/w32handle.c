@@ -1,5 +1,6 @@
-/*
- * w32handle.c:  Generic and internal operations on handles
+/**
+ * \file
+ * Generic and internal operations on handles
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

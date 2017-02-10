@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * Define the system and runtime performance counters.
  * Each category is defined with the macro:
  * 	PERFCTR_CAT(catid, name, help, type, instances, first_counter_id)

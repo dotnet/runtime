@@ -1,5 +1,6 @@
-/*
- * mono-ptr-array.h: GC aware equivalente of g_ptr_array
+/**
+ * \file
+ * GC aware equivalente of g_ptr_array
  *
  * Author:
  *	Rodrigo Kumpera  <rkumpera@novell.com>

@@ -1,5 +1,6 @@
-/*
- * console-io.c: ConsoleDriver internal calls for Win32
+/**
+ * \file
+ * ConsoleDriver internal calls for Win32
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)

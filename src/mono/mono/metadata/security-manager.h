@@ -1,5 +1,6 @@
-/*
- * security-manager.h:  Security Manager
+/**
+ * \file
+ * Security Manager
  *
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>

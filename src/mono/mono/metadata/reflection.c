@@ -1,5 +1,6 @@
-/*
- * reflection.c: System.Type icalls and related reflection queries.
+/**
+ * \file
+ * System.Type icalls and related reflection queries.
  * 
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

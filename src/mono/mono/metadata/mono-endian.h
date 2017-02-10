@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_METADATA_ENDIAN_H_
 #define _MONO_METADATA_ENDIAN_H_ 1
 

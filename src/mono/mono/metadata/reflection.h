@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __METADATA_REFLECTION_H__
 #define __METADATA_REFLECTION_H__
 

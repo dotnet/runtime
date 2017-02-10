@@ -1,5 +1,6 @@
-/*
- * coree.h: mscoree.dll functions
+/**
+ * \file
+ * mscoree.dll functions
  *
  * Author:
  *   Kornel Pal <http://www.kornelpal.hu/>

@@ -1,5 +1,6 @@
-/*
- * marshal-windows.c: Windows marshal support.
+/**
+ * \file
+ * Windows marshal support.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

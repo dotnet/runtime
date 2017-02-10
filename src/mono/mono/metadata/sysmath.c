@@ -1,5 +1,6 @@
-/*
- * sysmath.c: these are based on bob smith's csharp routines 
+/**
+ * \file
+ * these are based on bob smith's csharp routines 
  *
  * Author:
  *	Mono Project (http://www.mono-project.com)

@@ -1,5 +1,6 @@
-/*
- * sgen-client-mono.h: Mono's client definitions for SGen.
+/**
+ * \file
+ * Mono's client definitions for SGen.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

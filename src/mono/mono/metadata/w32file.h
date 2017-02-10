@@ -1,5 +1,6 @@
-/*
- * w32file.h: File IO internal calls
+/**
+ * \file
+ * File IO internal calls
  *
  * Authors:
  *	Dick Porter (dick@ximian.com)

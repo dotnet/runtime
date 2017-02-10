@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_CIL_COFF_H__
 #define __MONO_CIL_COFF_H__

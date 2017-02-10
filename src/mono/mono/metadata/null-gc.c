@@ -1,5 +1,6 @@
-/*
- * null-gc.c: GC implementation using malloc: will leak everything, just for testing.
+/**
+ * \file
+ * GC implementation using malloc: will leak everything, just for testing.
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
