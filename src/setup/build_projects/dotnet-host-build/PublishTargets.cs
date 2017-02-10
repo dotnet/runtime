@@ -268,6 +268,10 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishTargets.PublishSharedFrameworkInstallerFileToAzure),
             nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkInstallerFileToAzure))]
         [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.OSX, BuildPlatform.Windows, BuildPlatform.Debian)]
+
+        // We do not spport publishing platform installers for any other architecture on any supported platform
+        // yet.
+        [BuildArchitectures(BuildArchitecture.x64,BuildArchitecture.x86)]
         public static BuildTargetResult PublishInstallerFilesToAzure(BuildTargetContext c) => c.Success();
 
         [Target(
@@ -281,6 +285,9 @@ namespace Microsoft.DotNet.Host.Build
             nameof(PublishHostFxrDebToDebianRepo),
             nameof(PublishSharedHostDebToDebianRepo))]
         [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
+        // We do not spport publishing platform installers for any other architecture on any supported platform
+        // yet.
+        [BuildArchitectures(BuildArchitecture.x64)]
         public static BuildTargetResult PublishDebFilesToDebianRepo(BuildTargetContext c)
         {
             return c.Success();
