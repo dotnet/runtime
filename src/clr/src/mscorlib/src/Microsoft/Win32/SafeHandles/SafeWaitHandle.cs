@@ -30,7 +30,6 @@ namespace Microsoft.Win32.SafeHandles {
         {
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public SafeWaitHandle(IntPtr existingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(existingHandle);

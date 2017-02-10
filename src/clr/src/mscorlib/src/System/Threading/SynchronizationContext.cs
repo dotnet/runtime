@@ -130,7 +130,6 @@ namespace System.Threading
 
         // Method called when the CLR does a wait operation
         [CLSCompliant(false)]
-        [PrePrepareMethod]
         public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
@@ -138,8 +137,6 @@ namespace System.Threading
 
         // Method that can be called by Wait overrides
         [CLSCompliant(false)]
-        [PrePrepareMethod]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             if (waitHandles == null)
@@ -154,9 +151,7 @@ namespace System.Threading
         // Static helper to which the above method can delegate to in order to get the default
         // COM behavior.
         [CLSCompliant(false)]
-        [PrePrepareMethod]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern int WaitHelperNative(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
 
         public static void SetSynchronizationContext(SynchronizationContext syncContext)

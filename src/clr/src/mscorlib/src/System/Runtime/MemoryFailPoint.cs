@@ -393,7 +393,6 @@ namespace System.Runtime
             GC.SuppressFinalize(this);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private void Dispose(bool disposing)
         {
             // This is just bookkeeping to ensure multiple threads can really

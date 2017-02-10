@@ -19,7 +19,6 @@ namespace  System.StubHelpers {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class AnsiCharMarshaler
     {
         // The length of the returned array is an approximation based on the length of the input string and the system
@@ -54,7 +53,6 @@ namespace  System.StubHelpers {
         }
     }  // class AnsiCharMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class CSTRMarshaler
     {
         static internal unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
@@ -122,7 +120,6 @@ namespace  System.StubHelpers {
         }
     }  // class CSTRMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class UTF8Marshaler
     {
         const int MAX_UTF8_CHAR_SIZE = 3;
@@ -179,7 +176,6 @@ namespace  System.StubHelpers {
         }
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class UTF8BufferMarshaler
     {
         static internal unsafe IntPtr ConvertToNative(StringBuilder sb, IntPtr pNativeBuffer, int flags)
@@ -230,7 +226,6 @@ namespace  System.StubHelpers {
 
 #if FEATURE_COMINTEROP
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class BSTRMarshaler
     {
         static internal unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
@@ -358,7 +353,6 @@ namespace  System.StubHelpers {
 #endif // FEATURE_COMINTEROP
 
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class VBByValStrMarshaler
     {
         static internal unsafe IntPtr ConvertToNative(string strManaged, bool fBestFit, bool fThrowOnUnmappableChar, ref int cch)
@@ -424,7 +418,6 @@ namespace  System.StubHelpers {
 
 #if FEATURE_COMINTEROP
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class AnsiBSTRMarshaler
     {
         static internal unsafe IntPtr ConvertToNative(int flags, string strManaged)
@@ -476,7 +469,6 @@ namespace  System.StubHelpers {
 #endif // FEATURE_COMINTEROP
 
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class WSTRBufferMarshaler
     {
         static internal IntPtr ConvertToNative(string strManaged)
@@ -507,7 +499,6 @@ namespace  System.StubHelpers {
         public Int64 UniversalTime;
     };
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class DateTimeOffsetMarshaler {
 
         // Numer of ticks counted between 0001-01-01, 00:00:00 and 1601-01-01, 00:00:00.
@@ -535,7 +526,6 @@ namespace  System.StubHelpers {
 
 
 #if FEATURE_COMINTEROP
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class HStringMarshaler
     {
         // Slow-path, which requires making a copy of the managed string into the resulting HSTRING
@@ -598,7 +588,6 @@ namespace  System.StubHelpers {
         }
     }  // class HStringMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class ObjectMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -613,7 +602,6 @@ namespace  System.StubHelpers {
 
 #endif // FEATURE_COMINTEROP
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class ValueClassMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -626,7 +614,6 @@ namespace  System.StubHelpers {
         static internal extern void ClearNative(IntPtr dst, IntPtr pMT);
     }  // class ValueClassMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class DateMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -638,7 +625,6 @@ namespace  System.StubHelpers {
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [FriendAccessAllowed]
     internal static class InterfaceMarshaler
     {
@@ -658,7 +644,6 @@ namespace  System.StubHelpers {
 #endif // FEATURE_COMINTEROP
 
 #if FEATURE_COMINTEROP
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class UriMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -714,7 +699,6 @@ namespace  System.StubHelpers {
     }
 #endif // FEATURE_COMINTEROP
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class MngdNativeArrayMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -741,7 +725,6 @@ namespace  System.StubHelpers {
     }  // class MngdNativeArrayMarshaler
 
 #if FEATURE_COMINTEROP
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class MngdSafeArrayMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -763,7 +746,6 @@ namespace  System.StubHelpers {
         static internal extern void ClearNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class MngdHiddenLengthArrayMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -924,7 +906,6 @@ namespace  System.StubHelpers {
 
 #endif // FEATURE_COMINTEROP
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class MngdRefCustomMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -943,7 +924,6 @@ namespace  System.StubHelpers {
         static internal extern void ClearManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
     }  // class MngdRefCustomMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal struct AsAnyMarshaler
     {
         private const ushort VTHACK_ANSICHAR = 253;
@@ -1283,7 +1263,6 @@ namespace  System.StubHelpers {
     }  // struct AsAnyMarshaler
 
 #if FEATURE_COMINTEROP
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class NullableMarshaler
     {    
         static internal IntPtr ConvertToNative<T>(ref Nullable<T> pManaged) where T : struct
@@ -1345,7 +1324,6 @@ namespace  System.StubHelpers {
         internal static extern System.Type GetTypeFromWinRTTypeName(string typeName, out bool isPrimitive);
     }
     
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class SystemTypeMarshaler
     {   
         internal static unsafe void ConvertToNative(System.Type managedType, TypeNameNative *pNativeType)
@@ -1432,7 +1410,6 @@ namespace  System.StubHelpers {
     }  // class SystemTypeMarshaler
 
     // For converting WinRT's Windows.Foundation.HResult into System.Exception and vice versa.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class HResultExceptionMarshaler
     {
         static internal unsafe int ConvertToNative(Exception ex)
@@ -1470,7 +1447,6 @@ namespace  System.StubHelpers {
         }
     }  // class HResultExceptionMarshaler
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal static class KeyValuePairMarshaler
     {    
         internal static IntPtr ConvertToNative<K, V>([In] ref KeyValuePair<K, V> pair)
@@ -1535,7 +1511,6 @@ namespace  System.StubHelpers {
         public bool m_owned;
     }  // class CleanupWorkListElement
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     internal sealed class CleanupWorkList
     {
         private List<CleanupWorkListElement> m_list = new List<CleanupWorkListElement>();
@@ -1546,7 +1521,6 @@ namespace  System.StubHelpers {
             m_list.Add(elem);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void Destroy()
         {
             for (int i = m_list.Count - 1; i >= 0; i--)
@@ -1557,7 +1531,6 @@ namespace  System.StubHelpers {
         }
     }  // class CleanupWorkList
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class StubHelpers
     {
@@ -1594,7 +1567,6 @@ namespace  System.StubHelpers {
             return SafeHandleAddRef(handle, ref element.m_owned);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         static internal void DestroyCleanupList(ref CleanupWorkList pCleanupWorkList)
         {
             if (pCleanupWorkList != null)
@@ -1656,7 +1628,6 @@ namespace  System.StubHelpers {
         }
 
         // Releases the SH (to be called from finally block).
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         static internal void SafeHandleRelease(SafeHandle pHandle)
         {
             if (pHandle == null)

@@ -58,7 +58,6 @@ namespace Microsoft.Win32 {
                 
         [DllImport(Win32Native.KERNEL32, CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool FreeLibrary(IntPtr hModule);
 
 

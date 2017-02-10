@@ -74,7 +74,6 @@ namespace System.Threading {
         **             own the lock.
         =========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern void Exit(Object obj);
     
         /*=========================================================================
