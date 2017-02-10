@@ -53,7 +53,7 @@ namespace System.IO.Tests
             int length = 1 << 10; //fancy way of writing 2 to the pow 10
             byte[] btArr = new byte[length];
             for (int i = 0; i < btArr.Length; i++)
-                btArr[i] = (byte)i;
+                btArr[i] = unchecked((byte)i);
 
             if (stream.CanWrite)
                 stream.Write(btArr, 0, btArr.Length);
@@ -118,11 +118,11 @@ namespace System.IO.Tests
             stream.Seek(0, SeekOrigin.Begin);
 
             for (int i = 0; i < iLength; i++)
-                stream.WriteByte((byte)i);
+                stream.WriteByte(unchecked((byte)i));
 
             byte[] btArr = new byte[iLength];
             for (int i = 0; i < iLength; i++)
-                btArr[i] = (byte)i;
+                btArr[i] = unchecked((byte)i);
             stream.Write(btArr, 0, iLength);
 
             //we will write many things here using a binary writer
@@ -168,7 +168,7 @@ namespace System.IO.Tests
             stream.Read(btArr, 0, iLength);
             for (int i = 0; i < iLength; i++)
             {
-                Assert.Equal((byte)i, btArr[i]);
+                Assert.Equal(unchecked((byte)i), btArr[i]);
             }
 
             //Now, for the binary reader
@@ -221,14 +221,14 @@ namespace System.IO.Tests
 
             btArr = new byte[iLength];
             for (int i = 0; i < iLength; i++)
-                btArr[i] = (byte)(i + 5);
+                btArr[i] = unchecked((byte)(i + 5));
 
             await stream.WriteAsync(btArr, 0, btArr.Length);
 
             stream.Position = 0;
             for (int i = 0; i < iLength; i++)
             {
-                Assert.Equal((byte)(i + 5), stream.ReadByte());
+                Assert.Equal(unchecked((byte)(i + 5)), stream.ReadByte());
             }
 
             //we will read asynchronously
@@ -249,7 +249,7 @@ namespace System.IO.Tests
         [Fact]
         public async Task FlushAsyncTest()
         {
-            byte[] data = Enumerable.Range(0, 8000).Select(i => (byte)i).ToArray();
+            byte[] data = Enumerable.Range(0, 8000).Select(i => unchecked((byte)i)).ToArray();
             Stream stream = CreateStream();
 
             for (int i = 0; i < 4; i++)

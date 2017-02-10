@@ -217,7 +217,7 @@ namespace System.Tests
         [Fact]
         public static void ToString_ByteArray_Long()
         {
-            byte[] bytes = Enumerable.Range(0, 256 * 4).Select(i => (byte)i).ToArray();
+            byte[] bytes = Enumerable.Range(0, 256 * 4).Select(i => unchecked((byte)i)).ToArray();
 
             string expected = string.Join("-", bytes.Select(b => b.ToString("X2")));
 

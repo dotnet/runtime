@@ -52,7 +52,7 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random);
-                tempByteArray2 = new byte[] { (byte)s_random.Next(-31, 0) };
+                tempByteArray2 = new byte[] { unchecked((byte)s_random.Next(-31, 0)) };
                 VerifyLeftShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b<<");
             }
 
@@ -107,7 +107,7 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random, 2);
-                tempByteArray2 = new byte[] { (byte)s_random.Next(-31, 0) };
+                tempByteArray2 = new byte[] { unchecked((byte)s_random.Next(-31, 0)) };
                 VerifyLeftShiftString(Print(tempByteArray2) + Print(tempByteArray1) + "b<<");
             }
 

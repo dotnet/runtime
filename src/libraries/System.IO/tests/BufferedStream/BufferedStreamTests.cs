@@ -20,7 +20,7 @@ namespace System.IO.Tests
         [Fact]
         public async Task ConcurrentOperationsAreSerialized()
         {
-            byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)i).ToArray();
+            byte[] data = Enumerable.Range(0, 1000).Select(i => unchecked((byte)i)).ToArray();
             var mcaos = new ManuallyReleaseAsyncOperationsStream();
             var stream = new BufferedStream(mcaos, 1);
 
