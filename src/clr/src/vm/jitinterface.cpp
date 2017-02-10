@@ -112,8 +112,6 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 LARGE_INTEGER g_lastTimeInJitCompilation;
 #endif
 
-BOOL canReplaceMethodOnStack(MethodDesc* pReplaced, MethodDesc* pDeclaredReplacer, MethodDesc* pExactReplacer);
-
 /*********************************************************************/
 
 inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method) 
@@ -6741,10 +6739,9 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         /* Function marked as not inlineable */
         result |= CORINFO_FLG_DONT_INLINE;
 
-        if (pMD->IsIL() && (IsMdRequireSecObject(attribs) ||
-            (pMD->GetModule()->IsSystem() && IsMiNoInlining(pMD->GetImplAttrs()))))
+        if (pMD->IsIL() && IsMdRequireSecObject(attribs))
         {
-            // Assume all methods marked as NoInline inside mscorlib are
+            // Assume all methods marked as DynamicSecurity inside mscorlib are
             // marked that way because they use StackCrawlMark to identify
             // the caller (not just the security info).
             // See comments in canInline or canTailCall
@@ -6756,15 +6753,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
     else if (pMD->IsIL() && IsMiAggressiveInlining(pMD->GetImplAttrs()))
     {
         result |= CORINFO_FLG_FORCEINLINE;
-    }
-
-
-    if (!pMD->IsRuntimeSupplied())
-    {
-        if (IsMdRequireSecObject(attribs))
-        {
-            result |= CORINFO_FLG_SECURITYCHECK;
-        }
     }
 
     if (pMT->IsDelegate() && ((DelegateEEClass*)(pMT->GetClass()))->m_pInvokeMethod == pMD)
@@ -7641,28 +7629,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     _ASSERTE(!(CORINFO_FLG_DONT_INLINE & getMethodAttribsInternal(hCallee)));
 #endif
 
-    // Returns TRUE: if caller and callee are from the same assembly or the callee
-    //               is part of the system assembly.
-    //
-    // If the caller and callee have the same Critical state and the same Grant (and refuse) sets, then the
-    // callee may always be inlined into the caller.
-    //
-    // If they differ, then the callee is marked as INLINE_RESPECT_BOUNDARY.  The Jit may only inline the
-    // callee when any of the following are true.
-    //  1) the callee is a leaf method.
-    //  2) the callee does not call any Boundary Methods.
-    //
-    // Conceptually, a Boundary method is a method that needs to accurately find the permissions of its
-    // caller.  Boundary methods are:
-    //
-    //  1) A method that calls anything that creates a StackCrawlMark to look for its caller.  In this code
-    //      this is approximated as "in mscorlib and is marked as NoInlining".
-    //  2) A method that calls a method which calls Demand.  These methods must be marked as
-    //      IsMdRequireSecObject.
-    //  3) Calls anything that is virtual.  This is because the virtual method could be #1 or #2.
-    //
-    // In CoreCLR, all public Critical methods of mscorlib are considered Boundary Method
-
     MethodDesc* pCaller = GetMethod(hCaller);
     MethodDesc* pCallee = GetMethod(hCallee);
 
@@ -7726,7 +7692,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     if (IsMdRequireSecObject(pCallee->GetAttrs())) 
     {
         result = INLINE_NEVER;
-        szFailReason = "Inlinee requires a security object (calls Demand/Assert/Deny)";
+        szFailReason = "Inlinee requires a security object (or contains StackCrawlMark)";
         goto exit;
     }
 
@@ -7757,7 +7723,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
 #ifdef _DEBUG
         //
-        // Make sure that all methods with StackCrawlMark are marked as non-inlineable
+        // Make sure that all methods with StackCrawlMark are marked as IsMdRequireSecObject
         //
         if (pCalleeAssembly->IsSystem())
         {
@@ -7799,11 +7765,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
         }
 #endif  // FEATURE_PREJIT
-
-        if (!canReplaceMethodOnStack(pCallee, NULL, pCaller))
-        {
-            dwRestrictions |= INLINE_RESPECT_BOUNDARY;
-        }
 
         // TODO: We can probably be smarter here if the caller is jitted, as we will
         // know for sure if the inlinee has really no string interning active (currently
@@ -8183,159 +8144,6 @@ CorInfoInstantiationVerification
     return result;
 }
 
-// This function returns true if we can replace pReplaced on the stack with
-// pReplacer.  In the case of inlining this means that pReplaced is the inlinee
-// and pReplacer is the inliner.  In the case of tail calling, pReplacer is the
-// tail callee and pReplaced is the tail caller.
-//
-// It's possible for pReplacer to be NULL.  This means that it's an unresolved
-// callvirt for a tail call.  This is legal, but we make the static decision
-// based on pReplaced only (assuming that pReplacer is from a different
-// assembly that is a different partial trust).
-//
-// The general logic is this:
-//   1) You can replace anything that is full trust (since full trust doesn't
-//      cause a demand to fail).
-//   2) You can coalesce all stack frames that have the same permission set
-//      down to a single stack frame.
-//
-// You'll see three patterns in the code below:
-//   1) There is only one permission set per assembly
-//   2) Comparing grant sets is prohibitively expensive.  Therefore we use the
-//      the fact that, "a homogenous app domain has only one partial trust
-//      permission set" to infer that two grant sets are equal.
-//   3) Refuse sets are rarely used and too complex to handle correctly, so
-//      they generally just torpedo all of the logic in here.
-//
-BOOL canReplaceMethodOnStack(MethodDesc* pReplaced, MethodDesc* pDeclaredReplacer, MethodDesc* pExactReplacer)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE; //Called from PREEMPTIVE functions
-    } CONTRACTL_END;
-
-    OBJECTREF refused = NULL;
-    Assembly * pReplacedAssembly = pReplaced->GetAssembly();
-
-    _ASSERTE(Security::IsResolved(pReplacedAssembly));
-
-    // The goal of this code is to ensure that we never allow a unique non-full
-    // trust grant set to be eliminated from the stack.
-
-    Assembly * pReplacerAssembly = NULL;
-    if (pExactReplacer != NULL)
-    {
-        pReplacerAssembly = pExactReplacer->GetAssembly();
-        _ASSERTE(Security::IsResolved(pReplacerAssembly));
-
-        // If two methods are from the same assembly, they must have the same grant set.
-        if (pReplacerAssembly == pReplacedAssembly)
-        {
-            // When both methods are in the same assembly, then it is always safe to
-            // coalesce them for the purposes of security.
-            return TRUE;
-        }
-    }
-
-    if ( pDeclaredReplacer != NULL &&
-         pReplacedAssembly->GetDomainAssembly() == GetAppDomain()->GetAnonymouslyHostedDynamicMethodsAssembly() &&
-         SystemDomain::IsReflectionInvocationMethod(pDeclaredReplacer) )
-    {
-        // When an anonymously hosted dynamic method invokes a method through reflection invocation,
-        // the dynamic method is the true caller. If we replace it on the stack we would be doing 
-        // security check against its caller rather than the dynamic method itself. 
-        // We should do this check against pDeclaredReplacer rather than pExactReplacer because the
-        // latter is NULL is the former if virtual, e.g. MethodInfo.Invoke(...).
-        return FALSE;
-    }
-
-    // It is always safe to remove a full trust stack frame from the stack.
-    IAssemblySecurityDescriptor * pReplacedDesc = pReplacedAssembly->GetSecurityDescriptor();
-
-#ifdef FEATURE_APTCA
-    if (GetAppDomain()->IsCompilationDomain())
-    {
-        // If we're NGENing assemblies, we don't want to inline code out of a conditionally APTCA assembly,
-        // since we need to ensure that the dependency is loaded and checked to ensure that it is condtional
-        // APTCA.  We only need to do this if the replaced caller is transparent, since a critical caller
-        // will be allowed to use the conditional APTCA disabled assembly anyway.
-        if (pReplacedAssembly != pReplacerAssembly && Security::IsMethodTransparent(pReplaced))
-        {
-            ModuleSecurityDescriptor *pReplacedMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pReplacedAssembly);
-            if (pReplacedMSD->GetTokenFlags() & TokenSecurityDescriptorFlags_ConditionalAPTCA)
-            {
-                return FALSE;
-            }
-        }
-    }
-#endif // FEATURE_APTCA
-
-    if (pReplacedDesc->IsFullyTrusted())
-    {
-        GCX_COOP(); // Required for GetGrantedPermissionSet
-        (void)pReplacedDesc->GetGrantedPermissionSet(&refused);
-        if (refused != NULL)
-        {
-            // This is full trust with a Refused set.  That means that it is partial
-            // trust.  However, even in a homogeneous app domain, it could be a
-            // different partial trust from any other partial trust, and since
-            // pExactReplacer is either unknown or from a different assembly, we assume
-            // the worst: that is is a different partial trust.
-            return FALSE;
-        }
-        return TRUE;
-    }
-
-    // pReplaced is partial trust and pExactReplacer is either unknown or from a
-    // different assembly than pReplaced.
-
-    if (pExactReplacer == NULL)
-    {
-        // This is the unresolved callvirt case.  Since we're partial trust,
-        // we can't tail call.
-        return FALSE;
-    }
-
-    // We're replacing a partial trust stack frame.  We can only do this with a
-    // matching grant set. We know pReplaced is partial trust.  Make sure both
-    // pExactReplacer and pReplaced are the same partial trust.
-    IAssemblySecurityDescriptor * pReplacerDesc = pReplacerAssembly->GetSecurityDescriptor();
-    if (pReplacerDesc->IsFullyTrusted())
-    {
-        return FALSE; // Replacing partial trust with full trust.
-    }
-
-    // At this point both pExactReplacer and pReplaced are partial trust.  We can
-    // only do this if the grant sets are equal.  Since comparing grant sets
-    // requires calling up into managed code, we will infer that the two grant
-    // sets are equal if the domain is homogeneous.
-    IApplicationSecurityDescriptor * adSec = GetAppDomain()->GetSecurityDescriptor();
-    if (adSec->IsHomogeneous())
-    {
-        // We're homogeneous, but the two descriptors could have refused sets.
-        // Bail if they do.
-        GCX_COOP(); // Required for GetGrantedPermissionSet
-        (void)pReplacedDesc->GetGrantedPermissionSet(&refused);
-        if (refused != NULL)
-        {
-            return FALSE;
-        }
-
-        (void)pReplacerDesc->GetGrantedPermissionSet(&refused);
-        if (refused != NULL)
-            return FALSE;
-
-        return TRUE;
-    }
-
-    // pExactReplacer and pReplaced are from 2 different assemblies.  Both are partial
-    // trust, and the app domain is not homogeneous, so we just have to
-    // assume that they have different grant or refuse sets, and thus cannot
-    // safely be replaced.
-    return FALSE;
-}
-
 /*************************************************************
  * Similar to above, but perform check for tail call
  * eligibility. The callee can be passed as NULL if not known
@@ -8389,16 +8197,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
     {
         result = false;
         szFailReason = "Caller has declarative security";
-        goto exit;
-    }
-
-    // The jit already checks and doesn't allow the tail caller to use imperative security.
-    _ASSERTE(pCaller->IsRuntimeSupplied() || !IsMdRequireSecObject(pCaller->GetAttrs()));
-
-    if (!canReplaceMethodOnStack(pCaller, pDeclaredCallee, pExactCallee))
-    {
-        result = false;
-        szFailReason = "Different security";
         goto exit;
     }
 

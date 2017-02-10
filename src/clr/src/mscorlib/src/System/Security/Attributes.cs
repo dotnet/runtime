@@ -10,7 +10,7 @@ namespace System.Security
     //  Indicates that calling the target method requires space for a security
     //  object to be allocated on the callers stack. This attribute is only ever
     //  set on certain security methods defined within mscorlib.
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false )] 
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = true, Inherited = false )] 
     sealed internal class DynamicSecurityMethodAttribute : System.Attribute
     {
     }

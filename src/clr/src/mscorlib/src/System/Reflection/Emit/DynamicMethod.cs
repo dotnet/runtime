@@ -65,7 +65,7 @@ namespace System.Reflection.Emit
 
         private DynamicMethod() { }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes)
@@ -84,7 +84,7 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              Type returnType, 
                              Type[] parameterTypes, 
@@ -123,7 +123,7 @@ namespace System.Reflection.Emit
                 ref stackMark);  // transparentMethod
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              Type returnType, 
                              Type[] parameterTypes, 
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              MethodAttributes attributes, 
                              CallingConventions callingConvention, 
@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              Type returnType, 
                              Type[] parameterTypes, 
@@ -184,7 +184,7 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
         
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              Type returnType, 
                              Type[] parameterTypes, 
@@ -204,7 +204,7 @@ namespace System.Reflection.Emit
                 ref stackMark); // transparentMethod
         }
         
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name, 
                              MethodAttributes attributes, 
                              CallingConventions callingConvention, 
@@ -247,7 +247,7 @@ namespace System.Reflection.Emit
 
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
         // non-public fields (or any fields at all), it is a safe anonymous assembly to host DynamicMethods
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private static RuntimeModule GetDynamicMethodsModule()
         {
             if (s_anonymouslyHostedDynamicMethodsModule != null)

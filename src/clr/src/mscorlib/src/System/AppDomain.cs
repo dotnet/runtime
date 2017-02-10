@@ -1148,7 +1148,6 @@ namespace System
             };  
         } // PrepareDataForSetup
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static Object Setup(Object arg)
         {
             Contract.Requires(arg != null && arg is Object[]);
