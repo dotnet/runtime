@@ -1062,8 +1062,9 @@ mono_gc_cleanup (void)
 			}
 
 
-			/* Wait for the thread to actually exit */
-			ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, TRUE);
+			/* Wait for the thread to actually exit. We don't want the wait
+			 * to be alertable, because we assert on the result to be SUCCESS_0 */
+			ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
 			g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
 			mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));

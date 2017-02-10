@@ -5001,7 +5001,7 @@ self_suspend_internal (void)
 	event = thread->suspended;
 
 	MONO_ENTER_GC_SAFE;
-	res = mono_os_event_wait_one (event, MONO_INFINITE_WAIT);
+	res = mono_os_event_wait_one (event, MONO_INFINITE_WAIT, TRUE);
 	g_assert (res == MONO_OS_EVENT_WAIT_RET_SUCCESS_0 || res == MONO_OS_EVENT_WAIT_RET_ALERTED);
 	MONO_EXIT_GC_SAFE;
 }

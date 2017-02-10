@@ -45,9 +45,9 @@ void
 mono_os_event_reset (MonoOSEvent *event);
 
 MonoOSEventWaitRet
-mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout);
+mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable);
 
 MonoOSEventWaitRet
-mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout);
+mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable);
 
 #endif /* _MONO_UTILS_OS_EVENT_H_ */
