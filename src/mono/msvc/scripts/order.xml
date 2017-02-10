@@ -24,7 +24,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/basic/System.Xml.dll -r:./../../class/lib/basic/System.Configuration.dll -r:MonoSecurity=./../../class/lib/basic/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -486,7 +486,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/build/System.Xml.dll -r:./../../class/lib/build/System.Configuration.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -497,7 +497,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -508,7 +508,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/build/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/build/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -1102,7 +1102,7 @@
     </project>
     <project dir="class/System" library="System-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -d:CONFIGURATION_DEP -r:./../../class/lib/net_4_x/System.Xml.dll -r:./../../class/lib/net_4_x/System.Configuration.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.dll</library_output>
@@ -1124,7 +1124,7 @@
     </project>
     <project dir="class/System" library="System-bare-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/bare/System.dll</library_output>
@@ -1146,7 +1146,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:MONO_FEATURE_MULTIPLE_APPDOMAINS -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -nowarn:436 -d:CODEDOM -d:MONO_FEATURE_BTLS -d:SECURITY_DEP -d:XML_DEP -d:MONO_SECURITY_ALIAS -r:./../../class/lib/net_4_x/bare/System.Xml.dll -r:MonoSecurity=./../../class/lib/net_4_x/Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/secxml/System.dll</library_output>
