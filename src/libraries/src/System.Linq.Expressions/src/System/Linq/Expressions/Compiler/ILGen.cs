@@ -480,24 +480,24 @@ namespace System.Linq.Expressions.Compiler
             return false;
         }
 
-        internal static void EmitConstant(this ILGenerator il, object value)
+        internal static void EmitConstant(this ILGenerator il, object value, ILocalCache locals)
         {
             Debug.Assert(value != null);
-            EmitConstant(il, value, value.GetType());
+            EmitConstant(il, value, value.GetType(), locals);
         }
 
 
         //
         // Note: we support emitting more things as IL constants than
         // Linq does
-        internal static void EmitConstant(this ILGenerator il, object value, Type type)
+        internal static void EmitConstant(this ILGenerator il, object value, Type type, ILocalCache locals)
         {
             if (value == null)
             {
                 // Smarter than the Linq implementation which uses the initobj
                 // pattern for all value types (works, but requires a local and
                 // more IL)
-                il.EmitDefault(type);
+                il.EmitDefault(type, locals);
                 return;
             }
 
@@ -631,7 +631,7 @@ namespace System.Linq.Expressions.Compiler
 
         #region Linq Conversions
 
-        internal static void EmitConvertToType(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        internal static void EmitConvertToType(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             if (TypeUtils.AreEquivalent(typeFrom, typeTo))
             {
@@ -661,7 +661,7 @@ namespace System.Linq.Expressions.Compiler
             }
             else if (isTypeFromNullable || isTypeToNullable)
             {
-                il.EmitNullableConversion(typeFrom, typeTo, isChecked);
+                il.EmitNullableConversion(typeFrom, typeTo, isChecked, locals);
             }
             else if (!(typeFrom.IsConvertible() && typeTo.IsConvertible()) // primitive runtime conversion
                      &&
@@ -879,25 +879,26 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static void EmitNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        private static void EmitNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
             Label labIfNull;
             Label labEnd;
-            LocalBuilder locFrom = il.DeclareLocal(typeFrom);
+            LocalBuilder locFrom = locals.GetLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
-            LocalBuilder locTo = il.DeclareLocal(typeTo);
+            LocalBuilder locTo = locals.GetLocal(typeTo);
             // test for null
             il.Emit(OpCodes.Ldloca, locFrom);
             il.EmitHasValue(typeFrom);
             labIfNull = il.DefineLabel();
             il.Emit(OpCodes.Brfalse_S, labIfNull);
             il.Emit(OpCodes.Ldloca, locFrom);
+            locals.FreeLocal(locFrom);
             il.EmitGetValueOrDefault(typeFrom);
             Type nnTypeFrom = typeFrom.GetNonNullableType();
             Type nnTypeTo = typeTo.GetNonNullableType();
-            il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked);
+            il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
@@ -910,45 +911,48 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(OpCodes.Initobj, typeTo);
             il.MarkLabel(labEnd);
             il.Emit(OpCodes.Ldloc, locTo);
+            locals.FreeLocal(locTo);
         }
 
 
-        private static void EmitNonNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        private static void EmitNonNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
-            LocalBuilder locTo = il.DeclareLocal(typeTo);
+            LocalBuilder locTo = locals.GetLocal(typeTo);
             Type nnTypeTo = typeTo.GetNonNullableType();
-            il.EmitConvertToType(typeFrom, nnTypeTo, isChecked);
+            il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
             il.Emit(OpCodes.Stloc, locTo);
             il.Emit(OpCodes.Ldloc, locTo);
+            locals.FreeLocal(locTo);
         }
 
 
-        private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(typeFrom.IsNullableType());
             Debug.Assert(!typeTo.IsNullableType());
             if (typeTo.GetTypeInfo().IsValueType)
-                il.EmitNullableToNonNullableStructConversion(typeFrom, typeTo, isChecked);
+                il.EmitNullableToNonNullableStructConversion(typeFrom, typeTo, isChecked, locals);
             else
                 il.EmitNullableToReferenceConversion(typeFrom);
         }
 
 
-        private static void EmitNullableToNonNullableStructConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        private static void EmitNullableToNonNullableStructConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(typeFrom.IsNullableType());
             Debug.Assert(!typeTo.IsNullableType());
             Debug.Assert(typeTo.GetTypeInfo().IsValueType);
-            LocalBuilder locFrom = il.DeclareLocal(typeFrom);
+            LocalBuilder locFrom = locals.GetLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
             il.Emit(OpCodes.Ldloca, locFrom);
+            locals.FreeLocal(locFrom);
             il.EmitGetValue(typeFrom);
             Type nnTypeFrom = typeFrom.GetNonNullableType();
-            il.EmitConvertToType(nnTypeFrom, typeTo, isChecked);
+            il.EmitConvertToType(nnTypeFrom, typeTo, isChecked, locals);
         }
 
 
@@ -961,17 +965,17 @@ namespace System.Linq.Expressions.Compiler
         }
 
 
-        private static void EmitNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
+        private static void EmitNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             bool isTypeFromNullable = typeFrom.IsNullableType();
             bool isTypeToNullable = typeTo.IsNullableType();
             Debug.Assert(isTypeFromNullable || isTypeToNullable);
             if (isTypeFromNullable && isTypeToNullable)
-                il.EmitNullableToNullableConversion(typeFrom, typeTo, isChecked);
+                il.EmitNullableToNullableConversion(typeFrom, typeTo, isChecked, locals);
             else if (isTypeFromNullable)
-                il.EmitNullableToNonNullableConversion(typeFrom, typeTo, isChecked);
+                il.EmitNullableToNonNullableConversion(typeFrom, typeTo, isChecked, locals);
             else
-                il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked);
+                il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked, locals);
         }
 
 
@@ -1108,7 +1112,7 @@ namespace System.Linq.Expressions.Compiler
         /// Emits default(T)
         /// Semantics match C# compiler behavior
         /// </summary>
-        internal static void EmitDefault(this ILGenerator il, Type type)
+        internal static void EmitDefault(this ILGenerator il, Type type, ILocalCache locals)
         {
             switch (type.GetTypeCode())
             {
@@ -1123,10 +1127,11 @@ namespace System.Linq.Expressions.Compiler
                         // This is the IL for default(T) if T is a generic type
                         // parameter, so it should work for any type. It's also
                         // the standard pattern for structs.
-                        LocalBuilder lb = il.DeclareLocal(type);
+                        LocalBuilder lb = locals.GetLocal(type);
                         il.Emit(OpCodes.Ldloca, lb);
                         il.Emit(OpCodes.Initobj, type);
                         il.Emit(OpCodes.Ldloc, lb);
+                        locals.FreeLocal(lb);
                     }
                     else
                     {

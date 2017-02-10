@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Compiler
                 Type indexType = rightType.GetNonNullableType();
                 if (indexType != typeof(int))
                 {
-                    _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true);
+                    _ilg.EmitConvertToType(indexType, typeof(int), isChecked: true, locals: this);
                 }
                 _ilg.Emit(OpCodes.Ldelema, node.Type);
             }
