@@ -12770,11 +12770,31 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
                         }
                     }
+                }
 
-                    // Note that when running under tail call stress, a call will be marked as explicit tail prefixed
-                    // hence will not be considered for implicit tail calling.
-                    bool isRecursive = (callInfo.hMethod == info.compMethodHnd);
-                    if (impIsImplicitTailCallCandidate(opcode, codeAddr + sz, codeEndp, prefixFlags, isRecursive))
+                // This is split up to avoid goto flow warnings.
+                bool isRecursive;
+                isRecursive = !compIsForInlining() && (callInfo.hMethod == info.compMethodHnd);
+
+                // Note that when running under tail call stress, a call will be marked as explicit tail prefixed
+                // hence will not be considered for implicit tail calling.
+                if (impIsImplicitTailCallCandidate(opcode, codeAddr + sz, codeEndp, prefixFlags, isRecursive))
+                {
+                    if (compIsForInlining())
+                    {
+#if FEATURE_TAILCALL_OPT_SHARED_RETURN
+                        // Are we inlining at an implicit tail call site? If so the we can flag
+                        // implicit tail call sites in the inline body. These call sites
+                        // often end up in non BBJ_RETURN blocks, so only flag them when
+                        // we're able to handle shared returns.
+                        if (impInlineInfo->iciCall->IsImplicitTailCall())
+                        {
+                            JITDUMP(" (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
+                            prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
+                        }
+#endif // FEATURE_TAILCALL_OPT_SHARED_RETURN
+                    }
+                    else
                     {
                         JITDUMP(" (Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
                         prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
