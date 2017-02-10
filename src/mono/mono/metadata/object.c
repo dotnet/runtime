@@ -430,9 +430,6 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		lock->initializing_tid = tid;
 		lock->waiting_count = 1;
 		lock->done = FALSE;
-		/* grab the vtable lock while this thread still owns type_initialization_section */
-		/* This is why type_initialization_lock needs to enter blocking mode */
-		mono_type_init_lock (lock);
 		g_hash_table_insert (type_initialization_hash, vtable, lock);
 		do_initialization = 1;
 	} else {
@@ -513,10 +510,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 		if (last_domain)
 			mono_domain_set (last_domain, TRUE);
+
 		/* Signal to the other threads that we are done */
+		mono_type_init_lock (lock);
 		lock->done = TRUE;
 		mono_coop_cond_broadcast (&lock->cond);
-
 		mono_type_init_unlock (lock);
 
 		//This can happen if the cctor self-aborts
@@ -572,6 +570,7 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 		 * mono_runtime_class_init (). In this case, the exception object is not stored,
 		 * and get_type_init_exception_for_class () needs to be aware of this.
 		 */
+		mono_type_init_lock (lock);
 		vtable->init_failed = 1;
 		mono_coop_cond_broadcast (&lock->cond);
 		mono_type_init_unlock (lock);
