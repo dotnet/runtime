@@ -15037,6 +15037,16 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
         Verify(verCurrentState.esStackDepth == expectedStack, "stack non-empty on return");
     }
 
+#ifdef DEBUG
+    // If we are importing an inlinee and have GC ref locals we always
+    // need to have a spill temp for the return value.  This temp
+    // should have been set up in advance, over in fgFindBasicBlocks.
+    if (compIsForInlining() && impInlineInfo->HasGcRefLocals() && (info.compRetType != TYP_VOID))
+    {
+        assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
+    }
+#endif // DEBUG
+
     GenTree*             op2       = nullptr;
     GenTree*             op1       = nullptr;
     CORINFO_CLASS_HANDLE retClsHnd = nullptr;
@@ -15143,7 +15153,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                 if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                 {
                     assert(info.compRetNativeType != TYP_VOID &&
-                           (fgMoreThanOneReturnBlock() || impInlineInfo->hasPinnedLocals));
+                           (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
 
                     // This is a bit of a workaround...
                     // If we are inlining a call that returns a struct, where the actual "native" return type is
@@ -15234,7 +15244,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
                     assert(info.compRetNativeType != TYP_VOID);
-                    assert(fgMoreThanOneReturnBlock() || impInlineInfo->hasPinnedLocals);
+                    assert(fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals());
 
                     impAssignTempGen(lvaInlineeReturnSpillTemp, op2, se.seTypeInfo.GetClassHandle(),
                                      (unsigned)CHECK_SPILL_ALL);
@@ -17664,6 +17674,11 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         lclVarInfo[i + argCnt].lclIsPinned    = isPinned;
         lclVarInfo[i + argCnt].lclTypeInfo    = type;
 
+        if (varTypeIsGC(type))
+        {
+            pInlineInfo->numberOfGcRefLocals++;
+        }
+
         if (isPinned)
         {
             // Pinned locals may cause inlines to fail.
@@ -17728,6 +17743,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 #endif // FEATURE_SIMD
 }
 
+//------------------------------------------------------------------------
+// impInlineFetchLocal: get a local var that represents an inlinee local
+//
+// Arguments:
+//    lclNum -- number of the inlinee local
+//    reason -- debug string describing purpose of the local var
+//
+// Returns:
+//    Number of the local to use
+//
+// Notes:
+//    This method is invoked only for locals actually used in the
+//    inlinee body.
+//
+//    Allocates a new temp if necessary, and copies key properties
+//    over from the inlinee local var info.
+
 unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reason))
 {
     assert(compIsForInlining());
@@ -17736,55 +17768,46 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
 
     if (tmpNum == BAD_VAR_NUM)
     {
-        var_types lclTyp = impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclTypeInfo;
+        const InlLclVarInfo& inlineeLocal = impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt];
+        const var_types      lclTyp       = inlineeLocal.lclTypeInfo;
 
         // The lifetime of this local might span multiple BBs.
         // So it is a long lifetime local.
         impInlineInfo->lclTmpNum[lclNum] = tmpNum = lvaGrabTemp(false DEBUGARG(reason));
 
-        lvaTable[tmpNum].lvType = lclTyp;
-        if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclHasLdlocaOp)
-        {
-            lvaTable[tmpNum].lvHasLdAddrOp = 1;
-        }
+        // Copy over key info
+        lvaTable[tmpNum].lvType        = lclTyp;
+        lvaTable[tmpNum].lvHasLdAddrOp = inlineeLocal.lclHasLdlocaOp;
+        lvaTable[tmpNum].lvPinned      = inlineeLocal.lclIsPinned;
 
-        if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclIsPinned)
-        {
-            lvaTable[tmpNum].lvPinned = 1;
-
-            if (!impInlineInfo->hasPinnedLocals)
-            {
-                // If the inlinee returns a value, use a spill temp
-                // for the return value to ensure that even in case
-                // where the return expression refers to one of the
-                // pinned locals, we can unpin the local right after
-                // the inlined method body.
-                if ((info.compRetNativeType != TYP_VOID) && (lvaInlineeReturnSpillTemp == BAD_VAR_NUM))
-                {
-                    lvaInlineeReturnSpillTemp =
-                        lvaGrabTemp(false DEBUGARG("Inline candidate pinned local return spill temp"));
-                    lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
-                }
-            }
-
-            impInlineInfo->hasPinnedLocals = true;
-        }
-
-        if (impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclVerTypeInfo.IsStruct())
+        if (inlineeLocal.lclVerTypeInfo.IsStruct())
         {
             if (varTypeIsStruct(lclTyp))
             {
-                lvaSetStruct(tmpNum,
-                             impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclVerTypeInfo.GetClassHandle(),
-                             true /* unsafe value cls check */);
+                lvaSetStruct(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
             }
             else
             {
                 // This is a wrapped primitive.  Make sure the verstate knows that
-                lvaTable[tmpNum].lvVerTypeInfo =
-                    impInlineInfo->lclVarInfo[lclNum + impInlineInfo->argCnt].lclVerTypeInfo;
+                lvaTable[tmpNum].lvVerTypeInfo = inlineeLocal.lclVerTypeInfo;
             }
         }
+
+#ifdef DEBUG
+        // Sanity check that we're properly prepared for gc ref locals.
+        if (varTypeIsGC(lclTyp))
+        {
+            // Since there are gc locals we should have seen them earlier
+            // and if there was a return value, set up the spill temp.
+            assert(impInlineInfo->HasGcRefLocals());
+            assert((info.compRetNativeType == TYP_VOID) || (lvaInlineeReturnSpillTemp != BAD_VAR_NUM));
+        }
+        else
+        {
+            // Make sure all pinned locals count as gc refs.
+            assert(!inlineeLocal.lclIsPinned);
+        }
+#endif // DEBUG
     }
 
     return tmpNum;
