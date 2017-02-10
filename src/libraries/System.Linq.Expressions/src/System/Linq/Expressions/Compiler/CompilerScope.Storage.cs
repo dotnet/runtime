@@ -140,7 +140,7 @@ namespace System.Linq.Expressions.Compiler
             internal void EmitLoadBox()
             {
                 _array.EmitLoad();
-                Compiler.IL.EmitInt(_index);
+                Compiler.IL.EmitPrimitive(_index);
                 Compiler.IL.Emit(OpCodes.Ldelem_Ref);
                 Compiler.IL.Emit(OpCodes.Castclass, _boxType);
             }

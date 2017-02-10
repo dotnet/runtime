@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpression(node.Operand);
                 LocalBuilder loc = GetLocal(node.Operand.Type);
                 _ilg.Emit(OpCodes.Stloc, loc);
-                _ilg.EmitInt(0);
+                _ilg.EmitPrimitive(0);
                 _ilg.EmitConvertToType(typeof(int), node.Operand.Type, isChecked: false);
                 _ilg.Emit(OpCodes.Ldloc, loc);
                 FreeLocal(loc);

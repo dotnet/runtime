@@ -655,7 +655,7 @@ namespace System.Linq.Expressions.Compiler
                 // Result is known statically, so just emit the expression for
                 // its side effects and return the result
                 EmitExpressionAsVoid(node.Expression);
-                _ilg.EmitBoolean(result == AnalyzeTypeIsResult.KnownTrue);
+                _ilg.EmitPrimitive(result == AnalyzeTypeIsResult.KnownTrue);
                 return;
             }
 
@@ -903,7 +903,7 @@ namespace System.Linq.Expressions.Compiler
                 for (int i = 0; i < n; i++)
                 {
                     _ilg.Emit(OpCodes.Dup);
-                    _ilg.EmitInt(i);
+                    _ilg.EmitPrimitive(i);
                     EmitExpression(expressions[i]);
                     _ilg.EmitStoreElement(elementType);
                 }
@@ -1308,11 +1308,11 @@ namespace System.Linq.Expressions.Compiler
                         _ilg.Emit(OpCodes.Br_S, exit);
 
                         _ilg.MarkLabel(exitAllNull);
-                        _ilg.EmitBoolean(nodeType == ExpressionType.Equal);
+                        _ilg.EmitPrimitive(nodeType == ExpressionType.Equal);
                         _ilg.Emit(OpCodes.Br_S, exit);
 
                         _ilg.MarkLabel(exitAnyNull);
-                        _ilg.EmitBoolean(nodeType == ExpressionType.NotEqual);
+                        _ilg.EmitPrimitive(nodeType == ExpressionType.NotEqual);
 
                         _ilg.MarkLabel(exit);
                         return;
