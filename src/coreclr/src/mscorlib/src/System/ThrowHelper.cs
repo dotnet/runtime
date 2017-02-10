@@ -232,7 +232,7 @@ namespace System {
             return new ArgumentException(GetResourceString(resource));
         }
 
-        private static InvalidOperationException GetInvalidOperationException(ExceptionResource resource) {
+        internal static InvalidOperationException GetInvalidOperationException(ExceptionResource resource) {
             return new InvalidOperationException(GetResourceString(resource));
         }
 
@@ -244,7 +244,7 @@ namespace System {
             return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), nameof(value));
         }
 
-        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {
+        internal static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {
             return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
         }
 
@@ -381,6 +381,7 @@ namespace System {
         concurrencyLevel,
         text,
         callBack,
+        type,
     }
 
     //
@@ -484,7 +485,8 @@ namespace System {
         ConcurrentDictionary_ArrayNotLargeEnough,
         ConcurrentDictionary_ArrayIncorrectType,
         ConcurrentCollection_SyncRoot_NotSupported,
-
+        ArgumentOutOfRange_Enum,
+        InvalidOperation_HandleIsNotInitialized,
     }
 }
 
