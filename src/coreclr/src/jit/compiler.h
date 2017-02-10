@@ -7790,8 +7790,11 @@ public:
         bool genFPopt;   // Can we do frame-pointer-omission optimization?
         bool altJit;     // True if we are an altjit and are compiling this method
 
-#ifdef DEBUG
+#ifdef OPT_CONFIG
         bool optRepeat;                // Repeat optimizer phases k times
+#endif
+
+#ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
         bool dspEHTable;               // Display the EH table reported to the VM
