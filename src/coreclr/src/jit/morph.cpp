@@ -7951,7 +7951,16 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
                 GenTreeStmt* popStmt = nextMorphStmt;
                 nextMorphStmt        = nextMorphStmt->gtNextStmt;
 
-                noway_assert((popStmt->gtStmtExpr->gtFlags & GTF_ALL_EFFECT) == 0);
+                // Side effect flags on a GT_COMMA may be overly pessimistic, so examine
+                // the constituent nodes.
+                GenTreePtr popExpr          = popStmt->gtStmtExpr;
+                bool       isSideEffectFree = (popExpr->gtFlags & GTF_ALL_EFFECT) == 0;
+                if (!isSideEffectFree && (popExpr->OperGet() == GT_COMMA))
+                {
+                    isSideEffectFree = ((popExpr->gtGetOp1()->gtFlags & GTF_ALL_EFFECT) == 0) &&
+                                       ((popExpr->gtGetOp2()->gtFlags & GTF_ALL_EFFECT) == 0);
+                }
+                noway_assert(isSideEffectFree);
                 fgRemoveStmt(compCurBB, popStmt);
             }
 
