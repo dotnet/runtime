@@ -29,13 +29,9 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetModuleFileName();
 
-        [MethodImpl (MethodImplOptions.NoInlining)]
         public static String GetSystemVersion()
         {
             return Assembly.GetExecutingAssembly().ImageRuntimeVersion;
         }
-
-#if FEATURE_COMINTEROP
-#endif // FEATURE_COMINTEROP
     }
 }

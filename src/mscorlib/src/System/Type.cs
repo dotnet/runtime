@@ -77,25 +77,25 @@ namespace System
         // case-sensitive by default).
         ////  
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName, bool throwOnError, bool ignoreCase) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, ignoreCase, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName, bool throwOnError) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, false, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -105,7 +105,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -116,7 +116,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -128,7 +128,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type ReflectionOnlyGetType(String typeName, bool throwIfNotFound, bool ignoreCase) 
         {
             if (typeName == null)
