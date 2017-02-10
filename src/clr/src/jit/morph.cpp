@@ -6735,8 +6735,10 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         printTreeID(fgMorphStmt);
         printf(" in BB%02u:\n", compCurBB->bbNum);
         gtDispTree(fgMorphStmt);
-
-        // printf("startVars=%d.\n", startVars);
+        if (call->IsImplicitTailCall())
+        {
+            printf("Note: candidate is implicit tail call\n");
+        }
     }
 #endif
 
@@ -7882,14 +7884,15 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
             {
                 treeWithCall = stmtExpr->gtGetOp2();
             }
-            if (treeWithCall->gtOper == GT_CAST)
+
+            // Peel off casts
+            while (treeWithCall->gtOper == GT_CAST)
             {
-                noway_assert(treeWithCall->gtGetOp1() == call && !treeWithCall->gtOverflow());
+                noway_assert(!treeWithCall->gtOverflow());
+                treeWithCall = treeWithCall->gtGetOp1();
             }
-            else
-            {
-                noway_assert(treeWithCall == call);
-            }
+
+            noway_assert(treeWithCall == call);
         }
 #endif
 
