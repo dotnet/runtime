@@ -94,7 +94,6 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private SafeWinHttpHandle _sessionHandle;
         private WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
-        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
         public WinHttpHandler()
         {
@@ -533,8 +532,6 @@ namespace System.Net.Http
 
             CheckDisposed();
 
-            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
-
             SetOperationStarted();
 
             TaskCompletionSource<HttpResponseMessage> tcs = new TaskCompletionSource<HttpResponseMessage>();
@@ -562,8 +559,6 @@ namespace System.Net.Http
                 CancellationToken.None,
                 TaskCreationOptions.DenyChildAttach,
                 TaskScheduler.Default);
-
-            s_diagnosticListener.LogHttpResponse(tcs.Task, loggingRequestId);
 
             return tcs.Task;
         }
