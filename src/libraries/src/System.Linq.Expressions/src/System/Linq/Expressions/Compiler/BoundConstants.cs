@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Compiler
                 _values.Add(value);
             }
 
-            lc.IL.EmitInt(index);
+            lc.IL.EmitPrimitive(index);
             lc.IL.Emit(OpCodes.Ldelem_Ref);
             if (type.GetTypeInfo().IsValueType)
             {

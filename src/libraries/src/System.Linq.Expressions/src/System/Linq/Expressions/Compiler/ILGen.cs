@@ -342,49 +342,12 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(OpCodes.Ldstr, value);
         }
 
-        internal static void EmitBoolean(this ILGenerator il, bool value)
+        internal static void EmitPrimitive(this ILGenerator il, bool value)
         {
-            if (value)
-            {
-                il.Emit(OpCodes.Ldc_I4_1);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldc_I4_0);
-            }
+            il.Emit(value ? OpCodes.Ldc_I4_1 : OpCodes.Ldc_I4_0);
         }
 
-        internal static void EmitChar(this ILGenerator il, char value)
-        {
-            il.EmitInt(value);
-            il.Emit(OpCodes.Conv_U2);
-        }
-
-        internal static void EmitByte(this ILGenerator il, byte value)
-        {
-            il.EmitInt(value);
-            il.Emit(OpCodes.Conv_U1);
-        }
-
-        internal static void EmitSByte(this ILGenerator il, sbyte value)
-        {
-            il.EmitInt(value);
-            il.Emit(OpCodes.Conv_I1);
-        }
-
-        internal static void EmitShort(this ILGenerator il, short value)
-        {
-            il.EmitInt(value);
-            il.Emit(OpCodes.Conv_I2);
-        }
-
-        internal static void EmitUShort(this ILGenerator il, ushort value)
-        {
-            il.EmitInt(value);
-            il.Emit(OpCodes.Conv_U2);
-        }
-
-        internal static void EmitInt(this ILGenerator il, int value)
+        internal static void EmitPrimitive(this ILGenerator il, int value)
         {
             OpCode c;
             switch (value)
@@ -420,7 +383,7 @@ namespace System.Linq.Expressions.Compiler
                     c = OpCodes.Ldc_I4_8;
                     break;
                 default:
-                    if (value >= -128 && value <= 127)
+                    if (value >= sbyte.MinValue && value <= sbyte.MaxValue)
                     {
                         il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
                     }
@@ -433,37 +396,39 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(c);
         }
 
-        internal static void EmitUInt(this ILGenerator il, uint value)
+        private static void EmitPrimitive(this ILGenerator il, uint value)
         {
-            il.EmitInt(unchecked((int)value));
-            il.Emit(OpCodes.Conv_U4);
+            il.EmitPrimitive(unchecked((int)value));
         }
 
-        internal static void EmitLong(this ILGenerator il, long value)
+        private static void EmitPrimitive(this ILGenerator il, long value)
         {
-            il.Emit(OpCodes.Ldc_I8, value);
-
-            //
-            // Now, emit convert to give the constant type information.
-            //
-            // Otherwise, it is treated as unsigned and overflow is not
-            // detected if it's used in checked ops.
-            //
-            il.Emit(OpCodes.Conv_I8);
+            if (int.MinValue <= value & value <= uint.MaxValue)
+            {
+                il.EmitPrimitive((int)value);
+                // While often not of consequence depending on what follows, there are cases where this
+                // casting matters. Values [0, int.MaxValue] can use either safely, but negative values
+                // must use conv.i8 and those (int.MaxValue, uint.MaxValue] must use conv.u8, or else
+                // the higher bits will be wrong.
+                il.Emit(value > 0 ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
+            }
+            else
+            {
+                il.Emit(OpCodes.Ldc_I8, value);
+            }
         }
 
-        internal static void EmitULong(this ILGenerator il, ulong value)
+        private static void EmitPrimitive(this ILGenerator il, ulong value)
         {
-            il.Emit(OpCodes.Ldc_I8, unchecked((long)value));
-            il.Emit(OpCodes.Conv_U8);
+            il.EmitPrimitive(unchecked((long)value));
         }
 
-        internal static void EmitDouble(this ILGenerator il, double value)
+        private static void EmitPrimitive(this ILGenerator il, double value)
         {
             il.Emit(OpCodes.Ldc_R8, value);
         }
 
-        internal static void EmitSingle(this ILGenerator il, float value)
+        private static void EmitPrimitive(this ILGenerator il, float value)
         {
             il.Emit(OpCodes.Ldc_R4, value);
         }
@@ -616,40 +581,40 @@ namespace System.Linq.Expressions.Compiler
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
-                    il.EmitBoolean((bool)value);
+                    il.EmitPrimitive((bool)value);
                     return true;
                 case TypeCode.SByte:
-                    il.EmitSByte((sbyte)value);
+                    il.EmitPrimitive((sbyte)value);
                     return true;
                 case TypeCode.Int16:
-                    il.EmitShort((short)value);
+                    il.EmitPrimitive((short)value);
                     return true;
                 case TypeCode.Int32:
-                    il.EmitInt((int)value);
+                    il.EmitPrimitive((int)value);
                     return true;
                 case TypeCode.Int64:
-                    il.EmitLong((long)value);
+                    il.EmitPrimitive((long)value);
                     return true;
                 case TypeCode.Single:
-                    il.EmitSingle((float)value);
+                    il.EmitPrimitive((float)value);
                     return true;
                 case TypeCode.Double:
-                    il.EmitDouble((double)value);
+                    il.EmitPrimitive((double)value);
                     return true;
                 case TypeCode.Char:
-                    il.EmitChar((char)value);
+                    il.EmitPrimitive((char)value);
                     return true;
                 case TypeCode.Byte:
-                    il.EmitByte((byte)value);
+                    il.EmitPrimitive((byte)value);
                     return true;
                 case TypeCode.UInt16:
-                    il.EmitUShort((ushort)value);
+                    il.EmitPrimitive((ushort)value);
                     return true;
                 case TypeCode.UInt32:
-                    il.EmitUInt((uint)value);
+                    il.EmitPrimitive((uint)value);
                     return true;
                 case TypeCode.UInt64:
-                    il.EmitULong((ulong)value);
+                    il.EmitPrimitive((ulong)value);
                     return true;
                 case TypeCode.Decimal:
                     il.EmitDecimal((decimal)value);
@@ -1062,7 +1027,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(elementType != null);
             Debug.Assert(count >= 0);
 
-            il.EmitInt(count);
+            il.EmitPrimitive(count);
             il.Emit(OpCodes.Newarr, elementType);
         }
 
@@ -1104,13 +1069,13 @@ namespace System.Linq.Expressions.Compiler
                 if (int.MinValue <= value && value <= int.MaxValue)
                 {
                     int intValue = decimal.ToInt32(value);
-                    il.EmitInt(intValue);
+                    il.EmitPrimitive(intValue);
                     il.EmitNew(Decimal_Ctor_Int32);
                 }
                 else if (long.MinValue <= value && value <= long.MaxValue)
                 {
                     long longValue = decimal.ToInt64(value);
-                    il.EmitLong(longValue);
+                    il.EmitPrimitive(longValue);
                     il.EmitNew(Decimal_Ctor_Int64);
                 }
                 else
@@ -1127,11 +1092,11 @@ namespace System.Linq.Expressions.Compiler
         private static void EmitDecimalBits(this ILGenerator il, decimal value)
         {
             int[] bits = decimal.GetBits(value);
-            il.EmitInt(bits[0]);
-            il.EmitInt(bits[1]);
-            il.EmitInt(bits[2]);
-            il.EmitBoolean((bits[3] & 0x80000000) != 0);
-            il.EmitByte(unchecked((byte)(bits[3] >> 16)));
+            il.EmitPrimitive(bits[0]);
+            il.EmitPrimitive(bits[1]);
+            il.EmitPrimitive(bits[2]);
+            il.EmitPrimitive((bits[3] & 0x80000000) != 0);
+            il.EmitPrimitive(unchecked((byte)(bits[3] >> 16)));
             il.EmitNew(Decimal_Ctor_Int32_Int32_Int32_Bool_Byte);
         }
 

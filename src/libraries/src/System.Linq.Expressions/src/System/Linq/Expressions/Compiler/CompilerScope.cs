@@ -312,7 +312,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // create the array
-            lc.IL.EmitInt(_hoistedLocals.Variables.Count);
+            lc.IL.EmitPrimitive(_hoistedLocals.Variables.Count);
             lc.IL.Emit(OpCodes.Newarr, typeof(object));
 
             // initialize all elements
@@ -321,7 +321,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 // array[i] = new StrongBox<T>(...);
                 lc.IL.Emit(OpCodes.Dup);
-                lc.IL.EmitInt(i++);
+                lc.IL.EmitPrimitive(i++);
                 Type boxType = typeof(StrongBox<>).MakeGenericType(v.Type);
 
                 int index;
