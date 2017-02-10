@@ -5,7 +5,7 @@
   <Import Project="$(MSBuildProjectName).props" />
 
   <ItemGroup>
-    <!-- identity project, runtime specific projects are included by props above. Will not be includded on uapaot builds. -->
+    <!-- identity project, runtime specific projects are included by props above. Will not be built on uapaot builds. -->
     <Project Include="$(MSBuildProjectName).pkgproj" Condition="'$(TargetGroup)'=='uap'" />
   </ItemGroup>
 
