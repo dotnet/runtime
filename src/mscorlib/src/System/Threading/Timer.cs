@@ -107,7 +107,6 @@ namespace System.Threading
             {
             }
 
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             protected override bool ReleaseHandle()
             {
                 return DeleteAppDomainTimer(handle);
@@ -204,7 +203,6 @@ namespace System.Threading
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         static extern bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion

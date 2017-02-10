@@ -21,12 +21,10 @@ internal static class WindowsRuntimeBufferHelper {
 
     [DllImport(JitHelpers.QCall)]
     [SuppressUnmanagedCodeSecurity]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     private unsafe extern static void StoreOverlappedPtrInCCW(ObjectHandleOnStack windowsRuntimeBuffer, NativeOverlapped* overlapped);
 
 
     [FriendAccessAllowed]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     internal unsafe static void StoreOverlappedInCCW(Object windowsRuntimeBuffer, NativeOverlapped* overlapped) {
 
         StoreOverlappedPtrInCCW(JitHelpers.GetObjectHandleOnStack(ref windowsRuntimeBuffer), overlapped);

@@ -403,7 +403,6 @@ namespace System
                 // May replace the list with a new one if certain cache
                 // lookups succeed.  Also, may modify the contents of the list
                 // after merging these new data structures with cached ones.
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
                 internal void Insert(ref T[] list, string name, MemberListType listType)
                 {
                     bool lockTaken = false;
@@ -481,7 +480,6 @@ namespace System
                 }
 
                 // Modifies the existing list.
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
                 private void MergeWithGlobalList(T[] list)
                 {
                     T[] cachedMembers = m_allMembers;
@@ -1606,7 +1604,6 @@ namespace System
 
             internal bool IsGlobal 
             { 
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
                 get { return m_isGlobal; } 
             }
 
@@ -2508,7 +2505,6 @@ namespace System
         #endregion
 
         #region Private\Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimeType m = o as RuntimeType;
@@ -3220,7 +3216,6 @@ namespace System
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal sealed override RuntimeTypeHandle GetTypeHandleInternal()
         {
             return new RuntimeTypeHandle(this);

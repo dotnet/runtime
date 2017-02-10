@@ -57,7 +57,6 @@ namespace System {
         }
 
         [Pure]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNaN(float f) {
             return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;

@@ -232,7 +232,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimeEventInfo m = o as RuntimeEventInfo;

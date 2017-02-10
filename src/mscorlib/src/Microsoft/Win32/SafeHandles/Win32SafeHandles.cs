@@ -23,7 +23,6 @@ namespace Microsoft.Win32.SafeHandles
     // Class of safe handle which uses 0 or -1 as an invalid handle.
     public abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
     {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(IntPtr.Zero, ownsHandle) 
         {
         }
@@ -42,7 +41,6 @@ namespace Microsoft.Win32.SafeHandles
     // Class of safe handle which uses only -1 as an invalid handle.
     public abstract class SafeHandleMinusOneIsInvalid : SafeHandle
     {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(new IntPtr(-1), ownsHandle) 
         {
         }
@@ -61,7 +59,6 @@ namespace Microsoft.Win32.SafeHandles
     // Class of critical handle which uses 0 or -1 as an invalid handle.
     public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected CriticalHandleZeroOrMinusOneIsInvalid() : base(IntPtr.Zero) 
         {
         }
@@ -74,7 +71,6 @@ namespace Microsoft.Win32.SafeHandles
     // Class of critical handle which uses only -1 as an invalid handle.
     public abstract class CriticalHandleMinusOneIsInvalid : CriticalHandle
     {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected CriticalHandleMinusOneIsInvalid() : base(new IntPtr(-1)) 
         {
         }

@@ -1407,14 +1407,12 @@ namespace System
 
         public Int32 Id
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]  
             get {
                 return GetId();
             }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]              
         internal extern Int32 GetId();
 
     }

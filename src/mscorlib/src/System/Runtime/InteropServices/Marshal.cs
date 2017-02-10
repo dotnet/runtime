@@ -75,7 +75,6 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static bool IsNotWin32Atom(IntPtr ptr)
         {
 #if FEATURE_PAL
@@ -251,7 +250,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <typeparam name="T">Provide a value type to figure out its size</typeparam>
         /// <returns>The aligned size of T in bytes.</returns>
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal static uint AlignedSizeOf<T>() where T : struct
         {
             uint size = SizeOfType(typeof(T));
@@ -269,13 +267,11 @@ namespace System.Runtime.InteropServices
         // Type must be a value type with no object reference fields.  We only
         // assert this, due to the lack of a suitable generic constraint.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SizeOfType(Type type);
 
         // Type must be a value type with no object reference fields.  We only
         // assert this, due to the lack of a suitable generic constraint.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern uint AlignedSizeOfType(Type type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -468,7 +464,6 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
  
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
         {
             try
@@ -498,13 +493,11 @@ namespace System.Runtime.InteropServices
             }
         }
     
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int ReadInt32(IntPtr ptr)
         {
             return ReadInt32(ptr,0);
         }
        
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
         {
             #if BIT64
@@ -514,7 +507,6 @@ namespace System.Runtime.InteropServices
             #endif
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
             #if BIT64
@@ -524,7 +516,6 @@ namespace System.Runtime.InteropServices
             #endif
         }
     
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static IntPtr ReadIntPtr(IntPtr ptr)
         {
             #if BIT64
@@ -572,7 +563,6 @@ namespace System.Runtime.InteropServices
             }
         }
     
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static long ReadInt64(IntPtr ptr)
         {
             return ReadInt64(ptr,0);
@@ -766,7 +756,6 @@ namespace System.Runtime.InteropServices
         // GetLastWin32Error
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern int GetLastWin32Error();
     
 
@@ -774,14 +763,12 @@ namespace System.Runtime.InteropServices
         // SetLastWin32Error
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern void SetLastWin32Error(int error);
     
 
         //====================================================================
         // GetHRForLastWin32Error
         //====================================================================
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int GetHRForLastWin32Error()
         {
             int dwLastError = GetLastWin32Error();
@@ -983,7 +970,6 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Memory allocation and deallocation.
         //====================================================================
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static IntPtr AllocHGlobal(IntPtr cb)
         {
             // For backwards compatibility on 32 bit platforms, ensure we pass values between 
@@ -1007,13 +993,11 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static IntPtr AllocHGlobal(int cb)
         {
             return AllocHGlobal((IntPtr)cb);
         }
         
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static void FreeHGlobal(IntPtr hglobal)
         {
             if (IsNotWin32Atom(hglobal)) {
@@ -1558,7 +1542,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int /* ULONG */ AddRef(IntPtr /* IUnknown */ pUnk );
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk );
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
