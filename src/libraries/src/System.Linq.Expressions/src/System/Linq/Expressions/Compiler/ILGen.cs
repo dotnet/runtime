@@ -1087,7 +1087,7 @@ namespace System.Linq.Expressions.Compiler
                                 il.Emit(OpCodes.Ldsfld, Decimal_MinusOne);
                                 return;
                             case 0:
-                                il.EmitDefault(typeof(decimal));
+                                il.EmitDefault(typeof(decimal), locals: null); // locals won't be used.
                                 return;
                             case 1:
                                 il.Emit(OpCodes.Ldsfld, Decimal_One);
