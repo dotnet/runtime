@@ -266,7 +266,8 @@
     }
   },
   "demands": [
-    "Agent.OS -equals linux"
+    "Agent.OS -equals linux",
+    "Docker -equals 1.13.1"
   ],
   "retentionRules": [
     {
