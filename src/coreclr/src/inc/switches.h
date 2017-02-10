@@ -198,12 +198,10 @@
 // This is just for convenience in doing performance investigations in a checked-out enlistment.
 // #define FEATURE_ENABLE_NO_RANGE_CHECKS
 
-#ifndef FEATURE_CORECLR
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
 // in Silverlight (just to avoid thinking about whether the extra code space is worthwhile).
 #define FEATURE_JIT_TIMER
-#endif // FEATURE_CORECLR
 
 // This feature in RyuJIT supersedes the FEATURE_JIT_TIMER. In addition to supporting the time log file, this
 // feature also supports using COMPlus_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
