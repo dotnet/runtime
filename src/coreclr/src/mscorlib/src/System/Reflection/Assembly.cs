@@ -102,7 +102,7 @@ namespace System.Reflection
         }
 
         // Locate an assembly for reflection by the name of the file containing the manifest.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoadFrom(String assemblyFile)
         {
             if (assemblyFile == null)
@@ -114,7 +114,7 @@ namespace System.Reflection
 
         // Evidence is protected in Assembly.Load()
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Assembly LoadFrom(String assemblyFile,
                                         Evidence securityEvidence)
         {
@@ -131,7 +131,7 @@ namespace System.Reflection
                 ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly LoadFrom(String assemblyFile,
                                         byte[] hashValue,
                                         AssemblyHashAlgorithm hashAlgorithm)
@@ -146,7 +146,7 @@ namespace System.Reflection
 
         // Locate an assembly by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(String assemblyString)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -160,7 +160,7 @@ namespace System.Reflection
         // Calls Type.GetType for WinRT types.
         // Note: Type.GetType fails for assembly names that start with weird characters like '['. By calling it for managed types we would 
         // break AppCompat.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Type GetType_Compat(String assemblyString, String typeName)
         {
             // Normally we would get the stackMark only in public APIs. This is internal API, but it is AppCompat replacement of public API 
@@ -189,7 +189,7 @@ namespace System.Reflection
         // Locate an assembly for reflection by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
         //
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoad(String assemblyString)
         {
             if (assemblyString == null)
@@ -201,7 +201,7 @@ namespace System.Reflection
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -218,7 +218,7 @@ namespace System.Reflection
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Assembly Load(AssemblyName assemblyRef, IntPtr ptrLoadContextBinder)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -244,7 +244,7 @@ namespace System.Reflection
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(byte[] rawAssembly)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -258,7 +258,7 @@ namespace System.Reflection
         // Loads the assembly for reflection with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly)
         {
             if (rawAssembly == null)
@@ -270,7 +270,7 @@ namespace System.Reflection
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller. The second parameter is the raw bytes
         // representing the symbol store that matches the assembly.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore)
         {
@@ -321,14 +321,14 @@ namespace System.Reflection
         /*
          * Get the assembly that the current code is running from.
          */
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable 
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod 
         public static Assembly GetExecutingAssembly()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.GetExecutingAssembly(ref stackMark);
         }
        
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly GetCallingAssembly()
         {
             // LookForMyCallersCaller is not guarantee to return the correct stack frame
@@ -993,14 +993,14 @@ namespace System.Reflection
         }
 
         // Load a resource based on the NameSpace of the type.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Stream GetManifestResourceStream(Type type, String name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return GetManifestResourceStream(type, name, false, ref stackMark);
         }
     
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Stream GetManifestResourceStream(String name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1069,7 +1069,7 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static RuntimeAssembly InternalLoadFrom(String assemblyFile, 
                                                          Evidence securityEvidence,
                                                          byte[] hashValue, 
@@ -1098,7 +1098,7 @@ namespace System.Reflection
             return InternalLoad(assemblyString, assemblySecurity,  ref stackMark, IntPtr.Zero, forIntrospection);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
                                                      ref StackCrawlMark stackMark,
@@ -1332,7 +1332,7 @@ namespace System.Reflection
                                                           StringHandleOnStack retFileName,
                                                           StackCrawlMarkHandle stackMark);
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             RuntimeAssembly retAssembly = null;
@@ -1584,7 +1584,7 @@ namespace System.Reflection
             return null;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1592,14 +1592,14 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalGetSatelliteAssembly(culture, version, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         internal Assembly InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version version,
                                                        ref StackCrawlMark stackMark)
@@ -1613,7 +1613,7 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(name, culture, version, true, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         internal RuntimeAssembly InternalGetSatelliteAssembly(String name,
                                                               CultureInfo culture,
                                                               Version version,

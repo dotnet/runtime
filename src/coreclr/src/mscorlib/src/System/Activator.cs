@@ -52,7 +52,7 @@ namespace System {
             return CreateInstance(type, bindingAttr, binder, args, culture, null);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         static public Object CreateInstance(Type type,
                                             BindingFlags bindingAttr,
                                             Binder binder,
@@ -116,7 +116,7 @@ namespace System {
          * types to be created remotely without having to load the type locally.
          */
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         static public ObjectHandle CreateInstance(String assemblyName,
                                                   String typeName)
         {
@@ -133,7 +133,7 @@ namespace System {
                                   ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable                                                  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod                                                  
         static public ObjectHandle CreateInstance(String assemblyName,
                                                   String typeName,
                                                   Object[] activationAttributes)
@@ -152,7 +152,7 @@ namespace System {
                                   ref stackMark);
         }
             
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         static public Object CreateInstance(Type type, bool nonPublic)
         {
             if ((object)type == null)
@@ -168,7 +168,7 @@ namespace System {
             return rt.CreateInstanceDefaultCtor(!nonPublic, false, true, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         static public T CreateInstance<T>()
         {
             RuntimeType rt = typeof(T) as RuntimeType;
@@ -206,7 +206,7 @@ namespace System {
                                       activationAttributes);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static ObjectHandle CreateInstance(string assemblyName,
                                                   string typeName,
                                                   bool ignoreCase,
