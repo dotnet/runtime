@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Compiler
                 LocalBuilder loc = GetLocal(node.Operand.Type);
                 _ilg.Emit(OpCodes.Stloc, loc);
                 _ilg.EmitPrimitive(0);
-                _ilg.EmitConvertToType(typeof(int), node.Operand.Type, isChecked: false);
+                _ilg.EmitConvertToType(typeof(int), node.Operand.Type, isChecked: false, locals: this);
                 _ilg.Emit(OpCodes.Ldloc, loc);
                 FreeLocal(loc);
                 EmitBinaryOperator(ExpressionType.SubtractChecked, node.Operand.Type, node.Operand.Type, node.Type, liftedToNull: false);
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     // A conversion is emitted after emitting the operand, no tail call is emitted
                     EmitExpression(node.Operand);
-                    _ilg.EmitConvertToType(node.Operand.Type, node.Type, node.NodeType == ExpressionType.ConvertChecked);
+                    _ilg.EmitConvertToType(node.Operand.Type, node.Type, node.NodeType == ExpressionType.ConvertChecked, this);
                 }
             }
         }
@@ -371,7 +371,7 @@ namespace System.Linq.Expressions.Compiler
 
                 Type resultType = mc.Type.GetNullableType();
                 EmitLift(node.NodeType, resultType, mc, new ParameterExpression[] { v }, new Expression[] { node.Operand });
-                _ilg.EmitConvertToType(resultType, node.Type, isChecked: false);
+                _ilg.EmitConvertToType(resultType, node.Type, isChecked: false, locals: this);
             }
             else
             {
