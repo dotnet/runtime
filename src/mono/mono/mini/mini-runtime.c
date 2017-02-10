@@ -3138,8 +3138,8 @@ mini_parse_debug_option (const char *option)
 		debug_options.break_on_unverified = TRUE;
 	else if (!strcmp (option, "no-gdb-backtrace"))
 		debug_options.no_gdb_backtrace = TRUE;
-	else if (!strcmp (option, "suspend-on-sigsegv"))
-		debug_options.suspend_on_sigsegv = TRUE;
+	else if (!strcmp (option, "suspend-on-native-crash") || !strcmp (option, "suspend-on-sigsegv"))
+		debug_options.suspend_on_native_crash = TRUE;
 	else if (!strcmp (option, "suspend-on-exception"))
 		debug_options.suspend_on_exception = TRUE;
 	else if (!strcmp (option, "suspend-on-unhandled"))
@@ -3204,7 +3204,7 @@ mini_parse_debug_options (void)
 
 		if (!mini_parse_debug_option (arg)) {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dont-free-domains', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'gen-seq-points', 'no-compact-seq-points', 'single-imm-size', 'init-stacks', 'casts', 'soft-breakpoints', 'check-pinvoke-callconv', 'use-fallback-tls', 'debug-domain-unload', 'partial-sharing', 'align-small-structs', 'native-debugger-break'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'suspend-on-native-crash', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dont-free-domains', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'gen-seq-points', 'no-compact-seq-points', 'single-imm-size', 'init-stacks', 'casts', 'soft-breakpoints', 'check-pinvoke-callconv', 'use-fallback-tls', 'debug-domain-unload', 'partial-sharing', 'align-small-structs', 'native-debugger-break'\n");
 			exit (1);
 		}
 	}

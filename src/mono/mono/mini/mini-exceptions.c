@@ -2482,7 +2482,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	if (handling_sigsegv && is_sigsegv)
 		return;
 
-	if (mini_get_debug_options ()->suspend_on_sigsegv && is_sigsegv) {
+	if (mini_get_debug_options ()->suspend_on_native_crash) {
 		mono_runtime_printf_err ("Received %s, suspending...", signal);
 #ifdef HOST_WIN32
 		while (1)
