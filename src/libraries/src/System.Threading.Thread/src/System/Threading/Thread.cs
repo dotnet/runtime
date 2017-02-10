@@ -20,11 +20,7 @@ namespace System.Threading
     using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
 #endif
 
-#if !NETNATIVE
     public sealed partial class Thread : CriticalFinalizerObject
-#else
-    public sealed partial class Thread
-#endif
     {
         [ThreadStatic]
         private static Thread t_currentThread;
@@ -223,14 +219,12 @@ namespace System.Threading
         public static void BeginThreadAffinity() { }
         public static void EndThreadAffinity() { }
 
-#if !NETNATIVE
         public static LocalDataStoreSlot AllocateDataSlot() => LocalDataStore.AllocateSlot();
         public static LocalDataStoreSlot AllocateNamedDataSlot(string name) => LocalDataStore.AllocateNamedSlot(name);
         public static LocalDataStoreSlot GetNamedDataSlot(string name) => LocalDataStore.GetNamedSlot(name);
         public static void FreeNamedDataSlot(string name) => LocalDataStore.FreeNamedSlot(name);
         public static object GetData(LocalDataStoreSlot slot) => LocalDataStore.GetData(slot);
         public static void SetData(LocalDataStoreSlot slot, object data) => LocalDataStore.SetData(slot, data);
-#endif
 
         [Obsolete("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
         public ApartmentState ApartmentState
@@ -345,7 +339,6 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
 
-#if !NETNATIVE
         /// <summary>
         /// Manages functionality required to support members of <see cref="Thread"/> dealing with thread-local data
         /// </summary>
@@ -426,6 +419,5 @@ namespace System.Threading
                 GetThreadLocal(slot).Value = value;
             }
         }
-#endif
     }
 }
