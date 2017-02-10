@@ -1107,7 +1107,7 @@ namespace System.Linq.Tests
 
         private static IEnumerable<int> GenerateRandomSequnce(uint seed, int count)
         {
-            var random = new Random((int)seed);
+            var random = new Random(unchecked((int)seed));
 
             for (int i = 0; i < count; i++)
             {

@@ -282,7 +282,7 @@ namespace Internal.NativeCrypto
         {
             SafeProvHandle safeProvHandle;
             uint flag = 0;
-            uint hr = (uint)OpenCSP(parameters, flag, out safeProvHandle);
+            uint hr = unchecked((uint)OpenCSP(parameters, flag, out safeProvHandle));
             //Open container failed 
             if (hr != S_OK)
             {
@@ -718,8 +718,8 @@ namespace Internal.NativeCrypto
             if (hr != S_OK)
             {
                 hKey.Dispose();
-                if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
-                                                         (uint)hr != (uint)CryptKeyError.NTE_NO_KEY)
+                if (unchecked(IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
+                                                                   (uint)hr != (uint)CryptKeyError.NTE_NO_KEY))
                 {
                     throw new CryptographicException(SR.Format(SR.CryptGetUserKey_Failed, Convert.ToString(hr)));
                 }
@@ -1198,20 +1198,26 @@ namespace Internal.NativeCrypto
             }
             else if (exponent <= 0xFFFF)
             {
-                return new[]
+                unchecked
                 {
-                    (byte)(exponent >> 8),
-                    (byte)(exponent)
-                };
+                    return new[]
+                    {
+                        (byte)(exponent >> 8),
+                        (byte)(exponent)
+                    };
+                }
             }
             else if (exponent <= 0xFFFFFF)
             {
-                return new[]
+                unchecked
                 {
-                    (byte)(exponent >> 16),
-                    (byte)(exponent >> 8),
-                    (byte)(exponent)
-                };
+                    return new[]
+                    {
+                        (byte)(exponent >> 16),
+                        (byte)(exponent >> 8),
+                        (byte)(exponent)
+                    };
+                }
             }
             else
             {

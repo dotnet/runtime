@@ -177,7 +177,10 @@ namespace System.Text
                         mapUnicodeToBytes[unicodeCount] = count4Byte;
                         // Set the flag saying its a 4 byte sequence
                         mapUnicodeTo4BytesFlags[unicodeCount / 8] |= unchecked((byte)(1 << (unicodeCount % 8)));
-                        unicodeCount++;
+                        unchecked
+                        {
+                            unicodeCount++;
+                        }
                         count4Byte++;
                         data--;
                     }

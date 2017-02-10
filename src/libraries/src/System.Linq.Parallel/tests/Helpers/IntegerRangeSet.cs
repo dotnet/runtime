@@ -24,7 +24,7 @@ namespace System.Linq.Parallel.Tests
 
         public bool Add(int entry)
         {
-            Assert.InRange(entry, _start, _start + _seen.Length - 1);
+            Assert.InRange(entry, _start, unchecked(_start + _seen.Length - 1));
 
             bool seen;
 

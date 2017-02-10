@@ -32,7 +32,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 // Now verify we're seeing the data from the other process
                 for (int i = 0; i < capacity; i++)
                 {
-                    Assert.Equal((byte)(capacity - i - 1), acc.ReadByte(i));
+                    Assert.Equal(unchecked((byte)(capacity - i - 1)), acc.ReadByte(i));
                 }
             }
         }
@@ -48,11 +48,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                 long capacity = acc.Capacity;
                 for (int i = 0; i < capacity; i++)
                 {
-                    Assert.Equal((byte)i, acc.ReadByte(i));
+                    Assert.Equal(unchecked((byte)i), acc.ReadByte(i));
                 }
                 for (int i = 0; i < capacity; i++)
                 {
-                    acc.Write(i, (byte)(capacity - i - 1));
+                    acc.Write(i, unchecked((byte)(capacity - i - 1)));
                 }
                 acc.Flush();
                 return SuccessExitCode;

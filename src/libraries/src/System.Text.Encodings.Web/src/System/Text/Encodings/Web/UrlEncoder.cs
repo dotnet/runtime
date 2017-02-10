@@ -165,11 +165,11 @@ namespace System.Text.Encodings.Web
             if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
 
             numberOfCharactersWritten = 0;
-            uint asUtf8 = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)unicodeScalar);
+            uint asUtf8 = unchecked((uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)unicodeScalar));
             do
             {
                 char highNibble, lowNibble;
-                HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
+                HexUtil.ByteToHexDigits(unchecked((byte)asUtf8), out highNibble, out lowNibble);
 
                 if (numberOfCharactersWritten + 3 > bufferLength)
                 {
