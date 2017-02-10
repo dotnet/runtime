@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRBOUNDLAMBDA : EXPR
+    internal sealed class EXPRBOUNDLAMBDA : EXPR
     {
         public EXPRBLOCK OptionalBody;
         private Scope _argumentScope;            // The scope containing the names of the parameters

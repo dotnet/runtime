@@ -9,7 +9,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         /*
             These are the predefined binary operator signatures
@@ -80,7 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // When the binding method is looked up in these arrays we ASSERT
         // if the array is out of bounds of the corresponding array.
 
-        protected readonly BinOpSig[] g_binopSignatures;
+        private readonly BinOpSig[] g_binopSignatures;
 
         // We want unary minus to bind to "operator -(ulong)" and then we
         // produce an error (since there is no pfn). We can't let - bind to a floating point type,
@@ -88,9 +88,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // Increment and decrement operators are special.
 
-        protected readonly UnaOpSig[] g_rguos;
+        private readonly UnaOpSig[] g_rguos;
 
-        protected EXPR bindUserDefinedBinOp(ExpressionKind ek, BinOpArgInfo info)
+        private EXPR bindUserDefinedBinOp(ExpressionKind ek, BinOpArgInfo info)
         {
             MethPropWithInst pmpwi = null;
             if (info.pt1 <= PredefinedType.PT_ULONG && info.pt2 <= PredefinedType.PT_ULONG)
@@ -134,7 +134,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // Adds special signatures to the candidate list.  If we find an exact match
         // then it will be the last item on the list and we return true.
-        protected bool GetSpecialBinopSignatures(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
+        private bool GetSpecialBinopSignatures(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
             Debug.Assert(prgbofs != null);
             if (info.pt1 <= PredefinedType.PT_ULONG && info.pt2 <= PredefinedType.PT_ULONG)
@@ -150,7 +150,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Adds standard and lifted signatures to the candidate list.  If we find an exact match
         // then it will be the last item on the list and we return true.
 
-        protected bool GetStandardAndLiftedBinopSignatures(List<BinOpFullSig> rgbofs, BinOpArgInfo info)
+        private bool GetStandardAndLiftedBinopSignatures(List<BinOpFullSig> rgbofs, BinOpArgInfo info)
         {
             Debug.Assert(rgbofs != null);
 
@@ -350,7 +350,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Returns the index of the best match, or -1 if there is no best match.
-        protected int FindBestSignatureInList(
+        private int FindBestSignatureInList(
                 List<BinOpFullSig> binopSignatures,
                 BinOpArgInfo info)
         {
@@ -406,7 +406,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return bestSignature;
         }
 
-        protected EXPRBINOP bindNullEqualityComparison(ExpressionKind ek, BinOpArgInfo info)
+        private EXPRBINOP bindNullEqualityComparison(ExpressionKind ek, BinOpArgInfo info)
         {
             EXPR arg1 = info.arg1;
             EXPR arg2 = info.arg2;
@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return BindStandardBinopCore(info, binopSignatures[bestBinopSignature], ek, flags);
         }
 
-        protected EXPR BindStandardBinopCore(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
+        private EXPR BindStandardBinopCore(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
         {
             if (bofs.pfn == null)
             {
@@ -635,7 +635,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Get the special signatures when at least one of the args is a delegate instance.
             Returns true iff an exact signature match is found.
         */
-        protected bool GetDelBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
+        private bool GetDelBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
             if (!info.ValidForDelegate())
             {
@@ -786,7 +786,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Get the special signatures when at least one of the args is an enum.  Return true if
             we find an exact match.
         */
-        protected bool GetEnumBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
+        private bool GetEnumBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
             if (!info.typeRaw1.isEnumType() && !info.typeRaw2.isEnumType())
             {
@@ -857,7 +857,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             NOTE: We don't filter out bad operators on void pointers since BindPtrBinOp gives better
             error messages than the operator overload resolution does.
         */
-        protected bool GetPtrBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
+        private bool GetPtrBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
             if (!info.type1.IsPointerType() && !info.type2.IsPointerType())
             {
@@ -952,7 +952,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             may be applicable and better (or ambiguous)! This also handles == on System.Delegate, since
             it has special rules as well.
         */
-        protected bool GetRefEqualSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
+        private bool GetRefEqualSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
             if (info.mask != BinOpMask.Equal)
             {
@@ -3014,10 +3014,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
           will be a constant also. op2 can be null for a unary operator. The operands are assumed
           to be already converted to the correct type.
          */
-        // We have an intentional divide by 0 there, so disable the warning...
-#if _MSC_VER
-#pragma warning( disable : 4723 )
-#endif
         private EXPR bindFloatOp(ExpressionKind kind, EXPRFLAG flags, EXPR op1, EXPR op2)
         {
             //Debug.Assert(kind.isRelational() || kind.isArithmetic());
@@ -3125,10 +3121,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return exprRes;
         }
-
-#if _MSC_VER
-#pragma warning( default : 4723 )
-#endif
 
         private EXPR bindStringConcat(EXPR op1, EXPR op2)
         {

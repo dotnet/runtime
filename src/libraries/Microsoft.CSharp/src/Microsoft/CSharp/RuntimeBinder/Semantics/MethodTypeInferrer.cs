@@ -8,7 +8,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class MethodTypeInferrer
+    internal sealed class MethodTypeInferrer
     {
         private enum NewInferenceResult
         {
@@ -376,7 +376,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // dynamic operands enter method type inference with their
                 // actual runtime type, and in this way can infer implemented
                 // types that are not visible on more public types. (for ex.,
-                // private classes that implement IEnumerable, as in iterators).
+                // private sealed classes that implement IEnumerable, as in iterators).
 
                 CType pSource = pExpr.RuntimeObjectActualType != null
                     ? pExpr.RuntimeObjectActualType

@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Compiler
                         }
                         return;
                     default:
-                        throw Error.UnhandledUnary(op);
+                        throw Error.UnhandledUnary(op, nameof(op));
                 }
             }
             else
@@ -248,7 +248,7 @@ namespace System.Linq.Expressions.Compiler
                         _ilg.Emit(OpCodes.Sub);
                         break;
                     default:
-                        throw Error.UnhandledUnary(op);
+                        throw Error.UnhandledUnary(op, nameof(op));
                 }
 
                 EmitConvertArithmeticResult(op, resultType);

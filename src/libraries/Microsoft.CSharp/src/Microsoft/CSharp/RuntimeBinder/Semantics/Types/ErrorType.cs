@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // ErrorType - a symbol representing an error that has been reported.
     // ----------------------------------------------------------------------------
 
-    internal class ErrorType : CType
+    internal sealed class ErrorType : CType
     {
         public Name nameText;
         public TypeArray typeArgs;

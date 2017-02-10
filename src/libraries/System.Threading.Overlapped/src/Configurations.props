@@ -2,9 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      net463-Windows_NT;
-      netstandard-Windows_NT;
-      netstandard-Unix;
+      uap-Windows_NT;
+      uapaot-Windows_NT;
+      netfx-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -3,6 +3,9 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard1.0;
+      netstandard;
+      netcoreapp;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

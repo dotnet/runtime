@@ -109,13 +109,13 @@ namespace System.Net
             _context = context;
             lock (_locker)
             {
-                AuthenticationSchemes schemes = context.Listener.SelectAuthenticationScheme(context);
-                if ((schemes == AuthenticationSchemes.Basic || context.Listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null)
+                AuthenticationSchemes schemes = context._listener.SelectAuthenticationScheme(context);
+                if ((schemes == AuthenticationSchemes.Basic || context._listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null)
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    context.Response.Headers["WWW-Authenticate"] = schemes + " realm=\"" + context.Listener.Realm + "\"";
+                    context.Response.Headers["WWW-Authenticate"] = schemes + " realm=\"" + context._listener.Realm + "\"";
                     context.Response.OutputStream.Close();
-                    IAsyncResult ares = context.Listener.BeginGetContext(_cb, _state);
+                    IAsyncResult ares = context._listener.BeginGetContext(_cb, _state);
                     _forward = (ListenerAsyncResult)ares;
                     lock (_forward._locker)
                     {

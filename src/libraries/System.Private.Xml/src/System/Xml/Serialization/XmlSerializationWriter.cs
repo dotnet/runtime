@@ -1143,6 +1143,16 @@ namespace System.Xml.Serialization
             _typeEntries[type] = entry;
         }
 
+        internal bool ExistTypeEntry(Type type)
+        {
+            if (_typeEntries == null)
+            {
+                _typeEntries = new Hashtable();
+            }
+
+            return _typeEntries.ContainsKey(type);
+        }
+
         private void WriteArray(string name, string ns, object o, Type type)
         {
             Type elementType = TypeScope.GetArrayElementType(type, null);

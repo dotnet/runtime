@@ -33,6 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         Lim
     }
 
+    [Flags]
     internal enum ErrArgFlags
     {
         None = 0x0000,
@@ -43,13 +44,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         UseGetErrorInfo = 0x0008,
     }
 
-    internal class SymWithTypeMemo
+    internal sealed class SymWithTypeMemo
     {
         public Symbol sym;
         public AggregateType ats;
     }
 
-    internal class MethPropWithInstMemo
+    internal sealed class MethPropWithInstMemo
     {
         public Symbol sym;
         public AggregateType ats;
@@ -74,13 +75,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         public ErrArg()
         {
         }
+
         public ErrArg(int n)
         {
             this.eak = ErrArgKind.Int;
             this.eaf = ErrArgFlags.None;
             this.n = n;
         }
-        public ErrArg(SYMKIND sk)
+
+        private ErrArg(SYMKIND sk)
         {
             Debug.Assert(sk != SYMKIND.SK_AssemblyQualifiedNamespaceSymbol);
             this.eaf = ErrArgFlags.None;
@@ -94,7 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             this.eaf = ErrArgFlags.None;
             this.name = name;
         }
-        public ErrArg(PredefinedName pdn)
+        private ErrArg(PredefinedName pdn)
         {
             this.eak = ErrArgKind.PredefName;
             this.eaf = ErrArgFlags.None;
@@ -107,21 +110,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             this.eaf = ErrArgFlags.None;
             this.psz = psz;
         }
+
         public ErrArg(CType pType)
             : this(pType, ErrArgFlags.None)
         {
         }
+
         public ErrArg(CType pType, ErrArgFlags eaf)
         {
             this.eak = ErrArgKind.Type;
             this.eaf = eaf;
             this.pType = pType;
         }
+
         public ErrArg(Symbol pSym)
             : this(pSym, ErrArgFlags.None)
         {
         }
-        public ErrArg(Symbol pSym, ErrArgFlags eaf)
+
+        private ErrArg(Symbol pSym, ErrArgFlags eaf)
         {
             this.eak = ErrArgKind.Sym;
             this.eaf = eaf;
@@ -182,22 +189,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-
     internal class ErrArgRef : ErrArg
     {
-        public ErrArgRef()
+        protected ErrArgRef()
         {
         }
-        public ErrArgRef(int n)
+
+        private ErrArgRef(int n)
             : base(n)
         {
         }
-        public ErrArgRef(Name name)
+
+        private ErrArgRef(Name name)
             : base(name)
         {
             this.eaf = ErrArgFlags.Ref;
         }
-        public ErrArgRef(string psz)
+
+        private ErrArgRef(string psz)
             : base(psz)
         {
             this.eaf = ErrArgFlags.Ref;
@@ -207,17 +216,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             this.eaf = ErrArgFlags.Ref;
         }
-        public ErrArgRef(CType pType)
+
+        private ErrArgRef(CType pType)
             : base(pType)
         {
             this.eaf = ErrArgFlags.Ref;
         }
-        public ErrArgRef(SymWithType swt)
+
+        private ErrArgRef(SymWithType swt)
             : base(swt)
         {
             this.eaf = ErrArgFlags.Ref;
         }
-        public ErrArgRef(MethPropWithInst mpwi)
+        private ErrArgRef(MethPropWithInst mpwi)
             : base(mpwi)
         {
             this.eaf = ErrArgFlags.Ref;
@@ -257,7 +268,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-    internal class ErrArgRefOnly : ErrArgRef
+    internal sealed class ErrArgRefOnly : ErrArgRef
     {
         public ErrArgRefOnly(Symbol sym)
             : base(sym)
@@ -267,7 +278,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     }
 
     // This is used with COMPILER_BASE::ErrorRef to indicate no reference.
-    internal class ErrArgNoRef : ErrArgRef
+    internal sealed class ErrArgNoRef : ErrArgRef
     {
         public ErrArgNoRef(CType pType)
         {
@@ -277,7 +288,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-    internal class ErrArgIds : ErrArgRef
+    internal sealed class ErrArgIds : ErrArgRef
     {
         public ErrArgIds(MessageID ids)
         {
@@ -287,7 +298,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
     }
 
-    sealed internal class ErrArgSymKind : ErrArgRef
+    internal sealed class ErrArgSymKind : ErrArgRef
     {
         public ErrArgSymKind(Symbol sym)
         {

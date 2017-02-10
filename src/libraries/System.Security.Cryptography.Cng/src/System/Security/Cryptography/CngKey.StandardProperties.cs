@@ -285,7 +285,7 @@ namespace System.Security.Cryptography
                         // ! We must keep this byte array pinned until NCryptGetProperty() has returned *and* we've marshaled all of the inner native strings into managed String
                         // ! objects. Otherwise, a badly timed GC will move the native strings in memory and invalidate the pointers to them before we dereference them. 
                         byte[] ncryptUiPolicyAndStrings = new byte[numBytesNeeded];
-                        fixed (byte* pNcryptUiPolicyAndStrings = ncryptUiPolicyAndStrings)
+                        fixed (byte* pNcryptUiPolicyAndStrings = &ncryptUiPolicyAndStrings[0])
                         {
                             errorCode = Interop.NCrypt.NCryptGetProperty(_keyHandle, KeyPropertyName.UIPolicy, pNcryptUiPolicyAndStrings, ncryptUiPolicyAndStrings.Length, out numBytesNeeded, CngPropertyOptions.None);
                             if (errorCode != ErrorCode.ERROR_SUCCESS)

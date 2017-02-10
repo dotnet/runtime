@@ -32,6 +32,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -107,7 +108,30 @@ namespace System.Net
             }
         }
 
-        private MemoryStream GetHeaders(bool closing)
+        internal async Task WriteWebSocketHandshakeHeadersAsync()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().ToString());
+
+            if (_stream.CanWrite)
+            {
+                MemoryStream ms = GetHeaders(closing: false, isWebSocketHandshake: true);
+                bool chunked = _response.SendChunked;
+
+                long start = ms.Position;
+                if (chunked)
+                {
+                    byte[] bytes = GetChunkSizeBytes(0, true);
+                    ms.Position = ms.Length;
+                    ms.Write(bytes, 0, bytes.Length);
+                }
+
+                await InternalWriteAsync(ms.GetBuffer(), (int)start, (int)(ms.Length - start)).ConfigureAwait(false);
+                await _stream.FlushAsync().ConfigureAwait(false);
+            }
+        }
+
+        private MemoryStream GetHeaders(bool closing, bool isWebSocketHandshake = false)
         {
             // SendHeaders works on shared headers
             lock (_response._headersLock)
@@ -118,7 +142,7 @@ namespace System.Net
                 }
 
                 MemoryStream ms = new MemoryStream();
-                _response.SendHeaders(closing, ms);
+                _response.SendHeaders(closing, ms, isWebSocketHandshake);
                 return ms;
             }
         }
@@ -148,6 +172,15 @@ namespace System.Net
             {
                 _stream.Write(buffer, offset, count);
             }
+        }
+
+        internal Task InternalWriteAsync(byte[] buffer, int offset, int count) => 
+            _ignore_errors ? InternalWriteIgnoreErrorsAsync(buffer, offset, count) : _stream.WriteAsync(buffer, offset, count);
+
+        private async Task InternalWriteIgnoreErrorsAsync(byte[] buffer, int offset, int count)
+        {
+            try { await _stream.WriteAsync(buffer, offset, count).ConfigureAwait(false); }
+            catch { }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -190,8 +223,7 @@ namespace System.Net
                 InternalWrite(s_crlf, 0, 2);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count,
-                            AsyncCallback cback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback cback, object state)
         {
             if (_disposed)
                 throw new ObjectDisposedException(GetType().ToString());

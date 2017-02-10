@@ -22,7 +22,5 @@ namespace System.Collections.Immutable
         /// Gets an untyped reference to the array.
         /// </summary>
         Array Array { get; }
-
-        void ThrowInvalidOperationIfNotInitialized();
     }
 }

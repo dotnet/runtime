@@ -282,59 +282,8 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
-  <data name="ArgumentNull_Buffer" xml:space="preserve">
-    <value>Buffer cannot be null.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegFileSize" xml:space="preserve">
-    <value>Length must be non-negative.</value>
-  </data>
-  <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
-    <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
-  </data>
-  <data name="Argument_InvalidSafeBufferOffLen" xml:space="preserve">
-    <value>Offset and length were greater than the size of the SafeBuffer.</value>
-  </data>
-  <data name="InvalidOperation_CalledTwice" xml:space="preserve">
-    <value>The method cannot be called twice on the same instance.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
-    <value>The length cannot be greater than the capacity.</value>
-  </data>
-  <data name="ArgumentOutOfRange_UnmanagedMemStreamWrapAround" xml:space="preserve">
-    <value>The UnmanagedMemoryStream capacity would wrap around the high end of the address space.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
-    <value>Enum value was out of legal range.</value>
-  </data>
-  <data name="NotSupported_UmsSafeBuffer" xml:space="preserve">
-    <value>This operation is not supported for an UnmanagedMemoryStream created from a SafeBuffer.</value>
-  </data>
-  <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
-    <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
-  </data>
-  <data name="IO_SeekBeforeBegin" xml:space="preserve">
-    <value>An attempt was made to move the position before the beginning of the stream.</value>
-  </data>
   <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
     <value>Invalid seek origin.</value>
-  </data>
-  <data name="IO_FixedCapacity" xml:space="preserve">
-    <value>Unable to expand length of this stream beyond its capacity.</value>
-  </data>
-  <data name="IO_StreamTooLong" xml:space="preserve">
-    <value>Stream was too long.</value>
-  </data>
-  <data name="Arg_BufferTooSmall" xml:space="preserve">
-    <value>Not enough space available in the buffer.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
-  <data name="Argument_InvalidOffLen" xml:space="preserve">
-    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
-  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
   </data>
   <data name="DirectUI_Empty" xml:space="preserve">
     <value>Empty.</value>

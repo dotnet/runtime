@@ -51,7 +51,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 2);
 
             byte[] bytes = new byte[2];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((short*)b) = value;
             return bytes;
         }
@@ -65,7 +65,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 4);
 
             byte[] bytes = new byte[4];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((int*)b) = value;
             return bytes;
         }
@@ -79,7 +79,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>().Length == 8);
 
             byte[] bytes = new byte[8];
-            fixed (byte* b = bytes)
+            fixed (byte* b = &bytes[0])
                 *((long*)b) = value;
             return bytes;
         }
@@ -236,13 +236,13 @@ namespace System
                 {
                     int i1 = (*pbyte) | (*(pbyte + 1) << 8) | (*(pbyte + 2) << 16) | (*(pbyte + 3) << 24);
                     int i2 = (*(pbyte + 4)) | (*(pbyte + 5) << 8) | (*(pbyte + 6) << 16) | (*(pbyte + 7) << 24);
-                    return (uint)i1 | ((long)i2 << 32);
+                    return unchecked((uint)i1) | ((long)i2 << 32);
                 }
                 else
                 {
                     int i1 = (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
                     int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
-                    return (uint)i2 | ((long)i1 << 32);
+                    return unchecked((uint)i2) | ((long)i1 << 32);
                 }
             }
         }
@@ -374,7 +374,8 @@ namespace System
                 }
                 else
                 {
-                    fixed (char* chArrayPtr = new char[chArrayLength])
+                    char[] chArray = new char[chArrayLength];
+                    fixed (char* chArrayPtr = &chArray[0])
                         return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
                 }
             }

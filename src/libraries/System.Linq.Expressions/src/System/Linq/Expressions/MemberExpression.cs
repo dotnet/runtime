@@ -300,20 +300,24 @@ namespace System.Linq.Expressions
         private static PropertyInfo GetProperty(MethodInfo mi, string paramName, int index = -1)
         {
             Type type = mi.DeclaringType;
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
-            flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
-            PropertyInfo[] props = type.GetProperties(flags);
-            foreach (PropertyInfo pi in props)
+            if (type != null)
             {
-                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
+                flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
+                PropertyInfo[] props = type.GetProperties(flags);
+                foreach (PropertyInfo pi in props)
                 {
-                    return pi;
-                }
-                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
-                {
-                    return pi;
+                    if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
+                    {
+                        return pi;
+                    }
+                    if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
+                    {
+                        return pi;
+                    }
                 }
             }
+
             throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName, index);
         }
 

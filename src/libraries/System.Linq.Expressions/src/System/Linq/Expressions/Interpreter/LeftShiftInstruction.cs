@@ -29,7 +29,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((sbyte)((sbyte)value << (int)shift));
+                    frame.Push(unchecked((sbyte)((sbyte)value << (int)shift)));
                 }
                 return 1;
             }
@@ -47,7 +47,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((short)((short)value << (int)shift));
+                    frame.Push(unchecked((short)((short)value << (int)shift)));
                 }
                 return 1;
             }
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((byte)((byte)value << (int)shift));
+                    frame.Push(unchecked((byte)((byte)value << (int)shift)));
                 }
                 return 1;
             }
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((ushort)((ushort)value << (int)shift));
+                    frame.Push(unchecked((ushort)((ushort)value << (int)shift)));
                 }
                 return 1;
             }
@@ -164,10 +164,7 @@ namespace System.Linq.Expressions.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type)
         {
-            // Boxed enums can be unboxed as their underlying types:
-            Type underlyingType = type.GetTypeInfo().IsEnum ? Enum.GetUnderlyingType(type) : type.GetNonNullableType();
-
-            switch (underlyingType.GetTypeCode())
+            switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new LeftShiftSByte());
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new LeftShiftInt16());

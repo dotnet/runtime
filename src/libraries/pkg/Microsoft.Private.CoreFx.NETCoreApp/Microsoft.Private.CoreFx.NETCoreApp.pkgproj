@@ -27,14 +27,15 @@
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>     
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
     <TargetFrameworkVersion>2.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
 
-    <RefBinDir>$(BinDir)$(TargetFrameworkName)/pkg/ref</RefBinDir>
-    <LibBinDir>$(BinDir)$(TargetFrameworkName)/pkg/lib</LibBinDir>
+    <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
+    <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
 
     <NETStandardLibraryPackage>NETStandard.Library2</NETStandardLibraryPackage>
     <NETStandardLibraryPackageVersion>2.0.0-beta-24709-0</NETStandardLibraryPackageVersion>
@@ -84,15 +85,9 @@
     <ItemGroup>
       <!-- Exclude shims from the closure verification -->
       <ExcludeFromClosure Include="mscorlib" />
-      <ExcludeFromClosure Include="netstandard" />
-      <ExcludeFromClosure Include="System.Core" />
       <ExcludeFromClosure Include="System" />
-      <ExcludeFromClosure Include="System.Drawing" />
-      <ExcludeFromClosure Include="System.Numerics" />
-      <ExcludeFromClosure Include="System.Runtime.Serialization" />
-      <ExcludeFromClosure Include="System.Web" />
-      <ExcludeFromClosure Include="System.Xml" />
-      <ExcludeFromClosure Include="System.Xml.Linq" />
+      <ExcludeFromClosure Include="System.Core" />
+      <ExcludeFromClosure Include="System.Data" />
     </ItemGroup>
 
     <ItemGroup>

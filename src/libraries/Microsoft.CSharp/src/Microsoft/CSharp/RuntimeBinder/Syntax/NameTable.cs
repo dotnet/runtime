@@ -4,9 +4,9 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class NameTable
+    internal sealed class NameTable
     {
-        private class Entry
+        private sealed class Entry
         {
             internal readonly Name name;
             internal readonly int hashCode;
@@ -75,17 +75,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 
         private int ComputeHashCode(string key)
         {
-            int len = key.Length;
-            int hashCode = len + _hashCodeRandomizer;
-            // use key.Length to eliminate the range check
-            for (int i = 0; i < key.Length; i++)
+            int hashCode, len = key.Length;
+
+            unchecked
             {
-                hashCode += (hashCode << 7) ^ key[i];
+                hashCode = len + _hashCodeRandomizer;
+                // use key.Length to eliminate the range check
+                for (int i = 0; i < key.Length; i++)
+                {
+                    hashCode += (hashCode << 7) ^ key[i];
+                }
+                // mix it a bit more
+                hashCode -= hashCode >> 17;
+                hashCode -= hashCode >> 11;
+                hashCode -= hashCode >> 5;
             }
-            // mix it a bit more
-            hashCode -= hashCode >> 17;
-            hashCode -= hashCode >> 11;
-            hashCode -= hashCode >> 5;
+
             return hashCode;
         }
 

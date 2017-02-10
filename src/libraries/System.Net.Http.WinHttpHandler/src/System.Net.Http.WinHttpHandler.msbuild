@@ -41,7 +41,7 @@
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpTransportContext.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinInetProxyHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'netfx'">
     <CompileItem Include="$(CommonPath)\System\Net\HttpStatusDescription.cs" />
   </ItemGroup>
 </Project>

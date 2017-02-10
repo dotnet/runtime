@@ -35,7 +35,7 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(0, int.MinValue, 0, int.MaxValue)]
         public void FromLTRBTest(int left, int top, int right, int bottom)
         {
-            Rectangle rect1 = new Rectangle(left, top, right - left, bottom - top);
+            Rectangle rect1 = new Rectangle(left, top, unchecked(right - left), unchecked(bottom - top));
             Rectangle rect2 = Rectangle.FromLTRB(left, top, right, bottom);
 
             Assert.Equal(rect1, rect2);
@@ -77,8 +77,8 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(height, rect.Height);
             Assert.Equal(x, rect.Left);
             Assert.Equal(y, rect.Top);
-            Assert.Equal(x + width, rect.Right);
-            Assert.Equal(y + height, rect.Bottom);
+            Assert.Equal(unchecked(x + width), rect.Right);
+            Assert.Equal(unchecked(y + height), rect.Bottom);
 
             Point p = new Point(width, height);
             Size s = new Size(x, y);
@@ -94,8 +94,8 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(y, rect.Height);
             Assert.Equal(width, rect.Left);
             Assert.Equal(height, rect.Top);
-            Assert.Equal(x + width, rect.Right);
-            Assert.Equal(y + height, rect.Bottom);
+            Assert.Equal(unchecked(x + width), rect.Right);
+            Assert.Equal(unchecked(y + height), rect.Bottom);
         }
 
         [Theory]
@@ -137,6 +137,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.True(rect1 != rect2);
             Assert.False(rect1 == rect2);
             Assert.False(rect1.Equals(rect2));
+            Assert.False(rect1.Equals((object)rect2));
         }
 
         [Fact]
@@ -167,11 +168,16 @@ namespace System.Drawing.PrimitivesTest
         public void RectangleFConversionTest(float x, float y, float width, float height)
         {
             RectangleF rect = new RectangleF(x, y, width, height);
-            Rectangle rCeiling = new Rectangle((int)Math.Ceiling(x), (int)Math.Ceiling(y),
-                (int)Math.Ceiling(width), (int)Math.Ceiling(height));
-            Rectangle rTruncate = new Rectangle((int)x, (int)y, (int)width, (int)height);
-            Rectangle rRound = new Rectangle((int)Math.Round(x), (int)Math.Round(y),
-                (int)Math.Round(width), (int)Math.Round(height));
+            Rectangle rCeiling, rTruncate, rRound;
+
+            unchecked
+            {
+                rCeiling = new Rectangle((int)Math.Ceiling(x), (int)Math.Ceiling(y),
+                    (int)Math.Ceiling(width), (int)Math.Ceiling(height));
+                rTruncate = new Rectangle((int)x, (int)y, (int)width, (int)height);
+                rRound = new Rectangle((int)Math.Round(x), (int)Math.Round(y),
+                    (int)Math.Round(width), (int)Math.Round(height));
+            }
 
             Assert.Equal(rCeiling, Rectangle.Ceiling(rect));
             Assert.Equal(rTruncate, Rectangle.Truncate(rect));
@@ -183,7 +189,7 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(0, int.MinValue, int.MaxValue, 0)]
         public void ContainsTest(int x, int y, int width, int height)
         {
-            Rectangle rect = new Rectangle(2 * x - width, 2 * y - height, width, height);
+            Rectangle rect = new Rectangle(unchecked(2 * x - width), unchecked(2 * y - height), width, height);
             Point p = new Point(x, y);
             Rectangle r = new Rectangle(x, y, width / 2, height / 2);
 
@@ -198,8 +204,11 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(0, int.MinValue, int.MaxValue, 0)]
         public void InflateTest(int x, int y, int width, int height)
         {
-            Rectangle rect = new Rectangle(x, y, width, height);
-            Rectangle inflatedRect = new Rectangle(x - width, y - height, width + 2 * width, height + 2 * height);
+            Rectangle inflatedRect, rect = new Rectangle(x, y, width, height);
+            unchecked
+            {
+                inflatedRect = new Rectangle(x - width, y - height, width + 2 * width, height + 2 * height);
+            }
 
             Assert.Equal(inflatedRect, Rectangle.Inflate(rect, width, height));
 
@@ -207,7 +216,10 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(inflatedRect, rect);
 
             Size s = new Size(x, y);
-            inflatedRect = new Rectangle(rect.X - x, rect.Y - y, rect.Width + 2 * x, rect.Height + 2 * y);
+            unchecked
+            {
+                inflatedRect = new Rectangle(rect.X - x, rect.Y - y, rect.Width + 2 * x, rect.Height + 2 * y);
+            }
 
             rect.Inflate(s);
             Assert.Equal(inflatedRect, rect);

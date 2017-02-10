@@ -550,6 +550,20 @@ namespace System.Tests
         [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
         [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("A", 0, "x", 0, 1, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("a", 0, "X", 0, 1, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("[", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("[", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("\\", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("\\", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("]", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("]", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("^", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("^", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("_", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("_", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("`", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("`", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
         [InlineData(null, 0, null, 0, 0, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 0, null, 0, 5, StringComparison.OrdinalIgnoreCase, 1)]
         [InlineData(null, 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
@@ -1627,7 +1641,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp | TargetFrameworkMonikers.Netcoreapp1_0)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
@@ -1636,7 +1650,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
         {
             string enumerableExpected = expected;
@@ -2313,6 +2327,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.Trim());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.Trim(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.Trim(trimChars));
         }
 
@@ -2331,6 +2351,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.TrimEnd());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.TrimEnd(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.TrimEnd(trimChars));
         }
 
@@ -2349,6 +2375,12 @@ namespace System.Tests
             {
                 Assert.Equal(expected, s.TrimStart());
             }
+
+            if (trimChars?.Length == 1)
+            {
+                Assert.Equal(expected, s.TrimStart(trimChars[0]));
+            }
+
             Assert.Equal(expected, s.TrimStart(trimChars));
         }
 

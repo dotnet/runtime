@@ -22,13 +22,13 @@ namespace System.Net
             return 0;
         }
 
-        public static uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
+        public static unsafe uint Ipv4StringToAddress(string ipString, byte* bytes, int bytesLength, out ushort port)
         {
             port = 0;
             return 0;
         }
 
-        public static uint Ipv6StringToAddress(string ipString, byte[] bytes, out uint scope)
+        public static unsafe uint Ipv6StringToAddress(string ipString, byte* bytes, int bytesLength, out uint scope)
         {
             scope = 0;
             return 0;

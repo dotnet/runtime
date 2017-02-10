@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRASSIGNMENT : EXPR
+    internal sealed class EXPRASSIGNMENT : EXPR
     {
         private EXPR _LHS;
         public EXPR GetLHS() { return _LHS; }

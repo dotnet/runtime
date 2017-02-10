@@ -41,7 +41,7 @@ internal static partial class Interop
                                             int memLevel,
                                             ZLibNative.CompressionStrategy strategy)
         {
-            fixed (byte* versionString = ZLibVersion)
+            fixed (byte* versionString = &ZLibVersion[0])
             fixed (ZLibNative.ZStream* streamBytes = &stream)
             {
                 byte* pBytes = (byte*)streamBytes;
@@ -77,7 +77,7 @@ internal static partial class Interop
                                             ref ZLibNative.ZStream stream,
                                             int windowBits)
         {
-            fixed (byte* versionString = ZLibVersion)
+            fixed (byte* versionString = &ZLibVersion[0])
             fixed (ZLibNative.ZStream* streamBytes = &stream)
             {
                 byte* pBytes = (byte*)streamBytes;

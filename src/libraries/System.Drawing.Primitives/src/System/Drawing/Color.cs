@@ -10,7 +10,7 @@ namespace System.Drawing
 {
     [DebuggerDisplay("{NameAndARGBValue}")]
     [Serializable]
-    public struct Color
+    public struct Color : IEquatable<Color>
     {
         public static readonly Color Empty = new Color();
 
@@ -602,7 +602,9 @@ namespace System.Drawing
 
         public static bool operator !=(Color left, Color right) => !(left == right);
 
-        public override bool Equals(object obj) => obj is Color && this == (Color)obj;
+        public override bool Equals(object obj) => obj is Color && Equals((Color)obj);
+
+        public bool Equals(Color other) => this == other;
 
         public override int GetHashCode()
         {

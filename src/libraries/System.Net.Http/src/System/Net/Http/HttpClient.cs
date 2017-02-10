@@ -131,9 +131,9 @@ namespace System.Net.Http
             GetStringAsync(CreateUri(requestUri));
 
         public Task<string> GetStringAsync(Uri requestUri) =>
-            GeStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
+            GetStringAsyncCore(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead));
 
-        private async Task<string> GeStringAsyncCore(Task<HttpResponseMessage> getTask)
+        private async Task<string> GetStringAsyncCore(Task<HttpResponseMessage> getTask)
         {
             // Wait for the response message.
             using (HttpResponseMessage responseMessage = await getTask.ConfigureAwait(false))

@@ -227,10 +227,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="LdapConnection.Bind():System.Void" />
-        // <SatisfiesLinkDemand Name="LdapConnection.Bind(System.Net.NetworkCredential):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         private void lockedLdapBind(LdapConnection current, NetworkCredential creds, ContextOptions contextOptions)
         {
@@ -247,11 +243,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password)
@@ -323,11 +314,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password, ContextOptions connectionMethod)
@@ -365,9 +351,6 @@ namespace System.DirectoryServices.AccountManagement
     // ********************************************
     [System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.Assert,
                                                 Flags = System.Security.Permissions.SecurityPermissionFlag.UnmanagedCode)]
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618

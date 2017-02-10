@@ -82,6 +82,13 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void LeftShift_NegativeCount_ThrowsArgumentOutOfRangeException()
+        {
+            BitArray bitArray = new BitArray(1);
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => bitArray.LeftShift(-1));
+        }
+
+        [Fact]
         public static void RightShift_Iterator()
         {
             BitArray ba = new BitArray(BitsPerInt32 / 2);
@@ -122,6 +129,13 @@ namespace System.Collections.Tests
             Assert.All(bits.Cast<bool>(), bit => Assert.False(bit));
             bits.RightShift(1);
             Assert.All(bits.Cast<bool>(), bit => Assert.False(bit));
+        }
+
+        [Fact]
+        public static void RightShift_NegativeCount_ThrowsArgumentOutOfRangeException()
+        {
+            BitArray bitArray = new BitArray(1);
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => bitArray.RightShift(-1));
         }
 
         #endregion

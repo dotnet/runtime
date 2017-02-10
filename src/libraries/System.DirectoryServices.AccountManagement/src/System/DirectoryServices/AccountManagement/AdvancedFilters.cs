@@ -155,10 +155,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.AdvancedFilterSet(System.String,System.Object,System.Type,System.DirectoryServices.AccountManagement.MatchType):System.Void" />
-        // <ReferencesCritical Name="Method: Principal.AdvancedFilterSet(System.String,System.Object,System.Type,System.DirectoryServices.AccountManagement.MatchType):System.Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         protected void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)
         {

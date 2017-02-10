@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Xml
         new internal XmlElement GetXml(XmlDocument document)
         {
             if (ReferenceType == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_ReferenceTypeRequired"));
+                throw new CryptographicException(SR.Cryptography_Xml_ReferenceTypeRequired);
 
             // Create the Reference
             XmlElement referenceElement = document.CreateElement(ReferenceType, EncryptedXml.XmlEncNamespaceUrl);
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             ReferenceType = value.LocalName;
             Uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);

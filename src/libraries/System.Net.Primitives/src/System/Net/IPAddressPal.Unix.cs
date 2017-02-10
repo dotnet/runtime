@@ -32,13 +32,13 @@ namespace System.Net
             return Interop.Sys.IPAddressToString(address, true, buffer, scopeId);
         }
 
-        public static unsafe uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
+        public static unsafe uint Ipv4StringToAddress(string ipString, byte* bytes, int bytesLength, out ushort port)
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length >= IPAddressParserStatics.IPv4AddressBytes);
+            Debug.Assert(bytesLength >= IPAddressParserStatics.IPv4AddressBytes);
 
-            return unchecked((uint)Interop.Sys.IPv4StringToAddress(ipString, bytes, bytes.Length, out port));
+            return unchecked((uint)Interop.Sys.IPv4StringToAddress(ipString, bytes, bytesLength, out port));
         }
 
         private static bool IsHexString(string input, int startIndex)
@@ -121,11 +121,11 @@ namespace System.Net
             return true;
         }
 
-        public static unsafe uint Ipv6StringToAddress(string ipString, byte[] bytes, out uint scope)
+        public static unsafe uint Ipv6StringToAddress(string ipString, byte* bytes, int bytesLength, out uint scope)
         {
             Debug.Assert(ipString != null);
             Debug.Assert(bytes != null);
-            Debug.Assert(bytes.Length >= IPAddressParserStatics.IPv6AddressBytes);
+            Debug.Assert(bytesLength >= IPAddressParserStatics.IPv6AddressBytes);
 
             string host, port;
             if (!TryPreprocessIPv6Address(ipString, out host, out port))
@@ -134,7 +134,7 @@ namespace System.Net
                 return unchecked((uint)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME);
             }
 
-            return unchecked((uint)Interop.Sys.IPv6StringToAddress(host, port, bytes, bytes.Length, out scope));
+            return unchecked((uint)Interop.Sys.IPv6StringToAddress(host, port, bytes, bytesLength, out scope));
         }
 
         public static SocketError GetSocketErrorForErrorCode(uint status)

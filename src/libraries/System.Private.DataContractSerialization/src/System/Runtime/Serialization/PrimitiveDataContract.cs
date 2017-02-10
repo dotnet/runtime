@@ -1017,12 +1017,12 @@ namespace System.Runtime.Serialization
     }
 
 #if NET_NATIVE
-    public class TimeSpanDataContract : PrimitiveDataContract
+    public class XsDurationDataContract : TimeSpanDataContract
 #else
     internal class XsDurationDataContract : TimeSpanDataContract
 #endif
     {
-        internal XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
+        public XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
 #if NET_NATIVE

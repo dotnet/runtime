@@ -38,25 +38,6 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }
 
-    public static class ReadOnlySpanExtensions
-    {
-        public static ReadOnlySpan<char> Slice(this string text) { throw null; }
-        public static ReadOnlySpan<char> Slice(this string text, int start) { throw null; }
-        public static ReadOnlySpan<char> Slice(this string text, int start, int length) { throw null; }
-
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T:struct, IEquatable<T> { throw null; }
-        public static int IndexOf(this ReadOnlySpan<byte> span, byte value) { throw null; }
-        public static int IndexOf(this ReadOnlySpan<char> span, char value) { throw null; }
-
-        public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T:struct, IEquatable<T> { throw null; }
-        public static bool SequenceEqual(this ReadOnlySpan<byte> first, ReadOnlySpan<byte> second) { throw null; }
-        public static bool SequenceEqual(this ReadOnlySpan<char> first, ReadOnlySpan<char> second) { throw null; }
-
-        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
-        public static int IndexOf(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
-        public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value) { throw null; }
-    }
-
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Span<T>
     {
@@ -91,13 +72,20 @@ namespace System
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }
 
+    public static class Span
+    {
+        public static System.Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
+        public static System.ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
+        public static System.Span<TTo> NonPortableCast<TFrom, TTo>(this System.Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+        public static System.ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this System.ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
+
+        public static ReadOnlySpan<char> Slice(this string text) { throw null; }
+        public static ReadOnlySpan<char> Slice(this string text, int start) { throw null; }
+        public static ReadOnlySpan<char> Slice(this string text, int start, int length) { throw null; }
+    }
+
     public static class SpanExtensions
     {
-         public static System.Span<byte> AsBytes<T>(this Span<T> source) where T : struct { throw null; }
-         public static System.ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source) where T : struct { throw null; }
-         public static System.Span<TTo> NonPortableCast<TFrom, TTo>(this System.Span<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
-         public static System.ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this System.ReadOnlySpan<TFrom> source) where TFrom : struct where TTo : struct { throw null; }
-
          public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
          public static int IndexOf(this Span<byte> span, byte value) { throw null; }
          public static int IndexOf(this Span<char> span, char value) { throw null; }
@@ -109,6 +97,18 @@ namespace System
          public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
          public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
          public static int IndexOf(this Span<char> span, ReadOnlySpan<char> value) { throw null; }
+
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : struct, IEquatable<T> { throw null; }
+        public static int IndexOf(this ReadOnlySpan<byte> span, byte value) { throw null; }
+        public static int IndexOf(this ReadOnlySpan<char> span, char value) { throw null; }
+
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : struct, IEquatable<T> { throw null; }
+        public static bool SequenceEqual(this ReadOnlySpan<byte> first, ReadOnlySpan<byte> second) { throw null; }
+        public static bool SequenceEqual(this ReadOnlySpan<char> first, ReadOnlySpan<char> second) { throw null; }
+
+        public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
+        public static int IndexOf(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
+        public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value) { throw null; }
     }
 }
 

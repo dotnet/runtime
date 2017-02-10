@@ -137,13 +137,9 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
-#if netcoreapp11
         public static float Int32BitsToSingle(int value) { throw null; }
-#endif
         public static double Int64BitsToDouble(long value) { throw null; }
-#if netcoreapp11
         public static int SingleToInt32Bits(float value) { throw null; }
-#endif
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
         public static double ToDouble(byte[] value, int startIndex) { throw null; }
@@ -735,7 +731,6 @@ namespace System
         public static long BigMul(int a, int b) { throw null; }
         public static decimal Ceiling(decimal d) { throw null; }
         public static double Ceiling(double a) { throw null; }
-#if netcoreapp11
         public static byte Clamp(byte value, byte min, byte max) { throw null; }
         public static decimal Clamp(decimal value, decimal min, decimal max) { throw null; }
         public static double Clamp(double value, double min, double max) { throw null; }
@@ -751,7 +746,6 @@ namespace System
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
-#endif
         public static double Cos(double d) { throw null; }
         public static double Cosh(double value) { throw null; }
         public static int DivRem(int a, int b, out int result) { throw null; }
@@ -818,7 +812,6 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
-#if netcoreapp11
     public static partial class MathF
     {
         public static float Abs(float x) { throw null; }
@@ -842,7 +835,7 @@ namespace System
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
         public static float Round(float x, System.MidpointRounding mode) { throw null; }
-        public static int Sign(float x) { return default(int); }
+        public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
@@ -850,7 +843,6 @@ namespace System
         public static float Tanh(float x) { throw null; }
         public static float Truncate(float x) { throw null; }
     }
-#endif
     public sealed class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
         private OperatingSystem() { }
@@ -1185,9 +1177,7 @@ namespace System.IO
         public static string GetTempPath() { throw null; }
         public static bool HasExtension(string path) { throw null; }
         public static bool IsPathRooted(string path) { throw null; }
-#if netcoreapp11
-        public static string GetRelativePath(string relativeTo, string path) { return default(string); }
-#endif
+        public static string GetRelativePath(string relativeTo, string path) { throw null; }
     }
 
     public partial class BinaryReader : System.IDisposable
@@ -1288,10 +1278,8 @@ namespace System.IO
         public override void Write(byte[] array, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
-#if netcoreapp11
-        public Stream UnderlyingStream { get { return default(Stream); } }
-        public int BufferSize { get { return 0; } }
-#endif
+        public Stream UnderlyingStream { get { throw null; } }
+        public int BufferSize { get { throw null; } }
     }
     public partial class EndOfStreamException : System.IO.IOException
     {
@@ -1323,9 +1311,7 @@ namespace System.IO
         public override long Position { get { throw null; } set { } }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
-#if netcoreapp11
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
-#endif
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }

@@ -12,7 +12,7 @@ namespace System.Xml
         private const int guidLength = 16;
         private const int uuidLength = 45;
 
-        private static short[] s_char2val = new short[256]
+        private static readonly short[] s_char2val = new short[256]
         {
             /*    0-15 */
                               0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100,
@@ -163,7 +163,7 @@ namespace System.Xml
 
             int i = 0;
             int j = 0;
-            fixed (short* ps = s_char2val)
+            fixed (short* ps = &s_char2val[0])
             {
                 short* _char2val = ps;
 

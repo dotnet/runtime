@@ -190,7 +190,7 @@ namespace System.Net
             byte[] addressBuffer = addr.GetAddressBytes();
 
             int error;
-            fixed (byte* rawAddress = addressBuffer)
+            fixed (byte* rawAddress = &addressBuffer[0])
             {
                 error = Interop.Sys.GetNameInfo(
                     rawAddress,
