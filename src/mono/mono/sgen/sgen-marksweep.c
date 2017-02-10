@@ -1,5 +1,6 @@
-/*
- * sgen-marksweep.c: The Mark & Sweep major collector.
+/**
+ * \file
+ * The Mark & Sweep major collector.
  *
  * Author:
  * 	Mark Probst <mark.probst@gmail.com>

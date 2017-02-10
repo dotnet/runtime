@@ -1,5 +1,6 @@
-/*
- * sgen-array-list.c: A pointer array list that doesn't require reallocs
+/**
+ * \file
+ * A pointer array list that doesn't require reallocs
  *
  * Copyright (C) 2016 Xamarin Inc
  *

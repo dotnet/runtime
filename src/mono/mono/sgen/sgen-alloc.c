@@ -1,5 +1,6 @@
-/*
- * sgen-alloc.c: Object allocation routines + managed allocators
+/**
+ * \file
+ * Object allocation routines + managed allocators
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)

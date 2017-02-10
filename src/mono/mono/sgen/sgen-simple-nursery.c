@@ -1,5 +1,6 @@
-/*
- * sgen-simple-nursery.c: Simple always promote nursery.
+/**
+ * \file
+ * Simple always promote nursery.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

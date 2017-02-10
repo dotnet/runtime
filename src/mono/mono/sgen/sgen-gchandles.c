@@ -1,5 +1,6 @@
-/*
- * sgen-gchandles.c: SGen GC handles.
+/**
+ * \file
+ * SGen GC handles.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

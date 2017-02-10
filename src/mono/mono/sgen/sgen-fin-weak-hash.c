@@ -1,5 +1,6 @@
-/*
- * sgen-fin-weak-hash.c: Finalizers and weak links.
+/**
+ * \file
+ * Finalizers and weak links.
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)

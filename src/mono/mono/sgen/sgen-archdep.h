@@ -1,5 +1,6 @@
-/*
- * sgen-archdep.h: Architecture dependent parts of SGen.
+/**
+ * \file
+ * Architecture dependent parts of SGen.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

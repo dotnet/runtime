@@ -1,5 +1,6 @@
-/*
- * sgen-tagged-pointer.h: Macros for tagging and untagging pointers.
+/**
+ * \file
+ * Macros for tagging and untagging pointers.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

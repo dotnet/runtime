@@ -1,5 +1,6 @@
-/*
- * sgen-qsort.h: Fast inline sorting
+/**
+ * \file
+ * Fast inline sorting
  *
  * Copyright (C) 2014 Xamarin Inc
  *

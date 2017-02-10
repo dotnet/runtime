@@ -1,6 +1,6 @@
-/*
- * sgen-protocol.h: Binary protocol of internal activity, to aid
- * debugging.
+/**
+ * \file
+ * Binary protocol of internal activity, to aid debugging.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

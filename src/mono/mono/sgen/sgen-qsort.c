@@ -1,5 +1,6 @@
-/*
- * sgen-qsort.c: Quicksort.
+/**
+ * \file
+ * Quicksort.
  *
  * Copyright (C) 2013 Xamarin Inc
  *

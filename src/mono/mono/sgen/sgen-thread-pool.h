@@ -1,5 +1,6 @@
-/*
- * sgen-thread-pool.h: Threadpool for all concurrent GC work.
+/**
+ * \file
+ * Threadpool for all concurrent GC work.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

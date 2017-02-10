@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * All binary protocol entries are defined here.  To keep compatibility with past binary
  * protocol files, new protocol entries need to be defined at the end of the file so that
  * the sequential numbering is preserved.  We also can't change the types or numbers of

@@ -1,5 +1,6 @@
-/*
- * sgen-workers.c: Worker threads for parallel and concurrent GC.
+/**
+ * \file
+ * Worker threads for parallel and concurrent GC.
  *
  * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  * Copyright (C) 2012 Xamarin Inc

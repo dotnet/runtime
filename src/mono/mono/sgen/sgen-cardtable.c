@@ -1,5 +1,6 @@
-/*
- * sgen-cardtable.c: Card table implementation for sgen
+/**
+ * \file
+ * Card table implementation for sgen
  *
  * Author:
  * 	Rodrigo Kumpera (rkumpera@novell.com)

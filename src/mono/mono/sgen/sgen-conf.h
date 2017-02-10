@@ -1,5 +1,6 @@
-/*
- * sgen-conf.h: Tunable parameters and debugging switches.
+/**
+ * \file
+ * Tunable parameters and debugging switches.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

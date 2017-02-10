@@ -1,5 +1,6 @@
-/*
- * sgen-pinning.c: The pin queue.
+/**
+ * \file
+ * The pin queue.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

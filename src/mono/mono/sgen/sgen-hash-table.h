@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_SGENHASHTABLE_H__
 #define __MONO_SGENHASHTABLE_H__
 

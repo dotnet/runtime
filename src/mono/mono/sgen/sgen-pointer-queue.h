@@ -1,5 +1,6 @@
-/*
- * sgen-pointer-queue.h: A pointer queue that can be sorted.
+/**
+ * \file
+ * A pointer queue that can be sorted.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

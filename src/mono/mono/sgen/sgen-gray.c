@@ -1,5 +1,6 @@
-/*
- * sgen-gray.c: Gray queue management.
+/**
+ * \file
+ * Gray queue management.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

@@ -1,5 +1,6 @@
-/*
- * sgen-los.c: Large objects space.
+/**
+ * \file
+ * Large objects space.
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)

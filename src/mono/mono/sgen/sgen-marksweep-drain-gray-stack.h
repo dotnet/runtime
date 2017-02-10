@@ -1,6 +1,6 @@
-/*
- * sgen-marksweep-drain-gray-stack.h: The copy/mark and gray stack
- *     draining functions of the M&S major collector.
+/**
+ * \file
+ * The copy/mark and gray stack draining functions of the M&S major collector.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

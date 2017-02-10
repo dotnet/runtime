@@ -1,5 +1,6 @@
-/*
- * sgen-gc.c: Simple generational GC.
+/**
+ * \file
+ * Simple generational GC.
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)

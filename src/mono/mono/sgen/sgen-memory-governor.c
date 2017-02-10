@@ -1,6 +1,6 @@
-/*
- * sgen-memory-governor.c: When to schedule collections based on
- * memory usage.
+/**
+ * \file
+ * When to schedule collections based on memory usage.
  *
  * Author:
  * 	Rodrigo Kumpera (rkumpera@novell.com)

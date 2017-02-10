@@ -1,5 +1,6 @@
-/*
- * gc-internal-agnostic.h: Mono-agnostic GC interface.
+/**
+ * \file
+ * Mono-agnostic GC interface.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

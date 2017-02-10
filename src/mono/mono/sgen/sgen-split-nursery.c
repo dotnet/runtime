@@ -1,5 +1,6 @@
-/*
- * sgen-splliy-nursery.c: 3-space based nursery collector.
+/**
+ * \file
+ * 3-space based nursery collector.
  *
  * Author:
  *	Rodrigo Kumpera Kumpera <kumpera@gmail.com>

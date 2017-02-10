@@ -1,5 +1,6 @@
-/*
- * sgen-minor-copy-object.h: Copy functions for nursery collections.
+/**
+ * \file
+ * Copy functions for nursery collections.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

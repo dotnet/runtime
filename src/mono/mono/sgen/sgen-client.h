@@ -1,5 +1,6 @@
-/*
- * sgen-client.h: SGen client interface.
+/**
+ * \file
+ * SGen client interface.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

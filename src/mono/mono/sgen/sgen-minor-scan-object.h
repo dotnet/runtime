@@ -1,5 +1,6 @@
-/*
- * sgen-minor-scan-object.h: Object scanning in the nursery collectors.
+/**
+ * \file
+ * Object scanning in the nursery collectors.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

@@ -1,5 +1,6 @@
-/*
- * sgen-copy-object.h: This is where objects are copied.
+/**
+ * \file
+ * This is where objects are copied.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

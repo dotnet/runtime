@@ -1,5 +1,6 @@
-/*
- * sgen-nursery-allocator.c: Nursery allocation code.
+/**
+ * \file
+ * Nursery allocation code.
  *
  * Copyright 2009-2010 Novell, Inc.
  *           2011 Rodrigo Kumpera

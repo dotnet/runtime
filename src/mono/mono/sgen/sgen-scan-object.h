@@ -1,5 +1,6 @@
-/*
- * sgen-scan-object.h: Generic object scan.
+/**
+ * \file
+ * Generic object scan.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

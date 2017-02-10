@@ -1,5 +1,6 @@
-/*
- * sgen-internal.c: Internal lock-free memory allocator.
+/**
+ * \file
+ * Internal lock-free memory allocator.
  *
  * Copyright (C) 2012 Xamarin Inc
  *

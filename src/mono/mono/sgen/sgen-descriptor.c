@@ -1,5 +1,6 @@
-/*
- * sgen-descriptor.c: GC descriptors describe object layout.
+/**
+ * \file
+ * GC descriptors describe object layout.
  *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.

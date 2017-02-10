@@ -1,5 +1,6 @@
-/*
- * sgen-debug.c: Collector debugging
+/**
+ * \file
+ * Collector debugging
  *
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)
