@@ -1939,6 +1939,15 @@ precisely_report_roots_from (GCRootReport *report, void** start_root, void** end
 		}
 		break;
 	}
+	case ROOT_DESC_VECTOR: {
+		void **p;
+
+		for (p = start_root; p < end_root; p++) {
+			if (*p)
+				add_profile_gc_root (report, *p, MONO_PROFILE_GC_ROOT_OTHER, 0);
+		}
+		break;
+	}
 	case ROOT_DESC_USER: {
 		MonoGCRootMarkFunc marker = (MonoGCRootMarkFunc)sgen_get_user_descriptor_func (desc);
 		root_report = report;

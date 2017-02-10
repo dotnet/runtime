@@ -832,6 +832,9 @@ void sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data);
 void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
 void sgen_set_suspend_finalizers (void);
 
+void sgen_wbroots_iterate_live_block_ranges (sgen_cardtable_block_callback cb);
+void sgen_wbroots_scan_card_table (ScanCopyContext ctx);
+
 void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc);
 
 GCObject* sgen_weak_link_get (void **link_addr);

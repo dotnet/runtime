@@ -93,6 +93,9 @@ MonoGCDescriptor mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, i
 /* simple interface for data structures needed in the runtime */
 MonoGCDescriptor mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits);
 
+/* Return a root descriptor for a vector with repeating refs bitmap */
+MonoGCDescriptor mono_gc_make_vector_descr (void);
+
 /* Return a root descriptor for a root with all refs */
 MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits);
 

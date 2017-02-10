@@ -412,6 +412,7 @@ sgen_card_table_clear_cards (void)
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	sgen_major_collector_iterate_block_ranges (clear_cards);
 	sgen_los_iterate_live_block_ranges (clear_cards);
+	sgen_wbroots_iterate_live_block_ranges (clear_cards);
 }
 
 static void
@@ -433,6 +434,7 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 	/*First we copy*/
 	sgen_major_collector_iterate_block_ranges (move_cards_to_shadow_table);
 	sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
+	sgen_wbroots_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
 	sgen_card_table_clear_cards ();
@@ -446,6 +448,8 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
+
+	sgen_wbroots_scan_card_table (ctx);
 }
 
 guint8*

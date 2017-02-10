@@ -804,6 +804,15 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 			}
 			break;
 		}
+		case ROOT_DESC_VECTOR: {
+			void **p;
+
+			for (p = start_root; p < (void**)root->end_root; p++) {
+				if (*p)
+					check_root_obj_specific_ref (root, key, (GCObject *)*p);
+			}
+			break;
+		}
 		case ROOT_DESC_USER: {
 			SgenUserRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
 			marker (start_root, check_root_obj_specific_ref_from_marker, NULL);
@@ -905,6 +914,15 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 					++objptr;
 				}
 				start_run += GC_BITS_PER_WORD;
+			}
+			break;
+		}
+		case ROOT_DESC_VECTOR: {
+			void **p;
+
+			for (p = start_root; p < (void**)root->end_root; p++) {
+				if (*p)
+					check_obj_not_in_domain ((MonoObject **)*p);
 			}
 			break;
 		}
