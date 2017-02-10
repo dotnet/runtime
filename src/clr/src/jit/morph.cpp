@@ -17132,9 +17132,17 @@ void Compiler::fgPromoteStructs()
                 // field accesses, but only block-level operations on the whole struct, if the struct
                 // has only one or two fields, then doing those block operations field-wise is probably faster
                 // than doing a whole-variable block operation (e.g., a hardware "copy loop" on x86).
-                // So if no fields are accessed independently, and there are three or more fields,
+                // Struct promotion also provides the following benefits: reduce stack frame size,
+                // reduce the need for zero init of stack frame and fine grained constant/copy prop.
+                // Asm diffs indicate that promoting structs up to 3 fields is a net size win.
+                // So if no fields are accessed independently, and there are four or more fields,
                 // then do not promote.
-                if (structPromotionInfo.fieldCnt > 2 && !varDsc->lvFieldAccessed)
+                //
+                // TODO: Ideally we would want to consider the impact of whether the struct is
+                // passed as a parameter or assigned the return value of a call. Because once promoted,
+                // struct copying is done by field by field assignment instead of a more efficient
+                // rep.stos or xmm reg based copy.
+                if (structPromotionInfo.fieldCnt > 3 && !varDsc->lvFieldAccessed)
                 {
                     JITDUMP("Not promoting promotable struct local V%02u: #fields = %d, fieldAccessed = %d.\n", lclNum,
                             structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
