@@ -4281,7 +4281,7 @@ namespace System.Numerics
                     Byte* dataPtr = stackalloc Byte[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Byte)Math.Sqrt((Byte)(object)value[g]);
+                        dataPtr[g] = unchecked((Byte)Math.Sqrt((Byte)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4299,7 +4299,7 @@ namespace System.Numerics
                     UInt16* dataPtr = stackalloc UInt16[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (UInt16)Math.Sqrt((UInt16)(object)value[g]);
+                        dataPtr[g] = unchecked((UInt16)Math.Sqrt((UInt16)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4317,7 +4317,7 @@ namespace System.Numerics
                     UInt32* dataPtr = stackalloc UInt32[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (UInt32)Math.Sqrt((UInt32)(object)value[g]);
+                        dataPtr[g] = unchecked((UInt32)Math.Sqrt((UInt32)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4335,7 +4335,7 @@ namespace System.Numerics
                     UInt64* dataPtr = stackalloc UInt64[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (UInt64)Math.Sqrt((UInt64)(object)value[g]);
+                        dataPtr[g] = unchecked((UInt64)Math.Sqrt((UInt64)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4353,7 +4353,7 @@ namespace System.Numerics
                     Single* dataPtr = stackalloc Single[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Single)Math.Sqrt((Single)(object)value[g]);
+                        dataPtr[g] = unchecked((Single)Math.Sqrt((Single)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4362,7 +4362,7 @@ namespace System.Numerics
                     Double* dataPtr = stackalloc Double[Count];
                     for (int g = 0; g < Count; g++)
                     {
-                        dataPtr[g] = (Double)Math.Sqrt((Double)(object)value[g]);
+                        dataPtr[g] = unchecked((Double)Math.Sqrt((Double)(object)value[g]));
                     }
                     return new Vector<T>(dataPtr);
                 }
@@ -4656,27 +4656,27 @@ namespace System.Numerics
             }
             else if (typeof(T) == typeof(UInt32))
             {
-                return (T)(object)(UInt32)unchecked((UInt32)(object)left + (UInt32)(object)right);
+                return (T)(object)unchecked((UInt32)((UInt32)(object)left + (UInt32)(object)right));
             }
             else if (typeof(T) == typeof(Int32))
             {
-                return (T)(object)(Int32)unchecked((Int32)(object)left + (Int32)(object)right);
+                return (T)(object)unchecked((Int32)((Int32)(object)left + (Int32)(object)right));
             }
             else if (typeof(T) == typeof(UInt64))
             {
-                return (T)(object)(UInt64)unchecked((UInt64)(object)left + (UInt64)(object)right);
+                return (T)(object)unchecked((UInt64)((UInt64)(object)left + (UInt64)(object)right));
             }
             else if (typeof(T) == typeof(Int64))
             {
-                return (T)(object)(Int64)((Int64)(object)left + (Int64)(object)right);
+                return (T)(object)unchecked((Int64)((Int64)(object)left + (Int64)(object)right));
             }
             else if (typeof(T) == typeof(Single))
             {
-                return (T)(object)(Single)((Single)(object)left + (Single)(object)right);
+                return (T)(object)unchecked((Single)((Single)(object)left + (Single)(object)right));
             }
             else if (typeof(T) == typeof(Double))
             {
-                return (T)(object)(Double)((Double)(object)left + (Double)(object)right);
+                return (T)(object)unchecked((Double)((Double)(object)left + (Double)(object)right));
             }
             else
             {
@@ -4754,27 +4754,27 @@ namespace System.Numerics
             }
             else if (typeof(T) == typeof(UInt32))
             {
-                return (T)(object)(UInt32)unchecked((UInt32)(object)left * (UInt32)(object)right);
+                return (T)(object)unchecked((UInt32)((UInt32)(object)left * (UInt32)(object)right));
             }
             else if (typeof(T) == typeof(Int32))
             {
-                return (T)(object)(Int32)unchecked((Int32)(object)left * (Int32)(object)right);
+                return (T)(object)unchecked((Int32)((Int32)(object)left * (Int32)(object)right));
             }
             else if (typeof(T) == typeof(UInt64))
             {
-                return (T)(object)(UInt64)unchecked((UInt64)(object)left * (UInt64)(object)right);
+                return (T)(object)unchecked((UInt64)((UInt64)(object)left * (UInt64)(object)right));
             }
             else if (typeof(T) == typeof(Int64))
             {
-                return (T)(object)(Int64)((Int64)(object)left * (Int64)(object)right);
+                return (T)(object)unchecked((Int64)((Int64)(object)left * (Int64)(object)right));
             }
             else if (typeof(T) == typeof(Single))
             {
-                return (T)(object)(Single)((Single)(object)left * (Single)(object)right);
+                return (T)(object)unchecked((Single)((Single)(object)left * (Single)(object)right));
             }
             else if (typeof(T) == typeof(Double))
             {
-                return (T)(object)(Double)((Double)(object)left * (Double)(object)right);
+                return (T)(object)unchecked((Double)((Double)(object)left * (Double)(object)right));
             }
             else
             {
