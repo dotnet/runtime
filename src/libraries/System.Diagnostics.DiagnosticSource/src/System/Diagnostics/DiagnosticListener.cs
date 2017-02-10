@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
 
 // TODO when we upgrade to C# V6 you can remove this.  
 // warning CS0420: 'P.x': a reference to a volatile field will not be treated as volatile
@@ -19,7 +15,7 @@ namespace System.Diagnostics
 {
     /// <summary>
     /// A DiagnosticListener is something that forwards on events written with DiagnosticSource.
-    /// It is an IObservable (has Subscribe method), and it also has a Subscribe overload that
+    /// It is an IObservable (has Subscribe method), and it also has a Subscribe overloads that
     /// lets you specify a 'IsEnabled' predicate that users of DiagnosticSource will use for 
     /// 'quick checks'.   
     /// 
@@ -64,11 +60,16 @@ namespace System.Diagnostics
             return SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => isEnabled(name));
         }
 
-        // Subscription implementation 
         /// <summary>
         /// Add a subscriber (Observer).  If 'IsEnabled' == null (or not present), then the Source's IsEnabled 
         /// will always return true.  
         /// </summary>
+        /// <param name="observer">Subscriber (IObserver)</param>
+        /// <param name="isEnabled">Filters events based on their name (string) and context objects that could be null.
+        /// Note that producer may first call filter with event name only and null context arguments and filter should
+        /// return true if consumer is interested in any of such events. Producers that support 
+        /// context-based filtering will invoke isEnabled again with context for more prcise filtering.
+        /// Use Subscribe overload with name-based filtering if producer does NOT support context-based filtering</param>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
             return SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled);
@@ -180,7 +181,7 @@ namespace System.Diagnostics
         {
             for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
-                if (curSubscription.IsEnabled == null || curSubscription.IsEnabled(name))
+                if (curSubscription.IsEnabled1Arg == null || curSubscription.IsEnabled1Arg(name))
                     return true;
             }
             return false;
@@ -190,11 +191,11 @@ namespace System.Diagnostics
         /// <summary>
         /// Override abstract method
         /// </summary>
-        public override bool IsEnabled(string name, object arg1, object arg2)
+        public override bool IsEnabled(string name, object arg1, object arg2 = null)
         {
             for (DiagnosticSubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
             {
-                if (curSubscription.IsEnabledExt == null || curSubscription.IsEnabledExt(name, arg1, arg2))
+                if (curSubscription.IsEnabled3Arg == null || curSubscription.IsEnabled3Arg(name, arg1, arg2))
                     return true;
             }
             return false;
@@ -214,8 +215,20 @@ namespace System.Diagnostics
         {
             internal IObserver<KeyValuePair<string, object>> Observer;
 
-            internal Predicate<string> IsEnabled;
-            internal Func<string, object, object, bool> IsEnabledExt;
+            // IsEnabled1Arg and IsEnabled3Arg represent IsEnabled callbacks. 
+            //    - IsEnabled1Arg invoked for DiagnosticSource.IsEnabled(string)
+            //    - IsEnabled3Arg invoked for DiagnosticSource.IsEnabled(string, obj, obj)
+            // Subscriber MUST set both IsEnabled1Arg and IsEnabled3Arg or none of them:
+            //     when Predicate<string> is provided in DiagosticListener.Subscribe,
+            //       - IsEnabled1Arg is set to predicate
+            //       - IsEnabled3Arg falls back to predicate ignoring extra arguments.
+            //     similarly, when Func<string, obj, obj, bool> is provided, 
+            //     IsEnabled1Arg falls back to IsEnabled3Arg with null context
+            // Thus, dispatching is very efficient when producer and consumer agree on number of IsEnabled arguments
+            // Argument number mismatch between producer/consumer adds extra cost of adding or omitting context parameters 
+            internal Predicate<string> IsEnabled1Arg;
+            internal Func<string, object, object, bool> IsEnabled3Arg;
+
             internal DiagnosticListener Owner;          // The DiagnosticListener this is a subscription for.  
             internal DiagnosticSubscription Next;                // Linked list of subscribers
 
@@ -234,7 +247,7 @@ namespace System.Diagnostics
                         var cur = newSubscriptions;
                         while (cur != null)
                         {
-                            Debug.Assert(!(cur.Observer == Observer && cur.IsEnabled == IsEnabled), "Did not remove subscription!");
+                            Debug.Assert(!(cur.Observer == Observer && cur.IsEnabled1Arg == IsEnabled1Arg && cur.IsEnabled3Arg == IsEnabled3Arg), "Did not remove subscription!");
                             cur = cur.Next;
                         }
 #endif
@@ -252,14 +265,16 @@ namespace System.Diagnostics
                     return null;
                 }
 
-                if (subscriptions.Observer == subscription.Observer && subscriptions.IsEnabled == subscription.IsEnabled)
+                if (subscriptions.Observer == subscription.Observer && 
+                    subscriptions.IsEnabled1Arg == subscription.IsEnabled1Arg &&
+                    subscriptions.IsEnabled3Arg == subscription.IsEnabled3Arg)
                     return subscriptions.Next;
 #if DEBUG
                 // Delay a bit.  This makes it more likely that races will happen. 
                 for (int i = 0; i < 100; i++)
                     GC.KeepAlive("");
 #endif
-                return new DiagnosticSubscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled = subscriptions.IsEnabled, Next = Remove(subscriptions.Next, subscription) };
+                return new DiagnosticSubscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled1Arg = subscriptions.IsEnabled1Arg, IsEnabled3Arg = subscriptions.IsEnabled3Arg, Next = Remove(subscriptions.Next, subscription) };
             }
         }
 
@@ -360,7 +375,7 @@ namespace System.Diagnostics
         }
         #endregion
 
-        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled, Func<string, object, object, bool> isEnabledExt)
+        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled1Arg, Func<string, object, object, bool> isEnabled3Arg)
         {
             // If we have been disposed, we silently ignore any subscriptions.  
             if (_disposed)
@@ -370,8 +385,8 @@ namespace System.Diagnostics
             DiagnosticSubscription newSubscription = new DiagnosticSubscription()
             {
                 Observer = observer,
-                IsEnabled = isEnabled,
-                IsEnabledExt = isEnabledExt,
+                IsEnabled1Arg = isEnabled1Arg,
+                IsEnabled3Arg = isEnabled3Arg,
                 Owner = this,
                 Next = _subscriptions
             };
