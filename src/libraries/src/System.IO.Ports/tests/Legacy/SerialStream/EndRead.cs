@@ -17,6 +17,7 @@ namespace Legacy.SerialStream
     {
         #region Test Cases
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void EndReadAfterClose()
         {
@@ -43,6 +44,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void EndReadAfterSerialStreamClose()
         {
@@ -69,6 +71,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
@@ -81,6 +84,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_WriteResult()
         {
@@ -96,6 +100,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleSameResult()
         {
@@ -118,6 +123,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleInOrder()
         {
@@ -162,6 +168,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleOutOfOrder()
         {

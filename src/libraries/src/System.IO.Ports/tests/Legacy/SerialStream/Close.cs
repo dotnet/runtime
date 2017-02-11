@@ -19,6 +19,7 @@ namespace Legacy.SerialStream
         private static readonly int numReadBytes = 32;
         private static readonly int numWriteBytes = 32;
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_WriteMethods()
         {
@@ -63,6 +64,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_ReadMethods()
         {
@@ -122,6 +124,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_DiscardMethods()
         {
@@ -149,6 +152,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_OpenClose()
         {
@@ -178,7 +182,8 @@ namespace Legacy.SerialStream
                 }
             }
         }
-        
+
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_Properties()
         {
@@ -197,6 +202,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void OpenFillBuffersClose()
         {
@@ -252,7 +258,8 @@ namespace Legacy.SerialStream
                 }
             }
         }
-        
+
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenCloseNewInstanceOpen()
         {
@@ -291,6 +298,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Open()
         {
@@ -310,6 +318,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Close()
         {
@@ -330,6 +339,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_MultipleBaseStreamClose()
         {

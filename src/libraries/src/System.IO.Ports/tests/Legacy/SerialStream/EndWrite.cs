@@ -17,6 +17,7 @@ namespace Legacy.SerialStream
     {
         #region Test Cases
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void EndWriteAfterClose()
         {
@@ -33,7 +34,8 @@ namespace Legacy.SerialStream
                 VerifyEndWriteException(serialStream, asyncResult, null);
             }
         }
-        
+
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void EndWriteAfterSerialStreamClose()
         {
@@ -56,6 +58,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
@@ -68,6 +71,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_ReadResult()
         {
@@ -88,6 +92,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleSameResult()
         {
@@ -106,6 +111,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleInOrder()
         {
@@ -127,6 +133,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleOutOfOrder()
         {
@@ -149,6 +156,7 @@ namespace Legacy.SerialStream
             }
         }
 
+        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void InBreak()
         {
