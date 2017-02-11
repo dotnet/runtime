@@ -1169,60 +1169,6 @@ Object* GetTypesInner(Module* pModule)
     RETURN(OBJECTREFToObject(refArrClasses));
 }
 
-#if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
-//+--------------------------------------------------------------------------
-//  
-//  Member:     COMModule::GetSignerCertificate()
-//  
-//  Synopsis:   Gets the certificate with which the module was signed.
-//
-//  Effects:    Creates an X509Certificate and returns it.
-// 
-//  Arguments:  None.
-//
-//  Returns:    OBJECTREF to an X509Certificate object containing the 
-//              signer certificate.
-//
-//---------------------------------------------------------------------------
-
-void QCALLTYPE COMModule::GetSignerCertificate(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retData)
-{
-    QCALL_CONTRACT;
-    
-    BEGIN_QCALL;
-
-    PCOR_TRUST                  pCorTrust = NULL;
-    IAssemblySecurityDescriptor* pSecDesc = NULL;
-    PBYTE                       pbSigner = NULL;
-    DWORD                       cbSigner = 0;
-
-    // ******** Get the security descriptor ********
-
-    // Get a pointer to the module security descriptor
-    pSecDesc = pModule->GetSecurityDescriptor();
-    _ASSERTE(pSecDesc);
-
-    // ******** Get COR_TRUST info from module security descriptor ********
-    if (FAILED(pSecDesc->LoadSignature(&pCorTrust)))
-    {
-        COMPlusThrow(kArgumentNullException, W("InvalidOperation_MetaDataError"));
-    }
-
-    if( pCorTrust )
-    {
-        // Get a pointer to the signer certificate information in the COR_TRUST
-        pbSigner = pCorTrust->pbSigner;
-        cbSigner = pCorTrust->cbSigner;
-
-        if( pbSigner && cbSigner )
-        {
-            retData.SetByteArray(pbSigner, cbSigner);
-        }
-    }
-
-    END_QCALL;
-}
-#endif // #if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
 
 FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSAFE)
 {

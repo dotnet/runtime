@@ -233,20 +233,6 @@ static void ConvertCriticalMethodToLinkDemand(MethodDesc *pCallerMD)
     }
     CONTRACTL_END;
 
-#if !defined(CROSSGEN_COMPILE) && defined(FEATURE_CAS_POLICY)
-    if (NingenEnabled())
-        return;
-
-    GCX_COOP();
-
-    OBJECTREF permSet = NULL;
-    GCPROTECT_BEGIN(permSet);
-
-    Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-    Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-
-    GCPROTECT_END();
-#endif // !CROSSGEN_COMPILE && FEATURE_CAS_POLICY
 }
 
 // static
@@ -620,44 +606,6 @@ VOID SecurityTransparent::PerformTransparencyChecksForLoadByteArray(MethodDesc* 
     }
     CONTRACTL_END
 
-#ifdef FEATURE_CAS_POLICY
-	GCX_COOP();
-	// check to see if the method that does the Load(byte[] ) is transparent
-	if (IsMethodTransparent(pCallerMD))
-	{		
-		Assembly* pLoadedAssembly = pLoadedSecDesc->GetAssembly();
-		// check to see if the byte[] being loaded is critical, i.e. not Transparent
-		if (!ModuleSecurityDescriptor::IsMarkedTransparent(pLoadedAssembly))
-		{
-			// if transparent code loads a byte[] that is critical, need to inject appropriate demands
-			if (pLoadedSecDesc->IsFullyTrusted()) // if the loaded code is full-trust
-			{
-				// do a full-demand for Full-Trust				
-				OBJECTREF permSet = NULL;
-				GCPROTECT_BEGIN(permSet);
-        			Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-					Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-				GCPROTECT_END();// do a full-demand for Full-Trust				
-			}
-			else
-			{
-				// otherwise inject a Demand for permissions being granted?
-				struct _localGC {
-                			OBJECTREF granted;
-                			OBJECTREF denied;
-            			} localGC;
-            	ZeroMemory(&localGC, sizeof(localGC));
-
-            	GCPROTECT_BEGIN(localGC);
-				{
-					localGC.granted = pLoadedSecDesc->GetGrantedPermissionSet(&(localGC.denied));
-					Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, localGC.granted);
-            	}
-				GCPROTECT_END();
-			}
-		}		
-	}	
-#endif // FEATURE_CAS_POLICY
 }
 
 static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCalleeMD) 

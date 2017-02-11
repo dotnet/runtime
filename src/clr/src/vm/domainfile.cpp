@@ -1641,76 +1641,6 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSe
 
     if (pLoadSecurity != NULL)
     {
-#ifdef FEATURE_CAS_POLICY
-        // If this assembly had a file name specified, we aren't allowed to load from remote sources and we
-        // aren't in CAS policy mode (which sandboxes remote assemblies automatically), then we need to do a
-        // check on this assembly's zone of origin when creating it.
-        if (pLoadSecurity->m_fCheckLoadFromRemoteSource &&
-            !pLoadSecurity->m_fSuppressSecurityChecks &&
-            !m_pDomain->GetSecurityDescriptor()->AllowsLoadsFromRemoteSources() &&
-            !pFile->IsIntrospectionOnly())
-        {
-            SString strCodeBase;
-            BYTE pbUniqueID[MAX_SIZE_SECURITY_ID];
-            DWORD cbUniqueID = COUNTOF(pbUniqueID);
-            SecZone dwZone = NoZone;
-
-            GetSecurityIdentity(strCodeBase,
-                                &dwZone,
-                                0,
-                                pbUniqueID,
-                                &cbUniqueID);
-
-            // Since loads from remote sources are not enabled for this assembly, we only want to allow the
-            // load if any of the following conditions apply:
-            //
-            //  * The load is coming off the local machine
-            //  * The load is coming from the intranet or a trusted site, and the code base is UNC.  (ie,
-            //    don't allow HTTP loads off the local intranet
-
-            bool safeLoad = false;
-            if (dwZone == LocalMachine)
-            {
-                safeLoad = true;
-            }
-            else if (dwZone == Intranet || dwZone == Trusted)
-            {
-                if (UrlIsFileUrl(strCodeBase.GetUnicode()))
-                {
-                    safeLoad = true;
-                }
-                else if (PathIsUNC(strCodeBase.GetUnicode()))
-                {
-                    safeLoad = true;
-                }
-            }
-
-            if (!safeLoad)
-            {
-                // We've tried to load an assembly from a location where it would have been sandboxed in legacy
-                // CAS situations, but the application hasn't indicated that this is a safe thing to do. In
-                // order to prevent accidental security holes by silently loading assemblies in full trust that
-                // an application expected to be sandboxed, we'll throw an exception instead.
-                //
-                // Since this exception can commonly occur with if the file is physically located on the
-                // hard drive, but has the mark of the web on it we'll also try to detect this mark and
-                // provide a customized error message if we find it.   We do that by re-evaluating the
-                // assembly's zone with the NOSAVEDFILECHECK flag, which ignores the mark of the web, and if
-                // that comes back as MyComputer we flag the assembly as having the mark of the web on it.
-                SecZone dwNoMotwZone = NoZone;
-                GetSecurityIdentity(strCodeBase, &dwNoMotwZone, MUTZ_NOSAVEDFILECHECK, pbUniqueID, &cbUniqueID);
-
-                if (dwNoMotwZone == LocalMachine)
-                {
-                    COMPlusThrow(kNotSupportedException, IDS_E_LOADFROM_REMOTE_SOURCE_MOTW);
-                }
-                else
-                {
-                    COMPlusThrow(kNotSupportedException, IDS_E_LOADFROM_REMOTE_SOURCE);
-                }
-            }
-        }
-#endif // FEATURE_CAS_POLICY
 
         if (GetFile()->IsSourceGAC())
         {
@@ -1745,22 +1675,6 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSe
             {
                 GCX_COOP();
 
-#ifdef FEATURE_CAS_POLICY
-                if (pLoadSecurity->m_pAdditionalEvidence != NULL)
-                {
-                    if(*pLoadSecurity->m_pAdditionalEvidence != NULL)
-                    {
-                        pSecurityDescriptorHolder->SetAdditionalEvidence(*pLoadSecurity->m_pAdditionalEvidence);
-                    }
-                }
-                else if (pLoadSecurity->m_pEvidence != NULL)
-                {
-                    if (*pLoadSecurity->m_pEvidence != NULL)
-                    {
-                        pSecurityDescriptorHolder->SetEvidence(*pLoadSecurity->m_pEvidence);
-                    }
-                }
-#endif // FEATURE_CAS_POLICY
 
                 // If the assembly being loaded already knows its grant set (for instnace, it's being pushed
                 // from the loading assembly), then we can set that up now as well
@@ -1768,15 +1682,6 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSe
                 {
                     _ASSERTE(pLoadSecurity->m_pGrantSet != NULL);
 
-#ifdef FEATURE_CAS_POLICY
-                    // The permissions from an anonymously hosted dynamic method are fulltrust/transparent,
-                    // so ensure we have full trust to pass that on to the new assembly
-                    if(pLoadSecurity->m_fPropagatingAnonymouslyHostedDynamicMethodGrant &&
-                       !CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_Security_DisableAnonymouslyHostedDynamicMethodCreatorSecurityCheck))
-                    {
-                        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-                    }
-#endif // FEATURE_CAS_POLICY
 
                     pSecurityDescriptorHolder->PropagatePermissionSet(
                                                       *pLoadSecurity->m_pGrantSet,
@@ -3264,45 +3169,7 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
 }
 #endif // FEATURE_PREJIT
 
-#ifdef FEATURE_CAS_POLICY
-void DomainAssembly::InitializeSecurityManager()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
 
-    GetFile()->InitializeSecurityManager();
-}
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_CAS_POLICY
-// Returns security information for the assembly based on the codebase
-void DomainAssembly::GetSecurityIdentity(SString &codebase,
-                                         SecZone *pdwZone,
-                                         DWORD dwFlags,
-                                         BYTE *pbUniqueID,
-                                         DWORD *pcbUniqueID)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pdwZone));
-        PRECONDITION(CheckPointer(pbUniqueID));
-        PRECONDITION(CheckPointer(pcbUniqueID));
-    }
-    CONTRACTL_END;
-
-    GetFile()->GetSecurityIdentity(codebase, pdwZone, dwFlags, pbUniqueID, pcbUniqueID);
-}
-#endif // FEATURE_CAS_POLICY
 
 #ifdef FEATURE_FUSION
 IAssemblyBindingClosure* DomainAssembly::GetAssemblyBindingClosure(WALK_LEVEL level)

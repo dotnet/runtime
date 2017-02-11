@@ -304,10 +304,6 @@ DEFINE_EXCEPTION(g_SystemNS,           UnauthorizedAccessException,    true,   C
 
 DEFINE_EXCEPTION(g_SecurityNS,         VerificationException,          false,  COR_E_VERIFICATION)
 
-#ifdef FEATURE_CAS_POLICY
-DEFINE_EXCEPTION(g_PolicyNS,           PolicyException,                true,   CORSEC_E_POLICY_EXCEPTION, CORSEC_E_NO_EXEC_PERM, CORSEC_E_MIN_GRANT_FAIL)
-DEFINE_EXCEPTION(g_SecurityNS,         XmlSyntaxException,             false,  CORSEC_E_XMLSYNTAX)
-#endif // FEATURE_CAS_POLICY
 
 DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
 DEFINE_EXCEPTION(g_InteropNS,          ExternalException,              false,  E_FAIL)
