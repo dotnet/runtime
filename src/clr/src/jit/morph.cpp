@@ -6163,6 +6163,14 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             return newTree;
         }
     }
+    else if ((objRef != nullptr) && (objRef->OperGet() == GT_ADDR) && varTypeIsSIMD(objRef->gtGetOp1()))
+    {
+        GenTreeLclVarCommon* lcl = objRef->IsLocalAddrExpr();
+        if (lcl != nullptr)
+        {
+            lvaSetVarDoNotEnregister(lcl->gtLclNum DEBUGARG(DNER_LocalField));
+        }
+    }
 #endif
 
     /* Is this an instance data member? */
