@@ -85,8 +85,8 @@ mkdir -p $__Android_Cross_Dir/deb/
 mkdir -p $__Android_Cross_Dir/tmp/$arch/
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libcurl-dev_7.52.1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libcurl-dev_7.52.1_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libcurl_7.52.1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libcurl_7.52.1_$__AndroidArch.deb
-wget -nv -nc https://github.com/qmfrederik/dotnet-alpine-arm/raw/master/krb5-dev_1.15_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/krb5-dev_1.15_$__AndroidArch.deb
-wget -nv -nc https://github.com/qmfrederik/dotnet-alpine-arm/raw/master/krb5_1.15_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/krb5_1.15_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/krb5-dev_1.15_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/krb5-dev_1.15_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/krb5_1.15_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/krb5_1.15_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/openssl-dev_1.0.2k_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/openssl-dev_1.0.2k_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/openssl_1.0.2k_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/openssl_1.0.2k_$__AndroidArch.deb
 
