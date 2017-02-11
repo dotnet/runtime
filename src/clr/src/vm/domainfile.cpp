@@ -3537,12 +3537,6 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
     return TRUE;
 #else
 
-#ifdef FEATURE_APTCA
-    if (!Security::NativeImageHasValidAptcaDependencies(pNativeImage, this))
-    {
-        return FALSE;
-    }
-#endif // !FEATURE_APTCA
 
     GCX_COOP();
 

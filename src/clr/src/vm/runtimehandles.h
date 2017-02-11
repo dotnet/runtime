@@ -462,9 +462,6 @@ public:
     static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
 
     static FCDECL1(INT32, GetToken, AssemblyBaseObject *pAssemblyUNSAFE);   
-#ifdef FEATURE_APTCA
-    static FCDECL2(FC_BOOL_RET, AptcaCheck, AssemblyBaseObject *pTargetAssemblyUNSAFE, AssemblyBaseObject *pSourceAssemblyUNSAFE);
-#endif // FEATURE_APTCA
 };
 
 class SignatureNative;

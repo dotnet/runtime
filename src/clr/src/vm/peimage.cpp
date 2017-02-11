@@ -1444,9 +1444,6 @@ PEImage::PEImage():
     m_dwPEKind(0),
     m_dwMachine(0),
     m_fCachedKindAndMachine(FALSE)
-#ifdef FEATURE_APTCA
-    , m_fMayBeConditionalAptca(TRUE)
-#endif // FEATURE_APTCA
 #ifdef FEATURE_LAZY_COW_PAGES
     ,m_bAllocatedLazyCOWPages(FALSE)
 #endif // FEATURE_LAZY_COW_PAGES

@@ -37,9 +37,7 @@
 #ifndef __APTCA_H__
 #define __APTCA_H__
 
-#ifndef FEATURE_APTCA
 #error FEATURE_APTCA is required for this file
-#endif // FEATURE_APTCA
 
 #include "securitymeta.h"
 

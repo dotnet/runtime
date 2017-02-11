@@ -991,14 +991,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         if (args->flags & kTreatAsSafeAssembly)
             tokenFlags |= TokenSecurityDescriptorFlags_TreatAsSafe;
 
-#ifdef FEATURE_APTCA
-        if (args->aptcaBlob != NULL)
-        {
-            tokenFlags |= ParseAptcaAttribute(args->aptcaBlob->GetDirectPointerToNonObjectElements(),
-                                              args->aptcaBlob->GetNumComponents());
-        }
-
-#endif // FEATURE_APTCA
 
 #ifndef FEATURE_CORECLR
         // Use the security rules given to us if the emitting code has selected a specific one. Otherwise,

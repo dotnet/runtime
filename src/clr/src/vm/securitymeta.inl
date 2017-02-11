@@ -1112,7 +1112,7 @@ inline BOOL ModuleSecurityDescriptor::CanTransparentCodeSkipVerification()
 
 #endif // !FEATURE_CORECLR
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 inline BOOL ModuleSecurityDescriptor::IsAPTCA()
 {
     WRAPPER_NO_CONTRACT;

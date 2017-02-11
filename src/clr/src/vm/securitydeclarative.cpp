@@ -605,35 +605,6 @@ void SecurityDeclarative::MethodInheritanceCheck(MethodDesc *pMethod, MethodDesc
 //
 //-----------------------------------------------------------------------------
 
-#ifdef FEATURE_APTCA
-void DECLSPEC_NORETURN SecurityDeclarative::ThrowAPTCAException(Assembly *pCaller, MethodDesc *pCallee)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    } CONTRACTL_END;
-
-        MethodDescCallSite throwSecurityException(METHOD__SECURITY_ENGINE__THROW_SECURITY_EXCEPTION);
-
-        OBJECTREF callerObj = NULL;
-        if (pCaller != NULL && pCaller->GetDomain() == GetAppDomain())
-            callerObj = pCaller->GetExposedObject();
-
-        ARG_SLOT args[7];
-        args[0] = ObjToArgSlot(callerObj);
-        args[1] = ObjToArgSlot(NULL);
-        args[2] = ObjToArgSlot(NULL);
-        args[3] = PtrToArgSlot(pCallee);
-        args[4] = (ARG_SLOT)dclLinktimeCheck;
-        args[5] = ObjToArgSlot(NULL);
-        args[6] = ObjToArgSlot(NULL);
-        throwSecurityException.Call(args);
-
-    UNREACHABLE();
-}
-#endif // FEATURE_APTCA
 
 #ifdef FEATURE_CAS_POLICY
 void DECLSPEC_NORETURN SecurityDeclarative::ThrowHPException(EApiCategories protectedCategories, EApiCategories demandedCategories)
@@ -667,113 +638,8 @@ void DECLSPEC_NORETURN SecurityDeclarative::ThrowHPException(EApiCategories prot
 }
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-BOOL SecurityDeclarative::IsUntrustedCallerCheckNeeded(MethodDesc *pCalleeMD, Assembly *pCallerAssem)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Assembly *pCalleeAssembly = pCalleeMD->GetAssembly();
-    _ASSERTE(pCalleeAssembly != NULL);
-
-    // ATPCA is only enforced for cross-assembly calls, so if the target is not accessable from outside
-    // the assembly, or if the caller and callee are both within the same assembly, we do not need to
-    // do any APTCA checks
-    if (pCallerAssem == pCalleeAssembly)
-    {
-        return FALSE;
-    }
-
-    if (!MethodIsVisibleOutsideItsAssembly(pCalleeMD))
-    {
-        return FALSE;
-    }
-
-    // If the target assembly allows untrusted callers unconditionally, then the call should be allowed
-    if (pCalleeAssembly->AllowUntrustedCaller())
-    {
-        return FALSE;
-    }
-
-    // Otherwise, we need to ensure the caller is fully trusted
-    return TRUE;
-}
-#endif // FEATURE_APTCA
 
 
-#ifdef FEATURE_APTCA
-// Do a fulltrust check on the caller if the callee is fully trusted and
-// callee did not enable AllowUntrustedCallerChecks
-/*static*/
-void SecurityDeclarative::DoUntrustedCallerChecks(
-        Assembly *pCaller, MethodDesc *pCallee, 
-        BOOL fFullStackWalk)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    } CONTRACTL_END;
-
-    BOOL fRet = TRUE;
-
-#ifdef _DEBUG
-    if (!g_pConfig->Do_AllowUntrustedCaller_Checks())
-        return;
-#endif
-
-    if (!IsUntrustedCallerCheckNeeded(pCallee, pCaller))
-        return;
-
-    // Expensive calls after this point, this could end up resolving policy
-
-    if (fFullStackWalk)
-    {
-        // It is possible that wrappers like VBHelper libraries that are
-        // fully trusted, make calls to public methods that do not have
-        // safe for Untrusted caller custom attribute set.
-        // Like all other link demand that gets transformed to a full stack
-        // walk for reflection, calls to public methods also gets
-        // converted to full stack walk
-
-        OBJECTREF permSet = NULL;
-        GCPROTECT_BEGIN(permSet);
-
-        GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-        EX_TRY
-        {
-            SecurityStackWalk::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-        }
-        EX_CATCH
-        {
-            fRet = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
-
-        GCPROTECT_END();
-    }
-    else
-    {
-        _ASSERTE(pCaller);
-
-        // Link Demand only, no full stack walk here
-        if (!pCaller->GetSecurityDescriptor()->IsFullyTrusted())
-            fRet = FALSE;
-    }
-
-    if (!fRet)
-    {
-        ThrowAPTCAException(pCaller, pCallee);
-    }
-}
-
-#endif // FEATURE_APTCA
 
 // Retrieve all linktime demands sets for a method. This includes both CAS and
 // non-CAS sets for LDs at the class and the method level, so we could get up to
@@ -1135,12 +1001,6 @@ void SecurityDeclarative::CheckLinkDemandAgainstAppDomain(MethodDesc *pMD)
 
     GCPROTECT_BEGIN(gc);
 
-#ifdef FEATURE_APTCA
-    // Do a fulltrust check on the caller if the callee did not enable
-    // AllowUntrustedCallerChecks. Pass a NULL caller assembly:
-    // DoUntrustedCallerChecks needs to be able to cope with this.
-    SecurityDeclarative::DoUntrustedCallerChecks(NULL, pMD, TRUE);
-#endif // FEATURE_APTCA
 
     // Fetch link demand sets from all the places in metadata where we might
     // find them (class and method). These might be split into CAS and non-CAS

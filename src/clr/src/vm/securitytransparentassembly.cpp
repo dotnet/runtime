@@ -812,44 +812,6 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
                                                                                &gc.refMethodCasDemands,
                                                                                &gc.refMethodNonCasDemands);
 
-#ifdef FEATURE_APTCA
-    BOOL fCallerIsAPTCA = pCallerMD->GetAssembly()->AllowUntrustedCaller();
-
-    if ((linktimeCheckReason & LinktimeCheckReason_AptcaCheck))
-    {
-        if (fCallerIsAPTCA &&    
-            Security::IsUntrustedCallerCheckNeeded(pCalleeMD, pCallerMD->GetAssembly()))
-        {
-#ifdef _DEBUG
-            if (g_pConfig->LogTransparencyErrors())
-            {
-                SecurityTransparent::LogTransparencyError(pCallerMD, "Transparent method calling an APTCA protected assembly", pCalleeMD);
-            }
-            if (!g_pConfig->DisableTransparencyEnforcement())
-#endif // _DEBUG
-            {
-                // Depending on the transparency model, we need to either fail the attempt to call a method
-                // protected with the APTCA link demand, or conver it to a full demand.  Note that we need to
-                // upgrade to a full demand if either the caller of callee are in v2 mode, the APTCA check is
-                // conceptually a link demand, and for link demands we do the conversion if either assembly is
-                // using the v2 rules.
-                if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallLinkDemandMethods() ||
-                    pCalleeMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallLinkDemandMethods())
-                {
-                    OBJECTREF permSet = NULL;
-                    GCPROTECT_BEGIN(permSet);
-                    Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-                    Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-                    GCPROTECT_END();
-                }
-                else
-                {
-                    ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_LINKDEMAND);
-                }
-            }
-        }
-    }
-#endif // FEATURE_APTCA
 
             
     // The following logic turns link demands on the target method into full stack walks
@@ -905,15 +867,6 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
 
         if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallUnmanagedCode())
         {
-#ifdef FEATURE_APTCA
-            if (fCallerIsAPTCA)
-            {
-                // if the caller assembly is APTCA, then only inject this demand, for NON-APTCA we will allow
-                // calls to native code
-                // NOTE: the JIT would have already performed the LinkDemand for this anyways
-                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);        
-            }
-#endif // FEATURE_APTCA
         }
         else
         {

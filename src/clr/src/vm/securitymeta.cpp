@@ -1583,12 +1583,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
     // choosing.
     TokenSecurityDescriptorFlags tokenFlags = GetTokenFlags();
 
-#ifdef FEATURE_APTCA
-    // We need to post-process the APTCA bits on the token security descriptor to handle:
-    //  1. Conditional APTCA assemblies, which should appear as either APTCA-enabled or APTCA-disabled
-    //  2. APTCA killbitted assemblies, which should appear as APTCA-disabled
-    tokenFlags = ProcessAssemblyAptcaFlags(pAssembly->GetDomainAssembly(), tokenFlags);
-#endif // FEATURE_APTCA
 
 #ifndef FEATURE_CORECLR
     // Make sure we understand the security rule set being asked for
@@ -1691,14 +1685,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
         }
     }
 
-#ifdef FEATURE_APTCA
-    // If the security model implies that unsigned assemblies are APTCA, then check to see if we're unsigned
-    // and set the APTCA bit.
-    if (pTransparencyBehavior->DoesUnsignedImplyAPTCA() && !pAssembly->IsStrongNamed())
-    {
-        moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
-    }
-#endif // FEATURE_APTCA
 
 #ifdef _DEBUG
     // If we're being forced to generate native code for this assembly which can be used in a partial trust

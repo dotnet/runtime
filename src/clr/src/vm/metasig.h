@@ -564,9 +564,6 @@ DEFINE_METASIG_T(SM(Str_Evidence_AppDomainSetup_RetAppDomain, s C(EVIDENCE) C(AP
 DEFINE_METASIG_T(SM(Str_Evidence_Str_Str_Bool_RetAppDomain, s C(EVIDENCE) s s F, C(APP_DOMAIN)))
 DEFINE_METASIG_T(SM(Str_RetAppDomain, s, C(APP_DOMAIN)))
 DEFINE_METASIG_T(SM(Str_AppDomainSetup_Evidence_Evidence_IntPtr_Str_ArrStr_ArrStr_RetObj, s C(APPDOMAIN_SETUP) C(EVIDENCE) C(EVIDENCE) I s a(s) a(s), j))
-#ifdef FEATURE_APTCA
-DEFINE_METASIG(IM(PtrChar_Int_PtrByte_Int_RetBool, P(u) i P(b) i, F))
-#endif //FEATURE_APTCA
 #ifdef FEATURE_COMINTEROP
 // System.AppDomain.OnReflectionOnlyNamespaceResolveEvent
 DEFINE_METASIG_T(IM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))

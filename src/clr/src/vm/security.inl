@@ -603,38 +603,6 @@ inline BOOL Security::ContainsBuiltinCASPermsOnly(CORSEC_ATTRSET* pAttrSet)
     return SecurityAttributes::ContainsBuiltinCASPermsOnly(pAttrSet); 
 }
 
-#ifdef FEATURE_APTCA
-inline BOOL Security::IsUntrustedCallerCheckNeeded(MethodDesc *pCalleeMD, Assembly *pCallerAssem)
-{ 
-    WRAPPER_NO_CONTRACT; 
-    return SecurityDeclarative::IsUntrustedCallerCheckNeeded(pCalleeMD, pCallerAssem); 
-}
- 
-inline void Security::DoUntrustedCallerChecks(Assembly *pCaller, MethodDesc *pCalee, BOOL fFullStackWalk) 
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityDeclarative::DoUntrustedCallerChecks(pCaller, pCalee, fFullStackWalk); 
-}
-
-inline bool Security::NativeImageHasValidAptcaDependencies(PEImage *pNativeImage, DomainAssembly *pDomainAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::NativeImageHasValidAptcaDependencies(pNativeImage, pDomainAssembly);
-}
-
-inline SString Security::GetAptcaKillBitAccessExceptionContext(Assembly *pTargetAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::GetAptcaKillBitAccessExceptionContext(pTargetAssembly);
-}
-
-inline SString Security::GetConditionalAptcaAccessExceptionContext(Assembly *pTargetAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::GetConditionalAptcaAccessExceptionContext(pTargetAssembly);
-}
-
-#endif // FEATURE_APTCA
 
 inline bool Security::SecurityCalloutQuickCheck(MethodDesc *pCallerMD)
 {
@@ -646,12 +614,6 @@ inline bool Security::CanShareAssembly(DomainAssembly *pAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_APTCA
-    if (!DomainCanShareAptcaAssembly(pAssembly))
-    {
-        return false;
-    }
-#endif // FEATURE_APTCA
 
     return true;
 }
