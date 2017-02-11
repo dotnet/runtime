@@ -43,9 +43,7 @@
 #include "datatest.h"
 #endif // TEST_DATA_CONSISTENCY
 
-#if defined(FEATURE_CORECLR)
 #include "dbgenginemetrics.h"
-#endif // FEATURE_CORECLR
 
 #include "../../vm/rejit.h"
 
@@ -1896,7 +1894,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     pDbgLockHolder->Acquire();
 }
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 
 HANDLE g_hContinueStartupEvent = INVALID_HANDLE_VALUE;
 
@@ -1999,7 +1997,7 @@ HRESULT Debugger::Startup(void)
 
     _ASSERTE(g_pEEInterface != NULL);
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
     if (IsWatsonEnabled() || IsTelestoDebugPackInstalled())
     {
         // Iff the debug pack is installed, then go through the telesto debugging pipeline.

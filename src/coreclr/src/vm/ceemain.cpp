@@ -213,10 +213,6 @@
 
 #include "bbsweep.h"
 
-#ifndef FEATURE_CORECLR
-#include <metahost.h>
-#include "assemblyusagelogmanager.h"
-#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -284,12 +280,6 @@ HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
                                   DWORD dwReason,
                                   LPVOID lpReserved);
 #endif // FEATURE_MIXEDMODE
-#ifndef FEATURE_CORECLR
-BOOL STDMETHODCALLTYPE ExecuteDLL(HINSTANCE hInst,
-                                  DWORD dwReason,
-                                  LPVOID lpReserved,
-                                  BOOL fFromThunk);
-#endif // !FEATURE_CORECLR
 
 BOOL STDMETHODCALLTYPE ExecuteEXE(HMODULE hMod);
 BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn);
@@ -305,12 +295,6 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // !CROSSGEN_COMPILE
 
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-
-// Pointer to the activated CLR interface provided by the shim.
-ICLRRuntimeInfo *g_pCLRRuntime = NULL;
-
-#endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
 
 extern "C" IExecutionEngine* __stdcall IEE();
 
@@ -391,7 +375,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
     {
         BEGIN_ENTRYPOINT_NOTHROW;
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
         STARTUP_FLAGS startupFlags = CorHost2::GetStartupFlags();
         // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
         AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
@@ -528,58 +512,7 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 // A host can specify that it only wants one version of hosting interface to be used.
 BOOL g_singleVersionHosting;
 
-#ifndef FEATURE_CORECLR
-HRESULT STDMETHODCALLTYPE 
-SetRuntimeInfo(
-    IUnknown *                pUnk, 
-    STARTUP_FLAGS             dwStartupFlags, 
-    LPCWSTR                   pwzHostConfig, 
-    const CoreClrCallbacks ** ppClrCallbacks)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(CheckPointer(pwzHostConfig, NULL_OK));
-    } CONTRACTL_END;
 
-    ICLRRuntimeInfo *pRuntime;
-    HRESULT hr;
-    
-    IfFailGo(pUnk->QueryInterface(IID_ICLRRuntimeInfo, (LPVOID *)&pRuntime));
-
-    IfFailGo(CorHost2::SetFlagsAndHostConfig(dwStartupFlags, pwzHostConfig, FALSE));
-
-    if (InterlockedCompareExchangeT(&g_pCLRRuntime, pRuntime, NULL) != NULL)
-    {
-        // already set, release this one
-        pRuntime->Release();
-    }
-    *ppClrCallbacks = &GetClrCallbacks();
-
-ErrExit:
-    return hr;
-}
-#endif // !FEATURE_CORECLR
-
-#ifndef FEATURE_CORECLR
-HRESULT InitializeHostConfigFile()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
-    } CONTRACTL_END;
-
-    g_pszHostConfigFile = CorHost2::GetHostConfigFile();
-    g_dwHostConfigFile = (g_pszHostConfigFile == NULL ? 0 : wcslen(g_pszHostConfigFile));
-
-    return S_OK;
-}
-#endif // !FEATURE_CORECLR
 
 void InitializeStartupFlags()
 {
@@ -591,54 +524,12 @@ void InitializeStartupFlags()
 
     STARTUP_FLAGS flags = CorHost2::GetStartupFlags();
 
-#ifndef FEATURE_CORECLR
-    // If we are running under a requested performance default mode, honor any changes to startup flags
-    // In the future, we could make this conditional on the host telling us which subset of flags is 
-    // valid to override.  See file:PerfDefaults.h
-    flags = PerformanceDefaults::GetModifiedStartupFlags(flags);
-#endif // !FEATURE_CORECLR
 
     if (flags & STARTUP_CONCURRENT_GC)
         g_IGCconcurrent = 1;
     else
         g_IGCconcurrent = 0;
 
-#ifndef FEATURE_CORECLR // TODO: We can remove this. Retaining it now just to be safe
-    if (flags & STARTUP_SINGLE_VERSION_HOSTING_INTERFACE)
-    {
-        g_singleVersionHosting = TRUE;
-    }
-
-#ifndef FEATURE_CORECLR
-    g_pConfig->SetDisableCommitThreadStack(!CLRHosted() || (flags & STARTUP_DISABLE_COMMITTHREADSTACK));
-#else
-    g_pConfig->SetDisableCommitThreadStack(true);
-#endif
-
-    if(flags & STARTUP_LEGACY_IMPERSONATION)
-        g_pConfig->SetLegacyImpersonationPolicy();
-
-    if(flags & STARTUP_ALWAYSFLOW_IMPERSONATION)
-        g_pConfig->SetAlwaysFlowImpersonationPolicy();
-
-    if(flags & STARTUP_HOARD_GC_VM)
-        g_IGCHoardVM = 1;
-    else
-        g_IGCHoardVM = 0;
-
-#ifdef GCTRIMCOMMIT
-    if (flags & STARTUP_TRIM_GC_COMMIT)
-        g_IGCTrimCommit = 1;
-    else
-        g_IGCTrimCommit = 0;
-#endif
-
-    if(flags & STARTUP_ETW)
-        g_fEnableETW = TRUE;
-
-    if(flags & STARTUP_ARM)
-        g_fEnableARM = TRUE;
-#endif // !FEATURE_CORECLR
 
     InitializeHeapType((flags & STARTUP_SERVER_GC) != 0);
 
@@ -740,37 +631,6 @@ void InitGSCookie()
     }
 }
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-void InitAssemblyUsageLogManager()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    g_pIAssemblyUsageLogGac = NULL;
-
-    AssemblyUsageLogManager::Config config;
-
-    config.wszLogDir = NULL;
-    config.cLogBufferSize = 32768;
-#ifdef FEATURE_APPX
-    config.uiLogRefreshInterval = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NGenAssemblyUsageLogRefreshInterval);
-#endif
-
-    NewArrayHolder<WCHAR> szCustomLogDir(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NGenAssemblyUsageLog));
-    config.wszLogDir = szCustomLogDir;
-
-    AssemblyUsageLogManager::Init(&config);
-
-    // Once the logger is initialized, create a log object for logging GAC loads.
-    AssemblyUsageLogManager::GetUsageLogForContext(W("fusion"), W("GAC"), &g_pIAssemblyUsageLogGac);
-}
-#endif
 
 // ---------------------------------------------------------------------------
 // %%Function: EEStartupHelper
@@ -845,10 +705,6 @@ void EEStartupHelper(COINITIEE fFlags)
         if (!g_pConfig)
         {
             IfFailGo(EEConfig::Setup());
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-            IfFailGo(InitializeHostConfigFile());
-            IfFailGo(g_pConfig->SetupConfiguration());
-#endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
         }
 
 #ifndef CROSSGEN_COMPILE
@@ -858,11 +714,6 @@ void EEStartupHelper(COINITIEE fFlags)
         NumaNodeInfo::InitNumaNodeInfo();
         CPUGroupInfo::EnsureInitialized();
 
-#ifndef FEATURE_CORECLR
-        // Check in EEConfig whether a workload-specific set of performance defaults have been requested
-        // This needs to be done before InitializeStartupFlags in case one is to be overridden
-        PerformanceDefaults::InitializeForScenario(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerformanceScenario));
-#endif
 
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
@@ -897,10 +748,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #endif // CROSSGEN_COMPILE
 
-#ifndef FEATURE_CORECLR
-        // Ensure initialization of Apphacks environment variables
-        GetGlobalCompatibilityFlags();
-#endif // !FEATURE_CORECLR
 
 #ifdef STRESS_LOG
         if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog ()) != 0) {
@@ -988,16 +835,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#if defined(STRESS_HEAP) && defined(_DEBUG) && !defined(FEATURE_CORECLR)
-        // TODO: is this still an issue?
-        // There is a race that causes random AVs on dual proc boxes
-        // that we suspect is due to memory coherancy problems (see Whidbey bug 2360)
-        // Avoid the issue by making the box effectively single proc.
-        if (GCStress<cfg_instr>::IsEnabled() &&
-            g_SystemInfo.dwNumberOfProcessors > 1)
-            SetProcessAffinityMask(GetCurrentProcess(),
-                                   1 << (DbgGetEXETimeStamp() % g_SystemInfo.dwNumberOfProcessors));
-#endif // STRESS_HEAP && _DEBUG && !FEATURE_CORECLR
 
 #ifdef FEATURE_PREJIT
         // Initialize the sweeper thread.  THis is violating our rules with hosting
@@ -1099,10 +936,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
 
-#ifndef FEATURE_CORECLR
-        // Initialize Assembly Usage Logger
-        InitAssemblyUsageLogManager();
-#endif
 
 #endif // CROSSGEN_COMPILE
 
@@ -1239,9 +1072,6 @@ void EEStartupHelper(COINITIEE fFlags)
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
  
-#ifndef FEATURE_CORECLR
-        ExistingOobAssemblyList::Init();
-#endif
 
 #endif // CROSSGEN_COMPILE
 
@@ -1329,12 +1159,10 @@ void EEStartupHelper(COINITIEE fFlags)
         }
 
         //For a similar reason, let's not run VerifyAllOnLoad either.
-#ifdef FEATURE_CORECLR
         if (g_pConfig->VerifyModulesOnLoad())
         {
             SystemDomain::SystemModule()->VerifyAllMethods();
         }
-#endif //FEATURE_CORECLR
 
         // Perform mscorlib consistency check if requested
         g_Mscorlib.CheckExtended();
@@ -1595,11 +1423,6 @@ static void ExternalShutdownHelper(int exitCode, ShutdownCompleteAction sca)
     // process exit code.  This can be modified by the app via System.SetExitCode().
     SetLatchedExitCode(exitCode);
 
-#ifndef FEATURE_CORECLR // no shim
-    // Bump up the ref-count on the module
-    for (int i =0; i<6; i++)
-        CLRLoadLibrary(MSCOREE_SHIM_W);
-#endif // FEATURE_CORECLR
 
     ForceEEShutdown(sca);
 
@@ -1671,12 +1494,6 @@ BOOL IsRuntimeStarted(DWORD *pdwStartupFlags)
     if (pdwStartupFlags != NULL) // this parameter is optional
     {
         *pdwStartupFlags = 0;
-#ifndef FEATURE_CORECLR
-        if (g_fEEStarted)
-        {
-            *pdwStartupFlags = CorHost2::GetStartupFlags();
-        }
-#endif
     }
     return g_fEEStarted;
 }
@@ -1869,14 +1686,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             fFinalizeOK = FinalizerThread::FinalizerThreadWatchDog();
         }
 
-#ifndef FEATURE_CORECLR
-        if (!g_fFastExitProcess)
-        {
-            // Log usage data to disk. (Only do this in normal shutdown scenarios, and not involving ngen)
-            if (!IsCompilationProcess())
-                AssemblyUsageLogManager::GenerateLog(AssemblyUsageLogManager::GENERATE_LOG_FLAGS_NONE);
-        }
-#endif
 
         // Ok.  Let's stop the EE.
         if (!g_fProcessDetach)
@@ -1990,22 +1799,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 #endif // PROFILING_SUPPORTED
 
-#ifndef FEATURE_CORECLR
-        // CoEEShutDownCOM moved to
-        // the Finalizer thread. See bug 87809
-        if (!g_fProcessDetach && !g_fFastExitProcess)
-        {
-            g_fEEShutDown |= ShutDown_COM;
-            if (fFinalizeOK)
-            {
-                FinalizerThread::FinalizerThreadWatchDog();
-            }
-        }
-#ifdef _DEBUG
-        else
-            g_fEEShutDown |= ShutDown_COM;
-#endif
-#endif //FEATURE_CORECLR
 
 #ifdef _DEBUG
         g_fEEShutDown |= ShutDown_SyncBlock;
@@ -2662,75 +2455,6 @@ void STDMETHODCALLTYPE CoUninitializeEE(BOOL fIsDllUnloading)
 
 }
 
-#ifndef FEATURE_CORECLR
-//*****************************************************************************
-// This entry point is called from the native DllMain of the loaded image.
-// This gives the COM+ loader the chance to dispatch the loader event.  The
-// first call will cause the loader to look for the entry point in the user
-// image.  Subsequent calls will dispatch to either the user's DllMain or
-// their Module derived class.
-//*****************************************************************************
-BOOL STDMETHODCALLTYPE _CorDllMain(     // TRUE on success, FALSE on error.
-    HINSTANCE   hInst,                  // Instance handle of the loaded module.
-    DWORD       dwReason,               // Reason for loading.
-    LPVOID      lpReserved              // Unused.
-    )
-{
-    STATIC_CONTRACT_NOTHROW;
-    //STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    //BEGIN_ENTRYPOINT_NOTHROW;
-
-    struct Param
-    {
-        HINSTANCE hInst;
-        DWORD dwReason;
-        LPVOID lpReserved;
-        BOOL retval;
-    } param;
-    param.hInst = hInst;
-    param.dwReason = dwReason;
-    param.lpReserved = lpReserved;
-    param.retval = FALSE;
-
-    // Can't use PAL_TRY/EX_TRY here as they access the ClrDebugState which gets blown away as part of the
-    // PROCESS_DETACH path. Must use special PAL_TRY_FOR_DLLMAIN, passing the reason were in the DllMain.
-    PAL_TRY_FOR_DLLMAIN(Param *, pParam, &param, pParam->dwReason)
-    {
-#ifdef _DEBUG
-        if (CLRTaskHosted() &&
-            ((pParam->dwReason == DLL_PROCESS_ATTACH && pParam->lpReserved == NULL) ||  // LoadLibrary of a managed dll
-             (pParam->dwReason == DLL_PROCESS_DETACH && pParam->lpReserved == NULL)     // FreeLibrary of a managed dll
-             )) {
-            // OS loader lock is being held by the current thread.  We can not allow the fiber
-            // to be rescheduled here while processing DllMain for managed dll.
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-            IHostTask *pTask = GetCurrentHostTask();
-            if (pTask) {
-                Thread *pThread = GetThread();
-                _ASSERTE (pThread);
-                _ASSERTE (pThread->HasThreadAffinity());
-            }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-        }
-#endif
-        // Since we're in _CorDllMain, we know that we were not called because of a
-        // bootstrap thunk, since they will call CorDllMainForThunk. Because of this,
-        // we can pass FALSE for the fFromThunk parameter.
-        pParam->retval = ExecuteDLL(pParam->hInst,pParam->dwReason,pParam->lpReserved, FALSE);
-    }
-    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-    PAL_ENDTRY;
-
-    //END_ENTRYPOINT_NOTHROW;
-
-    return param.retval;
-}
-
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_MIXEDMODE
 //*****************************************************************************
@@ -2779,334 +2503,6 @@ void STDMETHODCALLTYPE CorDllMainForThunk(HINSTANCE hInst, HINSTANCE hInstShim)
 #endif // FEATURE_MIXEDMODE
 
 
-#ifndef FEATURE_CORECLR
-
-// This function will do some additional PE Checks to make sure everything looks good.
-// We must do these before we run any managed code (that's why we can't do them in PEVerifier, as
-// managed code is used to determine the policy settings)
-HRESULT DoAdditionalPEChecks(HINSTANCE hInst)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    struct Param
-    {
-        HINSTANCE hInst;
-        HRESULT hr;
-    } param;
-    param.hInst = hInst;
-    param.hr = S_OK;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        PEDecoder pe(pParam->hInst);
-
-        if (!pe.CheckWillCreateGuardPage())
-            pParam->hr = COR_E_BADIMAGEFORMAT;
-    }
-    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-    PAL_ENDTRY
-
-    return param.hr;
-}
-
-//*****************************************************************************
-// This entry point is called from the native entry point of the loaded
-// executable image.  This simply calls into _CorExeMainInternal, the real
-// entry point inside a filter to trigger unhandled exception processing in the 
-// event an exception goes unhandled, independent of the OS UEF mechanism.
-//*****************************************************************************
-__int32 STDMETHODCALLTYPE _CorExeMain(  // Executable exit code.
-    )
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_THROWS;
-    
-    // We really have nothing to share with our filter at this point.
-    struct Param
-    {
-        PVOID pData;
-    } param;
-    param.pData = NULL;
-
-    PAL_TRY(Param*, _pParam, &param)
-    {
-        // Call the real function that will invoke the managed entry point
-        _CorExeMainInternal();
-    }
-    PAL_EXCEPT_FILTER(EntryPointFilter)
-    {
-        LOG((LF_STARTUP, LL_INFO10, "EntryPointFilter returned EXCEPTION_EXECUTE_HANDLER!"));
-    }
-    PAL_ENDTRY;
-
-    return 0;
-}
-
-//*****************************************************************************
-// This entry point is called from _CorExeMain. If an exception goes unhandled
-// from here, we will trigger unhandled exception processing in _CorExeMain.
-//
-// The command line arguments and other entry point data
-// will be gathered here.  The entry point for the user image will be found
-// and handled accordingly.
-//*****************************************************************************
-__int32 STDMETHODCALLTYPE _CorExeMainInternal(  // Executable exit code.
-    )
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_ENTRY_POINT;
-    
-    // Yes, CorExeMain needs throws. If an exception passes through here, it will cause the
-    // "The application has generated an unhandled exception" dialog and offer to debug.
-
-    BEGIN_ENTRYPOINT_THROWS;
-
-    // Make sure PE file looks ok
-    HRESULT hr;
-    {
-        // We are early in the process, if we get an SO here we will just rip
-        CONTRACT_VIOLATION(SOToleranceViolation);
-        if (FAILED(hr = DoAdditionalPEChecks(WszGetModuleHandle(NULL))))
-        {
-            GCX_PREEMP();
-            VMDumpCOMErrors(hr);
-            SetLatchedExitCode (-1);
-            goto exit;
-        }
-    }
-
-    g_fEEManagedEXEStartup = TRUE;
-    // Before we initialize the EE, make sure we've snooped for all EE-specific
-    // command line arguments that might guide our startup.
-    WCHAR   *pCmdLine = WszGetCommandLine();
-    HRESULT result = CorCommandLine::SetArgvW(pCmdLine);
-
-    if (SUCCEEDED(result))
-    {
-        g_fWeOwnProcess = TRUE;
-        result = EnsureEEStarted(COINITEE_MAIN);
-    }
-
-    if (FAILED(result))
-    {
-        g_fWeOwnProcess = FALSE;
-        GCX_PREEMP();
-        VMDumpCOMErrors(result);
-        SetLatchedExitCode (-1);
-        goto exit;
-    }
-
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    // This will be called from a EXE so this is a self referential file so I am going to call
-    // ExecuteEXE which will do the work to make a EXE load.
-
-    BOOL bretval = 0;
-
-    bretval = ExecuteEXE(WszGetModuleHandle(NULL));
-    if (!bretval) {
-        // The only reason I've seen this type of error in the wild is bad
-        // metadata file format versions and inadequate error handling for
-        // partially signed assemblies.  While this may happen during
-        // development, our customers should not get here.  This is a back-stop
-        // to catch CLR bugs. If you see this, please try to find a better way
-        // to handle your error, like throwing an unhandled exception.
-        EEMessageBoxCatastrophic(IDS_EE_COREXEMAIN_FAILED_TEXT, IDS_EE_COREXEMAIN_FAILED_TITLE);
-        SetLatchedExitCode (-1);
-    }
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-exit:
-    STRESS_LOG1(LF_STARTUP, LL_ALWAYS, "Program exiting: return code = %d", GetLatchedExitCode());
-
-    STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutDown invoked from _CorExeMainInternal");
-
-    EEPolicy::HandleExitProcess();
-
-    END_ENTRYPOINT_THROWS;
-
-    return 0;
-}
-
-
-static BOOL CacheCommandLine(__in LPWSTR pCmdLine, __in_opt LPWSTR* ArgvW)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pCmdLine));
-        PRECONDITION(CheckPointer(ArgvW));
-    } CONTRACTL_END;
-
-    if (pCmdLine) {
-        size_t len = wcslen(pCmdLine);
-
-        _ASSERT(g_pCachedCommandLine== NULL);
-        g_pCachedCommandLine = new WCHAR[len+1];
-        wcscpy_s(g_pCachedCommandLine, len+1, pCmdLine);
-    }
-
-    if (ArgvW != NULL && ArgvW[0] != NULL) {
-        PathString wszModuleName;
-        PathString wszCurDir;
-        if (!WszGetCurrentDirectory(wszCurDir))
-            return FALSE;
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:25025)
-#endif
-
-        // usage of PathCombine is safe if we ensure that buffer specified by
-        // parameter1 can accomodate buffers specified by paramater2, parameter3
-        // and one path separator
-        COUNT_T wszModuleName_len = wszCurDir.GetCount() + lstrlenW(ArgvW[0]);
-        WCHAR* wszModuleName_buf = wszModuleName.OpenUnicodeBuffer(wszModuleName_len);
-
-        if (PathCombine(wszModuleName_buf, wszCurDir, ArgvW[0]) == NULL)
-            return FALSE;
-        wszModuleName.CloseBuffer();
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
-        size_t len = wszModuleName.GetCount();
-        _ASSERT(g_pCachedModuleFileName== NULL);
-        g_pCachedModuleFileName = new WCHAR[len+1];
-        wcscpy_s(g_pCachedModuleFileName, len+1, wszModuleName);
-    }
-
-    return TRUE;
-}
-
-//*****************************************************************************
-// This entry point is called from the native entry point of the loaded
-// executable image.  The command line arguments and other entry point data
-// will be gathered here.  The entry point for the user image will be found
-// and handled accordingly.
-//*****************************************************************************
-__int32 STDMETHODCALLTYPE _CorExeMain2( // Executable exit code.
-    PBYTE   pUnmappedPE,                // -> memory mapped code
-    DWORD   cUnmappedPE,                // Size of memory mapped code
-    __in LPWSTR  pImageNameIn,          // -> Executable Name
-    __in LPWSTR  pLoadersFileName,      // -> Loaders Name
-    __in LPWSTR  pCmdLine)              // -> Command Line
-{
-
-    // This entry point is used by clix
-    BOOL bRetVal = 0;
-
-    BEGIN_ENTRYPOINT_VOIDRET;
-    {
-        // Before we initialize the EE, make sure we've snooped for all EE-specific
-        // command line arguments that might guide our startup.
-        HRESULT result = CorCommandLine::SetArgvW(pCmdLine);
-
-        if (!CacheCommandLine(pCmdLine, CorCommandLine::GetArgvW(NULL))) {
-            LOG((LF_STARTUP, LL_INFO10, "Program exiting - CacheCommandLine failed\n"));
-            bRetVal = -1;
-            goto exit;
-        }
-
-        if (SUCCEEDED(result))
-            result = InitializeEE(COINITEE_MAIN);
-
-        if (FAILED(result)) {
-            VMDumpCOMErrors(result);
-            SetLatchedExitCode (-1);
-            goto exit;
-        }
-
-        // Load the executable
-        bRetVal = ExecuteEXE(pImageNameIn);
-
-        if (!bRetVal) {
-            // The only reason I've seen this type of error in the wild is bad
-            // metadata file format versions and inadequate error handling for
-            // partially signed assemblies.  While this may happen during
-            // development, our customers should not get here.  This is a back-stop
-            // to catch CLR bugs. If you see this, please try to find a better way
-            // to handle your error, like throwing an unhandled exception.
-            EEMessageBoxCatastrophic(IDS_EE_COREXEMAIN2_FAILED_TEXT, IDS_EE_COREXEMAIN2_FAILED_TITLE);
-            SetLatchedExitCode (-1);
-        }
-
-exit:
-        STRESS_LOG1(LF_STARTUP, LL_ALWAYS, "Program exiting: return code = %d", GetLatchedExitCode());
-
-        STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutDown invoked from _CorExeMain2");
-
-        EEPolicy::HandleExitProcess();
-    }
-    END_ENTRYPOINT_VOIDRET;
-
-    return bRetVal;
-}
-
-//*****************************************************************************
-// This is the call point to wire up an EXE.  In this case we have the HMODULE
-// and just need to make sure we do to correct self referantial things.
-//*****************************************************************************
-
-
-BOOL STDMETHODCALLTYPE ExecuteEXE(HMODULE hMod)
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    _ASSERTE(hMod);
-    if (!hMod)
-        return FALSE;
-
-    ETWFireEvent(ExecExe_V1);
-
-    struct Param
-    {
-        HMODULE hMod;
-    } param;
-    param.hMod = hMod;
-
-    EX_TRY_NOCATCH(Param *, pParam, &param)
-    {
-        // Executables are part of the system domain
-        SystemDomain::ExecuteMainMethod(pParam->hMod);
-    }
-    EX_END_NOCATCH;
-
-    ETWFireEvent(ExecExeEnd_V1);
-
-    return TRUE;
-}
-
-BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn)
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    EX_TRY_NOCATCH(LPWSTR, pImageNameInner, pImageNameIn)
-    {
-        WCHAR               wzPath[MAX_LONGPATH];
-        DWORD               dwPathLength = 0;
-
-        // get the path of executable
-        dwPathLength = WszGetFullPathName(pImageNameInner, MAX_LONGPATH, wzPath, NULL);
-
-        if (!dwPathLength || dwPathLength > MAX_LONGPATH)
-        {
-            ThrowWin32( !dwPathLength ? GetLastError() : ERROR_FILENAME_EXCED_RANGE);
-        }
-
-        SystemDomain::ExecuteMainMethod( NULL, (WCHAR *)wzPath );
-    }
-    EX_END_NOCATCH;
-
-    return TRUE;
-}
-#endif //  FEATURE_CORECLR
 
 #ifdef FEATURE_MIXEDMODE
 
@@ -3449,31 +2845,6 @@ BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
     return SUCCEEDED(hr);
 }
 
-#if !defined(FEATURE_CORECLR) && defined(_DEBUG)
-//*****************************************************************************
-// Factor some common debug code.
-//*****************************************************************************
-static void EnsureManagedThreadExistsForHostedThread()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    if (CLRTaskHosted()) {
-        // If CLR is hosted, and this is on a thread that a host controls,
-        // we must have created Thread object.
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostTask *pHostTask = GetCurrentHostTask();
-        if (pHostTask)
-        {
-            CONSISTENCY_CHECK(CheckPointer(GetThread()));
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-    }
-}
-#endif // !FEATURE_CORECLR && _DEBUG
 
 #ifdef FEATURE_MIXEDMODE
 //*****************************************************************************
@@ -3520,161 +2891,6 @@ HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
 
 #endif // FEATURE_MIXEDMODE
 
-#ifndef FEATURE_CORECLR
-//*****************************************************************************
-// This is the call point to make a DLL that is already loaded into our address
-// space run. There will be other code to actually have us load a DLL due to a
-// class reference.
-//*****************************************************************************
-BOOL STDMETHODCALLTYPE ExecuteDLL(HINSTANCE hInst,
-                                  DWORD dwReason,
-                                  LPVOID lpReserved,
-                                  BOOL fFromThunk)
-{
-
-    CONTRACTL{
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(lpReserved, NULL_OK));
-        PRECONDITION(CheckPointer(hInst));
-        PRECONDITION(GetThread() != NULL || !fFromThunk);
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL fRetValue = FALSE;
-
-    // This needs to be before the BEGIN_ENTRYPOINT_THROWS since
-    // we can't call ReportStackOverflow if we're almost done with
-    // shutdown and can't run managed code.
-    if (!CanRunManagedCode(LoaderLockCheck::None))
-    {
-        return fRetValue;
-    }
-        
-    BEGIN_ENTRYPOINT_THROWS;
-
-    Thread *pThread = GetThread();
-
-    if (!hInst)
-    {
-        fRetValue = ExecuteDLL_ReturnOrThrow(E_FAIL, fFromThunk);
-        goto Exit;
-    }
-
-    // Note that we always check fFromThunk before checking the dwReason value.
-    // This is because the dwReason value is undefined in the case that we're
-    // being invoked due to a bootstrap (because that is by definition outside
-    // of the loader lock and there is no appropriate dwReason value).
-    if (fFromThunk ||
-        dwReason == DLL_PROCESS_ATTACH ||
-        dwReason == DLL_THREAD_ATTACH)
-    {
-        INDEBUG(EnsureManagedThreadExistsForHostedThread();)
-
-
-        // If necessary, start the runtime and create a managed thread object.
-        if (fFromThunk || dwReason == DLL_PROCESS_ATTACH)
-        {
-            hr = EnsureEEStarted(COINITEE_DLL);
-
-            if (SUCCEEDED(hr) && pThread == NULL)
-            {
-                pThread = SetupThreadNoThrow(&hr);
-            }
-
-            if(FAILED(hr))
-            {
-                fRetValue = ExecuteDLL_ReturnOrThrow(hr, fFromThunk);
-                goto Exit;
-            }
-        }
-
-        // IJW assemblies cause the thread doing the process attach to
-        // re-enter ExecuteDLL and do a thread attach. This happens when
-        // CoInitializeEE() above executed
-        else if (!(pThread &&
-                   pThread->GetDomain() &&
-                   CanRunManagedCode(LoaderLockCheck::None)))
-        {
-            fRetValue = ExecuteDLL_ReturnOrThrow(S_OK, fFromThunk);
-            goto Exit;
-        }
-
-        // we now have a thread setup - either the 1st if set it up, or
-        // the else if ran if we didn't have a thread setup.
-
-#ifdef FEATURE_MIXEDMODE
-
-        EX_TRY
-        {
-            hr = ExecuteDLLForAttach(hInst, dwReason, lpReserved, fFromThunk);
-        }
-        EX_CATCH
-        {
-            // We rethrow directly here instead of using ExecuteDLL_ReturnOrThrow() to 
-            // preserve the full exception information, rather than just the HRESULT
-            if (fFromThunk)
-            {
-                EX_RETHROW;
-            }
-            else
-            {
-                hr = GET_EXCEPTION()->GetHR();
-            }
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-
-        if (FAILED(hr))
-        {
-            fRetValue = ExecuteDLL_ReturnOrThrow(hr, fFromThunk);
-            goto Exit;
-        }
-#endif // FEATURE_MIXEDMODE
-    }
-    else
-    {
-        PEDecoder pe(hInst);
-        if (pe.HasManagedEntryPoint())
-        {
-            // If the EE is still intact, then run user entry points.  Otherwise
-            // detach was handled when the app domain was stopped.
-            //
-            // Checks for the loader lock will occur within RunDllMain, if that's
-            FAULT_NOT_FATAL();
-            if (CanRunManagedCode(LoaderLockCheck::None))
-            {
-                hr = SystemDomain::RunDllMain(hInst, dwReason, lpReserved);
-            }
-        }
-        // This does need to match the attach. We will only unload dll's
-        // at the end and CoUninitialize will just bounce at 0. WHEN and IF we
-        // get around to unloading IL DLL's during execution prior to
-        // shutdown we will need to bump the reference one to compensate
-        // for this call.
-        if (dwReason == DLL_PROCESS_DETACH && !g_fForbidEnterEE)
-        {
-#ifdef FEATURE_MIXEDMODE
-            // If we're in a decent state, we need to free the memory associated
-            // with the IJW thunk fixups.
-            // we are not in a decent state if the process is terminating (lpReserved!=NULL)
-            if (g_fEEStarted && !g_fEEShutDown && !lpReserved)
-            {
-                PEImage::UnloadIJWModule(hInst);
-            }
-#endif // FEATURE_MIXEDMODE
-        }
-    }
-
-    fRetValue = ExecuteDLL_ReturnOrThrow(hr, fFromThunk);
-
-Exit:
-    
-    END_ENTRYPOINT_THROWS;
-    return fRetValue;
-}
-#endif // !FEATURE_CORECLR
 
 
 Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
@@ -3803,15 +3019,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // Remember module instance
                 g_pMSCorEE = pParam->hInst;
 
-#ifndef FEATURE_CORECLR
-                CoreClrCallbacks cccallbacks;
-                cccallbacks.m_hmodCoreCLR               = (HINSTANCE)g_pMSCorEE;
-                cccallbacks.m_pfnIEE                    = IEE;
-                cccallbacks.m_pfnGetCORSystemDirectory  = GetCORSystemDirectoryInternaL;
-                cccallbacks.m_pfnGetCLRFunction         = GetCLRFunction;
-
-                InitUtilcode(cccallbacks);
-#endif // !FEATURE_CORECLR
 
                 // Set callbacks so that LoadStringRC knows which language our
                 // threads are in so that it can return the proper localized string.
@@ -4124,7 +3331,6 @@ static void InitializeDebugger(void)
         hr = g_pDebugInterface->Startup(); // throw on error
         _ASSERTE(SUCCEEDED(hr));
 
-#ifdef FEATURE_CORECLR
         // 
         // If the debug pack is not installed, Startup will return S_FALSE
         // and we should cleanup and proceed without debugging support.
@@ -4133,31 +3339,8 @@ static void InitializeDebugger(void)
         {
             return;
         }
-#endif // FEATURE_CORECLR
     }
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    // If there's a DebuggerThreadControl interface, then we
-    // need to update the DebuggerSpecialThread list.
-    if (CorHost::GetDebuggerThreadControl())
-    {
-        hr = CorHost::RefreshDebuggerSpecialThreadList();
-        _ASSERTE((SUCCEEDED(hr)) && (hr != S_FALSE));
-
-        // So we don't think this will ever fail, but just in case...
-        IfFailThrow(hr);
-    }
-
-    // If there is a DebuggerThreadControl interface, then it was set before the debugger
-    // was initialized and we need to provide this interface now.  If debugging is already
-    // initialized then the IDTC pointer is passed in when it is set through CorHost
-    IDebuggerThreadControl *pDTC = CorHost::GetDebuggerThreadControl();
-
-    if (pDTC != NULL)
-    {
-        g_pDebugInterface->SetIDbgThreadControl(pDTC);
-    }
-#endif // !defined(FEATURE_CORECLR)
 
     LOG((LF_CORDB, LL_INFO10, "Left-side debugging services setup.\n"));
 
@@ -4198,9 +3381,6 @@ static void TerminateDebugger(void)
 
     g_CORDebuggerControlFlags = DBCF_NORMAL_OPERATION;
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    CorHost::CleanupDebuggerThreadControl();
-#endif // !defined(FEATURE_CORECLR)
 }
 
 
@@ -4825,172 +4005,6 @@ void ContractRegressionCheck()
 
 #endif // ENABLE_CONTRACTS_IMPL
 
-#ifndef FEATURE_CORECLR
-//-------------------------------------------------------------------------
-// CorCommandLine state and methods
-//-------------------------------------------------------------------------
-// Class to encapsulate Cor Command line processing
-
-// Statics for the CorCommandLine class
-DWORD                CorCommandLine::m_NumArgs     = 0;
-LPWSTR              *CorCommandLine::m_ArgvW       = 0;
-
-LPWSTR               CorCommandLine::m_pwszAppFullName = NULL;
-DWORD                CorCommandLine::m_dwManifestPaths = 0;
-LPWSTR              *CorCommandLine::m_ppwszManifestPaths = NULL;
-DWORD                CorCommandLine::m_dwActivationData = 0;
-LPWSTR              *CorCommandLine::m_ppwszActivationData = NULL;
-
-#ifdef _DEBUG
-LPCWSTR  g_CommandLine;
-#endif
-
-// Set argvw from command line
-/* static */
-HRESULT CorCommandLine::SetArgvW(LPCWSTR lpCommandLine)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-
-        PRECONDITION(CheckPointer(lpCommandLine));
-    }
-    CONTRACTL_END
-
-    HRESULT hr = S_OK;
-    if(!m_ArgvW) {
-        INDEBUG(g_CommandLine = lpCommandLine);
-
-        InitializeLogging();        // This is so early, we may not be initialized
-        LOG((LF_ALWAYS, LL_INFO10, "Executing program with command line '%S'\n", lpCommandLine));
-
-        m_ArgvW = SegmentCommandLine(lpCommandLine, &m_NumArgs);
-
-        if (!m_ArgvW)
-            return E_OUTOFMEMORY;
-
-        // Click once specific parsing
-        hr = ReadClickOnceEnvVariables();
-    }
-
-    return hr;
-}
-
-// Retrieve the command line
-/* static */
-LPWSTR* CorCommandLine::GetArgvW(DWORD *pNumArgs)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pNumArgs != 0)
-        *pNumArgs = m_NumArgs;
-
-    return m_ArgvW;
-}
-
-HRESULT CorCommandLine::ReadClickOnceEnvVariables()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-
-    EX_TRY
-    {
-        // Find out if this is a ClickOnce application being activated.
-        PathString m_pwszAppFullNameHolder;
-        DWORD cAppFullName = WszGetEnvironmentVariable(g_pwzClickOnceEnv_FullName, m_pwszAppFullNameHolder);
-        if (cAppFullName > 0) {
-            // get the application full name.
-            m_pwszAppFullName = m_pwszAppFullNameHolder.GetCopyOfUnicodeString();
-                       
-            // reset the variable now that we read it so child processes
-            // do not think they are a clickonce app.
-            WszSetEnvironmentVariable(g_pwzClickOnceEnv_FullName, NULL);
-
-            // see if we have application manifest files.
-            DWORD dwManifestPaths = 0;
-            while (1) {
-                StackSString manifestFile(g_pwzClickOnceEnv_Manifest);
-                StackSString buf;
-                COUNT_T size = buf.GetUnicodeAllocation();
-                _itow_s(dwManifestPaths, buf.OpenUnicodeBuffer(size), size, 10);
-                buf.CloseBuffer();
-                manifestFile.Append(buf);
-                SString temp;
-                if (WszGetEnvironmentVariable(manifestFile.GetUnicode(), temp) > 0)
-                    dwManifestPaths++;
-                else
-                    break;
-            }
-            m_ppwszManifestPaths = new LPWSTR[dwManifestPaths];
-            for (DWORD i=0; i<dwManifestPaths; i++) {
-                StackSString manifestFile(g_pwzClickOnceEnv_Manifest);
-                StackSString buf;
-                COUNT_T size = buf.GetUnicodeAllocation();
-                _itow_s(i, buf.OpenUnicodeBuffer(size), size, 10);
-                buf.CloseBuffer();
-                manifestFile.Append(buf);
-                PathString m_ppwszManifestPathsHolder;
-                DWORD cManifestPath = WszGetEnvironmentVariable(manifestFile.GetUnicode(), m_ppwszManifestPathsHolder);
-                if (cManifestPath > 0) {
-                    
-                    m_ppwszManifestPaths[i] = m_ppwszManifestPathsHolder.GetCopyOfUnicodeString();
-                    WszSetEnvironmentVariable(manifestFile.GetUnicode(), NULL); // reset the env. variable.
-                }
-            }
-            m_dwManifestPaths = dwManifestPaths;
-
-            // see if we have activation data arguments.
-            DWORD dwActivationData = 0;
-            while (1) {
-                StackSString activationData(g_pwzClickOnceEnv_Parameter);
-                StackSString buf;
-                COUNT_T size = buf.GetUnicodeAllocation();
-                _itow_s(dwActivationData, buf.OpenUnicodeBuffer(size), size, 10);
-                buf.CloseBuffer();
-                activationData.Append(buf);
-                SString temp;
-                if (WszGetEnvironmentVariable(activationData.GetUnicode(), temp) > 0)
-                    dwActivationData++;
-                else
-                    break;
-            }
-            m_ppwszActivationData = new LPWSTR[dwActivationData];
-            for (DWORD i=0; i<dwActivationData; i++) {
-                StackSString activationData(g_pwzClickOnceEnv_Parameter);
-                StackSString buf;
-                COUNT_T size = buf.GetUnicodeAllocation();
-                _itow_s(i, buf.OpenUnicodeBuffer(size), size, 10);
-                buf.CloseBuffer();
-                activationData.Append(buf);
-                PathString m_ppwszActivationDataHolder;
-                DWORD cActivationData = WszGetEnvironmentVariable(activationData.GetUnicode(), m_ppwszActivationDataHolder);
-                if (cActivationData > 0) {
-                    m_ppwszActivationData[i] = m_ppwszActivationDataHolder.GetCopyOfUnicodeString();
-                    WszSetEnvironmentVariable(activationData.GetUnicode(), NULL); // reset the env. variable.
-                }
-            }
-            m_dwActivationData = dwActivationData;
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
-}
-
-#endif // !FEATURE_CORECLR
 
 #endif // CROSSGEN_COMPILE
 
@@ -5004,62 +4018,6 @@ HRESULT CorCommandLine::ReadClickOnceEnvVariables()
 //
 BOOL GetOSVersion(LPOSVERSIONINFO lposVer)
 {
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-   CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-
-    //declared static to cache the version info
-    static OSVERSIONINFOEX osvi = {0};
-    BOOL ret = TRUE;
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), return FALSE);
-
-    //If not yet cached get the OS version info
-    if(osvi.dwMajorVersion == 0)
-    {
-        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-        ReleaseHolder<ICLRRuntimeHostInternal>  pRuntimeHostInternal;
-        //Get the interface
-        HRESULT hr = g_pCLRRuntime->GetInterface(CLSID_CLRRuntimeHostInternal,
-                        IID_ICLRRuntimeHostInternal,
-                        &pRuntimeHostInternal);
-
-        _ASSERT(SUCCEEDED(hr));
-
-        //Call mscoree!GetVersionExWrapper() through mscoreei interface method
-        hr = pRuntimeHostInternal->GetTrueOSVersion((LPOSVERSIONINFO)&osvi);
-        if(!SUCCEEDED(hr))
-        {
-           osvi.dwMajorVersion = 0;
-           ret = FALSE;
-           goto FUNCEND;
-        }
-    }
-
-    if(lposVer->dwOSVersionInfoSize==sizeof(OSVERSIONINFOEX)||lposVer->dwOSVersionInfoSize==sizeof(OSVERSIONINFO))
-    {
-        //Copy the cached version info to the return memory location
-        memcpy(lposVer,&osvi, lposVer->dwOSVersionInfoSize);
-    }
-    else
-    {
-        //return failure if dwOSVersionInfoSize not set properly
-        ret = FALSE;
-    }
-
-FUNCEND:
-    END_SO_INTOLERANT_CODE;
-    
-    return ret;
-#else
 // Fix for warnings when building against WinBlue build 9444.0.130614-1739
 // warning C4996: 'GetVersionExW': was declared deprecated
 // externalapis\windows\winblue\sdk\inc\sysinfoapi.h(442)
@@ -5067,5 +4025,4 @@ FUNCEND:
 #pragma warning( disable : 4996 )
     return WszGetVersionEx(lposVer);
 #pragma warning( default : 4996 )
-#endif
 }

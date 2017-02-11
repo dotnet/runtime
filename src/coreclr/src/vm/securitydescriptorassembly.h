@@ -123,9 +123,6 @@ public:
 #endif	// !DACCESS_COMPILE
 #endif // FEATURE_CAS_POLICY
 	
-#ifndef FEATURE_CORECLR 
-    virtual BOOL AllowApplicationSpecifiedAppDomainManager();
-#endif // !FEATURE_CORECLR
 
     virtual void CheckAllowAssemblyLoad();
 

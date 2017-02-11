@@ -36,9 +36,6 @@ class SystemNative;
 class NDirect;
 class SystemDomain;
 class AssemblySecurityDescriptor;
-#ifndef FEATURE_CORECLR
-class PEFileSecurityDescriptor;
-#endif
 class SharedSecurityDescriptor;
 class SecurityStackWalkData;
 class DemandStackWalk;

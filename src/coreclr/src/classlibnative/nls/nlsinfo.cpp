@@ -218,20 +218,6 @@ BOOL QCALLTYPE COMNlsInfo::InternalIsSortable(INT_PTR handle, INT_PTR handleOrig
     BOOL result = FALSE;
     BEGIN_QCALL;
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    if(!(curDomain->m_bUseOsSorting))
-    {
-        handle = EnsureValidSortHandle(handle, handleOrigin, localeName);
-        result = SortVersioning::SortDllIsDefinedString((SortVersioning::PSORTHANDLE) handle, COMPARE_STRING, 0, string, length);
-    }
-    else if(curDomain->m_pCustomSortLibrary != NULL)
-    {
-        result = (curDomain->m_pCustomSortLibrary->pIsNLSDefinedString)(COMPARE_STRING, 0, NULL, string, length);
-    }
-    else
-#endif
     {
         // Function should be COMPARE_STRING, dwFlags should be NULL, lpVersionInfo should be NULL for now
         result = NewApis::IsNLSDefinedString(COMPARE_STRING, 0, NULL, string, length);
@@ -389,7 +375,6 @@ BOOL QCALLTYPE COMNlsInfo::InternalGetUserDefaultUILanguage(QCall::StringHandleO
 }
 
 // Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#ifdef FEATURE_CORECLR
 FCIMPL0(Object*, COMNlsInfo::nativeGetResourceFallbackArray)
 {
     CONTRACTL
@@ -452,7 +437,6 @@ FCIMPL0(Object*, COMNlsInfo::nativeGetResourceFallbackArray)
 
 }
 FCIMPLEND
-#endif // FEATURE_CORECLR
 
 INT32 COMNlsInfo::CallGetUserDefaultUILanguage()
 {
@@ -492,31 +476,8 @@ INT_PTR COMNlsInfo::EnsureValidSortHandle(INT_PTR handle, INT_PTR handleOrigin, 
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    if(!(curDomain->m_bUseOsSorting) && handleOrigin == (INT_PTR) SortVersioning::GetSortHandle && ((SortVersioning::PSORTHANDLE) handle)->dwNLSVersion == curDomain->m_sortVersion)
-    {
-        return handle;
-    }
-
-    if(curDomain->m_bUseOsSorting && curDomain->m_pCustomSortLibrary == NULL && handleOrigin == (INT_PTR) NewApis::LCMapStringEx)
-    {
-        return handle;
-    }
-
-    if(curDomain->m_bUseOsSorting && curDomain->m_pCustomSortLibrary != NULL && handleOrigin == (INT_PTR) curDomain->m_pCustomSortLibrary->pLCMapStringEx)
-    {
-        return handle;
-    }
-
-    // At this point, we can't reuse the sort handle (it has different sort semantics than this domain) so we need to get a new one.
-    INT_PTR newHandleOrigin;
-    return InitSortHandleHelper(localeName, &newHandleOrigin);
-#else
     // For CoreCLR, on Windows 8 and up the handle will be valid. on downlevels the handle will be null
     return handle;
-#endif
 }
 
 #ifdef FEATURE_SYNTHETIC_CULTURES
@@ -569,45 +530,6 @@ INT32 COMNlsInfo::WstrToInteger4(
 #endif // FEATURE_SYNTHETIC_CULTURES
 
 
-#ifndef FEATURE_CORECLR
-FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeSetThreadLocale, StringObject* localeNameUNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(localeNameUNSAFE));
-    } CONTRACTL_END;
-
-    LCID lcid = 0;
-
-    // TODO: NLS Arrowhead -A bit scary becausue Set ThreadLocale can't handle custom cultures?
-    STRINGREF localeName = (STRINGREF)localeNameUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(localeName);
-    lcid=NewApis::LocaleNameToLCID(localeName->GetBuffer(),0);
-    if (lcid == 0)
-    {
-        ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
-    }
-        HELPER_METHOD_FRAME_END();
-
-
-    BOOL result = TRUE;
-
-    // SetThreadLocale doesn't handle names/custom cultures
-#ifdef _MSC_VER
-// Get rid of the SetThreadLocale warning in OACR:
-#pragma warning(push)
-#pragma warning(disable:38010)
-#endif
-    result = ::SetThreadLocale(lcid);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-    FC_RETURN_BOOL(result);
-}
-FCIMPLEND
-#endif
 
 
 FCIMPL2(Object*, COMNlsInfo::nativeGetLocaleInfoEx, StringObject* localeNameUNSAFE, INT32 lcType)
@@ -1661,18 +1583,6 @@ INT32 QCALLTYPE COMNlsInfo::InternalCompareString(
 
     handle = EnsureValidSortHandle(handle, handleOrigin, localeName);
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    if(!(curDomain->m_bUseOsSorting))
-    {
-        result = SortVersioning::SortDllCompareString((SortVersioning::PSORTHANDLE) handle, flags, &string1[offset1], length1, &string2[offset2], length2, NULL, 0);
-    }
-    else if (curDomain->m_pCustomSortLibrary != NULL) {
-        result = (curDomain->m_pCustomSortLibrary->pCompareStringEx)(handle != NULL ? NULL : localeName, flags, &string1[offset1], length1, &string2[offset2], length2, NULL, NULL, (LPARAM) handle);
-    } 
-    else 
-#endif
     {
         result = NewApis::CompareStringEx(handle != NULL ? NULL : localeName, flags, &string1[offset1], length1, &string2[offset2], length2,NULL,NULL, (LPARAM) handle);
     }
@@ -1770,40 +1680,19 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PT
         COMPlusThrowArgumentNull(W("string"),W("ArgumentNull_String"));
     }
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-#endif // FEATURE_CORECLR
 
     if(length > 0 && UseConstantSpaceHashAlgorithm() 
     // Note that we can't simply do the hash without the entropy and then try to add it after the fact we need the hash function itself to pass entropy to its inputs.
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
          && !bForceRandomizedHashing
-#ifndef FEATURE_CORECLR
-         && !curDomain->m_pNlsHashProvider->GetUseRandomHashing()
-#else
          && !COMNlsHashProvider::s_NlsHashProvider.GetUseRandomHashing()
-#endif // FEATURE_CORECLR
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
        )
     {
-#ifndef FEATURE_CORECLR
-        if(!(curDomain->m_bUseOsSorting))
-        {
-            iReturnHash=SortVersioning::SortDllGetHashCode((SortVersioning::PSORTHANDLE) handle, dwFlagsIn, string, length, NULL, 0);
-        }
-        else
-#endif
         {
             int iRes = 0;
             int iHashValue = 0;
 
-#ifndef FEATURE_CORECLR
-            if (curDomain->m_pCustomSortLibrary != NULL)
-            {
-                iRes = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(localeName, dwFlagsIn | LCMAP_HASH, string, length, (LPWSTR) &iHashValue, sizeof(INT32), NULL, NULL, 0);
-            }
-            else
-#endif
             {
                 iRes = NewApis::LCMapStringEx(localeName, dwFlagsIn | LCMAP_HASH, string, length, (LPWSTR) &iHashValue, sizeof(INT32), NULL, NULL, 0);
             }
@@ -1824,17 +1713,6 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PT
         //
         // Assert if we might hit an AV in LCMapStringEx for the invariant culture.
         _ASSERTE(length > 0 || (dwFlags & LCMAP_LINGUISTIC_CASING) == 0);
-#ifndef FEATURE_CORECLR
-        if(!(curDomain->m_bUseOsSorting))
-        {
-            byteCount=SortVersioning::SortDllGetSortKey((SortVersioning::PSORTHANDLE) handle, dwFlagsIn, string, length, NULL, 0, NULL, 0);
-        }
-        else if (curDomain->m_pCustomSortLibrary != NULL)
-        {
-            byteCount = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : localeName, dwFlags, string, length, NULL, 0, NULL, NULL, (LPARAM) handle);
-        }
-        else
-#endif
         {
             byteCount=NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, NULL, 0, NULL, NULL, (LPARAM) handle);
         }
@@ -1851,26 +1729,11 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PT
             CQuickBytesSpecifySize<MAX_STRING_VALUE * sizeof(WCHAR)> qbBuffer;
             BYTE* pByte = (BYTE*)qbBuffer.AllocThrows(byteCount);
 
-#ifndef FEATURE_CORECLR
-            if(!(curDomain->m_bUseOsSorting))
-            {
-                SortVersioning::SortDllGetSortKey((SortVersioning::PSORTHANDLE) handle, dwFlagsIn, string, length, pByte, byteCount, NULL, 0);
-            }
-            else if(curDomain->m_pCustomSortLibrary != NULL)
-            {
-                (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : localeName, dwFlags, string, length, (LPWSTR)pByte, byteCount, NULL, NULL, (LPARAM) handle);
-            }
-            else
-#endif
             {
                 NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, (LPWSTR)pByte, byteCount, NULL,NULL, (LPARAM) handle);
             }
 
-#ifndef FEATURE_CORECLR
-            iReturnHash = curDomain->m_pNlsHashProvider->HashSortKey(pByte, byteCount, bForceRandomizedHashing, additionalEntropy);
-#else
             iReturnHash = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pByte, byteCount, bForceRandomizedHashing, additionalEntropy);
-#endif // FEATURE_CORECLR
         }
     }
     END_QCALL;
@@ -1910,36 +1773,6 @@ FCIMPL5(FC_CHAR_RET, COMNlsInfo::InternalChangeCaseChar,
 
     handle = EnsureValidSortHandle(handle, handleOrigin, localeName->GetBuffer());
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    //For a versioned sort, Invariant should still use the OS
-    if(!(curDomain->m_bUseOsSorting) && !isInvariantLocale)
-    {
-        ret_LCMapStringEx = SortVersioning::SortDllChangeCase((SortVersioning::PSORTHANDLE) handle,
-                                    bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
-                                               LCMAP_LOWERCASE | linguisticCasing,
-                                    &wch,
-                                    1,
-                                    &retVal,
-                                    1,
-                                    NULL, 0);
-    }
-    else if(curDomain->m_pCustomSortLibrary != NULL)
-    {
-        ret_LCMapStringEx = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : localeName->GetBuffer(),
-                                   bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
-                                              LCMAP_LOWERCASE | linguisticCasing,
-                                   &wch,
-                                   1,
-                                   &retVal,
-                                   1,
-                                   NULL,
-                                   NULL,
-                                   (LPARAM) handle);
-    }
-    else
-#endif    
     {
         ret_LCMapStringEx = NewApis::LCMapStringEx(handle != NULL ? NULL : localeName->GetBuffer(),
                                    bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
@@ -2025,36 +1858,6 @@ FCIMPL5(Object*, COMNlsInfo::InternalChangeCaseString,
         LPWSTR pResultStr = gc.pResult->GetBuffer();
 
         int result;
-#ifndef FEATURE_CORECLR
-        AppDomain* curDomain = GetAppDomain();
-
-        //Invariant should always use OS
-        if(!(curDomain->m_bUseOsSorting) && !isInvariantLocale)
-        {
-            result = SortVersioning::SortDllChangeCase((SortVersioning::PSORTHANDLE) handle,
-                                        bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
-                                                   LCMAP_LOWERCASE | linguisticCasing,
-                                        gc.pString->GetBuffer(),
-                                        nLengthInput,
-                                        pResultStr,
-                                        nLengthOutput,
-                                        NULL, 0);
-        }
-        else if(curDomain->m_pCustomSortLibrary != NULL)
-        {
-            result = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
-                                       bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
-                                                  LCMAP_LOWERCASE | linguisticCasing,
-                                       gc.pString->GetBuffer(),
-                                       nLengthInput,
-                                       pResultStr,
-                                       nLengthOutput,
-                                       NULL,
-                                       NULL,
-                                       (LPARAM) handle);
-        }
-        else
-#endif
         {
             result = NewApis::LCMapStringEx(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
                                        bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
@@ -2076,34 +1879,6 @@ FCIMPL5(Object*, COMNlsInfo::InternalChangeCaseString,
                 ThrowLastError();
             }
             // need to update buffer
-#ifndef FEATURE_CORECLR
-            //Invariant should always use OS
-            if(!(curDomain->m_bUseOsSorting) && !IsInvariantLocale(gc.pLocale))
-            {
-                nLengthOutput = SortVersioning::SortDllChangeCase((SortVersioning::PSORTHANDLE) handle,
-                                            bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
-                                                       LCMAP_LOWERCASE | linguisticCasing,
-                                            gc.pString->GetBuffer(),
-                                            nLengthInput,
-                                            NULL,
-                                            0,
-                                            NULL, 0);
-            }
-            else if(curDomain->m_pCustomSortLibrary != NULL)
-            {
-                nLengthOutput = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
-                                                        bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
-                                                                   LCMAP_LOWERCASE | linguisticCasing,
-                                                        gc.pString->GetBuffer(),
-                                                        nLengthInput,
-                                                        NULL,
-                                                        0,
-                                                        NULL,
-                                                        NULL,
-                                                        (LPARAM) handle);
-            }
-            else
-#endif
             {
                 nLengthOutput = NewApis::LCMapStringEx(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
                                                         bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
@@ -2133,34 +1908,6 @@ FCIMPL5(Object*, COMNlsInfo::InternalChangeCaseString,
 
             gc.pResult = StringObject::NewString(nLengthOutput);
             pResultStr = gc.pResult->GetBuffer();
-#ifndef FEATURE_CORECLR
-            //Invariant should always use OS
-            if(!(curDomain->m_bUseOsSorting) && !IsInvariantLocale(gc.pLocale))
-            {
-                result = SortVersioning::SortDllChangeCase((SortVersioning::PSORTHANDLE) handle,
-                                            bIsToUpper?LCMAP_UPPERCASE | linguisticCasing:
-                                                       LCMAP_LOWERCASE | linguisticCasing,
-                                            gc.pString->GetBuffer(),
-                                            nLengthInput,
-                                            pResultStr,
-                                            nLengthOutput,
-                                            NULL, 0);
-            }
-            else if(curDomain->m_pCustomSortLibrary != NULL)
-            {
-                result = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
-                                           bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
-                                                      LCMAP_LOWERCASE | linguisticCasing,
-                                           gc.pString->GetBuffer(),
-                                           nLengthInput,
-                                           pResultStr,
-                                           nLengthOutput,
-                                           NULL,
-                                           NULL,
-                                           (LPARAM) handle);
-            }
-            else
-#endif
             {
                 result = NewApis::LCMapStringEx(handle != NULL ? NULL : (gc.pLocale)->GetBuffer(),
                                            bIsToUpper?LCMAP_UPPERCASE | linguisticCasing :
@@ -2217,9 +1964,6 @@ FCIMPL6(INT32, COMNlsInfo::InternalGetCaseInsHash,
 
     *((LPVOID *)&strA)=pvStrA;
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-#endif
 
     //
     // If we know that we don't have any high characters (the common case) we can
@@ -2235,11 +1979,7 @@ FCIMPL6(INT32, COMNlsInfo::InternalGetCaseInsHash,
     {
         // Notice that for Turkish and Azeri we don't get here and shouldn't use this
         // fast path because of their special Latin casing rules.
-#ifndef FEATURE_CORECLR
-        result = curDomain->m_pNlsHashProvider->HashiStringKnownLower80(strA->GetBuffer(), strA->GetStringLength(), bForceRandomizedHashing, additionalEntropy);
-#else
         result = COMNlsHashProvider::s_NlsHashProvider.HashiStringKnownLower80(strA->GetBuffer(), strA->GetStringLength(), bForceRandomizedHashing, additionalEntropy);
-#endif // FEATURE_CORECLR
     }
     else
     {
@@ -2259,29 +1999,6 @@ FCIMPL6(INT32, COMNlsInfo::InternalGetCaseInsHash,
         }
 
         int lcmapResult;
-#ifndef FEATURE_CORECLR
-        if(!(curDomain->m_bUseOsSorting))
-        {
-            lcmapResult = SortVersioning::SortDllChangeCase((SortVersioning::PSORTHANDLE) handle,
-                                                    LCMAP_UPPERCASE | linguisticCasing,
-                                                    strA->GetBuffer(),
-                                                    length,
-                                                    pNewStr,
-                                                    length,
-                                                    NULL, 0);
-        }
-        else if(curDomain->m_pCustomSortLibrary != NULL)
-        {
-            lcmapResult = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : localeName->GetBuffer(),
-                                                   LCMAP_UPPERCASE | linguisticCasing,
-                                                   strA->GetBuffer(),
-                                                   length,
-                                                   pNewStr,
-                                                   length,
-                                                   NULL, NULL, (LPARAM) handle);
-        }
-        else
-#endif
         {
             lcmapResult = NewApis::LCMapStringEx(handle != NULL ? NULL : localeName->GetBuffer(),
                                                    LCMAP_UPPERCASE | linguisticCasing,
@@ -2302,11 +2019,7 @@ FCIMPL6(INT32, COMNlsInfo::InternalGetCaseInsHash,
 
         // Get hash for the upper case of the new string
 
-#ifndef FEATURE_CORECLR
-        result = curDomain->m_pNlsHashProvider->HashString(pNewStr, length, (BOOL)bForceRandomizedHashing, additionalEntropy);
-#else
         result = COMNlsHashProvider::s_NlsHashProvider.HashString(pNewStr, length, (BOOL)bForceRandomizedHashing, additionalEntropy);
-#endif // FEATURE_CORECLR
     }
 
     END_SO_INTOLERANT_CODE
@@ -2351,23 +2064,6 @@ BOOL QCALLTYPE COMNlsInfo::InternalTryFindStringOrdinalIgnoreCase(
     else {
         lpSearchStart = &lpStringSource[sourceIndex];
     }
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    // Check if the default sorting is overridden
-    if (curDomain->m_pCustomSortLibrary != NULL)
-    {
-        *foundIndex = (curDomain->m_pCustomSortLibrary->pFindStringOrdinal)(
-            dwFindNLSStringFlags,
-            lpSearchStart,
-            cchSource,
-            lpStringValue,
-            cchValue,
-            TRUE);
-        result = TRUE;
-    }
-    else
-#endif
     {
         {
             *foundIndex = FindStringOrdinal(
@@ -2423,14 +2119,6 @@ INT32 QCALLTYPE COMNlsInfo::InternalCompareStringOrdinalIgnoreCase(
     _ASSERT(length2 >= 0);
 
     // Do the comparison
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-    
-    if (curDomain->m_pCustomSortLibrary != NULL) {
-        result = (curDomain->m_pCustomSortLibrary->pCompareStringOrdinal)(string1 + index1, length1, string2 + index2, length2, TRUE);
-    } 
-    else 
-#endif
     {
         result = NewApis::CompareStringOrdinal(string1 + index1, length1, string2 + index2, length2, TRUE);
     }
@@ -2581,15 +2269,6 @@ void QCALLTYPE COMNlsInfo::nativeNormalizationInitNormalization(int NormForm, BY
             if (!hNormalization)
                ThrowLastError();
         }
-#ifndef FEATURE_CORECLR
-        // in coreclr we should always find the normalization in kernel32 as it supports Win7 and up 
-        else
-        {
-            HRESULT hr = g_pCLRRuntime->LoadLibrary(NORMALIZATION_DLL, &hNormalization);
-            if (FAILED(hr))
-                ThrowHR(hr);
-        }
-#endif // FEATURE_CORECLR
 
         _ASSERTE(hNormalization != NULL);
         m_hNormalization = hNormalization;
@@ -2771,7 +2450,6 @@ FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeInitCultureData, CultureDataBaseObject *c
         gc.stringResult = StringObject::NewString(buffer, result - 1);
         SetObjectReference((OBJECTREF*)&(gc.cultureData->sSpecificCulture), gc.stringResult, NULL);
 
-#ifdef FEATURE_CORECLR
         if (!IsWindows7())
         {
             // For neutrals on Windows 7 + the neutral windows name can be the same as the neutral name,
@@ -2779,7 +2457,6 @@ FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeInitCultureData, CultureDataBaseObject *c
             gc.stringResult = StringObject::NewString(buffer, result - 1);
             SetObjectReference((OBJECTREF*)&(gc.cultureData->sWindowsName), gc.stringResult, NULL);
         }
-#endif
 
 
     }
@@ -2819,12 +2496,10 @@ FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeInitCultureData, CultureDataBaseObject *c
         SetObjectReference((OBJECTREF*)&(gc.cultureData->sName), gc.stringResult, NULL);
     }
 
-#ifdef FEATURE_CORECLR
     // For Silverlight make sure that the sorting tables are available (< Vista may not have east asian installed)
     result = NewApis::CompareStringEx(((STRINGREF)gc.cultureData->sWindowsName)->GetBuffer(),
                                       0, W("A"), 1, W("B"), 1, NULL, NULL, 0);
     if (result == 0) goto Exit;
-#endif
 
     // It succeeded.
     success = TRUE;
@@ -2887,16 +2562,9 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
 
     BEGIN_QCALL;
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-    handle = EnsureValidSortHandle(handle, handleOrigin, lpLocaleName);
-#endif
 
     #define RESERVED_FIND_ASCII_STRING 0x20000000       // This flag used only to tell the sorting DLL can assume the string characters are in ASCII.
 
-#ifndef FEATURE_CORECLR
-    int asciiFlag = (dwFindNLSStringFlags & RESERVED_FIND_ASCII_STRING);
-#endif // FEATURE_CORECLR
 
     dwFindNLSStringFlags &= ~RESERVED_FIND_ASCII_STRING;
 
@@ -2950,29 +2618,6 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
     {
         if (dwFindNLSStringFlags & (FIND_FROMEND | FIND_ENDSWITH))
         {
-#ifndef FEATURE_CORECLR
-            if(!(curDomain->m_bUseOsSorting))
-            {
-                retValue = SortVersioning::SortDllFindString((SortVersioning::PSORTHANDLE) handle,
-                                                  dwFindNLSStringFlags | asciiFlag,
-                                                  &lpStringSource[sourceIndex - cchSource + 1],
-                                                  cchSource,
-                                                  lpStringValue,
-                                                  cchValue,
-                                                  NULL, NULL, 0);
-            }
-            else if(curDomain->m_pCustomSortLibrary != NULL)
-            {
-                retValue = (curDomain->m_pCustomSortLibrary->pFindNLSStringEx)(
-                                        handle != NULL ? NULL : lpLocaleName,
-                                        dwFindNLSStringFlags,
-                                        &lpStringSource[sourceIndex - cchSource + 1],
-                                        cchSource,
-                                        lpStringValue,
-                                        cchValue, NULL, NULL, NULL, (LPARAM) handle);
-            }   
-            else
-#endif
             {
                 retValue = NewApis::FindNLSStringEx(
                                         handle != NULL ? NULL : lpLocaleName,
@@ -2990,29 +2635,6 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
         }
         else
         {
-#ifndef FEATURE_CORECLR
-            if(!(curDomain->m_bUseOsSorting))
-            {
-                retValue = SortVersioning::SortDllFindString((SortVersioning::PSORTHANDLE) handle,
-                                                  dwFindNLSStringFlags | asciiFlag,
-                                                  &lpStringSource[sourceIndex],
-                                                  cchSource,
-                                                  lpStringValue,
-                                                  cchValue,
-                                                  NULL, NULL, 0);
-            }
-            else if(curDomain->m_pCustomSortLibrary != NULL)
-            {
-                retValue = (curDomain->m_pCustomSortLibrary->pFindNLSStringEx)(
-                                        handle != NULL ? NULL : lpLocaleName,
-                                        dwFindNLSStringFlags,
-                                        &lpStringSource[sourceIndex],
-                                        cchSource,
-                                        lpStringValue,
-                                        cchValue, NULL, NULL, NULL, (LPARAM) handle);
-            }
-            else
-#endif
             {
                 retValue = NewApis::FindNLSStringEx(
                                         handle != NULL ? NULL : lpLocaleName,
@@ -3062,35 +2684,6 @@ int QCALLTYPE COMNlsInfo::InternalGetSortKey(
     BEGIN_QCALL;
 
 
-#ifndef FEATURE_CORECLR
-    handle = EnsureValidSortHandle(handle, handleOrigin, pLocaleName);
-
-    AppDomain* curDomain = GetAppDomain();
-
-    if(!(curDomain->m_bUseOsSorting))
-    {
-        retValue = SortVersioning::SortDllGetSortKey((SortVersioning::PSORTHANDLE) handle,
-                                                  flags,
-                                                  pStringSource,
-                                                  cchSource,
-                                                  pTarget,
-                                                  cchTarget,
-                                                  NULL, 0);
-    }
-    else if(curDomain->m_pCustomSortLibrary != NULL)
-    {
-        retValue = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(handle != NULL ? NULL : pLocaleName,
-                                          flags | LCMAP_SORTKEY,
-                                          pStringSource,
-                                          cchSource,
-                                          (LPWSTR)pTarget,
-                                          cchTarget,
-                                          NULL,
-                                          NULL,
-                                          (LPARAM) handle);
-    }
-    else
-#endif
     {
         // Just call NewApis::LCMapStringEx to do our work
         retValue = NewApis::LCMapStringEx(handle != NULL ? NULL : pLocaleName,
@@ -3143,86 +2736,11 @@ INT_PTR COMNlsInfo::InitSortHandleHelper(LPCWSTR localeName, __out INT_PTR* hand
 
     INT_PTR pSort = NULL;
 
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-#if _DEBUG
-    _ASSERTE(curDomain->m_bSortingInitialized);
-#endif
-
-    if(curDomain->m_bUseOsSorting)
-    {
-        pSort = InternalInitOsSortHandle(localeName, handleOrigin);
-    }
-    else
-    {
-        pSort = InternalInitVersionedSortHandle(localeName, handleOrigin);
-    }
-#else
     // coreclr will try to initialize the handle and if running on downlevel it'll just return null
     pSort = InternalInitOsSortHandle(localeName, handleOrigin);
-#endif // FEATURE_CORECLR
     return pSort;
 }
 
-#ifndef FEATURE_CORECLR
-INT_PTR COMNlsInfo::InternalInitVersionedSortHandle(LPCWSTR localeName, __out INT_PTR* handleOrigin)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        PRECONDITION(localeName != NULL);
-    } CONTRACTL_END;
-
-    AppDomain* curDomain = GetAppDomain();
-
-    if(curDomain->m_pCustomSortLibrary != NULL)
-    {
-        return NULL;
-    }
-
-    return InternalInitVersionedSortHandle(localeName, handleOrigin, curDomain->m_sortVersion);
-}
-
-INT_PTR COMNlsInfo::InternalInitVersionedSortHandle(LPCWSTR localeName, __out INT_PTR* handleOrigin, DWORD sortVersion)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        PRECONDITION(localeName != NULL);
-    } CONTRACTL_END;
-    
-    INT_PTR pSort = NULL;
-
-    _ASSERTE(NewApis::NotLeakingFrameworkOnlyCultures(localeName));
-
-    *handleOrigin = (INT_PTR) SortVersioning::GetSortHandle;
-
-    // try the requested version
-    if(sortVersion != DEFAULT_SORT_VERSION)
-    {
-        NLSVERSIONINFO  sortVersionInfo;
-        sortVersionInfo.dwNLSVersionInfoSize = sizeof(NLSVERSIONINFO);
-        sortVersionInfo.dwNLSVersion = sortVersion;
-        sortVersionInfo.dwDefinedVersion = sortVersion;
-        pSort = (INT_PTR) SortVersioning::GetSortHandle(localeName, &sortVersionInfo);
-    }
-
-    // fallback to default version
-    if(pSort == NULL)
-    {
-        pSort = (INT_PTR) SortVersioning::GetSortHandle(localeName, NULL);
-    }
-
-    _ASSERTE(RunningOnWin8() || pSort != NULL);
-
-    return pSort;
-}
-#endif //FEATURE_CORECLR
 
 // Can return NULL
 INT_PTR COMNlsInfo::InternalInitOsSortHandle(LPCWSTR localeName, __out INT_PTR* handleOrigin)
@@ -3239,23 +2757,11 @@ INT_PTR COMNlsInfo::InternalInitOsSortHandle(LPCWSTR localeName, __out INT_PTR* 
 
     AppDomain* curDomain = GetAppDomain();
 
-#ifndef FEATURE_CORECLR
-    if (RunningOnWin8() || curDomain->m_pCustomSortLibrary != NULL)
-#else
     if (RunningOnWin8())
-#endif //FEATURE_CORECLR 
     {
         LPARAM lSortHandle;
         int ret;
 
-#ifndef FEATURE_CORECLR
-        if (curDomain->m_pCustomSortLibrary != NULL)
-        {
-            ret = (curDomain->m_pCustomSortLibrary->pLCMapStringEx)(localeName, LCMAP_SORTHANDLE, NULL, 0, (LPWSTR) &lSortHandle, sizeof(LPARAM), NULL, NULL, 0);
-            *handleOrigin = (INT_PTR) curDomain->m_pCustomSortLibrary->pLCMapStringEx;
-        }
-        else
-#endif //FEATURE_CORECLR
         {
             ret = NewApis::LCMapStringEx(localeName, LCMAP_SORTHANDLE, NULL, 0, (LPWSTR) &lSortHandle, sizeof(LPARAM), NULL, NULL, 0);
             *handleOrigin = (INT_PTR) NewApis::LCMapStringEx;
@@ -3279,59 +2785,9 @@ BOOL QCALLTYPE COMNlsInfo::InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handl
     BOOL ret = FALSE;
 
     BEGIN_QCALL;
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-
-    if(curDomain->m_bUseOsSorting)
-    {
-        if(curDomain->m_pCustomSortLibrary != NULL)
-        {
-            ret = (curDomain->m_pCustomSortLibrary->pGetNLSVersionEx)(COMPARE_STRING, lpLocaleName, lpVersionInformation);
-        }
-        else
-        {
-            ret = GetNLSVersionEx(COMPARE_STRING, lpLocaleName, lpVersionInformation);
-        }
-    }
-    else
-    {
-        handle = EnsureValidSortHandle(handle, handleOrigin, lpLocaleName);
-
-        NLSVERSIONINFO nlsVersion;
-        nlsVersion.dwNLSVersionInfoSize = sizeof(NLSVERSIONINFO);
-
-        ret = SortVersioning::SortGetNLSVersion((SortVersioning::PSORTHANDLE) handle, COMPARE_STRING, &nlsVersion);
-
-        lpVersionInformation->dwNLSVersion = nlsVersion.dwNLSVersion;
-        lpVersionInformation->dwDefinedVersion = nlsVersion.dwDefinedVersion;
-        lpVersionInformation->dwEffectiveId = 0;
-        ZeroMemory(&(lpVersionInformation->guidCustomVersion), sizeof(GUID));                
-    }
-#else
     ret = GetNLSVersionEx(COMPARE_STRING, lpLocaleName, lpVersionInformation);
-#endif // FEATURE_CORECLR
     END_QCALL;
  
     return ret;
 }
 
-#ifndef FEATURE_CORECLR
-DWORD QCALLTYPE COMNlsInfo::InternalGetSortVersion()
-{
-    CONTRACTL {
-        QCALL_CHECK;
-    } CONTRACTL_END;
-
-    DWORD version = DEFAULT_SORT_VERSION;
-
-    BEGIN_QCALL;
-
-    AppDomain* curDomain = GetAppDomain();
-    version = curDomain->m_sortVersion;
-
-    END_QCALL;
-
-    return version;
-}
-
-#endif //FEATURE_CORECLR

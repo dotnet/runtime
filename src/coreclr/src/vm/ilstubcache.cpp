@@ -531,47 +531,6 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         }
     }
 
-#ifndef FEATURE_CORECLR
-    //
-    // Publish ETW events for IL stubs
-    //
-    if (bFireETWCacheHitEvent)    
-    {
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ILStubCacheHit))
-        {
-
-            SString strNamespaceOrClassName, strMethodName, strMethodSignature;
-            UINT64 uModuleId = 0;
-
-            if (pTargetMD)
-            {
-                pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-                uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();               
-            }
-
-            DWORD dwToken = 0;
-            if (pTargetMD)
-                dwToken = pTargetMD->GetMemberDef();
-
-            //
-            // Truncate string fields. Make sure the whole event is less than 64KB
-            //
-            TruncateUnicodeString(strNamespaceOrClassName, ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-            TruncateUnicodeString(strMethodName,           ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-            TruncateUnicodeString(strMethodSignature,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);           
-            
-            FireEtwILStubCacheHit(
-                GetClrInstanceId(),                         // ClrInstanceId
-                uModuleId,                                  // ModuleIdentifier
-                (UINT64)pMD,                                // StubMethodIdentifier
-                dwToken,                                    // ManagedInteropMethodToken
-                strNamespaceOrClassName.GetUnicode(),       // ManagedInteropMethodNamespace
-                strMethodName.GetUnicode(),                 // ManagedInteropMethodName
-                strMethodSignature.GetUnicode()             // ManagedInteropMethodSignature
-                );
-        }                       
-    }
-#endif // !FEATURE_CORECLR
     
     if (!pMD)
     {

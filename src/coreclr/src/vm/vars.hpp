@@ -66,9 +66,6 @@ typedef unsigned short wchar_t;
 #include <corpriv.h>
 #include <cordbpriv.h>
 
-#ifndef FEATURE_CORECLR
-#include <metahost.h>
-#endif // !FEATURE_CORECLR
 
 #include "eeprofinterfaces.h"
 #include "eehash.h"
@@ -416,9 +413,6 @@ GPTR_DECL(MethodTable,      g_pThreadClass);
 #ifdef FEATURE_CER
 GPTR_DECL(MethodTable,      g_pCriticalFinalizerObjectClass);
 #endif
-#ifndef FEATURE_CORECLR
-GPTR_DECL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
-#endif // !FEATURE_CORECLR
 GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
@@ -445,9 +439,6 @@ GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 //<TODO> @TODO Remove eventually - determines whether the verifier throws an exception when something fails</TODO>
 EXTERN bool                 g_fVerifierOff;
 
-#ifndef FEATURE_CORECLR
-EXTERN IAssemblyUsageLog   *g_pIAssemblyUsageLogGac;
-#endif
 
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
@@ -567,12 +558,6 @@ EXTERN Volatile<BOOL> g_fEEStarted;
 EXTERN BOOL g_fComStarted;
 #endif
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-//
-// Pointer to the activated CLR interface provided by the shim.
-//
-EXTERN ICLRRuntimeInfo *g_pCLRRuntime;
-#endif
 
 //
 // Global state variables indicating which stage of shutdown we are in

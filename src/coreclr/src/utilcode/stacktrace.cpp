@@ -949,7 +949,7 @@ void MagicDeinit(void)
     }
 }
 
-#if defined(_TARGET_X86_) && defined(FEATURE_CORECLR)
+#if defined(_TARGET_X86_)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*

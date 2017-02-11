@@ -2675,7 +2675,6 @@ void InitJITHelpers1()
     }
 
 
-#ifdef FEATURE_CORECLR
     if(IsSingleAppDomain())
     {
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_SingleAppDomain);
@@ -2684,7 +2683,6 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
     }
     else
-#endif
     if (gAppDomainTLSIndex >= TLS_MINIMUM_AVAILABLE)
     {
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE,          JIT_GetSharedGCStaticBase_Portable);

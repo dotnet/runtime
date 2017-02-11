@@ -16,9 +16,6 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#ifndef FEATURE_CORECLR
-#include "comutilnative.h"
-#endif // !FEATURE_CORECLR
 #if defined(FEATURE_APPX)
 #include "appxutil.h"
 #endif // FEATURE_APPX
@@ -177,12 +174,6 @@ void AppDomainNative::CreateDomainHelper (STRINGREF* ppFriendlyName, OBJECTREF* 
 
         setupInfo = prepareDataForSetup.Call_RetOBJECTREF(args);
 
-#ifndef FEATURE_CORECLR
-        // We need to setup domain sorting before any other managed code runs in the domain, since that code 
-        // could end up caching data based on the sorting mode of the domain.
-        pDomain->InitializeSorting(ppAppdomainSetup);
-        pDomain->InitializeHashing(ppAppdomainSetup);
-#endif
 
         // We need to ensure that the AppDomainProxy is generated before we call into DoSetup, since
         // GetAppDomainProxy will ensure that remoting is correctly configured in the domain.  DoSetup can
@@ -1341,7 +1332,6 @@ FCIMPL1(void , AppDomainNative::PublishAnonymouslyHostedDynamicMethodsAssembly, 
 }
 FCIMPLEND
 
-#ifdef FEATURE_CORECLR    
 
 void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wszNativeDllSearchDirectories)
 {
@@ -1398,7 +1388,6 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
     END_QCALL;
 }
 
-#endif // FEATURE_CORECLR    
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 FCIMPL0(void, AppDomainNative::EnableMonitoring)

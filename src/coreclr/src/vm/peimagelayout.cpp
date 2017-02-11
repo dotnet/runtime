@@ -258,47 +258,6 @@ void PEImageLayout::ApplyBaseRelocations()
 }
 #endif // FEATURE_PREJIT
 
-#ifndef FEATURE_CORECLR
-// Event Tracing for Windows is used to log data for performance and functional testing purposes.
-// The events in this structure are used to measure the time taken by PE image mapping. This is useful to reliably measure the
-// performance of the assembly loader by subtracting the time taken by the possibly I/O-intensive work of PE image mapping.
-struct ETWLoaderMappingPhaseHolder { // Special-purpose holder structure to ensure the LoaderMappingPhaseEnd ETW event is fired when returning from a function.
-    StackSString ETWCodeBase;
-    DWORD _dwAppDomainId;
-    BOOL initialized;
-
-    ETWLoaderMappingPhaseHolder(){
-        LIMITED_METHOD_CONTRACT;
-        _dwAppDomainId = ETWAppDomainIdNotAvailable;
-        initialized = FALSE;
-        }
-
-    void Init(DWORD dwAppDomainId, SString wszCodeBase) {
-        _dwAppDomainId = dwAppDomainId;
-
-        EX_TRY
-        {
-            ETWCodeBase.Append(wszCodeBase);
-            ETWCodeBase.Normalize(); // Ensures that the later cast to LPCWSTR does not throw.
-        }
-        EX_CATCH
-        {
-            ETWCodeBase.Clear();
-        }
-        EX_END_CATCH(RethrowTransientExceptions)            
-
-        FireEtwLoaderMappingPhaseStart(_dwAppDomainId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, ETWCodeBase.IsEmpty() ? NULL : (LPCWSTR)ETWCodeBase, NULL, GetClrInstanceId());
-
-        initialized = TRUE;
-    }
-
-    ~ETWLoaderMappingPhaseHolder() {
-        if (initialized) {
-            FireEtwLoaderMappingPhaseEnd(_dwAppDomainId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, ETWCodeBase.IsEmpty() ? NULL : (LPCWSTR)ETWCodeBase, NULL, GetClrInstanceId());
-        }
-    }
-};
-#endif // FEATURE_CORECLR
 
 RawImageLayout::RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner)
 {
@@ -316,12 +275,6 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner)
 
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
 
     if (size)
     {
@@ -355,12 +308,6 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
 
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
 
     if (bTakeOwnership)
     {
@@ -392,12 +339,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
 
     PEFingerprintVerificationHolder verifyHolder(source->m_pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
     
     if (!source->HasNTHeaders())
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
@@ -447,12 +388,6 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
 
 #ifndef FEATURE_PAL
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
 
     // Let OS map file for us
 
@@ -461,23 +396,12 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     if (m_FileMap == NULL)
     {
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_CORECLR
 
         // There is no reflection-only load on CoreCLR and so we can always throw an error here.
         // It is important on Windows Phone. All assemblies that we load must have SEC_IMAGE set
         // so that the OS can perform signature verification.
         ThrowLastError();
 
-#else // FEATURE_CORECLR
-
-        // We need to ensure any signature validation errors are caught if Extended Secure Boot (ESB) is on.
-        // Also, we have to always throw here during NGen to ensure that the signature validation is never skipped.
-        if (GetLastError() != ERROR_BAD_EXE_FORMAT || IsCompilationProcess())
-        {
-            ThrowLastError();
-        }
-
-#endif // FEATURE_CORECLR
 #endif // CROSSGEN_COMPILE
 
         return;
@@ -624,12 +548,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
 
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
 
     DWORD dwFlags = GetLoadWithAlteredSearchPathFlag();
     if (bNTSafeLoad)
@@ -667,12 +585,6 @@ FlatImageLayout::FlatImageLayout(HANDLE hFile, PEImage* pOwner)
 
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
 
     COUNT_T size = SafeGetFileSize(hFile, NULL);
     if (size == 0xffffffff && GetLastError() != NOERROR)
@@ -710,12 +622,6 @@ StreamImageLayout::StreamImageLayout(IStream* pIStream,PEImage* pOwner)
 
     PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
-#ifndef FEATURE_CORECLR
-    ETWLoaderMappingPhaseHolder loaderMappingPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-        loaderMappingPhaseHolder.Init(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, GetPath());
-    }
-#endif // FEATURE_CORECLR
     
     STATSTG statStg;
     IfFailThrow(pIStream->Stat(&statStg, STATFLAG_NONAME));

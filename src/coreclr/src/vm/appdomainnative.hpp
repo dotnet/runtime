@@ -66,9 +66,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsFrameworkAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
     static FCDECL1(UINT32,  GetAppDomainId, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void , PublishAnonymouslyHostedDynamicMethodsAssembly, AssemblyBaseObject * pAssemblyUNSAFE);
-#ifdef FEATURE_CORECLR    
     static void QCALLTYPE SetNativeDllSearchDirectories(__in_z LPCWSTR wszAssembly);
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     static FCDECL0(void,  EnableMonitoring);

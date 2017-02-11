@@ -612,14 +612,6 @@ void Thread::ChooseThreadCPUGroupAffinity()
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
-#ifndef FEATURE_CORECLR
-    // We only handle the non-hosted case here. If CLR is hosted, the hosting 
-    // process controls the physical OS Threads. If CLR is not hosted, we can 
-    // set thread group affinity on OS threads directly.
-    HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
-    if (pHostTask != NULL)
-        return;
-#endif //!FEATURE_CORECLR
 
     //Borrow the ThreadStore Lock here: Lock ThreadStore before distributing threads
     ThreadStoreLockHolder TSLockHolder(TRUE);
@@ -652,14 +644,6 @@ void Thread::ClearThreadCPUGroupAffinity()
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups()) 
          return;
 
-#ifndef FEATURE_CORECLR
-    // We only handle the non-hosted case here. If CLR is hosted, the hosting 
-    // process controls the physical OS Threads. If CLR is not hosted, we can 
-    // set thread group affinity on OS threads directly.
-    HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
-    if (pHostTask != NULL)
-        return;
-#endif //!FEATURE_CORECLR
 
     ThreadStoreLockHolder TSLockHolder(TRUE);
 
@@ -1919,11 +1903,6 @@ Thread::Thread()
 
     m_dwLockCount = 0;
     m_dwBeginLockCount = 0;
-#ifndef FEATURE_CORECLR
-    m_dwBeginCriticalRegionCount = 0;
-    m_dwCriticalRegionCount = 0;
-    m_dwThreadAffinityCount = 0;
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
@@ -2898,106 +2877,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     return hThread;
 }
 
-#ifndef FEATURE_CORECLR
-/*
-    The following are copied from MSDN:
-        http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/thread_stack_size.asp
-
-    To change the initially committed stack space, use the dwStackSize parameter of the CreateThread,
-    CreateRemoteThread, or CreateFiber function. This value is rounded up to the nearest page.
-    Generally, the reserve size is the default reserve size specified in the executable header.
-    However, if the initially committed size specified by dwStackSize is larger than the default reserve size,
-    the reserve size is this new commit size rounded up to the nearest multiple of 1 MB.
-
-    To change the reserved stack size, set the dwCreationFlags parameter of CreateThread or CreateRemoteThread
-    to STACK_SIZE_PARAM_IS_A_RESERVATION and use the dwStackSize parameter. In this case, the initially
-    committed size is the default size specified in the executable header.
-
-*/
-BOOL Thread::CheckThreadStackSize(SIZE_T *pSizeToCommitOrReserve,
-                                  BOOL   isSizeToReserve    // When TRUE, the previous argument is the stack size to reserve.
-                                                            // Otherwise, it is the size to commit.
-                                 )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //g_SystemInfo is global pointer to SYSTEM_INFO struct
-    SIZE_T dwAllocSize = (SIZE_T)g_SystemInfo.dwAllocationGranularity;
-    SIZE_T dwPageSize = (SIZE_T)g_SystemInfo.dwPageSize;
-
-    //Don't want users creating threads
-    //     with a stackSize request < 256K
-    //This value may change up or down as we see fit so don't doc to user
-    //
-    if(isSizeToReserve && 0x40000 > (*pSizeToCommitOrReserve))
-    {
-        *pSizeToCommitOrReserve = 0x40000;
-    }
-
-    *pSizeToCommitOrReserve = ALIGN(*pSizeToCommitOrReserve, dwAllocSize);
-
-    //
-    // Let's get the stack sizes from the PE file that started process.
-    //
-    SIZE_T ExeSizeOfStackReserve = 0;
-    SIZE_T ExeSizeOfStackCommit = 0;
-
-    if (!GetProcessDefaultStackSize(&ExeSizeOfStackReserve, &ExeSizeOfStackCommit))
-        return FALSE;
-
-    // Now let's decide which sizes OS are going to use.
-    SIZE_T sizeToReserve = 0;
-    SIZE_T sizeToCommit  = 0;
-
-    if (isSizeToReserve) {
-        // The passed-in *pSizeToCommitOrReserve is the stack size to reserve.
-        sizeToReserve = *pSizeToCommitOrReserve;
-        // OS will use ExeSizeOfStackCommit as the commited size.
-        sizeToCommit = ExeSizeOfStackCommit;
-    }
-    else {
-        // The passed-in *pSizeToCommitOrReserve is the stack size to commit.
-        sizeToCommit  = *pSizeToCommitOrReserve;
-        // OS will use ExeSizeOfStackReserve as the reserved size.
-        sizeToReserve = ExeSizeOfStackReserve;
-
-        // However, if the initially committed size specified by dwStackSize is larger than
-        // the default reserve size, the reserve size is this new commit size rounded up to
-        // the nearest multiple of 1 MB.
-        if (sizeToCommit > ExeSizeOfStackReserve) {
-            sizeToReserve = ALIGN(sizeToCommit, 0x1000000);
-        }
-
-        if (!g_pConfig->GetDisableCommitThreadStack())
-        {
-            // We will commit the full stack when a thread starts.  But if the PageFile is full, we may hit
-            // stack overflow at random places during startup.
-            // Therefore if we are unlikely to obtain space from PageFile, we will fail creation of a thread.
-
-            *pSizeToCommitOrReserve = sizeToReserve - HARD_GUARD_REGION_SIZE;
-
-            // OS's behavior is not consistent on if guard page is marked when we ask OS to commit the stack
-            // up to 2nd to last page.
-            // On Win2k3, the 2nd to last page is marked with guard bit.
-            // On WinXP, the 2nd to last page is not marked with guard bit.
-            // To be safe, we will not commit the 2nd to last page.
-            *pSizeToCommitOrReserve -= HARD_GUARD_REGION_SIZE;
-            // To make it more interesting, on X64, if we request to commit stack except the last two pages,
-            // OS commit the whole stack, and mark the last two pages as guard page.
-            *pSizeToCommitOrReserve -= 2*HARD_GUARD_REGION_SIZE;
-        }
-    }
-
-    // Ok, we now know what sizes OS will use to create the thread.
-    // Check to see if we have the room for guard pages.
-    return ThreadWillCreateGuardPage(sizeToReserve, sizeToCommit);
-}
-#endif // FEATURE_CORECLR
 
 BOOL Thread::GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize)
 {
@@ -3059,7 +2938,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     HANDLE  h = NULL;
     DWORD dwCreationFlags = CREATE_SUSPENDED;
 
-#ifdef FEATURE_CORECLR
     dwCreationFlags |= STACK_SIZE_PARAM_IS_A_RESERVATION;
 
 #ifndef FEATURE_PAL // the PAL does its own adjustments as necessary
@@ -3070,29 +2948,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
         sizeToCommitOrReserve = OS_PAGE_SIZE + 1;
     }
 #endif // !FEATURE_PAL
-#else
-    if(sizeToCommitOrReserve != 0)
-    {
-        dwCreationFlags |=  STACK_SIZE_PARAM_IS_A_RESERVATION;
-
-        //
-        // In this case we also force CommitThreadStack to commit the whole stack, even if we're configured not to do so.
-        // The config value is used to reduce the resource usage for default stack allocations; for non-default allocations,
-        // we assume the user has given us the correct size (and they're really going to need it).  This way we don't
-        // need to offer a Thread constructor that takes a confusing "stack size param is a commit size" parameter.
-        //
-        SetThreadStateNC(TSNC_ForceStackCommit);
-    }
-
-    // Check that we will have (reserved and never committed) guard pages at the end of the stack.
-    // If this call returns false then it will lead to an OOM exception on return.
-    // This is reasonable since a large stack was requested and we couldn't get it.
-    if(!CheckThreadStackSize(&sizeToCommitOrReserve, 
-        (sizeToCommitOrReserve != 0)))
-    {
-        return FALSE;
-    }
-#endif
 
     intermediateThreadParam* lpThreadArgs = new (nothrow) intermediateThreadParam;
     if (lpThreadArgs == NULL)
@@ -4236,10 +4091,6 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         // So on CoreCLR (where FEATURE_COMINTEROP is not currently defined) we can actually reach this point.
         // We can't fix this, because it's a breaking change, so we just won't assert here.
         // The result is that WaitAll on an STA thread in CoreCLR will behave stragely, as described above.
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-        else
-            _ASSERTE(!"WaitAll in an STA with more than one handle will deadlock");
-#endif
     }
 
     if (bWaitAll)
@@ -7707,81 +7558,6 @@ __declspec(noinline) void AllocateSomeStack(){
 BOOL Thread::CommitThreadStack(Thread* pThreadOptional)
 {
 
-#ifndef FEATURE_CORECLR
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (FAILED(CLRSetThreadStackGuarantee(STSGuarantee_Force)))
-        return FALSE;
-
-    if (g_pConfig->GetDisableCommitThreadStack() && (pThreadOptional == NULL || !pThreadOptional->HasThreadStateNC(TSNC_ForceStackCommit)))
-        return TRUE;
-
-
-    // This is a temporary fix for VSWhidbey 259155.  In CommitThreadStack() we determine the bounds of the
-    // region between the guard page and the hard guard region for a thread's stack and then commit that
-    // region.  Sometimes we cross a page boundary while calculating the bounds or doing the commit (in
-    // VirtualQuery or VirtualAlloc), such that the guard page is moved after we've already gotten it's
-    // location.  When that happens we commit too many pages and destroy the guard page.  To fix this we
-    // do a small stack allocation that ensures that we have enough stack space for all of the
-    // CommitThreadStack() work
-
-    AllocateSomeStack();
-
-    // Grab the info about the first region of the stack. First, we grab the region where we are now (&tmpMBI),
-    // then we use the allocation base of that to grab the first region.
-    MEMORY_BASIC_INFORMATION tmpMBI;
-    SIZE_T dwRes;
-
-    dwRes = ClrVirtualQuery((const void *)&tmpMBI, &tmpMBI, sizeof(MEMORY_BASIC_INFORMATION));
-
-    if (sizeof(MEMORY_BASIC_INFORMATION) != dwRes)
-    {
-        return FALSE;
-    }
-
-    dwRes = ClrVirtualQuery((const void *)((BYTE*)tmpMBI.AllocationBase + HARD_GUARD_REGION_SIZE), &tmpMBI, sizeof(MEMORY_BASIC_INFORMATION));
-
-    if (sizeof(MEMORY_BASIC_INFORMATION) != dwRes)
-    {
-        return FALSE;
-    }
-
-    // We commit the reserved part of the stack, if necessary, minus one page for the "hard" guard page.
-    if (tmpMBI.State == MEM_RESERVE)
-    {
-        // Note: we leave the "hard" guard region uncommitted.
-        void *base = (BYTE*)tmpMBI.AllocationBase + HARD_GUARD_REGION_SIZE;
-
-        // We are committing a page on stack.  If we call host for this operation,
-        // host needs to avoid adding it to the memory consumption.  Therefore
-        // we call into OS directly.
-#undef VirtualAlloc
-        void *p = VirtualAlloc(base,
-                               tmpMBI.RegionSize,
-                               MEM_COMMIT,
-                               PAGE_READWRITE);
-#define VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect) \
-        Dont_Use_VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect)
-
-        if (p != base )
-        {
-            DWORD err = GetLastError();
-            STRESS_LOG2(LF_EH, LL_ALWAYS,
-                        "Thread::CommitThreadStack: failed to commit stack for TID 0x%x with error 0x%x\n",
-                        ::GetCurrentThreadId(), err);
-
-            return FALSE;
-        }
-    }
-
-    INDEBUG(DebugLogStackMBIs());
-
-#endif 
     return TRUE;
 }
 
@@ -8802,10 +8578,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
     {
         pFrame->SetLockCount(m_dwBeginLockCount);
         m_dwBeginLockCount = m_dwLockCount;
-#ifndef FEATURE_CORECLR
-        pFrame->SetCriticalRegionCount(m_dwBeginCriticalRegionCount);
-        m_dwBeginCriticalRegionCount = m_dwCriticalRegionCount;
-#endif // !FEATURE_CORECLR
     }
 
     if (m_Context == pContext) {
@@ -8849,22 +8621,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
         PushDomain(pDomain->GetId());
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100000, "Entering into ADID=%d\n", pDomain->GetId().m_dwId);
 
-#ifndef FEATURE_CORECLR
-        //
-        // Push execution contexts (that could contain call context) into frame to avoid leaks
-        //
-
-        if (IsExposedObjectSet())
-        {
-            THREADBASEREF ref = (THREADBASEREF) ObjectFromHandle(m_ExposedObject);
-            _ASSERTE(ref != NULL);
-            if (ref->GetExecutionContext() != NULL)
-            {
-                pFrame->SetReturnExecutionContext(ref->GetExecutionContext());
-                ref->SetExecutionContext(NULL);
-            }
-        }
-#endif //!FEATURE_CORECLR
 
         //
         // Store the last thrown object in the ContextTransitionFrame before we null it out
@@ -8989,10 +8745,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
 
         m_dwLockCount = m_dwBeginLockCount;
         m_dwBeginLockCount = pFrame->GetLockCount();
-#ifndef FEATURE_CORECLR
-        m_dwCriticalRegionCount = m_dwBeginCriticalRegionCount;
-        m_dwBeginCriticalRegionCount = pFrame->GetCriticalRegionCount();
-#endif // !FEATURE_CORECLR
 
     }
 
@@ -9068,18 +8820,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
 
     if (fChangedDomains)
     {
-#ifndef FEATURE_CORECLR
-        //
-        // Pop execution contexts (could contain call context) from frame if applicable
-        //
-
-        if (IsExposedObjectSet())
-        {
-            THREADBASEREF ref = (THREADBASEREF) ObjectFromHandle(m_ExposedObject);
-            _ASSERTE(ref != NULL);
-            ref->SetExecutionContext(pFrame->GetReturnExecutionContext());
-        }
-#endif //!FEATURE_CORECLR
 
         // Do this last so that thread is not labeled as out of the domain until all cleanup is done.
         ADID adid=pCurrentDomain->GetId();
@@ -9192,11 +8932,9 @@ void Thread::RaiseCrossContextExceptionHelper(Exception* pEx, ContextTransitionF
     // Ensure that IP for WatsonBucketing has been collected if the exception is preallocated.
 #ifdef _DEBUG
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (IsWatsonEnabled())
-#endif // FEATURE_CORECLR
     {
         if (CLRException::IsPreallocatedExceptionObject(CLRException::GetThrowableFromException(pEx)))
         {
@@ -9491,11 +9229,7 @@ void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, Co
             switch (kind)
             {
             case kLastException:
-#ifdef FEATURE_CORECLR
                 gc.pMarshaledThrowable = gc.orBlob;
-#else
-                AppDomainHelper::UnmarshalObject(GetAppDomain(), &gc.orBlob, &gc.pMarshaledThrowable);
-#endif //FEATURE_CORECLR
 
                 break;
             case kOutOfMemoryException:
@@ -10225,7 +9959,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     {
         _ASSERTE(flags == MTCSF_NormalBase);
 
-#ifdef FEATURE_CORECLR
         if(!IsSingleAppDomain())
         {
             // This assert shouldnt be hit in CoreCLR since:
@@ -10239,11 +9972,9 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
             // So, if this is hit, something is not right!
             _ASSERTE(!"How come a managed thread in CoreCLR has suffered unhandled exception in DefaultDomain?");
         }
-#endif // FEATURE_CORECLR
 
         LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_ProcessedUnhandledException\n"));
 
-#if defined(FEATURE_CORECLR)
         //
         // In the default domain, when an exception goes unhandled on a managed thread whose threadbase is in the VM (e.g. explicitly spawned threads, 
         //    ThreadPool threads, finalizer thread, etc), CLR can end up in the unhandled exception processing path twice.
@@ -10271,7 +10002,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
         // will fail to honor the host policy (e.g. swallow unhandled exception). Thus, the 2nd unhandled exception may end up crashing the app when it should not.
         //
         if (IsSingleAppDomain() && (ret != EXCEPTION_EXECUTE_HANDLER))
-#endif // defined(FEATURE_CORECLR)
         {
             // Since we have already done unhandled exception processing for it, we dont want it 
             // to happen again if our UEF gets invoked upon returning back to the OS.
@@ -10321,9 +10051,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
         TryParam *pTryParam;
         Thread *pThread;
 
-#ifdef FEATURE_CORECLR
         BOOL *pfHadException; 
-#endif // FEATURE_CORECLR
 
 #ifdef WIN64EXCEPTIONS
         Frame *pFrame;
@@ -10333,10 +10061,8 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     args.pTryParam = &param;
     args.pThread = pThread;
 
-#ifdef FEATURE_CORECLR
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
-#endif // FEATURE_CORECLR
 
 #ifdef WIN64EXCEPTIONS
     args.pFrame = pFrame;
@@ -10368,13 +10094,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
         }
         PAL_ENDTRY;
 
-#ifdef FEATURE_CORECLR
         *(pArgs->pfHadException) = FALSE;
-#endif // FEATURE_CORECLR
     }
     PAL_FINALLY
     {
-#ifdef FEATURE_CORECLR
         // If we had a breakpoint exception that has gone unhandled,
         // then switch to the correct AD context. Its fine to do this
         // here because:
@@ -10386,7 +10109,6 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
         {
             ReturnToPreviousAppDomain();
         }
-#endif // FEATURE_CORECLR
         catchFrame.Pop();
     }
     PAL_ENDTRY;
@@ -11720,13 +11442,6 @@ void Thread::InternalReset(BOOL fFull, BOOL fNotFinalizerThread, BOOL fThreadObj
         FullResetThread();
     }
 
-#ifndef FEATURE_CORECLR
-    _ASSERTE (m_dwCriticalRegionCount == 0);
-    m_dwCriticalRegionCount = 0;
-
-    _ASSERTE (m_dwThreadAffinityCount == 0);
-    m_dwThreadAffinityCount = 0;
-#endif // !FEATURE_CORECLR
 
     //m_MarshalAlloc.Collapse(NULL);
 
@@ -11850,9 +11565,6 @@ HRESULT Thread::Reset(BOOL fFull)
 
         ResetThreadStateNC(TSNC_UnbalancedLocks);
         m_dwLockCount = 0;
-#ifndef FEATURE_CORECLR
-        m_dwCriticalRegionCount = 0;
-#endif // !FEATURE_CORECLR
 
     InternalSwitchOut();
     m_OSThreadId = SWITCHED_OUT_FIBER_OSID;
@@ -12227,9 +11939,6 @@ HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
     LIMITED_METHOD_CONTRACT;
 
     *pLockCount = m_dwLockCount;
-#ifndef FEATURE_CORECLR
-    *pLockCount += m_dwCriticalRegionCount;
-#endif // !FEATURE_CORECLR
     return S_OK;
 }
 
@@ -12823,37 +12532,6 @@ void Thread::BeginThreadAffinity()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_CORECLR
-    if (!CLRTaskHosted())
-    {
-        return;
-    }
-
-    if (IsGCSpecialThread() || IsDbgHelperSpecialThread())
-    {
-        return;
-    }
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-
-    HRESULT hr;
-
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = pManager->BeginThreadAffinity();
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-    _ASSERTE (hr == S_OK);
-    Thread *pThread = GetThread();
-
-    if (pThread)
-    {
-        pThread->IncThreadAffinityCount();
-#ifdef _DEBUG
-        pThread->AddFiberInfo(Thread::ThreadTrackInfo_Affinity);
-#endif
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-#endif // !FEATURE_CORECLR
 }
 
 
@@ -12862,40 +12540,6 @@ void Thread::EndThreadAffinity()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_CORECLR
-    if (!CLRTaskHosted())
-    {
-        return;
-    }
-
-    if (IsGCSpecialThread() || IsDbgHelperSpecialThread())
-    {
-        return;
-    }
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-
-    Thread *pThread = GetThread();
-    if (pThread)
-    {
-        pThread->DecThreadAffinityCount ();
-#ifdef _DEBUG
-        pThread->AddFiberInfo(Thread::ThreadTrackInfo_Affinity);
-#endif
-    }
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = pManager->EndThreadAffinity();
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    _ASSERTE (hr == S_OK);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-#endif // !FEATURE_CORECLR
 }
 
 void Thread::SetupThreadForHost()

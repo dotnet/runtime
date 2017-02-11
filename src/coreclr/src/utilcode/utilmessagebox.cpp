@@ -19,29 +19,6 @@
 #include "../dlls/mscorrc/resource.h"
 #include "ex.h"
 
-#if !defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
-
-//
-// This should be used for runtime dialog box, because we assume the resource is from mscorrc.dll
-// For tools like ildasm or Shim which uses their own resource file, you need to define IDS_RTL in 
-// their resource file and define a function like this and append the style returned from the function 
-// to every calls to WszMessageBox.
-//
-UINT GetCLRMBRTLStyle() 
-{
-    WRAPPER_NO_CONTRACT;
-
-    UINT mbStyle = 0;
-    WCHAR buff[MAX_LONGPATH];                        
-    if(SUCCEEDED(UtilLoadStringRC(IDS_RTL, buff, MAX_LONGPATH, true))) {
-        if(wcscmp(buff, W("RTL_True")) == 0) {
-            mbStyle = 0x00080000 |0x00100000; // MB_RIGHT || MB_RTLREADING
-        }
-    }
-    return mbStyle;
-}
-
-#endif //!defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
 
 BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 {
@@ -263,9 +240,6 @@ int UtilMessageBoxNonLocalizedVA(
             // in use.  However, outside the CLR (SELF_NO_HOST) we can't assume we have resources and
             // in CORECLR we can't even necessarily expect that our CLR callbacks have been initialized.
             // This code path is used for ASSERT dialogs.
-#if !defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
-            uType |= GetCLRMBRTLStyle();
-#endif
             
             result = MessageBoxImpl(hWnd, formattedMessage, formattedTitle, details, uType);
             

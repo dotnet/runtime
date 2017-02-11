@@ -160,11 +160,7 @@ DEFINE_DACVAR(ULONG, int, CCLRErrorReportingManager__g_ECustomDumpFlavor, CCLREr
 DEFINE_DACVAR(ULONG, PTR_SString, SString__s_Empty, SString::s_Empty)
 
 #ifdef FEATURE_APPX
-#if defined(FEATURE_CORECLR)
 DEFINE_DACVAR(ULONG, BOOL, dac__g_fAppX, ::g_fAppX)
-#else
-DEFINE_DACVAR(ULONG, PTR_AppXRTInfo, dac__g_pAppXRTInfo, ::g_pAppXRTInfo)
-#endif
 #endif // FEATURE_APPX
 
 DEFINE_DACVAR(ULONG, BOOL, SString__s_IsANSIMultibyte, SString::s_IsANSIMultibyte)
@@ -236,9 +232,6 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pThreadClass, ::g_pThreadClass
 #ifdef FEATURE_CER
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pCriticalFinalizerObjectClass, ::g_pCriticalFinalizerObjectClass)
 #endif
-#ifndef FEATURE_CORECLR
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pAsyncFileStream_AsyncResultClass, ::g_pAsyncFileStream_AsyncResultClass)
-#endif // !FEATURE_CORECLR
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pPredefinedArrayTypes, ::g_pPredefinedArrayTypes)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedReferenceMT)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pByteArrayMT, ::g_pByteArrayMT)
@@ -316,12 +309,10 @@ DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__saved_sweep_ephemeral_start, WKS::g
 DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__background_saved_lowest_address, WKS::gc_heap::background_saved_lowest_address)
 DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__background_saved_highest_address, WKS::gc_heap::background_saved_highest_address)
 
-#ifdef FEATURE_CORECLR
 #ifndef FEATURE_PAL
 DEFINE_DACVAR(ULONG, HANDLE, dac__g_hContinueStartupEvent, ::g_hContinueStartupEvent)
 #endif // !FEATURE_PAL
 DEFINE_DACVAR(ULONG, DWORD, CorHost2__m_dwStartupFlags, CorHost2::m_dwStartupFlags)
-#endif // FEATURE_CORECLR
 
 DEFINE_DACVAR(ULONG, HRESULT, dac__g_hrFatalError, ::g_hrFatalError)
 
@@ -329,9 +320,6 @@ DEFINE_DACVAR(ULONG, HRESULT, dac__g_hrFatalError, ::g_hrFatalError)
     DEFINE_DACVAR(ULONG, DWORD, PEFile__s_NGENDebugFlags, PEFile::s_NGENDebugFlags)
 #endif //defined(DEBUGGING_SUPPORTED) && defined (FEATURE_PREJIT)
 
-#ifndef FEATURE_CORECLR
-DEFINE_DACVAR(ULONG, DWORD, AssemblyUsageLogManager__s_UsageLogFlags, AssemblyUsageLogManager::s_UsageLogFlags)
-#endif // FEATURE_CORECLR
 
 #if defined(FEATURE_APPX_BINDER)
 DEFINE_DACVAR(ULONG, PTR_CLRPrivBinderAppX, CLRPrivBinderAppX__s_pSingleton, CLRPrivBinderAppX::s_pSingleton)

@@ -202,62 +202,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 #else // !DACCESS_COMPILE
 
 
-#if !defined(FEATURE_CORECLR)
-// Slower spin enter path after first attemp failed
-void CrstBase::SpinEnter()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CAN_TAKE_LOCK;
-
-    // We only reach this routine when first attemp failed, so time to fire ETW event (fyuan)
-
-    // Fire an ETW event to mark the beginning of native contention
-    FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::NativeContention, GetClrInstanceId());
-
-    // Try spinning and yielding before eventually blocking.
-    // The limit of dwRepetitions = 10 is largely arbitrary - feel free to tune if you have evidence
-    // you're making things better.
-    
-    for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
-    {
-        DWORD i = g_SpinConstants.dwInitialDuration;
-        
-        do
-        {
-            if (  (m_criticalsection.LockCount == -1 || 
-                (size_t)m_criticalsection.OwningThread == (size_t) GetCurrentThreadId())
-            && UnsafeTryEnterCriticalSection(&m_criticalsection))
-            {
-                return;
-            }
-                
-            if (g_SystemInfo.dwNumberOfProcessors <= 1)
-            {
-                break;
-            }
-            
-            // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and can't think
-            // of a better way that isn't machine-dependent.
-            
-            for (int delayCount = i; --delayCount; ) 
-            {
-                YieldProcessor();           // indicate to the processor that we are spining 
-            }
-
-            // exponential backoff: wait a factor longer in the next iteration
-            i *= g_SpinConstants.dwBackoffFactor;
-        } while (i < g_SpinConstants.dwMaximumDuration);
-        
-        __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-    }
-
-    UnsafeEnterCriticalSection(& m_criticalsection);
-}
-#endif // FEATURE_CORECLR
 
 
 void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CHECK*/))
@@ -438,10 +382,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         
         if (! fIsCriticalSectionEnteredAfterFailingOnce)
         {
-#ifndef FEATURE_CORECLR
-            // Fire an ETW event to mark the beginning of native contention
-            FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::NativeContention, GetClrInstanceId());
-#endif // !FEATURE_CORECLR
             fIsCriticalSectionEnteredAfterFailingOnce = TRUE;
 
             hr = m_pHostCrst->Enter(option);
@@ -465,36 +405,13 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
             Thread::BeginThreadAffinity();
         }
 
-#ifdef FEATURE_CORECLR
         UnsafeEnterCriticalSection(&m_criticalsection);
-#else
-        // Try entering the critical section once, if we fail we contend
-        // and fire the contention start ETW event
-        if ((m_criticalsection.LockCount == -1 || (size_t)m_criticalsection.OwningThread == (size_t) GetCurrentThreadId())
-             && UnsafeTryEnterCriticalSection(& m_criticalsection))
-        {
-        }
-        else
-        {
-            SpinEnter();
-
-            fIsCriticalSectionEnteredAfterFailingOnce = TRUE;
-        }
-#endif
 
 #ifdef FEATURE_INCLUDE_ALL_INTERFACES
         INCTHREADLOCKCOUNTTHREAD(pThread);
 #endif
     }
 
-#ifndef FEATURE_CORECLR
-    // Fire an ETW event to mark the end of native contention
-    // This we do only when we have fired a contention start event before
-    if (fIsCriticalSectionEnteredAfterFailingOnce)
-    {
-        FireEtwContentionStop(ETW::ContentionLog::ContentionStructs::NativeContention, GetClrInstanceId());
-    }
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     PostEnter();

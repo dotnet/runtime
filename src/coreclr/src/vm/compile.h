@@ -235,12 +235,6 @@ class CEECompileInfo : public ICorCompileInfo
                                mdFile                  file,
                                CORINFO_MODULE_HANDLE   *pHandle);
 
-#ifndef FEATURE_CORECLR
-    // Check if the assembly supports automatic NGen
-    BOOL SupportsAutoNGen(CORINFO_ASSEMBLY_HANDLE assembly);
-
-    HRESULT SetCachedSigningLevel(HANDLE hNI, HANDLE *pModules, COUNT_T nModules);
-#endif
 
     BOOL CheckAssemblyZap(
         CORINFO_ASSEMBLY_HANDLE assembly, 
@@ -757,9 +751,6 @@ typedef SHash<AssemblySpecDefRefMapTraits> AssemblySpecMapDefRefMapTable;
 class CompilationDomain : public AppDomain, 
                           public ICorCompilationDomain
 {
-#ifndef FEATURE_CORECLR
-    VPTR_MULTI_VTABLE_CLASS(CompilationDomain, AppDomain);
-#endif
 
  public:
     BOOL                    m_fForceDebug; 
@@ -796,14 +787,6 @@ class CompilationDomain : public AppDomain,
     HRESULT AddDependencyEntry(PEAssembly *pFile, mdAssemblyRef ref,mdAssemblyRef def);
     void ReleaseDependencyEmitter();
 
-#ifndef FEATURE_CORECLR // hardbinding
-    PtrHashMap              m_hardBoundModules;     // Hard dependency on native image of these dependency modules
-    PtrHashMap              m_cantHardBindModules;
-    void UpdateDependencyEntryForHardBind(PEAssembly * pDependencyAssembly);
-    void IncludeHardBindClosure(PEAssembly * pDependencyAssembly);
-    void CheckHardBindToZapFile(SString dependencyNameFromCustomAttribute);
-    void CheckLoadHints();
-#endif
 
   public:
 
@@ -831,28 +814,7 @@ class CompilationDomain : public AppDomain,
 
     BOOL CanEagerBindToZapFile(Module *targetModule, BOOL limitToHardBindList = TRUE);
 
-#ifndef FEATURE_CORECLR // hardbinding
-    PtrHashMap::PtrIterator IterateHardBoundModules();
 
-    // List of full display names of assemblies to hard-bind to
-    SArray<SString,FALSE> m_assemblyHardBindList;
-    BOOL                  m_useHardBindList;
-    BOOL IsInHardBindRequestList(Assembly * pAssembly);
-    BOOL IsInHardBindRequestList(PEAssembly * pAssembly);
-    BOOL IsSafeToHardBindTo(PEAssembly * pAssembly);
-
-    void SetAssemblyHardBindList(
-                        __in_ecount( cHardBindList )
-                            LPWSTR *pHardBindList,
-                        DWORD  cHardBindList);
-#endif
-
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    void ComputeAssemblyHardBindList(IMDInternalImport * pImport);
-    BOOL IsInHardBindList(SString& simpleName);
-
-    static BOOL FindImage(const SString& fileName, MDInternalImportFlags flags, PEImage ** ppImage);
-#endif
 
     // Returns NULL on out-of-memory
     RefCache *GetRefCache(Module *pModule)

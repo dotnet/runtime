@@ -70,12 +70,10 @@ EEPolicy::EEPolicy ()
     m_ActionOnFailure[FAIL_NonCriticalResource] = eThrowException;
     m_ActionOnFailure[FAIL_OrphanedLock] = eNoAction;
     m_ActionOnFailure[FAIL_FatalRuntime] = eRudeExitProcess;
-#ifdef FEATURE_CORECLR
     // For CoreCLR, initialize the default action for AV processing to all
     // all kind of code to catch AV exception. If the host wants, they can
     // specify a different action for this.
     m_ActionOnFailure[FAIL_AccessViolation] = eNoAction;
-#endif // FEATURE_CORECLR    
     m_ActionOnFailure[FAIL_StackOverflow] = eRudeExitProcess;
     m_ActionOnFailure[FAIL_CodeContract] = eThrowException;
     m_unhandledExceptionPolicy = eRuntimeDeterminedPolicy;
@@ -178,22 +176,10 @@ BOOL EEPolicy::IsValidActionForFailure(EClrFailure failure, EPolicyAction action
         return action >= eUnloadAppDomain &&
             action < MaxPolicyAction;
     case FAIL_AccessViolation:
-#ifdef FEATURE_CORECLR
         // Allowed actions on failure are:
         // 
         // eNoAction or eRudeExitProcess.
         return ((action == eNoAction) || (action == eRudeExitProcess));
-#else // !FEATURE_CORECLR
-        // FAIL_AccessViolation is defined for the desktop so that
-        // if any more definitions are added after it, their value
-        // should remain constant irrespective of whether its the
-        // desktop CLR or CoreCLR.
-        //
-        // That said, currently, Desktop CLR does not support
-        // FAIL_AccessViolation. Thus, any calls which use
-        // this failure are not allowed.
-        return FALSE;
-#endif // FEATURE_CORECLR         
     case FAIL_StackOverflow:
         return action >= eRudeUnloadAppDomain &&
             action < MaxPolicyAction;
@@ -602,21 +588,6 @@ void EEPolicy::ExitProcessViaShim(UINT exitCode)
     // runtime in a process with many. We need to give the other runtimes a chance to exit
     // cleanly. If we can't make the call, or if the call fails for some reason, then we
     // simply exit the process here, which is rude to the others, but the best we can do.
-#if !defined(FEATURE_CORECLR)
-    {
-        ReleaseHolder<ICLRRuntimeHostInternal> pRuntimeHostInternal;
-
-        HRESULT hr = g_pCLRRuntime->GetInterface(CLSID_CLRRuntimeHostInternal,
-            IID_ICLRRuntimeHostInternal,
-            &pRuntimeHostInternal);
-
-        if (SUCCEEDED(hr))
-        {
-            pRuntimeHostInternal->ShutdownAllRuntimesThenExit(exitCode);
-            LOG((LF_EH, LL_INFO10, "ExitProcessViaShim: shim returned... exiting now.\n"));
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     ExitProcess(exitCode);
 }

@@ -28,46 +28,6 @@ extern "C" {
 { 0xd41e4f1f, 0xa407, 0x11d1, {0x8b, 0xc9, 0x0, 0xc0, 0x4f, 0xa3, 0xa, 0x41 } }
 
 
-#ifndef FEATURE_CORECLR
-// See if we're set up to do a version check
-#if (VER_MAJORVERSION < 4)
-#error "Looks like major version isn't set correctly. Are you including product_version.h?"
-#endif
-
-// The following check has been added to ensure the right thing is done 
-// for SxS compatibility of mscorsecimpl.dll when moving to a new framework 
-// version. 
-//
-// The library is registered using a full path and a GUID in the following location:
-// HKLM\SOFTWARE\Microsoft\Cryptography\Providers\Trust\*
-// With a new SxS version of the framework, we need to move to a new
-// GUID so older versions continue to work unimpacted.
-//
-// The check will fail when the runtime version changes; when it does,
-// please do the following:
-//
-// If the new version is NOT a SxS release with the version number in the #if, 
-// update the version number in the #if below to the new version and you're done.
-//
-// If the new release is a SxS release, then there's a bit more work involved:
-// 1. Change COREE_POLICY_PROVIDER in CorPolicy.h to a new GUID.
-// 2. Update batchSetup to use the new GUID. To do so, update
-//    all occurrences of the GUID in 
-//    ndp\clr\src\dlls\mscorsecimpl\mscorsecimpl.vrg
-// 3. Update "real" setup to use the new GUID. To do so, update
-//    all occurrences of the GUID in 
-//    setupauthoring\netfx\clr\Components\mscorsec.dll.ddc
-// 4. Update the version number in the #if below.
-
-#if !(VER_MAJORVERSION == 4 && VER_MINORVERSION == 0)
-#error "The guid for mscorsecimpl needs to change when the runtime version changes"
-#endif
-
-// {A7F4C378-21BE-494e-BA0F-BB12C5D208C5}
-#define COREE_POLICY_PROVIDER \
-{ 0xa7f4c378, 0x21be, 0x494e, {0xba, 0x0f, 0xbb, 0x12, 0xc5, 0xd2, 0x08, 0xc5 } }
-
-#endif //#ifndef FEATURE_CORECLR
 
 // This structure is returned from the winverify trust call, free up the structure
 // using CoTaskMemAlloc except for COREE_POLICY_PROVIDER which uses LocalALLoc.

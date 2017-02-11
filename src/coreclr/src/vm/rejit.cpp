@@ -447,16 +447,10 @@ HRESULT ProfilerFunctionControl::SetILInstrumentedCodeMap(ULONG cILMapEntries, C
         return E_INVALIDARG;
     }
 
-#ifdef FEATURE_CORECLR
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
     }
-#else
-    // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-    // or profiler is loaded.  So it should always be available.
-    _ASSERTE(g_pDebugInterface != NULL);
-#endif // FEATURE_CORECLR
 
 
     // copy the il map and il map entries into the corresponding fields.

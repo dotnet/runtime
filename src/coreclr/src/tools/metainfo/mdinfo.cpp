@@ -22,9 +22,6 @@
 
 #define LEGACY_ACTIVATION_SHIM_LOAD_LIBRARY WszLoadLibrary
 #define LEGACY_ACTIVATION_SHIM_DEFINE_CoInitializeEE
-#ifndef FEATURE_CORECLR
-#include "LegacyActivationShim.h"
-#endif
 
 #define ENUM_BUFFER_SIZE 10
 #define TAB_SIZE 8
@@ -760,12 +757,6 @@ void MDInfo::Error(const char* szError, HRESULT hr)
             pIErr->Release();
 
     }
-#ifndef FEATURE_CORECLR
-    LegacyActivationShim::CoUninitializeCor();
-#ifndef FEATURE_PAL
-    CoUninitialize();
-#endif
-#endif
     exit(hr);
 } // void MDInfo::Error()
 

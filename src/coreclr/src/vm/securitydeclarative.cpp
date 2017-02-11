@@ -269,14 +269,7 @@ DeclActionInfo* SecurityDeclarative::DetectDeclActions(MethodDesc *pMeth, DWORD 
 
             if (pClass->HasSuppressUnmanagedCodeAccessAttr())
             {
-#ifdef FEATURE_CORECLR
                 hr = S_OK;
-#else
-                hr = pInternalImport->GetCustomAttributeByName(pMT->GetCl(),
-                                                               COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                               NULL,
-                                                               NULL);
-#endif // FEATURE_CORECLR
                 if (hr != S_OK)
                 {
                     g_IBCLogger.LogEEClassCOWTableAccess(pMT);
@@ -536,15 +529,7 @@ HRESULT SecurityDeclarative::GetDeclarationFlags(IMDInternalImport *pInternalImp
     BOOL hasSuppressUnmanagedCodeAccessAttr;
     if (pfHasSuppressUnmanagedCodeAccessAttr == NULL)
     {
-#ifdef FEATURE_CORECLR
         hasSuppressUnmanagedCodeAccessAttr = TRUE;
-#else
-        hasSuppressUnmanagedCodeAccessAttr = 
-          (pInternalImport->GetCustomAttributeByName(token,
-                                                     COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                     NULL,
-                                                     NULL) == S_OK);
-#endif
     }
     else
         hasSuppressUnmanagedCodeAccessAttr = *pfHasSuppressUnmanagedCodeAccessAttr;
@@ -1049,29 +1034,6 @@ void SecurityDeclarative::CheckLinkDemandAgainstAppDomain(MethodDesc *pMD)
     if (gc.refMethodNonCasDemands != NULL)
         CheckNonCasDemand(&gc.refMethodNonCasDemands);
 
-#ifndef FEATURE_CORECLR   
-    // On CORECLR, we do this from the JIT callouts if the caller is transparent: if caller is critical, no checks needed
-
-    // We perform automatic linktime checks for UnmanagedCode in three cases:
-    //   o  P/Invoke calls (shouldn't get these here, but let's be paranoid).
-    //   o  Calls through an interface that have a suppress runtime check
-    //      attribute on them (these are almost certainly interop calls).
-    //   o  Interop calls made through method impls.
-    // Just walk the stack in these cases, they'll be extremely rare and the
-    // perf delta isn't that huge.
-    if (pMD->IsNDirect() ||
-        (pMD->IsInterface() &&
-         (pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMethodTable()->GetCl(),
-                                                      COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                      NULL,
-                                                      NULL) == S_OK ||
-          pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMemberDef(),
-                                                      COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                      NULL,
-                                                      NULL) == S_OK) ) ||
-        (pMD->IsComPlusCall() && !pMD->IsInterface()))
-        SecurityStackWalk::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);
-#endif // FEATURE_CORECLR
 
     GCPROTECT_END();
 }

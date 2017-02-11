@@ -9785,23 +9785,7 @@ bool MethodTable::ClassRequiresUnmanagedCodeCheck()
 {
     LIMITED_METHOD_CONTRACT;
     
-#ifdef FEATURE_CORECLR
     return false;
-#else
-    // all WinRT types have an imaginary [SuppressUnmanagedCodeSecurity] attribute on them
-    if (IsProjectedFromWinRT())
-        return false;
-        
-    // In AppX processes, there is only one full trust AppDomain, so there is never any need to do a security
-    // callout on interop stubs
-    if (AppX::IsAppXProcess())
-        return false;
-
-    return GetMDImport()->GetCustomAttributeByName(GetCl(),
-                                                 COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                 NULL,
-                                                 NULL) == S_FALSE;
-#endif // FEATURE_CORECLR
 }
 
 #endif // !DACCESS_COMPILE
