@@ -197,15 +197,6 @@ BOOL GlobalAllocStore::m_Disabled = FALSE;
 
 #endif
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-// The helper thread can't call regular new / delete b/c of interop-debugging deadlocks.
-// It must use the (InteropSafe) heap from debugger.h, you also can't allocate normally
-// when we have any other thread hard-suspended.
-
-// Telesto doesn't support interop-debugging, so this won't be an issue.
-
-void AssertAllocationAllowed();
-#endif
 
 
 HANDLE g_ExecutableHeapHandle = NULL;
@@ -225,9 +216,6 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
             return NULL;
 #endif
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    AssertAllocationAllowed();
-#endif
 
 #ifdef _DEBUG
         if (g_fEEStarted) {
@@ -570,9 +558,6 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
         return NULL;
 #endif
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    AssertAllocationAllowed();
-#endif
 
 #ifdef FEATURE_INCLUDE_ALL_INTERFACES
     IHostMalloc *pHM = CorHost2::GetHostMalloc();
@@ -644,9 +629,6 @@ BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
     // @todo -  Need a backout validation here.
     CONTRACT_VIOLATION(SOToleranceViolation);
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    AssertAllocationAllowed();
-#endif
 
     BOOL retVal = FALSE;
 
@@ -745,7 +727,6 @@ HANDLE EEGetProcessExecutableHeap() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_CORECLR
 
 #ifndef FEATURE_PAL
 
@@ -780,18 +761,6 @@ HANDLE EEGetProcessExecutableHeap() {
     UNREACHABLE();
 #endif // !FEATURE_PAL
 
-#else // FEATURE_CORECLR
-
-    //
-    // Use process executable heap created by the shim
-    //
-    if (g_ExecutableHeapHandle == NULL)
-    {
-        extern HANDLE GetProcessExecutableHeap();
-        g_ExecutableHeapHandle = GetProcessExecutableHeap();
-    }
-
-#endif // FEATURE_CORECLR
 
     // TODO: implement hosted executable heap
     return g_ExecutableHeapHandle;

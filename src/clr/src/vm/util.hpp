@@ -1294,35 +1294,7 @@ public:
 
 extern LONG g_OLEAUT32_Loaded;
 
-#ifndef FEATURE_CORECLR
-#define ENSURE_OLEAUT32_LOADED()                                            \
-{                                                                           \
-    /* Should only be used in FCALL */                                      \
-    _ASSERTE (__me != 0);                                                   \
-    if (g_OLEAUT32_Loaded == 0)                                             \
-    {                                                                       \
-        /* CLRLoadLibrary/CLRFreeLibrary claim they trigger, but this */    \
-        /* isn't really true in this case because we're loading oleaut32 */ \
-        /* which we know doesn't contain any managed code in its DLLMain */ \
-        CONTRACT_VIOLATION(GCViolation|SOToleranceViolation);               \
-        HMODULE hMod = CLRLoadLibrary(W("oleaut32"));                         \
-        if (hMod == NULL)                                                   \
-        {                                                                   \
-            __FCThrow(__me, kOutOfMemoryException, 0, 0, 0, 0);             \
-        }                                                                   \
-        else                                                                \
-        {                                                                   \
-            if (FastInterlockExchange(&g_OLEAUT32_Loaded, 1) == 1)          \
-            {                                                               \
-                CLRFreeLibrary(hMod);                                       \
-            }                                                               \
-        }                                                                   \
-    }                                                                       \
-}                                                                           \
-INDEBUG(DisableDelayLoadCheckForOleaut32 _disableOleaut32Check);
-#else // !FEATURE_CORECLR
 #define ENSURE_OLEAUT32_LOADED()
-#endif // !FEATURE_CORECLR
 
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 

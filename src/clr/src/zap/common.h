@@ -50,9 +50,6 @@
 #include "guidfromname.h"
 #include "../dlls/mscorrc/resource.h"
 #include "zaplog.h"
-#ifndef FEATURE_CORECLR
-#include "eventmsg.h"
-#endif // FEATURE_CORECLR
 #include "ndpversion.h"
 
 #include "loaderheap.h"

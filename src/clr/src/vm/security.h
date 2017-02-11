@@ -160,9 +160,6 @@ namespace Security
     IAssemblySecurityDescriptor* CreateAssemblySecurityDescriptor(AppDomain *pDomain, DomainAssembly *pAssembly, LoaderAllocator *pLoaderAllocator);
     ISharedSecurityDescriptor* CreateSharedSecurityDescriptor(Assembly* pAssembly);
     void DeleteSharedSecurityDescriptor(ISharedSecurityDescriptor *descriptor);
-#ifndef FEATURE_CORECLR
-    IPEFileSecurityDescriptor* CreatePEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile);
-#endif
     inline void SetDefaultAppDomainProperty(IApplicationSecurityDescriptor* pASD);
     inline void SetDefaultAppDomainEvidenceProperty(IApplicationSecurityDescriptor* pASD);
 
@@ -326,9 +323,6 @@ public:
 
     virtual void PropagatePermissionSet(OBJECTREF GrantedPermissionSet, OBJECTREF DeniedPermissionSet, DWORD dwSpecialFlags) = 0;
 
-#ifndef FEATURE_CORECLR 
-    virtual BOOL AllowApplicationSpecifiedAppDomainManager() = 0;
-#endif
 
     // Check to make sure that security will allow this assembly to load.  Throw an exception if the
     // assembly should be forbidden from loading for security related purposes
@@ -345,13 +339,6 @@ public:
     virtual Assembly* GetAssembly() = 0;
 };
 
-#ifndef FEATURE_CORECLR
-class IPEFileSecurityDescriptor : public ISecurityDescriptor
-{
-public:
-    virtual BOOL AllowBindingRedirects() = 0;
-};
-#endif
 
 #include "security.inl"
 #include "securitydeclarative.inl"

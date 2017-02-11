@@ -364,9 +364,7 @@ private:
     SEMAPHORE_COOKIE m_semaphore;
 };
 
-#if defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
 HMODULE GetCLRModule ();
-#endif // defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
 
 #ifndef FEATURE_NO_HOST
 /*

@@ -356,12 +356,8 @@ ModuleRecord::ModuleRecord(unsigned lenName, unsigned lenAsmName)
     wLoadLevel = 0;
     // Extra data
     lenModuleName = (unsigned short) lenName;
-#if defined(FEATURE_CORECLR)
     lenAssemblyName = (unsigned short) lenAsmName;
     recordID += RoundUp(lenModuleName) + RoundUp(lenAssemblyName);
-#else
-    recordID += RoundUp(lenModuleName);
-#endif
 }
 
 
@@ -375,7 +371,6 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     unsigned lenModuleName = (unsigned) strlen(pModuleName);
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
-#if defined(FEATURE_CORECLR)
     SString sAssemblyName;
     StackScratchBuffer scratch;
     pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
@@ -383,7 +378,6 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
-#endif
 
 #if defined(FEATURE_APPX_BINDER)
 
@@ -422,12 +416,8 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
     const void * pModuleName = module.simpleName;
     unsigned lenModuleName = module.simpleName.GetSize();
 
-#if defined(FEATURE_CORECLR)
     const void * pAssemblyName = module.assemblyName;
     unsigned lenAssemblyName = module.assemblyName.GetSize();
-#else
-    unsigned lenAssemblyName = 0;
-#endif
 
     ModuleRecord mod(lenModuleName, lenAssemblyName);
     
@@ -442,12 +432,10 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
     {
         hr = WriteString(pModuleName, lenModuleName, pStream);
 
-#if defined(FEATURE_CORECLR)
         if (SUCCEEDED(hr))
         {
             hr = WriteString(pAssemblyName, lenAssemblyName, pStream);
         }
-#endif
     }
 
     return hr;
@@ -719,9 +707,6 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
     {
-#if !defined(FEATURE_CORECLR)
-        if (! pDomainAssembly->IsSystem())
-#endif
         {
             hr = HandleAssembly(pDomainAssembly);
         }
@@ -854,9 +839,6 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
 
     // When running under Appx or CoreCLR for K, AppDomain is normally not shut down properly (CLR in hybrid case, or Alt-F4 shutdown), 
     // So we only allow writing out after profileWriteTimeout seconds
-#if !defined(FEATURE_CORECLR)
-    if (m_fAppxMode)
-#endif
     {
         // Get the timeout in seconds.
         int profileWriteTimeout = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfileWriteDelay);
@@ -1061,11 +1043,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const wchar_t * pRoot, const wchar_t 
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
             m_pDomain,
-#if defined(FEATURE_CORECLR)
             m_pBinderContext,
-#else
-            NULL,
-#endif
             nSession,
             m_fAppxMode));
 
@@ -1235,11 +1213,7 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
     {
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-#if defined(FEATURE_CORECLR)
             pBinderContext,
-#else
-            NULL,
-#endif
             m_fAppxMode);
 
         if (pRecorder != NULL)
@@ -1473,17 +1447,6 @@ void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadL
     STANDARD_VM_CONTRACT;
 
 
-#if defined(FEATURE_APPX_BINDER) && !defined(FEATURE_CORECLR)
-    // When running under Appx, allow framework assembly / first party winmd to load
-    // load-level change not allowed in the background thread, unless for resource DLL (loaded for exception throwing), but this could still happen.
-    _ASSERTE(! GetThread()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled) || ModuleHasNoCode(pModule)
-             || m_fAppxMode && IsLoadOkay(pModule));
-
-#elif !defined(FEATURE_CORECLR)
-
-    _ASSERTE(! GetThread()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled) || ModuleHasNoCode(pModule));
-
-#endif
 
     if (m_fRecorderActive)
     {

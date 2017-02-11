@@ -613,15 +613,6 @@ OBJECTREF AssemblySecurityDescriptor::GetAdditionalEvidence()
 }
 #endif // FEATURE_CAS_POLICY
 
-#ifndef FEATURE_CORECLR 
-BOOL AssemblySecurityDescriptor::AllowApplicationSpecifiedAppDomainManager()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Only fully trusted assemblies are allowed to specify their AppDomainManager in a config file
-    return this->IsFullyTrusted();
-}
-#endif // FEATURE_CORECLR
 
 // Check to make sure that security will allow this assembly to load.  Throw an exception if the assembly
 // should be forbidden from loading for security related purposes

@@ -629,17 +629,10 @@ public:
     // Get the rule set the assembly uses
     inline SecurityRuleSet GetSecurityRuleSet();
 
-#ifndef FEATURE_CORECLR
-    // Can fully trusted transparent code bypass verification
-    inline BOOL CanTransparentCodeSkipVerification();
-#endif // !FEATURE_CORECLR
 
     // Does the assembly allow partially trusted callers
     inline BOOL IsAPTCA();
 
-#ifndef FEATURE_CORECLR
-    BOOL AssemblyVersionRequiresLegacyTransparency();
-#endif // !FEATURE_CORECLR
 
 private:
     // Helper class which fires transparency calculation begin/end ETW events

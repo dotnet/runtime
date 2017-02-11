@@ -252,13 +252,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
         if (pStaticParent != NULL)
         {
             // We dont validate this for CoreCLR as there is no good use-case for this scenario.
-#if !defined(FEATURE_CORECLR)        
-            // It is OK for signed assemblies to reference WinRT assemblies (.winmd files) that are not signed
-            if (!IsContentType_WindowsRuntime() && pStaticParent->GetFile()->IsStrongNamed() && !IsStrongNamed())
-            {
-                ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
-            }
-#endif // !defined(FEATURE_CORECLR)
             
             SetParentAssembly(pStaticParent);
         }
@@ -378,7 +371,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     }
 #endif //FEATURE_COMINTEROP
 
-#if defined(FEATURE_CORECLR)
     // Set the binding context for the AssemblySpec
     ICLRPrivBinder* pCurrentBinder = GetBindingContext();
     ICLRPrivBinder* pExpectedBinder = pFile->GetBindingContext();
@@ -391,7 +383,6 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
         _ASSERTE((pExpectedBinder != NULL) || pFile->IsSystem() || pFile->IsDynamic());
         SetBindingContext(pExpectedBinder);
     }
-#endif // defined(FEATURE_CORECLR)
 }
 
 #ifndef CROSSGEN_COMPILE
@@ -1206,7 +1197,6 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, AssemblyLoadSecu
     return pDomainAssembly->GetAssembly();
 }
 
-#if defined(FEATURE_CORECLR)
 // Returns a BOOL indicating if the two Binder references point to the same
 // binder instance.
 BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB)
@@ -1233,7 +1223,6 @@ BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB)
     
     return fIsSameInstance;
 }
-#endif // defined(FEATURE_CORECLR)
 
 ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDomain)
 {
@@ -1360,78 +1349,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
     AppDomain* pDomain = GetAppDomain();
 
-#ifndef FEATURE_CORECLR
-    // Event Tracing for Windows is used to log data for performance and functional testing purposes.
-    // The events in this function are used to help measure the performance of assembly loading as a whole for dynamic loads.
-
-    // Special-purpose holder structure to ensure the LoaderPhaseEnd ETW event is fired when returning from function.
-    struct ETWLoaderPhaseHolder
-    {
-        StackSString ETWCodeBase, ETWAssemblyName;
-
-        DWORD _dwAppDomainId;
-        BOOL initialized;
-
-        ETWLoaderPhaseHolder()
-            : _dwAppDomainId(ETWAppDomainIdNotAvailable)
-            , initialized(FALSE)
-        { }
-
-        void Init(DWORD dwAppDomainId, LPCWSTR wszCodeBase, LPCSTR szAssemblyName)
-        {
-            _dwAppDomainId = dwAppDomainId;
-
-            EX_TRY
-            {
-                if (wszCodeBase != NULL)
-                {
-                    ETWCodeBase.Append(wszCodeBase);
-                    ETWCodeBase.Normalize(); // Ensures that the later cast to LPCWSTR does not throw.
-                }
-            }
-            EX_CATCH
-            {
-                ETWCodeBase.Clear();
-            }
-            EX_END_CATCH(RethrowTransientExceptions)            
-
-            EX_TRY
-            {
-                if (szAssemblyName != NULL)
-                {
-                    ETWAssemblyName.AppendUTF8(szAssemblyName);
-                    ETWAssemblyName.Normalize(); // Ensures that the later cast to LPCWSTR does not throw.
-                }
-            }
-            EX_CATCH
-            {
-                ETWAssemblyName.Clear();
-            }
-            EX_END_CATCH(RethrowTransientExceptions)            
-
-            FireEtwLoaderPhaseStart(_dwAppDomainId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, ETWCodeBase.IsEmpty() ? NULL : (LPCWSTR)ETWCodeBase, ETWAssemblyName.IsEmpty() ? NULL : (LPCWSTR)ETWAssemblyName, GetClrInstanceId());
-
-            initialized = TRUE;
-        }
-
-        ~ETWLoaderPhaseHolder()
-        {
-            if (initialized)
-            {
-                FireEtwLoaderPhaseEnd(_dwAppDomainId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, ETWCodeBase.IsEmpty() ? NULL : (LPCWSTR)ETWCodeBase, ETWAssemblyName.IsEmpty() ? NULL : (LPCWSTR)ETWAssemblyName, GetClrInstanceId());
-            }
-        }
-    };
-
-    ETWLoaderPhaseHolder loaderPhaseHolder;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD)) {
-#ifdef  FEATURE_FUSION
-        loaderPhaseHolder.Init(pDomain->GetId().m_dwId, m_wszCodeBase, m_pAssemblyName);
-#else
-        loaderPhaseHolder.Init(pDomain->GetId().m_dwId, NULL, NULL);
-#endif    
-    }
-#endif // FEATURE_CORECLR
 
     DomainAssembly *pAssembly = nullptr;
 
@@ -1821,7 +1738,6 @@ void AssemblySpecBindingCache::Init(CrstBase *pCrst, LoaderHeap *pHeap)
     m_pHeap = pHeap;
 }
 
-#if defined(FEATURE_CORECLR)
 AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssemblyBindingEntryForAssemblySpec(AssemblySpec* pSpec, BOOL fThrow)
 {
     CONTRACTL
@@ -1895,19 +1811,12 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
     
     return pEntry;
 }
-#endif // defined(FEATURE_CORECLR)
 
 BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
 
-#if !defined(FEATURE_CORECLR)
-    DWORD key = pSpec->Hash();
-    AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
-    return (entry != (AssemblyBinding *) INVALIDENTRY);
-#else // defined(FEATURE_CORECLR)    
     return (GetAssemblyBindingEntryForAssemblySpec(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
-#endif // !defined(FEATURE_CORECLR)    
 }
 
 DomainAssembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
@@ -1933,12 +1842,7 @@ DomainAssembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,
 
     AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
     
-#if !defined(FEATURE_CORECLR)    
-    DWORD key = pSpec->Hash();
-    entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
-#else // defined(FEATURE_CORECLR)
     entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, fThrow);
-#endif // !defined(FEATURE_CORECLR)
 
     if (entry == (AssemblyBinding *) INVALIDENTRY)
         RETURN NULL;
@@ -1976,12 +1880,7 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
 
     AssemblyBinding *entry = (AssemblyBinding *) INVALIDENTRY;
     
-#if !defined(FEATURE_CORECLR)    
-    DWORD key = pSpec->Hash();
-    entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
-#else // defined(FEATURE_CORECLR)
     entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, fThrow);
-#endif // !defined(FEATURE_CORECLR)
     
     if (entry == (AssemblyBinding *) INVALIDENTRY)
         RETURN NULL;
@@ -2108,7 +2007,6 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     UPTR key = (UPTR)pSpec->Hash();
 
-#if defined(FEATURE_CORECLR)
     // On CoreCLR, we will use the BinderID as the key 
     ICLRPrivBinder* pBinderContextForLookup = pAssembly->GetFile()->GetBindingContext();
     _ASSERTE(pBinderContextForLookup || pAssembly->GetFile()->IsSystem());
@@ -2124,7 +2022,6 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
             pSpec->SetBindingContext(pBinderContextForLookup);
         }
     }
-#endif // defined(FEATURE_CORECLR)
     
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
 
@@ -2190,7 +2087,6 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
     UPTR key = (UPTR)pSpec->Hash();
 
-#if defined(FEATURE_CORECLR)
     // On CoreCLR, we will use the BinderID as the key 
     ICLRPrivBinder* pBinderContextForLookup = pFile->GetBindingContext();
     _ASSERTE(pBinderContextForLookup || pFile->IsSystem());
@@ -2206,7 +2102,6 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
             pSpec->SetBindingContext(pBinderContextForLookup);
         }
     }
-#endif // defined(FEATURE_CORECLR)
 
     AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
 
@@ -2263,9 +2158,6 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
 
     UPTR key = (UPTR)pSpec->Hash();
 
-#if !defined(FEATURE_CORECLR)    
-    AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
-#else // defined(FEATURE_CORECLR)
     AssemblyBinding *entry = GetAssemblyBindingEntryForAssemblySpec(pSpec, TRUE);
     if (entry == (AssemblyBinding *) INVALIDENTRY)
     {
@@ -2287,7 +2179,6 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
             }
         }
     }
-#endif // defined(FEATURE_CORECLR)
 
     if (entry == (AssemblyBinding *) INVALIDENTRY) {
         AssemblyBindingHolder abHolder;

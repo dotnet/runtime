@@ -128,11 +128,7 @@ DataImage::DataImage(Module *module, CEEPreloader *preloader)
 
     m_pInternedStructures = new InternedStructureHashTable();
 
-#ifdef FEATURE_CORECLR
     m_inlineTrackingMap = NULL;
-#else
-    m_inlineTrackingMap = new InlineTrackingMap();
-#endif
 }
 
 DataImage::~DataImage()

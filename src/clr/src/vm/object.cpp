@@ -1393,9 +1393,6 @@ void Object::ValidateHeap(Object *from, BOOL bDeep)
 #ifdef FEATURE_REMOTING                      
                       this == OBJECTREFToObject(((ThreadBaseObject *)from)->m_ExposedContext) ||
 #endif                      
-#ifndef FEATURE_CORECLR
-                        this == OBJECTREFToObject(((ThreadBaseObject *)from)->m_ExecutionContext) ||
-#endif
                         false))
             {  
                 if (((ThreadBaseObject *)from)->m_InternalThread)

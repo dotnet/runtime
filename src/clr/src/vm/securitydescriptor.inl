@@ -94,16 +94,5 @@ inline SecurityDescriptorBase<IT>::SecurityDescriptorBase(AppDomain *pAppDomain,
 }
 #endif // !DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR
-
-#ifndef DACCESS_COMPILE
-inline PEFileSecurityDescriptor::PEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile) :
-    SecurityDescriptorBase<IPEFileSecurityDescriptor>(pDomain, NULL,pPEFile, pDomain->GetLoaderAllocator())
-{
-    LIMITED_METHOD_CONTRACT
-}
-#endif // !DACCESS_COMPILE
-
-#endif // !FEATURE_CORECLR
 
 #endif // #define __SECURITYDESCRIPTOR_INL__

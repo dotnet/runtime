@@ -10,10 +10,6 @@
 #include "assembler.h"
 
 #include "ceefilegenwriter.h"
-#ifndef FEATURE_CORECLR
-#include "strongname.h"
-#include "LegacyActivationShim.h"
-#endif
 
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
@@ -34,17 +30,8 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
-#ifdef FEATURE_CORECLR
     hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
         IID_IMetaDataDispenserEx, (void **)&m_pDisp);
-#else
-    hr = LegacyActivationShim::ClrCoCreateInstance(
-        CLSID_CorMetaDataDispenser, 
-        NULL, 
-        CLSCTX_INPROC_SERVER, 
-        IID_IMetaDataDispenserEx, 
-        (void **)&m_pDisp);
-#endif
     if (FAILED(hr))
         goto exit;
 
@@ -66,25 +53,6 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
-#ifndef FEATURE_CORECLR
-    hr = CoCreateInstance(CLSID_CorSymWriter_SxS,
-                           NULL,
-                           CLSCTX_INPROC_SERVER,
-                           IID_ISymUnmanagedWriter,
-                           (void **)&m_pSymWriter);
-    if(SUCCEEDED(hr))
-    {
-        if(m_pSymWriter) m_pSymWriter->Initialize((IUnknown*)m_pEmitter,
-                                                  m_wzOutputFileName,
-                                                  NULL,
-                                                  TRUE);
-    }
-    else
-    {
-        fprintf(stderr, "Error: QueryInterface(IID_ISymUnmanagedWriter) returns %X\n",hr);
-        m_pSymWriter = NULL;
-    }
-#endif // !FEATURE_CORECLR
 
     //m_Parser = new AsmParse(m_pEmitter);
     m_fInitialisedMetaData = TRUE;
@@ -687,197 +655,6 @@ BYTE HexToByte (CHAR wc)
     return (BYTE) (wc - L'a' + 10);
 }
 
-#ifndef FEATURE_CORECLR
-bool GetBytesFromHex (LPCSTR szPublicKeyHexString, ULONG cchPublicKeyHexString, BYTE** buffer, ULONG *cbBufferSize)
-{
-    ULONG cchHex = cchPublicKeyHexString;
-    if (cchHex % 2 != 0)
-        return false;
-    *cbBufferSize = cchHex / 2;
-
-    *buffer = new BYTE[*cbBufferSize];
-    if (!*buffer)
-        return false;
-
-    for (ULONG i = 0; i < *cbBufferSize; i++)
-    {
-        BYTE msn = HexToByte(*szPublicKeyHexString);
-        BYTE lsn = HexToByte(*(szPublicKeyHexString + 1));
-        if (msn == 0xFF || lsn == 0xFF)
-        {
-            delete[] *buffer;
-            return false;
-        }
-
-        (*buffer)[i] = (BYTE) ( (msn << 4) | lsn );
-        szPublicKeyHexString += 2;
-    }
-
-    return true;
-}
-
-HRESULT Assembler::GetSignatureKey()
-{
-    HRESULT     hr = S_OK;
-    ULONG        cbSize = 0;
-    void *            pvData = NULL;
-    LPWSTR      pName = NULL;
-    
-    CustomDescrList* pCDList = &m_pManifest->m_pAssembly->m_CustomDescrList;
-    
-    for (ULONG i = 0;i < pCDList->COUNT(); i++)
-    {
-        CustomDescr* pCD = pCDList->PEEK(i);
-
-        if(pCD->pBlob)
-        {
-            pvData = (void *)(pCD->pBlob->ptr());
-            cbSize = pCD->pBlob->length();
-            pCD->tkOwner = m_pManifest->m_pAssembly->tkTok;
-            mdToken tkOwnerType, tkTypeType = TypeFromToken(pCD->tkType);
-            
-            if (GetCAName(pCD->tkType, &pName) != S_OK)
-                continue;
-
-            if (wcscmp(pName, L"System.Reflection.AssemblySignatureKeyAttribute") == 0)
-            {
-                    if (cbSize < sizeof(WORD) || GET_UNALIGNED_VAL16(pvData) != 1)
-                    {
-                        hr = E_FAIL;
-                        break;;
-                    }
-                    pvData = (unsigned char *)pvData  + sizeof(WORD);
-                    cbSize -= sizeof(WORD);
-                    
-                    // String is stored as compressed length, UTF8.
-                    if (*(const BYTE*)pvData != 0xFF)
-                    {
-                        PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)pvData;
-                        cbSize -= CorSigUncompressedDataSize(sig);
-                        DWORD len = CorSigUncompressData(sig);
-                        pvData = (void *)sig;
-                        if (cbSize < len)
-                        {
-                            hr = E_FAIL;
-                            break;
-                        }
-
-                        AsmManStrongName   *pSN = &m_pManifest->m_sStrongName;
-                        GetBytesFromHex((LPCSTR)pvData, len, &pSN->m_pbSignatureKey, &pSN->m_cbSignatureKey);
-                    }
-                    
-                    break;
-            }
-            
-            if (pName)
-            {
-                delete pName;
-                pName = NULL;
-            }
-        }
-    }
-
-    if (pName)
-        delete pName;
-    return hr;
-}
-
-HRESULT Assembler::AllocateStrongNameSignature()
-{
-    HRESULT             hr = S_OK;
-    HCEESECTION         hSection;
-    DWORD               dwDataLength;
-    DWORD               dwDataOffset;
-    DWORD               dwDataRVA;
-    VOID               *pvBuffer;
-    AsmManStrongName   *pSN = &m_pManifest->m_sStrongName;
-
-    // Pulls  the AssemblySignatureKey attribute from m_CustomDescrList
-    // If present, populate the pSN->m_pbSignatureKey from the AssemblySignatureKeyAttribute blob
-    if (FAILED(hr = GetSignatureKey()))
-    {
-        return hr;
-    }
-
-   // Determine size of signature blob.
-    if (pSN->m_pbSignatureKey != NULL)
-    {
-        // If m_pbSignatureKey present use it, else fall back to using identity key.
-        if (FAILED(hr = LegacyActivationShim::StrongNameSignatureSize_HRESULT(
-            pSN->m_pbSignatureKey, 
-            pSN->m_cbSignatureKey, 
-            &dwDataLength)))
-         {
-            return hr;
-        }
-    }
-    else if (FAILED(hr = LegacyActivationShim::StrongNameSignatureSize_HRESULT(
-            pSN->m_pbPublicKey, 
-            pSN->m_cbPublicKey, 
-            &dwDataLength)))
-    {
-        return hr;
-    }
-
-    // Grab memory in the section for our stuff.
-    if (FAILED(hr = m_pCeeFileGen->GetIlSection(m_pCeeFile,
-                                                &hSection)))
-        return hr;
-
-    if (FAILED(hr = m_pCeeFileGen->GetSectionBlock(hSection,
-                                                   dwDataLength,
-                                                   4,
-                                                   &pvBuffer)))
-        return hr;
-
-    // Where did we get that memory?
-    if (FAILED(hr = m_pCeeFileGen->GetSectionDataLen(hSection,
-                                                     &dwDataOffset)))
-        return hr;
-
-    dwDataOffset -= dwDataLength;
-
-    // Convert to an RVA.
-    if (FAILED(hr = m_pCeeFileGen->GetMethodRVA(m_pCeeFile,
-                                                dwDataOffset,
-                                                &dwDataRVA)))
-        return hr;
-
-    // Emit the directory entry.
-    if (FAILED(hr = m_pCeeFileGen->SetStrongNameEntry(m_pCeeFile,
-                                                      dwDataLength,
-                                                      dwDataRVA)))
-        return hr;
-
-    return S_OK;
-}
-
-HRESULT Assembler::StrongNameSign()
-{
-    LPWSTR              wszOutputFile;
-    HRESULT             hr = S_OK;
-    AsmManStrongName   *pSN = &m_pManifest->m_sStrongName;
-
-    // Determine what the ouput PE was called.
-    if (FAILED(hr = m_pCeeFileGen->GetOutputFileName(m_pCeeFile,
-                                                     &wszOutputFile)))
-        return hr;
-
-    // Update the output PE image with a strong name signature.
-    if (FAILED(hr = LegacyActivationShim::StrongNameSignatureGeneration_HRESULT(
-        wszOutputFile, 
-        pSN->m_wzKeyContainer, 
-        pSN->m_pbPrivateKey, 
-        pSN->m_cbPrivateKey, 
-        NULL, 
-        NULL)))
-    {
-        return hr;
-    }
-
-    return S_OK;
-}
-#endif // !FEATURE_CORECLR
 
 BOOL Assembler::EmitFieldsMethods(Class* pClass)
 {
@@ -1231,13 +1008,6 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
 
     if(bClock) bClock->cMDEmit1 = GetTickCount();
 
-#ifndef FEATURE_CORECLR
-    // Allocate space for a strong name signature if we're delay or full
-    // signing the assembly.
-    if (m_pManifest->m_sStrongName.m_pbPublicKey)
-        if (FAILED(hr = AllocateStrongNameSignature()))
-            goto exit;
-#endif
 
     if(bClock) bClock->cMDEmit2 = GetTickCount();
 

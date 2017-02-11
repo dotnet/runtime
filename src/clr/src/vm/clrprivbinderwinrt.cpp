@@ -11,9 +11,6 @@
 
 #include "common.h" // precompiled header
 
-#ifndef FEATURE_CORECLR
-#include "assemblyusagelogmanager.h"
-#endif
 #include "clr/fs/file.h"
 #include "clrprivbinderwinrt.h"
 #include "clrprivbinderutil.h"
@@ -33,14 +30,12 @@
 #endif
 #include <TypeResolution.h>
 #include "delayloadhelpers.h"
-#ifdef FEATURE_CORECLR
 #include "../binder/inc/applicationcontext.hpp"
 #include "../binder/inc/assemblybinder.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/debuglog.hpp"
 #include "../binder/inc/utils.hpp"
 #include "../binder/inc/fusionassemblyname.hpp"
-#endif
 
 #ifdef CROSSGEN_COMPILE
 #include "crossgenroresolvenamespace.h"
@@ -138,10 +133,8 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     , m_fCanUseNativeImages(fCanUseNativeImages)
 #endif
     , m_fNamespaceResolutionKind(fNamespaceResolutionKind)
-#ifdef FEATURE_CORECLR
     , m_pApplicationContext(nullptr)
     , m_appLocalWinMDPath(nullptr)
-#endif
 #ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
     , m_fCanSetLocalWinMDPath(TRUE)
 #endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
@@ -177,34 +170,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
                 m_rgAltPaths.GetRawArray() + iAltPath));
         }
     }
-#if defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
-    else if (AppX::IsAppXNGen())
-    {
-        // If this is an NGen worker process for AppX, then the process doesn't actually run in the package,
-        // and RoResolveNamespace won't work without some help.  AppX::GetCurrentPackageInfo can give us the
-        // package graph, which we can pass to RoResolveNamespace to make it work properly.
-        UINT32 cbBuffer = 0;
-        UINT32 nCount = 0;
-        HRESULT hr = AppX::GetCurrentPackageInfo(PACKAGE_FILTER_CLR_DEFAULT, &cbBuffer, nullptr, nullptr);
-        if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-            ThrowHR(hr);
-
-        NewArrayHolder<BYTE> pbBuffer(new (nothrow) BYTE[cbBuffer]);
-        IfNullThrow(pbBuffer);
-        IfFailThrow(AppX::GetCurrentPackageInfo(PACKAGE_FILTER_CLR_DEFAULT, &cbBuffer, pbBuffer, &nCount));
-
-        m_rgAltPaths.Allocate(nCount);
-
-        PCPACKAGE_INFO pPackageInfo = reinterpret_cast<PCPACKAGE_INFO>(static_cast<PBYTE>(pbBuffer));
-        for (UINT32 iAltPath = 0; iAltPath < nCount; iAltPath++)
-        {
-            IfFailThrow(WindowsCreateString(
-                pPackageInfo[iAltPath].path,
-                (UINT32)wcslen(pPackageInfo[iAltPath].path),
-                m_rgAltPaths.GetRawArray() + iAltPath));
-        }
-    }
-#endif //FEATURE_APPX && !FEATURE_CORECLR
 #endif //CROSSGEN_COMPILE
 
 #ifdef FEATURE_FUSION
@@ -217,9 +182,6 @@ CLRPrivBinderWinRT::~CLRPrivBinderWinRT()
 {
     WRAPPER_NO_CONTRACT;
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    AssemblyUsageLogManager::UnRegisterBinderFromUsageLog((UINT_PTR)this);
-#endif
     if (m_pTypeCache != nullptr)
     {
         m_pTypeCache->Release();
@@ -256,15 +218,6 @@ CLRPrivBinderWinRT::GetOrCreateBinder(
         {
             pBinder.SuppressRelease();
         }
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-        // Create and register WinRT usage log
-        ReleaseHolder<IAssemblyUsageLog> pNewWinRTUsageLog;
-        IfFailThrow(AssemblyUsageLogManager::GetUsageLogForContext(W("WinRT"), W("NotApp"), &pNewWinRTUsageLog));
-
-        UINT_PTR winRTBinderId;
-        IfFailThrow(pBinder->GetBinderID(&winRTBinderId));
-        IfFailThrow(AssemblyUsageLogManager::RegisterBinderWithUsageLog(winRTBinderId, pNewWinRTUsageLog));
-#endif
     }
     _ASSERTE(s_pSingleton->m_fNamespaceResolutionKind == fNamespaceResolutionKind);
     
@@ -289,16 +242,9 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     HRESULT hr = S_OK;
     ReleaseHolder<CLRPrivAssemblyWinRT> pAssembly;
     LPWSTR wszFullTypeName = nullptr;
-#ifndef FEATURE_CORECLR
-    NewArrayHolder<WCHAR> wszAssemblySimpleName;
-#endif
 
 #ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_CORECLR
-    fusion::logging::StatusScope logStatus(0, ID_FUSLOG_BINDING_STATUS_WINRT, &hr);
-#else
     BINDER_SPACE::BINDER_LOG_ENTER(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"));
-#endif
 #endif
     VALIDATE_ARG_RET(pAssemblyName != nullptr);
     VALIDATE_ARG_RET(ppAssembly != nullptr);
@@ -316,15 +262,11 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
         IfFailGo(COR_E_PLATFORMNOTSUPPORTED);
     }
     
-#ifndef FEATURE_CORECLR
-    IfFailGo(fusion::util::GetProperty(pAssemblyName, ASM_NAME_NAME, &wszAssemblySimpleName));
-#else
     WCHAR wszAssemblySimpleName[_MAX_PATH];
     {
         DWORD cchAssemblySimpleName = _MAX_PATH;
         IfFailGo(pAssemblyName->GetName(&cchAssemblySimpleName, wszAssemblySimpleName));
     }
-#endif
     
     wszFullTypeName = wcschr(wszAssemblySimpleName, W('!'));
     
@@ -445,49 +387,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                     pNewAssembly.SuppressRelease();
                 }
                 
-#ifndef FEATURE_CORECLR                
-                if (fPreBind)
-                {
-                    // We are pre-binding to this WinMD and do not want to open it
-                    // Compare the filename to the assembly simple name.  This is legal to do with WinRT because at NGen time
-                    // we embed a WinRT dependency as assembly def name component plus a namespace and type from it.
-                    // At bind time, this type should still exist in the same assembly.  If it doesn't, and has been moved,
-                    // the native image validation will fail anyway and we'll fall back to IL.  This is because if the type has 
-                    // been moved to another WinMD, it must have been removed from the first one because WinRT allows no duplicates.
-                    // See comment on CLRPrivBinderWinRT::PreBind for further details.                    
-                    if (!_wcsicmp(wszAssemblySimpleName, wszFileNameStripped))
-                    {
-                        *ppAssembly = pAssembly.Extract();
-                        return (hr = S_OK);
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-#endif
             }
-#ifndef FEATURE_CORECLR
-            else if (fPreBind)
-            {
-                // We are pre-binding to this WinMD and do not want to force it to be loaded into the runtime yet.
-                // Compare the filename to the assembly simple name.  This is legal to do with WinRT because at NGen time
-                // we embed a WinRT dependency as assembly def name component plus a namespace and type from it.
-                // At bind time, this type should still exist in the same assembly.  If it doesn't, and has been moved,
-                // the native image validation will fail anyway and we'll fall back to IL.  This is because if the type has 
-                // been moved to another WinMD, it must have been removed from the first one because WinRT allows no duplicates.
-                // See comment on CLRPrivBinderWinRT::PreBind for further details.
-                if (!_wcsicmp(wszAssemblySimpleName, wszFileNameStripped))
-                {
-                    *ppAssembly = pAssembly.Extract();
-                    return (hr = S_OK);
-                } 
-                else
-                {
-                    continue;
-                }
-            }
-#endif
 
             //
             // Look to see if there's a native image available.
@@ -499,11 +399,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
             if (hr == S_OK)
             {   // The type we are looking for has been found in this assembly
 #ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_CORECLR
-                fusion::logging::LogMessage(0, ID_FUSLOG_BINDING_STATUS_FOUND, wszFileName);
-#else
                 BINDER_SPACE::BINDER_LOG_LEAVE_HR(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"), hr);
-#endif
 #endif
                 *ppAssembly = pAssembly.Extract();
                 return (hr = S_OK);
@@ -516,9 +412,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     hr = CLR_E_BIND_TYPE_NOT_FOUND;
  ErrExit:
 
-#ifdef FEATURE_CORECLR
     BINDER_SPACE::BINDER_LOG_LEAVE_HR(W("CLRPrivBinderWinRT_CoreCLR::BindWinRTAssemblyByName"), hr);
-#endif
     return hr;
 } // CLRPrivBinderWinRT::BindWinRTAssemblyByName
 
@@ -659,7 +553,6 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
 {
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_CORECLR
     if (!m_pApplicationContext->IsTpaListProvided())
         return COR_E_FILENOTFOUND;
 
@@ -732,24 +625,11 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
                             FALSE, /* fIsInGAC */
                             FALSE /* fExplicitBindToNativeImage */,
                             ppAssembly);
-#else
-    ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
-
-    // This codepath is used for desktop crossgen
-    pAssembly = new BINDER_SPACE::Assembly();
-
-    pAssembly->SetPEImage(PEImage::OpenImage(sWinmdFilename, MDInternalImport_Default));
-
-    pAssembly->m_assemblyPath.Set(sWinmdFilename);
-
-    *ppAssembly = pAssembly.Extract();
-#endif
 
     return hr;
 }
 #endif // !FEATURE_FUSION
 
-#ifdef FEATURE_CORECLR
 //=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, SString &appLocalWinMD)
 {
@@ -784,7 +664,6 @@ HRESULT CLRPrivBinderWinRT::SetApplicationContext(BINDER_SPACE::ApplicationConte
     
     return hr;
 }
-#endif //FEATURE_CORECLR
 
 //=====================================================================================================================
 // Implements interface method code:ICLRPrivBinder::BindAssemblyByName.
@@ -950,20 +829,7 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
             LPWSTR wszWinMDPath = nullptr;
             UINT32 cchWinMDPath = 0;
 
-#ifdef FEATURE_CORECLR
             wszWinMDPath = m_appLocalWinMDPath;
-#else
-            if (AppX::IsAdaptiveApp())
-            {
-                IfFailRet(AppX::GetWinMetadataDirForAdaptiveApps(&wszWinMDPath));
-            }
-
-            else if (AppX::IsAppXDesignMode() || IsNgenOffline())
-            {
-                wszWinMDPathConfig = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WinMDPath);
-                wszWinMDPath = wszWinMDPathConfig;
-            }
-#endif // FEATURE_CORECLR
                 
             if (wszWinMDPath != nullptr)
             {
@@ -981,7 +847,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
                 &rgFileNames, 
                 nullptr,    // pcDirectNamespaceChildren
                 nullptr);  // rgDirectNamespaceChildren
-#ifdef FEATURE_CORECLR
             // For CoreCLR, if the process is not AppX, deliver more appropriate error message
             // when trying to bind to 3rd party WinMDs that is not confusing.
             if (HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE) == hr)
@@ -991,7 +856,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
                     IfFailRet(HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED));
                 }
             }
-#endif
 
 #ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
             // If we failed to find the requested name, but we have an application local probing path setup, then
@@ -1059,33 +923,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
                     &cchFileName);
                 
                 BOOL fSkipFilename = FALSE;
-#ifndef FEATURE_CORECLR            
-                // If we have a specified path list. Be certain to only find filenames in that list.
-                // NGen for AppX is an exception, where the path list contains the package graph, and we can
-                // accept files found elsewhere (e.g., in the Windows WinMD directory).
-                // On CoreCLR, we have no concept of an AppX package, so we want the passed in app
-                // paths to additively contribute to the set of WinMDs the API can find.
-                if (m_rgAltPaths.GetCount() > 0 && !AppX::IsAppXNGen())
-                {
-                    fSkipFilename = TRUE;
-                    for (DWORD iAltPath = 0; iAltPath < m_rgAltPaths.GetCount(); iAltPath++)
-                    {
-                        UINT32  cchAltPath = 0;
-                        LPCWSTR wszAltPath = WindowsGetStringRawBuffer(
-                            m_rgAltPaths.GetAt(iAltPath), 
-                            &cchAltPath);
-                    
-                        if (cchAltPath >= cchFileName)
-                            continue;
-                    
-                        if (wcsncmp(wszAltPath, wszFileName, cchAltPath) == 0)
-                        {
-                            fSkipFilename = FALSE;
-                            break;
-                        }
-                    }
-                }
-#endif            
                 if (!fSkipFilename)
                     hFileNameList.InsertTail(wszFileName);
             }
@@ -1573,7 +1410,6 @@ HRESULT CLRPrivBinderWinRT::GetBinderID(
     return S_OK;
 }
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 //=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::FindWinRTAssemblyBySpec(
     LPVOID pvAppDomain,
@@ -1584,7 +1420,6 @@ HRESULT CLRPrivBinderWinRT::FindWinRTAssemblyBySpec(
     STATIC_CONTRACT_WRAPPER;
     return E_FAIL; 
 }
-#endif
 
 #ifdef FEATURE_FUSION
 //=====================================================================================================================

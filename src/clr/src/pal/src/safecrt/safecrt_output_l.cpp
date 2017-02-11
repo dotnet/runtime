@@ -84,9 +84,6 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 
 // SNIP -srs 7/3/07
 
-#ifndef _CFLTCVT
-#define _CFLTCVT _cfltcvt
-#endif  /* _CFLTCVT */
 
 #ifndef _CLDCVT
 #define _CLDCVT _cldcvt
@@ -146,14 +143,6 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #define BUFFERSIZE    512
 #define MAXPRECISION  BUFFERSIZE
 
-#if BUFFERSIZE < _CVTBUFSIZE + 6
-/*
- * Buffer needs to be big enough for default minimum precision
- * when converting floating point needs bigger buffer, and malloc
- * fails
- */
-#error Conversion buffer too small for max double.
-#endif  /* BUFFERSIZE < _CVTBUFSIZE + 6 */
 
 /* flag definitions */
 #define FL_SIGN       0x00001   /* put plus or minus in front */
@@ -935,11 +924,6 @@ int __cdecl _output (
                 else
 #endif  /* !LONG_IS_INT */
 
-#if !SHORT_IS_INT
-                if (flags & FL_SHORT)
-                    *(short *)p = (short) charsout;
-                else
-#endif  /* !SHORT_IS_INT */
                     *(int *)p = charsout;
 
                 no_output = 1;              /* force no output */
@@ -1085,15 +1069,6 @@ int __cdecl _output (
                 else
 #endif  /* !LONG_IS_INT */
 
-#if !SHORT_IS_INT
-                if (flags & FL_SHORT) {
-                    if (flags & FL_SIGNED)
-                        l = (short) get_int_arg(&argptr); /* sign extend */
-                    else
-                        l = (unsigned short) get_int_arg(&argptr);    /* zero-extend*/
-
-                } else
-#endif  /* !SHORT_IS_INT */
                 {
                     if (flags & FL_SIGNED)
                         l = get_int_arg(&argptr); /* sign extend */

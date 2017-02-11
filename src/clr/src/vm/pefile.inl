@@ -179,23 +179,6 @@ inline BOOL PEFile::IsMarkedAsContentTypeWindowsRuntime()
     return (IsAfContentType_WindowsRuntime(GetFlags()));
 }
 
-#ifndef FEATURE_CORECLR
-inline BOOL PEFile::IsShareable()
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(m_identity));
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (!m_identity->HasID())
-        return FALSE;
-    return TRUE ;
-}
-#endif
 
 inline void PEFile::GetMVID(GUID *pMvid)
 {
@@ -525,9 +508,6 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
     CONTRACT_END;
 */
     SUPPORTS_DAC;
-#ifndef FEATURE_CORECLR
-_ASSERTE(m_bHasPersistentMDImport);
-#endif
 #if !defined(__GNUC__)
 
     _ASSERTE(!IsResource());
@@ -624,46 +604,6 @@ inline IMetaDataEmit *PEFile::GetEmitter()
     RETURN m_pEmitter;
 }
 
-#ifndef FEATURE_CORECLR
-inline IMetaDataAssemblyImport *PEFile::GetAssemblyImporter()
-{
-    CONTRACT(IMetaDataAssemblyImport *) 
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
-        THROWS;
-    }
-    CONTRACT_END;
-
-    if (m_pAssemblyImporter == NULL)
-        OpenAssemblyImporter();
-
-    RETURN m_pAssemblyImporter;
-}
-
-inline IMetaDataAssemblyEmit *PEFile::GetAssemblyEmitter()
-{
-    CONTRACT(IMetaDataAssemblyEmit *) 
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
-    }
-    CONTRACT_END;
-
-    if (m_pAssemblyEmitter == NULL)
-        OpenAssemblyEmitter();
-
-    RETURN m_pAssemblyEmitter;
-}
-#endif // FEATURE_CORECLR
 
 #endif // DACCESS_COMPILE
 
@@ -1391,7 +1331,7 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
 
     if (HasOpenedILimage())
     {
-#if defined(FEATURE_PREJIT) && defined(FEATURE_CORECLR)
+#if defined(FEATURE_PREJIT)
         if (m_openedILimage == m_nativeImage)
         {
             // On Apollo builds, we sometimes open the native image into the slot
@@ -1946,25 +1886,6 @@ inline BOOL PEAssembly::IsFullySigned()
     }
 }
 
-#ifndef FEATURE_CORECLR
-//---------------------------------------------------------------------------------------
-//
-// Mark that an assembly has had its strong name verification bypassed
-//
-
-inline void PEAssembly::SetStrongNameBypassed()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fStrongNameBypassed = TRUE;
-}
-
-inline BOOL PEAssembly::NeedsModuleHashChecks()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return ((m_flags & PEFILE_SKIP_MODULE_HASH_CHECKS) == 0) && !m_fStrongNameBypassed;
-}
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_CAS_POLICY
 //---------------------------------------------------------------------------------------
