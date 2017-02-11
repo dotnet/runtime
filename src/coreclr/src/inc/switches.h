@@ -217,9 +217,11 @@
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
+#if defined(FEATURE_CORESYSTEM)
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
+#endif // defined(FEATURE_CORESYSTEM)
 
-#if defined(FEATURE_PREJIT)
+#if defined(FEATURE_PREJIT) && defined(FEATURE_CORESYSTEM)
 // Desktop CLR allows profilers and debuggers to opt out of loading NGENd images, and to
 // JIT everything instead. "FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS" is roughly the
 // equivalent for Apollo, where MSIL images may not be available at all.

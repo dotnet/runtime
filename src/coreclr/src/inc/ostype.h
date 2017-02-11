@@ -38,6 +38,19 @@ extern BOOL                gExInfoIsServer;
 
 void InitRunningOnVersionStatus();
 
+#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
+typedef enum
+{
+    WINRT_STATUS_UNINITED = 0,
+    WINRT_STATUS_UNSUPPORTED,
+    WINRT_STATUS_SUPPORTED
+}
+WinRTStatusEnum;
+
+extern WinRTStatusEnum      gWinRTStatus;
+
+void InitWinRTStatus();
+#endif // FEATURE_COMINTEROP && !FEATURE_CORESYSTEM
 
 //*****************************************************************************
 //
@@ -58,7 +71,16 @@ void InitRunningOnVersionStatus();
 inline BOOL RunningOnWin7()
 {
     WRAPPER_NO_CONTRACT;
+#if defined(_ARM_) || defined(FEATURE_CORESYSTEM)
     return TRUE;
+#else
+    if (gRunningOnStatus == RUNNING_ON_STATUS_UNINITED)
+    {
+        InitRunningOnVersionStatus();
+    }
+
+    return (gRunningOnStatus >= RUNNING_ON_WIN7) ? TRUE : FALSE;
+#endif
 }
 
 //*****************************************************************************
@@ -115,11 +137,32 @@ inline BOOL ExOSInfoRunningOnServer()
 
 #ifdef FEATURE_COMINTEROP
 
+#ifdef FEATURE_CORESYSTEM
 
 inline BOOL WinRTSupported()
 {
     return RunningOnWin8();
 }
+#else
+inline BOOL WinRTSupported()
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
+    STATIC_CONTRACT_SO_TOLERANT;
+    
+#ifdef CROSSGEN_COMPILE
+    return TRUE;
+#endif
+
+    if (gWinRTStatus == WINRT_STATUS_UNINITED)
+    {
+        InitWinRTStatus();
+    }
+
+    return gWinRTStatus == WINRT_STATUS_SUPPORTED;
+}
+#endif // FEATURE_CORESYSTEM
 
 #endif // FEATURE_COMINTEROP
 

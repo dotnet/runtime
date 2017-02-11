@@ -266,6 +266,9 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
     FCFuncElement("get_CurrentProcessorNumber", SystemNative::GetCurrentProcessorNumber)
 
+#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
+    QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
+#endif // FEATURE_COMINTEROP
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
 FCFuncEnd()
