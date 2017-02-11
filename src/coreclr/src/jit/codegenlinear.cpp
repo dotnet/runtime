@@ -246,6 +246,10 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+        genInsertNopForUnwinder(block);
+#endif
+
         /* Start a new code output block */
 
         genUpdateCurrentFunclet(block);
