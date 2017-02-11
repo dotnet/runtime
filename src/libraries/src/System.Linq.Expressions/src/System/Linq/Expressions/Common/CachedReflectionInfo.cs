@@ -71,6 +71,14 @@ namespace System.Linq.Expressions
                                  s_Closure_Locals ??
                                 (s_Closure_Locals = typeof(Closure).GetField(nameof(Closure.Locals)));
 
+        private static FieldInfo s_Decimal_Zero;
+        public static FieldInfo Decimal_Zero
+            => s_Decimal_Zero ?? (s_Decimal_Zero = typeof(decimal).GetField(nameof(decimal.Zero)));
+
+        private static FieldInfo s_DateTime_MinValue;
+        public static FieldInfo DateTime_MinValue
+            => s_DateTime_MinValue ?? (s_DateTime_MinValue = typeof(DateTime).GetField(nameof(DateTime.MinValue)));
+
         private static MethodInfo s_MethodBase_GetMethodFromHandle_RuntimeMethodHandle;
         public  static MethodInfo   MethodBase_GetMethodFromHandle_RuntimeMethodHandle =>
                                   s_MethodBase_GetMethodFromHandle_RuntimeMethodHandle ??
