@@ -6548,6 +6548,12 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             else
 #endif // FEATURE_CONSERVATIVE_GC
             {
+#ifndef HIJACK_NONINTERRUPTIBLE_THREADS
+                if (!pES->m_IsInterruptible)
+                {
+                    notJittedCase = true;
+                }
+#else // HIJACK_NONINTERRUPTIBLE_THREADS
                 // if we're not interruptible right here, we need to determine the
                 // return address for hijacking.
                 if (!pES->m_IsInterruptible)
@@ -6621,6 +6627,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     action = SWA_CONTINUE;
 #endif // !WIN64EXCEPTIONS
                 }
+#endif // HIJACK_NONINTERRUPTIBLE_THREADS
             }
             // else we are successfully out of here with SWA_ABORT
         }
@@ -6695,6 +6702,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
     }
     CONTRACTL_END;
 
+#ifdef HIJACK_NONINTERRUPTIBLE_THREADS
     Thread         *thread = GetThread();
 
 #ifdef FEATURE_STACK_PROBE
@@ -6737,6 +6745,9 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // _DEBUG
 
     frame.Pop();
+#else
+    PORTABILITY_ASSERT("OnHijackWorker not implemented on this platform.");
+#endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
 ReturnKind GetReturnKindFromMethodTable(Thread *pThread, EECodeInfo *codeInfo)
