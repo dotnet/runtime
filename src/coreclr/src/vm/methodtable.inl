@@ -380,7 +380,11 @@ inline BOOL MethodTable::SupportsAutoNGen()
 inline BOOL MethodTable::RunCCTorAsIfNGenImageExists()
 {
     LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_CORESYSTEM
     return TRUE; // On our coresystem builds we will always be using triton in the customer scenario.
+#else
+    return FALSE;
+#endif
 }
 
 //==========================================================================================

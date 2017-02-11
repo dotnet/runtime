@@ -6416,7 +6416,7 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
             hmod = LocalLoadLibraryHelper(wszLibName, LOAD_LIBRARY_SEARCH_SYSTEM32, pErrorTracker);
         }
     }
-#endif // !PLATFORM_UNIX
+#endif // FEATURE_CORESYSTEM && !FEATURE_PAL
 
     if (hmod == NULL)
     {
