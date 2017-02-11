@@ -99,7 +99,6 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
     return Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, IID_ICorDebug, (void **) ppCordb);
 }
 
-#if defined(FEATURE_CORECLR)
 //
 // Public API.  
 // Telesto Creation path - only way to debug multi-instance.  
@@ -152,7 +151,6 @@ STDAPI CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTar
     return hr;
 }
 
-#endif // FEATURE_CORECLR
 
 
 

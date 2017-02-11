@@ -54,9 +54,6 @@ LPCWSTR EHTypedClauseTypeName(const DACEHInfo* pEHInfo);
 
 struct SOSEHInfo
 {
-#ifndef FEATURE_CORECLR
-    __field_ecount(EHCount)
-#endif
     DACEHInfo  *m_pInfos;
     UINT        EHCount;
     CLRDATA_ADDRESS methodStart;

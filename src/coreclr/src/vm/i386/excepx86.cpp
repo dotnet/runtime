@@ -1095,7 +1095,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_CORECLR
         // Check if we are dealing with AV or not and if we are,
         // ensure that this is a real AV and not managed AV exception
         BOOL fIsThrownExceptionAV = FALSE;
@@ -1124,7 +1123,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
             }
         }
-#endif // FEATURE_CORECLR
 
         // If we're out of memory, then we figure there's probably not memory to maintain a stack trace, so we skip it.
         // If we've got a stack overflow, then we figure the stack will be so huge as to make tracking the stack trace

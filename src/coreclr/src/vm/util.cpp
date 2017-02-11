@@ -2455,13 +2455,6 @@ HMODULE CLRGetCurrentModuleHandle()
     return hMod;
 }
 
-#ifndef FEATURE_CORECLR
-static ICLRRuntimeInfo *GetCLRRuntime()
-{
-    LIMITED_METHOD_CONTRACT;
-    return g_pCLRRuntime;
-}
-#endif // !FEATURE_CORECLR
 
 #endif // !FEATURE_PAL
 
@@ -2486,12 +2479,6 @@ void * __stdcall GetCLRFunction(LPCSTR FunctionName)
     {
         func = (void*)EEHeapFreeInProcessHeap;
     }
-#ifndef FEATURE_CORECLR
-    else if (strcmp(FunctionName, "GetCLRRuntime") == 0)
-    {
-        func = (void*)GetCLRRuntime;
-    }
-#endif // !FEATURE_CORECLR
     else if (strcmp(FunctionName, "ShutdownRuntimeWithoutExiting") == 0)
     {
         func = (void*)ShutdownRuntimeWithoutExiting;

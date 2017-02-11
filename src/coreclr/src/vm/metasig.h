@@ -339,10 +339,6 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
 #endif
 
-#ifndef FEATURE_CORECLR
-DEFINE_METASIG_T(SM(ExecutionContext_ContextCallback_Object_Bool_RetVoid, \
-                 C(EXECUTIONCONTEXT) C(CONTEXTCALLBACK) j F, v))
-#endif
 #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
 DEFINE_METASIG_T(SM(SecurityContext_ContextCallback_Object_RetVoid, \
                  C(SECURITYCONTEXT) C(CONTEXTCALLBACK) j, v))

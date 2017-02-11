@@ -1731,79 +1731,6 @@ typedef LogicalCallContextObject*     LOGICALCALLCONTEXTREF;
 
 #endif // FEATURE_REMOTING
 
-#ifndef FEATURE_CORECLR
-class ExecutionContextObject : public Object
-{
-    friend class MscorlibBinder;
-    
-    // These fields are also defined in the managed representation.  (ExecutionContext.cs) If you
-    // add or change these fields you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size.
-private :
-#ifdef FEATURE_CAS_POLICY
-    OBJECTREF               _hostExecutionContext;
-#endif // FEATURE_CAS_POLICY
-    OBJECTREF               _syncContext;
-    OBJECTREF               _syncContextNoFlow;
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-    SECURITYCONTEXTREF      _securityContext;
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-#ifdef FEATURE_REMOTING
-    LOGICALCALLCONTEXTREF   _logicalCallContext;
-    OBJECTREF               _illogicalCallContext;
-#endif // #ifdef FEATURE_REMOTING
-    INT32                   _flags;
-    OBJECTREF               _localValues;
-    OBJECTREF               _localChangeNotifications;
-
-public:
-    OBJECTREF GetSynchronizationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _syncContext;
-    }   
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)    
-    SECURITYCONTEXTREF GetSecurityContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _securityContext;
-    }
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
-#ifdef FEATURE_REMOTING
-    LOGICALCALLCONTEXTREF GetLogicalCallContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _logicalCallContext;
-    }
-    void SetLogicalCallContext(LOGICALCALLCONTEXTREF ref)
-    { 
-        WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked((OBJECTREF*)&_logicalCallContext, (OBJECTREF)ref);
-    }
-    OBJECTREF GetIllogicalCallContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _illogicalCallContext;
-    }
-    void SetIllogicalCallContext(OBJECTREF ref)
-    { 
-        WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked((OBJECTREF*)&_illogicalCallContext, ref);
-    }
-#endif //#ifdef FEATURE_REMOTING
-#ifdef FEATURE_COMPRESSEDSTACK    
-    COMPRESSEDSTACKREF GetCompressedStack()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (_securityContext != NULL)
-            return _securityContext->GetCompressedStack();
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
-        
-};
-#endif //FEATURE_CORECLR
 
 
 
@@ -1821,9 +1748,6 @@ typedef REF<ArrayBase> ARRAYBASEREF;
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 #endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-#ifndef FEATURE_CORECLR
-typedef ExecutionContextObject*     EXECUTIONCONTEXTREF;
-#endif
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
@@ -1849,9 +1773,6 @@ class CultureInfoBaseObject : public Object
 private:
     OBJECTREF compareInfo;
     OBJECTREF textInfo;
-#ifndef FEATURE_CORECLR
-    OBJECTREF regionInfo;
-#endif // !FEATURE_CORECLR
     OBJECTREF numInfo;
     OBJECTREF dateTimeInfo;
     OBJECTREF calendar;
@@ -2064,12 +1985,8 @@ private:
 #ifdef FEATURE_REMOTING    
     OBJECTREF     m_ExposedContext;
 #endif    
-#ifdef FEATURE_CORECLR
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
-#else
-    EXECUTIONCONTEXTREF     m_ExecutionContext;
-#endif
     OBJECTREF     m_Name;
     OBJECTREF     m_Delegate;
 #ifdef FEATURE_LEAK_CULTURE_INFO
@@ -2193,37 +2110,13 @@ public:
 #endif // FEATURE_LEAK_CULTURE_INFO
 
 #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
-#ifdef FEATURE_CORECLR
     OBJECTREF GetSynchronizationContext()
     {
         LIMITED_METHOD_CONTRACT;
         return m_SynchronizationContext;
     }
-#else // !FEATURE_CORECLR
-    OBJECTREF GetSynchronizationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (m_ExecutionContext != NULL)
-        {
-            return m_ExecutionContext->GetSynchronizationContext();
-        }
-        return NULL;
-    }
-#endif // FEATURE_CORECLR
 #endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
-#ifndef FEATURE_CORECLR
-    OBJECTREF GetExecutionContext()
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        return (OBJECTREF)m_ExecutionContext;
-    }
-    void SetExecutionContext(OBJECTREF ref)
-    { 
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReferenceUnchecked((OBJECTREF*)&m_ExecutionContext, ref);
-    }
-#endif //!FEATURE_CORECLR
 #ifdef FEATURE_COMPRESSEDSTACK    
     COMPRESSEDSTACKREF GetCompressedStack()
     {
@@ -2497,46 +2390,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 #endif // FEATURE_EXCEPTION_NOTIFICATIONS
 };
 
-#ifndef FEATURE_CORECLR
-// The managed definition of AppDomainSortingSetupInfo is in BCL\System\Globalization\AppDomainSortingSetupInfo.cs
-class AppDomainSortingSetupInfoObject : public Object
-{
-    friend class MscorlibBinder;
-
-  protected:
-    INT_PTR m_pfnIsNLSDefinedString;
-    INT_PTR m_pfnCompareStringEx;
-    INT_PTR m_pfnLCMapStringEx;
-    INT_PTR m_pfnFindNLSStringEx;
-    INT_PTR m_pfnCompareStringOrdinal;
-    INT_PTR m_pfnGetNLSVersionEx;
-    INT_PTR m_pfnFindStringOrdinal;
-    CLR_BOOL m_useV2LegacySorting;
-    CLR_BOOL m_useV4LegacySorting;
-
-  protected:
-    AppDomainSortingSetupInfoObject() { LIMITED_METHOD_CONTRACT; }
-   ~AppDomainSortingSetupInfoObject() { LIMITED_METHOD_CONTRACT; }
-
-  public:
-    CLR_BOOL UseV2LegacySorting() { LIMITED_METHOD_CONTRACT; return m_useV2LegacySorting; }
-    CLR_BOOL UseV4LegacySorting() { LIMITED_METHOD_CONTRACT; return m_useV4LegacySorting; }
-
-    INT_PTR GetPFNIsNLSDefinedString() { LIMITED_METHOD_CONTRACT; return m_pfnIsNLSDefinedString; }
-    INT_PTR GetPFNCompareStringEx() { LIMITED_METHOD_CONTRACT; return m_pfnCompareStringEx; }
-    INT_PTR GetPFNLCMapStringEx() { LIMITED_METHOD_CONTRACT; return m_pfnLCMapStringEx; }
-    INT_PTR GetPFNFindNLSStringEx() { LIMITED_METHOD_CONTRACT; return m_pfnFindNLSStringEx; }
-    INT_PTR GetPFNCompareStringOrdinal() { LIMITED_METHOD_CONTRACT; return m_pfnCompareStringOrdinal; }
-    INT_PTR GetPFNGetNLSVersionEx() { LIMITED_METHOD_CONTRACT; return m_pfnGetNLSVersionEx; }
-    INT_PTR GetPFNFindStringOrdinal() { LIMITED_METHOD_CONTRACT; return m_pfnFindStringOrdinal; }
-};
-typedef DPTR(AppDomainSortingSetupInfoObject) PTR_AppDomainSortingSetupInfoObject;
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<AppDomainSortingSetupInfoObject> APPDOMAINSORTINGSETUPINFOREF;
-#else
-typedef AppDomainSortingSetupInfoObject*     APPDOMAINSORTINGSETUPINFOREF;
-#endif // USE_CHECKED_OBJECTREFS
-#endif // FEATURE_CORECLR
 
 // The managed definition of AppDomainSetup is in BCL\System\AppDomainSetup.cs
 class AppDomainSetupObject : public Object
@@ -2557,9 +2410,6 @@ class AppDomainSetupObject : public Object
     STRINGREF m_AppDomainManagerType;
     OBJECTREF m_CompatFlags;
     STRINGREF m_TargetFrameworkName;
-#ifndef FEATURE_CORECLR
-    APPDOMAINSORTINGSETUPINFOREF m_AppDomainSortingSetupInfo;
-#endif // FEATURE_CORECLR
     INT32 m_LoaderOptimization;
 #ifdef FEATURE_COMINTEROP
     CLR_BOOL m_DisableInterfaceCache;
@@ -2575,9 +2425,6 @@ class AppDomainSetupObject : public Object
    ~AppDomainSetupObject() { LIMITED_METHOD_CONTRACT; }
 
   public:
-#ifndef FEATURE_CORECLR
-    APPDOMAINSORTINGSETUPINFOREF GetAppDomainSortingSetupInfo() { LIMITED_METHOD_CONTRACT; return m_AppDomainSortingSetupInfo; }
-#endif // FEATURE_CORECLR
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
     BOOL UseRandomizedStringHashing() { LIMITED_METHOD_CONTRACT; return (BOOL) m_UseRandomizedStringHashing; }
 #endif // FEATURE_RANDOMIZED_STRING_HASHING

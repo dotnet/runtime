@@ -41,31 +41,13 @@ void Security::DeleteSharedSecurityDescriptor(ISharedSecurityDescriptor *descrip
     delete static_cast<SharedSecurityDescriptor *>(descriptor);
 }
 
-#ifndef FEATURE_CORECLR
-IPEFileSecurityDescriptor* Security::CreatePEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return static_cast<IPEFileSecurityDescriptor*>(new PEFileSecurityDescriptor(pDomain, pPEFile));
-}
-#endif
 
 BOOL Security::IsTransparencyEnforcementEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     // No transparency enforcement in .NET Core
     return FALSE;
-#else
-
-#ifdef _DEBUG
-    if (g_pConfig->DisableTransparencyEnforcement())
-        return FALSE;
-#endif
-
-    return TRUE;
-#endif // FEATURE_CORECLR
 }
 
 //---------------------------------------------------------------------------------------

@@ -115,20 +115,18 @@ class Zapper
     BOOL                    m_failed;
     CorInfoRegionKind       m_currentRegionKind;
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     SString                 m_platformAssembliesPaths;
     SString                 m_trustedPlatformAssemblies;
     SString                 m_platformResourceRoots;
     SString                 m_appPaths;
     SString                 m_appNiPaths;
     SString                 m_platformWinmdPaths;
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     SString                 m_CLRJITPath;
     bool                    m_fDontLoadJit;
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#if !defined(NO_NGENPDB)
     SString                 m_DiasymreaderPath;
 #endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
     bool                    m_fForceFullTrust;
@@ -270,65 +268,6 @@ class Zapper
         }
     } m_assemblyDependencies;
 
-#ifndef FEATURE_CORECLR // No load lists on CoreCLR
-    struct loadLists
-    {
-        loadLists() :
-            m_loadAlwaysList(NULL),
-            m_loadSometimesList(NULL),
-            m_loadNeverList(NULL)
-        {
-        }
-
-        SAFEARRAY *m_loadAlwaysList;
-        SAFEARRAY *m_loadSometimesList;
-        SAFEARRAY *m_loadNeverList;
-
-        void SetLoadLists(SAFEARRAY *loadAlwaysList, SAFEARRAY *loadSometimesList, SAFEARRAY *loadNeverList)
-        {
-            m_loadAlwaysList    = loadAlwaysList;
-            m_loadSometimesList = loadSometimesList;
-            m_loadNeverList     = loadNeverList;
-        }
-
-    } m_loadLists;
-
-    void SetLoadLists(SAFEARRAY *loadAlwaysList, SAFEARRAY *loadSometimesList, SAFEARRAY *loadNeverList)
-    {
-        m_loadLists.SetLoadLists(loadAlwaysList, loadSometimesList, loadNeverList);
-    }
-
-    void SetAssemblyHardBindList()
-    {
-        SAFEARRAY *loadAlwaysList = m_loadLists.m_loadAlwaysList;
-        if (loadAlwaysList == NULL)
-        {
-            return;
-        }
-
-        LONG ubound = 0;
-        IfFailThrow(SafeArrayGetUBound(loadAlwaysList, 1, &ubound));
-
-        BSTR *pArrBstr = NULL;
-        IfFailThrow(SafeArrayAccessData(loadAlwaysList, reinterpret_cast<void **>(&pArrBstr)));
-
-        EX_TRY
-        {
-            _ASSERTE((ubound + 1) >= 0);
-            m_pEECompileInfo->SetAssemblyHardBindList(reinterpret_cast<LPWSTR *>(pArrBstr), ubound + 1);
-        }
-        EX_CATCH
-        {
-            // If something went wrong, try to unlock the OLE array
-            // Do not verify the outcome, as we can do nothing about it
-            SafeArrayUnaccessData(loadAlwaysList);
-            EX_RETHROW;
-        }
-        EX_END_CATCH_UNREACHABLE;
-
-        IfFailThrow(SafeArrayUnaccessData(loadAlwaysList));
-    }
-#endif // !FEATURE_CORECLR
 
   public:
 
@@ -442,7 +381,6 @@ class Zapper
 
     void            GetOutputFolder();
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     void SetPlatformAssembliesPaths(LPCWSTR pwzPlatformAssembliesPaths);
     void SetTrustedPlatformAssemblies(LPCWSTR pwzTrustedPlatformAssemblies);
     void SetPlatformResourceRoots(LPCWSTR pwzPlatformResourceRoots);
@@ -450,14 +388,13 @@ class Zapper
     void SetAppNiPaths(LPCWSTR pwzAppNiPaths);
     void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
     void SetForceFullTrust(bool val);
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     void SetCLRJITPath(LPCWSTR pwszCLRJITPath);
     void SetDontLoadJit();
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#if !defined(NO_NGENPDB)
     void SetDiasymreaderPath(LPCWSTR pwzDiasymreaderPath);
 #endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
 
@@ -544,9 +481,7 @@ class ZapperOptions
 
     bool       m_legacyMode;          // true if the zapper was invoked using legacy mode
 
-#ifdef FEATURE_CORECLR
     bool        m_fNoMetaData;          // Do not copy metadata and IL to native image
-#endif
 
     ZapperOptions();
     ~ZapperOptions();

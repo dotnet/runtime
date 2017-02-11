@@ -85,9 +85,7 @@ public:
     static BOOL QCALLTYPE InternalGetSystemDefaultUILanguage(QCall::StringHandleOnStack systemDefaultUiLanguage);
 
 // Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-#ifdef FEATURE_CORECLR
     static FCDECL0(Object*, nativeGetResourceFallbackArray);
-#endif
 
     //
     // Native helper functions for methods in DateTimeFormatInfo
@@ -111,11 +109,6 @@ public:
     static INT_PTR QCALLTYPE InternalInitSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
     static INT_PTR InitSortHandleHelper(LPCWSTR localeName, INT_PTR* handleOrigin);
     static INT_PTR InternalInitOsSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
-#ifndef FEATURE_CORECLR
-    static INT_PTR InternalInitVersionedSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
-    static INT_PTR InternalInitVersionedSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin, DWORD sortVersion);
-    static DWORD QCALLTYPE InternalGetSortVersion();
-#endif
     static BOOL QCALLTYPE InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR lpLocaleName, NLSVERSIONINFOEX * lpVersionInformation);
 
     //

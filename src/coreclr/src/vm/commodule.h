@@ -135,9 +135,7 @@ public:
 class COMPunkSafeHandle
 {
   public:
-#ifdef FEATURE_CORECLR
     static FCDECL0(void*, nGetDReleaseTarget);
-#endif
 };
 
 #endif

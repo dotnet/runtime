@@ -45,12 +45,6 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
     // 
     ESymbolFormat symFormatToUse = eSymbolFormatILDB;
 
-#ifndef FEATURE_CORECLR // On desktop only we still use PDB format if the symbols are savable to disk
-    if(mod->GetAssembly()->HasSaveAccess())
-    {
-        symFormatToUse = eSymbolFormatPDB;
-    }
-#endif
    
     static ConfigDWORD dbgForcePDBSymbols;
     if(dbgForcePDBSymbols.val_DontUse_(W("DbgForcePDBSymbols"), 0) == 1)
@@ -951,13 +945,6 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != 0) {
-#ifndef FEATURE_CORECLR
-            // workaround - lie about where mscorlib is. Mscorlib is now loaded out of the GAC, 
-            // but some apps query its location to find the system directory. (Notably CodeDOM)
-            if (pModule->IsSystem())
-                retString.Set(SystemDomain::System()->BaseLibrary());
-            else
-#endif // !FEATURE_CORECLR
             {
 #ifdef FEATURE_WINDOWSPHONE
                 //
@@ -1248,7 +1235,6 @@ FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSA
 }
 FCIMPLEND
 
-#ifdef FEATURE_CORECLR
 
 //---------------------------------------------------------------------
 // Helper code for PunkSafeHandle class. This does the Release in the
@@ -1283,6 +1269,5 @@ FCIMPL0(void*, COMPunkSafeHandle::nGetDReleaseTarget)
     return (void*)DReleaseTarget;
 }
 FCIMPLEND
-#endif //FEATURE_CORECLR
 
 

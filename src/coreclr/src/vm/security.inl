@@ -538,43 +538,8 @@ inline BOOL Security::CanSkipVerification(MethodDesc * pMD)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     // Always skip verification on CoreCLR
     return TRUE;
-#else
-
-    // Special case the System.Object..ctor:
-    // System.Object..ctor is not verifiable according to current verifier rules (that require to call the base 
-    // class ctor). But since we want System.Object..ctor() to be marked transparent, it cannot be unverifiable
-    // (v4 security rules prohibit transparent code from being unverifiable)
-
-#ifndef DACCESS_COMPILE
-    if (g_pObjectCtorMD == pMD)
-        return TRUE;
-#endif
-
-    // In AppX, all dynamic code (dynamic assemblies and dynamic methods) should be verified..
-    if (AppX::IsAppXProcess() && !AppX::IsAppXDesignMode())
-    {
-        if (pMD->IsLCGMethod() || pMD->GetAssembly()->IsDynamic())
-            return FALSE;
-    }
-
-    BOOL fCanSkipVerification = Security::CanSkipVerification(pMD->GetAssembly()->GetDomainAssembly()); 
-    if (fCanSkipVerification)
-    {
-        // check for transparency
-        if (SecurityTransparent::IsMethodTransparent(pMD))
-        {
-            ModuleSecurityDescriptor *pModuleSecDesc = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
-            if (!pModuleSecDesc->CanTransparentCodeSkipVerification())
-            {
-                return FALSE;
-            }
-        }
-    }
-   return fCanSkipVerification;
-#endif // !FEATURE_CORECLR
 }
 #endif //!DACCESS_COMPILE
 

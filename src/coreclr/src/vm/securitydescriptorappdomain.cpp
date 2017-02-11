@@ -321,9 +321,6 @@ BOOL ApplicationSecurityDescriptor::IsDefaultAppDomain() const
 {
     LIMITED_METHOD_CONTRACT;
     return  m_fIsDefaultAppdomain
-#ifndef FEATURE_CORECLR
-            && !m_fHomogeneous
-#endif // FEATURE_CORECLR
             ;
 }
 

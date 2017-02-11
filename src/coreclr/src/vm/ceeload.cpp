@@ -4260,14 +4260,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         SafeComHolder<ISymUnmanagedBinder> pBinder;
 
-#if defined(FEATURE_CORECLR)
         if (g_pDebugInterface == NULL)
         {
             // @TODO: this is reachable when debugging!
             UNREACHABLE_MSG("About to CoCreateInstance!  This code should not be "
                             "reachable or needs to be reimplemented for CoreCLR!");
         }
-#endif // FEATURE_CORECLR
 
         if (this->GetInMemorySymbolStreamFormat() == eSymbolFormatILDB)
         {
@@ -4286,21 +4284,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // On desktop, the framework installer is supposed to install diasymreader.dll as well
             // and so this shouldn't happen.
             hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
-#ifdef FEATURE_CORECLR
                                         NATIVE_SYMBOL_READER_DLL,
-#else
-                                        GetInternalSystemDirectory(),
-#endif
                                         IID_ISymUnmanagedBinder,
                                         (void**)&pBinder,
                                         NULL);
             if (FAILED(hr))
             {
-#ifdef FEATURE_CORECLR
                 RETURN (NULL);
-#else
-                ThrowHR(hr);
-#endif
             }
 
         }
@@ -5840,7 +5830,6 @@ Module::GetAssemblyIfLoaded(
                     continue;
                 }
 
-#if defined(FEATURE_CORECLR)                
                 // If we have been passed the binding context for the loaded assembly that is being looked up in the 
                 // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
                 if (pBindingContextForLoadedAssembly != NULL)
@@ -5848,7 +5837,6 @@ Module::GetAssemblyIfLoaded(
                     _ASSERTE(spec.GetBindingContext() == NULL);
                     spec.SetBindingContext(pBindingContextForLoadedAssembly);
                 }
-#endif // defined(FEATURE_CORECLR)
                 DomainAssembly * pDomainAssembly = nullptr;
 
 #ifdef FEATURE_APPX_BINDER
@@ -6154,7 +6142,6 @@ DomainAssembly * Module::LoadAssembly(
                 szWinRtTypeClassName);
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainFile(GetAppDomain())->GetDomainAssembly(), IsIntrospectionOnly());
-#if defined(FEATURE_CORECLR)      
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
@@ -6163,7 +6150,6 @@ DomainAssembly * Module::LoadAssembly(
         {
             spec.SetBindingContext(pBindingContext);
         }
-#endif // defined(FEATURE_CORECLR)
         if (szWinRtTypeClassName != NULL)
         {
             spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
@@ -15794,7 +15780,6 @@ LPCWSTR Module::GetPathForErrorMessages()
     }
 }
 
-#ifdef FEATURE_CORECLR
 #ifndef DACCESS_COMPILE
 BOOL IsVerifiableWrapper(MethodDesc* pMD)
 {
@@ -15887,7 +15872,6 @@ void Module::VerifyAllMethods()
         EEFileLoadException::Throw(GetFile(), COR_E_VERIFICATION);
 #endif //DACCESS_COMPILE
 }
-#endif //FEATURE_CORECLR
 
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)

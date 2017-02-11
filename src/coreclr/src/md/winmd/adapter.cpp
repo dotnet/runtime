@@ -1185,14 +1185,12 @@ void WinMDAdapter::GetExtraAssemblyRefProps(FrameworkAssemblyIndex index,
 
     if (ppPublicKeytoken)
     {
-#ifdef FEATURE_CORECLR
         if (index == FrameworkAssembly_Mscorlib)
         {
             *ppPublicKeytoken = g_rbTheSilverlightPlatformKeyToken;
             *pTokenLength = sizeof(g_rbTheSilverlightPlatformKeyToken);
         }
         else
-#endif
         {
             if (index == FrameworkAssembly_SystemNumericsVectors || index == FrameworkAssembly_SystemRuntime || index == FrameworkAssembly_SystemObjectModel)
             {

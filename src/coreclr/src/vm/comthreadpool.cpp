@@ -632,31 +632,6 @@ void SetAsyncResultProperties(
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_SO_TOLERANT;
 
-#ifndef FEATURE_CORECLR
-    ASYNCRESULTREF asyncResult = overlapped->m_asyncResult;
-    // only filestream is expected to have a null delegate in which
-    // case we do the necessary book-keeping here. However, for robustness
-    // we should make sure that the asyncResult is indeed an instance of
-    // FileStreamAsyncResult
-    if (asyncResult->GetMethodTable() == g_pAsyncFileStream_AsyncResultClass)
-    {
-        // Handle reading from & writing to closed pipes. It's possible for
-        // an async read on a pipe to be issued and then the pipe is closed,
-        // returning this error.  This may very well be necessary. -BG
-        if (dwErrorCode == ERROR_BROKEN_PIPE || dwErrorCode == ERROR_NO_DATA)
-            dwErrorCode = 0;
-        asyncResult->SetErrorCode(dwErrorCode);
-        asyncResult->SetNumBytes(dwNumBytes);
-        asyncResult->SetCompletedAsynchronously();
-        asyncResult->SetIsComplete();
-
-        // Signal the event - the OS does not do this for us.
-        WAITHANDLEREF waitHandle = asyncResult->GetWaitHandle();
-        HANDLE h = waitHandle->GetWaitHandle();
-        if ((h != NULL) && (h != (HANDLE) -1))
-            UnsafeSetEvent(h);
-    }
-#endif // !FEATURE_CORECLR
 }
 
 VOID BindIoCompletionCallBack_Worker(LPVOID args)
@@ -698,13 +673,6 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
         // no user delegate to callback
         _ASSERTE((overlapped->m_iocbHelper == NULL) || !"This is benign, but should be optimized");
 
-#ifndef FEATURE_CORECLR
-        // we cannot do this at threadpool initialization time since mscorlib may not have been loaded
-        if (!g_pAsyncFileStream_AsyncResultClass)
-        {
-            g_pAsyncFileStream_AsyncResultClass = MscorlibBinder::GetClass(CLASS__FILESTREAM_ASYNCRESULT);
-        }
-#endif // !FEATURE_CORECLR
 
         SetAsyncResultProperties(overlapped, ErrorCode, numBytesTransferred);
     }

@@ -103,9 +103,6 @@
 
 #include "clrprivtypecachewinrt.h"
 
-#ifndef FEATURE_CORECLR
-#include "nlsinfo.h"
-#endif
 
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
 #pragma warning(push)
@@ -739,10 +736,8 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 void BaseDomain::Attach()
 {
 #ifdef  FEATURE_RANDOMIZED_STRING_HASHING
-#ifdef FEATURE_CORECLR
     // Randomized string hashing is on by default for String.GetHashCode in coreclr.
     COMNlsHashProvider::s_NlsHashProvider.SetUseRandomHashing((CorHost2::GetStartupFlags() & STARTUP_DISABLE_RANDOMIZED_STRING_HASHING) == 0);
-#endif // FEATURE_CORECLR
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
     m_SpecialStaticsCrst.Init(CrstSpecialStatics);
 }
@@ -1229,7 +1224,6 @@ void AppDomain::RegisterLoaderAllocatorForDeletion(LoaderAllocator * pLoaderAllo
     m_pDelayedLoaderAllocatorUnloadList = pLoaderAllocator;
 }
 
-#ifdef FEATURE_CORECLR
 void AppDomain::ShutdownNativeDllSearchDirectories()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1243,7 +1237,6 @@ void AppDomain::ShutdownNativeDllSearchDirectories()
 
     m_NativeDllSearchDirectories.Clear();
 }
-#endif
 
 void AppDomain::ReleaseDomainBoundInfo()
 {
@@ -3497,10 +3490,6 @@ void SystemDomain::InitializeDefaultDomain(
 #ifndef CROSSGEN_COMPILE
         if (!NingenEnabled())
         {
-#ifndef FEATURE_CORECLR
-            pDefaultDomain->InitializeHashing(NULL);
-            pDefaultDomain->InitializeSorting(NULL);
-#endif // FEATURE_CORECLR
         }
 #endif // CROSSGEN_COMPILE
 
@@ -3540,174 +3529,6 @@ void SystemDomain::InitializeDefaultDomain(
 Volatile<LONG> g_fInExecuteMainMethod = 0;
 #endif
 
-#ifndef FEATURE_CORECLR
-void SystemDomain::ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path /*=NULL*/)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(hMod, NULL_OK));
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-#ifdef _DEBUG
-    CounterHolder counter(&g_fInExecuteMainMethod);
-#endif
-
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
-    GCX_COOP();
-
-    //
-    // There is no EH protecting this transition!
-    // This is generically ok in this method because if we throw out of here, it becomes unhandled anyway.
-    //
-    FrameWithCookie<ContextTransitionFrame> frame;
-    pThread->EnterContextRestricted(SystemDomain::System()->DefaultDomain()->GetDefaultContext(), &frame);
-    _ASSERTE(pThread->GetDomain());
-
-    AppDomain *pDomain = GetAppDomain();
-    _ASSERTE(pDomain);
-
-    // Push this frame around loading the main assembly to ensure the
-    // debugger can properly recognize any managed code that gets run
-    // as "class initializaion" code.
-    FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
-    {
-        GCX_PREEMP();
-
-        PEImageHolder pTempImage(PEImage::LoadImage(hMod));
-
-        PEFileHolder pTempFile(PEFile::Open(pTempImage.Extract()));
-
-        // Check for CustomAttributes - Set up the DefaultDomain and the main thread
-        // Note that this has to be done before ExplicitBind() as it
-        // affects the bind
-        mdToken tkEntryPoint = pTempFile->GetEntryPointToken();
-        // <TODO>@TODO: What if the entrypoint is in another file of the assembly?</TODO>
-        ReleaseHolder<IMDInternalImport> scope(pTempFile->GetMDImportWithRef());
-        // In theory, we should have a valid executable image and scope should never be NULL, but we've been  
-        // getting Watson failures for AVs here due to ISVs modifying image headers and some new OS loader 
-        // checks (see Dev10# 718530 and Windows 7# 615596)
-        if (scope == NULL)
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
-#ifdef FEATURE_COMINTEROP
-        Thread::ApartmentState state = Thread::AS_Unknown;        
-
-        if((!IsNilToken(tkEntryPoint)) && (TypeFromToken(tkEntryPoint) == mdtMethodDef)) {
-            if (scope->IsValidToken(tkEntryPoint))
-                state = SystemDomain::GetEntryPointThreadAptState(scope, tkEntryPoint);
-            else
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
-        // If the entry point has an explicit thread apartment state, set it
-        // before running the AppDomainManager initialization code.
-        if (state == Thread::AS_InSTA || state == Thread::AS_InMTA)
-            SystemDomain::SetThreadAptState(scope, state);
-#endif // FEATURE_COMINTEROP
-
-        BOOL fSetGlobalSharePolicyUsingAttribute = FALSE;
-
-        if((!IsNilToken(tkEntryPoint)) && (TypeFromToken(tkEntryPoint) == mdtMethodDef))
-        {
-            // The global share policy needs to be set before initializing default domain 
-            // so that it is in place for loading of appdomain manager.
-            fSetGlobalSharePolicyUsingAttribute = SystemDomain::SetGlobalSharePolicyUsingAttribute(scope, tkEntryPoint);
-        }
-
-        // This can potentially run managed code.
-        InitializeDefaultDomain(FALSE);
-
-#ifdef FEATURE_COMINTEROP
-        // If we haven't set an explicit thread apartment state, set it after the
-        // AppDomainManager has got a chance to go set it in InitializeNewDomain.
-        if (state != Thread::AS_InSTA && state != Thread::AS_InMTA)
-            SystemDomain::SetThreadAptState(scope, state);
-#endif // FEATURE_COMINTEROP
-
-        if (fSetGlobalSharePolicyUsingAttribute)
-            SystemDomain::System()->DefaultDomain()->SetupLoaderOptimization(g_dwGlobalSharePolicy);
-
-        NewHolder<IPEFileSecurityDescriptor> pSecDesc(Security::CreatePEFileSecurityDescriptor(pDomain, pTempFile));
-
-        {
-            GCX_COOP();
-            pSecDesc->Resolve();
-            if (pSecDesc->AllowBindingRedirects())
-                pDomain->TurnOnBindingRedirects();
-        }
-
-        PEAssemblyHolder pFile(pDomain->BindExplicitAssembly(hMod, TRUE));
-
-        pDomain->m_pRootAssembly = GetAppDomain()->LoadAssembly(NULL, pFile, FILE_ACTIVE);
-
-        {
-            GCX_COOP();
-
-            // Reuse the evidence that was generated for the PEFile for the assembly so we don't have to
-            // regenerate evidence of the same type again if it is requested later.
-            pDomain->m_pRootAssembly->GetSecurityDescriptor()->SetEvidenceFromPEFile(pSecDesc);
-        }
-
-        // If the AppDomainManager for the default domain was specified in the application config file then
-        // we require that the assembly be trusted in order to set the manager
-        if (pDomain->HasAppDomainManagerInfo() && pDomain->AppDomainManagerSetFromConfig())
-        {
-            Assembly *pEntryAssembly = pDomain->GetAppDomainManagerEntryAssembly();
-            if (!pEntryAssembly->GetSecurityDescriptor()->AllowApplicationSpecifiedAppDomainManager())
-            {
-                COMPlusThrow(kTypeLoadException, IDS_E_UNTRUSTED_APPDOMAIN_MANAGER);
-            }
-        }
-
-        if (CorCommandLine::m_pwszAppFullName == NULL) {
-            StackSString friendlyName;
-            StackSString assemblyPath = pFile->GetPath();
-            SString::Iterator i = assemblyPath.End();
-
-            if (PEAssembly::FindLastPathSeparator(assemblyPath, i)) {
-                i++;
-                friendlyName.Set(assemblyPath, i, assemblyPath.End());
-            }
-            else
-                friendlyName.Set(assemblyPath);
-
-            pDomain->SetFriendlyName(friendlyName, TRUE);
-        }
-    }
-    __dcimf.Pop();
-
-    {
-        GCX_PREEMP();
-
-        LOG((LF_CLASSLOADER | LF_CORDB,
-             LL_INFO10,
-             "Created domain for an executable at %p\n",
-             (pDomain->m_pRootAssembly ? pDomain->m_pRootAssembly->Parent() : NULL)));
-        TESTHOOKCALL(RuntimeStarted(RTS_CALLINGENTRYPOINT));
-
-#ifdef FEATURE_MULTICOREJIT
-        pDomain->GetMulticoreJitManager().AutoStartProfile(pDomain);
-#endif
-
-        pDomain->m_pRootAssembly->ExecuteMainMethod(NULL, TRUE /* waitForOtherThreads */);
-    }
-
-    pThread->ReturnToContext(&frame);
-
-#ifdef FEATURE_TESTHOOKS
-    TESTHOOKCALL(LeftAppDomain(DefaultADID));
-#endif
-}
-#endif //!FEATURE_CORECLR
 
 #ifdef FEATURE_CLICKONCE
 void SystemDomain::ActivateApplication(int *pReturnValue)
@@ -3895,7 +3716,6 @@ Assembly *AppDomain::LoadAssemblyHelper(LPCWSTR wszAssembly,
 
 #if defined(FEATURE_CLASSIC_COMINTEROP) && !defined(CROSSGEN_COMPILE)
 
-#ifdef FEATURE_CORECLR
 MethodTable *AppDomain::LoadCOMClass(GUID clsid,
                                      BOOL bLoadRecord/*=FALSE*/,
                                      BOOL* pfAssemblyInReg/*=NULL*/)
@@ -3903,135 +3723,6 @@ MethodTable *AppDomain::LoadCOMClass(GUID clsid,
     // @CORESYSTODO: what to do here?
     return NULL;
 }
-#else // FEATURE_CORECLR
-
-static BOOL IsSameRuntimeVersion(ICLRRuntimeInfo *pInfo1, ICLRRuntimeInfo *pInfo2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    WCHAR wszVersion1[_MAX_PATH]; 
-    WCHAR wszVersion2[_MAX_PATH];
-    DWORD cchVersion;
-
-    cchVersion = COUNTOF(wszVersion1);
-    IfFailThrow(pInfo1->GetVersionString(wszVersion1, &cchVersion));
-
-    cchVersion = COUNTOF(wszVersion2);
-    IfFailThrow(pInfo2->GetVersionString(wszVersion2, &cchVersion));
-
-    return SString::_wcsicmp(wszVersion1, wszVersion2) == 0;
-}
-
-MethodTable *AppDomain::LoadCOMClass(GUID clsid,
-                                     BOOL bLoadRecord/*=FALSE*/,
-                                     BOOL* pfAssemblyInReg/*=NULL*/)
-{
-    CONTRACT (MethodTable*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-
-    MethodTable* pMT = NULL;
-
-    NewArrayHolder<WCHAR>  wszClassName = NULL;
-    NewArrayHolder<WCHAR>  wszAssemblyString = NULL;
-    NewArrayHolder<WCHAR>  wszCodeBaseString = NULL;
-
-    DWORD   cbAssembly = 0;
-    DWORD   cbCodeBase = 0;
-    Assembly *pAssembly = NULL;
-    BOOL    fFromRegistry = FALSE;
-    BOOL    fRegFreePIA = FALSE;
-
-    HRESULT hr = S_OK;
-
-    if (pfAssemblyInReg != NULL)
-        *pfAssemblyInReg = FALSE;
-
-    // with sxs.dll help
-    hr = FindShimInfoFromWin32(clsid, bLoadRecord, NULL, NULL, &wszClassName, &wszAssemblyString, &fRegFreePIA);
-
-    if(FAILED(hr))
-    {
-        hr = FindShimInfoFromRegistry(clsid, bLoadRecord, VER_ASSEMBLYMAJORVERSION, VER_ASSEMBLYMINORVERSION,
-                                      &wszClassName, &wszAssemblyString, &wszCodeBaseString);
-        if (FAILED(hr))
-            RETURN NULL;
-
-        fFromRegistry = TRUE;
-    }
-
-    // Skip the GetRuntimeForManagedCOMObject check for value types since they cannot be activated and are
-    // always used for wrapping existing instances coming from COM.
-    if (!bLoadRecord)
-    {
-        // We will load the assembly only if it is a PIA or if unmanaged activation would load the currently running
-        // runtime. Otherwise we return NULL which will result in using the default System.__ComObject type.
-
-        // the type is a PIA type if mscoree.dll is not its inproc server dll or it was specified as <clrSurrogate> in the manifest
-        BOOL fPIA = (fFromRegistry ? !Clr::Util::Com::CLSIDHasMscoreeAsInprocServer32(clsid) : fRegFreePIA);
-        if (!fPIA)
-        {
-            // this isn't a PIA, so we must determine which runtime it would load
-            ReleaseHolder<ICLRRuntimeHostInternal> pRuntimeHostInternal;
-            IfFailThrow(g_pCLRRuntime->GetInterface(CLSID_CLRRuntimeHostInternal,
-                                                    IID_ICLRRuntimeHostInternal,
-                                                    &pRuntimeHostInternal));
-
-            // we call the shim to see which runtime would this be activated in
-            ReleaseHolder<ICLRRuntimeInfo> pRuntimeInfo;
-            if (FAILED(pRuntimeHostInternal->GetRuntimeForManagedCOMObject(clsid, IID_ICLRRuntimeInfo, &pRuntimeInfo)))
-            {
-                // the requested runtime is not loadable - don't load the assembly
-                RETURN NULL;
-            }
-
-            if (!IsSameRuntimeVersion(g_pCLRRuntime, pRuntimeInfo))
-            {
-                // the requested runtime is different from this runtime - don't load the assembly
-                RETURN NULL;
-            }
-        }
-    }
-
-    if (pfAssemblyInReg != NULL)
-        *pfAssemblyInReg = TRUE;
-
-    if (wszAssemblyString != NULL) {
-        pAssembly = LoadAssemblyHelper(wszAssemblyString, wszCodeBaseString);
-        pMT = TypeName::GetTypeFromAssembly(wszClassName, pAssembly).GetMethodTable();
-        if (!pMT)
-            goto ErrExit;
-    }
-
-    if (pMT == NULL) {
-    ErrExit:
-        // Convert the GUID to its string representation.
-        WCHAR szClsid[64];
-        if (GuidToLPWSTR(clsid, szClsid, NumItems(szClsid)) == 0)
-            szClsid[0] = 0;
-
-        // Throw an exception indicating we failed to load the type with
-        // the requested CLSID.
-        COMPlusThrow(kTypeLoadException, IDS_CLASSLOAD_NOCLSIDREG, szClsid);
-    }
-
-    RETURN pMT;
-}
-
-#endif // FEATURE_CORECLR
 
 #endif // FEATURE_CLASSIC_COMINTEROP && !CROSSGEN_COMPILE
 
@@ -4078,17 +3769,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__ASSEMBLY,
         CLASS__TYPE_DELEGATOR,
         CLASS__RUNTIME_HELPERS,
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-        CLASS__ITYPE,
-        CLASS__IASSEMBLY,
-        CLASS__IMETHODBASE,
-        CLASS__IMETHODINFO,
-        CLASS__ICONSTRUCTORINFO,
-        CLASS__IFIELDINFO,
-        CLASS__IPROPERTYINFO,
-        CLASS__IEVENTINFO,
-        CLASS__IAPPDOMAIN,
-#endif // FEATURE_COMINTEROP && !FEATURE_CORECLR
         CLASS__LAZY_INITIALIZER,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
@@ -4838,15 +4518,6 @@ AppDomain::AppDomain()
     m_pUnloadRequestThread = NULL;
     m_ADUnloadSink=NULL;
 
-#ifndef FEATURE_CORECLR
-    m_bUseOsSorting = RunningOnWin8();
-    m_sortVersion = DEFAULT_SORT_VERSION;
-    m_pCustomSortLibrary = NULL;
-#if _DEBUG
-    m_bSortingInitialized = FALSE;
-#endif // _DEBUG
-    m_pNlsHashProvider = NULL;
-#endif //!FEATURE_CORECLR
 
     // Initialize Shared state. Assemblies are loaded
     // into each domain by default.
@@ -4979,13 +4650,6 @@ AppDomain::~AppDomain()
     if(!g_fEEInit)
         Terminate();
 
-#ifndef FEATURE_CORECLR
-    if (m_pCustomSortLibrary)
-        delete m_pCustomSortLibrary;
-
-    if (m_pNlsHashProvider)
-        delete m_pNlsHashProvider;
-#endif
 
 
 #ifdef FEATURE_REMOTING
@@ -5450,9 +5114,7 @@ void AppDomain::Terminate()
     }
 
     ShutdownAssemblies();
-#ifdef FEATURE_CORECLR    
     ShutdownNativeDllSearchDirectories();
-#endif
 
     if (m_pRefClassFactHash)
     {
@@ -5589,123 +5251,7 @@ OBJECTREF AppDomain::GetExposedObject()
     return ref;
 }
 
-#ifndef FEATURE_CORECLR
-void AppDomain::InitializeSorting(OBJECTREF* ppAppdomainSetup)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(ppAppdomainSetup == NULL || IsProtectedByGCFrame(ppAppdomainSetup));
-    }
-    CONTRACTL_END;
 
-    DWORD sortVersionFromConfig = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CompatSortNLSVersion);
-
-    if(sortVersionFromConfig != 0)
-    {
-        m_bUseOsSorting = FALSE;
-        m_sortVersion = sortVersionFromConfig;
-    }
-
-    if(ppAppdomainSetup != NULL)
-    {
-        APPDOMAINSETUPREF adSetup = (APPDOMAINSETUPREF) *ppAppdomainSetup;
-        APPDOMAINSORTINGSETUPINFOREF sortingSetup = adSetup->GetAppDomainSortingSetupInfo();
-
-        if(sortingSetup != NULL)
-        {
-            if(sortingSetup->UseV2LegacySorting() || sortingSetup->UseV4LegacySorting())
-            {        
-
-                m_bUseOsSorting = FALSE;
-    
-                if(sortingSetup->UseV2LegacySorting())
-                {           
-                    m_sortVersion = SORT_VERSION_WHIDBEY;
-                }
-
-                if(sortingSetup->UseV4LegacySorting())
-                {
-                    m_sortVersion = SORT_VERSION_V4;
-                }
-            }
-            else if(sortingSetup->GetPFNIsNLSDefinedString() != NULL 
-                    && sortingSetup->GetPFNCompareStringEx() != NULL 
-                    && sortingSetup->GetPFNLCMapStringEx() != NULL 
-                    && sortingSetup->GetPFNFindNLSStringEx() != NULL 
-                    && sortingSetup->GetPFNCompareStringOrdinal() != NULL 
-                    && sortingSetup->GetPFNGetNLSVersionEx() != NULL
-                    && sortingSetup->GetPFNFindStringOrdinal() != NULL)
-            {
-                m_pCustomSortLibrary = new COMNlsCustomSortLibrary;    
-                m_pCustomSortLibrary->pIsNLSDefinedString = (PFN_IS_NLS_DEFINED_STRING) sortingSetup->GetPFNIsNLSDefinedString();
-                m_pCustomSortLibrary->pCompareStringEx = (PFN_COMPARE_STRING_EX) sortingSetup->GetPFNCompareStringEx();
-                m_pCustomSortLibrary->pLCMapStringEx = (PFN_LC_MAP_STRING_EX) sortingSetup->GetPFNLCMapStringEx();
-                m_pCustomSortLibrary->pFindNLSStringEx = (PFN_FIND_NLS_STRING_EX) sortingSetup->GetPFNFindNLSStringEx();
-                m_pCustomSortLibrary->pCompareStringOrdinal = (PFN_COMPARE_STRING_ORDINAL) sortingSetup->GetPFNCompareStringOrdinal();
-                m_pCustomSortLibrary->pGetNLSVersionEx = (PFN_GET_NLS_VERSION_EX) sortingSetup->GetPFNGetNLSVersionEx();
-                m_pCustomSortLibrary->pFindStringOrdinal = (PFN_FIND_STRING_ORDINAL) sortingSetup->GetPFNFindStringOrdinal();
-            }
-        }
-    }
-
-    if(m_bUseOsSorting == FALSE && m_sortVersion == DEFAULT_SORT_VERSION)
-    {
-        // If we are using the legacy sorting dlls, the default version for sorting is SORT_VERSION_V4.  Note that
-        // we don't expect this to change in the future (even when V5 or V6 of the runtime comes out).
-        m_sortVersion = SORT_VERSION_V4;
-    }
-
-    if(RunningOnWin8() && m_bUseOsSorting == FALSE)
-    {
-        // We need to ensure that the versioned sort DLL could load so we don't crash later.  This ensures we have
-        // the same behavior as Windows 7, where even if we couldn't load the correct versioned sort dll, we would
-        // provide the default sorting behavior.
-        INT_PTR sortOrigin;
-        if(COMNlsInfo::InternalInitVersionedSortHandle(W(""), &sortOrigin, m_sortVersion) == NULL)
-        {
-            LOG((LF_APPDOMAIN, LL_WARNING, "AppDomain::InitializeSorting failed to load legacy sort DLL for AppDomain.\n"));
-            // We couldn't load a sort DLL.  Fall back to default sorting using the OS.
-            m_bUseOsSorting = TRUE;
-            m_sortVersion = DEFAULT_SORT_VERSION;
-        }        
-    }
-
-#if _DEBUG
-    m_bSortingInitialized = TRUE;
-#endif
-}
-#endif
-
-#ifndef FEATURE_CORECLR
-void AppDomain::InitializeHashing(OBJECTREF* ppAppdomainSetup)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(ppAppdomainSetup == NULL || IsProtectedByGCFrame(ppAppdomainSetup));
-    }
-    CONTRACTL_END;
- 
-    m_pNlsHashProvider = new COMNlsHashProvider;
-
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    BOOL fUseRandomizedHashing = (BOOL) CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseRandomizedStringHashAlgorithm);
-
-    if(ppAppdomainSetup != NULL)
-    {
-        APPDOMAINSETUPREF adSetup = (APPDOMAINSETUPREF) *ppAppdomainSetup;
-        fUseRandomizedHashing |= adSetup->UseRandomizedStringHashing();
-    }
-
-    m_pNlsHashProvider->SetUseRandomHashing(fUseRandomizedHashing);
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-}
-#endif // FEATURE_CORECLR
 
 OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
 {
@@ -5949,11 +5495,7 @@ bool IsPlatformAssembly(LPCSTR szName, DomainAssembly *pDomainAssembly)
         return false;
     }
 
-#ifdef FEATURE_CORECLR
     return StrongNameIsSilverlightPlatformKey(pbPublicKey, cbPublicKey);
-#else
-    return StrongNameIsEcmaKey(pbPublicKey, cbPublicKey);
-#endif
 }
 
 void AppDomain::AddAssembly(DomainAssembly * assem)
@@ -6047,54 +5589,6 @@ BOOL AppDomain::HasSetSecurityPolicy()
     RETURN ((APPDOMAINREF)GetExposedObject())->HasSetPolicy();
 }
 
-#if defined (FEATURE_LOADER_OPTIMIZATION) && !defined(FEATURE_CORECLR)
-// Returns true if the user has declared the desire to load an 
-// assembly domain-neutral.  This is either by specifying System.LoaderOptimizationAttribute
-// on the entry routine or the host has set this loader-optimization flag.  
-BOOL AppDomain::ApplySharePolicy(DomainAssembly *pFile)
-{
-    CONTRACT(BOOL)
-    {
-        PRECONDITION(CheckPointer(pFile));
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    if (!pFile->GetFile()->IsShareable())
-        RETURN FALSE;
-
-    if (ApplySharePolicyFlag(pFile))
-        RETURN TRUE;
-
-    RETURN FALSE;
-}
-
-BOOL AppDomain::ApplySharePolicyFlag(DomainAssembly *pFile)
-{
-    CONTRACT(BOOL)
-    {
-        PRECONDITION(CheckPointer(pFile));
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    switch(GetSharePolicy()) {
-    case SHARE_POLICY_ALWAYS:
-        RETURN (!pFile->MayHaveUnknownDependencies());
-
-    case SHARE_POLICY_GAC:
-        RETURN (pFile->IsClosedInGAC());
-
-    case SHARE_POLICY_NEVER:
-        RETURN pFile->IsSystem();
-
-    default:
-        UNREACHABLE_MSG("Unknown share policy");
-    }
-}
-#endif // FEATURE_LOADER_OPTIMIZATION
 
 EEClassFactoryInfoHashTable* AppDomain::SetupClassFactHash()
 {
@@ -6714,7 +6208,6 @@ DomainAssembly* AppDomain::LoadDomainAssembly( AssemblySpec* pSpec,
         Exception* pEx=GET_EXCEPTION();
         if (!pEx->IsTransient())
         {
-#if defined(FEATURE_CORECLR)
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
             ICLRPrivBinder* pCurrentBindingContext = pSpec->GetBindingContext();
             ICLRPrivBinder* pBindingContextFromPEAssembly = pFile->GetBindingContext();
@@ -6733,7 +6226,6 @@ DomainAssembly* AppDomain::LoadDomainAssembly( AssemblySpec* pSpec,
                 _ASSERTE(AreSameBinderInstance(pCurrentBindingContext, pBindingContextFromPEAssembly));
             }
 #endif // _DEBUG            
-#endif // defined(FEATURE_CORECLR)
 
             if (!EEFileLoadException::CheckType(pEx))
             {
@@ -7152,16 +6644,6 @@ void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, F
 
     EX_TRY
     {
-#ifndef FEATURE_CORECLR
-        // Event Tracing for Windows is used to log data for performance and functional testing purposes.
-        // The events below are used to measure the performance of two steps in the assembly loader, namely assembly initialization and delivering events.
-        StackSString ETWAssemblySimpleName;
-        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD))
-        {
-            LPCUTF8 simpleName = pFile->GetSimpleName();
-            ETWAssemblySimpleName.AppendUTF8(simpleName ? simpleName : "NULL"); // Gather data used by ETW events later in this function.
-        }
-#endif // FEATURE_CORECLR
 
         // Special case: for LoadLibrary, we cannot hold the lock during the
         // actual LoadLibrary call, because we might get a callback from _CorDllMain on any
@@ -7172,28 +6654,10 @@ void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, F
             lockHolder.Release();
             released = TRUE;
         }
-#ifndef FEATURE_CORECLR
-        else if (workLevel == FILE_LOAD_DELIVER_EVENTS)
-        {
-            FireEtwLoaderDeliverEventsPhaseStart(GetId().m_dwId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, NULL, ETWAssemblySimpleName, GetClrInstanceId());
-        }
-#endif // FEATURE_CORECLR
 
         // Do the work
         TESTHOOKCALL(NextFileLoadLevel(GetId().m_dwId,pFile,workLevel));
-#ifndef FEATURE_CORECLR
-        if (workLevel == FILE_LOAD_ALLOCATE)
-        {
-            FireEtwLoaderAssemblyInitPhaseStart(GetId().m_dwId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, NULL, ETWAssemblySimpleName, GetClrInstanceId());
-        }                                                                             
-#endif // FEATURE_CORECLR
         BOOL success = pFile->DoIncrementalLoad(workLevel);
-#ifndef FEATURE_CORECLR
-        if (workLevel == FILE_LOAD_ALLOCATE)
-        {
-            FireEtwLoaderAssemblyInitPhaseEnd(GetId().m_dwId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, NULL, ETWAssemblySimpleName, GetClrInstanceId());
-       }
-#endif // FEATURE_CORECLR
         TESTHOOKCALL(CompletingFileLoadLevel(GetId().m_dwId,pFile,workLevel));
         if (released)
         {
@@ -7216,9 +6680,6 @@ void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, F
                 lockHolder.Release();
                 released = TRUE;
                 pFile->DeliverAsyncEvents();
-#ifndef FEATURE_CORECLR
-                FireEtwLoaderDeliverEventsPhaseEnd(GetId().m_dwId, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, NULL, ETWAssemblySimpleName, GetClrInstanceId());
-#endif // FEATURE_CORECLR
             };
         }
     }
@@ -7489,7 +6950,6 @@ AppDomain::SharePolicy AppDomain::GetSharePolicy()
 #endif // FEATURE_LOADER_OPTIMIZATION
 
 
-#ifdef FEATURE_CORECLR
 void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID * pGuid)
 {
     STANDARD_VM_CONTRACT;
@@ -7555,7 +7015,6 @@ void AppDomain::CheckForMismatchedNativeImages(AssemblySpec * pSpec, const GUID 
         amTracker.SuppressRelease();
     }
 }
-#endif // FEATURE_CORECLR
 
 
 void AppDomain::SetupSharedStatics()
@@ -8097,13 +7556,11 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
     return m_AssemblyCache.Contains(pSpec);
 }
 
-#ifdef FEATURE_CORECLR
 void AppDomain::GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList)
 {
     CrstHolder holder(&m_DomainCacheCrst);
     m_AssemblyCache.GetAllAssemblies(assemblyList);
 }
-#endif
 
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
 {
@@ -8886,12 +8343,10 @@ EndTry2:;
                         }
                         fAddFileToCache = true;
                         
-#if defined(FEATURE_CORECLR)                        
                         // Setup the reference to the binder, which performed the bind, into the AssemblySpec
                         ICLRPrivBinder* pBinder = result->GetBindingContext();
                         _ASSERTE(pBinder != NULL);
                         pSpec->SetBindingContext(pBinder);
-#endif // defined(FEATURE_CORECLR)
                     }
 
 #endif //!FEATURE_FUSION
@@ -9568,13 +9023,6 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*
     orSender = pAppDomain->GetRawExposedObject();
 
     retVal = pAppDomain->RaiseUnhandledExceptionEventNoThrow(&orSender, pThrowable, isTerminating);
-#ifndef FEATURE_CORECLR    
-// CoreCLR#520: 
-// To make this work correctly we need the changes for coreclr 473
-    if (pAppDomain != SystemDomain::System()->DefaultDomain())
-        retVal |= SystemDomain::System()->DefaultDomain()->RaiseUnhandledExceptionEventNoThrow
-                        (&orSender, pThrowable, isTerminating);
-#endif    
 
     GCPROTECT_END();
 
@@ -9670,54 +9118,6 @@ void AppDomain::RaiseExitProcessEvent()
     }
 }
 
-#ifndef FEATURE_CORECLR
-void AppDomain::RaiseUnhandledExceptionEvent_Wrapper(LPVOID ptr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-        SO_INTOLERANT;
-    }
-    CONTRACTL_END;
-    AppDomain::RaiseUnhandled_Args *args = (AppDomain::RaiseUnhandled_Args *) ptr;
-
-    struct _gc {
-        OBJECTREF orThrowable;
-        OBJECTREF orSender;
-    } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
-
-    _ASSERTE(args->pTargetDomain == GetAppDomain());
-    GCPROTECT_BEGIN(gc);
-    EX_TRY
-    {
-        SetObjectReference(&gc.orThrowable,
-                           AppDomainHelper::CrossContextCopyFrom(args->pExceptionDomain,
-                                                                 args->pThrowable),
-                           args->pTargetDomain);
-
-        SetObjectReference(&gc.orSender,
-                           AppDomainHelper::CrossContextCopyFrom(args->pExceptionDomain,
-                                                                 args->pSender),
-                           args->pTargetDomain);
-    }
-    EX_CATCH
-    {
-        SetObjectReference(&gc.orThrowable, GET_THROWABLE(), args->pTargetDomain);
-        SetObjectReference(&gc.orSender, GetAppDomain()->GetRawExposedObject(), args->pTargetDomain);
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    *(args->pResult) = args->pTargetDomain->RaiseUnhandledExceptionEvent(&gc.orSender,
-                                                                         &gc.orThrowable,
-                                                                         args->isTerminating);
-    GCPROTECT_END();
-
-}
-#endif //!FEATURE_CORECLR        
 
 BOOL
 AppDomain::RaiseUnhandledExceptionEventNoThrow(OBJECTREF *pSender, OBJECTREF *pThrowable, BOOL isTerminating)
@@ -9780,18 +9180,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pSender, OBJECTREF *pThrowabl
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
     _ASSERTE(pSender    != NULL && IsProtectedByGCFrame(pSender));
 
-#ifndef FEATURE_CORECLR
-    Thread *pThread = GetThread();
-    if (this != pThread->GetDomain())
-    {
-        RaiseUnhandled_Args args = {pThread->GetDomain(), this, pSender, pThrowable, isTerminating, &result};
-        // call through DoCallBack with a domain transition
-        pThread->DoADCallBack(this, AppDomain::RaiseUnhandledExceptionEvent_Wrapper, &args, ADV_DEFAULTAD);
-        return result;
-    }
-#else
     _ASSERTE(this == GetThread()->GetDomain());
-#endif
 
 
     OBJECTREF orDelegate = NULL;
@@ -9814,48 +9203,6 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pSender, OBJECTREF *pThrowabl
 }
 
 
-#ifndef FEATURE_CORECLR
-// Create a domain based on a string name
-AppDomain* AppDomain::CreateDomainContext(LPCWSTR fileName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if(fileName == NULL) return NULL;
-
-    AppDomain* pDomain = NULL;
-
-    MethodDescCallSite valCreateDomain(METHOD__APP_DOMAIN__VAL_CREATE_DOMAIN);
-
-    STRINGREF pFilePath = NULL;
-    GCPROTECT_BEGIN(pFilePath);
-    pFilePath = StringObject::NewString(fileName);
-
-    ARG_SLOT args[1] =
-    {
-        ObjToArgSlot(pFilePath),
-    };
-
-    APPDOMAINREF pDom = (APPDOMAINREF) valCreateDomain.Call_RetOBJECTREF(args);
-    if(pDom != NULL)
-    {
-        Context* pContext = Context::GetExecutionContext(pDom);
-        if(pContext)
-        {
-            pDomain = pContext->GetDomain();
-        }
-    }
-    GCPROTECT_END();
-
-    return pDomain;
-}
-#endif // !FEATURE_CORECLR
 
 #endif // CROSSGEN_COMPILE
 
@@ -9909,28 +9256,6 @@ void AppDomain::InitializeDomainContext(BOOL allowRedirects,
         gc.pConfig = StringObject::NewString(pwszConfig);
     }
 
-#ifndef FEATURE_CORECLR
-    StringArrayList *pPropertyNames;
-    StringArrayList *pPropertyValues;
-    CorHost2::GetDefaultAppDomainProperties(&pPropertyNames, &pPropertyValues);
-
-    _ASSERTE(pPropertyNames->GetCount() == pPropertyValues->GetCount());
-
-    if (pPropertyNames->GetCount() > 0)
-    {
-        gc.propertyNames = (PTRARRAYREF)AllocateObjectArray(pPropertyNames->GetCount(), g_pStringClass);
-        gc.propertyValues = (PTRARRAYREF)AllocateObjectArray(pPropertyValues->GetCount(), g_pStringClass);
-
-        for (DWORD i = 0; i < pPropertyNames->GetCount(); ++i)
-        {
-            STRINGREF propertyName = StringObject::NewString(pPropertyNames->Get(i));
-            gc.propertyNames->SetAt(i, propertyName);
-
-            STRINGREF propertyValue = StringObject::NewString(pPropertyValues->Get(i));
-            gc.propertyValues->SetAt(i, propertyValue);
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     if ((gc.ref = GetExposedObject()) != NULL)
     {
@@ -9998,23 +9323,6 @@ IApplicationContext *AppDomain::CreateFusionContext()
         
         IfFailThrow(FusionBind::CreateFusionContext(NULL, &pFusionContext));
         
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-        CLRPrivBinderWinRT * pWinRtBinder;
-        if (AppX::IsAppXProcess())
-        {   // Note: Fusion binder is used in AppX to bind .NET Fx assemblies - some of them depend on .winmd files (e.g. System.Runtime.WindowsRuntime.dll)
-            CLRPrivBinderAppX * pAppXBinder = CLRPrivBinderAppX::GetOrCreateBinder();
-            pWinRtBinder = pAppXBinder->GetWinRtBinder();
-        }
-        else
-        {
-            pWinRtBinder = m_pWinRtBinder;
-        }
-        _ASSERTE(pWinRtBinder != nullptr);
-        
-        IfFailThrow(SetApplicationContext_WinRTBinder(
-            pFusionContext, 
-            static_cast<IBindContext *>(pWinRtBinder)));
-#endif
 
 #ifdef FEATURE_PREJIT
         if (NGENImagesAllowed())
@@ -12587,13 +11895,6 @@ AppDomain::RaiseAssemblyResolveEvent(
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
-#ifndef FEATURE_CORECLR
-            if ( pSpec->IsIntrospectionOnly() 
-#ifdef FEATURE_FUSION
-                    || pSpec->GetParentLoadContext() == LOADCTX_TYPE_UNKNOWN
-#endif
-                )
-#endif // FEATURE_CORECLR
             {
                 gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
             }
@@ -12636,68 +11937,6 @@ AppDomain::RaiseAssemblyResolveEvent(
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
 
-#ifndef FEATURE_CORECLR
-
-//---------------------------------------------------------------------------------------
-//
-// Ask the AppDomainManager for the entry assembly of the application
-//
-// Note:
-//   Most AppDomainManagers will fall back on the root assembly for the domain, so we need
-//   to make sure this is set before we call through to the AppDomainManager itself.
-//
-
-Assembly *AppDomain::GetAppDomainManagerEntryAssembly()
-{
-    CONTRACT(Assembly *)
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(HasAppDomainManagerInfo());
-        PRECONDITION(CheckPointer(m_pRootAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    GCX_COOP();
-
-    Assembly *pEntryAssembly = NULL;
-
-    struct
-    {
-        APPDOMAINREF    orDomain;
-        OBJECTREF       orAppDomainManager;
-        ASSEMBLYREF     orEntryAssembly;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
-    gc.orDomain = static_cast<APPDOMAINREF>(GetExposedObject());
-    gc.orAppDomainManager = gc.orDomain->GetAppDomainManager();
-    _ASSERTE(gc.orAppDomainManager != NULL);
-
-    MethodDescCallSite getEntryAssembly(METHOD__APPDOMAIN_MANAGER__GET_ENTRY_ASSEMBLY, &gc.orAppDomainManager);
-    ARG_SLOT argThis = ObjToArgSlot(gc.orAppDomainManager);
-    gc.orEntryAssembly = static_cast<ASSEMBLYREF>(getEntryAssembly.Call_RetOBJECTREF(&argThis));
-
-    if (gc.orEntryAssembly != NULL)
-    {
-        pEntryAssembly = gc.orEntryAssembly->GetAssembly();
-    }
-
-    GCPROTECT_END();
-
-    // If the AppDomainManager did not return an entry assembly, we'll assume the default assembly
-    if (pEntryAssembly == NULL)
-    {
-        pEntryAssembly = m_pRootAssembly;
-    }
-
-    RETURN(pEntryAssembly);
-}
-
-#endif // !FEATURE_CORECLR
 
 //---------------------------------------------------------------------------------------
 //
@@ -12740,45 +11979,6 @@ void AppDomain::InitializeDefaultDomainManager()
 
         LOG((LF_APPDOMAIN, LL_INFO10, "Setting default AppDomainManager '%S', '%S' from hosting API.\n", GetAppDomainManagerAsm(), GetAppDomainManagerType()));
     }
-#ifndef FEATURE_CORECLR
-    else
-    {
-        CLRConfigStringHolder wszConfigAppDomainManagerAssembly(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AppDomainManagerAsm));
-        CLRConfigStringHolder wszConfigAppDomainManagerType(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AppDomainManagerType));
-
-        if (wszConfigAppDomainManagerAssembly != NULL &&
-            wszConfigAppDomainManagerType != NULL)
-        {
-            SetAppDomainManagerInfo(wszConfigAppDomainManagerAssembly,
-                                    wszConfigAppDomainManagerType,
-                                    eInitializeNewDomainFlags_None);
-            m_fAppDomainManagerSetInConfig = TRUE;
-
-            LOG((LF_APPDOMAIN, LL_INFO10, "Setting default AppDomainManager '%S', '%S' from application config file.\n", GetAppDomainManagerAsm(), GetAppDomainManagerType()));
-        }
-        else
-        {
-            CLRConfigStringHolder wszEnvironmentAppDomainManagerAssembly(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LEGACY_APPDOMAIN_MANAGER_ASM));
-            CLRConfigStringHolder wszEnvironmentAppDomainManagerType(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_LEGACY_APPDOMAIN_MANAGER_TYPE));
-
-            if (wszEnvironmentAppDomainManagerAssembly != NULL &&
-                wszEnvironmentAppDomainManagerType != NULL)
-            {
-                SetAppDomainManagerInfo(wszEnvironmentAppDomainManagerAssembly,
-                                        wszEnvironmentAppDomainManagerType,
-                                        eInitializeNewDomainFlags_None);
-                m_fAppDomainManagerSetInConfig = FALSE;
-
-                LOG((LF_APPDOMAIN, LL_INFO10, "Setting default AppDomainManager '%S', '%S' from environment variables.\n", GetAppDomainManagerAsm(), GetAppDomainManagerType()));
-
-                // Reset the environmetn variables so that child processes do not inherit our domain manager
-                // by default.
-                WszSetEnvironmentVariable(CLRConfig::EXTERNAL_LEGACY_APPDOMAIN_MANAGER_ASM.name, NULL);
-                WszSetEnvironmentVariable(CLRConfig::EXTERNAL_LEGACY_APPDOMAIN_MANAGER_TYPE.name, NULL);
-            }
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     // If we found an AppDomain manager to use, create and initialize it
     // Otherwise, initialize the config flags.
@@ -12962,11 +12162,9 @@ void AppDomain::CreateADUnloadWorker()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     // Do not create adUnload thread if there is only default domain
     if(IsSingleAppDomain())
         return;
-#endif
 
 Retry:
     BOOL fCreator = FALSE;
@@ -13820,95 +13018,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
 
 #ifndef DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR
-//------------------------------------------------------------------------
-DWORD* SetupCompatibilityFlags()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    LPCWSTR buf;
-    bool return_null = true;
-
-    FAULT_NOT_FATAL(); // we can simply give up
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
-    InlineSString<4> bufString;
-    
-    if (WszGetEnvironmentVariable(W("UnsupportedCompatSwitchesEnabled"), bufString) != 0)
-    {
-        buf = bufString.GetUnicode();
-        if (buf[0] != '1' || buf[1] != '\0')
-        {
-            return_null = true;
-        }
-        else
-        {
-            return_null = false;
-        }
-
-    }
-    END_SO_INTOLERANT_CODE
-
-    if (return_null)
-        return NULL;
-
-    static const LPCWSTR rgFlagNames[] = {
-#define COMPATFLAGDEF(name) TEXT(#name),
-#include "compatibilityflagsdef.h"
-    };
-
-    int size = (compatCount+31) / 32;
-    DWORD* pFlags = new (nothrow) DWORD[size];
-    if (pFlags == NULL)
-        return NULL;
-    ZeroMemory(pFlags, size * sizeof(DWORD));
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return NULL;)
-    InlineSString<4> bufEnvString;
-    for (int i = 0; i < COUNTOF(rgFlagNames); i++)
-    {
-        if (WszGetEnvironmentVariable(rgFlagNames[i], bufEnvString) == 0)
-            continue;
-
-        buf = bufEnvString.GetUnicode();
-        if (buf[0] != '1' || buf[1] != '\0')
-            continue;
-
-        pFlags[i / 32] |= 1 << (i % 32);
-    }
-    END_SO_INTOLERANT_CODE
-    
-    return pFlags;
-}
-
-//------------------------------------------------------------------------
-static VolatilePtr<DWORD> g_pCompatibilityFlags = (DWORD*)(-1);
-
-DWORD* GetGlobalCompatibilityFlags()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    if (g_pCompatibilityFlags == (DWORD*)(-1))
-    {
-        DWORD *pCompatibilityFlags = SetupCompatibilityFlags();
-
-        if (FastInterlockCompareExchangePointer(g_pCompatibilityFlags.GetPointer(), pCompatibilityFlags, reinterpret_cast<DWORD *>(-1)) != (VOID*)(-1))
-        {
-            delete [] pCompatibilityFlags;
-        }
-    }
-
-    return g_pCompatibilityFlags;
-}
-#endif // !FEATURE_CORECLR
 
 //------------------------------------------------------------------------
 BOOL GetCompatibilityFlag(CompatibilityFlag flag)
@@ -13919,16 +13028,7 @@ BOOL GetCompatibilityFlag(CompatibilityFlag flag)
         SO_TOLERANT;
     } CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    DWORD *pFlags = GetGlobalCompatibilityFlags();
-
-    if (pFlags != NULL)
-        return (pFlags[flag / 32] & (1 << (flag % 32))) ? TRUE : FALSE;
-    else
-        return FALSE;
-#else // !FEATURE_CORECLR
     return FALSE;
-#endif // !FEATURE_CORECLR
 }
 #endif // !DACCESS_COMPILE
 
@@ -14127,7 +13227,6 @@ AppDomain::AssemblyIterator::Next_UnsafeNoAddRef(
     return FALSE;
 } // AppDomain::AssemblyIterator::Next_UnsafeNoAddRef
 
-#ifdef FEATURE_CORECLR
 
 //---------------------------------------------------------------------------------------
 // 
@@ -14165,7 +13264,6 @@ BOOL AppDomain::IsImageFullyTrusted(PEImage* pPEImage)
     return IsImageFromTrustedPath(pPEImage);
 }
 
-#endif //FEATURE_CORECLR
 
 #endif //!DACCESS_COMPILE
 
@@ -14850,7 +13948,7 @@ void AppDomain::UnPublishHostedAssembly(
     }
 }
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMINTEROP)
 HRESULT AppDomain::SetWinrtApplicationContext(SString &appLocalWinMD)
 {
     STANDARD_VM_CONTRACT;
@@ -14904,7 +14002,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
     }
 }
 
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_CORECLR) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
 
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths)
 {
@@ -14919,7 +14017,7 @@ void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatf
 
 #endif
 
-#if defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
+#if !defined(CROSSGEN_COMPILE)
 bool IsSingleAppDomain()
 {
     STARTUP_FLAGS flags = CorHost2::GetStartupFlags();
