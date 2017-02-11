@@ -1148,8 +1148,10 @@ CrossDomainChannel::BlitAndCall()
         }
     }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Assume that exception at server was NotCorrupting
     CorruptionSeverity severity = NotCorrupting;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     // Push the frame
     ENTER_DOMAIN_ID(m_pSrvDomain);
@@ -1525,7 +1527,9 @@ struct MarshalAndCallArgs  : public CtxTransitionBaseArgs
     UINT64 uRegTypeMap;
 #endif
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     CorruptionSeverity severity;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 };
 
 // Simple wrapper to go from C to C++.
@@ -2535,8 +2539,10 @@ CrossDomainChannel::MarshalAndCall()
         args.uRegTypeMap = *(UINT64*)pMap;
 #endif
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // By default assume that exception thrown across the cross-AD call is NotCorrupting.
         args.severity = NotCorrupting;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         MakeCallWithPossibleAppDomainTransition(m_pSrvDomain, (FPAPPDOMAINCALLBACK) MarshalAndCall_Wrapper2, &args);
     }

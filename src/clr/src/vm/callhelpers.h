@@ -61,7 +61,9 @@ void DispatchCall(
                 CallDescrData *   pCallDescrData,
                 OBJECTREF *             pRefException,
                 ContextTransitionFrame* pFrame = NULL
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                 , CorruptionSeverity *  pSeverity = NULL
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                 );
 
 // Helper for VM->managed calls with simple signatures.

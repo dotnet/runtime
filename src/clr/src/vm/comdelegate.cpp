@@ -3970,7 +3970,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
         // specified would enable this change for builds that dont support
         // FEATURE_EXCEPTION_NOTIFICATIONS, like CoreCLR. We dont want that to happen
         // as well.
-#if defined(FEATURE_EXCEPTION_NOTIFICATIONS)
+#if defined(FEATURE_CORRUPTING_EXCEPTIONS) && defined(FEATURE_EXCEPTION_NOTIFICATIONS)
         BOOL fCanMethodHandleException = g_pConfig->LegacyCorruptedStateExceptionsPolicy();
         if (!fCanMethodHandleException)
         {

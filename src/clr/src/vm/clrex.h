@@ -762,6 +762,7 @@ class EEFileLoadException : public EEException
 
 #define GET_THROWABLE() CLRException::GetThrowableFromException(GET_EXCEPTION())
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
 // For the VM folder, we redefine SET_CE_RETHROW_FLAG_FOR_EX_CATCH to also check the
 // corruption severity when deciding whether to rethrow them or not.
@@ -815,6 +816,7 @@ class EEFileLoadException : public EEException
                                                      ((!__state.DidCatchSO()) && (!__state.DidCatchCxx()) && \
                                                       CEHelper::IsLastActiveExceptionCorrupting(TRUE))))
 
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #undef EX_TRY
 #define EX_TRY                                                                                     \

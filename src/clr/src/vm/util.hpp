@@ -899,6 +899,7 @@ ComCallHostNotificationHR()
 InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false) \
 ComCallHostNotificationHR()
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
 // Since Corrupting exceptions can escape COM interop boundaries,
 // these macros will be used to setup the initial SO-Intolerant transition.
@@ -929,6 +930,7 @@ if (FAILED(__hr))                                                           \
     return __hr;                                                            \
 }                                                                           \
 
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #define SetupForComCallDWORD()                                              \
 InternalSetupForComCall(-1, -1, -1, true)                                   \
