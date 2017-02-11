@@ -607,59 +607,6 @@ FCIMPL1(void, ThreadNative::ResetAbort, ThreadBaseObject* pThis)
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
-// You can only suspend a running thread.
-FCIMPL1(void, ThreadNative::Suspend, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE == NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-#ifdef MDA_SUPPORTED
-    MDA_TRIGGER_ASSISTANT(DangerousThreadingAPI, ReportViolation(W("System.Threading.Thread.Suspend")));
-#endif
-    
-    if (!ThreadIsRunning(thread))
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_SUSPEND_NON_RUNNING);
-
-    thread->UserSuspendThread();
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// You can only resume a thread that is in the user-suspended state.  (This puts a large
-// burden on the app developer, but we want him to be thinking carefully about race
-// conditions.  Precise errors give him a hope of sorting out his logic).
-FCIMPL1(void, ThreadNative::Resume, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE == NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // UserResumeThread() will return 0 if there isn't a user suspension for us to
-    // clear.
-    if (!ThreadIsRunning(thread))
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_RESUME_NON_RUNNING);
-
-    if (thread->UserResumeThread() == 0)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_RESUME_NON_USER_SUSPEND);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-#endif // FEATURE_CORECLR
 
 // Note that you can manipulate the priority of a thread that hasn't started yet,
 // or one that is running.  But you get an exception if you manipulate the priority
@@ -1913,41 +1860,6 @@ UINT64 QCALLTYPE ThreadNative::GetProcessDefaultStackSize()
     return (UINT64)reserve;
 }
 
-#ifndef FEATURE_CORECLR
-FCIMPL0(void, ThreadNative::BeginCriticalRegion)
-{
-    FCALL_CONTRACT;
-    if (CLRHosted())
-    {
-        GetThread()->BeginCriticalRegion_NoCheck();
-    }
-}
-FCIMPLEND
-
-FCIMPL0(void, ThreadNative::EndCriticalRegion)
-{
-    FCALL_CONTRACT;
-    if (CLRHosted())
-    {
-        GetThread()->EndCriticalRegion_NoCheck();
-    }
-}
-FCIMPLEND
-
-FCIMPL0(void, ThreadNative::BeginThreadAffinity)
-{
-    FCALL_CONTRACT;
-    Thread::BeginThreadAffinity();
-}
-FCIMPLEND
-
-FCIMPL0(void, ThreadNative::EndThreadAffinity)
-{
-    FCALL_CONTRACT;
-    Thread::EndThreadAffinity();
-}
-FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 
 FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
@@ -2128,69 +2040,6 @@ FCIMPL2(void, ThreadNative::SetAbortReason, ThreadBaseObject* pThisUNSAFE, Objec
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR // core clr does not support abort reason 
-FCIMPL1(Object*, ThreadNative::GetAbortReason, ThreadBaseObject *pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    OBJECTREF refRetVal = NULL;
-    Thread   *pThread   = pThisUNSAFE->GetInternal();
-
-    // Set up a frame in case of GC or EH
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal)
-
-    if (pThread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    // While the ExceptionInfo probably will be *set* from a different
-    //  thread, it should only be *read* from the current thread.
-    _ASSERTE(GetThread() == pThread);
-
-    // Set cooperative mode, to avoid AD unload while we're working.
-    GCX_COOP();
-
-    OBJECTHANDLE oh=NULL;
-    ADID adid;
-    // Scope the lock to reading the two fields on the Thread object.
-    {   // Atomically get the OBJECTHANDLE and ADID of the object
-        //  NOTE: get the lock on this thread object, not on the executing thread.
-        Thread::AbortRequestLockHolder lock(pThread);
-        oh = pThread->m_AbortReason;
-        adid = pThread->m_AbortReasonDomainID;
-    }
-
-    // If the OBJECTHANDLE is not 0...
-    if (oh != 0)
-    {
-
-        AppDomain *pCurrentDomain = pThread->GetDomain();
-        // See if the appdomain is equal to the appdomain of the currently running
-        //  thread.  
-
-        if (pCurrentDomain->GetId() == adid)
-        {   // Same appdomain; just return object from the OBJECTHANDLE
-            refRetVal = ObjectFromHandle(oh);
-        }
-        else
-        {   // Otherwise, try to marshal the object from the other AppDomain
-            ENTER_DOMAIN_ID(adid);
-            CrossAppDomainClonerCallback cadcc;
-            ObjectClone Cloner(&cadcc, CrossAppDomain, FALSE);
-            refRetVal = Cloner.Clone(ObjectFromHandle(oh), GetAppDomain(), pCurrentDomain, NULL);
-            Cloner.RemoveGCFrames();
-            END_DOMAIN_TRANSITION;
-        }
-    }
-
-    HELPER_METHOD_FRAME_END()
-
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 FCIMPL1(void, ThreadNative::ClearAbortReason, ThreadBaseObject* pThisUNSAFE)
 {

@@ -32,27 +32,6 @@ namespace NewApis
 
         FARPROC result = NULL;
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-
-        // First try to use the function defined in the culture dll 
-        // if we are running on a platform prior to Win7
-        if(!IsWindows7Platform())
-        {
-            // only need to load the culture dll's handle once then we can hold onto it
-            static HMODULE hCulture = NULL;
-            // if we haven't loaded the culture dll yet
-            if (hCulture == NULL)
-            {
-                UtilCode::LoadLibraryShim(MAKEDLLNAME_W(W("culture")), NULL, 0, &hCulture);
-            }
-            
-            // make sure we were successful before using the handle
-            if (hCulture != NULL)
-            {
-                result=GetProcAddress(hCulture,lpProcName);
-            }
-        }
-#endif // !FEATURE_CORECLR && !CROSSGEN_COMPILE
 
         // next try the kernel
         if(result==NULL)
@@ -1094,9 +1073,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
         retVal = ::LCIDToLocaleName(Locale, lpName, cchName, dwFlags | LOCALE_ALLOW_NEUTRAL_NAMES);
 #else
 
-#ifdef FEATURE_CORECLR
         retVal = DownLevel::LCIDToLocaleName(Locale, lpName,cchName,dwFlags | LOCALE_ALLOW_NEUTRAL_NAMES);
-#endif // FEATURE_CORECLR
 
         typedef int (WINAPI *PFNLCIDToLocaleName)(LCID, LPWSTR,int ,DWORD);
         static PFNLCIDToLocaleName pFNLCIDToLocaleName=NULL;
@@ -1138,9 +1115,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
 #if !defined(ENABLE_DOWNLEVEL_FOR_NLS)
         return ::LocaleNameToLCID(lpName, dwFlags | LOCALE_ALLOW_NEUTRAL_NAMES);
 #else
-#ifdef FEATURE_CORECLR
         retVal = DownLevel::LocaleNameToLCID(lpName, dwFlags | LOCALE_ALLOW_NEUTRAL_NAMES);
-#endif // FEATURE_CORECLR
 
         typedef int (WINAPI *PFNLocaleNameToLCID)(LPCWSTR,DWORD);
         static PFNLocaleNameToLCID pFNLocaleNameToLCID=NULL;
@@ -1278,26 +1253,6 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
     }
 
 
-#if !defined(FEATURE_CORECLR)
-    BOOL GetNlsVersionEx(__in NLS_FUNCTION Function, __in LPCWSTR lpLocaleName, __inout LPNLSVERSIONINFOEX lpVersionInfo)
-    {
-
-        typedef BOOL (WINAPI *PFNGetNLSVersionEx)(NLS_FUNCTION, LPCWSTR, LPNLSVERSIONINFOEX);
-        
-        static PFNGetNLSVersionEx pFNGetNLSVersionEx=NULL;
-
-        // See if we still need to find our function
-        if (pFNGetNLSVersionEx == NULL)
-        {
-            // We only call this on Win8 and above, so this should always work.
-            pFNGetNLSVersionEx = (PFNGetNLSVersionEx) GetSystemProcAddressForSortingApi("GetNLSVersionEx", NULL);
-        }
-
-        _ASSERTE(pFNGetNLSVersionEx != NULL);
-
-        return pFNGetNLSVersionEx(Function, lpLocaleName, lpVersionInfo);
-    }
-#endif
 
     // This is a Windows 7 and above function
     // This returns the "specific" locale from an input name, ie: "en" returns "en-US",

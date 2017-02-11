@@ -26,9 +26,6 @@
 #include "windows.h"
 #undef GetCurrentTime
 
-#ifndef FEATURE_CORECLR
-#include <winnls.h>
-#endif
 
 #ifdef  FEATURE_RANDOMIZED_STRING_HASHING
 #pragma warning(push)
@@ -249,35 +246,6 @@ public:
     static FCDECL1(INT32, GetHashCodeOfPtr, LPVOID ptr);
 };
 
-#ifndef FEATURE_CORECLR
-class SizedRefHandle
-{
-public:
-    static FCDECL1(OBJECTHANDLE,    Initialize, Object* _obj);
-    static FCDECL1(VOID,            Free, OBJECTHANDLE handle);
-    static FCDECL1(LPVOID,          GetTarget, OBJECTHANDLE handle);
-    static FCDECL1(INT64,           GetApproximateSize, OBJECTHANDLE handle);
-};
-
-typedef BOOL (*PFN_IS_NLS_DEFINED_STRING)(NLS_FUNCTION, DWORD, LPNLSVERSIONINFO, LPCWSTR, INT);
-typedef INT (*PFN_COMPARE_STRING_EX)(LPCWSTR, DWORD, LPCWSTR, INT, LPCWSTR, INT, LPNLSVERSIONINFO, LPVOID, LPARAM);
-typedef INT (*PFN_LC_MAP_STRING_EX)(LPCWSTR, DWORD, LPCWSTR, INT, LPWSTR, INT, LPNLSVERSIONINFO, LPVOID, LPARAM);
-typedef INT (*PFN_FIND_NLS_STRING_EX)(LPCWSTR, DWORD, LPCWSTR, INT, LPCWSTR, INT, LPINT, LPNLSVERSIONINFO, LPVOID, LPARAM);
-typedef INT (*PFN_COMPARE_STRING_ORDINAL)(LPCWSTR, INT, LPCWSTR, INT, BOOL);
-typedef BOOL (*PFN_GET_NLS_VERSION_EX)(NLS_FUNCTION, LPCWSTR, LPNLSVERSIONINFOEX);
-typedef INT (*PFN_FIND_STRING_ORDINAL)(DWORD, LPCWSTR, INT, LPCWSTR, INT, BOOL);
-
-class COMNlsCustomSortLibrary {
-public:
-    PFN_IS_NLS_DEFINED_STRING pIsNLSDefinedString;
-    PFN_COMPARE_STRING_EX pCompareStringEx;
-    PFN_LC_MAP_STRING_EX pLCMapStringEx;
-    PFN_FIND_NLS_STRING_EX pFindNLSStringEx;
-    PFN_COMPARE_STRING_ORDINAL pCompareStringOrdinal;
-    PFN_GET_NLS_VERSION_EX pGetNLSVersionEx;
-    PFN_FIND_STRING_ORDINAL pFindStringOrdinal;
-};
-#endif //!FEATURE_CORECLR
 
 typedef const BYTE  * PCBYTE;
 
@@ -289,9 +257,7 @@ public:
     INT32 HashSortKey(PCBYTE pSrc, SIZE_T cbSrc, BOOL forceRandomHashing, INT64 additionalEntropy);
     INT32 HashiStringKnownLower80(LPCWSTR lpszStr, INT32 strLen, BOOL forceRandomHashing, INT64 additionalEntropy);
 
-#ifdef FEATURE_CORECLR
     static COMNlsHashProvider s_NlsHashProvider;
-#endif // FEATURE_CORECLR
 
 #ifdef  FEATURE_RANDOMIZED_STRING_HASHING
     void SetUseRandomHashing(BOOL useRandomHashing) { LIMITED_METHOD_CONTRACT; bUseRandomHashing = useRandomHashing; }

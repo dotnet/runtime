@@ -27,9 +27,6 @@ VPTR_CLASS(Module)
 VPTR_CLASS(ReflectionModule)
 
 VPTR_CLASS(AppDomain)
-#ifndef FEATURE_CORECLR // FEATURE_NATIVE_IMAGE_GENERATION
-VPTR_MULTI_CLASS(CompilationDomain, AppDomain)
-#endif
 VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 

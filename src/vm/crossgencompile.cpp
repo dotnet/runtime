@@ -461,12 +461,10 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
 {
 }
 
-#ifdef FEATURE_CORECLR
 BOOL AppDomain::BindingByManifestFile()
 {
     return FALSE;
 }
-#endif
 
 ReJitManager::ReJitManager()
 { 

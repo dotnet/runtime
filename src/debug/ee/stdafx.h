@@ -12,10 +12,6 @@
 #include <stdio.h>
 
 #include <windows.h>
-#if !defined(FEATURE_CORECLR)
-#undef GetCurrentTime // works around a macro def conflict of GetCurrentTime
-#include <windows.ui.xaml.h>
-#endif // !FEATURE_CORECLR
 
 #include <switches.h>
 #include <winwrap.h>

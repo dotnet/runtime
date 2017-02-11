@@ -1399,7 +1399,6 @@ public:
 
         EncodeChar:
 
-#ifdef FASTLOOP
             int availableBytes = PtrDiff(pEnd, pSrc);
 
             // don't fall into the fast decoding loop if we don't have enough bytes
@@ -1565,7 +1564,6 @@ public:
                 // extra byte
                 charCount--;
             }
-#endif // FASTLOOP
 
             // no pending bits at this point
             ch = 0;
@@ -1815,7 +1813,6 @@ public:
             *pTarget = (WCHAR)ch;
             pTarget++;
 
-#ifdef FASTLOOP
             int availableChars = PtrDiff(pAllocatedBufferEnd, pTarget);
             int availableBytes = PtrDiff(pEnd, pSrc);
 
@@ -2054,7 +2051,6 @@ public:
                 // subtract an extra count from pStop so that we don't overrun the input.
                 pStop--;
             }
-#endif // FASTLOOP
 
             Contract::Assert(pTarget <= pAllocatedBufferEnd, "[UTF8Encoding.GetChars]pTarget <= pAllocatedBufferEnd");
 
@@ -2301,7 +2297,6 @@ public:
             pTarget++;
 
 
-#ifdef FASTLOOP
             // If still have fallback don't do fast loop
             if (fallbackBuffer != nullptr && (ch = fallbackBuffer->InternalGetNextChar()) != 0)
                 goto ProcessChar;
@@ -2480,7 +2475,6 @@ public:
 
             Contract::Assert(pTarget <= pAllocatedBufferEnd, "[UTF8Encoding.GetBytes]pTarget <= pAllocatedBufferEnd");
 
-#endif // FASTLOOP
 
             // no pending char at this point
             ch = 0;
@@ -2645,7 +2639,6 @@ public:
             }
 #endif
 
-#ifdef FASTLOOP
             // If still have fallback don't do fast loop
             if (fallbackBuffer != nullptr && (ch = fallbackBuffer->InternalGetNextChar()) != 0)
             {
@@ -2797,7 +2790,6 @@ public:
 
                 // byteCount - the last byte is already included
             }
-#endif // FASTLOOP
 
             // no pending char at this point
             ch = 0;

@@ -80,10 +80,8 @@
 #define __field_ecount(EHCount)
 #endif
 
-#ifdef FEATURE_CORECLR
 #undef _Ret_bytecap_
 #define _Ret_bytecap_(_Size) 
-#endif
 
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)

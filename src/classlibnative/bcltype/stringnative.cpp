@@ -160,12 +160,7 @@ FCIMPLEND
 inline COMNlsHashProvider * GetCurrentNlsHashProvider()
 {
     LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_CORECLR
-    AppDomain* curDomain = GetAppDomain();
-    return curDomain->m_pNlsHashProvider;
-#else
     return &COMNlsHashProvider::s_NlsHashProvider;
-#endif // FEATURE_CORECLR
 }
 
 FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32 strLen, INT64 additionalEntropy) {

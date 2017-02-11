@@ -17,9 +17,7 @@
 
 extern LocaleID g_lcid;
 
-#if defined(FEATURE_CORECLR)
 BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
-#endif // defined(FEATURE_CORECLR)
 
 inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
 {
@@ -262,12 +260,10 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
 
     m_pHostBinder = pSpec->m_pHostBinder;
 
-#ifdef FEATURE_CORECLR
     if ((pSpec->m_ownedFlags & BAD_NAME_OWNED) != 0)
     {
         m_ownedFlags |= BAD_NAME_OWNED;
     }
-#endif
 
 #ifdef FEATURE_FUSION
     IAssemblyName* pNameAfterPolicy=pSpec->GetNameAfterPolicy();
@@ -278,9 +274,7 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
     }
 #endif
 
-#if defined(FEATURE_CORECLR)
     m_pBindingContext = pSpec->m_pBindingContext;
-#endif // defined(FEATURE_CORECLR)
 
 }
 
@@ -294,10 +288,8 @@ inline DWORD BaseAssemblySpec::Hash()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     if(m_wszCodeBase)
         return HashString(m_wszCodeBase);
-#endif
 
     // Hash fields.
     DWORD hash = 0;
@@ -312,11 +304,6 @@ inline DWORD BaseAssemblySpec::Hash()
     hash ^= m_dwFlags;
     hash = _rotl(hash, 4);
 
-#ifndef FEATURE_CORECLR
-    if (m_wszCodeBase)
-        hash ^= HashString(m_wszCodeBase);
-    hash = _rotl(hash, 4);
-#endif
 
     hash ^= m_context.usMajorVersion;
     hash = _rotl(hash, 8);
@@ -364,42 +351,13 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef FEATURE_CORECLR
-    _ASSERTE(pSpec != NULL);
 
-    if ((m_dwFlags & afContentType_Mask) == (pSpec->m_dwFlags & afContentType_Mask))
-    {
-        if (IsContentType_WindowsRuntime() && pSpec->IsContentType_WindowsRuntime())
-        {
-            // If comparing assembly definitions, can not use bindability attributes as
-            // a shortcut for equivalence, as this type of shortcut is only applicable
-            // when comparing assembly references (not definitions).
-            //
-            // Example of why this is needed: native images still need to compare
-            // assembly identities even if they are not bindable, because it needs to
-            // ensure that the exact same assembly file (definition) is used at runtime
-            // as was used during compilation.
-            if ((dwCompareFlags & ASC_DefinitionEquality) != ASC_DefinitionEquality)
-            {
-                // WinRT assembly references are meaningless, they are all equal to each other
-                return TRUE;
-            }
-        }
-    }
-    else
-    {
-        return FALSE;
-    }
-#endif
-
-#ifdef FEATURE_CORECLR
     if(m_wszCodeBase || pSpec->m_wszCodeBase)
     {
         if(!m_wszCodeBase || !pSpec->m_wszCodeBase)    
             return FALSE;
         return wcscmp(m_wszCodeBase,(pSpec->m_wszCodeBase))==0;
     }
-#endif
 
     // Compare fields
 #ifdef FEATURE_FUSION
@@ -418,12 +376,6 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
         || memcmp(m_pbPublicKeyOrToken, pSpec->m_pbPublicKeyOrToken, m_cbPublicKeyOrToken))
         return FALSE;
 
-#ifndef FEATURE_CORECLR
-    if (m_wszCodeBase != pSpec->m_wszCodeBase
-        && (m_wszCodeBase == NULL || pSpec->m_wszCodeBase == NULL
-            || wcscmp(m_wszCodeBase, pSpec->m_wszCodeBase)))
-        return FALSE;
-#endif
 
     if (m_dwFlags != pSpec->m_dwFlags)
         return FALSE;
@@ -465,7 +417,6 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
     }
 #endif
 
-#if defined(FEATURE_CORECLR)
     // If the assemblySpec contains the binding context, then check if they match.
     if (!(pSpec->IsAssemblySpecForMscorlib() && IsAssemblySpecForMscorlib()))
     {
@@ -474,7 +425,6 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
             return FALSE;
         }
     }
-#endif // defined(FEATURE_CORECLR)
 
 
     return TRUE;

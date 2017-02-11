@@ -4125,32 +4125,6 @@ void DisableOSWatson(void)
     SetErrorMode(lastErrorMode | SEM_NOGPFAULTERRORBOX);
     LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetErrorMode = 0x%x\n", lastErrorMode | SEM_NOGPFAULTERRORBOX));
 
-#ifndef FEATURE_CORECLR
-    // CoreCLR is always hosted and so this condition is always false
-    if (RunningOnWin7() && !CLRHosted())
-    {
-        typedef DWORD (WINAPI * GetThreadErrorModeFnPtr)(void);
-        typedef BOOL  (WINAPI * SetThreadErrorModeFnPtr)(DWORD, LPDWORD);
-        GetThreadErrorModeFnPtr pFnGetThreadErrorMode;
-        SetThreadErrorModeFnPtr pFnSetThreadErrorMode;
-
-        HINSTANCE hKernel32 = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
-        if (hKernel32 != NULL)
-        {
-            pFnGetThreadErrorMode = (GetThreadErrorModeFnPtr)GetProcAddress(hKernel32, "GetThreadErrorMode");
-            pFnSetThreadErrorMode = (SetThreadErrorModeFnPtr)GetProcAddress(hKernel32, "SetThreadErrorMode");
-
-            // GetThreadErrorMode and SetThreadErrorMode should be available on Win7.
-            _ASSERTE((pFnGetThreadErrorMode != NULL) && (pFnSetThreadErrorMode != NULL));
-            if ((pFnGetThreadErrorMode != NULL) && (pFnSetThreadErrorMode != NULL))
-            {
-                DWORD dwOldMode = (*pFnGetThreadErrorMode)();
-                (*pFnSetThreadErrorMode)(dwOldMode | SEM_NOGPFAULTERRORBOX, &dwOldMode);
-                LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetThreadErrorMode = 0x%x\n", dwOldMode | SEM_NOGPFAULTERRORBOX));
-            }
-        }
-    }
-#endif // FEATURE_CORECLR
 }
 
 
@@ -4858,7 +4832,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 } // LONG DefaultCatchNoSwallowFilter()
 
-#if defined(FEATURE_CORECLR)
 // Note: This is used only for CoreCLR on WLC.
 //
 // We keep a pointer to the previous unhandled exception filter.  After we install, we use
@@ -4871,7 +4844,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
 // yet and having installed it but the original handler was NULL.
 static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = (LPTOP_LEVEL_EXCEPTION_FILTER)-1;
 #define FILTER_NOT_INSTALLED (LPTOP_LEVEL_EXCEPTION_FILTER) -1
-#endif // defined(FEATURE_CORECLR)
 
 
 BOOL InstallUnhandledExceptionFilter() {
@@ -5222,7 +5194,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     //
     if (pThread && (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) || pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled)))
     {
-#ifdef FEATURE_CORECLR
         // This assert shouldnt be hit in CoreCLR since:
         //
         // 1) It has no concept of managed entry point that is invoked by the shim. You can
@@ -5236,7 +5207,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             _ASSERTE(!"How come a thread with TSNC_ProcessedUnhandledException state entered the UEF on CoreCLR?");
         }
-#endif // FEATURE_CORECLR
 
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: have already processed unhandled exception for this thread.\n"));
         return EXCEPTION_CONTINUE_SEARCH;
@@ -5318,7 +5288,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             BOOL fIsProcessTerminating = TRUE;
 
-#ifdef FEATURE_CORECLR
             // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads in a given AppDomain.
             // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
             // return back to the filter, instead of letting the process terminate because of unhandled exception.
@@ -5342,7 +5311,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
                 fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
-#endif // FEATURE_CORECLR
 
 #ifndef FEATURE_PAL
             // Setup the watson bucketing details for UE processing.
@@ -5354,14 +5322,12 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // Send notifications to the AppDomains.
             NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
 
-#ifdef FEATURE_CORECLR
             // If the process is not terminating, then return back to the filter and ask it to execute
             if (!fIsProcessTerminating)
             {
                 pParam->retval = EXCEPTION_EXECUTE_HANDLER;
                 goto lDone;
             }
-#endif // FEATURE_CORECLR
         }
         else
         {
@@ -5547,7 +5513,6 @@ LONG InternalUnhandledExceptionFilter(
     //
     // Note: Also see the conditional UEF registration with the OS in EEStartupHelper.
 
-#ifdef FEATURE_CORECLR
     // We would be here only on CoreCLR for WLC since we dont register
     // the UEF with the OS for SL.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
@@ -5555,7 +5520,6 @@ LONG InternalUnhandledExceptionFilter(
     {
         STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
     }
-#endif // FEATURE_CORECLR
 
     return retval;
 
@@ -5623,7 +5587,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 // Returns
 //   the result of calling InternalUnhandledExceptionFilter
 //------------------------------------------------------------------------------
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 #pragma code_seg(push, uef, CLR_UEF_SECTION_NAME)
 #endif // FEATURE_CORECLR && !FEATURE_PAL
 LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or EXCEPTION_CONTINUE_EXECUTION
@@ -5653,47 +5617,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
         return retVal;
     }
 
-#ifndef FEATURE_CORECLR
-#ifdef _DEBUG
-    // V4 onwards, we will reach here in the UEF only on the following conditions:
-    //
-    // 1) Faulting address is in native code on a reverse pinvoke thread. An example is an exception that escaped
-    //    out of the reverse pinvoke thread but was caught in the native part of the thread. The native part then
-    //    had another exception that went unhandled. The difference between this and (3) below is that
-    //    we have a thread object here but not in (3).
-    //
-    //    An exception from PInvoke, that is never caught/rethrown in managed code and goes unhandled, also falls
-    //    in this category.
-    //
-    // 2) The exception escaped out of a reverse pinvoke thread and went unhandled.
-    //
-    // 3) Faulting thread was never seen by the runtime. An example is a another native thread
-    //    which the user code created that had unhandled exception.
-    //
-    // 4) A corrupting exception may become unhandled.
-    //
-    // This is not applicable to CoreCLR, as this unhandled exception filter is always set up, and all hardware exceptions in
-    // managed code, including those that are not process-corrupting, such as integer division by zero, will end up here.
-
-    // Assert these conditions here - we shouldnt be here for any other unhandled exception processing.
-    Thread *pThread = GetThread();
-    if ((pThread != NULL) && // condition 3
-        !(pThread->GetExceptionState()->IsExceptionInProgress() &&
-            pThread->GetExceptionState()->GetFlags()->ReversePInvokeEscapingException()) && // condition 2
-        (ExecutionManager::IsManagedCode((PCODE)pExceptionInfo->ExceptionRecord->ExceptionAddress))) // condition 1
-    {
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        if (!CEHelper::IsProcessCorruptedStateException(pExceptionInfo->ExceptionRecord->ExceptionCode)) // condition 4
-        {
-            GCX_COOP();
-            _ASSERTE(CEHelper::IsProcessCorruptedStateException(pThread->GetThrowable())); // condition 4
-        }
-#else // !FEATURE_CORRUPTING_EXCEPTIONS
-        _ASSERTE(false);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    }
-#endif // _DEBUG
-#endif // !FEATURE_CORECLR
 
     retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
 
@@ -5706,7 +5629,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     return retVal;
 } // LONG __stdcall COMUnhandledExceptionFilter()
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 #pragma code_seg(pop, uef)
 #endif // FEATURE_CORECLR && !FEATURE_PAL
 
@@ -6802,10 +6725,8 @@ exit:
 
 #ifndef FEATURE_PAL
 
-#ifdef FEATURE_CORECLR
     // Only proceed if Watson is enabled - CoreCLR may have it disabled.
     if (IsWatsonEnabled())
-#endif // FEATURE_CORECLR
     {
         BOOL fClearUEWatsonBucketTracker = TRUE;
         PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
@@ -7108,7 +7029,7 @@ bool IsInterceptableException(Thread *pThread)
 // appropriate exception code, or zero if the code is not a GC marker.
 DWORD GetGcMarkerExceptionCode(LPVOID ip)
 {
-#if defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+#if defined(HAVE_GCCOVER)
     WRAPPER_NO_CONTRACT;
 
     if (GCStress<cfg_any>::IsEnabled() && IsGcCoverageInterrupt(ip))
@@ -9322,13 +9243,11 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return FALSE;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -9441,13 +9360,11 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return FALSE;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -9572,13 +9489,11 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10028,14 +9943,12 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
     BOOL fResult = TRUE;
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return fResult;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10290,14 +10203,12 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10901,14 +10812,12 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -11364,7 +11273,7 @@ UINT_PTR EHWatsonBucketTracker::RetrieveWatsonBucketIp()
 // This is *also* invoked from the DAC when buckets are requested.
 PTR_VOID EHWatsonBucketTracker::RetrieveWatsonBuckets()
 {
-#if defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     if (!IsWatsonEnabled())
     {
         return NULL;
@@ -11390,12 +11299,10 @@ void EHWatsonBucketTracker::ClearWatsonBucketDetails()
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {

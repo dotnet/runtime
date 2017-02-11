@@ -16,9 +16,7 @@
 #include "contract.h"
 #include "tls.h"
 
-#if defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
 CoreClrCallbacks g_CoreClrCallbacks;
-#endif
 
 
 // In some cirumstance (e.g, the thread suspecd another thread), allocation on heap
@@ -206,7 +204,6 @@ int RFS_HashStack ()
 #endif // FAILPOINTS_ENABLED
 
 
-#if defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
 
 //-----------------------------------------------------------------------------------
 // This is the approved way to get a module handle to mscorwks.dll (or coreclr.dll).
@@ -264,7 +261,6 @@ HMODULE GetCLRModule ()
     return g_CoreClrCallbacks.m_hmodCoreCLR;
 }
 
-#endif // defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
 
 
 #if defined(SELF_NO_HOST)
@@ -402,7 +398,6 @@ LoadsTypeHolder::~LoadsTypeHolder()
 // versions in the same process.
 //--------------------------------------------------------------------------
 
-#if defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
 
 //--------------------------------------------------------------------------
 // One-time initialized called by coreclr.dll in its dllmain.
@@ -456,4 +451,3 @@ void OnUninitializedCoreClrCallbacks()
 }
 #endif // _DEBUG
 
-#endif // defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)

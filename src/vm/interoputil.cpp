@@ -294,7 +294,6 @@ static const BinderMethodID s_stubsDisposableToClosable[] =
     METHOD__IDISPOSABLE_TO_ICLOSABLE_ADAPTER__CLOSE
 };
 
-#ifdef FEATURE_CORECLR
 DEFINE_ASM_QUAL_TYPE_NAME(NCCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyCollectionChanged_WinRTName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCMA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToManagedAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCWA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToWinRTAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
@@ -306,20 +305,6 @@ DEFINE_ASM_QUAL_TYPE_NAME(CMDMA_ASM_QUAL_TYPE_NAME, g_ICommandToManagedAdapterNa
 DEFINE_ASM_QUAL_TYPE_NAME(CMDWA_ASM_QUAL_TYPE_NAME, g_ICommandToWinRTAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCEHWINRT_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventHandler_WinRT, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(PCEHWINRT_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventHandler_WinRT_Name, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-#else
-DEFINE_ASM_QUAL_TYPE_NAME(NCCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyCollectionChanged_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCMA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCWA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyPropertyChanged_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCMA_ASM_QUAL_TYPE_NAME, g_NotifyPropertyChangedToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCWA_ASM_QUAL_TYPE_NAME, g_NotifyPropertyChangedToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDWINRT_ASM_QUAL_TYPE_NAME, g_ICommand_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDMA_ASM_QUAL_TYPE_NAME, g_ICommandToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDWA_ASM_QUAL_TYPE_NAME, g_ICommandToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCEHWINRT_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventHandler_WinRT, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(PCEHWINRT_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventHandler_WinRT_Name, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-
-#endif
 
 const WinRTInterfaceRedirector::NonMscorlibRedirectedInterfaceInfo WinRTInterfaceRedirector::s_rNonMscorlibInterfaceInfos[3] =
 {
@@ -6942,12 +6927,6 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
     LPCWSTR pwszClassName = winrtClassName.GetRawBuffer(&cchClassName);
     SString ssClassName(SString::Literal, pwszClassName, cchClassName);
 
-#ifndef FEATURE_CORECLR
-    if (ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATE_DYNAMICTYPEUSAGE_KEYWORD))
-    {
-        FireEtwIInspectableRuntimeClassName(pwszClassName, GetClrInstanceId());
-    }
-#endif
     
     // Check a cache to see if this has already been looked up.
     AppDomain *pDomain = GetAppDomain();

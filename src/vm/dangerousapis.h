@@ -48,20 +48,6 @@ DEFINE_DANGEROUS_API(EVENT_INFO,                API_NAMES("AddEventHandler", "Re
 DEFINE_DANGEROUS_API(EVENT,                     API_NAMES("AddEventHandler", "RemoveEventHandler", "ToString"))
 DEFINE_DANGEROUS_API(RESOURCE_MANAGER,          API_NAMES("GetResourceSet", "InternalGetResourceSet", ".ctor"))
 
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORECLR)
-// The COM interfaces implemented by the reflection types.
-// The IDispatch Invoke methods are not included here because they are not implemented in mscorlib.
-DEFINE_DANGEROUS_API(ITYPE,                     API_NAMES("InvokeMember"))
-DEFINE_DANGEROUS_API(IASSEMBLY,                 API_NAMES("CreateInstance"))
-DEFINE_DANGEROUS_API(IMETHODBASE,               API_NAMES("Invoke"))
-DEFINE_DANGEROUS_API(IMETHODINFO,               API_NAMES("Invoke"))
-DEFINE_DANGEROUS_API(ICONSTRUCTORINFO,          API_NAMES("Invoke", "Invoke_2", "Invoke_3", "Invoke_4", "Invoke_5"))
-DEFINE_DANGEROUS_API(IFIELDINFO,                API_NAMES("GetValue", "SetValue"))
-DEFINE_DANGEROUS_API(IPROPERTYINFO,             API_NAMES("GetValue", "SetValue"))
-DEFINE_DANGEROUS_API(IEVENTINFO,                API_NAMES("AddEventHandler", "RemoveEventHandler"))
-DEFINE_DANGEROUS_API(IAPPDOMAIN,                API_NAMES("CreateInstance", "CreateInstanceFrom", "DefineDynamicAssembly", "Load"))
-DEFINE_DANGEROUS_API(IREFLECT,                  API_NAMES("InvokeMember"))
-#endif // FEATURE_COMINTEROP && !FEATURE_CORECLR
 
 
 

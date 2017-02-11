@@ -29,23 +29,6 @@
 #include <metamodelrw.h>
 
 
-#ifndef FEATURE_CORECLR
-
-#include <metahost.h>
-
-// Pointer to the activated CLR interface provided by the shim.
-extern ICLRRuntimeInfo *g_pCLRRuntime;
-
-#ifdef FEATURE_METADATA_EMIT_ALL
-
-#include "iappdomainsetup.h"
-
-// {27FFF232-A7A8-40dd-8D4A-734AD59FCD41}
-EXTERN_GUID(IID_IAppDomainSetup, 0x27FFF232, 0xA7A8, 0x40dd, 0x8D, 0x4A, 0x73, 0x4A, 0xD5, 0x9F, 0xCD, 0x41);
-
-#endif //FEATURE_METADATA_EMIT_ALL
-
-#endif // !FEATURE_CORECLR
 
 
 #define DEFINE_CUSTOM_NODUPCHECK    1
@@ -117,90 +100,8 @@ HRESULT RegMeta::FindCachedReadOnlyEntry(
 //*****************************************************************************
 HRESULT RegMeta::StartupEE()
 {
-#ifdef FEATURE_CORECLR
     UNREACHABLE_MSG_RET("About to CoCreateInstance!  This code should not be "
                         "reachable or needs to be reimplemented for CoreCLR!");
-#else // !FEATURE_CORECLR
-
-    struct Param
-    {
-        RegMeta *pThis;
-        IUnknown *pSetup;
-        IAppDomainSetup *pDomainSetup;
-        bool fDoneStart;
-        HRESULT hr;
-    } param;
-    param.pThis = this;
-    param.pSetup = NULL;
-    param.pDomainSetup = NULL;
-    param.fDoneStart = false;
-    param.hr = S_OK;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        HRESULT hr = S_OK;
-
-        DWORD dwBuffer[1 + (MAX_LONGPATH+1) * sizeof(WCHAR) / sizeof(DWORD) + 1];
-        BSTR  bstrDir = NULL;
-
-        // Create a hosting environment.
-        IfFailGo(g_pCLRRuntime->GetInterface(
-            CLSID_CorRuntimeHost, 
-            IID_ICorRuntimeHost, 
-            (void **)&pParam->pThis->m_pCorHost));
-
-        // Startup the runtime.
-        IfFailGo(pParam->pThis->m_pCorHost->Start());
-        pParam->fDoneStart = true;
-
-        // Create an AppDomain Setup so we can set the AppBase.
-        IfFailGo(pParam->pThis->m_pCorHost->CreateDomainSetup(&pParam->pSetup));
-
-        // Get the current directory (place it in a BSTR).
-        bstrDir = (BSTR)(dwBuffer + 1);
-        if ((dwBuffer[0] = (WszGetCurrentDirectory(MAX_LONGPATH + 1, bstrDir) * sizeof(WCHAR))))
-        {
-            // QI for the IAppDomainSetup interface.
-            IfFailGo(pParam->pSetup->QueryInterface(IID_IAppDomainSetup,
-                                            (void**)&pParam->pDomainSetup));
-
-            // Set the AppBase.
-            pParam->pDomainSetup->put_ApplicationBase(bstrDir);
-        }
-
-        // Create a new AppDomain.
-        IfFailGo(pParam->pThis->m_pCorHost->CreateDomainEx(W("Compilation Domain"),
-                                            pParam->pSetup,
-                                            NULL,
-                                            &pParam->pThis->m_pAppDomain));
-
-        // That's it, we're all set up.
-        _ASSERTE(pParam->pThis->m_pAppDomain != NULL);
-        pParam->pThis->m_fStartedEE = true;
-
-    ErrExit:
-        pParam->hr = hr;
-    }
-    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
-    {
-        _ASSERTE(!"Unexpected exception setting up hosting environment for security attributes");
-        param.hr = E_FAIL;
-    }
-    PAL_ENDTRY
-
-    // Cleanup temporary resources.
-    if (m_pAppDomain && FAILED(param.hr))
-        m_pAppDomain->Release();
-    if (param.pDomainSetup)
-        param.pDomainSetup->Release();
-    if (param.pSetup)
-        param.pSetup->Release();
-    if (param.fDoneStart && FAILED(param.hr))
-        m_pCorHost->Stop();
-    if (m_pCorHost && FAILED(param.hr))
-        m_pCorHost->Release();
-    return param.hr;
-#endif // FEATURE_CORECLR
 }
 
 #endif //FEATURE_METADATA_EMIT_ALL
@@ -471,63 +372,7 @@ RegMeta::ResolveTypeRef(
         goto ErrExit;
     }
 
-#ifndef FEATURE_CORECLR
-    wcscpy_s(rcModule, _MAX_PATH, wzNameSpace);
-
-    //******************
-    // Try to find the module on CORPATH
-    //******************
-
-    if ((wcsncmp(rcModule, W("System."), 16) != 0) && 
-        (wcsncmp(rcModule, W("System/"), 16) != 0))
-    {
-        // only go through regular CORPATH lookup by fully qualified class name when
-        // it is not System.*
-        hr = CORPATHService::GetClassFromCORPath(
-            rcModule,
-            tr,
-            pMiniMd,
-            riid,
-            ppIScope,
-            ptd);
-    }
-    else 
-    {
-        // force it to look for System.* in mscorlib.dll
-        hr = S_FALSE;
-    }
-
-    if (hr == S_FALSE)
-    {
-        LPWSTR szTmp;
-        WszSearchPath(
-            NULL, 
-            W("mscorlib.dll"), 
-            NULL, 
-            sizeof(rcModule) / sizeof(rcModule[0]), 
-            rcModule, 
-            &szTmp);
-
-        //*******************
-        // Last desperate try!!
-        //*******************
-
-        // Use the file name "mscorlib:
-        IfFailGo(CORPATHService::FindTypeDef(
-            rcModule, 
-            tr, 
-            pMiniMd, 
-            riid, 
-            ppIScope, 
-            ptd));
-        if (hr == S_FALSE)
-        {
-            IfFailGo(META_E_CANNOTRESOLVETYPEREF);
-        }
-    }
-#else //FEATURE_CORECLR
     IfFailGo(META_E_CANNOTRESOLVETYPEREF);
-#endif //FEATURE_CORECLR
 
 ErrExit:
     STOP_MD_PERF(ResolveTypeRef);

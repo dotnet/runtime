@@ -4727,16 +4727,10 @@ HRESULT ProfToEEInterfaceImpl::SetILInstrumentedCodeMap(FunctionID functionId,
     if (!pMethodDesc ->IsRestored())
         return CORPROF_E_DATAINCOMPLETE;
 
-#ifdef FEATURE_CORECLR
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
     }
-#else
-    // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-    // or profiler is loaded.  So it should always be available.
-    _ASSERTE(g_pDebugInterface != NULL);
-#endif // FEATURE_CORECLR
 
     COR_IL_MAP * rgNewILMapEntries = new (nothrow) COR_IL_MAP[cILMapEntries];
 
@@ -5181,16 +5175,10 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         return E_INVALIDARG;
     }
 
-#ifdef FEATURE_CORECLR
     if (g_pDebugInterface == NULL)
     {
         return CORPROF_E_DEBUGGING_DISABLED;
     }
-#else
-    // g_pDebugInterface is initialized on startup on desktop CLR, regardless of whether a debugger
-    // or profiler is loaded.  So it should always be available.
-    _ASSERTE(g_pDebugInterface != NULL);
-#endif // FEATURE_CORECLR
 
     return (g_pDebugInterface->GetILToNativeMapping(pMD, cMap, pcMap, map));
 #else
@@ -8681,11 +8669,7 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
 
     if (pRuntimeType != NULL)
     {
-#ifdef FEATURE_CORECLR
         *pRuntimeType = COR_PRF_CORE_CLR;
-#else // FEATURE_CORECLR
-        *pRuntimeType = COR_PRF_DESKTOP_CLR;
-#endif // FEATURE_CORECLR
     }
 
     if (pMajorVersion != NULL)

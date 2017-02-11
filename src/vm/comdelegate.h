@@ -131,14 +131,10 @@ public:
 
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
-#ifdef FEATURE_CORECLR    
     static BOOL IsMethodAllowedToSinkReversePInvoke(MethodDesc *pMD);
-#endif
 
 private:
-#ifdef FEATURE_CORECLR    
     static BOOL IsFullTrustDelegate(DELEGATEREF pDelegate);
-#endif
     static Stub* SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth);
 
 public:

@@ -27,9 +27,6 @@
 #include "zapsig.h"
 #include "gcrefmap.h"
 
-#ifndef FEATURE_CORECLR
-#include "corsym.h"
-#endif // FEATURE_CORECLR
 
 #include "virtualcallstub.h"
 #include "typeparse.h"
@@ -192,20 +189,14 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
 
         ENTER_DOMAIN_PTR(pCompilationDomain,ADV_COMPILATION)
         {
-#ifdef FEATURE_CORECLR
             if (fForceFulltrustDomain)
                 ((ApplicationSecurityDescriptor *)pCompilationDomain->GetSecurityDescriptor())->SetGrantedPermissionSet(NULL, NULL, 0xFFFFFFFF);
-#endif
 
 #ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_CORECLR
-            pCompilationDomain->InitializeHashing(NULL);
-#endif // FEATURE_CORECLR
 #endif
             pCompilationDomain->InitializeDomainContext(TRUE, NULL, NULL);
 
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_CORECLR
 
             if (!NingenEnabled())
             {
@@ -223,7 +214,6 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
                 initializeSecurity.Call(args);
                 GCPROTECT_END();
             }
-#endif //FEATURE_CORECLR
 #endif
 
             {
@@ -393,14 +383,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 
         PEImageHolder pImage;
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-        // If the path is not absolute, look for the assembly on platform path list first
-        if (wcschr(wzPath, '\\') == NULL || wcschr(wzPath, ':') == NULL || wcschr(wzPath, '/') == NULL)
-        {
-            CompilationDomain::FindImage(wzPath,
-                fExplicitBindToNativeImage ? MDInternalImport_NoCache : MDInternalImport_Default, &pImage);
-        }
-#endif
 
         if (pImage == NULL)
         {
@@ -521,10 +503,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
                 pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 #endif
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-            if (!IsReadyToRunCompilation())
-                pDomain->ToCompilationDomain()->ComputeAssemblyHardBindList(pAssemblyHolder->GetPersistentMDImport());
-#endif
 
             {
                 // Mark the assembly before it gets fully loaded and NGen image dependencies are verified. This is necessary
@@ -802,66 +780,6 @@ HRESULT CEECompileInfo::LoadAssemblyModule(
     return S_OK;
 }
 
-#ifndef FEATURE_CORECLR
-BOOL CEECompileInfo::SupportsAutoNGen(CORINFO_ASSEMBLY_HANDLE assembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly *pAssembly = (Assembly*) assembly;
-    return pAssembly->SupportsAutoNGen();
-}
-
-HRESULT CEECompileInfo::SetCachedSigningLevel(HANDLE hNI, HANDLE *pModules, COUNT_T nModules)
-{
-    STANDARD_VM_CONTRACT;
-
-    HRESULT hr = S_OK;
-
-    HMODULE hKernel32 = WszLoadLibrary(W("kernel32.dll"));
-    typedef BOOL (WINAPI *SetCachedSigningLevel_t)
-        (__in_ecount(Count) PHANDLE SourceFiles, __in ULONG Count, __in ULONG Flags, __in HANDLE TargetFile);
-    SetCachedSigningLevel_t SetCachedSigningLevel
-        = (SetCachedSigningLevel_t)GetProcAddress(hKernel32, "SetCachedSigningLevel");
-    if (SetCachedSigningLevel == NULL)
-    {
-        return S_OK;
-    }
-
-    StackSArray<PEImage*> images;
-    PEImage::GetAll(images);
-
-    StackSArray<HANDLE> handles;
-    for (StackSArray<PEImage*>::Iterator i = images.Begin(), end = images.End(); i != end; i++)
-    {
-        if (!(*i)->IsFile())
-        {
-            continue;
-        }
-        HANDLE hFile = (*i)->GetFileHandleLocking();
-        handles.Append(hFile);
-    }
-
-    if (!SetCachedSigningLevel(handles.GetElements(), handles.GetCount(), 0, hNI))
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        _ASSERTE(FAILED(hr));
-        goto ErrExit;
-    }
-
-    for (COUNT_T i = 0; i < nModules; i++)
-    {
-        if (!SetCachedSigningLevel(handles.GetElements(), handles.GetCount(), 0, pModules[i]))
-        {
-            hr = HRESULT_FROM_WIN32(GetLastError());
-            _ASSERTE(FAILED(hr));
-            goto ErrExit;
-        }
-    }
-
-ErrExit:
-    return hr;
-}
-#endif
 
 BOOL CEECompileInfo::CheckAssemblyZap(
     CORINFO_ASSEMBLY_HANDLE assembly, 
@@ -2910,11 +2828,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-#ifdef FEATURE_CORECLR
 #define WRITER_LOAD_ERROR_MESSAGE W("Unable to load ") NATIVE_SYMBOL_READER_DLL W(".  Please ensure that ") NATIVE_SYMBOL_READER_DLL W(" is on the path.  Error='%d'\n")
-#else
-#define WRITER_LOAD_ERROR_MESSAGE W("Unable to load diasymreader.dll.  Please ensure that version 11 or greater of diasymreader.dll is on the path.  You can typically find this DLL in the desktop .NET install directory for 4.5 or greater.  Error='%d'\n")
-#endif
 
     HRESULT Load(LPCWSTR wszDiasymreaderPath = nullptr)
     {
@@ -2942,11 +2856,7 @@ public:
         {
             hr = FakeCoCreateInstanceEx(
                 CLSID_CorSymBinder_SxS,
-#ifdef FEATURE_CORECLR
                 wszDiasymreaderPath != nullptr ? wszDiasymreaderPath : (LPCWSTR)NATIVE_SYMBOL_READER_DLL,
-#else
-                wszDiasymreaderPath,
-#endif
                 IID_ISymUnmanagedBinder,
                 (void**)&m_pBinder,
                 NULL);
@@ -4952,9 +4862,6 @@ void CEECompileInfo::SetAssemblyHardBindList(
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_CORECLR // hardbinding
-    GetAppDomain()->ToCompilationDomain()->SetAssemblyHardBindList(pHardBindList, cHardBindList);
-#endif
 }
 
 HRESULT CEECompileInfo::SetVerboseLevel(
@@ -7254,11 +7161,6 @@ CompilationDomain::CompilationDomain(BOOL fForceDebug,
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_CORECLR // hardbinding
-    m_hardBoundModules.Init(FALSE, NULL);
-    m_cantHardBindModules.Init(FALSE, NULL);
-    m_useHardBindList = FALSE;
-#endif
 }
 
 void CompilationDomain::ReleaseDependencyEmitter()
@@ -7307,11 +7209,6 @@ void CompilationDomain::Init()
     Security::SetDefaultAppDomainProperty(GetSecurityDescriptor());
     SetCompilationDomain();
 
-#ifndef FEATURE_CORECLR
-    // We need the Compilation Domain to be homogeneous.  We've already forced everything to be full trust.
-    // However, CheckZapSecurity needs this to be set, so set it here.
-    GetSecurityDescriptor()->SetHomogeneousFlag(TRUE);
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG 
     g_pConfig->DisableGenerateStubForHost();
@@ -7381,12 +7278,8 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
         // Note that this can trigger an assembly load (of mscorlib)
         pAssembly->GetOptimizedIdentitySignature(&pDependency->signAssemblyDef);
 
-#if !defined(FEATURE_CORECLR)
-        ReleaseHolder<IMDInternalImport> pAssemblyMD(pFile->GetMDImportWithRef());
-#endif
 
 
-#ifdef FEATURE_CORECLR // hardbinding
         //
         // This is done in CompilationDomain::CanEagerBindToZapFile with full support for hardbinding
         //
@@ -7395,59 +7288,7 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
             CORCOMPILE_VERSION_INFO * pNativeVersion = pFile->GetLoadedNative()->GetNativeVersionInfo();
             pDependency->signNativeImage = pNativeVersion->signature;
         }
-#endif
 
-#ifndef FEATURE_CORECLR
-        // Find the architecture of the dependency, using algorithm from Fusion GetRuntimeVersionForAssembly.
-        // Normally, when an assembly is loaded at runtime, Fusion determines its architecture based on the
-        // metadata. However, if assembly load is skipped due to presence of native image, then Fusion needs
-        // to get assembly architecture from another source. For assemblies in GAC, the GAC structure provides
-        // architecture data. For assemblies outside of GAC, however, no other source of info is available.
-        // So we calculate the architecture now and store it in the native image, to make it available to Fusion.
-        // The algorithm here must exactly match  the algorithm in GetRuntimeVersionForAssembly.
-        LPCSTR pszPERuntime;
-        IfFailThrow(pAssemblyMD->GetVersionString(&pszPERuntime));
-
-        if (SString::_strnicmp(pszPERuntime, "v1.0", 4) != 0 &&
-            SString::_strnicmp(pszPERuntime, "v1.1", 4) != 0 &&
-            SString::_stricmp(pszPERuntime, "Standard CLI 2002") != 0)
-        {
-            // Get the PE architecture of this dependency, similar to PEAssembly::GetFusionProcessorArchitecture.
-            // The difference is when NI is loaded, PEAssembly::GetFusionProcessorArchitecture returns the
-            // architecture of the NI (which is never processor neutral), but we want the architecture
-            // associated with the IL image.
-            DWORD dwPEKind, dwMachine;
-            if (pFile->HasNativeImage())
-            {
-                // CrossGen can load an NI without loading the corresponding IL image, in which case
-                // PEAssembly::GetILImage() actually returns an NI. Thus we need specific code to handle NI.
-                PEImageHolder pImage(pFile->GetNativeImageWithRef());
-                pImage->GetNativeILPEKindAndMachine(&dwPEKind, &dwMachine);
-            }
-            else
-            {
-                pFile->GetILimage()->GetPEKindAndMachine(&dwPEKind, &dwMachine);
-            }
-
-            DWORD dwAssemblyFlags = 0;
-            IfFailThrow(pAssemblyMD->GetAssemblyProps(TokenFromRid(1, mdtAssembly),
-                NULL, NULL, NULL,
-                NULL, NULL, &dwAssemblyFlags));
-
-            PEKIND peKind;
-            if (SUCCEEDED(TranslatePEToArchitectureType(
-                (CorPEKind)dwPEKind,
-                dwMachine,
-                dwAssemblyFlags,
-                &peKind)))
-            {
-                CorCompileDependencyInfo peKindShifted = CorCompileDependencyInfo(peKind << CORCOMPILE_DEPENDENCY_PEKIND_SHIFT);
-                _ASSERTE(peKindShifted == (peKindShifted & CORCOMPILE_DEPENDENCY_PEKIND_MASK));
-                pDependency->dependencyInfo = CorCompileDependencyInfo(pDependency->dependencyInfo
-                    | (peKindShifted & CORCOMPILE_DEPENDENCY_PEKIND_MASK));
-            }
-        }
-#endif //FEATURE_FUSION
     }
 
     return S_OK;
@@ -7619,68 +7460,6 @@ AssemblySpec* CompilationDomain::FindAssemblyRefSpecForDefSpec(
     return (pEntry != NULL) ? pEntry->m_pRef : NULL;
 }
 
-#ifndef FEATURE_CORECLR // hardbinding
-//----------------------------------------------------------------------------
-// Was the assembly asked to be hard-bound to?
-
-BOOL CompilationDomain::IsInHardBindRequestList(Assembly * pAssembly)
-{
-    return IsInHardBindRequestList(pAssembly->GetManifestFile());
-}
-
-BOOL CompilationDomain::IsInHardBindRequestList(PEAssembly * pAssembly)
-{
-    if (!m_useHardBindList)
-        return FALSE;
-
-    StackSString displayName;
-    pAssembly->GetDisplayName(displayName);
-
-    for (COUNT_T i = 0; i < m_assemblyHardBindList.GetCount(); i++)
-    {
-        if (displayName.Equals(m_assemblyHardBindList[i]))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-BOOL CompilationDomain::IsSafeToHardBindTo(PEAssembly * pAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    // The dependency worker does not have m_useHardBindList set.
-    // We do want to allow all possible native images to be loaded in this case.
-    if (!m_useHardBindList)
-        return TRUE;
-
-    if (CompilationDomain::IsInHardBindRequestList(pAssembly))
-        return TRUE;
-
-    return FALSE;
-}
-
-PtrHashMap::PtrIterator CompilationDomain::IterateHardBoundModules()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_hardBoundModules.begin();
-}
-
-void CompilationDomain::SetAssemblyHardBindList(
-        __in_ecount( cHardBindList )
-            LPWSTR *pHardBindList,
-        DWORD cHardBindList)
-{
-    m_assemblyHardBindList.SetCount(0);
-
-    for (DWORD i = 0; i < cHardBindList; i++)
-    {
-        SString s(pHardBindList[i]);
-        m_assemblyHardBindList.Append(s);
-    }
-
-    m_useHardBindList = TRUE;
-}
-#endif // FEATURE_CORECLR
 
 //----------------------------------------------------------------------------
 // Is it OK to embed direct pointers to an ngen dependency?
@@ -7703,261 +7482,13 @@ BOOL CompilationDomain::CanEagerBindToZapFile(Module *targetModule, BOOL limitTo
         return TRUE;
     }
 
-#ifdef FEATURE_CORECLR // hardbinding
     //
     // CoreCLR does not have attributes for fine grained eager binding control.
     // We hard bind to mscorlib.dll only.
     //
     return targetModule->IsSystem();
-#else
-    // Now, look up the hashtables to avoid doing the heavy-duty work everytime
-
-    if (m_cantHardBindModules.LookupValue((UPTR)targetModule, targetModule) !=
-        LPVOID(INVALIDENTRY))
-    {
-        return FALSE;
-    }
-
-    if (m_hardBoundModules.LookupValue((UPTR)targetModule, targetModule) !=
-        LPVOID(INVALIDENTRY))
-    {
-        return TRUE;
-    }
-
-    const char * logMsg = NULL;
-
-    EEConfig::NgenHardBindType ngenHardBindConfig = g_pConfig->NgenHardBind();
-
-    if (ngenHardBindConfig == EEConfig::NGEN_HARD_BIND_NONE)
-    {
-        logMsg = "COMPlus_HardPrejitEnabled=0 is specified";        
-        goto CANNOT_HARD_BIND;
-    }
-
-    if (ngenHardBindConfig == EEConfig::NGEN_HARD_BIND_ALL)
-    {
-        // COMPlus_HardPrejitEnabled=2 is specified
-        limitToHardBindList = FALSE;
-    }
-
-    if (!targetModule->HasNativeImage())
-    {
-        logMsg = "dependency does not have a native image (check FusLogVw for reason)";
-        goto CANNOT_HARD_BIND;
-    }
-
-    // The loader/Fusion cannot currently guarantee that a non-manifest module of a 
-    // hardbound dependency gets eagerly loaded.
-    if (!targetModule->GetFile()->IsAssembly())
-    {
-        logMsg = "dependency is a non-manifest module";
-        goto CANNOT_HARD_BIND;
-    }
-
-    // Don't hard bind to modules not on the list
-    if (limitToHardBindList && m_useHardBindList)
-    {
-        if (!IsInHardBindRequestList(targetModule->GetAssembly()))
-        {
-            logMsg = "dependency was not found in m_assemblyHardBindList";
-            goto CANNOT_HARD_BIND;
-        }
-    }
-
-    // Mark targetModule as a hard dependency
-    //
-    m_hardBoundModules.InsertValue((UPTR)targetModule, targetModule);
-
-    // Update m_pDependencies for the corresponding assembly, to reflect the fact
-    // that we are hard-binding to its native image
-    //
-    PEAssembly * pTargetAssembly;
-    pTargetAssembly = targetModule->GetFile()->GetAssembly();
-    UpdateDependencyEntryForHardBind(pTargetAssembly);
-
-    logMsg = "new dependency";        
-
-    // Try to hardbind to the hardbound dependency closure as there is 
-    // no extra cost in doing so
-    IncludeHardBindClosure(pTargetAssembly);
-
-    LOG((LF_ZAP, LL_INFO100, "Success CanEagerBindToZapFile: %S (%s)\n",
-                             targetModule->GetDebugName(), logMsg));
-
-    return TRUE;
-
-CANNOT_HARD_BIND:
-
-    m_cantHardBindModules.InsertValue((UPTR)targetModule, targetModule);
-
-    // If we have a hard binding list, check if this module is on the list.
-    if (targetModule->GetFile()->IsAssembly() && 
-        IsInHardBindRequestList(targetModule->GetAssembly()))
-    {
-        StackSString displayName;
-        targetModule->GetAssembly()->GetDisplayName(displayName);
-
-        GetSvcLogger()->Printf(LogLevel_Warning, W("WARNING: Cannot hardbind to %s because %S\n"), 
-            displayName.GetUnicode(), logMsg);
-    }
-
-    if (logMsg)
-    {
-        LOG((LF_ZAP, LL_INFO100, "Failure CanEagerBindToZapFile: %S (%s)\n",
-             targetModule->GetDebugName(), logMsg));
-    }
-
-    return FALSE;
-#endif // FEATURE_CORECLR
 }
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-
-SArray<LPCWSTR> * s_pPlatformAssembliesPaths;
-
-void ZapperSetPlatformAssembliesPaths(SString &platformAssembliesPaths)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(s_pPlatformAssembliesPaths == NULL);
-    s_pPlatformAssembliesPaths = new SArray<LPCWSTR>();
-
-    SString strPaths(platformAssembliesPaths);
-    if (strPaths.IsEmpty())
-        return;
-
-    for (SString::Iterator i = strPaths.Begin(); i != strPaths.End(); )
-    {
-        // Skip any leading spaces or semicolons
-        if (strPaths.Skip(i, W(';')))
-        {
-            continue;
-        }
-    
-        SString::Iterator iEnd = i;     // Where current assembly name ends
-        SString::Iterator iNext;        // Where next assembly name starts
-        if (strPaths.Find(iEnd, W(';')))
-        {
-            iNext = iEnd + 1;
-        }
-        else
-        {
-            iNext = iEnd = strPaths.End();
-        }
-    
-        _ASSERTE(i < iEnd);
-        if(i != iEnd)
-        {
-            SString strPath(strPaths, i, iEnd);
-
-            SString strFullPath;
-            Clr::Util::Win32::GetFullPathName(strPath, strFullPath, NULL);
-
-            NewArrayHolder<WCHAR> wszFullPath = DuplicateStringThrowing(strFullPath.GetUnicode());
-            s_pPlatformAssembliesPaths->Append(wszFullPath);
-            wszFullPath.SuppressRelease();
-        }
-        i = iNext;
-    }
-}
-
-BOOL CompilationDomain::FindImage(const SString& fileName, MDInternalImportFlags flags, PEImage ** ppImage)
-{
-    if (s_pPlatformAssembliesPaths == NULL)
-        return FALSE;
-
-    for (COUNT_T i = 0; i < s_pPlatformAssembliesPaths->GetCount(); i++)
-    {
-        SString sPath((*s_pPlatformAssembliesPaths)[i]);
-        if (sPath[sPath.GetCount() - 1] != '\\')
-            sPath.Append(W("\\"));
-        sPath.Append(fileName);
-
-        if (!FileExists(sPath))
-            continue;
-
-        // Normalize the path to maintain identity
-        SString sFullPath;
-        Clr::Util::Win32::GetFullPathName(sPath, sFullPath, NULL);
-
-        PEImageHolder image(PEImage::OpenImage(sFullPath, flags));
-
-        PEImageLayoutHolder pLayout(image->GetLayout(
-            (flags == MDInternalImport_NoCache) ? PEImageLayout::LAYOUT_FLAT : PEImageLayout::LAYOUT_MAPPED,
-            PEImage::LAYOUT_CREATEIFNEEDED));
-
-        if (!pLayout->HasNTHeaders())
-            continue;
-
-        if (!pLayout->IsNativeMachineFormat())
-        {
-            // Check for platform agnostic IL
-            if (!pLayout->IsPlatformNeutral())
-                continue;
-        }
-
-        *ppImage = image.Extract();
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-BOOL CompilationDomain::IsInHardBindList(SString& simpleName)
-{
-    for (COUNT_T i = 0; i < m_assemblyHardBindList.GetCount(); i++)
-    {
-        if (simpleName.Equals(m_assemblyHardBindList[i]))
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-void CompilationDomain::ComputeAssemblyHardBindList(IMDInternalImport * pImport)
-{
-    AssemblyForLoadHint assembly(pImport);
-
-    HENUMInternalHolder hEnum(pImport);
-    hEnum.EnumAllInit(mdtAssemblyRef);
-
-    mdAssembly token;
-    while (pImport->EnumNext(&hEnum, &token))
-    {
-        LPCSTR pszName;
-        IfFailThrow(pImport->GetAssemblyRefProps(token, NULL, NULL,
-                                                 &pszName, NULL,
-                                                 NULL, NULL, NULL));
-
-        SString sSimpleName(SString::Utf8, pszName);
-
-        SString sFileName(sSimpleName, W(".dll"));
-
-        PEImageHolder pDependencyImage;
-
-        if (!FindImage(sFileName, MDInternalImport_Default, &pDependencyImage))
-            continue;
-
-        AssemblyForLoadHint assemblyDependency(pDependencyImage->GetMDImport());
-
-        LoadHintEnum loadHint;
-        ::GetLoadHint(&assembly, &assemblyDependency, &loadHint);
-
-        if (loadHint == LoadAlways)
-        {
-            GetSvcLogger()->Printf(W("Hardbinding to %s\n"), sSimpleName.GetUnicode());
-
-            if (!IsInHardBindList(sSimpleName))
-            {
-                m_assemblyHardBindList.Append(sSimpleName);
-            }
-        }
-    }
-
-    // Note that we are not setting m_useHardBindList to TRUE here. When we load the NGen image, we are good to hardbind.
-    // m_useHardBindList = TRUE;
-}
-#endif
 
 void CompilationDomain::SetTarget(Assembly *pAssembly, Module *pModule)
 {
@@ -7977,7 +7508,6 @@ void CompilationDomain::SetTargetImage(DataImage *pImage, CEEPreloader * pPreloa
     _ASSERTE(pImage->GetModule() == GetTargetModule());
 }
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 void ReportMissingDependency(Exception * e)
 {
     // Avoid duplicate error messages
@@ -7991,7 +7521,6 @@ void ReportMissingDependency(Exception * e)
 
     g_hrFatalError = COR_E_FILELOAD;
 }
-#endif
 
 PEAssembly *CompilationDomain::BindAssemblySpec(
     AssemblySpec *pSpec,
@@ -8022,13 +7551,11 @@ PEAssembly *CompilationDomain::BindAssemblySpec(
     }
     EX_HOOK
     {
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
         if (!g_fNGenMissingDependenciesOk)
         {
             ReportMissingDependency(GET_EXCEPTION());
             EX_RETHROW;
         }
-#endif
 
         //
         // Record missing dependencies
@@ -8127,199 +7654,6 @@ void CompilationDomain::SetDependencyEmitter(IMetaDataAssemblyEmit *pEmit)
     m_pDependencyRefSpecs = new AssemblySpecHash();
 }
 
-#ifndef FEATURE_CORECLR // hardbinding
-/* Update m_pDependencies for the corresponding assembly, to reflect the fact
-   that we are hard-binding to its native image
- */
-
-void CompilationDomain::UpdateDependencyEntryForHardBind(PEAssembly * pDependencyAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(pDependencyAssembly->HasBindableIdentity()); // Currently no hard deps on WinMD files.
-    }
-    CONTRACTL_END;
-    AssemblySpec assemblySpec;
-    assemblySpec.InitializeSpec(pDependencyAssembly);
-
-    mdAssemblyRef defToken;
-    IfFailThrow(assemblySpec.EmitToken(m_pEmit, &defToken));
-
-    CORCOMPILE_DEPENDENCY * pDep = m_pDependencies;
-
-    for (unsigned i = 0; i < m_cDependenciesCount; i++, pDep++)
-    {
-        if (pDep->dwAssemblyDef == defToken)
-        {
-            PEImage * pNativeImage = pDependencyAssembly->GetPersistentNativeImage();
-            CORCOMPILE_VERSION_INFO * pNativeVersion = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
-            _ASSERTE(pDep->signNativeImage == INVALID_NGEN_SIGNATURE ||
-                     pDep->signNativeImage == pNativeVersion->signature);
-            pDep->signNativeImage = pNativeVersion->signature;
-            return;
-        }
-    }
-
-    // We should have found and updated the corresponding dependency
-    _ASSERTE(!"This should be unreachable");
-}
-
-// pAssembly is a hardbound ngen dependency of m_pTargetModule.
-// Try to hardbind to the hardbound dependency closure as there is 
-// no extra cost in doing so, and it will help generate better code
-//
-
-void CompilationDomain::IncludeHardBindClosure(PEAssembly * pAssembly)
-{
-    CONTRACTL {
-        PRECONDITION(pAssembly->GetPersistentNativeImage() != NULL);
-    } CONTRACTL_END;
-
-    PEImageLayout *pNativeImage = pAssembly->GetLoadedNative();
-    COUNT_T cDependencies;
-    CORCOMPILE_DEPENDENCY *pDependencies = pNativeImage->GetNativeDependencies(&cDependencies);
-    CORCOMPILE_DEPENDENCY *pDependenciesEnd = pDependencies + cDependencies;
-
-    for (/**/; pDependencies < pDependenciesEnd; pDependencies++)
-    {
-        // Ignore "soft" dependencies
-
-        if (pDependencies->signNativeImage == INVALID_NGEN_SIGNATURE)
-            continue;
-
-        // Load the manifest file for the given hardbound name-assembly-spec.
-
-        AssemblySpec name;
-        name.InitializeSpec(pDependencies->dwAssemblyRef,
-                            pAssembly->GetPersistentNativeImage()->GetNativeMDImport(),
-                            FindAssembly(pAssembly),
-                            FALSE);
-
-        DomainAssembly * pDependency = name.LoadDomainAssembly(FILE_LOADED);
-
-        // Since pAssembly hardbinds to pDependency, pDependency better
-        // have a native image
-        _ASSERTE(pDependency->GetFile()->HasNativeImage());
-
-        //
-        // Now add pDependency as a hard dependency of m_pTargetModule.
-        // We pass in limitToHardBindList=FALSE as it is OK to hardbind even if
-        // pDependency is not in the hardbound list.
-        //
-
-        CanEagerBindToZapFile(pDependency->GetLoadedModule(), FALSE);
-    }
-}
-
-//-----------------------------------------------------------------------------
-// Check if we were successfully able to hardbind to the requested dependency
-
-void CompilationDomain::CheckHardBindToZapFile(SString dependencyNameFromCA)
-{
-    // First check if we were successfully able to hard-bind
-    
-    for (PtrHashMap::PtrIterator hbItr = m_hardBoundModules.begin(); !hbItr.end(); ++hbItr)
-    {
-        Module * pModule = (Module*) hbItr.GetValue();
-
-        if (IsAssemblySpecifiedInCA(pModule->GetAssembly(), dependencyNameFromCA))
-        {
-            // We did successfully use "dependencyNameFromCA"
-            return;
-        }
-    }
-
-    // Next, check if we failed to hard-bind. CompilationDomain::CanEagerBindToZapFile()
-    // would have logged a warning message with the cause of the soft-bind
-    
-    for (PtrHashMap::PtrIterator sbItr = m_cantHardBindModules.begin(); !sbItr.end(); ++sbItr)
-    {
-        Module * pModule = (Module*) sbItr.GetValue();
-
-        if (IsAssemblySpecifiedInCA(pModule->GetAssembly(), dependencyNameFromCA))
-        {
-            if (!IsInHardBindRequestList(pModule->GetAssembly()))
-            {
-                // CompilationDomain::CanEagerBindToZapFile() does not give a warning
-                // message for the cyclic dependency case, since the NGEN service
-                // breaks the cycle by overriding the CA. So give a message here instead.
-                GetSvcLogger()->Printf(LogLevel_Warning, W("WARNING: Dependency attribute for %s is being ignored, possibly because of cyclic dependencies.\n"), 
-                    dependencyNameFromCA.GetUnicode());
-            }
-            return;
-        }
-    }
-
-    // Finally, it looks like the assembly was either not loaded, or that
-    // there was no reason to even try to hard-bind.
-
-    GetSvcLogger()->Printf(LogLevel_Warning, W("WARNING: Cannot hardbind to %s because it is not loaded\n"), 
-        dependencyNameFromCA.GetUnicode());
-}
-
-//-----------------------------------------------------------------------------
-// Check if we were successfully able to hardbind to all the requested
-// dependencies.
-
-void CompilationDomain::CheckLoadHints()
-{
-    if (!m_useHardBindList)
-        return;
-    
-    if (g_pConfig->NgenHardBind() == EEConfig::NGEN_HARD_BIND_NONE)
-        return;
-
-    // Look for the binding custom attribute
-
-    IMDInternalImport * pImport = m_pTargetAssembly->GetManifestImport();
-    _ASSERTE(pImport);
-
-    MDEnumHolder hEnum(pImport);        // Enumerator for custom attributes
-    if (FAILED(pImport->EnumCustomAttributeByNameInit(m_pTargetAssembly->GetManifestToken(),
-                                                     DEPENDENCY_TYPE, 
-                                                     &hEnum)))
-    {
-        return;
-    }
-
-    mdCustomAttribute tkAttribute;      // A custom attribute on this assembly.
-    const BYTE  *pbAttr;                // Custom attribute data as a BYTE*.
-    ULONG       cbAttr;                 // Size of custom attribute data.
-
-    while (pImport->EnumNext(&hEnum, &tkAttribute))
-    {   // Get raw custom attribute.
-        IfFailThrow(pImport->GetCustomAttributeAsBlob(tkAttribute, (const void**)&pbAttr, &cbAttr));
-
-        CustomAttributeParser cap(pbAttr, cbAttr);
-        if (FAILED(cap.ValidateProlog()))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, m_pTargetAssembly->GetManifestModule());
-        }
-
-        LPCUTF8 szString;
-        ULONG   cbString;
-        if (FAILED(cap.GetNonNullString(&szString, &cbString)))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_STRING, m_pTargetAssembly->GetManifestModule());
-        }
-
-        UINT32 u4;
-        IfFailThrow(cap.GetU4(&u4));
-        LoadHintEnum loadHint = (LoadHintEnum)u4;
-
-        if (loadHint != LoadAlways)
-            continue;
-
-        // Convert the string to Unicode.
-        StackSString dependencyNameFromCA(SString::Utf8, szString, cbString);
-
-        CheckHardBindToZapFile(dependencyNameFromCA);
-    }
-}
-#endif // FEATURE_CORECLR
 
 HRESULT
     CompilationDomain::GetDependencies(CORCOMPILE_DEPENDENCY **ppDependencies,
@@ -8327,9 +7661,6 @@ HRESULT
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_CORECLR // hardbinding
-    CheckLoadHints();
-#endif
 
     //
     // Return the bindings.
@@ -8412,16 +7743,5 @@ HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
 }
 #endif // CROSSGEN_COMPILE
 
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
-bool UseRyuJit()
-{
-#ifdef CROSSGEN_COMPILE
-    return true;
-#else
-    static ConfigDWORD useRyuJitValue;
-    return useRyuJitValue.val(CLRConfig::INTERNAL_UseRyuJit) == 1 || IsNgenOffline();
-#endif
-}
-#endif
 
 #endif // FEATURE_PREJIT

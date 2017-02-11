@@ -790,34 +790,6 @@ void QCALLTYPE SecurityPolicy::GetDeviceName(LPCWSTR wszDriveLetter, QCall::Stri
 {
     QCALL_CONTRACT;
 
-#if !defined(FEATURE_CORECLR)
-    BEGIN_QCALL;
-
-    WCHAR networkName[MAX_LONGPATH];
-    DWORD networkNameSize = MAX_LONGPATH;
-    ZeroMemory( networkName, sizeof( networkName ) );
-
-    UINT driveType = WszGetDriveType( wszDriveLetter );
-    if (driveType == DRIVE_REMOVABLE ||
-        driveType == DRIVE_FIXED ||
-        driveType == DRIVE_CDROM ||
-        driveType == DRIVE_RAMDISK)
-    {
-        retDeviceName.Set( wszDriveLetter );
-        goto lExit;
-    }
-
-    if (WszWNetGetConnection(wszDriveLetter, networkName, &networkNameSize) != NO_ERROR)
-    {
-        goto lExit;
-    }
-
-    retDeviceName.Set( networkName );
-
-lExit: ;
-
-    END_QCALL;
-#endif // !FEATURE_CORECLR
 }
 
 #ifdef FEATURE_CAS_POLICY

@@ -80,9 +80,6 @@ public:
     static HMODULE LoadLibraryFromPath(LPCWSTR libraryPath);
     static HINSTANCE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
 
-#ifndef FEATURE_CORECLR
-    static VOID CheckUnificationList(NDirectMethodDesc * pMD, DWORD * pDllImportSearchPathFlag, BOOL * pSearchAssemblyDirectory);
-#endif // !FEATURE_CORECLR
 
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
@@ -121,9 +118,6 @@ public:
 
     inline static ILStubCache*     GetILStubCache(NDirectStubParameters* pParams);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
-    static Stub*            GetStubForCopyCtor();
-#endif // _TARGET_X86_ && !FEATURE_CORECLR
 
     static BOOL IsHostHookEnabled();
 
@@ -132,9 +126,7 @@ public:
 private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
 
-#ifdef FEATURE_CORECLR
     static HMODULE LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
-#endif
     static HMODULE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
@@ -493,9 +485,6 @@ public:
     void    GetCleanupFinallyOffsets(ILStubEHClause * pClause);
     void    AdjustTargetStackDeltaForReverseInteropHRESULTSwapping();
     void    AdjustTargetStackDeltaForExtraParam();
-#if defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
-    DWORD   CreateCopyCtorCookie(ILCodeStream* pcsEmit);
-#endif // _TARGET_X86_ && !FEATURE_CORECLR
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
@@ -535,9 +524,6 @@ protected:
     void            InitCleanupCode();
     void            InitExceptionCleanupCode();
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
-    BOOL            IsCopyCtorStubNeeded();
-#endif // _TARGET_X86_ && !FEATURE_CORECLR
 
 
     ILCodeStream*   m_pcsSetup;
@@ -569,10 +555,6 @@ protected:
     DWORD               m_dwCleanupWorkListLocalNum;
     DWORD               m_dwRetValLocalNum;
     
-#if defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
-    DWORD               m_dwFirstCopyCtorCookieLocalNum;    // list head passed to SetCopyCtorCookieChain
-    DWORD               m_dwLastCopyCtorCookieLocalNum;     // used for chaining the cookies into a linked list
-#endif // _TARGET_X86_ && !FEATURE_CORECLR
 
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;

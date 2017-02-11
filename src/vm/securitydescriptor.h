@@ -168,32 +168,6 @@ public:
 #endif
 };
 
-#ifndef FEATURE_CORECLR
-class PEFileSecurityDescriptor : public SecurityDescriptorBase<IPEFileSecurityDescriptor>
-{
-public:
-	virtual BOOL AllowBindingRedirects();
-    BOOL QuickIsFullyTrusted();
-    virtual VOID Resolve();
-
-#ifndef DACCESS_COMPILE
-    inline PEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile);
-#endif
-	
-#ifdef FEATURE_CAS_POLICY
-    virtual OBJECTREF GetEvidence();
-    DWORD GetZone();
-#endif // FEATURE_CAS_POLICY
-    
-
-#ifdef FEATURE_CAS_POLICY
-    static
-    OBJECTREF BuildEvidence(PEFile *pPEFile, const OBJECTREF& objHostSuppliedEvidence);
-#endif // FEATURE_CAS_POLICY
-private:
-	VOID ResolveWorker();
-};
-#endif // !FEATURE_CORECLR
 
 #include "securitydescriptor.inl"
 

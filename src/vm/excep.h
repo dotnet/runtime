@@ -174,7 +174,7 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 BOOL InstallUnhandledExceptionFilter();
 void UninstallUnhandledExceptionFilter();
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
 // ".text$zzz" (lowercase after $ is important). What the linker does is look for the sections
 // that has the same name before '$' sign. It combines them together but sorted in an alphabetical

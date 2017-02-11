@@ -158,10 +158,6 @@
 
 #define g_SecurityCriticalAttribute "System.Security.SecurityCriticalAttribute"
 #define g_SecurityTransparentAttribute "System.Security.SecurityTransparentAttribute"
-#ifndef FEATURE_CORECLR
-#define g_SecurityTreatAsSafeAttribute "System.Security.SecurityTreatAsSafeAttribute"
-#define g_SecurityRulesAttribute "System.Security.SecurityRulesAttribute"
-#endif //FEATURE_CORECLR
 
 #define g_SecuritySafeCriticalAttribute "System.Security.SecuritySafeCriticalAttribute"
 

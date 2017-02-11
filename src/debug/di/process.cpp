@@ -2361,18 +2361,7 @@ HRESULT CordbProcess::EnumerateHandles(CorGCReferenceType types, ICorDebugGCRefe
 
 HRESULT CordbProcess::EnableNGENPolicy(CorDebugNGENPolicy ePolicy)
 {
-#ifdef FEATURE_CORECLR
     return E_NOTIMPL;
-#else
-    HRESULT hr = S_OK;
-    PUBLIC_API_BEGIN(this);
-
-    IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-    hr = pDAC->EnableNGENPolicy(ePolicy);
-
-    PUBLIC_API_END(hr);
-    return hr;
-#endif
 }
 
 
@@ -7507,33 +7496,6 @@ void CordbProcess::VerifyControlBlock()
     // For Telesto, Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
     // numbers, but the other protocol numbers should still match.
-#if !defined(FEATURE_CORECLR)
-    bool fSkipVerCheck = false;
-#if _DEBUG
-    // In debug builds, allow us to disable the version check to help with applying hotfixes.
-    // The hotfix may be built against a compatible IPC protocol, but have a slightly different build number.
-    fSkipVerCheck = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgSkipVerCheck) != 0;
-#endif
-
-    if (!fSkipVerCheck)
-    {
-        //
-        // These asserts double check that the version of the Right Side matches the version of the left side.
-        //
-        // If you hit these asserts, it is probably because you rebuilt mscordbi without rebuilding mscorwks, or rebuilt
-        // mscorwks without rebuilding mscordbi. You might be able to ignore these asserts, but proceed at your own risk.
-        //
-        CONSISTENCY_CHECK_MSGF(VER_PRODUCTBUILD == GetDCB()->m_verMajor,
-            ("version of %s (%d) in the debuggee does not match version of mscordbi.dll (%d) in the debugger.\n"
-             "This means your setup is wrong. You can ignore this but proceed at your own risk.\n", 
-             MAIN_CLR_DLL_NAME_A, GetDCB()->m_verMajor, VER_PRODUCTBUILD));
-        CONSISTENCY_CHECK_MSGF(VER_PRODUCTBUILD_QFE == GetDCB()->m_verMinor,
-            ("QFE version of %s (%d) in the debuggee does not match QFE version of mscordbi.dll (%d) in the debugger.\n"
-             "Both dlls have build # (%d).\n"
-             "This means your setup is wrong. You can ignore this but proceed at your own risk.\n", 
-             MAIN_CLR_DLL_NAME_A, GetDCB()->m_verMinor, VER_PRODUCTBUILD_QFE, VER_PRODUCTBUILD));
-    }
-#endif // !FEATURE_CORECLR
 
     // These assertions verify that the debug manager is behaving correctly.
     // An assertion failure here means that the runtime version of the debuggee is different from the runtime version of
@@ -15175,11 +15137,7 @@ bool CordbProcess::IsCompatibleWith(DWORD clrMajorVersion)
     //  honored for SLv4.
     if (requiredVersion <= 0)
     {
-#if defined(FEATURE_CORECLR)
         requiredVersion = 2;
-#else
-        requiredVersion = 4;
-#endif
     }
 
     // Compare the version we were created for against the minimum required

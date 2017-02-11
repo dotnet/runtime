@@ -39,9 +39,6 @@ Stub * GenerateInitPInvokeFrameHelper();
 EXTERN_C void STDCALL PInvokeStackImbalanceHelper(void);
 #endif // MDA_SUPPORTED
 
-#ifndef FEATURE_CORECLR
-EXTERN_C void STDCALL CopyCtorCallStub(void);
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_STUBS_AS_IL
 EXTERN_C void SinglecastDelegateInvokeStub();
