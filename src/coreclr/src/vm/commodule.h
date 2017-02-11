@@ -103,11 +103,6 @@ public:
     static
     mdString QCALLTYPE GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength);
 
-#if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
-    /*X509Certificate*/
-    static
-    void QCALLTYPE GetSignerCertificate(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retData);
-#endif // #if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
 
     static
     void QCALLTYPE SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName);

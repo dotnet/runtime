@@ -167,10 +167,6 @@ public:
     static
     INT64 QCALLTYPE GetHostContext(QCall::AssemblyHandle pAssembly);
 
-#ifdef FEATURE_CAS_POLICY
-    static
-    BOOL QCALLTYPE IsStrongNameVerified(QCall::AssemblyHandle pAssembly);
-#endif // FEATURE_CAS_POLICY
 
     //
     // AssemblyBuilder FCALLs

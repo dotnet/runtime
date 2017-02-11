@@ -3965,10 +3965,6 @@ void MethodTable::CallFinalizer(Object *obj)
         return;
     }
 
-#ifdef FEATURE_CAS_POLICY
-    // Notify the host to setup the restricted context before finalizing each object
-    HostExecutionContextManager::SetHostRestrictedContext();
-#endif // FEATURE_CAS_POLICY
 
     // Determine if the object has a critical or normal finalizer.
     BOOL fCriticalFinalizer = pMT->HasCriticalFinalizer();

@@ -1608,7 +1608,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         ETW::EnumerationLog::ProcessShutdown();
     }
 
-#if defined(FEATURE_CAS_POLICY) || defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMINTEROP)
     // Get the current thread.
     Thread * pThisThread = GetThread();
 #endif
@@ -1808,15 +1808,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             // because we are shutting down.
             CONTRACT_VIOLATION(ModeViolation);
 
-#ifdef FEATURE_CAS_POLICY
-            // Save the security policy cache as necessary.
-            if (!g_fProcessDetach || pThisThread != NULL)
-            {
-                // If process shutdown has started, it is not safe to create Thread object which is needed
-                // by the following call.
-                Security::SaveCache();
-            }
-#endif
 #ifdef FEATURE_COMINTEROP
             // We need to call CoUninitialize in part one to ensure orderly shutdown of COM dlls.
             if (!g_fFastExitProcess)

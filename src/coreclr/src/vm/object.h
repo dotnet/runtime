@@ -2303,9 +2303,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 #endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
-#ifdef FEATURE_CAS_POLICY
-    INT32        m_iPrincipalPolicy;   // Type of principal to create by default
-#endif    
     CLR_BOOL     m_bHasSetPolicy;               // SetDomainPolicy has been called for this domain
     CLR_BOOL     m_bIsFastFullTrustDomain;      // We know for sure that this is a homogeneous full trust domain.  
     CLR_BOOL     m_compatFlagsInitialized;

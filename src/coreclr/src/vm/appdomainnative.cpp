@@ -280,12 +280,6 @@ void QCALLTYPE AppDomainNative::SetupDomainSecurity(QCall::AppDomainHandle pDoma
         }
     }
 
-#ifdef FEATURE_CAS_POLICY
-    if (gc.orEvidence != NULL)
-    {
-        pSecDesc->SetEvidence(gc.orEvidence);
-    }
-#endif // FEATURE_CAS_POLICY
 
     // We need to downgrade sharing level if the AppDomain is homogeneous and not fully trusted, or the
     // AppDomain is in legacy mode.  Effectively, we need to be sure that all assemblies loaded into the
@@ -859,39 +853,6 @@ void QCALLTYPE AppDomainNative::SetSecurityHomogeneousFlag(QCall::AppDomainHandl
     END_QCALL;
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-// static
-void QCALLTYPE AppDomainNative::SetLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-    pAppSecDesc->SetLegacyCasPolicyEnabled();
-
-    END_QCALL;
-}
-
-// static
-BOOL QCALLTYPE AppDomainNative::IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget)
-{
-    QCALL_CONTRACT;
-
-    BOOL fLegacyCasPolicy = FALSE;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-    fLegacyCasPolicy = !!pAppSecDesc->IsLegacyCasPolicyEnabled();
-
-    END_QCALL;
-
-    return fLegacyCasPolicy;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 
 FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisUNSAFE)

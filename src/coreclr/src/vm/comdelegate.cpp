@@ -2529,38 +2529,7 @@ BOOL COMDelegate::NeedsSecureDelegate(MethodDesc* pCreatorMethod, AppDomain *pCr
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CAS_POLICY
     return FALSE;
-#else
-    if (pCreatorMethod)
-    {
-        Assembly* pTargetAssembly = pTargetMD->GetAssembly();
-        Assembly* pCreatorAssembly = pCreatorMethod->GetAssembly();
-        if (pCreatorAssembly != pTargetAssembly)
-        {
-            // We don't need secure delegate is everything in the AppDomain is full trust.
-            if (!pCreatorDomain->GetSecurityDescriptor()->DomainMayContainPartialTrustCode())
-                return FALSE;
-
-            IAssemblySecurityDescriptor *pCreatorAsd = pCreatorAssembly->GetSecurityDescriptor(pCreatorDomain);
-
-            // We should also create secure delegates for anonymously hosted dynamic methods which
-            // are themselves full trust (although transparent) yet can be created from partial trust.
-            if (!pCreatorAsd->IsFullyTrusted() ||
-                pCreatorAssembly->GetDomainAssembly(pCreatorDomain) == pCreatorDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-            {
-                return TRUE;
-            }
-
-            // Note that if we begin to support using an NGEN image which is not fully trusted, we may need
-            // to force on secure delegates as the grant set of the image may not match between NGEN time
-            // and runtime.
-        }
-    }
-
-    return FALSE;
-
-#endif // FEATURE_CAS_POLICY
 }
 
 BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
@@ -2902,9 +2871,6 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CAS_POLICY
-#error GetSecureInvoke not implemented
-#else
     MethodTable *       pDelegateMT = pMD->GetMethodTable();
     DelegateEEClass*    delegateEEClass = (DelegateEEClass*) pDelegateMT->GetClass();
     Stub *pStub = delegateEEClass->m_pSecureDelegateInvokeStub;
@@ -2960,7 +2926,6 @@ PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)
 
     }
     return pStub->GetEntryPoint();
-#endif
 }
 #else // FEATURE_STUBS_AS_IL
 PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)

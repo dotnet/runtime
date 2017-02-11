@@ -1808,25 +1808,6 @@ inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
     return GetPersistentMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, pdwFlags);
 }
 
-#ifdef FEATURE_CAS_POLICY
-inline COR_TRUST *PEFile::GetAuthenticodeSignature()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (!m_fCheckedCertificate && HasSecurityDirectory())
-    {
-        CheckAuthenticodeSignature();
-    }
-
-    return m_certificate;
-}
-#endif
 
 // ------------------------------------------------------------
 // Hash support
@@ -1887,57 +1868,6 @@ inline BOOL PEAssembly::IsFullySigned()
 }
 
 
-#ifdef FEATURE_CAS_POLICY
-//---------------------------------------------------------------------------------------
-//
-// Verify the Authenticode and strong name signatures of an assembly during the assembly
-// load code path.  To verify the strong name signature outside of assembly load, use the
-// VefifyStrongName method instead.
-// 
-// If the applicaiton is using strong name bypass, then this method may not cause a real
-// strong name verification, delaying the assembly's strong name load until we know that
-// the verification is required.  If the assembly must be forced to have its strong name
-// verified, then the VerifyStrongName method should also be chosen.
-// 
-// See code:AssemblySecurityDescriptor::ResolveWorker#StrongNameBypass
-//
-
-inline void PEAssembly::DoLoadSignatureChecks()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS; // Fusion uses crsts on AddRef/Release
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ETWOnStartup(SecurityCatchCall_V1, SecurityCatchCallEnd_V1);
-
-    // If this isn't mscorlib or a dynamic assembly, verify the Authenticode signature.
-    if (IsSystem() || IsDynamic())
-    {
-        // If it was a dynamic module (or mscorlib), then we don't want to be doing module hash checks on it
-        m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-    }
-
-    // Check strong name signature. We only want to do this now if the application is not using the strong
-    // name bypass feature.  Otherwise we'll delay strong name verification until we figure out how trusted
-    // the assembly is.
-    // 
-    // For more information see code:AssemblySecurityDescriptor::ResolveWorker#StrongNameBypass
-
-    // Make sure m_pMDImport is initialized as we need to call VerifyStrongName which calls GetFlags
-    // BypassTrustedAppStrongNames = false is a relatively uncommon scenario so we need to make sure 
-    // the initialization order is always correct and we don't miss this uncommon case
-    _ASSERTE(GetMDImport());
-
-    if (!g_pConfig->BypassTrustedAppStrongNames())
-    { 
-        VerifyStrongName();
-    }
-}
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // Metadata access

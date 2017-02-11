@@ -364,9 +364,6 @@ DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
 DEFINE_METASIG_T(SM(Evidence_RetEvidence, C(EVIDENCE), C(EVIDENCE)))
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METASIG_T(SM(PEFile_Evidence_RetEvidence, C(SAFE_PEFILE_HANDLE) C(EVIDENCE), C(EVIDENCE)))
-#endif // FEATURE_CAS_POLICY
 DEFINE_METASIG_T(SM(Evidence_Asm_RetEvidence, C(EVIDENCE) C(ASSEMBLY), C(EVIDENCE)))
 DEFINE_METASIG_T(IM(Evidence_RetVoid, C(EVIDENCE), v))
 
@@ -401,9 +398,6 @@ DEFINE_METASIG(IM(RetBool, _, F))
 DEFINE_METASIG(IM(RetArrByte, _, a(b)))
 DEFINE_METASIG_T(IM(RetArrParameterInfo, _, a(C(PARAMETER))))
 DEFINE_METASIG_T(IM(RetCultureInfo, _, C(CULTURE_INFO)))
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METASIG_T(IM(RetSecurityElement, _, C(SECURITY_ELEMENT)))
-#endif // FEATURE_CAS_POLICY
 
 DEFINE_METASIG_T(SM(RetThread, _, C(THREAD)))
 
