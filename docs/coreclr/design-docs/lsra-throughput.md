@@ -53,6 +53,10 @@ I propose instead to do the following:
   * I don't know if we need `REG_OPT_DEF`, but that could be added as well.
 * Having done this, we can greatly simplify `IsContained()`.
 
+It may be more effective to use the extra bit for an actual `GTF_CONTAINED` flag, and that is something we might want to consider
+eventually, but initially it is easier to simplify the containedness check using `GTF_TREE_ROOT` without having to change all the
+places that currently mark nodes as contained.
+
 Combining Containedness Analysis with Lowering
 ==============================================
 Once we've changed containedness to use the above representation, we can move the code to set it into the first pass of `Lowering`.
