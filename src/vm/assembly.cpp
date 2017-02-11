@@ -801,17 +801,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     // should inherit the grant set of the creation assembly.
     if (loadSecurity.m_pAdditionalEvidence == NULL)
     {   
-#ifdef FEATURE_CAS_POLICY
-        // If we're going to inherit the grant set of an anonymously hosted dynamic method, it will be
-        // full trust/transparent. In that case, we should demand full trust.
-        if(args->securityContextSource == kCurrentAssembly &&
-            pCallerAssembly != NULL &&
-            pCallersDomain != NULL &&
-            pCallerAssembly->GetDomainAssembly(pCallersDomain) == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-        {
-            loadSecurity.m_fPropagatingAnonymouslyHostedDynamicMethodGrant = true;
-        }
-#endif // FEATURE_CAS_POLICY
 
         loadSecurity.m_pGrantSet = &gc.granted;
         loadSecurity.m_pRefusedSet = &gc.denied;
@@ -875,33 +864,11 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         pAssem->m_dwDynamicAssemblyAccess = args->access;
 
-#ifdef FEATURE_CAS_POLICY
-        // If a legacy assembly is emitting an assembly, then we implicitly add the legacy attribute. If the legacy
-        // assembly is also in partial trust, we implicitly make the emitted assembly transparent.
-        ModuleSecurityDescriptor *pEmittingMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pCallerAssembly);
-        if (pEmittingMSD->GetSecurityRuleSet() == SecurityRuleSet_Level1)
-        {
-            IAssemblySecurityDescriptor *pCallerSecDesc = pCallerAssembly->GetSecurityDescriptor(pCallersDomain);
-            if (!pCallerSecDesc->IsFullyTrusted())
-            {
-                args->flags = kTransparentAssembly;
-            }
-        }
-
-        // If the code emitting the dynamic assembly is transparent and it is attempting to emit a non-transparent
-        // assembly, then we need to do a demand for the grant set of the emitting assembly (which should also be
-        // is the grant set of the dynamic assembly).
-        if (Security::IsMethodTransparent(pmdEmitter) && !(args->flags & kTransparentAssembly))
-        {
-            Security::DemandGrantSet(pCallerAssembly->GetSecurityDescriptor(pCallersDomain));
-        }
-#else // FEATURE_CORECLR
         // Making the dynamic assembly opportunistically critical in full trust CoreCLR and transparent otherwise.
         if (!GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
         {
             args->flags = kTransparentAssembly;
         }
-#endif //!FEATURE_CORECLR
 
         // Fake up a module security descriptor for the assembly.
         TokenSecurityDescriptorFlags tokenFlags = TokenSecurityDescriptorFlags_None;

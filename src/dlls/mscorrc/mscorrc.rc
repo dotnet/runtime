@@ -1536,10 +1536,6 @@ BEGIN
     IDS_TYPE_INHERITANCE_RULES_VIOLATED     "Inheritance security rules violated by type: '%1'. Derived types must either match the security accessibility of the base type or be less accessible.  If the base class has a non-transparent default constructor, the derived class must also have a default constructor, and the method inheritance rules apply across those two methods."
     IDS_METHOD_INHERITANCE_RULES_VIOLATED   "Inheritance security rules violated while overriding member: '%1'. Security accessibility of the overriding method must match the security accessibility of the method being overriden."
     IDS_CRITICAL_METHOD_ACCESS_DENIED       "Attempt to access method %1 in violation of security transparency rules failed."
-#ifdef FEATURE_CAS_POLICY
-    IDS_E_LOADFROM_REMOTE_SOURCE            "An attempt was made to load an assembly from a network location which would have caused the assembly to be sandboxed in previous versions of the .NET Framework. This release of the .NET Framework does not enable CAS policy by default, so this load may be dangerous. If this load is not intended to sandbox the assembly, please enable the loadFromRemoteSources switch. See http://go.microsoft.com/fwlink/?LinkId=155569 for more information."
-    IDS_E_LOADFROM_REMOTE_SOURCE_MOTW       "An attempt was made to load an assembly that was downloaded from a network location, which would have caused the assembly to be sandboxed in previous versions of the .NET Framework. This release of the .NET Framework does not enable CAS policy by default, so this load may be dangerous. If this assembly is trusted, either remove the Zone marker from it or enable the loadFromRemoteSources switch. See http://go.microsoft.com/fwlink/?LinkId=155569 for more information."
-#endif // FEATURE_CAS_POLICY
     IDS_CRITICAL_TYPE_ACCESS_DENIED         "Attempt to access type %1 in violation of security transparency rules failed."
     IDS_APPLICATION_ASSEMBLY_EXEC_DENIED    "Application assemblies cannot be directly executed: %1"
     IDS_REFLECTION_METHOD_ACCESS_DENIED     "Application code cannot access %1 using Reflection."

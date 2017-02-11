@@ -68,10 +68,6 @@ namespace Security
     inline void SaveCache();
 
     // Policy
-#ifdef FEATURE_CAS_POLICY
-    inline bool IsProcessWideLegacyCasPolicyEnabled();
-    inline bool CanLoadFromRemoteSources();
-#endif // FEATURE_CAS_POLICY
 
     BOOL IsTransparencyEnforcementEnabled();
 
@@ -129,17 +125,8 @@ namespace Security
 
     // other CAS Actions
     inline void Demand(SecurityStackWalkType eType, OBJECTREF demand) ;
-#ifdef FEATURE_CAS_POLICY
-    inline void DemandGrantSet(IAssemblySecurityDescriptor *psdAssembly);
-#endif // FEATURE_CAS_POLICY
     inline void DemandSet(SecurityStackWalkType eType, OBJECTREF demand) ;
     inline void DemandSet(SecurityStackWalkType eType, PsetCacheEntry *pPCE, DWORD dwAction) ;
-#ifdef FEATURE_CAS_POLICY
-    inline void ReflectionTargetDemand(DWORD dwPermission, IAssemblySecurityDescriptor *psdTarget);
-    inline void ReflectionTargetDemand(DWORD dwPermission,
-                                       IAssemblySecurityDescriptor *psdTarget,
-                                       DynamicResolver * pAccessContext);
-#endif // FEATURE_CAS_POLICY
     inline void SpecialDemand(SecurityStackWalkType eType, DWORD whatPermission) ;
 
     inline void InheritanceLinkDemandCheck(Assembly *pTargetAssembly, MethodDesc * pMDLinkDemand);
@@ -243,11 +230,6 @@ public:
     virtual void Resolve() = 0;
     virtual BOOL IsResolved() const = 0;
 
-#ifdef FEATURE_CAS_POLICY
-    virtual OBJECTREF GetEvidence() = 0;
-    virtual BOOL IsEvidenceComputed() const = 0;
-    virtual void SetEvidence(OBJECTREF evidence) = 0;
-#endif // FEATURE_CAS_POLICY
 
     virtual OBJECTREF GetGrantedPermissionSet(OBJECTREF* RefusedPermissions = NULL) = 0;
 #endif // !DACCESS_COMPILE
@@ -284,11 +266,6 @@ public:
     // or if unmanaged code access is allowed at this time
     virtual DWORD GetDomainWideSpecialFlag() const = 0;
 
-#ifdef FEATURE_CAS_POLICY
-    virtual void SetLegacyCasPolicyEnabled() = 0;
-    virtual BOOL IsLegacyCasPolicyEnabled() = 0;
-    virtual BOOL AllowsLoadsFromRemoteSources() = 0;
-#endif // FEATURE_CAS_POLICY
 
 #endif // !DACCESS_COMPILE
 };
@@ -312,14 +289,6 @@ public:
 
     virtual void ResolvePolicy(ISharedSecurityDescriptor *pSharedDesc, BOOL fShouldSkipPolicyResolution) = 0;
 
-#ifdef FEATURE_CAS_POLICY
-    virtual HRESULT LoadSignature( COR_TRUST **ppSignature = NULL) = 0;
-
-    virtual void SetAdditionalEvidence(OBJECTREF evidence) = 0;
-    virtual BOOL HasAdditionalEvidence() = 0;
-    virtual OBJECTREF GetAdditionalEvidence()  = 0;
-    virtual void SetEvidenceFromPEFile(IPEFileSecurityDescriptor *pPEFileSecDesc) = 0;
-#endif // FEATURE_CAS_POLICY
 
     virtual void PropagatePermissionSet(OBJECTREF GrantedPermissionSet, OBJECTREF DeniedPermissionSet, DWORD dwSpecialFlags) = 0;
 

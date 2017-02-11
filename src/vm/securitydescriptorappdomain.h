@@ -76,9 +76,6 @@ private:
                                         // exists on the AppDomain. (In the managed world: AppDomain._SecurityIdentity != null)
     BOOL m_fHomogeneous;                // This AppDomain has an ApplicationTrust
     BOOL m_fRuntimeSuppliedHomogenousGrantSet; // This AppDomain is homogenous only because the v4 CLR defaults to creating homogenous domains, and would not have been homogenous in v2
-#ifdef FEATURE_CAS_POLICY
-    BOOL m_fLegacyCasPolicy;            // This AppDomain is using legacy CAS policy
-#endif // FEATURE_CAS_POLICY
     DWORD m_dwHostSecurityManagerFlags; // Flags indicating what decisions the host wants to participate in.
     BOOL m_fContainsAnyRefusedPermissions;
 
@@ -125,20 +122,12 @@ public:
     inline void SetHomogeneousFlag(BOOL fRuntimeSuppliedHomogenousGrantSet);
     virtual BOOL IsHomogeneous() const;
 
-#ifdef FEATURE_CAS_POLICY
-    virtual BOOL IsLegacyCasPolicyEnabled();
-    virtual void SetLegacyCasPolicyEnabled();
-#endif // FEATURE_CAS_POLICY
     
     virtual BOOL ContainsAnyRefusedPermissions();
 
     // Should the HSM be consulted for security decisions in this AppDomain.
     virtual BOOL CallHostSecurityManager();
 
-#ifdef FEATURE_CAS_POLICY
-    // Does the domain's HSM need to be consulted for assemblies loaded into the domain
-    inline BOOL CallHostSecurityManagerForAssemblies();
-#endif // FEATURE_CAS_POLICY
 
     // Initialize the PLS on the AppDomain.
     void InitializePLS();
@@ -157,12 +146,6 @@ public:
     inline BOOL CheckDomainWideSpecialFlag(DWORD flags) const;
     virtual DWORD GetDomainWideSpecialFlag() const;
 
-#ifdef FEATURE_CAS_POLICY
-    virtual OBJECTREF GetEvidence();
-    DWORD GetZone();
-
-    virtual BOOL AllowsLoadsFromRemoteSources();
-#endif // FEATURE_CAS_POLICY
 
     virtual BOOL DomainMayContainPartialTrustCode();
 

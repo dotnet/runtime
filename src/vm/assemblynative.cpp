@@ -347,35 +347,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     if (pCallersAssembly == NULL) {
         pCallersAssembly = SystemDomain::System()->SystemAssembly();
     } else {
-#ifdef FEATURE_CAS_POLICY
-        // If no evidence was provided to the Assembly.Load(byte[]) call, 
-        // we want to inherit the evidence from the security context source
-        if (fPropagateIdentity) {
-            ISecurityDescriptor *pSecDesc = NULL;
-            if (securityContextSource == kCurrentAppDomain) {
-                pSecDesc = pCallersDomain->GetSecurityDescriptor();
-            }
-            else {
-                _ASSERTE(securityContextSource == kCurrentAssembly);
-                pSecDesc = pCallersAssembly->GetSecurityDescriptor(pCallersDomain);
-            }
-
-            ENTER_DOMAIN_PTR(pSecDesc->GetDomain(),ADV_RUNNINGIN)
-            {
-                gc.orefSecurity = pSecDesc->GetEvidence();
-            }
-            END_DOMAIN_TRANSITION;
-
-            // Caller may be in another appdomain context, in which case we'll
-            // need to marshal/unmarshal the evidence across.
-#ifdef FEATURE_REMOTING   // should not happenwithout remoting
-            if (pCallersDomain != GetAppDomain())
-                gc.orefSecurity = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &gc.orefSecurity);
-#else
-            _ASSERTE(pCallersDomain == GetAppDomain());
-#endif
-        }
-#endif // FEATURE_CAS_POLICY
     }
 
     if ((COUNT_T)uAssemblyLength !=uAssemblyLength)  // overflow
@@ -409,35 +380,9 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     {
         DWORD dwSpecialFlags = 0;
 
-#ifdef FEATURE_CAS_POLICY
-        if (securityContextSource == kCurrentAssembly)
-        {
-            IAssemblySecurityDescriptor *pCallersSecDesc = pCallersAssembly->GetSecurityDescriptor(pCallersDomain);
-            gc.granted = pCallersSecDesc->GetGrantedPermissionSet( &(gc.denied));
-            dwSpecialFlags = pCallersSecDesc->GetSpecialFlags();
-
-            // If we're going to inherit the grant set of an anonymously hosted dynamic method, it will be
-            // full trust/transparent. In that case, we should demand full trust.
-            if(pCallersAssembly != NULL && pCallersDomain != NULL && pCallersAssembly->GetDomainAssembly(pCallersDomain) == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-            {
-                loadSecurity.m_fPropagatingAnonymouslyHostedDynamicMethodGrant = true;
-            }
-        }
-        else
-#endif // FEATURE_CAS_POLICY
         {
             IApplicationSecurityDescriptor *pDomainSecDesc = pCallersDomain->GetSecurityDescriptor();
 
-#ifdef FEATURE_CAS_POLICY
-            // We only want to propigate the identity of homogenous domains, since heterogenous domains tend
-            // to be fully trusted even if they are housing partially trusted code - which could lead to an
-            // elevation of privilege if we allow the grant set to be pushed to assemblies partially trusted
-            // code is loading.
-            if (!pDomainSecDesc->IsHomogeneous())
-            {
-                COMPlusThrow(kNotSupportedException, W("NotSupported_SecurityContextSourceAppDomainInHeterogenous"));
-            }
-#endif // FEATURE_CAS_POLICY
 
 
             gc.granted = pDomainSecDesc->GetGrantedPermissionSet();
@@ -2445,23 +2390,6 @@ INT64 QCALLTYPE AssemblyNative::GetHostContext(QCall::AssemblyHandle pAssembly)
 }
 #endif // FEATURE_FUSION
 
-#ifdef FEATURE_CAS_POLICY
-BOOL QCALLTYPE AssemblyNative::IsStrongNameVerified(QCall::AssemblyHandle pAssembly)
-{
-    QCALL_CONTRACT;
-
-    BOOL fStrongNameVerified = FALSE;
-
-    BEGIN_QCALL;
-
-    PEFile *pPEFile = pAssembly->GetFile();
-    fStrongNameVerified = pPEFile->IsStrongNameVerified();
-
-    END_QCALL;
-
-    return fStrongNameVerified;
-}
-#endif // FEATURE_CAS_POLICY
 
 #ifdef FEATURE_APPX
 /*static*/
