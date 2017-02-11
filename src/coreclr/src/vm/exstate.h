@@ -171,6 +171,7 @@ public:
     }
 #endif
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 private:
     CorruptionSeverity      m_LastActiveExceptionCorruptionSeverity;
     BOOL                    m_fCanReflectionTargetHandleException;
@@ -218,6 +219,7 @@ public:
 
         m_fCanReflectionTargetHandleException = fCanReflectionTargetHandleException;
     }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 private:   
     ThreadExceptionFlag      m_flag;

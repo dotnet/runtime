@@ -145,6 +145,7 @@ public:
     STDMETHODIMP CreateInstance(LPUNKNOWN punkOuter, REFIID riid, void** ppv)
     {
         HRESULT hr = S_OK;
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
         // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
         // through this boundary but all it does is (in addition to checking that no exception has escaped it)
@@ -155,10 +156,17 @@ public:
         // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
         // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+        SetupForComCallHR();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         CONTRACTL
         {
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             THROWS; // CSE can escape out of this function
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+            NOTHROW;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             SO_TOLERANT;
@@ -175,7 +183,9 @@ public:
             hr = EEAllocateInstance(punkOuter, m_pMethodTable, m_hasLicensing, riid, TRUE, NULL, ppv);
         }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         EndSetupForComCallHRWithEscapingCorruptingExceptions();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         return hr;
     }
@@ -204,6 +214,7 @@ public:
     {
         HRESULT hr = S_OK;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
         // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
         // through this boundary but all it does is (in addition to checking that no exception has escaped it)
@@ -214,10 +225,17 @@ public:
         // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
         // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+        SetupForComCallHR();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         CONTRACTL
         {
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             THROWS; // CSE can escape out of this function
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+            NOTHROW;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
@@ -256,7 +274,9 @@ public:
         }
 
 done: ;
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         EndSetupForComCallHRWithEscapingCorruptingExceptions();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         return hr;
     }
@@ -265,6 +285,7 @@ done: ;
     {
         HRESULT hr = S_OK;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
         // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
         // through this boundary but all it does is (in addition to checking that no exception has escaped it)
@@ -275,10 +296,17 @@ done: ;
         // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
         // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
         BeginSetupForComCallHRWithEscapingCorruptingExceptions();
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+        SetupForComCallHR();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         CONTRACTL
         {
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             THROWS; // CSE can escape out of this function
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+            NOTHROW;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             SO_TOLERANT;
@@ -292,7 +320,9 @@ done: ;
             hr = EEAllocateInstance(punkOuter, m_pMethodTable, m_hasLicensing, riid, TRUE, NULL, ppv);
         }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         EndSetupForComCallHRWithEscapingCorruptingExceptions();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         return hr;
     }
@@ -562,7 +592,11 @@ HRESULT STDMETHODCALLTYPE EEAllocateInstance(LPUNKNOWN pOuter, MethodTable* pMT,
 {
     CONTRACTL
     {
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         THROWS; // CSE can escape out of this function
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+        NOTHROW;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         SO_TOLERANT;        
@@ -584,16 +618,19 @@ HRESULT STDMETHODCALLTYPE EEAllocateInstance(LPUNKNOWN pOuter, MethodTable* pMT,
 
     HRESULT hr = S_OK;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Get the MethodDesc of the type being instantiated. Based upon it,
     // we will decide whether to rethrow a CSE or not in 
     // END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX below.
     PTR_MethodDesc pMDDefConst = NULL;
     BOOL fHasConstructor = FALSE;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Get the MethodDesc of the type being instantiated. Based upon it,
         // we will decide whether to rethrow a CSE or not in 
         // END_EXTERNAL_ENTRYPOINT_RETHROW_CORRUPTING_EXCEPTIONS_EX below.
@@ -602,6 +639,7 @@ HRESULT STDMETHODCALLTYPE EEAllocateInstance(LPUNKNOWN pOuter, MethodTable* pMT,
             pMDDefConst = pMT->GetDefaultConstructor();
             fHasConstructor = (pMDDefConst != NULL);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         EEAllocateInstanceWorker(pOuter, pMT, fHasLicensing, riid, fDesignTime, bstrKey, ppv);
     } 

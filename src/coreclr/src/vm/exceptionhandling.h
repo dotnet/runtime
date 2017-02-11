@@ -80,8 +80,10 @@ public:
         m_WatsonBucketTracker.Init();
 #endif // !FEATURE_PAL        
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Initialize the default exception severity to NotCorrupting
         m_CorruptionSeverity = NotSet;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // By default, mark the tracker as not having delivered the first
@@ -140,8 +142,10 @@ public:
         m_WatsonBucketTracker.Init();
 #endif // !FEATURE_PAL        
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Initialize the default exception severity to NotCorrupting
         m_CorruptionSeverity = NotSet;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // By default, mark the tracker as not having delivered the first
@@ -593,6 +597,7 @@ public:
     }
 #endif // !FEATURE_PAL        
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 private:
     CorruptionSeverity      m_CorruptionSeverity;
 public:
@@ -609,6 +614,7 @@ public:
 
         m_CorruptionSeverity = severityToSet;
     }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
