@@ -14,7 +14,7 @@ namespace System.Diagnostics
     /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.  
     /// </summary>
-    public abstract class DiagnosticSource
+    public abstract partial class DiagnosticSource
     { 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification

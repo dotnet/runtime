@@ -12,12 +12,12 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
-    internal class ExpressionTreeCallRewriter : ExprVisitorBase
+    internal sealed class ExpressionTreeCallRewriter : ExprVisitorBase
     {
         /////////////////////////////////////////////////////////////////////////////////
         // Members
 
-        private class ExpressionEXPR : EXPR
+        private sealed class ExpressionEXPR : EXPR
         {
             public readonly Expression Expression;
             public ExpressionEXPR(Expression e)
@@ -35,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected ExpressionTreeCallRewriter(TypeManager typeManager, IEnumerable<Expression> listOfParameters)
+        private ExpressionTreeCallRewriter(TypeManager typeManager, IEnumerable<Expression> listOfParameters)
         {
             _typeManager = typeManager;
             _DictionaryOfParameters = new Dictionary<EXPRCALL, Expression>();
@@ -881,7 +881,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     underlyingType = underlyingType.getAggregate().GetUnderlyingType();
                 }
 
-                switch (underlyingType.AssociatedSystemType.GetTypeCode())
+                switch (Type.GetTypeCode(underlyingType.AssociatedSystemType))
                 {
                     case TypeCode.Boolean:
                         objval = val.boolVal;

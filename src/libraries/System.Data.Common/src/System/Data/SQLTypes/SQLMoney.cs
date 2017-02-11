@@ -137,7 +137,7 @@ namespace System.Data.SqlTypes
             if (_value < 0)
             {
                 fNegative = true;
-                value = -_value;
+                value = unchecked(-_value);
             }
 
             return new decimal(unchecked((int)value), unchecked((int)(value >> 32)), 0, fNegative, (byte)s_iMoneyScale);

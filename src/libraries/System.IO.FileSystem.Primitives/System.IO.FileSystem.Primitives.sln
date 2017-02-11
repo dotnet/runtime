@@ -1,4 +1,3 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
@@ -9,54 +8,43 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primit
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives", "src\System.IO.FileSystem.Primitives.csproj", "{6C05678E-394C-4CFF-B453-A18E28C8F2C3}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D59F40E6-C632-49A9-B531-C4A78FF0A1DC}"
-	ProjectSection(SolutionItems) = preProject
-		src\System.IO.FileSystem.Primitives.builds = src\System.IO.FileSystem.Primitives.builds
+	ProjectSection(ProjectDependencies) = postProject
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC} = {45201E24-47CD-47AE-9350-B48C3FBE74EC}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{70DD0C74-5B42-47B3-AFF5-94CE0F10D71C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives", "ref\System.IO.FileSystem.Primitives.csproj", "{45201E24-47CD-47AE-9350-B48C3FBE74EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Primitives", "ref\System.IO.FileSystem.Primitives.csproj", "{037524B9-B7AE-4C84-A924-0EE2D6A86CB3}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{3934A2BA-0812-48E8-B4C9-7C76324FAE8C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{4E03C44C-B05F-4A33-B0E7-935881EA1D21}"
-	ProjectSection(SolutionItems) = preProject
-		pkg\System.IO.FileSystem.Primitives.builds = pkg\System.IO.FileSystem.Primitives.builds
-		pkg\System.IO.FileSystem.Primitives.pkgproj = pkg\System.IO.FileSystem.Primitives.pkgproj
-	EndProjectSection
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
-		ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
-		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
-		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Debug|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Debug|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Release|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Release|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{2EF7EFA5-F171-4CAB-8A29-32833949FD87}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{6C05678E-394C-4CFF-B453-A18E28C8F2C3}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{2EF7EFA5-F171-4CAB-8A29-32833949FD87} = {2EF7EFA5-F171-4CAB-8A29-32833949FD87}
-		{6C05678E-394C-4CFF-B453-A18E28C8F2C3} = {6C05678E-394C-4CFF-B453-A18E28C8F2C3}
+		{2EF7EFA5-F171-4CAB-8A29-32833949FD87} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{6C05678E-394C-4CFF-B453-A18E28C8F2C3} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{45201E24-47CD-47AE-9350-B48C3FBE74EC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal

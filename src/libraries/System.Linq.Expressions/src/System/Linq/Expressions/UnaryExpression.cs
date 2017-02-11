@@ -361,7 +361,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.PostDecrementAssign:
                     return PostDecrementAssign(operand, method);
                 default:
-                    throw Error.UnhandledUnary(unaryType);
+                    throw Error.UnhandledUnary(unaryType, nameof(unaryType));
             }
         }
 

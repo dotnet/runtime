@@ -12,7 +12,7 @@ namespace System.Net
         internal const int INET_ADDRSTRLEN = 22;
         internal const int INET6_ADDRSTRLEN = 65;
 
-        internal static IPAddress Parse(string ipString, bool tryParse)
+        internal static unsafe IPAddress Parse(string ipString, bool tryParse)
         {
             if (ipString == null)
             {
@@ -34,21 +34,21 @@ namespace System.Net
                 // port specification at the end of address and so can
                 // make this decision.
                 uint scope;
-                byte[] bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
-                error = IPAddressPal.Ipv6StringToAddress(ipString, bytes, out scope);
+                byte* bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                error = IPAddressPal.Ipv6StringToAddress(ipString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
 
                 if (error == IPAddressPal.SuccessErrorCode)
                 {
                     // AppCompat: .Net 4.5 ignores a correct port if the address was specified in brackets.
                     // Will still throw for an incorrect port.
-                    return new IPAddress(bytes, (long)scope);
+                    return new IPAddress(bytes, IPAddressParserStatics.IPv6AddressBytes, (long)scope);
                 }
             }
             else
             {
                 ushort port;
-                byte[] bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
-                error = IPAddressPal.Ipv4StringToAddress(ipString, bytes, out port);
+                byte* bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
+                error = IPAddressPal.Ipv4StringToAddress(ipString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
 
                 if (error == IPAddressPal.SuccessErrorCode)
                 {
@@ -57,7 +57,7 @@ namespace System.Net
                         throw new FormatException(SR.dns_bad_ip_address);
                     }
 
-                    return new IPAddress(bytes);
+                    return new IPAddress(bytes, IPAddressParserStatics.IPv4AddressBytes);
                 }
             }
 

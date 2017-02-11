@@ -235,7 +235,6 @@ namespace System.Linq
             private readonly IList<TSource> _source;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
-            private int _index;
 
             public ListPartition(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
@@ -245,7 +244,6 @@ namespace System.Linq
                 _source = source;
                 _minIndexInclusive = minIndexInclusive;
                 _maxIndexInclusive = maxIndexInclusive;
-                _index = minIndexInclusive;
             }
 
             public override Iterator<TSource> Clone()
@@ -255,10 +253,14 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if ((_state == 1 & _index <= _maxIndexInclusive) && _index < _source.Count)
+                // _state - 1 represents the zero-based index into the list.
+                // Having a separate field for the index would be more readable. However, we save it
+                // into _state with a bias to minimize field size of the iterator.
+                int index = _state - 1;
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
-                    _current = _source[_index];
-                    ++_index;
+                    _current = _source[_minIndexInclusive + index];
+                    ++_state;
                     return true;
                 }
 

@@ -774,7 +774,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            fixed (byte* ptr = buffer)
+            fixed (byte* ptr = &buffer[0])
             {
                 WriteBytesUnchecked(ptr + start, byteCount);
             }
@@ -954,7 +954,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            fixed (char* ptr = value)
+            fixed (char* ptr = &value[0])
             {
                 WriteBytesUnchecked((byte*)ptr, value.Length * sizeof(char));
             }

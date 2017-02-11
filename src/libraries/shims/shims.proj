@@ -2,7 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp
+      netcoreapp;
+      uap;
+      uapaot;
     </BuildConfigurations>
   </PropertyGroup>
 
@@ -12,10 +14,26 @@
     <NetCoreAppRefPath>$(RefPath)</NetCoreAppRefPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <NetFxReference Include="mscorlib" />
+    <NetFxReference Include="System" />
+    <NetFxReference Include="System.Core" />
+    <NetFxReference Include="System.ComponentModel.Composition" />
+    <NetFxReference Include="System.Data" />
+    <NetFxReference Include="System.Drawing" />
+    <NetFxReference Include="System.IO.Compression.FileSystem" />
+    <NetFxReference Include="System.Numerics" />
+    <NetFxReference Include="System.Runtime.Serialization" />
+    <NetFxReference Include="System.Web" />
+    <NetFxReference Include="System.Xml" />
+    <NetFxReference Include="System.Xml.Linq" />
+  </ItemGroup>
+
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
-      <GenFacadesContracts Include="$(NetFxRefPath)*.dll" />
-      <GenFacadesContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" />
+      <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
+      <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
       <GenFacadesSeeds Include="$(NetCoreAppRefPath)*.dll" Exclude="$(NetCoreAppRefPath)System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
@@ -49,14 +67,18 @@
       <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
     </PropertyGroup>
 
-    <Exec Command="$(GenFacadesCmd) -contracts:&quot;$(NetFxRefPath)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
-    <Exec Command="$(GenFacadesCmd) -contracts:$(NetStandardRefPath)netstandard.dll @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
+    <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
     <!-- Copy the facades to the package ref and lib folders to be included in the packages -->
+    <!-- TODO: replace with BinPlacing targets -->
     <ItemGroup>
-      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/ref" />
-      <PackageOutputPaths Include="$(BinDir)$(TargetGroup)/pkg/lib" />
+      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/ref" />
+      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/lib" />
+      <PackageOutputPaths Include="$(RefPath)" />
+      <PackageOutputPaths Include="$(RuntimePath)" />
+      <PackageOutputPaths Condition="'$(BinplaceTestSharedFramework)' == 'true'" Include="$(NETCoreAppTestSharedFrameworkPath)" />
       <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
       <FileWrites Include="@(ProducedFacades)" />
     </ItemGroup>
@@ -70,8 +92,8 @@
 
   <PropertyGroup>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
-    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netfx461.txt</ApiCompatBaselineFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard20.txt</ApiCompatNSBaselineFile>
+    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
+    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
   </PropertyGroup>
 
   <!-- Run ApiCompat -->
@@ -89,7 +111,7 @@
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
 
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetFxRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
+    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxContracts)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"

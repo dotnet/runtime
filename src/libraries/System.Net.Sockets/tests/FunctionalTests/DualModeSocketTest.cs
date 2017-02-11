@@ -104,19 +104,13 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV4IPAddressToV6Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
+            DualModeConnect_IPAddressToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
         public void ConnectV6IPAddressToV4Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
+            DualModeConnect_IPAddressToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
@@ -140,6 +134,20 @@ namespace System.Net.Sockets.Tests
                 socket.Connect(connectTo, port);
                 Assert.True(socket.Connected);
             }
+        }
+
+        private void DualModeConnect_IPAddressToHost_Fails_Helper(IPAddress connectTo, IPAddress listenOn)
+        {
+            Assert.ThrowsAny<SocketException>(() =>
+            {
+                DualModeConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Unix, socket assignment is random (not incremental) and there is a small chance the
+                    // listening socket was created in another test currently running. Try the test one more time.
+                    DualModeConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
+                }
+            });
         }
     }
 
@@ -186,19 +194,13 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectV4IPEndPointToV6Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
+            DualModeConnect_IPEndPointToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
         public void ConnectV6IPEndPointToV4Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
+            DualModeConnect_IPEndPointToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
@@ -222,6 +224,20 @@ namespace System.Net.Sockets.Tests
                 socket.Connect(new IPEndPoint(connectTo, port));
                 Assert.True(socket.Connected);
             }
+        }
+
+        private void DualModeConnect_IPEndPointToHost_Fails_Helper(IPAddress connectTo, IPAddress listenOn)
+        {
+            Assert.ThrowsAny<SocketException>(() =>
+            {
+                DualModeConnect_IPEndPointToHost_Helper(connectTo, listenOn, false);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Unix, socket assignment is random (not incremental) and there is a small chance the
+                    // listening socket was created in another test currently running. Try the test one more time.
+                    DualModeConnect_IPEndPointToHost_Helper(connectTo, listenOn, false);
+                }
+            });
         }
     }
 
@@ -339,19 +355,13 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnectV4IPAddressToV6Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
+            DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
         public void BeginConnectV6IPAddressToV4Host_Fails()
         {
-            Assert.ThrowsAny<SocketException>(() =>
-            {
-                DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
+            DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
@@ -376,6 +386,20 @@ namespace System.Net.Sockets.Tests
                 socket.EndConnect(async);
                 Assert.True(socket.Connected);
             }
+        }
+
+        private void DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress connectTo, IPAddress listenOn)
+        {
+            Assert.ThrowsAny<SocketException>(() =>
+            {
+                DualModeBeginConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Unix, socket assignment is random (not incremental) and there is a small chance the
+                    // listening socket was created in another test currently running. Try the test one more time.
+                    DualModeBeginConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
+                }
+            });
         }
     }
 
@@ -513,19 +537,13 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void ConnectAsyncV4IPEndPointToV6Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
-           {
-               DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-           });
+            DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void ConnectAsyncV6IPEndPointToV4Host_Fails()
         {
-            Assert.Throws<SocketException>(() =>
-          {
-              DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-          });
+            DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
@@ -561,6 +579,20 @@ namespace System.Net.Sockets.Tests
                 }
                 Assert.True(socket.Connected);
             }
+        }
+
+        private void DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress connectTo, IPAddress listenOn)
+        {
+            Assert.ThrowsAny<SocketException>(() =>
+            {
+                DualModeConnectAsync_IPEndPointToHost_Helper(connectTo, listenOn, false);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Unix, socket assignment is random (not incremental) and there is a small chance the
+                    // listening socket was created in another test currently running. Try the test one more time.
+                    DualModeConnectAsync_IPEndPointToHost_Helper(connectTo, listenOn, false);
+                }
+            });
         }
 
         [Theory]

@@ -183,11 +183,12 @@ namespace System.Security.Principal
 
         private static int LookupAuthenticationPackage(SafeLsaHandle lsaHandle, string packageName)
         {
+            Debug.Assert(!string.IsNullOrEmpty(packageName));
             unsafe
             {
                 int packageId;
                 byte[] asciiPackageName = Encoding.ASCII.GetBytes(packageName);
-                fixed (byte* pAsciiPackageName = asciiPackageName)
+                fixed (byte* pAsciiPackageName = &asciiPackageName[0])
                 {
                     LSA_STRING lsaPackageName = new LSA_STRING((IntPtr)pAsciiPackageName, checked((ushort)(asciiPackageName.Length)));
                     int ntStatus = Interop.SspiCli.LsaLookupAuthenticationPackage(lsaHandle, ref lsaPackageName, out packageId);

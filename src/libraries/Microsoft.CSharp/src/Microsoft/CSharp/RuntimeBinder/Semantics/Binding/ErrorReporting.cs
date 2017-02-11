@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Errors;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         private static readonly ErrorCode[] s_ReadOnlyLocalErrors =
         {
@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ErrorCode.ERR_AssgReadonlyLocal,
         };
 
-        protected void ReportLocalError(LocalVariableSymbol local, CheckLvalueKind kind, bool isNested)
+        private void ReportLocalError(LocalVariableSymbol local, CheckLvalueKind kind, bool isNested)
         {
             Debug.Assert(local != null);
 
@@ -43,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ErrorCode.ERR_AssgReadonlyStatic2
         };
 
-        protected void ReportReadOnlyError(EXPRFIELD field, CheckLvalueKind kind, bool isNested)
+        private void ReportReadOnlyError(EXPRFIELD field, CheckLvalueKind kind, bool isNested)
         {
             Debug.Assert(field != null);
 
@@ -63,7 +63,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Return true if we actually report a failure.
-        protected bool TryReportLvalueFailure(EXPR expr, CheckLvalueKind kind)
+        private bool TryReportLvalueFailure(EXPR expr, CheckLvalueKind kind)
         {
             Debug.Assert(expr != null);
 

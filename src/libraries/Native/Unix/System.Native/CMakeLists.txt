@@ -42,7 +42,7 @@ add_library(System.Native-Static
 SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES PREFIX "")
 SET_TARGET_PROPERTIES(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
     target_link_libraries(System.Native rt)
 endif ()
 

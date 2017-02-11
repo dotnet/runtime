@@ -189,7 +189,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesSent = Interop.Winsock.send(
                         handle.DangerousGetHandle(),
@@ -234,7 +234,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesSent = Interop.Winsock.sendto(
                         handle.DangerousGetHandle(),
@@ -440,7 +440,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesReceived = Interop.Winsock.recvfrom(handle.DangerousGetHandle(), pinnedBuffer + offset, size, socketFlags, socketAddress, ref addressLength);
                 }

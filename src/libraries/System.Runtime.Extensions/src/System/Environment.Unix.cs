@@ -382,7 +382,7 @@ namespace System
                 {
                     lastBufLen *= 2;
                     byte[] heapBuf = new byte[lastBufLen];
-                    fixed (byte* buf = heapBuf)
+                    fixed (byte* buf = &heapBuf[0])
                     {
                         if (TryGetUserNameFromPasswd(buf, heapBuf.Length, out username))
                         {

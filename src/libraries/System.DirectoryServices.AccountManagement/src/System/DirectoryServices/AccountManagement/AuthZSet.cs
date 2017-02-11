@@ -16,30 +16,6 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class AuthZSet : ResultSet
     {
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-        // <SatisfiesLinkDemand Name="SafeHandle.DangerousGetHandle():System.IntPtr" />
-        // <SatisfiesLinkDemand Name="Marshal.GetLastWin32Error():System.Int32" />
-        // <SatisfiesLinkDemand Name="Marshal.AllocHGlobal(System.Int32):System.IntPtr" />
-        // <SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        // <SatisfiesLinkDemand Name="Marshal.SizeOf(System.Type):System.Int32" />
-        // <SatisfiesLinkDemand Name="SafeHandle.Close():System.Void" />
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.AuthzInitializeResourceManager(System.Int32,System.IntPtr,System.IntPtr,System.IntPtr,System.String,System.IntPtr&):System.Boolean" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.AuthzInitializeContextFromSid(System.Int32,System.IntPtr,System.IntPtr,System.IntPtr,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+LUID,System.IntPtr,System.IntPtr&):System.Boolean" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.AuthzGetInformationFromContext(System.IntPtr,System.Int32,System.Int32,System.Int32&,System.IntPtr):System.Boolean" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.AuthzFreeContext(System.IntPtr):System.Boolean" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.AuthzFreeResourceManager(System.IntPtr):System.Boolean" />
-        // <ReferencesCritical Name="Method: Utils.GetMachineDomainSid():System.IntPtr" Ring="1" />
-        // <ReferencesCritical Name="Method: SafeMemoryPtr..ctor(System.IntPtr)" Ring="1" />
-        // <ReferencesCritical Name="Field: psMachineSid" Ring="1" />
-        // <ReferencesCritical Name="Method: Utils.ConvertByteArrayToIntPtr(System.Byte[]):System.IntPtr" Ring="1" />
-        // <ReferencesCritical Name="Field: psUserSid" Ring="1" />
-        // <ReferencesCritical Name="Method: SidList..ctor(System.DirectoryServices.AccountManagement.UnsafeNativeMethods+SID_AND_ATTR[])" Ring="1" />
-        // <ReferencesCritical Name="Field: groupSidList" Ring="1" />
-        // <ReferencesCritical Name="Field: psBuffer" Ring="1" />
-        // <ReferencesCritical Name="Method: StoreCtx.get_OwningContext():System.DirectoryServices.AccountManagement.PrincipalContext" Ring="2" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal AuthZSet(
                     byte[] userSid,
@@ -258,24 +234,6 @@ namespace System.DirectoryServices.AccountManagement
 
         override internal object CurrentAsPrincipal
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="SafeHandle.DangerousGetHandle():System.IntPtr" />
-            // <SatisfiesLinkDemand Name="GroupPrincipal.FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext,System.DirectoryServices.AccountManagement.IdentityType,System.String):System.DirectoryServices.AccountManagement.GroupPrincipal" />
-            // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.EqualDomainSid(System.IntPtr,System.IntPtr,System.Boolean&):System.Boolean" />
-            // <ReferencesCritical Name="Field: groupSidList" Ring="1" />
-            // <ReferencesCritical Name="Method: SidList.get_Length():System.Int32" Ring="1" />
-            // <ReferencesCritical Name="Method: SidList.get_Item(System.Int32):System.DirectoryServices.AccountManagement.SidListEntry" Ring="1" />
-            // <ReferencesCritical Name="Method: Utils.ConvertNativeSidToByteArray(System.IntPtr):System.Byte[]" Ring="1" />
-            // <ReferencesCritical Name="Method: Utils.ClassifySID(System.IntPtr):System.DirectoryServices.AccountManagement.SidType" Ring="1" />
-            // <ReferencesCritical Name="Field: psUserSid" Ring="1" />
-            // <ReferencesCritical Name="Field: psMachineSid" Ring="1" />
-            // <ReferencesCritical Name="Method: Utils.IsMachineDC(System.String):System.Boolean" Ring="1" />
-            // <ReferencesCritical Name="Method: SDSCache.GetContext(System.String,System.DirectoryServices.AccountManagement.NetCred,System.DirectoryServices.AccountManagement.ContextOptions):System.DirectoryServices.AccountManagement.PrincipalContext" Ring="1" />
-            // <ReferencesCritical Name="Method: Utils.GetComputerFlatName():System.String" Ring="1" />
-            // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: ADStoreCtx.FindPrincipalBySID(System.Type,System.DirectoryServices.AccountManagement.IdentityReference,System.Boolean):System.DirectoryServices.AccountManagement.Principal" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -491,16 +449,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="SafeHandle.DangerousGetHandle():System.IntPtr" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.EqualDomainSid(System.IntPtr,System.IntPtr,System.Boolean&):System.Boolean" />
-        // <ReferencesCritical Name="Field: groupSidList" Ring="1" />
-        // <ReferencesCritical Name="Method: SidList.get_Length():System.Int32" Ring="1" />
-        // <ReferencesCritical Name="Method: SidList.get_Item(System.Int32):System.DirectoryServices.AccountManagement.SidListEntry" Ring="1" />
-        // <ReferencesCritical Name="Method: Utils.ClassifySID(System.IntPtr):System.DirectoryServices.AccountManagement.SidType" Ring="1" />
-        // <ReferencesCritical Name="Field: psUserSid" Ring="1" />
-        // <ReferencesCritical Name="Method: Utils.GetLastRidFromSid(System.IntPtr):System.Int32" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         override internal bool MoveNext()
         {
@@ -558,12 +506,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // IDisposable implementation        
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="SafeHandle.Close():System.Void" />
-        // <ReferencesCritical Name="Field: psBuffer" Ring="1" />
-        // <ReferencesCritical Name="Field: psUserSid" Ring="1" />
-        // <ReferencesCritical Name="Field: psMachineSid" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public override void Dispose()
         {
@@ -635,9 +577,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Guarantees finalization of the native resources
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="SafeHandle" />
-        // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
         [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618

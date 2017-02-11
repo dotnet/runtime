@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Xunit;
 #if netcoreapp11
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.Formatters.Tests;
 #endif
 
 namespace System.Tests
@@ -1223,6 +1224,28 @@ namespace System.Tests
             Assert.Equal(42, it[7]);
             Assert.Throws<IndexOutOfRangeException>(() => it[8].ToString());
 #endif
+        }
+
+#if netcoreapp11
+        [Fact]
+#endif
+        public static void ValueTupleSerialization()
+        {
+            VerifySerialization(new ValueTuple());
+            VerifySerialization(ValueTuple.Create(1));
+            VerifySerialization(ValueTuple.Create(1, 2));
+            VerifySerialization(ValueTuple.Create(1, 2, 3));
+            VerifySerialization(ValueTuple.Create(1, 2, 3, 4));
+            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5));
+            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5, 6));
+            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5, 6, 7));
+            VerifySerialization(CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8)));
+        }
+
+        private static void VerifySerialization<T>(T tuple)
+        {
+            T clone = BinaryFormatterHelpers.Clone(tuple);
+            Assert.Equal(tuple, clone);
         }
 
         private class TestClass : IComparable

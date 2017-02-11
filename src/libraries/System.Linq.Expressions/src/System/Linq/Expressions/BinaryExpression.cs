@@ -824,8 +824,13 @@ namespace System.Linq.Expressions
             {
                 left = left.GetNonNullableType();
             }
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_True");
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_False");
+            Type declaringType = method.DeclaringType;
+            if (declaringType == null)
+            {
+                throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
+            }
+            MethodInfo opTrue = TypeUtils.GetBooleanOperator(declaringType, "op_True");
+            MethodInfo opFalse = TypeUtils.GetBooleanOperator(declaringType, "op_False");
             if (opTrue == null || opTrue.ReturnType != typeof(bool) ||
                 opFalse == null || opFalse.ReturnType != typeof(bool))
             {

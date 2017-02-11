@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{4259DCE9-3480-40BB-B08A-64A2D446264B}</ProjectGuid>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Legacy\SerialPort\BaseStream.cs" />
+    <Compile Include="Legacy\SerialPort\BaudRate.cs" />
+    <Compile Include="Legacy\SerialPort\BreakState.cs" />
+    <Compile Include="Legacy\SerialPort\BytesToRead.cs" />
+    <Compile Include="Legacy\SerialPort\BytesToSend.cs" />
+    <Compile Include="Legacy\SerialPort\CDHolding.cs" />
+    <Compile Include="Legacy\SerialPort\Close.cs" />
+    <Compile Include="Legacy\SerialPort\ctor.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_IContainer.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str_int.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str_int_parity.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str_int_parity_int.cs" />
+    <Compile Include="Legacy\SerialPort\ctor_str_int_parity_int_stopbits.cs" />
+    <Compile Include="Legacy\SerialPort\CtsHolding.cs" />
+    <Compile Include="Legacy\SerialPort\DataBits.cs" />
+    <Compile Include="Legacy\SerialPort\DiscardInBuffer.cs" />
+    <Compile Include="Legacy\SerialPort\DiscardInBuffer_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\DiscardNull.cs" />
+    <Compile Include="Legacy\SerialPort\DiscardOutBuffer.cs" />
+    <Compile Include="Legacy\SerialPort\DiscardOutBuffer_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\DosDevices.cs" />
+    <Compile Include="Legacy\SerialPort\DsrHolding.cs" />
+    <Compile Include="Legacy\SerialPort\DtrEnable.cs" />
+    <Compile Include="Legacy\SerialPort\Encoding.cs" />
+    <Compile Include="Legacy\SerialPort\ErrorEvent.cs" />
+    <Compile Include="Legacy\SerialPort\Event_Close_Stress.cs" />
+    <Compile Include="Legacy\SerialPort\Event_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\GetPortNames.cs" />
+    <Compile Include="Legacy\SerialPort\Handshake.cs" />
+    <Compile Include="Legacy\SerialPort\IsOpen.cs" />
+    <Compile Include="Legacy\SerialPort\NewLine.cs" />
+    <Compile Include="Legacy\SerialPort\Open.cs" />
+    <Compile Include="Legacy\SerialPort\OpenDevices.cs" />
+    <Compile Include="Legacy\SerialPort\Open_Stress.cs" />
+    <Compile Include="Legacy\SerialPort\Parity.cs" />
+    <Compile Include="Legacy\SerialPort\ParityReplace.cs" />
+    <Compile Include="Legacy\SerialPort\PinChangedEvent.cs" />
+    <Compile Include="Legacy\SerialPort\PortName.cs" />
+    <Compile Include="Legacy\SerialPort\ReadBufferSize.cs" />
+    <Compile Include="Legacy\SerialPort\ReadByte.cs" />
+    <Compile Include="Legacy\SerialPort\ReadByte_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\ReadChar.cs" />
+    <Compile Include="Legacy\SerialPort\ReadChar_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\ReadExisting.cs" />
+    <Compile Include="Legacy\SerialPort\ReadExisting_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\ReadLine.cs" />
+    <Compile Include="Legacy\SerialPort\ReadLine_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\ReadTimeout.cs" />
+    <Compile Include="Legacy\SerialPort\ReadTo.cs" />
+    <Compile Include="Legacy\SerialPort\ReadTo_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\Read_byte_int_int.cs" />
+    <Compile Include="Legacy\SerialPort\Read_byte_int_int_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\Read_char_int_int.cs" />
+    <Compile Include="Legacy\SerialPort\Read_char_int_int_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\ReceivedBytesThreshold.cs" />
+    <Compile Include="Legacy\SerialPort\ReceivedEvent.cs" />
+    <Compile Include="Legacy\SerialPort\RtsEnable.cs" />
+    <Compile Include="Legacy\SerialPort\SerialPortRegressions.cs" />
+    <Compile Include="Legacy\SerialPort\StopBits.cs" />
+    <Compile Include="Legacy\SerialPort\Stress01.cs" />
+    <Compile Include="Legacy\SerialPort\WriteBufferSize.cs" />
+    <Compile Include="Legacy\SerialPort\WriteLine.cs" />
+    <Compile Include="Legacy\SerialPort\WriteLine_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\WriteTimeout.cs" />
+    <Compile Include="Legacy\SerialPort\Write_byte_int_int.cs" />
+    <Compile Include="Legacy\SerialPort\Write_byte_int_int_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\Write_char_int_int.cs" />
+    <Compile Include="Legacy\SerialPort\Write_char_int_int_Generic.cs" />
+    <Compile Include="Legacy\SerialPort\Write_str.cs" />
+    <Compile Include="Legacy\SerialPort\Write_str_Generic.cs" />
+    <Compile Include="Legacy\Support\LocalMachineSerialInfo.cs" />
+    <Compile Include="Legacy\Support\PortHelper.cs" />
+    <Compile Include="Legacy\Support\SerialPortConnection.cs" />
+    <Compile Include="Legacy\Support\SerialPortProperties.cs" />
+    <Compile Include="Legacy\Support\TCSupport.cs" />
+    <Compile Include="Legacy\Support\TestDelegate.cs" />
+    <Compile Include="Legacy\Support\PortsTest.cs" />
+    <Compile Include="System\IO\Ports\SmokeTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

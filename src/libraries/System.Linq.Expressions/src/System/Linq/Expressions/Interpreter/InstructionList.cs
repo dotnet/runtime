@@ -687,38 +687,17 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitAdd(Type type, bool @checked)
         {
-            if (@checked)
-            {
-                Emit(AddOvfInstruction.Create(type));
-            }
-            else
-            {
-                Emit(AddInstruction.Create(type));
-            }
+            Emit(@checked ? AddOvfInstruction.Create(type) : AddInstruction.Create(type));
         }
 
         public void EmitSub(Type type, bool @checked)
         {
-            if (@checked)
-            {
-                Emit(SubOvfInstruction.Create(type));
-            }
-            else
-            {
-                Emit(SubInstruction.Create(type));
-            }
+            Emit(@checked ? SubOvfInstruction.Create(type) : SubInstruction.Create(type));
         }
 
         public void EmitMul(Type type, bool @checked)
         {
-            if (@checked)
-            {
-                Emit(MulOvfInstruction.Create(type));
-            }
-            else
-            {
-                Emit(MulInstruction.Create(type));
-            }
+            Emit(@checked ? MulOvfInstruction.Create(type) : MulInstruction.Create(type));
         }
 
         public void EmitDiv(Type type)

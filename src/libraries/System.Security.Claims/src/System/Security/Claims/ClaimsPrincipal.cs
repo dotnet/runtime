@@ -24,9 +24,10 @@ namespace System.Security.Claims
         }
 
         [NonSerialized]
-        private List<ClaimsIdentity> _identities = new List<ClaimsIdentity>();
+        private readonly List<ClaimsIdentity> _identities = new List<ClaimsIdentity>();
+
         [NonSerialized]
-        private byte[] _userSerializationData;
+        private readonly byte[] _userSerializationData;
 
         private static Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> s_identitySelector = SelectPrimaryIdentity;
         private static Func<ClaimsPrincipal> s_principalSelector = ClaimsPrincipalSelector;
@@ -42,7 +43,7 @@ namespace System.Security.Claims
         /// <summary>
         /// This method iterates through the collection of ClaimsIdentities and chooses an identity as the primary.
         /// </summary>
-        static ClaimsIdentity SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
+        private static ClaimsIdentity SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
         {
             if (identities == null)
             {
@@ -174,9 +175,35 @@ namespace System.Security.Claims
         public ClaimsPrincipal(BinaryReader reader)
         {
             if (reader == null)
+            {
                 throw new ArgumentNullException(nameof(reader));
+            }
 
-            Initialize(reader);
+            SerializationMask mask = (SerializationMask)reader.ReadInt32();
+            int numPropertiesToRead = reader.ReadInt32();
+            int numPropertiesRead = 0;
+            if ((mask & SerializationMask.HasIdentities) == SerializationMask.HasIdentities)
+            {
+                numPropertiesRead++;
+                int numberOfIdentities = reader.ReadInt32();
+                for (int index = 0; index < numberOfIdentities; ++index)
+                {
+                    // directly add to _identities as that is what we serialized from
+                    _identities.Add(CreateClaimsIdentity(reader));
+                }
+            }
+
+            if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
+            {
+                int cb = reader.ReadInt32();
+                _userSerializationData = reader.ReadBytes(cb);
+                numPropertiesRead++;
+            }
+
+            for (int i = numPropertiesRead; i < numPropertiesToRead; i++)
+            {
+                reader.ReadString();
+            }
         }
 
         /// <summary>
@@ -214,7 +241,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsPrincipal"/> by enumerating all <see cref="ClaimsIdentities"/>.
+        /// Gets the claims as <see cref="IEnumerable{Claim}"/>, associated with this <see cref="ClaimsPrincipal"/> by enumerating all <see cref="Identities"/>.
         /// </summary>
         public virtual IEnumerable<Claim> Claims
         {
@@ -231,7 +258,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Contains any additional data provided by derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.</param>
+        /// Contains any additional data provided by derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.
         /// </summary>
         protected virtual byte[] CustomSerializationData
         {
@@ -250,7 +277,7 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Provides and extensibility point for derived types to create a custom <see cref="ClaimsIdentity"/>.
+        /// Provides an extensibility point for derived types to create a custom <see cref="ClaimsIdentity"/>.
         /// </summary>
         /// <param name="reader">the <see cref="BinaryReader"/>that points at the claim.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
@@ -283,11 +310,11 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Retrieves a <see cref="IEnumerable{Claim}"/> where each claim is matched by <param name="match"/>.
+        /// Retrieves a <see cref="IEnumerable{Claim}"/> where each claim is matched by <paramref name="match"/>.
         /// </summary>
         /// <param name="match">The predicate that performs the matching logic.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>  
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindAll"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindAll(string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
@@ -315,7 +342,7 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>   
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindAll"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindAll(Predicate{Claim})"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
@@ -338,11 +365,11 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Retrieves the first <see cref="Claim"/> that is matched by <param name="match"/>.
+        /// Retrieves the first <see cref="Claim"/> that is matched by <paramref name="match"/>.
         /// </summary>
         /// <param name="match">The predicate that performs the matching logic.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst(string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception> 
         public virtual Claim FindFirst(Predicate<Claim> match)
         {
@@ -375,7 +402,7 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.FindFirst(Predicate{Claim})"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual Claim FindFirst(string type)
         {
@@ -408,7 +435,7 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="match">The predicate that performs the matching logic.</param>
         /// <returns>true if a claim is found, false otherwise.</returns>
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.HasClaim"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.HasClaim(string, string)"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual bool HasClaim(Predicate<Claim> match)
         {
@@ -439,7 +466,7 @@ namespace System.Security.Claims
         /// <param name="type"> the type of the claim to match.</param>
         /// <param name="value"> the value of the claim to match.</param>
         /// <returns>true if a claim is matched, false otherwise.</returns>
-        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.HasClaim"/>.</remarks>
+        /// <remarks>Each <see cref="ClaimsIdentity"/> is called. <seealso cref="ClaimsIdentity.HasClaim(Predicate{Claim})"/>.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
         public virtual bool HasClaim(string type, string value)
@@ -523,47 +550,6 @@ namespace System.Security.Claims
         }
 
         /// <summary>
-        /// Initializes from a <see cref="BinaryReader"/>. Normally the reader is initialized with the results from <see cref="WriteTo(BinaryWriter)"/>
-        /// Normally the <see cref="BinaryReader"/> is initialized in the same way as the <see cref="BinaryWriter"/> passed to <see cref="WriteTo(BinaryWriter)"/>.
-        /// </summary>
-        /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="ClaimsPrincipal"/>.</param>
-        /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        private void Initialize(BinaryReader reader)
-        {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
-
-            SerializationMask mask = (SerializationMask)reader.ReadInt32();
-            int numPropertiesToRead = reader.ReadInt32();
-            int numPropertiesRead = 0;
-            if ((mask & SerializationMask.HasIdentities) == SerializationMask.HasIdentities)
-            {
-                numPropertiesRead++;
-                int numberOfIdentities = reader.ReadInt32();
-                for (int index = 0; index < numberOfIdentities; ++index)
-                {                    
-                    // directly add to _identities as that is what we serialized from
-                    _identities.Add(CreateClaimsIdentity(reader));
-                }
-            }
-
-            if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
-            {
-                // TODO - brentschmaltz - maximum size ??
-                int cb = reader.ReadInt32();
-                _userSerializationData = reader.ReadBytes(cb);
-                numPropertiesRead++;
-            }
-
-            for (int i = numPropertiesRead; i < numPropertiesToRead; i++)
-            {
-                reader.ReadString();
-            }
-        }
-
-        /// <summary>
         /// Serializes using a <see cref="BinaryWriter"/>
         /// </summary>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
@@ -571,6 +557,7 @@ namespace System.Security.Claims
         {
             WriteTo(writer, null);
         }
+
         /// <summary>
         /// Serializes using a <see cref="BinaryWriter"/>
         /// </summary>
@@ -579,7 +566,6 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
         protected virtual void WriteTo(BinaryWriter writer, byte[] userData)
         {
-
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));
@@ -599,8 +585,8 @@ namespace System.Security.Claims
                 mask |= SerializationMask.UserData;
             }
 
-            writer.Write((Int32)mask);
-            writer.Write((Int32)numberOfPropertiesWritten);
+            writer.Write((int)mask);
+            writer.Write(numberOfPropertiesWritten);
             if ((mask & SerializationMask.HasIdentities) == SerializationMask.HasIdentities)
             {
                 writer.Write(_identities.Count);
@@ -612,7 +598,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                writer.Write((Int32)userData.Length);
+                writer.Write(userData.Length);
                 writer.Write(userData);
             }
 

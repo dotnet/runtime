@@ -1,61 +1,50 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives.Tests", "tests\System.Drawing.Primitives.Tests.csproj", "{297A9116-1005-499D-A895-2063D03E4C94}"
 	ProjectSection(ProjectDependencies) = postProject
-		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {8F472B93-574C-4AEC-9D28-6C2360A55BBF}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "src\System.Drawing.Primitives.csproj", "{F9DF2357-81B4-4317-908E-512DA9395583}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "src\System.Drawing.Primitives.csproj", "{8F472B93-574C-4AEC-9D28-6C2360A55BBF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F} = {10F74537-6423-48F5-A7F3-4DE94E42AF8F}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Primitives", "ref\System.Drawing.Primitives.csproj", "{10F74537-6423-48F5-A7F3-4DE94E42AF8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU = DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU
-		ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU = ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU
-		DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
-		ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU = ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU
-		DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU = DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU
-		ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU
-		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
-		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.ActiveCfg = net463-Windows_NT-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.Build.0 = net463-Windows_NT-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.ActiveCfg = net463-Windows_NT-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnet463-Windows_NTnetstandard1.3|AnyCPU.Build.0 = net463-Windows_NT-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.ActiveCfg = net463-Windows_NT-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnet463-Windows_NTnetstandard|AnyCPU.Build.0 = net463-Windows_NT-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnetstandardnetstandard1.3|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{297A9116-1005-499D-A895-2063D03E4C94} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{10F74537-6423-48F5-A7F3-4DE94E42AF8F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal

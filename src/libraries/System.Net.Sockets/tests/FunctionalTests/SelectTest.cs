@@ -238,5 +238,69 @@ namespace System.Net.Sockets.Tests
                 pair.Value.Dispose();
             }
         }
+
+        [OuterLoop]
+        [Fact]
+        public static void Select_AcceptNonBlocking_Success()
+        {
+            using (Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listenSocket.BindToAnonymousPort(IPAddress.Loopback);
+
+                listenSocket.Blocking = false;
+
+                listenSocket.Listen(5);
+
+                Task t = Task.Run(() => { DoAccept(listenSocket, 5); });
+
+                // Loop, doing connections and pausing between
+                for (int i = 0; i < 5; i++)
+                {
+                    Thread.Sleep(50);
+                    using (Socket connectSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        connectSocket.Connect(listenSocket.LocalEndPoint);
+                    }
+                }
+
+                // Give the task 5 seconds to complete; if not, assume it's hung.
+                bool completed = t.Wait(5000);
+                Assert.True(completed);
+            }
+        }
+
+        public static void DoAccept(Socket listenSocket, int connectionsToAccept)
+        {
+            int connectionCount = 0;
+            while (true)
+            {
+                var ls = new List<Socket> { listenSocket };
+                Socket.Select(ls, null, null, 1000000);
+                if (ls.Count > 0)
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            Socket s = listenSocket.Accept();
+                            s.Close();
+                            connectionCount++;
+                        }
+                        catch (SocketException e)
+                        {
+                            Assert.Equal(e.SocketErrorCode, SocketError.WouldBlock);
+
+                            //No more requests in queue
+                            break;
+                        }
+
+                        if (connectionCount == connectionsToAccept)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

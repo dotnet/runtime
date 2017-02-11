@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public class TypeBuilderCreateType
+    public class TypeBuilderCreateTypeInfo
     {
         [Theory]
         [InlineData(TypeAttributes.Abstract)]
@@ -30,7 +30,7 @@ namespace System.Reflection.Emit.Tests
             Type createdType = type.CreateTypeInfo().AsType();
             Assert.Equal(type.Name, createdType.Name);
 
-            Assert.Equal(type.CreateTypeInfo(), type.CreateTypeInfo());
+            Assert.Equal(type.CreateTypeInfo(), createdType.GetTypeInfo());
         }
         
         [Fact]

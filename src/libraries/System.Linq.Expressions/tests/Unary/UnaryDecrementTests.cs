@@ -39,6 +39,7 @@ namespace System.Linq.Expressions.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 VerifyDecrementInt(values[i], useInterpreter);
+                VerifyDecrementIntMakeUnary(values[i], useInterpreter);
             }
         }
 
@@ -177,6 +178,16 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
             Assert.Equal((int)(--value), f());
+        }
+
+        private static void VerifyDecrementIntMakeUnary(int value, bool useInterpreter)
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.MakeUnary(ExpressionType.Decrement, Expression.Constant(value), null),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile(useInterpreter);
+            Assert.Equal(--value, f());
         }
 
         private static void VerifyDecrementUInt(uint value, bool useInterpreter)

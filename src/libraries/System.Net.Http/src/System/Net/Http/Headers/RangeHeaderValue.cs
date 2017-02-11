@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -63,7 +64,8 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(_unit);
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append(_unit);
             sb.Append('=');
 
             if (_ranges != null)
@@ -86,7 +88,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public override bool Equals(object obj)

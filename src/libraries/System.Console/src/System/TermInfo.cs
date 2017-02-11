@@ -857,7 +857,7 @@ namespace System
 
                 // Allocate the needed space, format into it, and return the data as a string.
                 byte[] bytes = new byte[neededLength + 1]; // extra byte for the null terminator
-                fixed (byte* ptr = bytes)
+                fixed (byte* ptr = &bytes[0])
                 {
                     int length = stringArg != null ?
                         Interop.Sys.SNPrintF(ptr, bytes.Length, format, stringArg) :

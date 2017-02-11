@@ -9,6 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // There is exactly one of these.
     // ----------------------------------------------------------------------------
 
-    internal class ArgumentListType : CType
+    internal sealed class ArgumentListType : CType
     { };
 }

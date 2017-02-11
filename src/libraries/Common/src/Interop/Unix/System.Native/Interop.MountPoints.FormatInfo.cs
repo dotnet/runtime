@@ -51,6 +51,8 @@ internal static partial class Interop
             nfs = 0x6969,
             ntfs = 0x5346544e,
             openprom = 0x9fa1,
+            overlay = 0x794c7630,
+            overlayfs = 0x794c764f,
             proc = 0x9fa0,
             qnx4 = 0x002f,
             reiserfs = 0x52654973,
@@ -146,6 +148,7 @@ internal static partial class Interop
                 case "befs":
                 case "bfs":
                 case "btrfs":
+                case "drvfs":
                 case "ecryptfs":
                 case "efs":
                 case "ext":
@@ -166,6 +169,7 @@ internal static partial class Interop
                 case "jfs":
                 case "jffs":
                 case "jffs2":
+                case "lxfs":
                 case "minix":
                 case "minix_old":
                 case "minix2":
@@ -174,6 +178,8 @@ internal static partial class Interop
                 case "ocfs2":
                 case "omfs":
                 case "openprom":
+                case "overlay":
+                case "overlayfs":
                 case "ntfs":
                 case "qnx4":
                 case "reiserfs":
@@ -269,10 +275,8 @@ internal static partial class Interop
                 case "vfat":
                     return DriveType.Removable;
 
-                case "aufs": // marking all unions as unknown
-                case "funionfs":
-                case "unionfs-fuse":
-                case "mhddfs":
+                    // Categorize as "Unknown" everything else not explicitly
+                    // recognized as a particular drive type.
                 default:
                     return DriveType.Unknown;
             }

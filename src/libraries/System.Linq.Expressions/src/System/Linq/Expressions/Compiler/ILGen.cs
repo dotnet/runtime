@@ -193,10 +193,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 il.Emit(OpCodes.Ldelem_Ref);
             }
-            else if (type.GetTypeInfo().IsEnum)
-            {
-                il.Emit(OpCodes.Ldelem, type);
-            }
             else
             {
                 switch (type.GetTypeCode())
@@ -245,11 +241,6 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(type != null);
 
-            if (type.GetTypeInfo().IsEnum)
-            {
-                il.Emit(OpCodes.Stelem, type);
-                return;
-            }
             switch (type.GetTypeCode())
             {
                 case TypeCode.Boolean:
@@ -305,42 +296,21 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Ldsflda, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldflda, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Ldsflda : OpCodes.Ldflda, fi);
         }
 
         internal static void EmitFieldGet(this ILGenerator il, FieldInfo fi)
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Ldsfld, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Ldfld, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Ldsfld : OpCodes.Ldfld, fi);
         }
 
         internal static void EmitFieldSet(this ILGenerator il, FieldInfo fi)
         {
             Debug.Assert(fi != null);
 
-            if (fi.IsStatic)
-            {
-                il.Emit(OpCodes.Stsfld, fi);
-            }
-            else
-            {
-                il.Emit(OpCodes.Stfld, fi);
-            }
+            il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
@@ -350,17 +320,6 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(!ci.DeclaringType.GetTypeInfo().ContainsGenericParameters);
 
             il.Emit(OpCodes.Newobj, ci);
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-        internal static void EmitNew(this ILGenerator il, Type type, Type[] paramTypes)
-        {
-            Debug.Assert(type != null);
-            Debug.Assert(paramTypes != null);
-
-            ConstructorInfo ci = type.GetConstructor(paramTypes);
-            if (ci == null) throw Error.TypeDoesNotHaveConstructorForTheSignature();
-            il.EmitNew(ci);
         }
 
         #endregion
@@ -472,7 +431,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitUInt(this ILGenerator il, uint value)
         {
-            il.EmitInt((int)value);
+            il.EmitInt(unchecked((int)value));
             il.Emit(OpCodes.Conv_U4);
         }
 
@@ -491,7 +450,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitULong(this ILGenerator il, ulong value)
         {
-            il.Emit(OpCodes.Ldc_I8, (long)value);
+            il.Emit(OpCodes.Ldc_I8, unchecked((long)value));
             il.Emit(OpCodes.Conv_U8);
         }
 
@@ -924,14 +883,7 @@ namespace System.Linq.Expressions.Compiler
                             il.Emit(OpCodes.Conv_U4);
                             break;
                         case TypeCode.Int64:
-                            if (isFromUnsigned)
-                            {
-                                il.Emit(OpCodes.Conv_U8);
-                            }
-                            else
-                            {
-                                il.Emit(OpCodes.Conv_I8);
-                            }
+                            il.Emit(isFromUnsigned ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
                             break;
                         case TypeCode.UInt64:
                             if (isFromUnsigned || isFromFloatingPoint)
@@ -1126,14 +1078,14 @@ namespace System.Linq.Expressions.Compiler
             }
             else
             {
-                int rank = arrayType.GetArrayRank();
-
-                Type[] types = new Type[rank];
-                for (int i = 0; i < rank; i++)
+                Type[] types = new Type[arrayType.GetArrayRank()];
+                for (int i = 0; i < types.Length; i++)
                 {
                     types[i] = typeof(int);
                 }
-                il.EmitNew(arrayType, types);
+                ConstructorInfo ci = arrayType.GetConstructor(types);
+                Debug.Assert(ci != null);
+                il.EmitNew(ci);
             }
         }
 
@@ -1175,7 +1127,7 @@ namespace System.Linq.Expressions.Compiler
             il.EmitInt(bits[1]);
             il.EmitInt(bits[2]);
             il.EmitBoolean((bits[3] & 0x80000000) != 0);
-            il.EmitByte((byte)(bits[3] >> 16));
+            il.EmitByte(unchecked((byte)(bits[3] >> 16)));
             il.EmitNew(Decimal_Ctor_Int32_Int32_Int32_Bool_Byte);
         }
 

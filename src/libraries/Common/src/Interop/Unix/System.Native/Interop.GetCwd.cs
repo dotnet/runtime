@@ -34,7 +34,7 @@ internal static partial class Interop
                 {
                     checked { bufferSize *= 2; }
                     var buf = new byte[Math.Min(bufferSize, maxPath)];
-                    fixed (byte* ptr = buf)
+                    fixed (byte* ptr = &buf[0])
                     {
                         result = GetCwdHelper(ptr, buf.Length);
                         if (result != null)

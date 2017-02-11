@@ -412,7 +412,7 @@ namespace System
                                 {
                                     escapedReallocations = 30;
                                     char[] newDest = new char[dest.Length + escapedReallocations * 3];
-                                    fixed (char* pNewDest = newDest)
+                                    fixed (char* pNewDest = &newDest[0])
                                     {
                                         for (int i = 0; i < destPosition; ++i)
                                             pNewDest[i] = pDest[i];

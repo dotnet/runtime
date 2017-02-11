@@ -17,18 +17,24 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>672d0a712539e1903a903424edad85fd649b456c</CoreFxCurrentRef>
-    <CoreClrCurrentRef>672d0a712539e1903a903424edad85fd649b456c</CoreClrCurrentRef>
-    <ExternalCurrentRef>4e2952b5114bfa90cc45eef908204006a771a62b</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>3ae2fce20a0a2c098ad787baf1353034d1d0e393</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>8c02c8b91856b5b8f6e5d7f1707f6b2f0de67644</CoreFxCurrentRef>
+    <CoreClrCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</CoreClrCurrentRef>
+    <ExternalCurrentRef>6ebb1923d44306ebc37fe819f95f54e547a38c46</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</ProjectNTfsCurrentRef>
+    <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
+    <StandardCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-24917-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-24917-03</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-24727-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-24917-00</ProjectNTfsExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-25007-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-25007-01</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-25007-00</ProjectNTfsExpectedPrerelease>
+    <NETStandardPackageVersion>2.0.0-beta-25008-01</NETStandardPackageVersion>
+    <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
+    <!-- Use the SNI runtime package -->
+    <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -57,6 +63,14 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectk-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ExternalCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="Sni">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)sni/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(SniCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="Standard">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
@@ -81,12 +95,27 @@
       <ElementName>ExternalExpectedPrerelease</ElementName>
       <BuildInfoName>External</BuildInfoName>
     </XmlUpdateStep>
+    <XmlUpdateStep Include="Standard">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>NETStandardPackageVersion</ElementName>
+      <PackageId>$(NETStandardPackageId)</PackageId>
+    </XmlUpdateStep>
     <XmlUpdateStep Condition="'$(DisableProjectNTfsAutoUpgrade)' != 'true'" Include="ProjectNTfs">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
       <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
+    <XmlUpdateStep Include="Sni">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>SniPackageVersion</ElementName>
+      <!-- Pick any of the SNI runtime packages. All the runtime packages of sni will have the same version -->
+      <PackageId>runtime.win7-x64.runtime.native.System.Data.SqlClient.sni</PackageId>
+    </XmlUpdateStep>
   </ItemGroup>
+
+  <PropertyGroup>
+    <XUnitPackageVersion>2.2.0-beta4-build3444</XUnitPackageVersion>
+  </PropertyGroup>
 
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
   <ItemGroup>
@@ -108,7 +137,7 @@
     <XUnitDependency Include="xunit.runner.utility"/>
     <XUnitDependency Include="xunit.runner.console"/>
     <StaticDependency Include="@(XUnitDependency)">
-      <Version>2.2.0-beta2-build3300</Version>
+      <Version>$(XUnitPackageVersion)</Version>
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">

@@ -31,13 +31,20 @@ namespace System.Net.Http
             int index = HttpPrefix.Length;
             int majorVersion = _span.ReadInt(ref index);
             CheckResponseMsgFormat(majorVersion != 0);
+            CheckResponseMsgFormat(index < _span.Length);
 
-            CheckResponseMsgFormat(index < _span.Length && _span[index] == '.');
-            index++;
+            int minorVersion;
+            if (_span[index] == '.')
+            {
+                index++;
 
-            // Need minor version.
-            CheckResponseMsgFormat(index < _span.Length && _span[index] >= '0' && _span[index] <= '9');
-            int minorVersion = _span.ReadInt(ref index);
+                CheckResponseMsgFormat(index < _span.Length && _span[index] >= '0' && _span[index] <= '9');
+                minorVersion = _span.ReadInt(ref index);
+            }
+            else
+            {
+                minorVersion = 0;
+            }
 
             CheckResponseMsgFormat(_span.SkipSpace(ref index));
 
@@ -89,7 +96,7 @@ namespace System.Net.Http
                 CheckResponseMsgFormat(index < _span.Length);
                 CheckResponseMsgFormat(_span[index] == ':');
                 HeaderBufferSpan headerNameSpan = _span.Substring(0, headerNameLength);
-                if (!HttpKnownHeaderNames.TryGetHeaderName(_span.Buffer, _span.Length, out headerName))
+                if (!HttpKnownHeaderNames.TryGetHeaderName(headerNameSpan.Buffer, headerNameSpan.Length, out headerName))
                 {
                     headerName = headerNameSpan.ToString();
                 }

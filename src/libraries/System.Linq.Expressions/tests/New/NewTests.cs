@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -511,6 +512,33 @@ namespace System.Linq.Expressions.Tests
             {
                 Assert.Throws<ArgumentException>("constructor", () => Expression.New(ctor));
             }
+        }
+
+        [Fact]
+        public static void GlobalMethodInMembers()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = { Expression.Constant(5) };
+            MemberInfo[] members = { globalMethodInfo };
+            Assert.Throws<ArgumentException>(() => Expression.New(constructor, arguments, members));
+        }
+
+        [Fact]
+        public static void GlobalFieldInMembers()
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            FieldBuilder fieldBuilder = module.DefineInitializedData("GlobalField", new byte[1], FieldAttributes.Public);
+            module.CreateGlobalFunctions();
+            FieldInfo globalField = module.GetField(fieldBuilder.Name);
+            ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
+            Expression[] arguments = { Expression.Constant(5) };
+            MemberInfo[] members = { globalField };
+            Assert.Throws<ArgumentException>(() => Expression.New(constructor, arguments, members));
         }
 
         static class StaticCtor

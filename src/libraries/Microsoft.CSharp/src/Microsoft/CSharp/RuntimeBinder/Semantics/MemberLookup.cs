@@ -36,7 +36,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // 
     // Lookup must be called before any other methods.
 
-    internal class MemberLookup
+    internal sealed class MemberLookup
     {
         // The inputs to Lookup.
         private CSemanticChecker _pSemanticChecker;
@@ -712,7 +712,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Whether there were errors.
-        public bool FError()
+        private bool FError()
         {
             return !_swtFirst || _swtAmbig;
         }
@@ -747,7 +747,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Put all the types in a type array.
-        public TypeArray GetAllTypes()
+        private TypeArray GetAllTypes()
         {
             return GetSymbolLoader().getBSymmgr().AllocParams(_prgtype.Count, _prgtype.ToArray());
         }

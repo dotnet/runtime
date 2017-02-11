@@ -1416,19 +1416,23 @@ namespace System.Xml
         {
             Debug.Assert(ch >= 0x80 && !XmlCharType.IsSurrogate(ch));
 
-            /* UTF8-2: If ch is in 0x80-0x7ff range, then use 2 bytes to encode it */
-            if (ch < 0x800)
+            unchecked
             {
-                *pDst = (byte)(unchecked((sbyte)0xC0) | (ch >> 6));
-            }
-            /* UTF8-3: If ch is anything else, then default to using 3 bytes to encode it. */
-            else
-            {
-                *pDst = (byte)(unchecked((sbyte)0xE0) | (ch >> 12));
-                pDst++;
+                /* UTF8-2: If ch is in 0x80-0x7ff range, then use 2 bytes to encode it */
+                if (ch < 0x800)
+                {
+                    *pDst = (byte)((sbyte)0xC0 | (ch >> 6));
+                }
+                /* UTF8-3: If ch is anything else, then default to using 3 bytes to encode it. */
+                else
+                {
+                    *pDst = (byte)((sbyte)0xE0 | (ch >> 12));
+                    pDst++;
 
-                *pDst = (byte)(unchecked((sbyte)0x80) | (ch >> 6) & 0x3F);
+                    *pDst = (byte)((sbyte)0x80 | (ch >> 6) & 0x3F);
+                }
             }
+
             pDst++;
             *pDst = (byte)(0x80 | ch & 0x3F);
             return pDst + 1;
