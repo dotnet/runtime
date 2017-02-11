@@ -231,6 +231,21 @@ BOOL RunningInteractive()
     if (fInteractive != -1)
         return fInteractive != 0;
 
+#if !defined(FEATURE_CORESYSTEM)
+        HWINSTA hwinsta = NULL;
+
+        if ((hwinsta = GetProcessWindowStation() ) != NULL)
+        {
+            DWORD lengthNeeded;
+            USEROBJECTFLAGS flags;
+
+            if (GetUserObjectInformationW (hwinsta, UOI_FLAGS, &flags, sizeof(flags), &lengthNeeded))
+           {
+                    if ((flags.dwFlags & WSF_VISIBLE) == 0)
+                        fInteractive = 0;
+            }
+        }
+#endif // !FEATURE_CORESYSTEM
 
     if (fInteractive != 0)
         fInteractive = 1;

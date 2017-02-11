@@ -12,6 +12,9 @@
 //
 // ============================================================
 
+#ifndef FEATURE_CORESYSTEM
+#define DISABLE_BINDER_DEBUG_LOGGING
+#endif
 
 #include "applicationcontext.hpp"
 #include "stringarraylist.h"

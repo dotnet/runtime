@@ -381,6 +381,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
+#if defined(FEATURE_CORESYSTEM)
             size_t pathLen = wcslen(mutableFilePath);
 
             const wchar_t *nidll = W(".ni.dll");
@@ -402,6 +403,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             {
                 wcscpy_s(mutableFilePath+pathLen-winmdLen, winmdLen, W(".winmd"));
             }
+#endif//FEATURE_CORESYSTEM
 
             ALLOW_DATATARGET_MISSING_MEMORY(
                 pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
@@ -7565,7 +7567,27 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
 
     {
-#if FEATURE_PAL
+#if !defined FEATURE_CORESYSTEM
+        // kernel32!OpenThread does not exist on all platforms (missing on Win98).
+        // So we need to delay load it.
+        typedef HANDLE (WINAPI *FPOPENTHREAD)(DWORD dwDesiredAccess,
+                                              BOOL bInheritHandle,
+                                              DWORD dwThreadId);
+
+
+
+        HMODULE mod = WszGetModuleHandle(W("kernel32.dll"));
+
+        _ASSERTE(mod != NULL); // can't fail since Kernel32.dll is already loaded.
+
+        const FPOPENTHREAD pfnOpenThread = (FPOPENTHREAD)GetProcAddress(mod, "OpenThread");
+
+        if (pfnOpenThread != NULL)
+        {
+            m_hHelperThread = pfnOpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
+            CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
+        }
+#elif FEATURE_PAL
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -9738,11 +9760,13 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
     if (m_clrInstanceId == 0)
     {
 
+#ifdef FEATURE_CORESYSTEM
         if(m_cordb->GetTargetCLR() != 0)
         {
             m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
             return S_OK;
         }
+#endif
 
         // The only case in which we're allowed to request the "default" CLR instance
         // ID is when we're running in V2 mode.  In V3, the client is required to pass
@@ -14885,6 +14909,17 @@ HRESULT CordbProcess::IsReadyForDetach()
     // and hard detach failures (after which the process object is neutered).
     if (m_pShim != NULL)
     {
+#if !defined(FEATURE_CORESYSTEM) // CORESYSTEM TODO
+        HModuleHolder hKernel32;
+        hKernel32 = WszLoadLibrary(W("kernel32"));
+        if (hKernel32 == NULL)
+            return HRESULT_FROM_GetLastError();
+        typedef BOOL (*DebugActiveProcessStopSig) (DWORD);
+        DebugActiveProcessStopSig pDebugActiveProcessStop = 
+            reinterpret_cast<DebugActiveProcessStopSig>(GetProcAddress(hKernel32, "DebugActiveProcessStop"));
+        if (pDebugActiveProcessStop == NULL)
+            return COR_E_PLATFORMNOTSUPPORTED;
+#endif
     }    
 
     return S_OK;

@@ -150,6 +150,7 @@ typedef BOOL (CALLBACK* LOCALE_ENUMPROCEX)(LPWSTR, DWORD, LPARAM);
 
 namespace NewApis
 {
+#if defined(FEATURE_CORESYSTEM)
     __inline bool IsWindows7Platform()
     {
         return true;
@@ -165,6 +166,94 @@ namespace NewApis
         return false;
     }
 
+#else
+    // Return true if we're on Windows 7 or up (ie: if we have neutral native support and sorting knows about versions)
+    __inline bool IsWindows7Platform()
+    {
+        static int isRunningOnWindows7 = -1; // -1 notinitialized, 0 not running on Windows 7, other value means running on Windows 7
+
+        if (isRunningOnWindows7 == -1)
+        {
+            OSVERSIONINFOEX sVer;
+            ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
+            sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+            sVer.dwMajorVersion = 6;
+            sVer.dwMinorVersion = 1;
+            sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
+
+            DWORDLONG dwlConditionMask = 0;
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_MAJORVERSION, VER_GREATER_EQUAL);
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_MINORVERSION, VER_GREATER_EQUAL);
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_PLATFORMID, VER_EQUAL);
+
+            if(VerifyVersionInfo(&sVer, CLR_VER_MAJORVERSION|CLR_VER_MINORVERSION|CLR_VER_PLATFORMID, dwlConditionMask))
+            {
+                isRunningOnWindows7 = 1;
+            }
+            else
+            {
+                isRunningOnWindows7 = 0;
+            }
+        }
+
+        return isRunningOnWindows7 == 1;
+    }
+
+    //
+    // IsVistaPlatform return true if running on Vista and false if running on pre or post Vista
+    //
+    __inline BOOL IsVistaPlatform()
+    {
+        static int isRunningOnVista = -1; // -1 notinitialized, 0 not running on Vista, other value meanse running on Vista
+
+        if (isRunningOnVista == -1)
+        {
+            OSVERSIONINFOEX sVer;
+            ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
+            sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+            sVer.dwMajorVersion = 6;
+            sVer.dwMinorVersion = 0;
+            sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
+
+            DWORDLONG dwlConditionMask = 0;
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_MAJORVERSION, VER_EQUAL);
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_MINORVERSION, VER_EQUAL);
+            VER_SET_CONDITION(dwlConditionMask, CLR_VER_PLATFORMID, VER_EQUAL);
+
+            if(VerifyVersionInfo(&sVer, CLR_VER_MAJORVERSION|CLR_VER_MINORVERSION|CLR_VER_PLATFORMID, dwlConditionMask))
+            {
+                isRunningOnVista = 1;
+            }
+            else
+            {
+                isRunningOnVista = 0;
+            }
+        }
+
+        return isRunningOnVista == 1;
+    }
+
+
+    __inline BOOL IsZhTwSku()
+    {
+        const INT32 LANGID_ZH_TW = 0x0404;
+        LPCWSTR DEFAULT_REGION_NAME_0404 = W("\x53f0\x7063");
+
+        if(::GetSystemDefaultUILanguage() == LANGID_ZH_TW)
+        {
+            WCHAR wszBuffer[32];
+            int result = ::GetLocaleInfoW(LANGID_ZH_TW, LOCALE_SNATIVECTRYNAME, wszBuffer, 32);
+            if (result)
+            {
+                if (wcsncmp(wszBuffer, DEFAULT_REGION_NAME_0404, 3) != 0)
+                {
+                    return true;
+                } 
+            }
+        }
+        return false;
+    }
+#endif // FEATURE_CORESYSTEM
 
     __inline BOOL NotLeakingFrameworkOnlyCultures(__in LPCWSTR lpLocaleName)
     {

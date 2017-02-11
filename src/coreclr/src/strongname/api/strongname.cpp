@@ -906,8 +906,14 @@ SNAPI StrongNameGetPublicKeyEx (LPCWSTR   wszKeyContainer,    // [in] desired ke
                                0, 0, &hKey))
             goto Error;
     } else {
+#if !defined(FEATURE_CORESYSTEM)
+        // Else fetch the signature key pair from the container.
+        if (!CryptGetUserKey(hProv, g_uKeySpec, &hKey))
+            goto Error;
+#else // FEATURE_CORESYSTEM
         SetLastError(E_NOTIMPL);
         goto Error;
+#endif // !FEATURE_CORESYSTEM
     }
 
     // Determine the length of the public key part as a blob.

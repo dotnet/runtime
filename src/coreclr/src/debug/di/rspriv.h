@@ -2315,7 +2315,9 @@ public:
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
+#ifdef FEATURE_CORESYSTEM
 	HMODULE GetTargetCLR() { return m_targetCLR; }
+#endif
 
 private:
     bool IsCreateProcessSupported();
@@ -2335,7 +2337,9 @@ private:
 
 //Note - this code could be useful outside coresystem, but keeping the change localized
 // because we are late in the win8 release
+#ifdef FEATURE_CORESYSTEM
 	HMODULE m_targetCLR;
+#endif
 };
 
 
