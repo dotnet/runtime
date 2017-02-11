@@ -167,12 +167,6 @@
 #define FEATURE_PROFAPI_EVENT_LOGGING
 #endif // defined(PROFILING_SUPPORTED)
 
-// Windows desktop supports the profiling API attach / detach feature.
-// This will eventually be supported on coreclr as well. 
-
-// Windows desktop DAC builds need to see some of the data used in the profiling API
-// attach / detach feature, particularly Thread::m_dwProfilerEvacuationCounter 
-
 // MUST NEVER CHECK IN WITH THIS ENABLED.
 // This is just for convenience in doing performance investigations in a checked-out enlistment.
 // #define FEATURE_ENABLE_NO_RANGE_CHECKS
