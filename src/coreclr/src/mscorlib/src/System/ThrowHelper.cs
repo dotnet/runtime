@@ -267,18 +267,8 @@ namespace System {
         }
 
         // This function will convert an ExceptionArgument enum value to the argument name string.
-        private static string GetArgumentName(ExceptionArgument argument) {
-            // This is indirected through a second NoInlining function it has a special meaning
-            // in System.Private.CoreLib of indicatating it takes a StackMark which cause 
-            // the caller to also be not inlined; so we can't mark it directly.
-            // So is the effect of marking this function as non-inlining in a regular situation.
-            return GetArgumentNameInner(argument);
-        }
-
-        // This function will convert an ExceptionArgument enum value to the argument name string.
-        // Second function in chain so as to not propergate the non-inlining to outside caller
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetArgumentNameInner(ExceptionArgument argument) {
+        private static string GetArgumentName(ExceptionArgument argument) {
             Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
@@ -286,18 +276,8 @@ namespace System {
         }
 
         // This function will convert an ExceptionResource enum value to the resource string.
-        private static string GetResourceString(ExceptionResource resource) {
-            // This is indirected through a second NoInlining function it has a special meaning
-            // in System.Private.CoreLib of indicatating it takes a StackMark which cause 
-            // the caller to also be not inlined; so we can't mark it directly.
-            // So is the effect of marking this function as non-inlining in a regular situation.
-            return GetResourceStringInner(resource);
-        }
-
-        // This function will convert an ExceptionResource enum value to the resource string.
-        // Second function in chain so as to not propergate the non-inlining to outside caller
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetResourceStringInner(ExceptionResource resource) {
+        private static string GetResourceString(ExceptionResource resource) {
             Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 

@@ -237,14 +237,14 @@ namespace System.Threading {
         **
         ** Exceptions: ThreadStateException if the thread has already been started.
         =========================================================================*/
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public new void Start()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             Start(ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public new void Start(object parameter)
         {
             //In the case of a null delegate (second call to start on same thread)
