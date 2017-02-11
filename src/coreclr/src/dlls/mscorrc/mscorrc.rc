@@ -1591,10 +1591,6 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_ACCESS_EXCEPTION_CONTEXT_LEVEL2_APTCA           "Assembly '%1' is marked with the AllowPartiallyTrustedCallersAttribute, and uses the level 2 security transparency model.  Level 2 transparency causes all methods in AllowPartiallyTrustedCallers assemblies to become security transparent by default, which may be the cause of this exception."
     IDS_ACCESS_EXCEPTION_CONTEXT_PT_TRANSPARENT         "Assembly '%1' is partially trusted, which causes the CLR to make it entirely security transparent regardless of any transparency annotations in the assembly itself.  In order to access security critical code, this assembly must be fully trusted."
-#ifdef FEATURE_APTCA
-    IDS_ACCESS_EXCEPTION_CONTEXT_APTCA_KILLBIT          "Assembly '%1' has had an APTCA killbit set for it, which prevents it from being used by partial trust or security transparent code."
-    IDS_ACCESS_EXCEPTION_CONTEXT_CONDITIONAL_APTCA      "Assembly '%1' is a conditionally APTCA assembly which is not enabled in the current AppDomain.  To enable this assembly to be used by partial trust or security transparent code, please add assembly name '%2' to the the PartialTrustVisibleAssemblies list when creating the AppDomain."
-#endif // FEATURE_APTCA
 END
 
 // These strings are generated from within the EE for streams

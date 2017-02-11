@@ -902,25 +902,6 @@ BOOL QCALLTYPE AppDomainNative::IsLegacyCasPolicyEnabled(QCall::AppDomainHandle 
 
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-
-// static
-void QCALLTYPE AppDomainNative::SetCanonicalConditionalAptcaList(QCall::AppDomainHandle adhTarget,
-                                                                 LPCWSTR wszCanonicalConditionalAptcaList)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-
-    GCX_COOP();
-    pAppSecDesc->SetCanonicalConditionalAptcaList(wszCanonicalConditionalAptcaList);
-
-    END_QCALL;
-}
-
-#endif // FEATURE_APTCA
 
 FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisUNSAFE)
 {

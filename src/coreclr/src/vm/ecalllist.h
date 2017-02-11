@@ -704,9 +704,6 @@ FCFuncStart(gAppDomainFuncs)
     FCFuncElement("nIsDefaultAppDomainForEvidence", AppDomainNative::IsDefaultAppDomainForEvidence)
     FCFuncElement("nGetAssemblies", AppDomainNative::GetAssemblies)
 #endif
-#ifdef FEATURE_APTCA
-    QCFuncElement("SetCanonicalConditionalAptcaList", AppDomainNative::SetCanonicalConditionalAptcaList)
-#endif // FEATURE_ATPCA
     QCFuncElement("SetSecurityHomogeneousFlag", AppDomainNative::SetSecurityHomogeneousFlag)
     QCFuncElement("SetupDomainSecurity", AppDomainNative::SetupDomainSecurity)
     FCFuncElement("nSetupFriendlyName", AppDomainNative::SetupFriendlyName)
@@ -839,9 +836,6 @@ FCFuncStart(gAssemblyFuncs)
     FCFuncElement("IsReflectionOnly", AssemblyNative::IsReflectionOnly)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
     FCFuncElement("GetToken", AssemblyHandle::GetToken)
-#ifdef FEATURE_APTCA
-    FCFuncElement("AptcaCheck", AssemblyHandle::AptcaCheck)
-#endif // FEATURE_APTCA
 FCFuncEnd()
 
 #ifdef FEATURE_CORECLR

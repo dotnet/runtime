@@ -7374,9 +7374,6 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
     pDependency->dwAssemblyDef = def;
 
     pDependency->signNativeImage = INVALID_NGEN_SIGNATURE;
-#ifdef FEATURE_APTCA
-    pDependency->dependencyInfo = CorCompileDependencyInfo(0);
-#endif //FEATURE_APTCA
 
     if (pFile)
     {
@@ -7384,47 +7381,10 @@ HRESULT CompilationDomain::AddDependencyEntry(PEAssembly *pFile,
         // Note that this can trigger an assembly load (of mscorlib)
         pAssembly->GetOptimizedIdentitySignature(&pDependency->signAssemblyDef);
 
-#if defined(FEATURE_APTCA) || !defined(FEATURE_CORECLR)
+#if !defined(FEATURE_CORECLR)
         ReleaseHolder<IMDInternalImport> pAssemblyMD(pFile->GetMDImportWithRef());
 #endif
 
-#ifdef FEATURE_APTCA
-        // determine if there's an APTCA reference, before we retrieve the target file version (for killbit)
-        TokenSecurityDescriptorFlags assemblySecurityAttributes =
-            TokenSecurityDescriptor::ReadSecurityAttributes(pAssemblyMD, TokenFromRid(1, mdtAssembly));
-
-        pFile->AddRef();
-
-        BOOL fIsAptca = assemblySecurityAttributes & (TokenSecurityDescriptorFlags_APTCA
-                                                      | TokenSecurityDescriptorFlags_ConditionalAPTCA);
-        if (fIsAptca)
-        {
-            //  get the file path
-            LPCWSTR pwszPath = pFile->GetPath().GetUnicode();
-            if (pwszPath == NULL)
-            {
-                return E_FAIL;
-            }
-            // retrieve the file version based on the file path (using Watson OS wrapper)
-            if (FAILED(GetFileVersion(pwszPath, &pDependency->uliFileVersion)))
-                // ignore failures (e.g. platform doesn't support file version, or version info missing
-
-            {
-                fIsAptca = FALSE;
-            }
-        }
-        if (fIsAptca)
-        {
-            pDependency->dependencyInfo = CorCompileDependencyInfo(pDependency->dependencyInfo
-                                                                   | CORCOMPILE_DEPENDENCY_IS_APTCA);
-            }
-
-        if (assemblySecurityAttributes & TokenSecurityDescriptorFlags_ConditionalAPTCA)
-        {
-            pDependency->dependencyInfo = CorCompileDependencyInfo(pDependency->dependencyInfo
-                                                                   | CORCOMPILE_DEPENDENCY_IS_CAPTCA);
-        }
-#endif //FEATURE_APTCA
 
 #ifdef FEATURE_CORECLR // hardbinding
         //

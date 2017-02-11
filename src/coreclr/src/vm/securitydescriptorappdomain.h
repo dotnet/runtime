@@ -86,9 +86,6 @@ private:
     BOOL m_fPreResolutionFullTrust;     // Was the domain pre-resolved to be full trust
     BOOL m_fPreResolutionHomogeneous;   // Was the domain pre-resolved to be homogenous
     
-#ifdef FEATURE_APTCA
-    ConditionalAptcaCache*   m_pConditionalAptcaCache;    // Cache of known conditional APTCA assemblies in this domain
-#endif // FEATURE_APTCA
 
 #ifndef DACCESS_COMPILE
 public:
@@ -100,9 +97,6 @@ public:
     //--------------------
     // Destructor
     //--------------------
-#ifdef FEATURE_APTCA  //  The destructor only deletes the ConditionalAptcaCache
-    inline ~ApplicationSecurityDescriptor();
-#endif // FEATURE_APTCA
 
 public:
     // Indicates whether the initialization phase is in progress.
@@ -174,10 +168,6 @@ public:
 
     BOOL QuickIsFullyTrusted();
 
-#ifdef FEATURE_APTCA
-    virtual ConditionalAptcaCache *GetConditionalAptcaCache();
-    virtual void SetCanonicalConditionalAptcaList(LPCWSTR wszCanonicalConditionalAptcaList);
-#endif // FEATURE_APTCA
 #endif // #ifndef DACCESS_COMPILE
 };
 
