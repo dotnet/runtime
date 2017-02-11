@@ -1084,7 +1084,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         GCPROTECT_BEGIN(throwable);
         throwable = pThread->GetThrowable();
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         {
             BEGIN_SO_INTOLERANT_CODE(GetThread());
             // Setup the state in current exception tracker indicating the corruption severity
@@ -1093,7 +1092,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
             END_SO_INTOLERANT_CODE;
         }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         // Check if we are dealing with AV or not and if we are,
         // ensure that this is a real AV and not managed AV exception
@@ -2453,7 +2451,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     if (fIsILStub)
         pUserMDForILStub = GetUserMethodForILStub(pThread, currentSP, pFunc, &pILStubFrame);
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     CorruptionSeverity currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
     {
         // We must defer to the MethodDesc of the user method instead of the IL stub
@@ -2465,7 +2462,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         // is a CE or not. If it is, it will check if the method can process it or not.
         fMethodCanHandleException = CEHelper::CanMethodHandleException(currentSeverity, pMDWithCEAttribute);
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     // Let the profiler know that we are searching for a handler within this function instance
     if (fGiveDebuggerAndProfilerNotification)
@@ -2500,7 +2496,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     EH_CLAUSE_ENUMERATOR pEnumState;
     unsigned EHCount = 0;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // If exception cannot be handled, then just bail out. We shouldnt examine the EH clauses
     // in such a method.
     if (!fMethodCanHandleException)
@@ -2514,7 +2509,6 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         EHCount = 0;
     }
     else
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     {
         EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
     }
@@ -2800,7 +2794,6 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     TypeHandle thrownType = TypeHandle();
 
     BOOL fCanMethodHandleException = TRUE;
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // MethodDesc's security information (i.e. whether it is critical or transparent) is calculated lazily.
     // If this method's security information was not precalculated, then it would have been in the first pass
     // already using Security::IsMethodCritical which could take have taken us down a path which is GC_TRIGGERS.
@@ -2850,7 +2843,6 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         }
         fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pFuncWithCEAttribute, FALSE);
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef DEBUGGING_SUPPORTED
     LOG((LF_EH, LL_INFO1000, "COMPlusUnwindCallback: Intercept %d, pData->pFunc 0x%X, pFunc 0x%X, pData->pStack 0x%X, pStack 0x%X\n",
@@ -2879,7 +2871,6 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     EH_CLAUSE_ENUMERATOR pEnumState;
     unsigned EHCount;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     if (!fCanMethodHandleException)
     {
         LOG((LF_EH, LL_INFO100, "COMPlusUnwindCallback - CEHelper decided not to look for exception handlers in the method(MD:%p).\n", pFunc));
@@ -2891,7 +2882,6 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         EHCount = 0;
     }
     else
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     {
         EHCount = pJitManager->InitializeEHEnumeration(pCf->GetMethodToken(), &pEnumState);
     }

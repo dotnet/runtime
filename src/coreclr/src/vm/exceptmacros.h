@@ -254,7 +254,6 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 // Installs a handler to unwind exception frames, but not catch the exception
 //==========================================================================
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 // -----------------------------------------------------------------------
 // Support for Corrupted State Exceptions
 // -----------------------------------------------------------------------
@@ -274,12 +273,9 @@ enum CorruptionSeverity
 #define GET_CORRUPTION_SEVERITY(severity) ((severity & (~ReuseForReraise)))
 #define CAN_REUSE_CORRUPTION_SEVERITY(severity) ((severity & ReuseForReraise) == ReuseForReraise)
 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 );
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);

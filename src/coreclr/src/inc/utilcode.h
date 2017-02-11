@@ -5145,12 +5145,10 @@ void OnUninitializedCoreClrCallbacks();
 #endif //_DEBUG
 
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
 // Corrupting Exception limited support for outside the VM folder
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO = TRUE);
 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 
 BOOL IsV2RuntimeLoaded(void);
