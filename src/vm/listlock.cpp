@@ -27,10 +27,8 @@ ListLockEntry::ListLockEntry(ListLock *pList, void *pData, const char *descripti
     m_hrResultCode(S_FALSE),
     m_hInitException(NULL),
     m_pLoaderAllocator(NULL)
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     ,
     m_CorruptionSeverity(NotCorrupting)
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 {
     WRAPPER_NO_CONTRACT;
 }

@@ -838,9 +838,7 @@ private:
     friend class TailCallFrame;
     friend class AppDomain;
     friend VOID RealCOMPlusThrow(OBJECTREF
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
     friend FCDECL0(VOID, JIT_StressGC);
 #ifdef _DEBUG

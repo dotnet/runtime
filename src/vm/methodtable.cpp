@@ -3364,7 +3364,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         *pThrowable = GET_THROWABLE();
         _ASSERTE(fRet == FALSE);
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // If active thread state does not have a CorruptionSeverity set for the exception,
         // then set one up based upon the current exception code and/or the throwable.
         //
@@ -3395,7 +3394,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         {
             LOG((LF_EH, LL_INFO100, "MethodTable::RunClassInitEx - Exception already has corruption severity set.\n"));
         }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     EX_END_CATCH(SwallowAllExceptions)
 
@@ -3538,9 +3536,7 @@ void MethodTable::DoRunClassInitThrowing()
         // </FEATURE_CORRUPTING_EXCEPTIONS>
 
         COMPlusThrow(gc.pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             , pEntry->m_CorruptionSeverity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
             );
     }
 
@@ -3631,7 +3627,6 @@ void MethodTable::DoRunClassInitThrowing()
                             pEntry->m_hrResultCode = E_FAIL;
                             SetClassInitError();
     
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                             // Save the corruption severity of the exception so that if the type system
                             // attempts to pick it up from its cache list and throw again, it should
                             // treat the exception as corrupting, if applicable.
@@ -3639,12 +3634,9 @@ void MethodTable::DoRunClassInitThrowing()
                             
                             // We should be having a valid corruption severity at this point
                             _ASSERTE(pEntry->m_CorruptionSeverity != NotSet);
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
     
                             COMPlusThrow(gc.pThrowable
-    #ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                 , pEntry->m_CorruptionSeverity
-    #endif // FEATURE_CORRUPTING_EXCEPTIONS
                                 );
                         }
     

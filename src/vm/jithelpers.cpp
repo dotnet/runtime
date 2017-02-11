@@ -5427,7 +5427,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         }
     }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
     {
         // Within the VM, we could have thrown and caught a managed exception. This is done by
@@ -5442,7 +5441,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         ThreadExceptionState *pExState = GetThread()->GetExceptionState();
         pExState->SetLastActiveExceptionCorruptionSeverity(NotSet);
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
 

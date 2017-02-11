@@ -3362,7 +3362,6 @@ lDone: ;
     return param.fRet;
 }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
 // To include definition of EXCEPTION_SOFTSO
 #include "corexcep.h"
@@ -3412,7 +3411,6 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*
     return fIsCorruptedStateException;
 }
 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 void EnableTerminationOnHeapCorruption()
 {

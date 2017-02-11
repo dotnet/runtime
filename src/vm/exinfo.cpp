@@ -113,10 +113,8 @@ void ExInfo::Init()
     DestroyExceptionHandle();
     m_hThrowable = NULL;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Initialize the default exception severity to NotCorrupting
     m_CorruptionSeverity = NotSet;
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     // By default, mark the tracker as not having delivered the first
