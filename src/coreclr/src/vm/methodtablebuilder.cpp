@@ -5172,7 +5172,6 @@ void MethodTableBuilder::SetSecurityFlagsOnMethod(bmtRTMethod* pParentMethod,
         pNewMD->SetRequiresLinktimeCheck();
     }
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM) 
     // All public methods on public types will do a link demand of
     // full trust, unless AllowUntrustedCaller attribute is set
     if (
@@ -5200,7 +5199,6 @@ void MethodTableBuilder::SetSecurityFlagsOnMethod(bmtRTMethod* pParentMethod,
                 pNewMD->SetRequiresLinktimeCheck();
         }
     }
-#endif //  defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
     // If it's a delegate BeginInvoke, we need to do a HostProtection check for synchronization
     if(!pNewMD->RequiresLinktimeCheck() && IsDelegate())

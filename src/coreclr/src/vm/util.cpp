@@ -369,20 +369,6 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
         DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
         // No CharNextExA on CoreSystem, we just assume no multi-byte characters (this code path shouldn't be
         // used in the production codepath for currently supported CoreSystem based products anyway).
-#ifndef FEATURE_CORESYSTEM
-        if (dwChunkToWrite < BytesToWrite) {
-            break;
-            // must go by char to find biggest string that will fit, taking DBCS chars into account
-            //dwChunkToWrite = 0;
-            //const char *charNext = pszString;
-            //while (dwChunkToWrite < maxWriteFileSize-2 && charNext) {
-            //    charNext = CharNextExA(0, pszString+dwChunkToWrite, 0);
-            //    dwChunkToWrite = (DWORD)(charNext - pszString);
-            //}
-            //if (dwChunkToWrite == 0)
-            //    break;
-        }
-#endif // !FEATURE_CORESYSTEM
 
         // Try to write to handle.  If this is not a CUI app, then this is probably
         // not going to work unless the dev took special pains to set their own console
@@ -2243,78 +2229,11 @@ DWORD GetLogicalCpuCountFallback()
 
         if(LogicalNum > 1) 
         {
-#ifdef FEATURE_CORESYSTEM
             // CoreSystem doesn't expose GetProcessAffinityMask or SetProcessAffinityMask or anything
             // functionally equivalent. Just assume 1:1 mapping if we get here (in reality we shouldn't since
             // all CoreSystems support GetLogicalProcessorInformation so GetLogicalCpuCountFromOS should have
             // taken care of everything.
             goto fDone;
-#else // FEATURE_CORESYSTEM
-            HANDLE hCurrentProcessHandle;
-            DWORD_PTR  dwProcessAffinity;
-            DWORD_PTR  dwSystemAffinity;
-            DWORD_PTR  dwAffinityMask;
-
-            // Calculate the appropriate  shifts and mask based on the
-            // number of logical processors.
-
-            BYTE i = 1, PHY_ID_MASK  = 0xFF, PHY_ID_SHIFT = 0;
-            while (i < LogicalNum)
-            {
-                i *= 2;
-                PHY_ID_MASK  <<= 1;
-                PHY_ID_SHIFT++;
-            }
-            hCurrentProcessHandle = GetCurrentProcess();  
-
-            GetProcessAffinityMask(hCurrentProcessHandle, &dwProcessAffinity, &dwSystemAffinity);
-
-            // Check if available process affinity mask is equal to the available system affinity mask
-            // If the masks are equal, then all the processors the OS utilizes are available to the 
-            // application.
-
-            if (dwProcessAffinity != dwSystemAffinity)
-            {
-                retVal = 0;          
-                goto fDone;
-            }
-
-            dwAffinityMask = 1;
-
-            // loop over all processors, running APIC ID retrieval code starting
-            // with the first one by setting process affinity.
-            while (dwAffinityMask != 0 && dwAffinityMask <= dwProcessAffinity)
-            {
-                // Check if this CPU is available
-                if (dwAffinityMask & dwProcessAffinity)
-                {
-                    if (SetProcessAffinityMask(hCurrentProcessHandle, dwAffinityMask))  
-                    {
-                        BYTE APIC_ID, LOG_ID, PHY_ID;
-                        __SwitchToThread(0, CALLER_LIMITS_SPINNING); // Give OS time to switch CPU
-
-                        getextcpuid(0,1, buffer);  //call cpuid with EAX=1
-
-                        APIC_ID = (dwBuffer[1] & INITIAL_APIC_ID_BITS) >> 24;
-                        LOG_ID  = APIC_ID & ~PHY_ID_MASK;
-                        PHY_ID  = APIC_ID >> PHY_ID_SHIFT;
-                        if (LOG_ID != 0)   
-                        lProcCounter++;
-                    }
-                }
-                dwAffinityMask = dwAffinityMask << 1;
-            }
-            // Reset the processor affinity
-
-            SetProcessAffinityMask(hCurrentProcessHandle, dwProcessAffinity);
-
-            // Check if HT is enabled on all the processors
-            if(lProcCounter > 0 && (lProcCounter == (DWORD)(PhysicalNum / LogicalNum)))
-            {
-                retVal = lProcCounter;
-                goto fDone;
-            }
-#endif // FEATURE_CORESYSTEM
         }
     }   
 fDone:

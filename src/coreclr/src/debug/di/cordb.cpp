@@ -86,15 +86,6 @@ HINSTANCE       g_hInst;                // Instance handle to this piece of code
 //*****************************************************************************
 STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 {
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)
-    // This API should not be called for Windows CoreCLR unless we are doing interop-debugging
-    // (which is only supported internally).  Use code:CoreCLRCreateCordbObject instead.
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMixedModeDebugging) == 0)
-    {
-        _ASSERTE(!"Deprecated entry point CreateCordbObject() is called on Windows CoreCLR\n");
-        return E_NOTIMPL;
-    }
-#endif // FEATURE_CORECLR && !FEATURE_DBGIPC_TRANSPORT_DI
 
     if (ppCordb == NULL)
     {

@@ -540,7 +540,7 @@ ftype BankersRound(ftype value)
     if ((value -(integerPart +0.5)) == 0.0)
     {
         // round to even 
-#if defined(_TARGET_ARM_) && defined(FEATURE_CORESYSTEM)
+#if defined(_TARGET_ARM_)
         // @ARMTODO: On ARM when building on CoreSystem (where we link against the system CRT) an attempt to
         // use fmod(float, float) fails to link (apparently this is converted to a reference to fmodf, which
         // is not included in the system CRT). Use the double version instead.
