@@ -7,9 +7,12 @@ using  System.Runtime.InteropServices;
 namespace System.Security
 {
     // DynamicSecurityMethodAttribute:
-    //  Indicates that calling the target method requires space for a security
-    //  object to be allocated on the callers stack. This attribute is only ever
-    //  set on certain security methods defined within mscorlib.
+    //  All methods that use StackCrawlMark should be marked with this attribute. This attribute
+    //  disables inlining of the calling method to allow stackwalking to find the exact caller.
+    //
+    //  This attribute used to indicate that the target method requires space for a security object 
+    //  to be allocated on the callers stack. It is not used for this purpose anymore because of security 
+    //  stackwalks are not ever done in CoreCLR.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = true, Inherited = false )] 
     sealed internal class DynamicSecurityMethodAttribute : System.Attribute
     {
