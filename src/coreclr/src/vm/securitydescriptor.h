@@ -9,7 +9,6 @@
 #ifndef __SECURITYDESCRIPTOR_H__
 #define __SECURITYDESCRIPTOR_H__
 
-#include "securityconfig.h"
 #include "securityattributes.h"
 #include "securitypolicy.h"
 

@@ -45,7 +45,6 @@
 #include "currency.h"
 #include "comdatetime.h"
 #include "comisolatedstorage.h"
-#include "securityconfig.h"
 #include "number.h"
 #include "compatibilityswitch.h"
 #ifdef FEATURE_REMOTING
@@ -94,8 +93,6 @@
 
 #include "stubhelpers.h"
 #include "ilmarshalers.h"
-
-#include "hostexecutioncontext.h"
 
 #ifdef FEATURE_MULTICOREJIT
 #include "multicorejit.h"

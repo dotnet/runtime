@@ -27,7 +27,6 @@
 #include "ipcmanagerinterface.h"
 #endif // FEATURE_IPCMAN
 #include "comcallablewrapper.h"
-#include "hostexecutioncontext.h"
 #include "invokeutil.h"
 #include "appdomain.inl"
 #include "vars.hpp"
