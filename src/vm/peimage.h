@@ -463,9 +463,6 @@ private:
     DWORD m_dwMachine;
     BOOL  m_fCachedKindAndMachine;
 
-#ifdef FEATURE_APTCA
-    BOOL  m_fMayBeConditionalAptca;
-#endif // FEATURE_APTCA
 
 #ifdef FEATURE_FUSION
     PEFingerprint *m_pILFingerprint; // has to be the real type (as opposed to an interface) so we can delete it
@@ -478,10 +475,6 @@ public:
     PEKIND GetFusionProcessorArchitecture();
 #endif
 
-#ifdef FEATURE_APTCA
-    inline BOOL MayBeConditionalAptca();
-    inline void SetIsNotConditionalAptca();
-#endif // FEATURE_APTCA
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

@@ -57,16 +57,6 @@ inline void AssemblySecurityDescriptor::SetSignatureLoaded()
 
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-
-inline BOOL AssemblySecurityDescriptor::IsConditionalAptca()
-{
-    WRAPPER_NO_CONTRACT;
-    ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(m_pAssem->GetAssembly());
-    return (pMSD->GetTokenFlags() & TokenSecurityDescriptorFlags_ConditionalAPTCA) == TokenSecurityDescriptorFlags_ConditionalAPTCA;
-}
-
-#endif // FEATURE_APTCA
 
 #endif // !DACCESS_COMPILE
 

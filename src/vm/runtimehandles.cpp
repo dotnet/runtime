@@ -3263,36 +3263,6 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
 }
 FCIMPLEND
 
-#ifdef FEATURE_APTCA
-FCIMPL2(FC_BOOL_RET, AssemblyHandle::AptcaCheck, AssemblyBaseObject* pTargetAssemblyUNSAFE,  AssemblyBaseObject* pSourceAssemblyUNSAFE) 
-{
-    FCALL_CONTRACT;
-
-    ASSEMBLYREF refTargetAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pTargetAssemblyUNSAFE);
-    ASSEMBLYREF refSourceAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pSourceAssemblyUNSAFE);
-    
-    if ((refTargetAssembly == NULL) || (refSourceAssembly == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pTargetAssembly = refTargetAssembly->GetDomainAssembly();
-    DomainAssembly *pSourceAssembly = refSourceAssembly->GetDomainAssembly();
-    
-    if (pTargetAssembly == pSourceAssembly)
-        FC_RETURN_BOOL(TRUE);
-
-    BOOL bResult = TRUE;
-    
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refSourceAssembly, refTargetAssembly);
-    {
-        bResult = ( pTargetAssembly->GetAssembly()->AllowUntrustedCaller() || // target assembly allows untrusted callers unconditionally
-                    pSourceAssembly->GetSecurityDescriptor()->IsFullyTrusted());
-    }
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-#endif // FEATURE_APTCA
     
 void QCALLTYPE ModuleHandle::GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine)
 {

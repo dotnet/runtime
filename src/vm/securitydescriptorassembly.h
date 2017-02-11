@@ -141,12 +141,6 @@ private:
     inline void SetSignatureLoaded();
 #endif
 
-#ifdef FEATURE_APTCA
-    // If you think you need to call this method, you're probably wrong.  We shouldn't be making any
-    // security enforcement decisions based upon this result -- it's strictly for ensuring that we load
-    // conditional APTCA assemblies correctly.
-    inline BOOL IsConditionalAptca();
-#endif // FEATURE_APTCA
 
 #endif // #ifndef DACCESS_COMPILE
 };

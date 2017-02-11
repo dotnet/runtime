@@ -873,19 +873,6 @@ inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
         *pdwMachine = m_dwMachine;
 }
 
-#ifdef FEATURE_APTCA
-inline BOOL PEImage::MayBeConditionalAptca()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fMayBeConditionalAptca;
-}
-
-inline void PEImage::SetIsNotConditionalAptca()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fMayBeConditionalAptca = FALSE;
-}
-#endif // FEATURE_APTCA
 
 #ifndef FEATURE_CORECLR
 inline BOOL PEImage::IsReportedToUsageLog()

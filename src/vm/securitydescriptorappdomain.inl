@@ -29,9 +29,6 @@ inline ApplicationSecurityDescriptor::ApplicationSecurityDescriptor(AppDomain *p
     m_fIsPreResolved(FALSE),
     m_fPreResolutionFullTrust(FALSE),
     m_fPreResolutionHomogeneous(FALSE)
-#ifdef FEATURE_APTCA
-    ,m_pConditionalAptcaCache(new ConditionalAptcaCache(pAppDomain))
-#endif // FEATURE_APTCA
 {
     CONTRACTL
     {
@@ -45,20 +42,6 @@ inline ApplicationSecurityDescriptor::ApplicationSecurityDescriptor(AppDomain *p
     return;
 }
 
-#ifdef FEATURE_APTCA
-inline ApplicationSecurityDescriptor::~ApplicationSecurityDescriptor()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    delete m_pConditionalAptcaCache;
-}
-#endif // FEATURE_APTCA
 
 inline void ApplicationSecurityDescriptor::ResetInitializationInProgress()
 {

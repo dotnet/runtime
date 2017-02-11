@@ -129,11 +129,6 @@ public:
     BOOL QCALLTYPE IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-    static
-    void QCALLTYPE SetCanonicalConditionalAptcaList(QCall::AppDomainHandle adhTarget,
-                                                    LPCWSTR wszCanonicalConditionalAptcaList);
-#endif // FEATURE_APTCA
 
 #ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
     static

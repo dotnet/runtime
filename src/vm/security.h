@@ -16,9 +16,6 @@
 #include "securitydeclarative.h"
 #include "securitytransparentassembly.h"
 
-#ifdef FEATURE_APTCA
-#include "aptca.h"
-#endif
 
 class IAssemblySecurityDescriptor;
 class IApplicationSecurityDescriptor;
@@ -224,15 +221,6 @@ namespace Security
     // security enforcement
     inline BOOL ContainsBuiltinCASPermsOnly(CORSEC_ATTRSET* pAttrSet);
 
-#ifdef FEATURE_APTCA
-    inline BOOL IsUntrustedCallerCheckNeeded(MethodDesc *pCalleeMD, Assembly *pCallerAssem = NULL) ;
-    inline void DoUntrustedCallerChecks(Assembly *pCaller, MethodDesc *pCalee, BOOL fFullStackWalk) ;
-
-    inline bool NativeImageHasValidAptcaDependencies(PEImage *pNativeImage, DomainAssembly *pDomainAssembly);
-
-    inline SString GetAptcaKillBitAccessExceptionContext(Assembly *pTargetAssembly);
-    inline SString GetConditionalAptcaAccessExceptionContext(Assembly *pTargetAssembly);
-#endif // FEATURE_APTCA
 
     inline bool SecurityCalloutQuickCheck(MethodDesc *pCallerMD);
 
@@ -305,10 +293,6 @@ public:
     virtual BOOL AllowsLoadsFromRemoteSources() = 0;
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-    virtual ConditionalAptcaCache *GetConditionalAptcaCache() = 0;
-    virtual void SetCanonicalConditionalAptcaList(LPCWSTR wszCanonicalConditionalAptcaList) = 0;
-#endif // FEATURE_APTCA
 #endif // !DACCESS_COMPILE
 };
 
