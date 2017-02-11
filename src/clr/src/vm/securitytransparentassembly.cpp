@@ -1443,12 +1443,10 @@ public:
 
         ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
         if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
         {
             moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
         }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
         if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
         {
@@ -1618,12 +1616,10 @@ public:
         ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
         bool fShouldBeOpportunisticallyCritical = true;
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
         if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
         {
             moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
         }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
         if (tokenFlags & TokenSecurityDescriptorFlags_Transparent)
         {
