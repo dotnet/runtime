@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.ExceptionServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
@@ -132,7 +135,7 @@ namespace System.Data.SqlClient.SNI
                         return;
                     }
 
-                    connectTask = ConnectAsync(serverAddresses, port);
+                    connectTask = ParallelConnectAsync(serverAddresses, port);
                 }
                 else
                 {
@@ -146,6 +149,17 @@ namespace System.Data.SqlClient.SNI
                 }
 
                 _socket = connectTask.Result;
+                if (_socket == null || !_socket.Connected)
+                {
+                    if (_socket != null)
+                    {
+                        _socket.Dispose();
+                        _socket = null;
+                    }
+                    ReportTcpSNIError(0, SNICommon.ConnOpenFailedError, string.Empty);
+                    return;
+                }
+
                 _socket.NoDelay = true;
                 _tcpStream = new NetworkStream(_socket, true);
 
@@ -169,30 +183,33 @@ namespace System.Data.SqlClient.SNI
 
         private static async Task<Socket> ConnectAsync(string serverName, int port)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
+            IPAddress targetAddrV4 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetwork));
+            IPAddress targetAddrV6 = Array.Find(addresses, addr => (addr.AddressFamily == AddressFamily.InterNetworkV6));
+            if (targetAddrV4 != null && targetAddrV6 != null)
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                await socket.ConnectAsync(serverName, port).ConfigureAwait(false);
+                return await ParallelConnectAsync(new IPAddress[] { targetAddrV4, targetAddrV6 }, port).ConfigureAwait(false);
+            }
+            else
+            {
+                IPAddress targetAddr = (targetAddrV4 != null) ? targetAddrV4 : targetAddrV6;
+                var socket = new Socket(targetAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+                try
+                {
+                    await socket.ConnectAsync(targetAddr, port).ConfigureAwait(false);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
                 return socket;
             }
-
-            // On unix we can't use the instance Socket methods that take multiple endpoints
-
-            IPAddress[] addresses = await Dns.GetHostAddressesAsync(serverName).ConfigureAwait(false);
-            return await ConnectAsync(addresses, port).ConfigureAwait(false);
         }
 
-        private static async Task<Socket> ConnectAsync(IPAddress[] serverAddresses, int port)
+        private static Task<Socket> ParallelConnectAsync(IPAddress[] serverAddresses, int port)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                await socket.ConnectAsync(serverAddresses, port).ConfigureAwait(false);
-                return socket;
-            }
-
-            // On unix we can't use the instance Socket methods that take multiple endpoints
-
             if (serverAddresses == null)
             {
                 throw new ArgumentNullException(nameof(serverAddresses));
@@ -202,33 +219,95 @@ namespace System.Data.SqlClient.SNI
                 throw new ArgumentOutOfRangeException(nameof(serverAddresses));
             }
 
-            // Try each address in turn, and return the socket opened for the first one that works.
-            ExceptionDispatchInfo lastException = null;
+            var sockets = new List<Socket>(serverAddresses.Length);
+            var connectTasks = new List<Task>(serverAddresses.Length);
+            var tcs = new TaskCompletionSource<Socket>();
+            var lastError = new StrongBox<Exception>();
+            var pendingCompleteCount = new StrongBox<int>(serverAddresses.Length);
+
             foreach (IPAddress address in serverAddresses)
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                sockets.Add(socket);
+
+                // Start all connection tasks now, to prevent possible race conditions with
+                // calling ConnectAsync on disposed sockets.
                 try
                 {
-                    await socket.ConnectAsync(address, port).ConfigureAwait(false);
-                    return socket;
+                    connectTasks.Add(socket.ConnectAsync(address, port));
                 }
-                catch (Exception exc)
+                catch (Exception e)
                 {
-                    socket.Dispose();
-                    lastException = ExceptionDispatchInfo.Capture(exc);
+                    connectTasks.Add(Task.FromException(e));
                 }
             }
 
-            // Propagate the last failure that occurred
-            if (lastException != null)
+            for (int i = 0; i < sockets.Count; i++)
             {
-                lastException.Throw();
+                ParallelConnectHelper(sockets[i], connectTasks[i], tcs, pendingCompleteCount, lastError, sockets);
             }
 
-            // Should never get here.  Either there will have been no addresses and we'll have thrown
-            // at the beginning, or one of the addresses will have worked and we'll have returned, or
-            // at least one of the addresses will failed, in which case we will have propagated that.
-            throw new ArgumentException();
+            return tcs.Task;
+        }
+
+        private static async void ParallelConnectHelper(
+            Socket socket,
+            Task connectTask,
+            TaskCompletionSource<Socket> tcs,
+            StrongBox<int> pendingCompleteCount,
+            StrongBox<Exception> lastError,
+            List<Socket> sockets)
+        {
+            bool success = false;
+            try
+            {
+                // Try to connect.  If we're successful, store this task into the result task.
+                await connectTask.ConfigureAwait(false);
+                success = tcs.TrySetResult(socket);
+                if (success)
+                {
+                    // Whichever connection completes the return task is responsible for disposing
+                    // all of the sockets (except for whichever one is stored into the result task).
+                    // This ensures that only one thread will attempt to dispose of a socket.
+                    // This is also the closest thing we have to canceling connect attempts.
+                    foreach (Socket otherSocket in sockets)
+                    {
+                        if (otherSocket != socket)
+                        {
+                            otherSocket.Dispose();
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // Store an exception to be published if no connection succeeds
+                Interlocked.Exchange(ref lastError.Value, e);
+            }
+            finally
+            {
+                // If we didn't successfully transition the result task to completed,
+                // then someone else did and they would have cleaned up, so there's nothing
+                // more to do.  Otherwise, no one completed it yet or we failed; either way,
+                // see if we're the last outstanding connection, and if we are, try to complete
+                // the task, and if we're successful, it's our responsibility to dispose all of the sockets.
+                if (!success && Interlocked.Decrement(ref pendingCompleteCount.Value) == 0)
+                {
+                    if (lastError.Value != null)
+                    {
+                        tcs.TrySetException(lastError.Value);
+                    }
+                    else
+                    {
+                        tcs.TrySetCanceled();
+                    }
+
+                    foreach (Socket s in sockets)
+                    {
+                        s.Dispose();
+                    }
+                }
+            }
         }
 
         /// <summary>
