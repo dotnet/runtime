@@ -23,7 +23,7 @@ WARNING:   When setting properties based on their current state (for example:
 if [ ! -z $RunningLongGCTests ]
 then
     echo "Skipping execution because this is not a long-running GC test"
-    exit 0
+    exit 2
 fi
         ]]></GCLongGCTestBashScript>
         <GCLongGCTestBashScript Condition="'$(IsLongRunningGCTest)' == 'true'"><![CDATA[
@@ -31,7 +31,7 @@ fi
 if [ -z $RunningLongGCTests ]
 then
     echo "Skipping execution because long-running GC tests are not enabled"
-    exit 0
+    exit 2
 fi
         ]]></GCLongGCTestBashScript>
 
@@ -41,7 +41,7 @@ fi
 if [ ! -z $RunningGCSimulatorTests ]
 then
     echo "Skipping execution because this is not a GCSimulator test"
-    exit 0
+    exit 2
 fi
         ]]></GCSimulatorTestBashScript>
         <GCSimulatorTestBashScript Condition="'$(IsGCSimulatorTest)' == 'true'"><![CDATA[
@@ -49,7 +49,7 @@ fi
 if [ -z $RunningGCSimulatorTests ]
 then
     echo "Skipping execution because GCSimulator tests are not enabled"
-    exit 0
+    exit 2
 fi
         ]]></GCSimulatorTestBashScript>
 
