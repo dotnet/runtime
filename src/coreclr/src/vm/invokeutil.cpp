@@ -1610,25 +1610,6 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
         // stack walks in order to close security holes in poorly written
         // reflection users.
 
-#ifdef FEATURE_APTCA
-        if (Security::IsUntrustedCallerCheckNeeded(pMeth))
-        {
-            if (pSCtx->GetCallerMT()) 
-            { 
-                // Check for untrusted caller
-                // It is possible that wrappers like VBHelper libraries that are
-                // fully trusted, make calls to public methods that do not have
-                // safe for Untrusted caller custom attribute set.
-                // Like all other link demand that gets transformed to a full stack 
-                // walk for reflection, calls to public methods also gets 
-                // converted to full stack walk
-    
-                Security::DoUntrustedCallerChecks(
-                    pSCtx->GetCallerMT()->GetAssembly(), pMeth,
-                    TRUE);
-            }
-        }
-#endif // FEATURE_APTCA
 
         struct _gc
         {

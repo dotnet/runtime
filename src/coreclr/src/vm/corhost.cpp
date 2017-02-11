@@ -5542,92 +5542,6 @@ public:
 static CCLRAppDomainResourceMonitor s_Arm;
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
-#ifdef FEATURE_APTCA
-class CLRDomainManager : public ICLRDomainManager
-{
-public:
-    virtual HRESULT STDMETHODCALLTYPE SetAppDomainManagerType(__in LPCWSTR wszAppDomainManagerAssembly,
-                                                              __in LPCWSTR wszAppDomainManagerType,
-                                                              EInitializeNewDomainFlags dwInitializeDomainFlags)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            ENTRY_POINT;
-        }
-        CONTRACTL_END;
-
-        HRESULT hr = S_OK;
-        BEGIN_ENTRYPOINT_NOTHROW;
-
-        hr = CorHost2::SetAppDomainManagerType(wszAppDomainManagerAssembly,
-                                               wszAppDomainManagerType,
-                                               dwInitializeDomainFlags);
-        END_ENTRYPOINT_NOTHROW;
-        return hr;
-    }
-
-    virtual HRESULT STDMETHODCALLTYPE SetPropertiesForDefaultAppDomain(DWORD nProperties,
-                                                                       __in_ecount(nProperties) LPCWSTR *pwszPropertyNames,
-                                                                       __in_ecount(nProperties) LPCWSTR *pwszPropertyValues)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        HRESULT hr = S_OK;
-        BEGIN_ENTRYPOINT_NOTHROW;
-
-        hr = CorHost2::SetPropertiesForDefaultAppDomain(nProperties, pwszPropertyNames, pwszPropertyValues);
-
-        END_ENTRYPOINT_NOTHROW;
-        return hr;
-    }
-
-    virtual ULONG STDMETHODCALLTYPE AddRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return 1;
-    }
-
-    virtual ULONG STDMETHODCALLTYPE Release()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return 1;
-    }
-
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface(__in REFIID riid, __out LPVOID *ppvObject)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (ppvObject == NULL)
-            return E_POINTER;
-
-        *ppvObject = NULL;
-
-        if (riid == IID_ICLRDomainManager)
-        {
-            *ppvObject = this;
-        }
-        else if (riid == IID_IUnknown)
-        {
-            *ppvObject = static_cast<IUnknown *>(this);
-        }
-
-        if (*ppvObject == NULL)
-            return E_NOINTERFACE;
-
-        AddRef();
-        return S_OK;
-    }
-};
-
-static CLRDomainManager s_CLRDomainManager;
-#endif // FEATURE_APTCA
 
 BOOL g_CLRPolicyRequested = FALSE;
 
@@ -5724,13 +5638,6 @@ public:
             return S_OK;
         }
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-#ifdef FEATURE_APTCA
-        else if (riid == IID_ICLRDomainManager)
-        {
-            *ppObject = &s_CLRDomainManager;
-            return S_OK;
-        }
-#endif // FEATURE_APTCA
         else
             return (E_NOINTERFACE);
     }

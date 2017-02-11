@@ -897,10 +897,6 @@ struct CORCOMPILE_VERSION_INFO
 #ifndef FEATURE_CORECLR
 enum CorCompileDependencyInfo
 {
-#ifdef FEATURE_APTCA
-    CORCOMPILE_DEPENDENCY_IS_APTCA          = 0x1,
-    CORCOMPILE_DEPENDENCY_IS_CAPTCA         = 0x2,
-#endif //FEATURE_APTCA
 
     CORCOMPILE_DEPENDENCY_PEKIND_MASK       = 0xff00,
     CORCOMPILE_DEPENDENCY_PEKIND_SHIFT      = 8,
@@ -919,10 +915,6 @@ struct CORCOMPILE_DEPENDENCY
 
     CORCOMPILE_NGEN_SIGNATURE       signNativeImage;    // INVALID_NGEN_SIGNATURE if this a soft-bound dependency
 
-#ifdef FEATURE_APTCA
-    // Win32 version info for tracking dependency references to strong-named assemblies with APTCA
-    ULARGE_INTEGER                  uliFileVersion; // OS file version ~ NOT assembly version
-#endif //FEATURE_APTCA
 
 #ifndef FEATURE_CORECLR
     CorCompileDependencyInfo        dependencyInfo;  //Flags about the dependency

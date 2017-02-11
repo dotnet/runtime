@@ -2402,9 +2402,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pProcessExitEventHandler; // Delegate for 'process exit' event.  Only used in Default appdomain.
     OBJECTREF    m_pDomainUnloadEventHandler; // Delegate for 'about to unload domain' event
     OBJECTREF    m_pUnhandledExceptionEventHandler; // Delegate for 'unhandled exception' event
-#ifdef FEATURE_APTCA
-    OBJECTREF    m_aptcaVisibleAssemblies;  // array of conditional APTCA assembly names that should be APTCA visible
-#endif
 
     OBJECTREF    m_compatFlags;
 
@@ -2461,13 +2458,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
         return !!m_bIsFastFullTrustDomain;
     }
 
-#ifdef FEATURE_APTCA
-    OBJECTREF GetPartialTrustVisibleAssemblies()
-    {
-        LIMITED_METHOD_CONTRACT
-        return m_aptcaVisibleAssemblies;
-    }
-#endif // FEATURE_APTCA
 
     // Ref needs to be a PTRARRAYREF
     void SetPolicies(OBJECTREF ref)
@@ -2565,9 +2555,6 @@ class AppDomainSetupObject : public Object
     I1ARRAYREF m_ConfigurationBytes;
     STRINGREF m_AppDomainManagerAssembly;
     STRINGREF m_AppDomainManagerType;
-#if FEATURE_APTCA
-    PTRARRAYREF m_AptcaVisibleAssemblies;
-#endif
     OBJECTREF m_CompatFlags;
     STRINGREF m_TargetFrameworkName;
 #ifndef FEATURE_CORECLR

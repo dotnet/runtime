@@ -158,10 +158,6 @@ inline SecurityRuleSet GetSecurityRuleSet(TokenSecurityDescriptorFlags flags);
 // Encode a security rule set into token flags - this reverses GetSecurityRuleSet
 inline TokenSecurityDescriptorFlags EncodeSecurityRuleSet(SecurityRuleSet ruleSet);
 
-#ifdef FEATURE_APTCA
-TokenSecurityDescriptorFlags ParseAptcaAttribute(const BYTE *pbAptcaBlob,
-                                                 DWORD cbAptcaBlob);
-#endif // FEATURE_APTCA
 
 TokenSecurityDescriptorFlags ParseSecurityRulesAttribute(const BYTE *pbSecurityRulesBlob,
                                                          DWORD cbSecurityRulesBlob);
@@ -575,9 +571,6 @@ inline ModuleSecurityDescriptorFlags operator&=(ModuleSecurityDescriptorFlags& l
 
 inline ModuleSecurityDescriptorFlags operator~(ModuleSecurityDescriptorFlags flags);
 
-#ifdef FEATURE_APTCA
-BOOL CheckAssemblyHasBeenKillBitted(LPASSEMBLYNAME pAssemblyName, ULARGE_INTEGER uliFileVersion);
-#endif
 
 // Module security descriptor, this class contains static security information about the module
 // this information will get persisted in the NGen image
