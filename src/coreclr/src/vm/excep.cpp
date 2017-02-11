@@ -4175,18 +4175,6 @@ void RaiseFailFastExceptionOnWin7(PEXCEPTION_RECORD pExceptionRecord, PCONTEXT p
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(RunningOnWin7());
 
-#ifndef FEATURE_CORESYSTEM
-    typedef void (WINAPI * RaiseFailFastExceptionFnPtr)(PEXCEPTION_RECORD, PCONTEXT, DWORD);
-    RaiseFailFastExceptionFnPtr RaiseFailFastException;
-
-    HINSTANCE hKernel32 = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
-    if (hKernel32 == NULL)
-        return;
-
-    RaiseFailFastException = (RaiseFailFastExceptionFnPtr)GetProcAddress(hKernel32, "RaiseFailFastException");
-    if (RaiseFailFastException == NULL)
-        return;
-#endif
 
     // enable preemptive mode before call into OS to allow runtime suspend to finish
     GCX_PREEMP();

@@ -495,11 +495,7 @@ void ThreadpoolMgr::InitPlatformVariables()
         CONTRACT_VIOLATION(GCViolation|FaultViolation);
         hNtDll = CLRLoadLibrary(W("ntdll.dll"));
         _ASSERTE(hNtDll);
-#ifdef FEATURE_CORESYSTEM
         hCoreSynch = CLRLoadLibrary(W("api-ms-win-core-synch-l1-1-0.dll"));
-#else
-        hCoreSynch = CLRLoadLibrary(W("kernel32.dll"));
-#endif
         _ASSERTE(hCoreSynch);
     }
 

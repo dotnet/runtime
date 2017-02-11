@@ -2535,20 +2535,12 @@ HRESULT GetCLSIDFromProgID(__in_z WCHAR *strProgId, GUID *pGuid)
     
     HRESULT     hr = S_OK;
 
-#ifdef FEATURE_CORESYSTEM
     LeaveRuntimeHolderNoThrow lrh((size_t)CLSIDFromProgID);
-#else
-    LeaveRuntimeHolderNoThrow lrh((size_t)CLSIDFromProgIDEx);
-#endif
     hr = lrh.GetHR();
     if (FAILED(hr))
         return hr;
 
-#ifdef FEATURE_CORESYSTEM
     return CLSIDFromProgID(strProgId, pGuid);
-#else
-    return CLSIDFromProgIDEx(strProgId, pGuid);
-#endif
 }
 #endif // FEATURE_CLASSIC_COMINTEROP
 

@@ -641,10 +641,8 @@ public:
     inline BOOL CanTransparentCodeSkipVerification();
 #endif // !FEATURE_CORECLR
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
     // Does the assembly allow partially trusted callers
     inline BOOL IsAPTCA();
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
 #ifndef FEATURE_CORECLR
     BOOL AssemblyVersionRequiresLegacyTransparency();

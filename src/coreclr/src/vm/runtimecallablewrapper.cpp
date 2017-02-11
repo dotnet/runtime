@@ -742,7 +742,6 @@ IUnknown *AppXComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pf
     
     HRESULT hr;
 
-#ifdef FEATURE_CORESYSTEM
     // This works around a bug in the Windows 7 loader that prevents us from loading the
     // forwarder for this function
     typedef HRESULT (*CoCreateInstanceFromAppFnPtr) (REFCLSID rclsid, IUnknown *punkOuter, DWORD dwClsCtx,
@@ -763,7 +762,6 @@ IUnknown *AppXComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pf
         _ASSERTE(false);
         IfFailThrow(E_FAIL);
     }
-#endif
 
     LeaveRuntimeHolder lrh((size_t)CoCreateInstanceFromApp);
     
