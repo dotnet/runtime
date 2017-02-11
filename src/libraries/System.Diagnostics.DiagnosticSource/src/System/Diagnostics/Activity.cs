@@ -13,8 +13,8 @@ namespace System.Diagnostics
     ///  
     /// Current activity can be accessed with static AsyncLocal variable Activity.Current.
     /// 
-    /// Activities should be created with constructor, configured as necessarily 
-    /// and then started with Activity.Start method which maintaines parent-child
+    /// Activities should be created with constructor, configured as necessary
+    /// and then started with Activity.Start method which maintains parent-child
     /// relationships for the activities and sets Activity.Current.
     /// 
     /// When activity is finished, it should be stopped with static Activity.Stop method.
@@ -23,7 +23,7 @@ namespace System.Diagnostics
     {
         /// <summary>
         /// An operation name is a COARSEST name that is useful grouping/filtering. 
-        /// The name is typically a compile time constant.   Names of Rest APIs are 
+        /// The name is typically a compile-time constant.   Names of Rest APIs are
         /// reasonable, but arguments (e.g. specific accounts etc), should not be in
         /// the name but rather in the tags.  
         /// </summary>
@@ -31,27 +31,28 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID insures that you get only one request that matches.  
-        /// It is typically assigned the system itself. 
+        /// to a particular ID ensures that you get only one request that matches.  
+        /// It is generated when <see cref="Start"/> is called.
         /// </summary>
         public string Id { get; private set; }
 
         /// <summary>
-        /// The time that operation started.  Typcially when Start() is called 
-        /// (but you can pass a value to Start() if necessary.  This use UTC (Greenwitch Mean Time)
+        /// The time that operation started.  It will typically be initialized when <see cref="Start"/>
+        /// is called, but you can set at any time via <see cref="SetStartTime(DateTime)"/>.
         /// </summary>
         public DateTime StartTimeUtc { get; private set; }
 
         /// <summary>
         /// If the Activity that created this activity is  from the same process you can get 
-        /// that Activit with Parent.   However this can be null if the Activity has no
-        /// parent (a root activity) or if the Parent is from outside the process.  (see ParentId for more)
+        /// that Activity with Parent.  However, this can be null if the Activity has no
+        /// parent (a root activity) or if the Parent is from outside the process.
         /// </summary>
+        /// <seealso cref="ParentId"/>
         public Activity Parent { get; private set; }
 
         /// <summary>
         /// If the parent for this activity comes from outside the process, the activity
-        /// does not have a Parent Activity but MAY have a ParentId (which was serialized from
+        /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
         /// from the parent) .   This accessor fetches the parent ID if it exists at all.  
         /// Note this can be null if this is a root Activity (it has no parent)
         /// </summary>
@@ -60,8 +61,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Tags are string-string key-value pairs that represent information that will
         /// be logged along with the Activity to the logging system.   This information
-        /// however is NOT passed on to the children of this activity.  (see Baggage)
+        /// however is NOT passed on to the children of this activity.
         /// </summary>
+        /// <seealso cref="Baggage"/>
         public IEnumerable<KeyValuePair<string, string>> Tags
         {
             get
@@ -90,7 +92,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns the value of the key-value pair added to the activity with 'WithBaggage'.
+        /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.  
         /// </summary>
         public string GetBaggageItem(string key)
@@ -105,9 +107,9 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'With*' APIs and then
-        /// call 'Activity.Start' to build the activity.   You MUST call Start before using it 
+        /// call <see cref="Start"/> to build the activity.  You MUST call <see cref="Start"/> before using it.
         /// </summary>
-        /// <param name="operationName">Operations name <see cref="OperationName"/></param>
+        /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
         {
             if (string.IsNullOrEmpty(operationName))
@@ -117,10 +119,10 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have a tag with an additional 'key' and value 'value'.
-        /// This shows up in the 'Tags' eumeration.   It is meant for information that
-        /// is useful to log but not needed for runtime control (for the latter, use Baggage)
+        /// This shows up in the <see cref="Tags"/>  eumeration.   It is meant for information that
+        /// is useful to log but not needed for runtime control (for the latter, <see cref="Baggage"/>)
         /// </summary>
-        /// <returns>'this' for convinient chaining</returns>
+        /// <returns>'this' for convenient chaining</returns>
         public Activity AddTag(string key, string value)
         {
             _tags = new KeyValueListNode() { keyValue = new KeyValuePair<string, string>(key, value), Next = _tags };
@@ -129,12 +131,13 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Update the Activity to have baggage with an additional 'key' and value 'value'.
-        /// This shows up in the 'Baggage' eumeration as well as the 'GetBaggageItem' API.
-        /// Baggage is mean for information that is needed for runtime control.   For information 
-        /// that is simply useful to show up in the log with the activity use Tags.   
-        /// Returns 'this' for convinient chaining.
+        /// This shows up in the <see cref="Baggage"/> eumeration as well as the <see cref="GetBaggageItem(string)"/>
+        /// mathod.
+        /// Baggage is meant for information that is needed for runtime control.   For information 
+        /// that is simply useful to show up in the log with the activity use <see cref="Tags"/>.
+        /// Returns 'this' for convenient chaining.
         /// </summary>
-        /// <returns>'this' for convinient chaining</returns>
+        /// <returns>'this' for convenient chaining</returns>
         public Activity AddBaggage(string key, string value)
         {
             _baggage = new KeyValueListNode() { keyValue = new KeyValuePair<string, string>(key, value), Next = _baggage };
@@ -142,13 +145,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Updates the Activity To indicate that the activity with ID 'parentID' 
-        /// caused this activity.   This is only intended to be used at 'boundary' 
-        /// scenarios where an activity from another process loggically started 
+        /// Updates the Activity To indicate that the activity with ID <paramref name="parentId"/>
+        /// caused this activity.   This is intended to be used only at 'boundary' 
+        /// scenarios where an activity from another process logically started 
         /// this activity. The Parent ID shows up the Tags (as well as the ParentID 
         /// property), and can be used to reconstruct the causal tree.  
-        /// Returns 'this' for convinient chaining.
+        /// Returns 'this' for convenient chaining.
         /// </summary>
+        /// <param name="parentId">The id of the parent operation.</param>
         public Activity SetParentId(string parentId)
         {
             if (Parent != null)
@@ -169,8 +173,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Update the Activity to set start time
         /// </summary>
-        /// <param name="startTimeUtc">Activity start time in UTC (Greenwitch Mean Time)</param>
-        /// <returns>'this' for convinient chaining</returns>
+        /// <param name="startTimeUtc">Activity start time in UTC (Greenwich Mean Time)</param>
+        /// <returns>'this' for convenient chaining</returns>
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
@@ -181,10 +185,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Update the Activity to set <see cref="Duration"/>
         /// as a difference between <see cref="StartTimeUtc"/>
-        /// and given stop timestamp
+        /// and <paramref name="endTimeUtc"/>.
         /// </summary>
-        /// <param name="endTimeUtc">Activity stop time in UTC (Greenwitch Mean Time)</param>
-        /// <returns>'this' for convinient chaining</returns>
+        /// <param name="endTimeUtc">Activity stop time in UTC (Greenwich Mean Time)</param>
+        /// <returns>'this' for convenient chaining</returns>
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)
@@ -195,18 +199,22 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// If the Activity has ended (Stop was called) then this is the delta
+        /// If the Activity has ended (<see cref="Stop"/> was called) then this is the delta
         /// between start and end.   If the activity is not ended then this is 
-        /// TimeSpan.Zero.  
+        /// <see cref="TimeSpan.Zero"/>.
         /// </summary>
         public TimeSpan Duration { get; private set; }
 
         /// <summary>
-        /// Starts activity: sets <see cref="Parent"/> to hold <see cref="Current"/> and sets Current to this Activity.
-        /// If <see cref="StartTimeUtc"/> was not set previously, sets it to DateTime.UtcNow.
-        /// Use DiagnosticSource.Start to start activity and write start event.
+        /// Starts activity:
+        /// <list type="bullet">
+        /// <item>Sets <see cref="Parent"/> to hold <see cref="Current"/>.</item>
+        /// <item>Sets <see cref="Current"/> to this activity.</item>
+        /// <item>If <see cref="StartTimeUtc"/> was not set previously, sets it to <see cref="DateTime.UtcNow"/>.</item>
+        /// <item>Generates a unique <see cref="Id"/> for this activity.</item>
+        /// </list>
+        /// Use <see cref="DiagnosticSource.StartActivity(Activity, object)"/> to start activity and write start event.
         /// </summary>
-        /// <returns>Started activity for convinient chaining</returns>
         /// <seealso cref="DiagnosticSource.StartActivity(Activity, object)"/>
         /// <seealso cref="SetStartTime(DateTime)"/>
         public Activity Start()
@@ -234,9 +242,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Stops activity: sets Current to Parent.
-        /// If end time was not set previously, sets <see cref="Duration"/> as a difference between DateTime.UtcNow and <see cref="StartTimeUtc"/>
-        /// Use DiagnosticSource.Stop to stop activity and write stop event.
+        /// Stops activity: sets <see cref="Current"/> to <see cref="Parent"/>.
+        /// If end time was not set previously, sets <see cref="Duration"/> as a difference between <see cref="DateTime.UtcNow"/> and <see cref="StartTimeUtc"/>
+        /// Use <see cref="DiagnosticSource.StopActivity(Activity, object)"/>  to stop activity and write stop event.
         /// </summary>
         /// <seealso cref="DiagnosticSource.StopActivity(Activity, object)"/>
         /// <seealso cref="SetEndTime(DateTime)"/>
