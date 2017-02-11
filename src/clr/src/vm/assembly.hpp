@@ -291,9 +291,7 @@ public:
 
     BOOL GetModuleZapFile(LPCWSTR name, SString &path);
 
-#if defined(FEATURE_CORESYSTEM)
     BOOL AllowUntrustedCaller();
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
     
 #ifdef LOGGING
     LPCWSTR GetDebugName()

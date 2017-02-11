@@ -1014,6 +1014,6 @@ inline int LateboundMessageBoxA(HWND hWnd,
 #define MessageBoxW LateboundMessageBoxW
 #define MessageBoxA LateboundMessageBoxA
 
-#endif // FEATURE_CORESYSTEM
+#endif // !CROSSGEN_COMPILE
 
 #endif  // __WIN_WRAP_H__
