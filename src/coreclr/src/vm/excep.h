@@ -268,9 +268,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity = NotCorrupting
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
                                         );
 
 //==========================================================================
@@ -816,7 +814,6 @@ LONG ReflectionInvocationExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
     PVOID               pParam);         
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 // -----------------------------------------------------------------------
 // Support for Corrupted State Exceptions
 // -----------------------------------------------------------------------
@@ -852,7 +849,6 @@ public:
     void static ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread);
 };
 
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifndef DACCESS_COMPILE
 // Switches to the previous AppDomain on the thread. See implementation for detailed comments.
@@ -907,16 +903,12 @@ private:
 
     void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
     void static InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs, 
         OBJECTREF *pAppDomain
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
 public:
@@ -924,14 +916,10 @@ public:
     
     void static DeliverNotification(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS        
         , CorruptionSeverity severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     BOOL static CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 #endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 public:

@@ -251,9 +251,7 @@ void DispatchCall(
                     CallDescrData * pCallDescrData,
                     OBJECTREF *pRefException,
                     ContextTransitionFrame* pFrame /* = NULL */
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                     , CorruptionSeverity *pSeverity /*= NULL*/
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
                     )
 {
     CONTRACTL
@@ -269,13 +267,11 @@ void DispatchCall(
         g_pDebugInterface->TraceCall((const BYTE *)pCallDescrData->pTarget);
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     if (pSeverity != NULL)
     {
         // By default, assume any exception that comes out is NotCorrupting
         *pSeverity = NotCorrupting;
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     EX_TRY
     {
@@ -287,13 +283,11 @@ void DispatchCall(
     {
         *pRefException = GET_THROWABLE();
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (pSeverity != NULL)
         {
             // By default, assume any exception that comes out is NotCorrupting
             *pSeverity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
         }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     }
     EX_END_CATCH(RethrowTransientExceptions);

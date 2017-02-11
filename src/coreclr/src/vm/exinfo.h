@@ -90,7 +90,6 @@ public:
     }
 #endif
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 private:
     CorruptionSeverity      m_CorruptionSeverity;
 public:
@@ -107,7 +106,6 @@ public:
 
         m_CorruptionSeverity = severityToSet;
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
     
 #ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
