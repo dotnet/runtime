@@ -2065,6 +2065,26 @@ BOOL QCALLTYPE COMNlsInfo::InternalTryFindStringOrdinalIgnoreCase(
         lpSearchStart = &lpStringSource[sourceIndex];
     }
     {
+#ifndef FEATURE_CORESYSTEM
+        // kernel function pointer
+        typedef int (WINAPI *PFNFindStringOrdinal)(DWORD, LPCWSTR, INT, LPCWSTR, INT, BOOL);
+        static PFNFindStringOrdinal FindStringOrdinal = NULL;
+
+        // initizalize kernel32!FindStringOrdinal
+        if (FindStringOrdinal == NULL)
+        {
+            PFNFindStringOrdinal result  = NULL;
+
+            HMODULE hMod=WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
+            if(hMod != NULL)
+                result=(PFNFindStringOrdinal)GetProcAddress(hMod,"FindStringOrdinal");
+            
+            FindStringOrdinal = (result != NULL) ? result : (PFNFindStringOrdinal)-1;
+        }
+
+        // call into the kernel
+        if (FindStringOrdinal != (PFNFindStringOrdinal)-1)
+#endif
         {
             *foundIndex = FindStringOrdinal(
                 dwFindNLSStringFlags,

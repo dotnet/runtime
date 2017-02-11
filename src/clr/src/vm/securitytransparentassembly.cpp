@@ -1238,10 +1238,12 @@ public:
 
         ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
 
+#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
         if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
         {
             moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
         }
+#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
         if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
         {
@@ -1323,7 +1325,6 @@ public:
         return typeFlags;
     }
 };
-
 
 //
 // Shared transparency behavior objects

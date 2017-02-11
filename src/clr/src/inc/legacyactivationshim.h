@@ -819,6 +819,46 @@ namespace LegacyActivationShim
 #endif //LoadStringRC
 
 // Define this method only if it is not yet defined as macro (see ndp\clr\src\inc\UtilCode.h).
+#if !defined(LoadStringRCEx) && !defined(FEATURE_CORESYSTEM)
+    // --------------------------------------------------------------------------------------------
+    inline
+    HRESULT LoadStringRCEx(
+        LCID lcid,
+        UINT   nResourceID, 
+        __out_ecount(nMax) LPWSTR szBuffer,
+        int    nMax, 
+        int    fQuiet, 
+        int *pcwchUsed)
+    {
+        HRESULT hr = S_OK;
+
+        if (Util::HasNewActivationAPIs())
+        {
+            GET_CLRINFO(pInfo);
+            DWORD cchUsed = static_cast<DWORD>(nMax);
+            IfHrFailRet(pInfo->LoadErrorString(nResourceID, szBuffer, &cchUsed, lcid));
+            *pcwchUsed = cchUsed;
+        }
+        else
+        {
+            CALL_LEGACY_API(LoadStringRCEx,
+                            (LCID lcid,
+                             UINT   nResourceID, 
+                             LPWSTR szBuffer,
+                             int    nMax, 
+                             int    fQuiet, 
+                             int *pcwchUsed),
+                            (lcid,
+                             nResourceID,
+                             szBuffer,
+                             nMax,
+                             fQuiet,
+                             pcwchUsed));
+        }
+
+        return hr;
+    }
+#endif //LoadStringRCEx
 
     // --------------------------------------------------------------------------------------------
     inline

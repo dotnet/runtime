@@ -71,7 +71,9 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 
     bool success = true;
 
-#if !defined(FEATURE_PAL)
+#if !defined(FEATURE_CORESYSTEM)
+    SetThreadIdealProcessor(GetCurrentThread(), (DWORD)affinity->Processor);
+#elif !defined(FEATURE_PAL)
     PROCESSOR_NUMBER proc;
 
     if (affinity->Group != -1)

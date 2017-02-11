@@ -3286,6 +3286,7 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 
 #endif // FEATURE_LOADER_OPTIMIZATION
 
+#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 BOOL Assembly::AllowUntrustedCaller()
 {
     CONTRACTL
@@ -3298,6 +3299,7 @@ BOOL Assembly::AllowUntrustedCaller()
 
     return ModuleSecurityDescriptor::GetModuleSecurityDescriptor(this)->IsAPTCA();
 }
+#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {
