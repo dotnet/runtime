@@ -1076,12 +1076,15 @@ inline BOOL ModuleSecurityDescriptor::IsMixedTransparency()
     return !IsAllCritical() && !IsAllTransparent();
 }
 
+
+#if defined(FEATURE_CORESYSTEM)
 inline BOOL ModuleSecurityDescriptor::IsAPTCA()
 {
     WRAPPER_NO_CONTRACT;
     VerifyDataComputed();
     return !!(m_flags & ModuleSecurityDescriptorFlags_IsAPTCA);
 }
+#endif // defined(FEATURE_CORESYSTEM)
 
 // Get the set of security rules that the assembly is using
 inline SecurityRuleSet ModuleSecurityDescriptor::GetSecurityRuleSet()
