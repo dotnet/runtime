@@ -466,7 +466,7 @@
 #define WszObjectDeleteAuditAlarm ObjectDeleteAuditAlarmW
 #define WszPrivilegedServiceAuditAlarm PrivilegedServiceAuditAlarmW
 #define WszIsBadStringPtr __DO_NOT_USE__WszIsBadStringPtr__
-#if !defined(FEATURE_CORESYSTEM) || defined(CROSSGEN_COMPILE)
+#if defined(CROSSGEN_COMPILE)
 #define WszLookupAccountSid LookupAccountSidW
 #endif
 #define WszLookupAccountName LookupAccountNameW
@@ -659,7 +659,6 @@
 // winnetwk.h
 #define WszWNetGetConnection WNetGetConnectionW
 
-#ifdef FEATURE_CORESYSTEM
 
 // CoreSystem has CreateSemaphoreExW but not CreateSemaphoreW.
 #undef WszCreateSemaphore
@@ -671,7 +670,6 @@
 #undef GetFileVersionInfoSize
 #define GetFileVersionInfoSize(_filename, _handle) GetFileVersionInfoSizeEx(0, (_filename), (_handle))
 
-#endif // FEATURE_CORESYSTEM
 
 #ifndef _T
 #define _T(str) W(str)
@@ -1021,7 +1019,7 @@ inline int LateboundMessageBoxA(HWND hWnd,
     return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
 }
 
-#if defined(FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE)
+#if !defined(CROSSGEN_COMPILE)
 
 #define MessageBoxW LateboundMessageBoxW
 #define MessageBoxA LateboundMessageBoxA

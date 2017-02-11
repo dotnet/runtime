@@ -18,9 +18,6 @@
 #include <limits.h>
 #include "shimpriv.h"
 
-#if !defined(FEATURE_CORESYSTEM)
-#include <tlhelp32.h>
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -1082,114 +1079,8 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
 //    sends the threads in an arbitrary order.
 HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder() 
 { 
-#ifdef FEATURE_CORESYSTEM
     _ASSERTE("NYI");
     return E_FAIL;
-#else
-    ICorDebugProcess * pProcess = GetProcess();
-
-    DWORD dwProcessId;
-    HRESULT hr = pProcess->GetID(&dwProcessId);
-    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    HANDLE hThreadSnap = INVALID_HANDLE_VALUE; 
-    THREADENTRY32 te32; 
-
-    // Take a snapshot of all running threads  
-    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0); 
-    if (hThreadSnap == INVALID_HANDLE_VALUE) 
-    {
-        hr = HRESULT_FROM_GetLastError();
-        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-        return hr; 
-    }
-    // HandleHolder doesn't deal with INVALID_HANDLE_VALUE, so we only assign if we have a legal value.
-    HandleHolder hSnapshotHolder(hThreadSnap);
-
-    // Fill in the size of the structure before using it. 
-    te32.dwSize = sizeof(THREADENTRY32); 
-
-    // Retrieve information about the first thread, and exit if unsuccessful
-    if (!Thread32First(hThreadSnap, &te32)) 
-    {
-        hr = HRESULT_FROM_GetLastError();
-        return hr;
-    }
-
-    // Now walk the thread list of the system,
-    // and display information about each thread
-    // associated with the specified process
-    do 
-    { 
-        if (te32.th32OwnerProcessID == dwProcessId)
-        {            
-            RSExtSmartPtr<ICorDebugThread> pThread;
-            pProcess->GetThread(te32.th32ThreadID, &pThread);
-            if (pThread != NULL)
-            {
-                // If we fail to get the appdomain for some reason, then then
-                // we can't dispatch this thread callback. But we can still
-                // finish enumerating.
-                RSExtSmartPtr<ICorDebugAppDomain> pAppDomain;
-                HRESULT hrGetAppDomain = pThread->GetAppDomain(&pAppDomain);
-                SIMPLIFYING_ASSUMPTION_SUCCEEDED(hrGetAppDomain);
-                if (pAppDomain != NULL)
-                {
-                    GetShimCallback()->CreateThread(pAppDomain, pThread);
-                    AddDuplicateCreationEvent(pThread);
-
-                    //fix for issue DevDiv2\DevDiv 77523 - threads are switched out in SQL don't get thread create notifications
-                    // mark that this thread has queued a create event
-                    CordbThread* pThreadInternal = static_cast<CordbThread*>(pThread.GetValue());
-                    pThreadInternal->SetCreateEventQueued();
-                }
-            }
-        }
-    } while(Thread32Next(hThreadSnap, &te32)); 
-
-
-    //fix for issue DevDiv2\DevDiv 77523 - threads are switched out in SQL don't get thread create notifications
-    //
-
-
-    // Threads which were switched out won't be present in the native thread order enumeration above.
-    // In order to not miss them we will enumerate all the managed thread objects and for any that we haven't
-    // already queued a notification for, we will queue a notification now.
-    RSExtSmartPtr<ICorDebugThreadEnum> pThreadEnum;
-    RSExtSmartPtr<ICorDebugThread> pThread;
-    hr = pProcess->EnumerateThreads(&pThreadEnum);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    ULONG cDummy;
-    
-    while(SUCCEEDED(pThreadEnum->Next(1, &pThread, &cDummy)) && (pThread != NULL))
-    {
-        RSExtSmartPtr<ICorDebugAppDomain> pAppDomain;
-        hr = pThread->GetAppDomain(&pAppDomain);
-        CordbThread* pThreadInternal = static_cast<CordbThread*>(pThread.GetValue());
-
-        // Getting the appdomain shouldn't fail. If it does, we can't dispatch
-        // this callback, but we can still dispatch the other thread creates.
-        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-        if (pAppDomain != NULL && !pThreadInternal->CreateEventWasQueued())
-        {
-            GetShimCallback()->CreateThread(pAppDomain, pThread);
-            AddDuplicateCreationEvent(pThread);
-            pThreadInternal->SetCreateEventQueued();
-        }
-        pThread.Clear();        
-    }
-
-
-    return S_OK;
-#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -1477,15 +1368,9 @@ void ShimProcess::QueueFakeAttachEvents()
     //
     // Third, Queue all Threads
     //
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI) && !defined(FEATURE_CORESYSTEM)   
-    // Use OS thread enumeration facilities to ensure that the managed thread
-    // thread order is the same as the corresponding native thread order.
-    QueueFakeThreadAttachEventsNativeOrder();
-#else
     // Use ICorDebug to enumerate threads. The order of managed threads may
     // not match the order the threads were created in.
     QueueFakeThreadAttachEventsNoOrder();
-#endif
 
     // Forth, Queue all Connections.
     // Enumerate connections is not exposed through ICorDebug, so we need to go use a private hook on CordbProcess.
@@ -1742,42 +1627,8 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
     CORDB_ADDRESS baseAddress = CORDB_ADDRESS(NULL);
     DWORD dwPid = m_pLiveDataTarget->GetPid();
 
-#if defined(FEATURE_CORESYSTEM)
     // Debugger attaching to CoreCLR via CoreCLRCreateCordbObject should have already specified CLR module address.
     // Code that help to find it now lives in dbgshim.
-#else
-    // get a "snapshot" of all modules in the target
-    HandleHolder hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPid);
-    MODULEENTRY32 moduleEntry = { 0 };
-
-    if (hSnapshot == INVALID_HANDLE_VALUE)
-    {
-        // we haven't got a loaded CLR yet
-        baseAddress = CORDB_ADDRESS(NULL);
-    }
-    else
-    {
-        // we need to loop through the modules until we find mscorwks.dll
-        moduleEntry.dwSize = sizeof(MODULEENTRY32);
-
-        if (!Module32First(hSnapshot, &moduleEntry))
-        {
-            baseAddress = CORDB_ADDRESS(NULL);
-        }
-        else
-        {
-
-            do
-            {
-                if (!_wcsicmp(moduleEntry.szModule, MAKEDLLNAME_W(MAIN_CLR_MODULE_NAME_W)))
-                {
-                    // we found it, so save the base address
-                    baseAddress = PTR_TO_CORDB_ADDRESS(moduleEntry.modBaseAddr);
-                }
-            } while (Module32Next(hSnapshot, &moduleEntry));
-        }
-    }
-#endif
     return baseAddress;
 } // ShimProcess::GetCLRInstanceBaseAddress
 

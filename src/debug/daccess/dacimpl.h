@@ -14,14 +14,11 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
-#if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
 #define DAC_HASHTABLE
-#endif // _TARGET_ARM_|| FEATURE_CORESYSTEM
-
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
 #undef return
@@ -1482,11 +1479,9 @@ public:
                                              DWORD &dwSize,
                                              __out_ecount(cchPath) LPWSTR wszPath,
                                              const DWORD cchPath);
-#if defined(FEATURE_CORESYSTEM)
     static bool GetILImageNameFromNgenImage(LPCWSTR ilExtension,
                                             __out_ecount(cchFilePath) LPWSTR wszFilePath,
                                             const DWORD cchFilePath);
-#endif // FEATURE_CORESYSTEM
 };
 
 extern ClrDataAccess* g_dacImpl;

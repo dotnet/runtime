@@ -468,33 +468,8 @@ BOOL ShouldLogInEventLog()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORESYSTEM
-    // If the process is being debugged, don't log
-    if ((CORDebuggerAttached() || IsDebuggerPresent())
-#ifdef _DEBUG
-        // Allow debug to be able to break in
-        &&
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) == 0
-#endif
-        )
-    {
-        return FALSE;
-    }
-
-    static LONG fOnce = 0;
-    if (fOnce == 1 || FastInterlockExchange(&fOnce, 1) == 1)
-    {
-        return FALSE;
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_logFatalError) == 0)
-        return FALSE;
-    else
-        return TRUE;
-#else
     // no event log on Apollo
     return FALSE;
-#endif //!FEATURE_CORESYSTEM
 }
 
 //---------------------------------------------------------------------------------------

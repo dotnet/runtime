@@ -15,9 +15,6 @@
 #include <comcallablewrapper.h>
 #include <gcdump.h>
 
-#if !defined(FEATURE_CORESYSTEM)
-#include <algorithm>
-#endif
 
 #include <constrainedexecutionregion.h>
 
@@ -31,11 +28,6 @@
 
 #include <mdfileformat.h>
 
-#if !defined(FEATURE_CORESYSTEM)
-#include <cassert>
-#undef _ASSERTE
-#define _ASSERTE(x) assert(x)
-#endif
 
 #include <compile.h>
 
@@ -6073,16 +6065,6 @@ void NativeImageDumper::DumpTypes(PTR_Module module)
         //there may be duplicates in the list.  Remove them before moving on.
         COUNT_T mtCount = m_discoveredMTs.GetCount();
 
-#if !defined(FEATURE_CORESYSTEM) // no STL right now
-        std::sort(&*m_discoveredMTs.Begin(),
-                  (&*m_discoveredMTs.Begin())
-                  + (m_discoveredMTs.End() - m_discoveredMTs.Begin()));
-        PTR_MethodTable* newEnd = std::unique(&*m_discoveredMTs.Begin(),
-                                              (&*m_discoveredMTs.Begin())
-                                              + (m_discoveredMTs.End()
-                                                 - m_discoveredMTs.Begin()));
-        mtCount = (COUNT_T)(newEnd - &*m_discoveredMTs.Begin());
-#endif
 
         DisplayStartArray( "MethodTables", NULL, METHODTABLES );
         for(COUNT_T i = 0; i < mtCount; ++i )
@@ -6098,15 +6080,6 @@ void NativeImageDumper::DumpTypes(PTR_Module module)
         DisplayStartArray( "MethodTableSlotChunks", NULL, METHODTABLES );
         {
             COUNT_T slotChunkCount = m_discoveredSlotChunks.GetCount();
-#if !defined(FEATURE_CORESYSTEM) // no STL right now
-            std::sort(&*m_discoveredSlotChunks.Begin(),
-                      (&*m_discoveredSlotChunks.Begin())
-                      + (m_discoveredSlotChunks.End() - m_discoveredSlotChunks.Begin()));
-            SlotChunk *newEndChunks = std::unique(&*m_discoveredSlotChunks.Begin(),
-                                              (&*m_discoveredSlotChunks.Begin())
-                                              + (m_discoveredSlotChunks.End() - m_discoveredSlotChunks.Begin()));
-            slotChunkCount = (COUNT_T)(newEndChunks - &*m_discoveredSlotChunks.Begin());
-#endif
             
             for (COUNT_T i = 0; i < slotChunkCount; ++i)
             {
@@ -6121,16 +6094,6 @@ void NativeImageDumper::DumpTypes(PTR_Module module)
 
         //there may be duplicates in the list.  Remove them before moving on.
         COUNT_T clazzCount = m_discoveredClasses.GetCount();
-#if !defined(FEATURE_CORESYSTEM) // no STL right now
-        std::sort(&*m_discoveredClasses.Begin(),
-                  (&*m_discoveredClasses.Begin())
-                  + (m_discoveredClasses.End() - m_discoveredClasses.Begin()));
-        PTR_MethodTable * newEndClazz = std::unique(&*m_discoveredClasses.Begin(),
-                                               (&*m_discoveredClasses.Begin())
-                                               +(m_discoveredClasses.End()
-                                                 -m_discoveredClasses.Begin()));
-        clazzCount = (COUNT_T)(newEndClazz - &*m_discoveredClasses.Begin());
-#endif
 
         for(COUNT_T i = 0; i < clazzCount; ++i )
         {
@@ -6149,17 +6112,6 @@ void NativeImageDumper::DumpTypes(PTR_Module module)
 
         //there may be duplicates in the list.  Remove them before moving on.
         COUNT_T tdCount = m_discoveredTypeDescs.GetCount();
-#if !defined(FEATURE_CORESYSTEM) // no STL right now
-        std::sort(&*m_discoveredTypeDescs.Begin(),
-                  (&*m_discoveredTypeDescs.Begin())
-                  + (m_discoveredTypeDescs.End()
-                     - m_discoveredTypeDescs.Begin()));
-        PTR_TypeDesc* newEndTD = std::unique(&*m_discoveredTypeDescs.Begin(),
-                                             (&*m_discoveredTypeDescs.Begin())
-                                             +(m_discoveredTypeDescs.End()
-                                               -m_discoveredTypeDescs.Begin()));
-        tdCount = (COUNT_T)(newEndTD - &*m_discoveredTypeDescs.Begin());
-#endif
 
         for(COUNT_T i = 0; i < tdCount; ++i )
         {
