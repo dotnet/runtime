@@ -121,13 +121,6 @@
     <NlpObjDir>$(BclSourcesRoot)\System\Globalization\Tables</NlpObjDir>
   </PropertyGroup>
   
-  <!-- Output paths -->
-  <PropertyGroup>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(Configuration)</IntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
-  </PropertyGroup>
-  
   <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
   <PropertyGroup>
     <ClrProduct>core_clr</ClrProduct>
