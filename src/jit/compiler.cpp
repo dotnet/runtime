@@ -4456,7 +4456,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         bool doRangeAnalysis = true;
         int  iterations      = 1;
 
-#ifdef DEBUG
+#if defined(OPT_CONFIG)
         doSsa           = (JitConfig.JitDoSsa() != 0);
         doEarlyProp     = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
@@ -4469,7 +4469,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         {
             iterations = JitConfig.JitOptRepeatCount();
         }
-#endif
+#endif // defined(OPT_CONFIG)
 
         while (iterations > 0)
         {
