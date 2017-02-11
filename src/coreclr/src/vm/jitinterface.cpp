@@ -6732,23 +6732,21 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_NOSECURITYWRAP;
     }
 
+    if (IsMdRequireSecObject(attribs))
+    {
+        // Assume all methods marked as DynamicSecurity are
+        // marked that way because they use StackCrawlMark to identify
+        // the caller.
+        // See comments in canInline or canTailCall
+        result |= CORINFO_FLG_DONT_INLINE_CALLER;
+    }
 
     // Check for an inlining directive.
     if (pMD->IsNotInline())
     {
         /* Function marked as not inlineable */
         result |= CORINFO_FLG_DONT_INLINE;
-
-        if (pMD->IsIL() && IsMdRequireSecObject(attribs))
-        {
-            // Assume all methods marked as DynamicSecurity inside mscorlib are
-            // marked that way because they use StackCrawlMark to identify
-            // the caller (not just the security info).
-            // See comments in canInline or canTailCall
-            result |= CORINFO_FLG_DONT_INLINE_CALLER;
-        }
     }
-
     // AggressiveInlining only makes sense for IL methods.
     else if (pMD->IsIL() && IsMiAggressiveInlining(pMD->GetImplAttrs()))
     {
@@ -8231,24 +8229,15 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
         // Methods with StackCrawlMark depend on finding their caller on the stack.
         // If we tail call one of these guys, they get confused.  For lack of
-        // a better way of identifying them, we look for methods marked as NoInlining
-        // inside mscorlib (StackCrawlMark is private), and assume it is one of these
-        // methods.  We have an assert in canInline that ensures all StackCrawlMark
+        // a better way of identifying them, we use DynamicSecurity attribute to identify
+        // them. We have an assert in canInline that ensures all StackCrawlMark
         // methods are appropriately marked.
         //
-        // NOTE that this is *NOT* a security issue because we check to ensure that
-        // the callee has the *SAME* security properties as the caller, it just might
-        // be from a different assembly which messes up APIs like Type.GetType, which
-        // for back-compat uses the assembly of it's caller to resolve unqualified
-        // typenames.
-        if ((pExactCallee != NULL) && pExactCallee->GetModule()->IsSystem() && pExactCallee->IsIL())
+        if ((pExactCallee != NULL) && IsMdRequireSecObject(pExactCallee->GetAttrs()))
         {
-            if (IsMiNoInlining(pExactCallee->GetImplAttrs()))
-            {
-                result = false;
-                szFailReason = "Callee might have a StackCrawlMark.LookForMyCaller";
-                goto exit;
-            }
+            result = false;
+            szFailReason = "Callee might have a StackCrawlMark.LookForMyCaller";
+            goto exit;
         }
     }
 
