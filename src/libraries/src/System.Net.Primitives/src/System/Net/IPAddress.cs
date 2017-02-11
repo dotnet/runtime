@@ -135,6 +135,13 @@ namespace System.Net
                 throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
             }
 
+            // Consider: Since scope is only valid for link-local and site-local
+            //           addresses we could implement some more robust checking here
+            if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
+            {
+                throw new ArgumentOutOfRangeException(nameof(scopeid));
+            }
+
             _numbers = new ushort[NumberOfLabels];
 
             for (int i = 0; i < NumberOfLabels; i++)
@@ -142,11 +149,25 @@ namespace System.Net
                 _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
             }
 
+            PrivateScopeId = (uint)scopeid;
+        }
+
+        internal unsafe IPAddress(byte* address, int addressLength, long scopeid)
+        {
+            Debug.Assert(address != null);
+            Debug.Assert(addressLength == IPAddressParserStatics.IPv6AddressBytes);
+
             // Consider: Since scope is only valid for link-local and site-local
             //           addresses we could implement some more robust checking here
             if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(scopeid));
+            }
+
+            _numbers = new ushort[NumberOfLabels];
+            for (int i = 0; i < NumberOfLabels; i++)
+            {
+                _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
             }
 
             PrivateScopeId = (uint)scopeid;
@@ -184,6 +205,28 @@ namespace System.Net
             {
                 _numbers = new ushort[NumberOfLabels];
 
+                for (int i = 0; i < NumberOfLabels; i++)
+                {
+                    _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
+                }
+            }
+        }
+
+        internal unsafe IPAddress(byte* address, int addressLength)
+        {
+            Debug.Assert(address != null);
+            Debug.Assert(addressLength > 0);
+            Debug.Assert(
+                addressLength == IPAddressParserStatics.IPv4AddressBytes ||
+                addressLength == IPAddressParserStatics.IPv6AddressBytes);
+
+            if (addressLength == IPAddressParserStatics.IPv4AddressBytes)
+            {
+                PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
+            }
+            else
+            {
+                _numbers = new ushort[NumberOfLabels];
                 for (int i = 0; i < NumberOfLabels; i++)
                 {
                     _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);

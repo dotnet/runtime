@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class LabelSymbol : Symbol
+    internal sealed class LabelSymbol : Symbol
     {
     }
 }

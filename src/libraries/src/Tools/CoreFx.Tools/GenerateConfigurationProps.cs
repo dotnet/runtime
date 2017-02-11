@@ -45,10 +45,8 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var project = ProjectRootElement.Create();
 
-            var projectConfigurationNotSetCondition = $"'$({ConfigurationProperty})' == ''";
             var buildConfigurationPropsFilePath = $"{ConfigurationPropsPrefix}{PropsFileExtension}";
             var buildConfigurationImport = project.AddImport($"{CurrentDirectoryIdentifier}{buildConfigurationPropsFilePath}");
-            buildConfigurationImport.Condition = projectConfigurationNotSetCondition;
 
             CreateBuildConfigurationPropsFile(buildConfigurationPropsFilePath);
 
@@ -73,7 +71,7 @@ namespace Microsoft.DotNet.Build.Tasks
         /// </summary>
         /// <param name="propertyName">name of property to parse</param>
         /// <param name="project">project to update</param>
-        private void ParseProperties(string propertyName, ProjectRootElement project, bool includeAdditionalProperites, Func<PropertyInfo, bool> configurationSelector)
+        private void ParseProperties(string propertyName, ProjectRootElement project, bool includeAdditionalProperites, Func<PropertyInfo, bool> configurationSelector, string parsedValuePrefix = null)
         {
             var parseConfigurationPropertyGroup = project.LastChild as ProjectPropertyGroupElement;
 
@@ -100,7 +98,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     var whenPropertiesElement = project.CreateWhenElement(propertiesCondition);
                     choosePropertiesElement.AppendChild(whenPropertiesElement);
 
-                    AddProperties(whenPropertiesElement, value, includeAdditionalProperites);
+                    AddProperties(whenPropertiesElement, value, includeAdditionalProperites, parsedValuePrefix);
                 }
 
                 var otherwisePropertiesElement = project.CreateOtherwiseElement();
@@ -108,7 +106,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 if (property.DefaultValue != null)
                 {
-                    AddProperties(otherwisePropertiesElement, property.DefaultValue, includeAdditionalProperites);
+                    AddProperties(otherwisePropertiesElement, property.DefaultValue, includeAdditionalProperites, parsedValuePrefix);
                 }
                 else
                 {
@@ -149,12 +147,20 @@ namespace Microsoft.DotNet.Build.Tasks
         {
             var buildConfigurationProps = ProjectRootElement.Create();
 
-            // pull apart BuildConfiguration, but don't set any derived properties
-            ParseProperties(BuildConfigurationProperty, buildConfigurationProps, false, p => !p.Independent);
+            // pull apart BuildConfiguration, but don't set any derived properties]
+            // we do this even when Configuration is already set because we want to
+            // parse out the BuildConfiguration-derived property values as _bc_*.
+            // In the case Configration is set we'll not use the parsed values, 
+            // and immediately overwrite them with the values parsed from Configuration.
+            ParseProperties(BuildConfigurationProperty, buildConfigurationProps, false, p => !p.Independent, "_bc_");
 
-            // Set error on missing import
+            var projectConfigurationNotSet = $"'$({ConfigurationProperty})' == ''";
+
             var buildConfigurationsPropertyGroup = buildConfigurationProps.CreatePropertyGroupElement();
             buildConfigurationProps.AppendChild(buildConfigurationsPropertyGroup);
+
+            // Only set props used for when Configuration is not set.
+            buildConfigurationsPropertyGroup.Condition = projectConfigurationNotSet;
 
             // get path to import
             var buildConfigurationImportName = $"_import_{BuildConfigurationProperty}_props";
@@ -168,12 +174,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var buildConfigurationsIsSet = $"'$({AvailableBuildConfigurationsProperty})' != ''";
 
+            // Set error on missing import
             var missingImportError = buildConfigurationsPropertyGroup.AddProperty(ErrorMessageProperty, $"$({ErrorMessageProperty}){ConfigurationProperty} is not set and $({BuildConfigurationProperty}) is not a known value for {BuildConfigurationProperty}.");
             missingImportError.Condition = $"{buildConfigurationsIsSet} AND !Exists('$({buildConfigurationImportName})')";
 
             // import props to set ProjectConfiguration
             var buildConfigurationImport = buildConfigurationProps.CreateImportElement($"$({buildConfigurationImportName})");
-            buildConfigurationImport.Condition = $"{buildConfigurationsIsSet} AND Exists('$({buildConfigurationImportName})')";
+            buildConfigurationImport.Condition = $"{buildConfigurationsIsSet} AND {projectConfigurationNotSet} AND Exists('$({buildConfigurationImportName})')";
             buildConfigurationProps.AppendChild(buildConfigurationImport);
 
             // iterate over all possible configuration strings
@@ -246,12 +253,17 @@ namespace Microsoft.DotNet.Build.Tasks
             }
         }
 
-        private void AddProperties(ProjectElementContainer parent, PropertyValue value, bool includeAddtionalProperties)
+        private void AddProperties(ProjectElementContainer parent, PropertyValue value, bool includeAddtionalProperties, string parsedValuePrefix = null)
         {
             var propertyGroup = parent.ContainingProject.CreatePropertyGroupElement();
             parent.AppendChild(propertyGroup);
 
             propertyGroup.AddProperty(value.Property.Name, value.Value);
+
+            if (!String.IsNullOrEmpty(parsedValuePrefix))
+            {
+                propertyGroup.AddProperty(parsedValuePrefix + value.Property.Name, value.Value);
+            }
 
             if (includeAddtionalProperties)
             {

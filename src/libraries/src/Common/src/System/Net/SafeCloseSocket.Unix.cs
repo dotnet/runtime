@@ -241,7 +241,11 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    SocketPal.TryCompleteAccept(socketHandle, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
+                    bool completed = SocketPal.TryCompleteAccept(socketHandle, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
+                    if (!completed)
+                    {
+                        errorCode = SocketError.WouldBlock;
+                    }
                 }
 
                 var res = new InnerSafeCloseSocket();

@@ -158,7 +158,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class MethWithType : MethPropWithType
+    internal sealed class MethWithType : MethPropWithType
     {
         public MethWithType()
         {
@@ -170,7 +170,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class PropWithType : MethPropWithType
+    internal sealed class PropWithType : MethPropWithType
     {
         public PropWithType()
         { }
@@ -186,7 +186,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class EventWithType : SymWithType
+    internal sealed class EventWithType : SymWithType
     {
         public EventWithType()
         {
@@ -198,7 +198,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class FieldWithType : SymWithType
+    internal sealed class FieldWithType : SymWithType
     {
         public FieldWithType()
         {
@@ -259,7 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class MethWithInst : MethPropWithInst
+    internal sealed class MethWithInst : MethPropWithInst
     {
         public MethWithInst()
         {

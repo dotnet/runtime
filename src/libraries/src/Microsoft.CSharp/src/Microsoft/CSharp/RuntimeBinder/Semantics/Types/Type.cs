@@ -10,7 +10,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class CType : ITypeOrNamespace
+    internal abstract class CType : ITypeOrNamespace
     {
         private TypeKind _typeKind;
         private Name _pName;
@@ -469,7 +469,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return GetNakedAgg(false);
         }
-        public AggregateSymbol GetNakedAgg(bool fStripNub)
+
+        private AggregateSymbol GetNakedAgg(bool fStripNub)
         {
             CType type = GetNakedType(fStripNub);
             if (type != null && type.IsAggregateType())
@@ -521,7 +522,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return isSimpleType() || isPredefType(PredefinedType.PT_STRING) || isEnumType();
         }
 
-        public bool isPointerLike()
+        private bool isPointerLike()
         {
             return IsPointerType() || isPredefType(PredefinedType.PT_INTPTR) || isPredefType(PredefinedType.PT_UINTPTR);
         }

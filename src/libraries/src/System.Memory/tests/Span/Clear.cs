@@ -198,11 +198,22 @@ namespace System.SpanTests
         {
             if (sizeof(IntPtr) == sizeof(long))
             {
-                // The maximum index in any single dimension is 2,147,483,591 (0x7FFFFFC7) 
-                // for byte arrays and arrays of single-byte structures, 
-                // and 2,146,435,071 (0X7FEFFFFF) for other types.
-                const int maxArraySizeForLargerThanByteTypes = 0X7FEFFFFF;
-                var a = new int[maxArraySizeForLargerThanByteTypes];
+                // Arrange
+                int[] a = null;
+                try
+                {
+                    // The maximum index in any single dimension is 2,147,483,591 (0x7FFFFFC7) 
+                    // for byte arrays and arrays of single-byte structures, 
+                    // and 2,146,435,071 (0X7FEFFFFF) for other types.
+                    const int maxArraySizeForLargerThanByteTypes = 0X7FEFFFFF;
+                    a = new int[maxArraySizeForLargerThanByteTypes];
+                }
+                // Skipping test if Out-of-Memory, since this test can only be run, if there is enough memory
+                catch (OutOfMemoryException)
+                {
+                    Console.WriteLine($"Span.Clear test {nameof(ClearLongerThanUintMaxValueBytes)} skipped due to {nameof(OutOfMemoryException)}.");
+                    return;
+                }
 
                 int initial = 5;
                 for (int i = 0; i < a.Length; i++)
@@ -237,7 +248,18 @@ namespace System.SpanTests
                 IntPtr bytes = (IntPtr)(((long)int.MaxValue) * sizeof(int));
                 int length = (int)(((long)bytes) / sizeof(int));
 
-                var ptr = (int*)Runtime.InteropServices.Marshal.AllocHGlobal(bytes);
+                int* ptr = null;
+                try
+                {
+                    ptr = (int*)Runtime.InteropServices.Marshal.AllocHGlobal(bytes);
+                }
+                // Skipping test if Out-of-Memory, since this test can only be run, if there is enough memory
+                catch (OutOfMemoryException)
+                {
+                    Console.WriteLine($"Span.Clear test {nameof(ClearNativeLongerThanUintMaxValueBytes)} skipped due to {nameof(OutOfMemoryException)}.");
+                    return;
+                }
+
                 try
                 {
                     int initial = 5;

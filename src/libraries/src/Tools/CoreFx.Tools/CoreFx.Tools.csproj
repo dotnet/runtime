@@ -12,6 +12,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'net46_Debug'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ConfigurationTask.cs" />
     <Compile Include="BuildTask.cs" />
@@ -20,16 +22,17 @@
     <Compile Include="Configuration\PropertyValue.cs" />
     <Compile Include="Configuration\PropertyInfo.cs" />
     <Compile Include="GenerateConfigurationProps.cs" />
-    <Compile Include="FindBestConfiguration.cs" />
+    <Compile Include="FindBestConfigurations.cs" />
     <Compile Include="GenerateDepsJson.cs" />
     <Compile Include="TryGetManagedAssemblyName.cs" />
-    <Compile Include="ValidateVSConfigurations.cs" />
+    <Compile Include="UpdateVSConfigurations.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <Compile Include="BuildTask.net45.cs" />
     <Compile Include="AssemblyResolver.cs" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Xml" />
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />

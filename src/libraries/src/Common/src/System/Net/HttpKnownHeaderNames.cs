@@ -87,6 +87,7 @@ namespace System.Net
         public const string XContentDuration = "X-Content-Duration";
         public const string XContentTypeOptions = "X-Content-Type-Options";
         public const string XFrameOptions = "X-Frame-Options";
+        public const string XMSEdgeRef = "X-MSEdge-Ref";
         public const string XPoweredBy = "X-Powered-By";
         public const string XRequestID = "X-Request-ID";
         public const string XUACompatible = "X-UA-Compatible";

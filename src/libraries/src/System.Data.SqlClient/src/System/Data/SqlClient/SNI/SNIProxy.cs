@@ -264,8 +264,7 @@ namespace System.Data.SqlClient.SNI
 
             if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length < 2)
             {
-                int defaultInstancePort = TryToGetDefaultInstancePort(fullServerName);
-                return new SNITCPHandle(fullServerName, (defaultInstancePort > 0 ? defaultInstancePort : DefaultSqlServerPort), timerExpire, callbackObject, parallel);
+                return new SNITCPHandle(fullServerName, DefaultSqlServerPort, timerExpire, callbackObject, parallel);
             }
             else if (serverNamePartsByComma.Length == 2 && serverNamePartsByBackSlash.Length < 2)
             {

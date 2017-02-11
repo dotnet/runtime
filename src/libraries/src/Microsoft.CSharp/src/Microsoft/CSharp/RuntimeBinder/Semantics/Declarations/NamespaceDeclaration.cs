@@ -21,7 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // DeclNext() is the next declaration for the same namespace.
     // ----------------------------------------------------------------------------
 
-    internal class NamespaceDeclaration : Declaration
+    internal sealed class NamespaceDeclaration : Declaration
     {
         public NamespaceSymbol Bag()
         {

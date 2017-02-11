@@ -7,7 +7,7 @@
 
 namespace System.Transactions
 {
-    public sealed partial class CommittableTransaction : System.Transactions.Transaction, System.IAsyncResult, System.IDisposable, System.Runtime.Serialization.ISerializable
+    public sealed partial class CommittableTransaction : System.Transactions.Transaction, System.IAsyncResult
     {
         public CommittableTransaction() { }
         public CommittableTransaction(System.TimeSpan timeout) { }
@@ -18,19 +18,17 @@ namespace System.Transactions
         bool System.IAsyncResult.IsCompleted { get { throw null; } }
         public System.IAsyncResult BeginCommit(System.AsyncCallback asyncCallback, object asyncState) { throw null; }
         public void Commit() { }
-        public void EndCommit(System.IAsyncResult ar) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public void EndCommit(System.IAsyncResult asyncResult) { }
     }
     public enum DependentCloneOption
     {
         BlockCommitUntilComplete = 0,
         RollbackIfNotComplete = 1,
     }
-    public sealed partial class DependentTransaction : System.Transactions.Transaction, System.Runtime.Serialization.ISerializable
+    public sealed partial class DependentTransaction : System.Transactions.Transaction
     {
         internal DependentTransaction() { }
         public void Complete() { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class Enlistment
     {
@@ -50,7 +48,6 @@ namespace System.Transactions
         None = 0,
     }
     public delegate System.Transactions.Transaction HostCurrentTransactionCallback();
-    //[System.Runtime.InteropServices.InterfaceTypeAttribute((System.Runtime.InteropServices.ComInterfaceType)(1))] // TODO: Put back when available
     public partial interface IDtcTransaction
     {
         void Abort(System.IntPtr reason, int retaining, int async);
@@ -118,7 +115,7 @@ namespace System.Transactions
         internal Transaction() { }
         public static System.Transactions.Transaction Current { get { throw null; } set { } }
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } }
-        public System.Guid PromoterType { get; }
+        public System.Guid PromoterType { get { throw null; } }
         public System.Transactions.TransactionInformation TransactionInformation { get { throw null; } }
         public event System.Transactions.TransactionCompletedEventHandler TransactionCompleted { add { } remove { } }
         public System.Transactions.Transaction Clone() { throw null; }
@@ -139,7 +136,7 @@ namespace System.Transactions
         public void Rollback() { }
         public void Rollback(System.Exception e) { }
         public void SetDistributedTransactionIdentifier(System.Transactions.IPromotableSinglePhaseNotification promotableNotification, System.Guid distributedTransactionIdentifier) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class TransactionAbortedException : System.Transactions.TransactionException
     {
@@ -154,16 +151,16 @@ namespace System.Transactions
         public TransactionEventArgs() { }
         public System.Transactions.Transaction Transaction { get { throw null; } }
     }
-    public partial class TransactionException : System.Exception //System.SystemException  // TODO: Put back when available
+    public partial class TransactionException : System.SystemException
     {
-        protected TransactionException() { }
+        public TransactionException() { }
         protected TransactionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionException(string message) { }
         public TransactionException(string message, System.Exception innerException) { }
     }
     public partial class TransactionInDoubtException : System.Transactions.TransactionException
     {
-        protected TransactionInDoubtException() { }
+        public TransactionInDoubtException() { }
         protected TransactionInDoubtException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionInDoubtException(string message) { }
         public TransactionInDoubtException(string message, System.Exception innerException) { }
@@ -198,7 +195,7 @@ namespace System.Transactions
     }
     public partial class TransactionManagerCommunicationException : System.Transactions.TransactionException
     {
-        protected TransactionManagerCommunicationException() { }
+        public TransactionManagerCommunicationException() { }
         protected TransactionManagerCommunicationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionManagerCommunicationException(string message) { }
         public TransactionManagerCommunicationException(string message, System.Exception innerException) { }
@@ -210,12 +207,12 @@ namespace System.Transactions
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { throw null; }
-        public static bool operator !=(System.Transactions.TransactionOptions o1, System.Transactions.TransactionOptions o2) { throw null; }
+        public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
+        public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
     }
     public partial class TransactionPromotionException : System.Transactions.TransactionException
     {
-        protected TransactionPromotionException() { }
+        public TransactionPromotionException() { }
         protected TransactionPromotionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionPromotionException(string message) { }
         public TransactionPromotionException(string message, System.Exception innerException) { }
@@ -227,8 +224,8 @@ namespace System.Transactions
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout, System.Transactions.EnterpriseServicesInteropOption interopOption) { }
         public TransactionScope(System.Transactions.Transaction transactionToUse, System.TimeSpan scopeTimeout, System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
-        public TransactionScope(Transaction transactionToUse, TransactionScopeAsyncFlowOption asyncFlowOption) { }
-        public TransactionScope(TransactionScopeAsyncFlowOption asyncFlowOption) { }
+        public TransactionScope(System.Transactions.Transaction transactionToUse, System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
+        public TransactionScope(System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
         public TransactionScope(System.Transactions.TransactionScopeOption scopeOption) { }
         public TransactionScope(System.Transactions.TransactionScopeOption scopeOption, System.TimeSpan scopeTimeout) { }
         public TransactionScope(System.Transactions.TransactionScopeOption scopeOption, System.TimeSpan scopeTimeout, System.Transactions.TransactionScopeAsyncFlowOption asyncFlowOption) { }
@@ -239,7 +236,8 @@ namespace System.Transactions
         public void Complete() { }
         public void Dispose() { }
     }
-    public enum TransactionScopeAsyncFlowOption {
+    public enum TransactionScopeAsyncFlowOption
+    {
         Enabled = 1,
         Suppress = 0,
     }

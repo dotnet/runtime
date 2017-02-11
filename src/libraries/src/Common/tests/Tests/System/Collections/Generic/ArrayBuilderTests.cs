@@ -23,8 +23,11 @@ namespace System.Collections.Generic.Tests
             uint seed = (uint)count;
             for (int i = 0; i < count; i++)
             {
-                seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                yield return generator.Generate((int)seed);
+                unchecked
+                {
+                    seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2);
+                    yield return generator.Generate((int)seed);
+                }
             }
         }
     }

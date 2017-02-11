@@ -46,8 +46,7 @@ namespace System.Net
             public int Count;
             public int InitialCount;
             public HttpStreamAsyncResult Ares;
-            public ReadBufferState(byte[] buffer, int offset, int count,
-                        HttpStreamAsyncResult ares)
+            public ReadBufferState(byte[] buffer, int offset, int count, HttpStreamAsyncResult ares)
             {
                 Buffer = buffer;
                 Offset = offset;

@@ -1,13 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{44C7E52C-3873-4C64-875C-8A23A8376D60}</ProjectGuid>
-    <IsTestProject>true</IsTestProject>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
@@ -15,23 +18,9 @@
     <Compile Include="OrderedImportManyAttribute.cs" />
     <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
     <Compile Include="KeyByMetadataAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
-      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
-      <Project>{c6257381-c624-494a-a9d9-5586e60856ea}</Project>
-      <Name>System.Composition.AttributedModel</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Composition.Hosting\src\System.Composition.Hosting.csproj">
-      <Project>{2b8fecc6-34a1-48fe-ba75-99572d2d6db2}</Project>
-      <Name>System.Composition.Hosting</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
-      <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>
-      <Name>System.Composition.Runtime</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -32,10 +32,10 @@ namespace System.Security.Cryptography.Xml
         public int Add(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (!(value is DataReference) && !(value is KeyReference))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             return _references.Add(value);
         }
@@ -58,10 +58,10 @@ namespace System.Security.Cryptography.Xml
         public void Insert(int index, object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             if (!(value is DataReference) && !(value is KeyReference))
-                throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
             _references.Insert(index, value);
         }
@@ -101,10 +101,10 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (!(value is DataReference) && !(value is KeyReference))
-                    throw new ArgumentException(SecurityResources.GetResourceString("Cryptography_Xml_IncorrectObjectType"), "value");
+                    throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
 
                 _references[index] = value;
             }

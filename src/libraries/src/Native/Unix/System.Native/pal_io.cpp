@@ -291,9 +291,16 @@ extern "C" intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_
 
 extern "C" int32_t SystemNative_ShmUnlink(const char* name)
 {
+#if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     int32_t result;
     while (CheckInterrupted(result = shm_unlink(name)));
     return result;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because name is unused
+    (void)name;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
@@ -577,7 +584,45 @@ extern "C" int32_t SystemNative_Link(const char* source, const char* linkTarget)
 extern "C" intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
+#if HAVE_MKSTEMPS
     while (CheckInterrupted(result = mkstemps(pathTemplate, suffixLength)));
+#elif HAVE_MKSTEMP
+    // mkstemps is not available bionic/Android, but mkstemp is
+    // mkstemp doesn't allow the suffix that msktemps does allow, so we'll need to
+    // remove that before passing pathTemplate to mkstemp
+
+    int32_t pathTemplateLength = static_cast<int32_t>(strlen(pathTemplate));
+
+    // pathTemplate must include at least XXXXXX (6 characters) which are not part of
+    // the suffix
+    if (suffixLength < 0 || suffixLength > pathTemplateLength - 6)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    // Make mkstemp ignore the suffix by setting the first char of the suffix to \0,
+    // if there is a suffix
+    int32_t firstSuffixIndex = 0;
+    char firstSuffixChar = 0;
+
+    if (suffixLength > 0)
+    {
+        firstSuffixIndex = pathTemplateLength - suffixLength;
+        firstSuffixChar = pathTemplate[firstSuffixIndex];
+        pathTemplate[firstSuffixIndex] = 0;
+    }
+
+    while (CheckInterrupted(result = mkstemp(pathTemplate)));
+
+    // Reset the first char of the suffix back to its original value, if there is a suffix
+    if (suffixLength > 0)
+    {
+        pathTemplate[firstSuffixIndex] = firstSuffixChar;
+    }
+#else
+#error "Cannot find mkstemps nor mkstemp on this platform"
+#endif
     return  result;
 }
 
@@ -1079,15 +1124,28 @@ extern "C" int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destination
 
     // Now that the data from the file has been copied, copy over metadata
     // from the source file.  First copy the file times.
+    // If futimes nor futimes are available on this platform, file times will
+    // not be copied over.
     while (CheckInterrupted(ret = fstat_(inFd, &sourceStat)));
     if (ret == 0)
     {
+#if HAVE_FUTIMES
         struct timeval origTimes[2];
         origTimes[0].tv_sec = sourceStat.st_atime;
         origTimes[0].tv_usec = 0;
         origTimes[1].tv_sec = sourceStat.st_mtime;
         origTimes[1].tv_usec = 0;
         while (CheckInterrupted(ret = futimes(outFd, origTimes)));
+#elif HAVE_FUTIMENS
+        // futimes is not a POSIX function, and not available on Android,
+        // but futimens is
+        struct timespec origTimes[2];
+        origTimes[0].tv_sec = sourceStat.st_atime;
+        origTimes[0].tv_nsec = 0;
+        origTimes[1].tv_sec = sourceStat.st_mtime;
+        origTimes[1].tv_nsec = 0;
+        while (CheckInterrupted(ret = futimens(outFd, origTimes)));
+#endif
     }
     if (ret != 0)
     {
@@ -1135,7 +1193,13 @@ extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
     assert(wd >= 0);
 
 #if HAVE_INOTIFY
-    return inotify_rm_watch(ToFileDescriptor(fd), wd);
+    return inotify_rm_watch(
+        ToFileDescriptor(fd),
+#if INOTIFY_RM_WATCH_WD_UNSIGNED
+        static_cast<uint32_t>(wd));
+#else
+        wd);
+#endif
 #else
     (void)fd, (void)wd;
     errno = ENOTSUP;

@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime.Loader:
+TypesMustExist : Type 'System.Reflection.Metadata.AssemblyExtensions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Loader.AssemblyLoadContext' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

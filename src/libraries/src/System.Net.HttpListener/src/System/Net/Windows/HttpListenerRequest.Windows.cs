@@ -362,7 +362,7 @@ namespace System.Net
 
                 foreach (string upgrade in this.Headers.GetValues(HttpKnownHeaderNames.Upgrade))
                 {
-                    if (string.Equals(upgrade, WebSocketValidate.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -822,7 +822,7 @@ namespace System.Net
                 while (true)
                 {
                     byte[] clientCertInfoBlob = new byte[checked((int)size)];
-                    fixed (byte* pClientCertInfoBlob = clientCertInfoBlob)
+                    fixed (byte* pClientCertInfoBlob = &clientCertInfoBlob[0])
                     {
                         Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)pClientCertInfoBlob;
 

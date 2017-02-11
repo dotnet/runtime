@@ -160,7 +160,7 @@ namespace System.Net.Http
             else
             {
                 bufferLength = buffer.Length;
-                fixed (char* pBuffer = buffer)
+                fixed (char* pBuffer = &buffer[0])
                 {
                     if (QueryHeaders(requestHandle, infoLevel, pBuffer, ref bufferLength, ref index))
                     {
@@ -203,7 +203,7 @@ namespace System.Net.Http
             int bufferLength = buffer.Length;
             uint index = 0;
 
-            fixed (char* pBuffer = buffer)
+            fixed (char* pBuffer = &buffer[0])
             {
                 if (!QueryHeaders(requestHandle, infoLevel, pBuffer, ref bufferLength, ref index))
                 {

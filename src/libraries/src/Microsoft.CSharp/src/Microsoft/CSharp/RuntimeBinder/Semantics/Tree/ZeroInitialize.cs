@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRZEROINIT : EXPR
+    internal sealed class EXPRZEROINIT : EXPR
     {
         public EXPR OptionalArgument;
         public EXPR OptionalConstructorCall;

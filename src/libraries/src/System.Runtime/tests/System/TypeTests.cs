@@ -286,5 +286,12 @@ namespace System.Tests
         {
             Assert.Equal(typeCode, Type.GetTypeCode(t));
         }
+
+        public static void ReflectionOnlyGetType()
+        {
+            Assert.Throws<ArgumentNullException>("typeName", () => Type.ReflectionOnlyGetType(null, true, false));
+            Assert.Throws<TypeLoadException>(() => Type.ReflectionOnlyGetType("", true, true));
+            Assert.Throws<NotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+        }
     }
 }

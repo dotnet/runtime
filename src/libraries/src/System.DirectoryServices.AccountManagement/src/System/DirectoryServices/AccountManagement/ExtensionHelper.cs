@@ -19,9 +19,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal string RdnPrefix
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -78,9 +75,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal string StructuralObjectClass
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {

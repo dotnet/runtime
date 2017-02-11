@@ -35,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     }
 
 
-    internal class PredefinedTypes
+    internal sealed class PredefinedTypes
     {
         private SymbolTable _runtimeBinderSymbolTable;
         private readonly BSYMMGR _pBSymmgr;
@@ -265,7 +265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // "object". This return the nice name if one exists; otherwise null is 
         // returned.
 
-        public static string GetNiceName(PredefinedType pt)
+        private static string GetNiceName(PredefinedType pt)
         {
             return PredefinedTypeFacts.GetNiceName(pt);
         }
@@ -404,7 +404,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return s_pdTypeNames[name];
         }
 
-        private class PredefinedTypeInfo
+        private sealed class PredefinedTypeInfo
         {
             internal readonly PredefinedType type;
             internal readonly string name;

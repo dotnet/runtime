@@ -419,7 +419,10 @@ namespace System.Xml.Linq
 
                 // Hash the key
                 for (int i = index; i < end; i++)
-                    hashCode += (hashCode << 7) ^ key[i];
+                    unchecked
+                    {
+                        hashCode += (hashCode << 7) ^ key[i];
+                    }
 
                 // Mix up hash code a bit more and clear the sign bit.  This code was taken from NameTable.cs in System.Xml.
                 hashCode -= hashCode >> 17;

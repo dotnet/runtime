@@ -1,4 +1,3 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
@@ -8,46 +7,44 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom.Tests", "tes
 		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{350C956A-B4ED-4376-9B04-2908528D10FF}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom", "ref\System.CodeDom.csproj", "{14FAFC3A-8266-45C7-8604-8C2CB567E50D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827B5CCD-073A-4A75-9661-73D54F0A3528}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom", "src\System.CodeDom.csproj", "{53D09AF4-0C13-4197-B8AD-9746F0374E88}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377} = {4CF42F1E-B5AC-4834-AE24-A1F285091377}
+	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{096E7AD0-17A2-4EAF-9AC5-2F0FC67A4112}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.CodeDom", "ref\System.CodeDom.csproj", "{4CF42F1E-B5AC-4834-AE24-A1F285091377}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		DebugNETCoreAppnet461netstandard|AnyCPU = DebugNETCoreAppnet461netstandard|AnyCPU
-		ReleaseNETCoreAppnet461netstandard|AnyCPU = ReleaseNETCoreAppnet461netstandard|AnyCPU
-		DebugNETCoreAppnetstandardnetstandard|AnyCPU = DebugNETCoreAppnetstandardnetstandard|AnyCPU
-		ReleaseNETCoreAppnetstandardnetstandard|AnyCPU = ReleaseNETCoreAppnetstandardnetstandard|AnyCPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnet461netstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnet461netstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnet461netstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnet461netstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnet461netstandard|AnyCPU.ActiveCfg = net461-Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnet461netstandard|AnyCPU.Build.0 = net461-Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnet461netstandard|AnyCPU.ActiveCfg = net461-Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnet461netstandard|AnyCPU.Build.0 = net461-Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.DebugNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Debug|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.ActiveCfg = netstandard-Release|Any CPU
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.ReleaseNETCoreAppnetstandardnetstandard|AnyCPU.Build.0 = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726} = {0D1E2954-A5C7-4B8C-932A-31EB4A96A726}
-		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {53D09AF4-0C13-4197-B8AD-9746F0374E88}
+		{0D1E2954-A5C7-4B8C-932A-31EB4A96A726} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{53D09AF4-0C13-4197-B8AD-9746F0374E88} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{4CF42F1E-B5AC-4834-AE24-A1F285091377} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal

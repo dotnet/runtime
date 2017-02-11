@@ -47,9 +47,7 @@ namespace System.Security.Cryptography
     public partial class CryptoStream : System.IO.Stream, System.IDisposable
     {
         public CryptoStream(System.IO.Stream stream, System.Security.Cryptography.ICryptoTransform transform, System.Security.Cryptography.CryptoStreamMode mode) { }
-#if netcoreapp
         public CryptoStream(System.IO.Stream stream, System.Security.Cryptography.ICryptoTransform transform, System.Security.Cryptography.CryptoStreamMode mode, bool leaveOpen) { }
-#endif
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
@@ -121,7 +119,7 @@ namespace System.Security.Cryptography
     public abstract partial class HMAC : System.Security.Cryptography.KeyedHashAlgorithm
     {
         protected HMAC() { }
-        protected int BlockSizeValue { get { return default(int); } set {} }
+        protected int BlockSizeValue { get { throw null; } set {} }
         public string HashName { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.HMAC Create() { throw null; }

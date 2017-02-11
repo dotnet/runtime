@@ -676,7 +676,7 @@ namespace System.Net.WebSockets
             else
             {
                 bufferLength = buffer.Length;
-                fixed (char* pBuffer = buffer)
+                fixed (char* pBuffer = &buffer[0])
                 {
                     if (QueryHeaders(headerName, pBuffer, ref bufferLength))
                     {

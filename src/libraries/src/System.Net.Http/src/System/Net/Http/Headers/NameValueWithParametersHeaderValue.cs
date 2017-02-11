@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace System.Net.Http.Headers
 {
@@ -78,7 +80,11 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            return base.ToString() + NameValueHeaderValue.ToString(_parameters, ';', true);
+            string baseString = base.ToString();
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append(baseString);
+            NameValueHeaderValue.ToString(_parameters, ';', true, sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         public static new NameValueWithParametersHeaderValue Parse(string input)

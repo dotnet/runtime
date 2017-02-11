@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal abstract class EXPR
     {
-        protected static void RETAILVERIFY(bool f)
+        private static void RETAILVERIFY(bool f)
         {
             //if (!f)
             //Debug.Assert(false, "panic!");
@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExpressionKind kind;
         public EXPRFLAG flags;
-        public bool IsError;
+        private bool IsError;
         public bool IsOptionalArgument;
         public void SetInaccessibleBit()
         {

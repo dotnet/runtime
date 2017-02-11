@@ -1189,7 +1189,7 @@ namespace System
                 }
 
                 bool readSuccess;
-                fixed (byte* p = bytes)
+                fixed (byte* p = &bytes[0])
                 {
                     if (useFileAPIs)
                     {
@@ -1227,7 +1227,7 @@ namespace System
                     return Interop.Errors.ERROR_SUCCESS;
 
                 bool writeSuccess;
-                fixed (byte* p = bytes)
+                fixed (byte* p = &bytes[0])
                 {
                     if (useFileAPIs)
                     {

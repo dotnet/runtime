@@ -25,9 +25,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public dSPropertyValueCollection this[string propertyName]
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PropertyCollection.get_Item(System.String):System.DirectoryServices.PropertyValueCollection" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -57,9 +54,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public object this[int index]
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PropertyValueCollection.get_Item(System.Int32):System.Object" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {

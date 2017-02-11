@@ -4,6 +4,7 @@
 
 internal partial class Interop
 {
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382.aspx
     internal partial class Errors
     {
         internal const int ERROR_SUCCESS = 0x0;
@@ -17,6 +18,7 @@ internal partial class Interop
         internal const int ERROR_INVALID_DRIVE = 0xF;
         internal const int ERROR_NO_MORE_FILES = 0x12;
         internal const int ERROR_NOT_READY = 0x15;
+        internal const int ERROR_BAD_COMMAND = 0x16;
         internal const int ERROR_BAD_LENGTH = 0x18;
         internal const int ERROR_SHARING_VIOLATION = 0x20;
         internal const int ERROR_LOCK_VIOLATION = 0x21;
@@ -46,9 +48,11 @@ internal partial class Interop
         internal const int ERROR_PIPE_CONNECTED = 0x217;
         internal const int ERROR_PIPE_LISTENING = 0x218;
         internal const int ERROR_OPERATION_ABORTED = 0x3E3;
+        internal const int ERROR_IO_INCOMPLETE = 0x3E4;
         internal const int ERROR_IO_PENDING = 0x3E5;
         internal const int ERROR_NO_TOKEN = 0x3f0;
         internal const int ERROR_DLL_INIT_FAILED = 0x45A;
+        internal const int ERROR_COUNTER_TIMEOUT = 0x461;
         internal const int ERROR_NOT_FOUND = 0x490;
         internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
         internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;

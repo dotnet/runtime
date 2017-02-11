@@ -1192,39 +1192,39 @@ namespace System.Linq.Expressions
         /// <paramref name="instance"/>.Type is not assignable to the declaring type of the method represented by <paramref name="method"/>.-or-The number of elements in <paramref name="arguments"/> does not equal the number of parameters for the method represented by <paramref name="method"/>.-or-One or more of the elements of <paramref name="arguments"/> is not assignable to the corresponding parameter for the method represented by <paramref name="method"/>.</exception>
         public static MethodCallExpression Call(Expression instance, MethodInfo method, IEnumerable<Expression> arguments)
         {
-            IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression>;
+            IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
 
-            if (argumentList != null)
+            int argCount = argumentList.Count;
+
+            switch (argCount)
             {
-                int argCount = argumentList.Count;
+                case 0:
+                    return Call(instance, method);
+                case 1:
+                    return Call(instance, method, argumentList[0]);
+                case 2:
+                    return Call(instance, method, argumentList[0], argumentList[1]);
+                case 3:
+                    return Call(instance, method, argumentList[0], argumentList[1], argumentList[2]);
+            }
 
+            if (instance == null)
+            {
                 switch (argCount)
                 {
-                    case 0:
-                        return Call(instance, method);
-                    case 1:
-                        return Call(instance, method, argumentList[0]);
-                    case 2:
-                        return Call(instance, method, argumentList[0], argumentList[1]);
-                    case 3:
-                        return Call(instance, method, argumentList[0], argumentList[1], argumentList[2]);
-                }
-
-                if (instance == null)
-                {
-                    switch (argCount)
-                    {
-                        case 4:
-                            return Call(method, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
-                        case 5:
-                            return Call(method, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
-                    }
+                    case 4:
+                        return Call(method, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
+                    case 5:
+                        return Call(method, argumentList[0], argumentList[1], argumentList[2], argumentList[3], argumentList[4]);
                 }
             }
 
             ContractUtils.RequiresNotNull(method, nameof(method));
 
-            ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
+            // If this has resulted in a duplicate call to ToReadOnly (any case except arguments being
+            // a large IReadOnlyList that is not TrueReadOnlyCollection) it will return argumentList
+            // back again quickly.
+            ReadOnlyCollection<Expression> argList = argumentList.ToReadOnly();
 
             ValidateMethodInfo(method, nameof(method));
             ValidateStaticOrInstanceMethod(instance, method);

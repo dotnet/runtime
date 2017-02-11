@@ -16,7 +16,7 @@ namespace System.Drawing
     ///    </para>
     /// </summary>
     [Serializable]
-    public struct SizeF
+    public struct SizeF : IEquatable<SizeF>
     {
         /// <summary>
         ///    Initializes a new instance of the <see cref='System.Drawing.SizeF'/> class.
@@ -165,15 +165,9 @@ namespace System.Drawing
         ///    with the same dimensions as this <see cref='System.Drawing.SizeF'/>.
         /// </para>
         /// </summary>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is SizeF))
-                return false;
+        public override bool Equals(object obj) => obj is SizeF && Equals((SizeF)obj);
 
-            SizeF comp = (SizeF)obj;
-
-            return (comp.Width == Width) && (comp.Height == Height);
-        }
+        public bool Equals(SizeF other) => this == other;
 
         public override int GetHashCode() => HashHelpers.Combine(Width.GetHashCode(), Height.GetHashCode());
 

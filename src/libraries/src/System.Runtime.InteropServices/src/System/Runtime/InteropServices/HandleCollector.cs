@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
-    public sealed partial class HandleCollector
+    public sealed class HandleCollector
     {
         private const int deltaPercent = 10; // this is used for increasing the threshold.        
         private string _name;
@@ -90,7 +90,13 @@ namespace System.Runtime.InteropServices
                     (_gc_counts[gen_collect] == GC.CollectionCount(gen_collect))))
             {
                 GC.Collect(gen_collect);
-                Sleep(10 * gen_collect);
+#if NETNATIVE
+                // TODO: Delete once RuntimeThread is reconciled between 
+                // CoreCLR and CoreRT
+                System.Threading.RuntimeThread.Sleep(10 * gen_collect);
+#else
+                Internal.Runtime.Augments.RuntimeThread.Sleep(10 * gen_collect);
+#endif
             }
 
             //don't bother with gen0. 

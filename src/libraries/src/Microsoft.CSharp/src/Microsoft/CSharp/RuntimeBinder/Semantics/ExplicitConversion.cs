@@ -7,13 +7,13 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // BindExplicitConversion
         // ----------------------------------------------------------------------------
 
-        private class ExplicitConversion
+        private sealed class ExplicitConversion
         {
             private readonly ExpressionBinder _binder;
             private EXPR _exprSrc;

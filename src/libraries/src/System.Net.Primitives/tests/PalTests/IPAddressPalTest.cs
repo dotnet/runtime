@@ -8,16 +8,16 @@ using Xunit;
 
 namespace System.Net.Primitives.PalTests
 {
-    public class IPAddressPalTests
+    public unsafe class IPAddressPalTests
     {
         [Fact]
         public void IPv4StringToAddress_Valid()
         {
             const string AddressString = "127.0.64.255";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             Assert.Equal(127, bytes[0]);
             Assert.Equal(0, bytes[1]);
@@ -31,9 +31,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "128.64.256";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             Assert.Equal(128, bytes[0]);
             Assert.Equal(64, bytes[1]);
@@ -47,9 +47,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "192.65536";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             Assert.Equal(192, bytes[0]);
             Assert.Equal(1, bytes[1]);
@@ -63,9 +63,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "2130706433";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             Assert.Equal(127, bytes[0]);
             Assert.Equal(0, bytes[1]);
@@ -79,9 +79,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -90,9 +90,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "hello, world";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -101,9 +101,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "127.0.64.255:80";
 
-            var bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, out port);
+            uint err = IPAddressPal.Ipv4StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.True(err != IPAddressPal.SuccessErrorCode || port != 0);
         }
 
@@ -134,9 +134,9 @@ namespace System.Net.Primitives.PalTests
             var actualAddressString = buffer.ToString();
             Assert.Equal(addressString, actualAddressString);
 
-            var roundTrippedBytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            var roundTrippedBytes = stackalloc byte[IPAddressParserStatics.IPv4AddressBytes];
             ushort port;
-            err = IPAddressPal.Ipv4StringToAddress(actualAddressString, roundTrippedBytes, out port);
+            err = IPAddressPal.Ipv4StringToAddress(actualAddressString, roundTrippedBytes, IPAddressParserStatics.IPv4AddressBytes, out port);
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             Assert.Equal(bytes[0], roundTrippedBytes[0]);
             Assert.Equal(bytes[1], roundTrippedBytes[1]);
@@ -148,22 +148,25 @@ namespace System.Net.Primitives.PalTests
         [Theory, MemberData(nameof(ValidIPv4Addresses))]
         public void IPv4StringToAddress_RoundTrip(byte[] bytes, string addressString)
         {
-            var actualBytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
-            ushort port;
-            uint err = IPAddressPal.Ipv4StringToAddress(addressString, actualBytes, out port);
-            Assert.Equal(IPAddressPal.SuccessErrorCode, err);
-            Assert.Equal(bytes[0], actualBytes[0]);
-            Assert.Equal(bytes[1], actualBytes[1]);
-            Assert.Equal(bytes[2], actualBytes[2]);
-            Assert.Equal(bytes[3], actualBytes[3]);
-            Assert.Equal(0, port);
+            var actualBytesArr = new byte[IPAddressParserStatics.IPv4AddressBytes];
+            fixed (byte* actualBytes = actualBytesArr)
+            {
+                ushort port;
+                uint err = IPAddressPal.Ipv4StringToAddress(addressString, actualBytes, IPAddressParserStatics.IPv4AddressBytes, out port);
+                Assert.Equal(IPAddressPal.SuccessErrorCode, err);
+                Assert.Equal(bytes[0], actualBytes[0]);
+                Assert.Equal(bytes[1], actualBytes[1]);
+                Assert.Equal(bytes[2], actualBytes[2]);
+                Assert.Equal(bytes[3], actualBytes[3]);
+                Assert.Equal(0, port);
 
-            var buffer = new StringBuilder(IPAddressParser.INET_ADDRSTRLEN);
-            err = IPAddressPal.Ipv4AddressToString(actualBytes, buffer);
-            Assert.Equal(IPAddressPal.SuccessErrorCode, err);
+                var buffer = new StringBuilder(IPAddressParser.INET_ADDRSTRLEN);
+                err = IPAddressPal.Ipv4AddressToString(actualBytesArr, buffer);
+                Assert.Equal(IPAddressPal.SuccessErrorCode, err);
 
-            var roundTrippedAddressString = buffer.ToString();
-            Assert.Equal(addressString, roundTrippedAddressString);
+                var roundTrippedAddressString = buffer.ToString();
+                Assert.Equal(addressString, roundTrippedAddressString);
+            }
         }
 
         [Fact]
@@ -176,7 +179,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -195,7 +202,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -214,7 +225,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -233,7 +248,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -252,7 +271,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -271,7 +294,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -290,7 +317,11 @@ namespace System.Net.Primitives.PalTests
             Assert.Equal(bytes.Length, expectedBytes.Length);
 
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err;
+            fixed (byte* bytesPtr = bytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(AddressString, bytesPtr, bytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < expectedBytes.Length; i++)
             {
@@ -304,9 +335,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "";
 
-            var bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -315,9 +346,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "hello, world";
 
-            var bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -326,9 +357,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "[2001:db8::1]:xx";
 
-            var bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -337,9 +368,9 @@ namespace System.Net.Primitives.PalTests
         {
             const string AddressString = "2001::db8::1";
 
-            var bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+            var bytes = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, out scope);
+            uint err = IPAddressPal.Ipv6StringToAddress(AddressString, bytes, IPAddressParserStatics.IPv6AddressBytes, out scope);
             Assert.NotEqual(err, IPAddressPal.SuccessErrorCode);
         }
 
@@ -383,7 +414,10 @@ namespace System.Net.Primitives.PalTests
 
             var roundTrippedBytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            err = IPAddressPal.Ipv6StringToAddress(actualAddressString, roundTrippedBytes, out scope);
+            fixed (byte* roundTrippedBytesPtr = roundTrippedBytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(actualAddressString, roundTrippedBytesPtr, IPAddressParserStatics.IPv6AddressBytes, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < bytes.Length; i++)
             {
@@ -397,7 +431,11 @@ namespace System.Net.Primitives.PalTests
         {
             var actualBytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
             uint scope;
-            uint err = IPAddressPal.Ipv6StringToAddress(addressString, actualBytes, out scope);
+            uint err;
+            fixed (byte* actualBytesPtr = actualBytes)
+            {
+                err = IPAddressPal.Ipv6StringToAddress(addressString, actualBytesPtr, actualBytes.Length, out scope);
+            }
             Assert.Equal(IPAddressPal.SuccessErrorCode, err);
             for (int i = 0; i < bytes.Length; i++)
             {

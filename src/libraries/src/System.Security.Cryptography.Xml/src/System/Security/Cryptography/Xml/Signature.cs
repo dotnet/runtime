@@ -104,13 +104,13 @@ namespace System.Security.Cryptography.Xml
 
             // Add the SignedInfo
             if (_signedInfo == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_SignedInfoRequired"));
+                throw new CryptographicException(SR.Cryptography_Xml_SignedInfoRequired);
 
             signatureElement.AppendChild(_signedInfo.GetXml(document));
 
             // Add the SignatureValue
             if (_signatureValue == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_SignatureValueRequired"));
+                throw new CryptographicException(SR.Cryptography_Xml_SignatureValueRequired);
 
             XmlElement signatureValueElement = document.CreateElement("SignatureValue", SignedXml.XmlDsigNamespaceUrl);
             signatureValueElement.AppendChild(document.CreateTextNode(Convert.ToBase64String(_signatureValue)));
@@ -139,12 +139,12 @@ namespace System.Security.Cryptography.Xml
         {
             // Make sure we don't get passed null
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             // Signature
             XmlElement signatureElement = value;
             if (!signatureElement.LocalName.Equals("Signature"))
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "Signature");
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Signature");
 
             // Id attribute -- optional
             _id = Utils.GetAttribute(signatureElement, "Id", SignedXml.XmlDsigNamespaceUrl);
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Xml
             // SignedInfo
             XmlElement signedInfoElement = signatureElement.SelectSingleNode("ds:SignedInfo", nsm) as XmlElement;
             if (signedInfoElement == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "SignedInfo");
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo");
 
             SignedInfo = new SignedInfo();
             SignedInfo.LoadXml(signedInfoElement);
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Xml
             // SignatureValue
             XmlElement signatureValueElement = signatureElement.SelectSingleNode("ds:SignatureValue", nsm) as XmlElement;
             if (signatureValueElement == null)
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_InvalidElement"), "SignedInfo/SignatureValue");
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/SignatureValue");
             _signatureValue = Convert.FromBase64String(Utils.DiscardWhiteSpaces(signatureValueElement.InnerText));
             _signatureValueId = Utils.GetAttribute(signatureValueElement, "Id", SignedXml.XmlDsigNamespaceUrl);
 

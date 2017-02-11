@@ -40,9 +40,9 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (CipherValue != null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CipherValueElementRequired"));
+                    throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
 
                 _cipherReference = value;
                 _cachedXml = null;
@@ -55,9 +55,9 @@ namespace System.Security.Cryptography.Xml
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 if (CipherReference != null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CipherValueElementRequired"));
+                    throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
 
                 _cipherValue = (byte[])value.Clone();
                 _cachedXml = null;
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml
             {
                 // No CipherValue specified, see if there is a CipherReference
                 if (CipherReference == null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CipherValueElementRequired"));
+                    throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
                 cipherDataElement.AppendChild(CipherReference.GetXml(document));
             }
             return cipherDataElement;
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Xml
         public void LoadXml(XmlElement value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Xml
             if (cipherValueNode != null)
             {
                 if (cipherReferenceNode != null)
-                    throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CipherValueElementRequired"));
+                    throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
                 _cipherValue = Convert.FromBase64String(Utils.DiscardWhiteSpaces(cipherValueNode.InnerText));
             }
             else if (cipherReferenceNode != null)
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Xml
             }
             else
             {
-                throw new CryptographicException(SecurityResources.GetResourceString("Cryptography_Xml_CipherValueElementRequired"));
+                throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
             }
 
             // Save away the cached value
