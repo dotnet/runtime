@@ -1357,6 +1357,7 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
 {
     HRESULT hrRetVal = S_OK;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // SetupForComCallHR uses "SO_INTOLERANT_CODE_NOTHROW" to setup the SO-Intolerant transition
     // for COM Interop. However, "SO_INTOLERANT_CODE_NOTHROW" expects that no exception can escape
     // through this boundary but all it does is (in addition to checking that no exception has escaped it)
@@ -1367,6 +1368,9 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
     // SO_INTOLERANT_CODE_NOTHROW and yet allow for CEs to escape through. Since there will be a corresponding
     // END_SO_INTOLERANT_CODE, the call is splitted into two parts: the Begin and End (see below).
     BeginSetupForComCallHRWithEscapingCorruptingExceptions();
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+    SetupForComCallHR();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     
 
     CONTRACTL
@@ -1387,7 +1391,9 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
                        pvarResult, pexcepinfo, puArgErr, &hrRetVal};
     Dispatch_Invoke_CallBack(&args);   
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     EndSetupForComCallHRWithEscapingCorruptingExceptions();
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     return hrRetVal;
 }

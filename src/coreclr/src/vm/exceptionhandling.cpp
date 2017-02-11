@@ -949,6 +949,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                                                 !(dwExceptionFlags & EXCEPTION_UNWINDING),
                                                 &STState);
     
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Only setup the Corruption Severity in the first pass
         if (!(dwExceptionFlags & EXCEPTION_UNWINDING))
         {
@@ -963,6 +964,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                                                                     CEHelper::ShouldTreatActiveExceptionAsNonCorrupting());
             }
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
         {
             // Switch to COOP mode since we are going to work
@@ -2378,6 +2380,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
     if (fIsILStub && !fIsFunclet)    // only make this callback on the main method body of IL stubs
         pUserMDForILStub = GetUserMethodForILStub(pThread, sf.SP, pMD, &pILStubFrame);
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     BOOL fCanMethodHandleException = TRUE;
     CorruptionSeverity currentSeverity = NotCorrupting;
     {
@@ -2394,6 +2397,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         currentSeverity = pThread->GetExceptionState()->GetCurrentExceptionTracker()->GetCorruptionSeverity();
         fCanMethodHandleException = CEHelper::CanMethodHandleException(currentSeverity, pMDWithCEAttribute);
     }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     // Doing rude abort.  Skip all non-constrained execution region code.
     // When rude abort is initiated, we cannot intercept any exceptions.
@@ -2618,6 +2622,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
             EH_CLAUSE_ENUMERATOR EnumState;
             unsigned             EHCount;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             // The method cannot handle the exception (e.g. cannot handle the CE), then simply bail out
             // without examining the EH clauses in it.
             if (!fCanMethodHandleException)
@@ -2631,6 +2636,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                 EHCount = 0;
             }
             else
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
             {
                 EHCount = pJitMan->InitializeEHEnumeration(MethToken, &EnumState);
             }
@@ -3884,6 +3890,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             }
         }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (fCreateNewTracker)
         {
             // Exception tracker should be in the 2nd pass right now
@@ -3895,6 +3902,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             // See comment in CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass for details
             CEHelper::SetupCorruptionSeverityForActiveExceptionInUnwindPass(pThread, pTracker, FALSE, pExceptionRecord->ExceptionCode);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     _ASSERTE(pTracker->m_pLimitFrame >= pThread->GetFrame());
@@ -4659,6 +4667,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         ThreadExceptionState * pCurTES = pCurThread->GetExceptionState();
         _ASSERTE(pCurTES != NULL);
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         ExceptionTracker* pEHTracker = pCurTES->GetCurrentExceptionTracker();
         if (pEHTracker == NULL)
         {
@@ -4670,6 +4679,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
             pCurTES->SetLastActiveExceptionCorruptionSeverity(severity);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     throw std::move(ex);

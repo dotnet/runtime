@@ -162,7 +162,9 @@ PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity = NotCorrupting
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                                         );
 
 //-------------------------------------------------------------------------------
@@ -2798,7 +2800,9 @@ LONG RaiseExceptionFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
 // Throw an object.
 //==========================================================================
 VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                          , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                                          )
 {
     STATIC_CONTRACT_THROWS;
@@ -2830,6 +2834,7 @@ VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
     _ASSERTE(throwable != CLRException::GetPreallocatedStackOverflowException());
 #endif
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     if (!g_pConfig->LegacyCorruptedStateExceptionsPolicy())
     {
         // This is Scenario 3 described in clrex.h around the definition of SET_CE_RETHROW_FLAG_FOR_EX_CATCH macro.
@@ -2879,6 +2884,7 @@ VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
         LOG((LF_EH, LL_INFO100, "RaiseTheException - Set VM thrown managed exception severity to %d.\n", severity));
     }
 
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     RaiseTheExceptionInternalOnly(throwable,rethrow);
 }
@@ -3120,7 +3126,9 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 
 // INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter, so must put the call in a separate fcn
 static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                                      , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 ) {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -3149,14 +3157,18 @@ static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL r
     // TODO: Do we need to install COMPlusFrameHandler here?
     INSTALL_COMPLUS_EXCEPTION_HANDLER();
     RaiseTheException(throwable, rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
     UNINSTALL_COMPLUS_EXCEPTION_HANDLER();
 }
 
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 ) {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -3182,14 +3194,18 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow
     }
 
     RealCOMPlusThrowWorker(throwable, rethrow
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
     GCPROTECT_END();
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                         , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                                         )
 {
     CONTRACTL
@@ -3201,7 +3217,9 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable
     CONTRACTL_END;
 
     RealCOMPlusThrow(throwable, FALSE
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 }
 
@@ -3924,11 +3942,13 @@ BOOL IsUncatchable(OBJECTREF *pThrowable)
         if (OBJECTREFToObject(*pThrowable)->GetMethodTable() == g_pExecutionEngineExceptionClass)
             return TRUE;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         // Corrupting exceptions are also uncatchable
         if (CEHelper::IsProcessCorruptedStateException(*pThrowable))
         {
             return TRUE;
         }
+#endif //FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     return FALSE;
@@ -8869,10 +8889,12 @@ LONG ReflectionInvocationExceptionFilter(
 #error Unsupported platform
 #endif // _WIN64
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
         {
             EEPolicy::HandleFatalError(COR_E_FAILFAST, reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress), NULL, pExceptionInfo);
         }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
 
     return ret;
@@ -11395,6 +11417,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
     return fFoundTracker ? pEHTracker : NULL;
 }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 // -----------------------------------------------------------------------
 // Support for CorruptedState Exceptions
 // -----------------------------------------------------------------------
@@ -12222,6 +12245,7 @@ BOOL CEHelper::CanIDispatchTargetHandleException()
     return fCanMethodHandleException;
 }
 
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifndef DACCESS_COMPILE
 // When a managed thread starts in non-default domain, its callstack looks like below:
@@ -12584,6 +12608,7 @@ static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 // This method will return a BOOL indicating if the delegate should be invoked for the exception
 // of the specified corruption severity.
 BOOL ExceptionNotifications::CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity)
@@ -12622,13 +12647,16 @@ BOOL ExceptionNotifications::CanDelegateBeInvokedForException(OBJECTREF *pDelega
 
     return fCanMethodHandleException;
 }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 // This method will make the actual delegate invocation for the exception notification to be delivered. If an
 // exception escapes out of the notification, our filter in ExceptionNotifications::DeliverNotification will
 // address it.
 void ExceptionNotifications::InvokeNotificationDelegate(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
                                                         OBJECTREF *pAppDomain
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                                                         , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                                                         )
 {
     CONTRACTL
@@ -12639,13 +12667,16 @@ void ExceptionNotifications::InvokeNotificationDelegate(ExceptionNotificationHan
         PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
         PRECONDITION(pEventArgs != NULL && IsProtectedByGCFrame(pEventArgs));
         PRECONDITION(pAppDomain != NULL && IsProtectedByGCFrame(pAppDomain));
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         PRECONDITION(severity > NotSet);
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         // Unhandled Exception Notification is delivered via Unhandled Exception Processing
         // mechanism.
         PRECONDITION(notificationType != UnhandledExceptionHandler);
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Notifications are delivered based upon corruption severity of the exception
     if (!ExceptionNotifications::CanDelegateBeInvokedForException(pDelegate, severity))
     {
@@ -12653,6 +12684,7 @@ void ExceptionNotifications::InvokeNotificationDelegate(ExceptionNotificationHan
         severity));
         return;
     }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     // We've already exercised the prestub on this delegate's COMDelegate::GetMethodDesc,
     // as part of wiring up a reliable event sink in the BCL. Deliver the notification.
@@ -12701,7 +12733,9 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
 // our filter.
 void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerType notificationType,
                                                  OBJECTREF *pThrowable
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         )
 {
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -12712,19 +12746,25 @@ void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerTyp
     {
         ExceptionNotificationHandlerType notificationType;
         OBJECTREF *pThrowable;
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         CorruptionSeverity severity;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     } args;
 
     args.notificationType = notificationType;
     args.pThrowable = pThrowable;
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     args.severity = severity;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
         // Make the call to the actual method that will invoke the callbacks
         ExceptionNotifications::DeliverNotificationInternal(pArgs->notificationType,
             pArgs->pThrowable
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             , pArgs->severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
             );
     }
     PAL_EXCEPT_FILTER(ExceptionNotificationFilter)
@@ -12740,7 +12780,9 @@ void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerTyp
 // This method will deliver the exception notification to the current AppDomain.
 void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
                                                  OBJECTREF *pThrowable
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , CorruptionSeverity severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         )
 {
     CONTRACTL
@@ -12754,7 +12796,9 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         PRECONDITION(notificationType != UnhandledExceptionHandler);
         PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
         PRECONDITION(ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(notificationType));
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         PRECONDITION(severity > NotSet); // Exception corruption severity must be valid at this point.
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     }
     CONTRACTL_END;
 
@@ -12824,7 +12868,9 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         {
             ExceptionNotifications::InvokeNotificationDelegate(notificationType, &gc.oNotificationDelegate, &gc.oEventArgs,
                 &gc.oCurAppDomain
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                 , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                 );
         }
         else
@@ -12839,7 +12885,9 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
                 gc.oInnerDelegate = gc.arrDelegates->m_Array[i];
                 ExceptionNotifications::InvokeNotificationDelegate(notificationType, &gc.oInnerDelegate, &gc.oEventArgs,
                     &gc.oCurAppDomain
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
                     , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
                     );
             }
         }
@@ -12881,7 +12929,9 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
             _ASSERTE(oThrowable != NULL);
 
             ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
              , pCurTES->GetCurrentExceptionTracker()->GetCorruptionSeverity()
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
              );
             GCPROTECT_END();
 

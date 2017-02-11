@@ -315,8 +315,10 @@ public:
     bool LegacyComVTableLayout(void)                const {LIMITED_METHOD_CONTRACT;  return fLegacyComVTableLayout; }
     bool NewComVTableLayout(void)                   const {LIMITED_METHOD_CONTRACT;  return fNewComVTableLayout; }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
     bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
     
     // SECURITY
     unsigned    ImpersonationMode(void)           const 
@@ -906,7 +908,9 @@ private: //----------------------------------------------------------------
     bool fLegacyUnhandledExceptionPolicy;     // Old unhandled exception policy (many are swallowed)
     bool fLegacyVirtualMethodCallVerification;  // Old (pre-whidbey) policy for call (nonvirt) of virtual function
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     bool fLegacyCorruptedStateExceptionsPolicy;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     bool fLegacyApartmentInitPolicy;          // Old nondeterministic COM apartment initialization switch
     bool fLegacyComHierarchyVisibility;       // Old behavior allowing QIs for classes with invisible parents
