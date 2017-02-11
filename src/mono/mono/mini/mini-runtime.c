@@ -1,6 +1,6 @@
-
-/*
- * mini-runtime.c: Runtime code for the JIT
+/**
+ * \file
+ * Runtime code for the JIT
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

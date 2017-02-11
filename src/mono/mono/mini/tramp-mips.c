@@ -1,5 +1,6 @@
-/*
- * tramp-mips.c: JIT trampoline code for MIPS
+/**
+ * \file
+ * JIT trampoline code for MIPS
  *
  * Authors:
  *    Mark Mason (mason@broadcom.com)

@@ -1,5 +1,6 @@
-/*
- * exceptions-ia64.c: exception support for IA64
+/**
+ * \file
+ * exception support for IA64
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * exceptions-mips.c: exception support for MIPS
+/**
+ * \file
+ * exception support for MIPS
  *
  * Authors:
  *   Mark Mason (mason@broadcom.com)

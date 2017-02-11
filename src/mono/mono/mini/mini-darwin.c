@@ -1,5 +1,6 @@
-/*
- * mini-darwin.c: Darwin/MacOS support for Mono.
+/**
+ * \file
+ * Darwin/MacOS support for Mono.
  *
  * Authors:
  *   Mono Team (mono-list@lists.ximian.com)

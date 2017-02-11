@@ -1,5 +1,6 @@
-/*
- * xdebug.c: Support for emitting gdb debug info for JITted code.
+/**
+ * \file
+ * Support for emitting gdb debug info for JITted code.
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

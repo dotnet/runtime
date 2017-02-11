@@ -1,5 +1,6 @@
-/*
- * tramp-arm64.c: JIT trampoline code for ARM64
+/**
+ * \file
+ * JIT trampoline code for ARM64
  *
  * Copyright 2013 Xamarin Inc
  *

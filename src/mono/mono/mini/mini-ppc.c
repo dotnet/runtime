@@ -1,5 +1,6 @@
-/*
- * mini-ppc.c: PowerPC backend for the Mono code generator
+/**
+ * \file
+ * PowerPC backend for the Mono code generator
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

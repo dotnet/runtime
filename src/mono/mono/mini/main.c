@@ -1,5 +1,6 @@
-/*
- * main.c: The main entry point for the mono executable
+/**
+ * \file
+ * The main entry point for the mono executable
  *
  * The main entry point does a few things:
  * 

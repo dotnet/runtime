@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)
  *

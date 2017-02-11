@@ -1,5 +1,6 @@
-/*
- * mini-windows-dllmain.c: DllMain entry point.
+/**
+ * \file
+ * DllMain entry point.
  *
  * (C) 2002-2003 Ximian, Inc.
  * (C) 2003-2006 Novell, Inc.

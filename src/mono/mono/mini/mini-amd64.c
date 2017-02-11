@@ -1,5 +1,6 @@
-/*
- * mini-amd64.c: AMD64 backend for the Mono code generator
+/**
+ * \file
+ * AMD64 backend for the Mono code generator
  *
  * Based on mini-x86.c.
  *

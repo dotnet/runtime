@@ -1,5 +1,6 @@
-/*
- * exceptions-arm.c: exception support for ARM
+/**
+ * \file
+ * exception support for ARM
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

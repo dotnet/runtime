@@ -1,5 +1,6 @@
-/*
- * method-to-ir.c: Convert CIL to the JIT internal representation
+/**
+ * \file
+ * Convert CIL to the JIT internal representation
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

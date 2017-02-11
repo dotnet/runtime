@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_XDEBUG_LLDB_H__
 #define __MONO_XDEBUG_LLDB_H__
 

@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * Utilities for handling interpreter VM instructions
  *
  * Authors:

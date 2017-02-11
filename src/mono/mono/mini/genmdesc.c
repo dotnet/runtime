@@ -1,5 +1,6 @@
-/*
- * genmdesc: Generates the machine description
+/**
+ * \file
+ * Generates the machine description
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

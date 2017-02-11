@@ -1,5 +1,6 @@
-/*
- * exceptions-sparc.c: exception support for sparc
+/**
+ * \file
+ * exception support for sparc
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)

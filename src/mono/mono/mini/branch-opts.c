@@ -1,5 +1,6 @@
-/*
- * branch-opts.c: Branch optimizations support 
+/**
+ * \file
+ * Branch optimizations support
  *
  * Authors:
  *   Patrik Torstensson (Patrik.Torstesson at gmail.com)

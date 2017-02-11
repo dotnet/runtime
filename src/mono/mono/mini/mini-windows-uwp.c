@@ -1,5 +1,6 @@
-/*
- * mini-windows-uwp.c: UWP profiler stat support for Mono.
+/**
+ * \file
+ * UWP profiler stat support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

@@ -1,5 +1,6 @@
-/*
- * mini-arm.c: ARM backend for the Mono code generator
+/**
+ * \file
+ * ARM backend for the Mono code generator
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

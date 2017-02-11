@@ -1,5 +1,6 @@
-/*
- * mini-sparc.c: Sparc backend for the Mono code generator
+/**
+ * \file
+ * Sparc backend for the Mono code generator
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

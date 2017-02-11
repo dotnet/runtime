@@ -1,5 +1,6 @@
-/*
- * driver.c: The new mono JIT compiler.
+/**
+ * \file
+ * The new mono JIT compiler.
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

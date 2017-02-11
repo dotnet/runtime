@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_TRACE_H__
 #define __MONO_TRACE_H__
 #include <glib.h>

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_MINI_INTERPRETER_H__
 #define __MONO_MINI_INTERPRETER_H__
 #include <mono/mini/mini.h>

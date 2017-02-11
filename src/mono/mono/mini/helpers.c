@@ -1,5 +1,6 @@
-/*
- * helpers.c: Assorted routines
+/**
+ * \file
+ * Assorted routines
  *
  * (C) 2003 Ximian, Inc.
  */

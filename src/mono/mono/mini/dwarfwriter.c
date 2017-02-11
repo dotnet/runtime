@@ -1,5 +1,6 @@
-/*
- * dwarfwriter.c: Creation of DWARF debug information
+/**
+ * \file
+ * Creation of DWARF debug information
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

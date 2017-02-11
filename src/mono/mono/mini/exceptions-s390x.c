@@ -1,21 +1,20 @@
-/*------------------------------------------------------------------*/
-/* 								    */
-/* Name        - exceptions-s390.c				    */
-/* 								    */
-/* Function    - Exception support for S/390.                       */
-/* 								    */
-/* Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com) */
-/* 								    */
-/* Date        - January, 2004					    */
-/* 								    */
-/* Derivation  - From exceptions-x86 & exceptions-ppc		    */
-/* 	         Paolo Molaro (lupus@ximian.com) 		    */
-/* 		 Dietmar Maurer (dietmar@ximian.com)		    */
-/* 								    */
-/* Copyright   - 2001 Ximian, Inc.				    */
-/* Licensed under the MIT license. See LICENSE file in the project root for full license information. */
-/* 								    */
-/*------------------------------------------------------------------*/
+/**
+ * \file
+ *
+ * Function    - Exception support for S/390.
+ *
+ * Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
+ *
+ * Date        - January, 2004
+ *
+ * Derivation  - From exceptions-x86 & exceptions-ppc
+ * 	         Paolo Molaro (lupus@ximian.com)
+ * 		 Dietmar Maurer (dietmar@ximian.com)
+ *
+ * Copyright   - 2001 Ximian, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ *
+ */
 
 /*------------------------------------------------------------------*/
 /*                 D e f i n e s                                    */

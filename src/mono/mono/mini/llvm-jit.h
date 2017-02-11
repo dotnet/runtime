@@ -1,5 +1,6 @@
-/*
- * llvm-jit.h: LLVM backend
+/**
+ * \file
+ * LLVM backend
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

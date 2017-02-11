@@ -1,5 +1,6 @@
-/*
- * exceptions-amd64.c: exception support for AMD64
+/**
+ * \file
+ * exception support for AMD64
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

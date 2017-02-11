@@ -1,5 +1,6 @@
-/*
- * image-writer.c: Creation of object files or assembly files using the same interface.
+/**
+ * \file
+ * Creation of object files or assembly files using the same interface.
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

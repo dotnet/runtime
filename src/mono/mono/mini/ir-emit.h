@@ -1,5 +1,6 @@
-/*
- * ir-emit.h: IR Creation/Emission Macros
+/**
+ * \file
+ * IR Creation/Emission Macros
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

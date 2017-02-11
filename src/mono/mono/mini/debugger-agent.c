@@ -1,5 +1,6 @@
-/*
- * debugger-agent.c: Soft Debugger back-end module
+/**
+ * \file
+ * Soft Debugger back-end module
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * trace.c: Tracing facilities for the Mono Runtime.
+/**
+ * \file
+ * Tracing facilities for the Mono Runtime.
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

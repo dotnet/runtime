@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_SUPPORT_S390X_H__
 #define __MONO_SUPPORT_S390X_H__
 

@@ -1,5 +1,6 @@
-/*
- * tramp-arm.c: JIT trampoline code for ARM
+/**
+ * \file
+ * JIT trampoline code for ARM
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * mini-arm-gsharedvt.c: gsharedvt support code for arm
+/**
+ * \file
+ * gsharedvt support code for arm
  *
  * Authors:
  *   Zoltan Varga <vargaz@gmail.com>

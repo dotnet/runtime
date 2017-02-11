@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_DEBUGGER_AGENT_H__
 #define __MONO_DEBUGGER_AGENT_H__
 

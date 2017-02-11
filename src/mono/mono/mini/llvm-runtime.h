@@ -1,5 +1,6 @@
-/*
- * llvm-runtime.h: Runtime support for llvm generated code
+/**
+ * \file
+ * Runtime support for llvm generated code
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

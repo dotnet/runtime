@@ -1,5 +1,6 @@
-/*
- * tramp-x86-gsharedvt.c: gsharedvt support code for x86
+/**
+ * \file
+ * gsharedvt support code for x86
  *
  * Authors:
  *   Zoltan Varga <vargaz@gmail.com>

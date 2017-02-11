@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_MINI_GC_H__
 #define __MONO_MINI_GC_H__
 

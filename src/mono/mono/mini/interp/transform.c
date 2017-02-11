@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * transform CIL into different opcodes for more
  * efficient interpretation
  *

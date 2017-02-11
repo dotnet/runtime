@@ -1,5 +1,6 @@
-/*
- * debug-mini.c: Mini-specific debugging stuff.
+/**
+ * \file
+ * Mini-specific debugging stuff.
  *
  * Author:
  *   Martin Baulig (martin@ximian.com)

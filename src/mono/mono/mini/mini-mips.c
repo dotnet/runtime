@@ -1,5 +1,6 @@
-/*
- * mini-mips.c: MIPS backend for the Mono code generator
+/**
+ * \file
+ * MIPS backend for the Mono code generator
  *
  * Authors:
  *   Mark Mason (mason@broadcom.com)

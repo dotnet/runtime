@@ -1,5 +1,6 @@
-/*
- * tramp-ia64.c: JIT trampoline code for ia64
+/**
+ * \file
+ * JIT trampoline code for ia64
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

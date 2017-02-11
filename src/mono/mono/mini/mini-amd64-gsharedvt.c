@@ -1,5 +1,6 @@
-/*
- * mini-amd64-gsharedvt.c: libcorkscrew-based native unwinder
+/**
+ * \file
+ * libcorkscrew-based native unwinder
  *
  * Authors:
  *   Zoltan Varga <vargaz@gmail.com>

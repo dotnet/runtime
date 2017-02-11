@@ -1,5 +1,6 @@
-/*
- * mini-unwind.h: Stack Unwinding Interface
+/**
+ * \file
+ * Stack Unwinding Interface
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * tramp-x86.c: JIT trampoline code for x86
+/**
+ * \file
+ * JIT trampoline code for x86
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __INTERPRETER_MINTOPS_H
 #define __INTERPRETER_MINTOPS_H
 

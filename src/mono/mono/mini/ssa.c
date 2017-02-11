@@ -1,5 +1,6 @@
-/*
- * ssa.c: Static single assign form support for the JIT compiler.
+/**
+ * \file
+ * Static single assign form support for the JIT compiler.
  *
  * Author:
  *    Dietmar Maurer (dietmar@ximian.com)

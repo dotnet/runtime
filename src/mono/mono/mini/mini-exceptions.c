@@ -1,5 +1,6 @@
-/*
- * mini-exceptions.c: generic exception support
+/**
+ * \file
+ * generic exception support
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * simd-instrisics.c: simd support for intrinsics
+/**
+ * \file
+ * simd support for intrinsics
  *
  * Author:
  *   Rodrigo Kumpera (rkumpera@novell.com)

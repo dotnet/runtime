@@ -1,5 +1,6 @@
-/*
- * cfold.c: Constant folding support
+/**
+ * \file
+ * Constant folding support
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

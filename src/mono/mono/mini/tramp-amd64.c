@@ -1,5 +1,6 @@
-/*
- * tramp-amd64.c: JIT trampoline code for amd64
+/**
+ * \file
+ * JIT trampoline code for amd64
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

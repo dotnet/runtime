@@ -1,5 +1,6 @@
-/*
- * tramp-sparc.c: JIT trampoline code for Sparc
+/**
+ * \file
+ * JIT trampoline code for Sparc
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)

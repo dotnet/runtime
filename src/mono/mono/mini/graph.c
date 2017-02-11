@@ -1,5 +1,6 @@
-/*
- * graph.c: Helper routines to graph various internal states of the code generator
+/**
+ * \file
+ * Helper routines to graph various internal states of the code generator
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

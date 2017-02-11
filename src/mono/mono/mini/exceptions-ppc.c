@@ -1,5 +1,6 @@
-/*
- * exceptions-ppc.c: exception support for PowerPC
+/**
+ * \file
+ * exception support for PowerPC
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

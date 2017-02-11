@@ -1,5 +1,6 @@
-/*
- * mini-gc.c: GC interface for the mono JIT
+/**
+ * \file
+ * GC interface for the mono JIT
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

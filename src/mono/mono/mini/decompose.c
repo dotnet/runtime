@@ -1,5 +1,6 @@
-/*
- * decompose.c: Functions to decompose complex IR instructions into simpler ones.
+/**
+ * \file
+ * Functions to decompose complex IR instructions into simpler ones.
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

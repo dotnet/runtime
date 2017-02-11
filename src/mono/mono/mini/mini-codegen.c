@@ -1,5 +1,6 @@
-/*
- * mini-codegen.c: Arch independent code generation functionality
+/**
+ * \file
+ * Arch independent code generation functionality
  *
  * (C) 2003 Ximian, Inc.
  */

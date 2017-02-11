@@ -1,5 +1,6 @@
-/*
- * unwind.c: Stack Unwinding Interface
+/**
+ * \file
+ * Stack Unwinding Interface
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

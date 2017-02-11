@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_AOT_COMPILER_H__
 #define __MONO_AOT_COMPILER_H__
 

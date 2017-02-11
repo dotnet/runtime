@@ -1,5 +1,6 @@
-/*
- * exceptions-x86.c: exception support for x86
+/**
+ * \file
+ * exception support for x86
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

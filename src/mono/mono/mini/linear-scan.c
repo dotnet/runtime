@@ -1,5 +1,6 @@
-/*
- * liveness.c: liveness analysis
+/**
+ * \file
+ * liveness analysis
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

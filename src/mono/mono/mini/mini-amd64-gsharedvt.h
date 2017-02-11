@@ -1,5 +1,6 @@
-/*
- * mini-exceptions-native-unwinder.c: libcorkscrew-based native unwinder
+/**
+ * \file
+ * libcorkscrew-based native unwinder
  *
  * Authors:
  *   Zoltan Varga <vargaz@gmail.com>

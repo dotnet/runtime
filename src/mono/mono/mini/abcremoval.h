@@ -1,5 +1,6 @@
-/*
- * abcremoval.h: Array bounds check removal
+/**
+ * \file
+ * Array bounds check removal
  *
  * Author:
  *   Massimiliano Mantione (massi@ximian.com)

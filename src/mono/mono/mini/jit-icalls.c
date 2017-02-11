@@ -1,5 +1,6 @@
-/*
- * jit-icalls.c: internal calls used by the JIT
+/**
+ * \file
+ * internal calls used by the JIT
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

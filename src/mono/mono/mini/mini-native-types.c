@@ -1,5 +1,6 @@
-/*
- * magic-types.c: intrinsics for variable sized int/floats
+/**
+ * \file
+ * intrinsics for variable sized int/floats
  *
  * Author:
  *   Rodrigo Kumpera (kumpera@gmail.com)

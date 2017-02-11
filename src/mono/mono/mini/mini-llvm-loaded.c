@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * Handle the differences between the llvm backend beeing embedded
  * or loaded at runtime.
  */

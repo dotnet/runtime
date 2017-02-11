@@ -1,5 +1,6 @@
-/*
- * mini-x86.c: x86 backend for the Mono code generator
+/**
+ * \file
+ * x86 backend for the Mono code generator
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

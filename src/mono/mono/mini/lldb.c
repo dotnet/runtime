@@ -1,5 +1,6 @@
-/*
- * lldb.c: Mono support for LLDB.
+/**
+ * \file
+ * Mono support for LLDB.
  *
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)

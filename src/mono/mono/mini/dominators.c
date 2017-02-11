@@ -1,5 +1,6 @@
-/*
- * dominators.c: Dominator computation on the control flow graph
+/**
+ * \file
+ * Dominator computation on the control flow graph
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

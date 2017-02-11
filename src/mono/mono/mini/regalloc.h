@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #if defined(__native_client__) && defined(__x86_64__)
 typedef guint64 regmask_t;
 #else

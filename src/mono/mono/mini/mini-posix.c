@@ -1,5 +1,6 @@
-/*
- * mini-posix.c: POSIX signal handling support for Mono.
+/**
+ * \file
+ * POSIX signal handling support for Mono.
  *
  * Authors:
  *   Mono Team (mono-list@lists.ximian.com)

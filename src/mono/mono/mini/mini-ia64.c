@@ -1,5 +1,6 @@
-/*
- * mini-ia64.c: IA64 backend for the Mono code generator
+/**
+ * \file
+ * IA64 backend for the Mono code generator
  *
  * Authors:
  *   Zoltan Varga (vargaz@gmail.com)

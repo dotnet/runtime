@@ -1,5 +1,6 @@
-/*
- * exceptions-arm64.c: exception support for ARM64
+/**
+ * \file
+ * exception support for ARM64
  *
  * Copyright 2013 Xamarin Inc
  *

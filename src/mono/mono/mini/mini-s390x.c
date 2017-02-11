@@ -1,18 +1,16 @@
-/*------------------------------------------------------------------*/
-/* 								    */
-/* Name        - mini-s390.c					    */
-/* 								    */
-/* Function    - S/390 backend for the Mono code generator.         */
-/* 								    */
-/* Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com) */
-/* 								    */
-/* Date        - January, 2004					    */
-/* 								    */
-/* Derivation  - From mini-x86 & mini-ppc by -			    */
-/* 	         Paolo Molaro (lupus@ximian.com) 		    */
-/* 		 Dietmar Maurer (dietmar@ximian.com)		    */
-/* 								    */
-/*------------------------------------------------------------------*/
+/**
+ * \file
+ * Function    - S/390 backend for the Mono code generator.
+ *
+ * Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
+ *
+ * Date        - January, 2004
+ *
+ * Derivation  - From mini-x86 & mini-ppc by -
+ * 	         Paolo Molaro (lupus@ximian.com)
+ * 		 Dietmar Maurer (dietmar@ximian.com)
+ *
+ */
 
 /*------------------------------------------------------------------*/
 /*                 D e f i n e s                                    */

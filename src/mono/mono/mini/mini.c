@@ -1,5 +1,6 @@
-/*
- * mini.c: The new Mono code generator.
+/**
+ * \file
+ * The new Mono code generator.
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * local-propagation.c: Local constant, copy and tree propagation.
+/**
+ * \file
+ * Local constant, copy and tree propagation.
  *
  * To make some sense of the tree mover, read mono/docs/tree-mover.txt
  *

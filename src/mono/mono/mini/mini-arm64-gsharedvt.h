@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MINI_ARM64_GSHAREDVT_H__
 #define __MINI_ARM64_GSHAREDVT_H__
 

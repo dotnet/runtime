@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #include "mini.h"
 
 /* Dummy versions of some arch specific functions to avoid ifdefs at call sites */

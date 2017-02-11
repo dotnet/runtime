@@ -1,5 +1,6 @@
-/*
- * alias-analysis.c: Implement simple alias analysis for local variables.
+/**
+ * \file
+ * Implement simple alias analysis for local variables.
  *
  * Author:
  *   Rodrigo Kumpera (kumpera@gmail.com)

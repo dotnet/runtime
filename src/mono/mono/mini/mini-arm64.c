@@ -1,5 +1,6 @@
-/*
- * mini-arm64.c: ARM64 backend for the Mono code generator
+/**
+ * \file
+ * ARM64 backend for the Mono code generator
  *
  * Copyright 2013 Xamarin, Inc (http://www.xamarin.com)
  * 

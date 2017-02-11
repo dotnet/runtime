@@ -1,5 +1,6 @@
-/*
- * mini-generic-sharing.c: Support functions for generic sharing.
+/**
+ * \file
+ * Support functions for generic sharing.
  *
  * Author:
  *   Mark Probst (mark.probst@gmail.com)
