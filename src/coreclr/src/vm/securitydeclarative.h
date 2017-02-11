@@ -152,9 +152,6 @@ namespace SecurityDeclarative
 
     inline BOOL ClassIsVisibleOutsideItsAssembly(DWORD dwClassAttr, BOOL fIsGlobalClass);
 
-#ifdef FEATURE_CAS_POLICY
-    void DECLSPEC_NORETURN ThrowHPException(EApiCategories protectedCategories, EApiCategories demandedCategories);
-#endif // FEATURE_CAS_POLICY
 
     // Add a declarative action and PermissionSet index to the linked list
     void AddDeclAction(CorDeclSecurity action, PsetCacheEntry *pClassPCE, PsetCacheEntry *pMethodPCE, DeclActionInfo** ppActionList, MethodDesc *pMeth);

@@ -68,9 +68,6 @@ inline void StoreObjectInLazyHandle(LOADERHANDLE& handle, OBJECTREF ref, LoaderA
 class SecurityDescriptor
 {
 protected:
-#ifdef FEATURE_CAS_POLICY
-    LOADERHANDLE m_hAdditionalEvidence;     // Evidence Object
-#endif // FEATURE_CAS_POLICY
 
     // The unmanaged DomainAssembly object
     DomainAssembly     *m_pAssem;
@@ -82,9 +79,6 @@ protected:
     AppDomain*   m_pAppDomain;
 
     BOOL         m_fSDResolved;
-#ifdef FEATURE_CAS_POLICY
-    BOOL         m_fEvidenceComputed;
-#endif // FEATURE_CAS_POLICY
 
     DWORD        m_dwSpecialFlags;
     LoaderAllocator *m_pLoaderAllocator;
@@ -102,15 +96,6 @@ public:
     AppDomain* GetDomain() const;
     BOOL CanCallUnmanagedCode() const;
 	
-#ifdef FEATURE_CAS_POLICY
-
-#ifndef DACCESS_COMPILE
-    void SetEvidence(OBJECTREF evidence);
-    BOOL CheckQuickCache(SecurityConfig::QuickCacheEntryType all, DWORD dwZone);
-#endif // FEATURE_CAS_POLICY
-    BOOL IsEvidenceComputed() const;
-    inline void SetEvidenceComputed();
-#endif // FEATURE_CAS_POLICY
 
 #ifndef DACCESS_COMPILE
     void SetGrantedPermissionSet(OBJECTREF GrantedPermissionSet,
@@ -156,12 +141,6 @@ public:
 
     virtual BOOL IsResolved() const { return SecurityDescriptor::IsResolved(); }
 
-#ifdef FEATURE_CAS_POLICY
-    virtual BOOL IsEvidenceComputed() const { return SecurityDescriptor::IsEvidenceComputed(); }
-#ifndef DACCESS_COMPILE
-    virtual void SetEvidence(OBJECTREF evidence) { SecurityDescriptor::SetEvidence(evidence); }
-#endif // DACCESS_COMPILE
-#endif // FEATURE_CAS_POLICY
 
 #ifndef DACCESS_COMPILE
     virtual OBJECTREF GetGrantedPermissionSet(OBJECTREF* RefusedPermissions = NULL) { return SecurityDescriptor::GetGrantedPermissionSet(RefusedPermissions); }

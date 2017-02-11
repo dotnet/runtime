@@ -35,27 +35,6 @@ inline void AssemblySecurityDescriptor::TryCachePassedDemand(PsetCacheEntry *pCa
         m_arrPassedLinktimeDemands[m_dwNumPassedDemands++] = pCasDemands;
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-inline BOOL AssemblySecurityDescriptor::IsAssemblyRequestsComputed() 
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fAssemblyRequestsComputed;
-}
-
-inline BOOL AssemblySecurityDescriptor::IsSignatureLoaded()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fIsSignatureLoaded;
-}
-
-inline void AssemblySecurityDescriptor::SetSignatureLoaded()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fIsSignatureLoaded = TRUE;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 
 #endif // !DACCESS_COMPILE

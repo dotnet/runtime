@@ -119,13 +119,6 @@ public:
     void QCALLTYPE SetSecurityHomogeneousFlag(QCall::AppDomainHandle adhTarget,
                                               BOOL fRuntimeSuppliedHomgenousGrantSet);
 
-#ifdef FEATURE_CAS_POLICY
-    static
-    void QCALLTYPE SetLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
-
-    static
-    BOOL QCALLTYPE IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
-#endif // FEATURE_CAS_POLICY
 
 
 #ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS

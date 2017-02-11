@@ -41,9 +41,6 @@
 #include "../binder/inc/coreclrbindercommon.h"
 #endif
 
-#ifdef FEATURE_CAS_POLICY
-#include <wintrust.h>
-#endif
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -88,12 +85,6 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     m_hash(NULL),
     m_flags(0),
     m_fStrongNameVerified(FALSE)
-#ifdef FEATURE_CAS_POLICY
-    ,m_certificate(NULL),
-    m_fCheckedCertificate(FALSE)
-    ,m_pSecurityManager(NULL)
-    ,m_securityManagerLock(CrstPEFileSecurityManager)
-#endif // FEATURE_CAS_POLICY
     ,m_pHostAssembly(nullptr)
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     ,m_pFallbackLoadContextBinder(nullptr)
@@ -122,12 +113,6 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     }
 
 
-#ifdef FEATURE_CAS_POLICY
-    if (fCheckAuthenticodeSignature)
-    {
-        CheckAuthenticodeSignature();
-    }
-#endif // FEATURE_CAS_POLICY
 }
 
 
@@ -164,14 +149,6 @@ PEFile::~PEFile()
         m_identity->Release();
     if (m_pMetadataLock)
         delete m_pMetadataLock;
-#ifdef FEATURE_CAS_POLICY
-    if (m_pSecurityManager) {
-        m_pSecurityManager->Release();
-        m_pSecurityManager = NULL;
-    }
-    if (m_certificate && !g_pCertificateCache->Contains(m_certificate))
-        CoTaskMemFree(m_certificate);
-#endif // FEATURE_CAS_POLICY
 
     if (m_pHostAssembly != NULL)
     {
@@ -835,86 +812,6 @@ void PEFile::GetCodeBaseOrName(SString &result)
         result.SetUTF8(GetSimpleName());
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-// Returns security information for the assembly based on the codebase
-void PEFile::GetSecurityIdentity(SString &codebase, SecZone *pdwZone, DWORD dwFlags, BYTE *pbUniqueID, DWORD *pcbUniqueID)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pdwZone));
-        PRECONDITION(CheckPointer(pbUniqueID));
-        PRECONDITION(CheckPointer(pcbUniqueID));
-    }
-    CONTRACTL_END;
-
-    if (IsAssembly())
-    {
-        ((PEAssembly*)this)->GetCodeBase(codebase);
-    }
-    else if (m_identity != NULL && !m_identity->GetPath().IsEmpty())
-    {
-        codebase.Set(W("file:///"));
-        codebase.Append(m_identity->GetPath());
-    }
-    else
-    {
-        _ASSERTE( !"Unable to determine security identity" );
-    }
-
-    GCX_PREEMP();
-
-    if(!codebase.IsEmpty())
-    {
-        *pdwZone = NoZone;
-
-        InitializeSecurityManager();
-
-        // We have a class name, return a class factory for it
-        _ASSERTE(sizeof(SecZone) == sizeof(DWORD));
-        IfFailThrow(m_pSecurityManager->MapUrlToZone(codebase,
-                                                     reinterpret_cast<DWORD *>(pdwZone),
-                                                     dwFlags));
-
-        if (*pdwZone>=NumZones)            
-            IfFailThrow(SecurityPolicy::ApplyCustomZoneOverride(pdwZone));
-        
-        IfFailThrow(m_pSecurityManager->GetSecurityId(codebase,
-                                                      pbUniqueID,
-                                                      pcbUniqueID,
-                                                      0));
-    }
-}
-
-void PEFile::InitializeSecurityManager()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        CAN_TAKE_LOCK;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    if(m_pSecurityManager == NULL)
-    {
-        CrstHolder holder(&m_securityManagerLock);
-        if (m_pSecurityManager == NULL)
-        {
-                IfFailThrow(CoInternetCreateSecurityManager(NULL,
-                                                            &m_pSecurityManager,
-                                                            0));
-        }
-    }
-}
-
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // Checks
@@ -1287,153 +1184,6 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
      }
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-void PEFile::CheckAuthenticodeSignature()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Check any security signature in the header.
-
-    // This publisher data can potentially be cached and passed back in via
-    // PEAssembly::CreateDelayed.
-    //
-    // HOWEVER - even if we cache it, the certificate still may need to be verified at
-    // load time.  The only real caching can be done when the COR_TRUST certificate is
-    // ABSENT.
-    //
-    // (In the case where it is present, we could still theoretically
-    // cache the certificate and re-verify it and at least avoid touching the image
-    // again, however this path is not implemented yet, so this is TBD if we decide
-    // it is an important case to optimize for.)
-
-    if (!HasSecurityDirectory())
-    {
-        LOG((LF_SECURITY, LL_INFO1000, "No certificates found in module\n"));
-    }
-    else if(g_pConfig->GeneratePublisherEvidence())
-    {
-        // <TODO>@todo: Just because we don't have a file path, doesn't mean we can't have a certicate (does it?)</TODO>
-        if (!GetPath().IsEmpty())
-        {
-            GCX_PREEMP();
-
-            // Ignore any errors here - if we fail to validate a certificate, we just don't
-            // include it as evidence.
-
-            DWORD size;
-            CoTaskNewHolder<COR_TRUST> pCor = NULL;
-            // Failing to find a signature is OK.
-            LPWSTR pFileName = (LPWSTR) GetPath().GetUnicode();
-            DWORD dwAuthFlags = COR_NOUI|COR_NOPOLICY;
-
-            HRESULT hr = ::GetPublisher(pFileName,
-                                          NULL,
-                                          dwAuthFlags,
-                                          &pCor,
-                                          &size);
-
-
-            if( SUCCEEDED(hr) ) { 
-                DWORD index = 0;
-                EnumCertificateAdditionFlags dwFlags = g_pCertificateCache->AddEntry(pCor, &index);
-                switch (dwFlags) {
-                case CacheSaturated:
-                    pCor.SuppressRelease();
-                    m_certificate = pCor.GetValue();
-                    break;
-
-                case Success:
-                    pCor.SuppressRelease();
-                    // falling through
-                case AlreadyExists:
-                    m_certificate = g_pCertificateCache->GetEntry(index);
-                    _ASSERTE(m_certificate);
-                    break;
-                }
-            }
-        }
-    }
-    else 
-    {
-        LOG((LF_SECURITY, LL_INFO1000, "Assembly has an Authenticode signature, but Publisher evidence has been disabled.\n"));
-    }
-
-    m_fCheckedCertificate = TRUE;
-}
-
-HRESULT STDMETHODCALLTYPE
-GetPublisher(__in __in_z IN LPWSTR pwsFileName,      // File name, this is required even with the handle
-             IN HANDLE hFile,            // Optional file name
-             IN DWORD  dwFlags,          // COR_NOUI or COR_NOPOLICY
-             OUT PCOR_TRUST *pInfo,      // Returns a PCOR_TRUST (Use FreeM)
-             OUT DWORD      *dwInfo)     // Size of pInfo.                           
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    
-    GUID gV2 = COREE_POLICY_PROVIDER;
-    COR_POLICY_PROVIDER sCorPolicy;
-    
-    WINTRUST_DATA      sWTD;
-    WINTRUST_FILE_INFO sWTFI;
-    
-    // Set up the COR trust provider
-    memset(&sCorPolicy, 0, sizeof(COR_POLICY_PROVIDER));
-    sCorPolicy.cbSize = sizeof(COR_POLICY_PROVIDER);
-    
-    // Set up the winverify provider structures
-    memset(&sWTD, 0x00, sizeof(WINTRUST_DATA));
-    memset(&sWTFI, 0x00, sizeof(WINTRUST_FILE_INFO));
-    
-    sWTFI.cbStruct      = sizeof(WINTRUST_FILE_INFO);
-    sWTFI.hFile         = hFile;
-    sWTFI.pcwszFilePath = pwsFileName;
-    
-    sWTD.cbStruct       = sizeof(WINTRUST_DATA);
-    sWTD.pPolicyCallbackData = &sCorPolicy; // Add in the cor trust information!!
-    if (dwFlags & COR_NOUI)
-    {
-        sWTD.dwUIChoice     = WTD_UI_NONE;        // No bad UI is overridden in COR TRUST provider
-    }
-    else
-    {
-        sWTD.dwUIChoice     = WTD_UI_ALL;        // No bad UI is overridden in COR TRUST provider
-    }
-    sWTD.dwUnionChoice  = WTD_CHOICE_FILE;
-    sWTD.pFile          = &sWTFI;
-    
-    // Set the policies for the VM (we have stolen VMBased and use it like a flag)
-    if (dwFlags != 0)
-        sCorPolicy.VMBased = dwFlags;
-    
-    LeaveRuntimeHolder holder((size_t)WinVerifyTrust);
-    
-    // WinVerifyTrust calls mscorsecimpl.dll to do the policy check
-    hr = WinVerifyTrust(GetFocus(), &gV2, &sWTD);
-    
-    *pInfo  = sCorPolicy.pbCorTrust;
-    *dwInfo = sCorPolicy.cbCorTrust;
-    
-    return hr;
-} // GetPublisher
-
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // PE file access
@@ -2489,39 +2239,6 @@ ULONG PEFile::GetILImageTimeDateStamp()
     return GetLoadedIL()->GetTimeDateStamp();
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-//---------------------------------------------------------------------------------------
-//
-// Get a SafePEFileHandle for this PEFile
-//
-
-SAFEHANDLE PEFile::GetSafeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    SAFEHANDLE objSafeHandle = NULL;
-
-    GCPROTECT_BEGIN(objSafeHandle);
-
-    objSafeHandle = (SAFEHANDLE)AllocateObject(MscorlibBinder::GetClass(CLASS__SAFE_PEFILE_HANDLE));
-    CallDefaultConstructor(objSafeHandle);
-
-    this->AddRef();
-    objSafeHandle->SetHandle(this);
-
-    GCPROTECT_END();
-
-    return objSafeHandle;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 // ================================================================================
 // PEAssembly class - a PEFile which represents an assembly

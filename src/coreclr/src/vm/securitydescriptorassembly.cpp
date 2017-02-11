@@ -15,14 +15,6 @@ AssemblySecurityDescriptor::AssemblySecurityDescriptor(AppDomain *pDomain, Domai
     m_dwNumPassedDemands(0),
     m_pSignature(NULL),
     m_pSharedSecDesc(NULL),
-#ifdef FEATURE_CAS_POLICY
-    m_hRequiredPermissionSet(NULL),
-    m_hOptionalPermissionSet(NULL),
-    m_hDeniedPermissionSet(NULL),
-    m_fAdditionalEvidence(FALSE),
-    m_fIsSignatureLoaded(FALSE),
-    m_fAssemblyRequestsComputed(FALSE),
-#endif
     m_fMicrosoftPlatform(FALSE),
     m_fAllowSkipVerificationInFullTrust(TRUE)
 {
@@ -151,48 +143,6 @@ BOOL AssemblySecurityDescriptor::QuickIsFullyTrusted()
 
     if (IsSystem())
         return TRUE;
-#ifdef FEATURE_CAS_POLICY
-
-    // NGEN is always done in full trust
-    if (m_pAppDomain->IsCompilationDomain())
-    {
-        return TRUE;
-    }
-
-    // If the assembly is in the GAC then it gets FullTrust.
-    if (m_pAssem->GetFile()->IsSourceGAC())
-        return TRUE;
-
-    // quickly detect if we've got a request refused or a request optional.
-    if (m_pAppDomain->GetSecurityDescriptor()->IsLegacyCasPolicyEnabled())
-    {
-        ReleaseHolder<IMDInternalImport> pImport(m_pAssem->GetFile()->GetMDImportWithRef());
-        if (SecurityAttributes::RestrictiveRequestsInAssembly(pImport))
-            return FALSE;
-    }
-
-    // Check if we need to call the HostSecurityManager.
-    ApplicationSecurityDescriptor* pAppSecDesc = static_cast<ApplicationSecurityDescriptor*>(m_pAppDomain->GetSecurityDescriptor());
-    if (pAppSecDesc->CallHostSecurityManagerForAssemblies())
-        return FALSE;
-
-    // - If the AppDomain is homogeneous, we currently simply detect the FT case
-    // - Not having CAS on implies full trust.  We can get here if we're still in the process of setting up
-    //   the AppDomain and the CLR hasn't yet setup the homogenous flag.
-    // - Otherwise, check the quick cache
-    if (pAppSecDesc->IsHomogeneous())
-    {
-        return m_pAppDomain->GetSecurityDescriptor()->IsFullyTrusted();
-    }
-    else if (!m_pAppDomain->GetSecurityDescriptor()->IsLegacyCasPolicyEnabled())
-    {
-        return TRUE;
-    }
-    else if (CheckQuickCache(SecurityConfig::FullTrustAll, GetZone()))
-    {
-        return TRUE;
-    }
-#endif
 
     // See if we've already determined that the assembly is FT
     // in another AppDomain, in case this is a shared assembly.
@@ -231,115 +181,6 @@ void AssemblySecurityDescriptor::PropagatePermissionSet(OBJECTREF GrantedPermiss
     Resolve();
 }
 
-#ifdef FEATURE_CAS_POLICY
-//-----------------------------------------------------------------------------------------------------------
-//
-// Use the evidence already generated for this assembly's PEFile as the evidence for the assembly
-//
-// Arguments:
-//    pPEFileSecDesc - PEFile security descriptor contining the already generated evidence
-//
-void AssemblySecurityDescriptor::SetEvidenceFromPEFile(IPEFileSecurityDescriptor *pPEFileSecDesc)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pPEFileSecDesc));
-        PRECONDITION(GetPEFile()->Equals(static_cast<PEFileSecurityDescriptor*>(pPEFileSecDesc)->GetPEFile()));
-    }
-    CONTRACTL_END;
-
-    // If we couldn't determine the assembly was fully trusted without first generating evidence for it,
-    // then we cannot reuse the PEFile's evidence.  In that case we'll just use what we've generated for the
-    // assembly, and discard the PEFile's version.
-    if (!IsEvidenceComputed())
-    {
-        struct
-        {
-            OBJECTREF objPEFileEvidence;
-            OBJECTREF objEvidence;
-        }
-        gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.objPEFileEvidence = pPEFileSecDesc->GetEvidence();
-        gc.objEvidence = UpgradePEFileEvidenceToAssemblyEvidence(gc.objPEFileEvidence);
-        SetEvidence(gc.objEvidence);
-
-        GCPROTECT_END();
-    }
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Get the evidence collection for this Assembly
-//
-//
-OBJECTREF AssemblySecurityDescriptor::GetEvidence()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_pAppDomain == GetAppDomain());
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // If we already have evidence, then just return that
-    if (IsEvidenceComputed())
-        return ObjectFromLazyHandle(m_hAdditionalEvidence, m_pLoaderAllocator);
-
-    struct
-    {
-        OBJECTREF objHostProvidedEvidence;
-        OBJECTREF objPEFileEvidence;
-        OBJECTREF objEvidence;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-    BEGIN_SO_INTOLERANT_CODE(GetThread());
-
-    gc.objHostProvidedEvidence = ObjectFromLazyHandle(m_hAdditionalEvidence, m_pLoaderAllocator);
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-    {
-        _ASSERTE(gc.objPEFileEvidence == NULL || GetAppDomain() == gc.objPEFileEvidence->GetAppDomain());
-        _ASSERTE(gc.objHostProvidedEvidence == NULL || GetAppDomain() == gc.objHostProvidedEvidence->GetAppDomain());
-    }
-#endif  // CHECK_APP_DOMAIN_LEAKS
-
-    //
-    // First get an evidence collection which targets our PEFile, then upgrade it to use this assembly as a
-    // target.  We create a new Evidence for the PEFile here, which means that any evidence that PEFile may
-    // have already had is not used in this upgrade.  If an existing PEFileSecurityDescriptor exists for the
-    // PEFile, then that should be upgraded directly, rather than going through this code path.
-    // 
-    
-    gc.objPEFileEvidence = PEFileSecurityDescriptor::BuildEvidence(m_pPEFile, gc.objHostProvidedEvidence);
-    gc.objEvidence = UpgradePEFileEvidenceToAssemblyEvidence(gc.objPEFileEvidence);
-    SetEvidence(gc.objEvidence);
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks())
-        _ASSERTE(gc.objEvidence == NULL || GetAppDomain() == gc.objEvidence->GetAppDomain());
-#endif // CHECK_APP_DOMAIN_LEAKS
-
-    END_SO_INTOLERANT_CODE;
-
-    GCPROTECT_END();
-
-    return gc.objEvidence;
-}
-#endif // FEATURE_CAS_POLICY
 #endif // !DACCESS_COMPILE
 
 BOOL AssemblySecurityDescriptor::IsSystem()
@@ -369,36 +210,6 @@ void AssemblySecurityDescriptor::Resolve()
         pSharedSecDesc->Resolve(this);
 }
 
-#ifdef FEATURE_CAS_POLICY
-// This routine is called when we have determined that it that there is no SECURITY reason
-// to verify an image, but we may want to do so anyway to insure that 3rd parties don't 
-// accidentally ship delay signed dlls because the application happens to be full trust.  
-//
-static bool DontNeedToFlagAccidentalDelaySigning(PEAssembly* assem)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // If the file has a native image, then either it is strongly named and can be considered
-    // fully signed (see additional comments in code:PEAssembly::IsFullySigned), or it is not
-    // strong named and thus can't be delay signed. Either way no check is needed.
-    // If the file fully signed, then people did not accidentally forget, so no check is needed
-    if (assem->HasNativeImage() || assem->IsFullySigned())
-        return true;
-
-    // If mscorlib itself is not signed, this is not an offical CLR, you don't need to 
-    // to do the checking in this case either because 3rd parties should not be running this way.
-    // This is useful because otherwise when we run perf runs on normal CLR lab builds we don't
-    // measure the performance that we get for a offical runtime (since official runtimes will
-    // be signed).   
-    PEAssembly* mscorlib = SystemDomain::SystemFile();
-    if (!mscorlib->HasNativeImage())
-        return false;
-    if ((mscorlib->GetLoadedNative()->GetNativeHeader()->COR20Flags & COMIMAGE_FLAGS_STRONGNAMESIGNED) == 0)
-        return true;
-
-    return false;
-}
-#endif // FEATURE_CAS_POLICY
 
 void AssemblySecurityDescriptor::ResolveWorker()
 {
@@ -463,27 +274,6 @@ void AssemblySecurityDescriptor::ResolvePolicy(ISharedSecurityDescriptor *pShare
     __dcimf.Pop();
 }
 
-#ifdef FEATURE_CAS_POLICY
-DWORD AssemblySecurityDescriptor::GetZone()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(m_pAppDomain->GetSecurityDescriptor()->IsLegacyCasPolicyEnabled());
-    } CONTRACTL_END;
-
-    StackSString    codebase;
-    SecZone         dwZone = NoZone;
-    BYTE            rbUniqueID[MAX_SIZE_SECURITY_ID];
-    DWORD           cbUniqueID = sizeof(rbUniqueID);
-
-    m_pAssem->GetSecurityIdentity(codebase, &dwZone, 0, rbUniqueID, &cbUniqueID);
-    return dwZone;
-}
-#endif // FEATURE_CAS_POLICY
 
 Assembly* AssemblySecurityDescriptor::GetAssembly()
 {
@@ -498,120 +288,6 @@ BOOL AssemblySecurityDescriptor::CanSkipPolicyResolution()
 }
 
 
-#ifdef FEATURE_CAS_POLICY
-//-----------------------------------------------------------------------------------------------------------
-//
-// Upgrade the evidence used for resolving a PEFile to be targeted at the Assembly the PEFile represents
-//
-// Arguments:
-//    objPEFileEvidence - 
-//    
-// Notes:
-//    During CLR startup we may need to resolve policy against a PEFile before we have the associated
-//    Assembly.  Once we have the Assembly we don't want to recompute potenially expensive evidence, so this
-//    method can be used to upgrade the evidence who's target was the PEFile to target the assembly instead.
-//    
-//    Will call into System.Reflection.Assembly.UpgradeSecurityIdentity
-//
-
-OBJECTREF AssemblySecurityDescriptor::UpgradePEFileEvidenceToAssemblyEvidence(const OBJECTREF& objPEFileEvidence)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(objPEFileEvidence != NULL);
-    }
-    CONTRACTL_END;
-
-    struct
-    {
-        OBJECTREF objAssembly;
-        OBJECTREF objEvidence;
-        OBJECTREF objUpgradedEvidence;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
-    gc.objAssembly = m_pAssem->GetExposedAssemblyObject();
-    gc.objEvidence = objPEFileEvidence;
-
-    MethodDescCallSite upgradeSecurityIdentity(METHOD__ASSEMBLY_EVIDENCE_FACTORY__UPGRADE_SECURITY_IDENTITY);
-
-    ARG_SLOT args[] = 
-    {
-        ObjToArgSlot(gc.objEvidence),
-        ObjToArgSlot(gc.objAssembly)
-    };
-
-    gc.objUpgradedEvidence = upgradeSecurityIdentity.Call_RetOBJECTREF(args);
-
-    GCPROTECT_END();
-
-    return gc.objUpgradedEvidence;
-}
-
-HRESULT AssemblySecurityDescriptor::LoadSignature(COR_TRUST **ppSignature)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    if (IsSignatureLoaded())
-    {
-        if (ppSignature)
-        {
-            *ppSignature = m_pSignature;
-        }
-
-        return S_OK;
-    }
-
-    GCX_PREEMP();
-    m_pSignature = m_pAssem->GetFile()->GetAuthenticodeSignature();
-
-    SetSignatureLoaded();
-
-    if (ppSignature)
-    {
-        *ppSignature = m_pSignature;
-    }
-
-    return S_OK;
-}
-
-void AssemblySecurityDescriptor::SetAdditionalEvidence(OBJECTREF evidence)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    StoreObjectInLazyHandle(m_hAdditionalEvidence, evidence, m_pLoaderAllocator);
-    m_fAdditionalEvidence = TRUE;
-}
-
-BOOL AssemblySecurityDescriptor::HasAdditionalEvidence()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fAdditionalEvidence;
-}
-
-OBJECTREF AssemblySecurityDescriptor::GetAdditionalEvidence()
-{
-    WRAPPER_NO_CONTRACT;
-    return ObjectFromLazyHandle(m_hAdditionalEvidence, m_pLoaderAllocator);
-}
-#endif // FEATURE_CAS_POLICY
 
 
 // Check to make sure that security will allow this assembly to load.  Throw an exception if the assembly
