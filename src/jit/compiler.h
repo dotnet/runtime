@@ -7791,7 +7791,7 @@ public:
         bool altJit;     // True if we are an altjit and are compiling this method
 
 #ifdef OPT_CONFIG
-        bool optRepeat;                // Repeat optimizer phases k times
+        bool optRepeat; // Repeat optimizer phases k times
 #endif
 
 #ifdef DEBUG

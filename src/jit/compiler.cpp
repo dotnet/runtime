@@ -3891,7 +3891,7 @@ void Compiler::compSetOptimizationLevel()
             }
         }
     }
-#else // !DEBUG
+#else  // !DEBUG
     // Retail check if we should force Minopts due to the complexity of the method
     // For PREJIT we never drop down to MinOpts
     // unless unless CLFLG_MINOPT is set
