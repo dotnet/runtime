@@ -5568,6 +5568,12 @@ public:
         optMethodFlags &= ~OMF_HAS_FATPOINTER;
     }
 
+    void addFatPointerCandidate(GenTreeCall* call)
+    {
+        setMethodHasFatPointer();
+        call->SetFatPointerCandidate();
+    }
+
     unsigned optMethodFlags;
 
     // Recursion bound controls how far we can go backwards tracking for a SSA value.
