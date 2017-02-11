@@ -135,6 +135,7 @@ const FrameworkConfig g_arFxPolicy[] =
     {L"System.Windows.Forms", ECMA_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L,              FxPolicyHelper::AppXBinder_Blocked},
     {L"System.Xml", ECMA_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L,                        FxPolicyHelper::AppXBinder_Supported},
 
+#ifdef NDP4_AUTO_VERSION_ROLLFORWARD
     
     // Post-Everett FX 2.0 assemblies:
     {L"AspNetMMCExt", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L,                 FxPolicyHelper::AppXBinder_Blocked},
@@ -331,6 +332,7 @@ const FrameworkConfig g_arFxPolicy[] =
     {L"System.Windows", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.Xml.Serialization", ECMA_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
 
+#endif // NDP4_AUTO_VERSION_ROLLFORWARD
 
 // ENDDICTIONARY
 };  //g_arFxPolicy
