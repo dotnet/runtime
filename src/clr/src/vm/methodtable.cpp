@@ -60,8 +60,6 @@
 #include "zapsig.h"
 #endif //FEATURE_PREJIT
 
-#include "hostexecutioncontext.h"
-
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
