@@ -5400,7 +5400,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         SafeUpdateLastThrownObject();
     }
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Since the catch clause has successfully executed and we are exiting it, reset the corruption severity
     // in the ThreadExceptionState for the last active exception. This will ensure that when the next exception
     // gets thrown/raised, EH tracker wont pick up an invalid value.
@@ -5408,7 +5407,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
     {
         CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(this);
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 }
 
@@ -9125,14 +9123,12 @@ void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, Co
     ORBLOBREF orBlob = NULL;
 
     // Get the corruption severity for the exception caught at AppDomain transition boundary.
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     CorruptionSeverity severity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
     if (severity == NotSet)
     {
         // No severity set at this point implies the exception was not corrupting
         severity = NotCorrupting;
     }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef FEATURE_TESTHOOKS
     ADID adid=GetAppDomain()->GetId();
@@ -9249,9 +9245,7 @@ void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, Co
         // ... and throw it.
         VALIDATEOBJECTREF(gc.pMarshaledThrowable);
         COMPlusThrow(gc.pMarshaledThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
             , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
             );
 
         GCPROTECT_END();
