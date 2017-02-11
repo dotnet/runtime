@@ -1737,9 +1737,10 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         AVInRuntimeImplOkayHolder avOk;
 
         MethodTable *pMT = GetGCSafeMethodTable();
+
         lastTest = 1;
 
-        CHECK_AND_TEAR_DOWN(pMT->Validate());
+        CHECK_AND_TEAR_DOWN(pMT && pMT->Validate());
         lastTest = 2;
 
         bool noRangeChecks =
