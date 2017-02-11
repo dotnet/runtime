@@ -242,7 +242,7 @@ namespace System.Linq
                         continue;
                     }
 
-                    builder.AddRange(_selector(element));
+                    builder.AddRange(enumerable);
                 }
 
                 TResult[] array = builder.ToArray();
