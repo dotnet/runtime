@@ -271,6 +271,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     if (index != nullptr && !modifiedSources)
     {
         info->srcCount++;
+        info->internalIntCount++;
     }
 }
 
@@ -595,6 +596,11 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
     {
         NYI_ARM("float reg varargs");
     }
+
+    if (call->NeedsNullCheck())
+    {
+        info->internalIntCount++;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -688,6 +694,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
     JITDUMP("TreeNodeInfoInit for: ");
     DISPNODE(tree);
+
+    NYI_IF(tree->TypeGet() == TYP_STRUCT, "lowering struct");
+    NYI_IF(tree->TypeGet() == TYP_LONG, "lowering long");
+    NYI_IF(tree->TypeGet() == TYP_DOUBLE, "lowering double");
 
     switch (tree->OperGet())
     {
@@ -907,6 +917,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             break;
 
+        case GT_ARR_BOUNDS_CHECK:
+            // Consumes arrLen and index. Has no result.
+            info->srcCount = 2;
+            info->dstCount = 0;
+            break;
+
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
@@ -928,13 +944,17 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             info->dstCount = 1;
 
+            // On ARM we may need a single internal register
+            // (when both conditions are true then we still only need a single internal register)
             if ((index != nullptr) && (cns != 0))
             {
-                NYI_ARM("GT_LEA: index and cns are not nil");
+                // ARM does not support both Index and offset so we need an internal register
+                info->internalIntCount = 1;
             }
             else if (!emitter::emitIns_valid_imm_for_add(cns, INS_FLAGS_DONT_CARE))
             {
-                NYI_ARM("GT_LEA: invalid imm");
+                // This offset can't be contained in the add instruction, so we need an internal register
+                info->internalIntCount = 1;
             }
         }
         break;
@@ -1030,12 +1050,24 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         default:
 #ifdef DEBUG
-            JitTls::GetCompiler()->gtDispTree(tree);
-#endif
+            char message[256];
+            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
+                        GenTree::NodeName(tree->OperGet()));
+            NYIRAW(message);
+#else
             NYI_ARM("TreeNodeInfoInit default case");
+#endif
         case GT_LCL_FLD:
+        case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
+        {
+            unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
+            LclVarDsc* varDsc = comp->lvaTable + varNum;
+            NYI_IF(varTypeIsStruct(varDsc), "lowering struct var");
+            NYI_IF(varTypeIsLong(varDsc), "lowering long var");
+        }
+        case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_CNS_INT:
