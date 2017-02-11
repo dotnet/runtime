@@ -4550,7 +4550,7 @@ DWORD __stdcall ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
      * 2. GCCpuGroups=1, CLR creates GC threads for all processors in all CPU groups
      *    thus, the threadpool thread would use a whole CPU group (if Thread_UseAllCpuGroups is not set).
      *    ==> use g_SystemInfo.dwNumberOfProcessors.
-     * 3. !defined(FEATURE_PAL) but defined(FEATURE_CORESYSTEM), GetCurrentProcessCpuCount()
+     * 3. !defined(FEATURE_PAL), GetCurrentProcessCpuCount()
      *    returns g_SystemInfo.dwNumberOfProcessors ==> use g_SystemInfo.dwNumberOfProcessors;
      * Other cases:
      * 1. Normal case: the mask is all or a subset of all processors in a CPU group;
