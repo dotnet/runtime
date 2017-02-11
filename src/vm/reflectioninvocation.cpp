@@ -1121,12 +1121,14 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
     }
 #endif // _DEBUG && !FEATURE_PAL
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Get the corruption severity of the exception that came in through reflection invocation.
     CorruptionSeverity severity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
 
     // Since we are dealing with an exception, set the flag indicating if the target of Reflection can handle exception or not.
     // This flag is used in CEHelper::CanIDispatchTargetHandleException.
     GetThread()->GetExceptionState()->SetCanReflectionTargetHandleException(CEHelper::CanMethodHandleException(severity, pMethod));
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     OBJECTREF except = InvokeUtil::CreateTargetExcept(&targetException);
 
@@ -1182,7 +1184,9 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
     // Since VM is throwing the exception, we set it to use the same corruption severity
     // that the original exception came in with from reflection invocation.
     COMPlusThrow(except 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
         , severity
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
         );
 
     GCPROTECT_END();
@@ -1497,9 +1501,11 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     ENDFORBIDGC();
     }
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // By default, set the flag in TES indicating the reflection target can handle CSE.
     // This flag is used in CEHelper::CanIDispatchTargetHandleException.
     pThread->GetExceptionState()->SetCanReflectionTargetHandleException(TRUE);
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
     if (pValueClasses != NULL)
     {

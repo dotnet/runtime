@@ -265,8 +265,10 @@ HRESULT EEConfig::Init()
     fNewComVTableLayout = false;
     iImpersonationPolicy = IMP_DEFAULT;
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // By default, there is not pre-V4 CSE policy
     fLegacyCorruptedStateExceptionsPolicy = false;
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #ifdef _DEBUG
     fLogTransparencyErrors = false;

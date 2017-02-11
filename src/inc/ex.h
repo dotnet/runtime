@@ -751,6 +751,7 @@ private:
 //
 /////////////////////////////////////////////////////////////////////
 
+#ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
 #define CORRUPTING_EXCEPTIONS_ONLY(expr) expr
 #define COMMA_CORRUPTING_EXCEPTIONS_ONLY(expr) ,expr
@@ -803,6 +804,16 @@ private:
         EX_RETHROW;                                                      \
     }
 
+#else // !FEATURE_CORRUPTING_EXCEPTIONS
+
+#define CORRUPTING_EXCEPTIONS_ONLY(expr)
+#define COMMA_CORRUPTING_EXCEPTIONS_ONLY(expr)
+
+// When we dont have support for CE, just map it to SwallowAllExceptions
+#define RethrowCorruptingExceptionsEx(expr) SwallowAllExceptions
+#define RethrowCorruptingExceptionsExAndHookRethrow(shouldRethrowExpr, aboutToRethrowExpr) SwallowAllExceptions
+#define SET_CE_RETHROW_FLAG_FOR_EX_CATCH(expr) !TRUE
+#endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 // Map to RethrowCorruptingExceptionsEx so that it does the "right" thing
 #define RethrowCorruptingExceptions RethrowCorruptingExceptionsEx(TRUE)
