@@ -4791,7 +4791,13 @@ HRESULT InitCorDebugInterface()
     // SOS now has a statically linked version of the loader code that is normally found in mscoree/mscoreei.dll
     // Its not much code and takes a big step towards 0 install dependencies
     // Need to pick the appropriate SKU of CLR to detect
+#if defined(FEATURE_CORESYSTEM)
     GUID skuId = CLR_ID_ONECORE_CLR;
+#elif defined(FEATURE_CORECLR)
+    GUID skuId = CLR_ID_CORECLR;
+#else
+    GUID skuId = CLR_ID_V4_DESKTOP;
+#endif
     CLRDebuggingImpl* pDebuggingImpl = new CLRDebuggingImpl(skuId);
     hr = pDebuggingImpl->QueryInterface(IID_ICLRDebugging, (LPVOID *)&pClrDebugging);
     if (FAILED(hr))

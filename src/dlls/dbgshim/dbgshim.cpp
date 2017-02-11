@@ -1787,7 +1787,9 @@ GetContinueStartupEvent(
 
 #endif // !FEATURE_PAL
 
+#if defined(FEATURE_CORESYSTEM)
 #include "debugshim.h"
+#endif
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -1806,6 +1808,7 @@ CLRCreateInstance(
     REFIID riid, 
     LPVOID *ppInterface)
 {
+#if defined(FEATURE_CORESYSTEM)
 
     if (ppInterface == NULL)
         return E_POINTER;
@@ -1813,8 +1816,17 @@ CLRCreateInstance(
     if (clsid != CLSID_CLRDebugging || riid != IID_ICLRDebugging)
         return E_NOINTERFACE;
     
+#if defined(FEATURE_CORESYSTEM)
     GUID skuId = CLR_ID_ONECORE_CLR;
+#elif defined(FEATURE_CORECLR)
+    GUID skuId = CLR_ID_CORECLR;
+#else
+    GUID skuId = CLR_ID_V4_DESKTOP;
+#endif
     
     CLRDebuggingImpl *pDebuggingImpl = new CLRDebuggingImpl(skuId);
     return pDebuggingImpl->QueryInterface(riid, ppInterface);
+#else
+    return E_NOTIMPL;
+#endif
 }

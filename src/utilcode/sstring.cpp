@@ -2237,7 +2237,11 @@ void SString::PVPrintf(const WCHAR *format, va_list args)
     {
         // First, try to use the existing buffer
         va_copy(ap, args);
+#if defined(FEATURE_CORESYSTEM)
         int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
+#else
+        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, ap);
+#endif
         va_end(ap);
         if (result >= 0)
         {
@@ -2267,7 +2271,11 @@ void SString::PVPrintf(const WCHAR *format, va_list args)
         errno = 0;
 
         va_copy(ap, args);
+#if defined(FEATURE_CORESYSTEM)
         int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
+#else
+        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, ap);
+#endif
         va_end(ap);
 
         if (result >= 0)

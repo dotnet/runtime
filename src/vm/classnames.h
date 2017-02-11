@@ -161,9 +161,11 @@
 
 #define g_SecuritySafeCriticalAttribute "System.Security.SecuritySafeCriticalAttribute"
 
+#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 #define g_SecurityAPTCA "System.Security.AllowPartiallyTrustedCallersAttribute"
 #define g_SecurityPartialTrustVisibilityLevel "System.Security.PartialTrustVisibilityLevel"
 #define g_PartialTrustVisibilityLevel "PartialTrustVisibilityLevel"
+#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
 #define g_ReferenceAssemblyAttribute "System.Runtime.CompilerServices.ReferenceAssemblyAttribute"
 

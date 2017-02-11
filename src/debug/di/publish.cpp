@@ -44,6 +44,19 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
 {    
     HandleHolder hSnapshotHolder;
 
+#if !defined(FEATURE_CORESYSTEM)
+    // Load the dll "kernel32.dll".
+    HModuleHolder hDll = WszLoadLibrary(W("kernel32"));
+    _ASSERTE(hDll != NULL);
+
+    if (hDll == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO1000,
+                "Unable to load the dll for enumerating processes. "
+                "LoadLibrary (kernel32.dll) failed.\n"));
+        return FALSE;
+    }
+#else
 	// Load the dll "api-ms-win-obsolete-kernel32-l1-1-0.dll".
     HModuleHolder hDll = WszLoadLibrary(W("api-ms-win-obsolete-kernel32-l1-1-0.dll"));
     _ASSERTE(hDll != NULL);
@@ -55,6 +68,7 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
                 "LoadLibrary (api-ms-win-obsolete-kernel32-l1-1-0.dll) failed.\n"));
         return FALSE;
     }
+#endif
   
     
     // Create the Process' Snapshot
@@ -169,7 +183,11 @@ CorpubPublish::CorpubPublish()
 {
     // Try to get psapi!GetModuleFileNameExW once, and then every process object can use it.
     // If we can't get it, then we'll fallback to getting information from the IPC block.
+#if !defined(FEATURE_CORESYSTEM)
+    m_hPSAPIdll = WszLoadLibrary(W("psapi.dll"));
+#else
 	m_hPSAPIdll = WszLoadLibrary(W("api-ms-win-obsolete-psapi-l1-1-0.dll"));
+#endif
 
     if (m_hPSAPIdll != NULL)
     {

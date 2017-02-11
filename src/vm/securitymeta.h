@@ -630,8 +630,10 @@ public:
     inline SecurityRuleSet GetSecurityRuleSet();
 
 
+#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
     // Does the assembly allow partially trusted callers
     inline BOOL IsAPTCA();
+#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
 
 
 private:
