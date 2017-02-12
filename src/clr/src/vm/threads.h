@@ -2708,22 +2708,6 @@ public:
             *pSyncContextObj = ExposedThreadObj->GetSynchronizationContext();
     }
 
-#ifdef FEATURE_COMPRESSEDSTACK    
-    OBJECTREF GetCompressedStack()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-        THREADBASEREF ExposedThreadObj = (THREADBASEREF)GetExposedObjectRaw();
-        if (ExposedThreadObj != NULL)
-            return (OBJECTREF)(ExposedThreadObj->GetCompressedStack());
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
