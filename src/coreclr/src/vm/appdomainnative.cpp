@@ -775,53 +775,6 @@ void QCALLTYPE AppDomainNative::SetAppDomainManagerType(QCall::AppDomainHandle a
     END_QCALL;
 }
 
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-
-FCIMPL0(FC_BOOL_RET, AppDomainNative::HasHost)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(CorHost2::GetHostControl() != NULL);
-}
-FCIMPLEND
-
-//
-// Callback to the CLR host to register an AppDomainManager->AppDomain ID pair with it.
-//
-// Arguments:
-//    punkAppDomainManager - COM reference to the AppDomainManager being registered with the host
-//
-
-// static
-void QCALLTYPE AppDomainNative::RegisterWithHost(IUnknown *punkAppDomainManager)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(punkAppDomainManager));
-        PRECONDITION(CheckPointer(CorHost2::GetHostControl()));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    EnsureComStarted();
-
-    IHostControl *pHostControl = CorHost2::GetHostControl();
-    ADID dwDomainId = SystemDomain::GetCurrentDomain()->GetId();
-    HRESULT hr = S_OK;
-
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = pHostControl->SetAppDomainManager(dwDomainId.m_dwId, punkAppDomainManager);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    if (FAILED(hr))
-    {
-        ThrowHR(hr);
-    }
-
-    END_QCALL;
-}
-#endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
 
 FCIMPL1(void, AppDomainNative::SetHostSecurityManagerFlags, DWORD dwFlags);
 {

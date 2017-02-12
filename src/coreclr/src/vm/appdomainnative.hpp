@@ -35,9 +35,6 @@ public:
 #endif // FEATURE_LOADER_OPTIMIZATION
 
     static FCDECL9(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array* securityRulesBlobUNSAFE, U1Array* aptcaBlobUNSAFE, INT32 access, INT32 flags, SecurityContextSource securityContextSource);
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    static FCDECL0(FC_BOOL_RET, HasHost);
-#endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
     static FCDECL1(void, SetHostSecurityManagerFlags, DWORD dwFlags);
     static FCDECL1(Object*, GetFriendlyName, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsDefaultAppDomainForEvidence, AppDomainBaseObject* refThisUNSAFE);
@@ -119,10 +116,6 @@ public:
 
 
 
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    static
-    void QCALLTYPE RegisterWithHost(IUnknown *punkAppDomainManager);
-#endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
 
 #if defined(FEATURE_APPX_BINDER)
     static
