@@ -1318,12 +1318,10 @@ DEFINE_CLASS(STRONG_NAME_KEY_PAIR,  Reflection,             StrongNameKeyPair)
 DEFINE_METHOD(STRONG_NAME_KEY_PAIR, GET_KEY_PAIR,           GetKeyPair,                 IM_RefObject_RetBool) 
 #endif
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 DEFINE_CLASS_U(Threading,              SynchronizationContext, SynchronizationContextObject)
 DEFINE_FIELD_U(_props, SynchronizationContextObject, _props)
 DEFINE_CLASS(SYNCHRONIZATION_CONTEXT,    Threading,              SynchronizationContext)
 DEFINE_METHOD(SYNCHRONIZATION_CONTEXT,  INVOKE_WAIT_METHOD_HELPER, InvokeWaitMethodHelper, SM_SyncCtx_ArrIntPtr_Bool_Int_RetInt)
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_COMINTEROP_TLB_SUPPORT
 DEFINE_CLASS(TCE_EVENT_ITF_INFO,    InteropTCE,             EventItfInfo)

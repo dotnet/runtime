@@ -4241,7 +4241,6 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     DWORD ret = 0;
 
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     // Waits from SynchronizationContext.WaitHelper are always just WaitMode_IgnoreSyncCtx.
     // So if we defer to a sync ctx, we will lose any extra bits.  We must therefore not
     // defer to a sync ctx if doing any non-default wait.  
@@ -4283,7 +4282,6 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
         if (fSyncCtxPresent)
             return ret;
     }
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
     // Before going to pre-emptive mode the thread needs to be flagged as waiting for
     // the debugger. This used to be accomplished by the TS_Interruptible flag but that
@@ -4707,7 +4705,6 @@ WaitCompleted:
 }
 #endif // !FEATURE_PAL
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis)
 {
     CONTRACTL
@@ -4737,7 +4734,6 @@ DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE
     
     return invokeWaitMethodHelper.Call_RetI4(args);
 }
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 // Called out of SyncBlock::Wait() to block this thread until the Notify occurs.
 BOOL Thread::Block(INT32 timeOut, PendingSync *syncState)
