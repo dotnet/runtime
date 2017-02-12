@@ -69,9 +69,7 @@ GPTR_IMPL(MethodTable,      g_pStringClass);
 GPTR_IMPL(MethodTable,      g_pArrayClass);
 GPTR_IMPL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_IMPL(MethodTable,      g_pNullableClass);
-#ifdef FEATURE_SPAN_OF_T
 GPTR_IMPL(MethodTable,      g_pByReferenceClass);
-#endif
 GPTR_IMPL(MethodTable,      g_pExceptionClass);
 GPTR_IMPL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_IMPL(MethodTable,      g_pOutOfMemoryExceptionClass);

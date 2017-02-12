@@ -2860,13 +2860,11 @@ void SystemDomain::LoadBaseSystemClasses()
     // the SZArrayHelper class here.
     g_pSZArrayHelperClass = MscorlibBinder::GetClass(CLASS__SZARRAYHELPER);
 
-#ifdef FEATURE_SPAN_OF_T
     // Load ByReference class
     //
     // NOTE: ByReference<T> must be the first by-ref-like system type to be loaded,
     //       because MethodTable::ClassifyEightBytesWithManagedLayout depends on it.
     g_pByReferenceClass = MscorlibBinder::GetClass(CLASS__BYREFERENCE);
-#endif
 
     // Load Nullable class
     g_pNullableClass = MscorlibBinder::GetClass(CLASS__NULLABLE);
