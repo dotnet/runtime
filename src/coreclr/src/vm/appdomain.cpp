@@ -3457,9 +3457,6 @@ void SystemDomain::InitializeDefaultDomain(
 #ifndef CROSSGEN_COMPILE
         if (!NingenEnabled())
         {
-#ifdef FEATURE_CLICKONCE
-            pDefaultDomain->InitializeDefaultClickOnceDomain();
-#endif // FEATURE_CLICKONCE
     
             if (!IsSingleAppDomain())
             {
@@ -3489,40 +3486,6 @@ Volatile<LONG> g_fInExecuteMainMethod = 0;
 #endif
 
 
-#ifdef FEATURE_CLICKONCE
-void SystemDomain::ActivateApplication(int *pReturnValue)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    struct _gc {
-        OBJECTREF   orThis;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCX_COOP();
-    GCPROTECT_BEGIN(gc);
-
-    gc.orThis = SystemDomain::System()->DefaultDomain()->GetExposedObject();
-
-    MethodDescCallSite activateApp(METHOD__APP_DOMAIN__ACTIVATE_APPLICATION, &gc.orThis);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.orThis),
-    };
-    int retval = activateApp.Call_RetI4(args);
-    if (pReturnValue)
-        *pReturnValue = retval;
-
-    GCPROTECT_END();
-}
-#endif // FEATURE_CLICKONCE
 
 #ifdef FEATURE_MIXEDMODE
 static HRESULT RunDllMainHelper(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved, Thread* pThread, bool bReenablePreemptive)
@@ -3788,9 +3751,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         // unmaintainable as more changes are made to BCL types.
         if ((pCaller == MscorlibBinder::GetExistingClass(CLASS__APP_DOMAIN))
             && (pMeth != MscorlibBinder::GetMethod(METHOD__APP_DOMAIN__CREATE_APP_DOMAIN_MANAGER)) // This uses reflection to create an AppDomainManager
-    #ifdef FEATURE_CLICKONCE
-            && (pMeth != MscorlibBinder::GetMethod(METHOD__APP_DOMAIN__ACTIVATE_APPLICATION)) // This uses reflection to create an ActivationContext
-    #endif
             )
         {
             return true;
@@ -11830,102 +11790,6 @@ void AppDomain::InitializeDefaultDomainManager()
     }
 }
 
-#ifdef FEATURE_CLICKONCE
-
-//---------------------------------------------------------------------------------------
-//
-// If we are launching a ClickOnce application, setup the default domain with the deails
-// of the application.
-//
-
-void AppDomain::InitializeDefaultClickOnceDomain()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(GetId().m_dwId == DefaultADID);
-    }
-    CONTRACTL_END;
-
-    //
-    // If the CLR is being started to run a ClickOnce application, then capture the information about the
-    // application to setup the default domain wtih.
-    //
-
-    if (CorCommandLine::m_pwszAppFullName != NULL)
-    {
-        struct
-        {
-            OBJECTREF   orThis;
-            STRINGREF   orAppFullName;
-            PTRARRAYREF orManifestPathsArray;
-            PTRARRAYREF orActivationDataArray;
-        }
-        gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        gc.orAppFullName = StringObject::NewString(CorCommandLine::m_pwszAppFullName);
-
-        // If specific manifests have been pointed at, make a note of them
-        if (CorCommandLine::m_dwManifestPaths > 0)
-        {
-            _ASSERTE(CorCommandLine::m_ppwszManifestPaths != NULL);
-
-            gc.orManifestPathsArray = static_cast<PTRARRAYREF>(AllocateObjectArray(CorCommandLine::m_dwManifestPaths, g_pStringClass));
-            for (DWORD i = 0; i < CorCommandLine::m_dwManifestPaths; ++i)
-            {
-                STRINGREF str = StringObject::NewString(CorCommandLine::m_ppwszManifestPaths[i]);
-                gc.orManifestPathsArray->SetAt(i, str);
-            }
-        }
-
-        // Check for any activation parameters to pass to the ClickOnce application
-        if (CorCommandLine::m_dwActivationData > 0)
-        {
-            _ASSERTE(CorCommandLine::m_ppwszActivationData != NULL);
-
-            gc.orActivationDataArray = static_cast<PTRARRAYREF>(AllocateObjectArray(CorCommandLine::m_dwActivationData, g_pStringClass));
-            for (DWORD i = 0; i < CorCommandLine::m_dwActivationData; ++i)
-            {
-                STRINGREF str = StringObject::NewString(CorCommandLine::m_ppwszActivationData[i]);
-                gc.orActivationDataArray->SetAt(i, str);
-            }
-        }
-
-        gc.orThis = GetExposedObject();
-
-        MethodDescCallSite setupDefaultClickOnceDomain(METHOD__APP_DOMAIN__SETUP_DEFAULT_CLICKONCE_DOMAIN);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(gc.orThis),
-            ObjToArgSlot(gc.orAppFullName),
-            ObjToArgSlot(gc.orManifestPathsArray),
-            ObjToArgSlot(gc.orActivationDataArray),
-        };
-        setupDefaultClickOnceDomain.Call(args);
-
-        GCPROTECT_END();
-    }
-}
-
-BOOL AppDomain::IsClickOnceAppDomain()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    return ((APPDOMAINREF)GetExposedObject())->HasActivationContext();
-}
-
-#endif // FEATURE_CLICKONCE
 
 //---------------------------------------------------------------------------------------
 //
