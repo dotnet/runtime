@@ -362,7 +362,7 @@ bool StrongNameCryptAcquireContext(HCRYPTPROV *phProv, LPCWSTR pwszContainer, LP
     {
         dwFlags &= ~CRYPT_MACHINE_KEYSET;
     }
-#endif // FEATURE_CRYPTO
+#endif // defined(CRYPT_VERIFYCONTEXT) && defined(CRYPT_MACHINE_KEYSET)
 
     return !!WszCryptAcquireContext(phProv, pwszContainer, pwszProvider, dwProvType, dwFlags);
 }
