@@ -16,9 +16,6 @@
 #include <corerror.h>
 #include <mdlog.h>
 #include <mdcommon.h>
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include <imptlb.h>
-#endif 
 
 #ifdef EnC_SUPPORTED
 #define ENC_DELTA_HACK
