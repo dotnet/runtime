@@ -69,9 +69,7 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
-        [Target(nameof(PrepareTargets.Init),
-        nameof(PublishTargets.InitPublish))]
-        [Environment("SKIP_FINALIZEBUILD", null, "", "0", "false")] // This is set to true for official crossbuild
+        [Target]
         public static BuildTargetResult FinalizeBuild(BuildTargetContext c)
         {
             if (CheckIfAllBuildsHavePublished(c))
