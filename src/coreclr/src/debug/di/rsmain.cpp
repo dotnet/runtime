@@ -1423,14 +1423,14 @@ bool Cordb::IsInteropDebuggingSupported()
     // ICorDebug::SetUnmanagedHandler for details.
 #ifdef FEATURE_INTEROP_DEBUGGING
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_CORESYSTEM)
+#if !defined(FEATURE_CORESYSTEM)
     // Interop debugging is only supported internally on CoreCLR.
     // Check if the special reg key is set.  If not, then we don't allow interop debugging.
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgEnableMixedModeDebugging) == 0)
     {
         return false;
     }
-#endif // FEATURE_CORECLR
+#endif // FEATURE_CORESYSTEM
 
     return true;
 #else

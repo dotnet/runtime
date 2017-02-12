@@ -13625,7 +13625,7 @@ HRESULT AppDomain::SetWinrtApplicationContext(SString &appLocalWinMD)
     return m_pWinRtBinder->SetApplicationContext(pApplicationContext, appLocalWinMD);
 }
 
-#endif // FEATURE_CORECLR && FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
 #endif //!DACCESS_COMPILE
 

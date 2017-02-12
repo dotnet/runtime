@@ -673,7 +673,7 @@ class AssemblySpecBindingCache
             ++i;
         }
     }
-#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     static BOOL CompareSpecs(UPTR u1, UPTR u2);
 };

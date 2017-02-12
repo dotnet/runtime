@@ -40,7 +40,7 @@ inline void ReleaseCapiHash(HCRYPTHASH hHash)
     CryptDestroyHash(hHash);
 }
 typedef Wrapper<HCRYPTHASH, DoNothing, ReleaseCapiHash, 0> CapiHashHolder;
-#endif // !FEATURE_CORECLR || CROSSGEN_COMPILE
+#endif // defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX)
 
 #if SNAPI_INTERNAL
 
