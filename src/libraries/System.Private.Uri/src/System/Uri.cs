@@ -6,20 +6,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
-#if netstandard10
 using System.Runtime.Serialization;
-#endif //netstandard10
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-#if netstandard10
     [Serializable]
-#endif //netstandard10
-    public partial class Uri 
-#if netstandard10
-    : ISerializable
-#endif
+    public partial class Uri : ISerializable
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -397,7 +390,7 @@ namespace System
 
             CreateUri(baseUri, relativeUri, false);
         }
-#if netstandard10
+
         //
         // Uri(SerializationInfo, StreamingContext)
         //
@@ -445,7 +438,6 @@ namespace System
                 serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
             }
         }
-#endif //netstandard10
 
         private void CreateUri(Uri baseUri, string relativeUri, bool dontEscape)
         {
