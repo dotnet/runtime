@@ -14,17 +14,6 @@
 #ifndef _SHIMLOAD_H
 #define _SHIMLOAD_H
 
-#ifndef FEATURE_CORECLR
-#include <delayimp.h>
-
-extern FARPROC __stdcall ShimDelayLoadHook(unsigned        dliNotify,          // What event has occurred, dli* flag.
-                                           DelayLoadInfo   *pdli);             // Description of the event.
-
-//and one for safe mode
-extern FARPROC __stdcall ShimSafeModeDelayLoadHook(unsigned        dliNotify,          // What event has occurred, dli* flag.
-                                           DelayLoadInfo   *pdli);             // Description of the event.
-
-#endif
 
 //*****************************************************************************
 // Sets/Gets the directory based on the location of the module. This routine

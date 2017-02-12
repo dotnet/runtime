@@ -125,9 +125,6 @@ class AssemblySpec  : public BaseAssemblySpec
         HRESULT hr=InitializeSpecInternal(kAssemblyRefOrDef, pImport,pStaticParent,fIntrospectionOnly,TRUE);
         if(FAILED(hr))
             EEFileLoadException::Throw(this,hr);
-#ifndef FEATURE_CORECLR
-        CloneFields();
-#endif
     };
 
 #ifdef FEATURE_FUSION
@@ -269,9 +266,6 @@ class AssemblySpec  : public BaseAssemblySpec
         BOOL fNgenExplicitBind = FALSE, 
         BOOL fExplicitBindToNativeImage = FALSE,
         StackCrawlMark *pCallerStackMark  = NULL );
-#ifndef FEATURE_CORECLR
-    static VOID BindToSystem(BINDER_SPACE::Assembly** ppAssembly);
-#endif
 #endif
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel, 
@@ -653,9 +647,7 @@ class AssemblySpecBindingCache
     PtrHashMap m_map;
     LoaderHeap *m_pHeap;
 
-#if defined(FEATURE_CORECLR)    
     AssemblySpecBindingCache::AssemblyBinding* GetAssemblyBindingEntryForAssemblySpec(AssemblySpec* pSpec, BOOL fThrow);
-#endif // defined(FEATURE_CORECLR)
     
   public:
 
@@ -683,7 +675,7 @@ class AssemblySpecBindingCache
         return pSpec->Hash();
     }
     
-#if defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)    
+#if !defined(DACCESS_COMPILE)
     void GetAllAssemblies(SetSHash<PTR_DomainAssembly>& assemblyList)
     {
         PtrHashMap::PtrIterator i = m_map.begin();

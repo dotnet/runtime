@@ -102,61 +102,6 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
     return address;
 }
 
-#ifndef FEATURE_CORECLR   
-// Call into the unhandled-exception processing code to launch Watson.
-// 
-// Arguments:
-//    address - address to distinguish callsite of break.
-//    
-// Notes:
-//    Invokes a watson dialog in response to a user break (Debug.Break).
-//    Assumes that caller has already enforced any policy it cares about related to whether a debugger is attached.
-void DoWatsonForUserBreak(UINT_PTR address)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(address != NULL);
-    }
-    CONTRACTL_END;
-
-    CONTEXT context;
-    EXCEPTION_RECORD exceptionRecord;
-    EXCEPTION_POINTERS exceptionPointers;
-
-    ZeroMemory(&context, sizeof(context));
-    ZeroMemory(&exceptionRecord, sizeof(exceptionRecord));
-    ZeroMemory(&exceptionPointers, sizeof(exceptionPointers));
-
-    // Try to locate the user managed code invoking System.Diagnostics.Debugger.Break
-    UINT_PTR userCodeAddress = FindMostRecentUserCodeOnStack();
-    if (userCodeAddress != NULL)
-    {
-        address = userCodeAddress;
-    }
-
-    LOG((LF_EH, LL_INFO10, "DoDebugBreak: break at %0p\n", address));
-
-    exceptionRecord.ExceptionAddress = reinterpret_cast< PVOID >(address);
-    exceptionPointers.ExceptionRecord = &exceptionRecord;
-    exceptionPointers.ContextRecord = &context;
-
-    Thread *pThread = GetThread();
-    PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
-    _ASSERTE(pUEWatsonBucketTracker != NULL);
-    pUEWatsonBucketTracker->SaveIpForWatsonBucket(address);
-    pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::UserBreakpoint, pThread, NULL);
-    if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
-    {
-        pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-    }
-
-    WatsonLastChance(GetThread(), &exceptionPointers, TypeOfReportedError::UserBreakpoint);
-
-} // void DoDebugBreak()
-#endif // !FEATURE_CORECLR   
 
 // This does a user break, triggered by System.Diagnostics.Debugger.Break, or the IL opcode for break.
 //
@@ -210,12 +155,6 @@ FCIMPL0(void, DebugDebugger::Break)
     }
     else
     {   
-#ifndef FEATURE_CORECLR        
-        // No debugger attached -- Watson up.
-
-        // The HelperMethodFrame knows how to get the return address.
-        DoWatsonForUserBreak(HELPER_METHOD_FRAME_GET_RETURN_ADDRESS());
-#endif //FEATURE_CORECLR
     }
 
     HELPER_METHOD_FRAME_END();

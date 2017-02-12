@@ -35,38 +35,7 @@ inline void AssemblySecurityDescriptor::TryCachePassedDemand(PsetCacheEntry *pCa
         m_arrPassedLinktimeDemands[m_dwNumPassedDemands++] = pCasDemands;
 }
 
-#ifdef FEATURE_CAS_POLICY
 
-inline BOOL AssemblySecurityDescriptor::IsAssemblyRequestsComputed() 
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fAssemblyRequestsComputed;
-}
-
-inline BOOL AssemblySecurityDescriptor::IsSignatureLoaded()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fIsSignatureLoaded;
-}
-
-inline void AssemblySecurityDescriptor::SetSignatureLoaded()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fIsSignatureLoaded = TRUE;
-}
-
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_APTCA
-
-inline BOOL AssemblySecurityDescriptor::IsConditionalAptca()
-{
-    WRAPPER_NO_CONTRACT;
-    ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(m_pAssem->GetAssembly());
-    return (pMSD->GetTokenFlags() & TokenSecurityDescriptorFlags_ConditionalAPTCA) == TokenSecurityDescriptorFlags_ConditionalAPTCA;
-}
-
-#endif // FEATURE_APTCA
 
 #endif // !DACCESS_COMPILE
 

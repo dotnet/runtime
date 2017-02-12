@@ -4336,16 +4336,10 @@ HRESULT ETW::CEtwTracer::Register()
     EventRegisterMicrosoft_Windows_DotNETRuntimeRundown();
 
     // Stress Log ETW events are available only on the desktop version of the runtime
-#ifndef FEATURE_CORECLR
-    EventRegisterMicrosoft_Windows_DotNETRuntimeStress();
-#endif // !FEATURE_CORECLR
 
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeRundownHandle;
-#ifndef FEATURE_CORECLR
-    MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeStressHandle;
-#endif // !FEATURE_CORECLR
 
     return S_OK;
 }
@@ -4371,9 +4365,6 @@ HRESULT ETW::CEtwTracer::UnRegister()
     EventUnregisterMicrosoft_Windows_DotNETRuntime();
     EventUnregisterMicrosoft_Windows_DotNETRuntimePrivate();
     EventUnregisterMicrosoft_Windows_DotNETRuntimeRundown();
-#ifndef FEATURE_CORECLR
-    EventUnregisterMicrosoft_Windows_DotNETRuntimeStress();
-#endif // !FEATURE_CORECLR
     return S_OK;
 }
 
@@ -4923,11 +4914,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
                 g_fEEComActivatedStartup ||      //CLR started as a COM object
                 g_fEEOtherStartup  );            //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
 
-#ifdef FEATURE_CORECLR
             Sku = ETW::InfoLog::InfoStructs::CoreCLR;
-#else
-            Sku = ETW::InfoLog::InfoStructs::DesktopCLR;
-#endif //FEATURE_CORECLR
         
             //version info for clr.dll
             USHORT vmMajorVersion = VER_MAJORVERSION;
@@ -4946,30 +4933,6 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             PCWSTR lpwszCommandLine = W("");
             
 
-#ifndef FEATURE_CORECLR
-            startupFlags = CorHost2::GetStartupFlags();
-
-            // Some of the options specified by the startup flags can be overwritten by config files. 
-            // Strictly speaking since the field in this event is called StartupFlags there's nothing 
-            // wrong with just showing the actual startup flags but it makes it less useful (a more 
-            // appropriate name for the field is StartupOptions).
-            startupFlags &= ~STARTUP_CONCURRENT_GC;
-            if (g_pConfig->GetGCconcurrent())
-                startupFlags |= STARTUP_CONCURRENT_GC;
-
-            if (g_pConfig->DefaultSharePolicy() != AppDomain::SHARE_POLICY_UNSPECIFIED)
-            {
-                startupFlags &= ~STARTUP_LOADER_OPTIMIZATION_MASK;
-                startupFlags |= g_pConfig->DefaultSharePolicy() << 1;
-            }
-
-            startupFlags &= ~STARTUP_LEGACY_IMPERSONATION;
-            startupFlags &= ~STARTUP_ALWAYSFLOW_IMPERSONATION;
-            if (g_pConfig->ImpersonationMode() == IMP_NOFLOW)
-                startupFlags |= STARTUP_LEGACY_IMPERSONATION;
-            else if (g_pConfig->ImpersonationMode() == IMP_ALWAYSFLOW)
-                startupFlags |= STARTUP_ALWAYSFLOW_IMPERSONATION;
-#endif //!FEATURE_CORECLR
 
             // Determine the startupmode
             if(g_fEEIJWStartup)
@@ -5477,9 +5440,6 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
 VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_CORECLR
-    FireEtwStrongNameVerificationStart_V1(dwInFlags, 0, strFullyQualifiedAssemblyName, GetClrInstanceId());
-#endif // !FEATURE_CORECLR
 }
 
 
@@ -5489,9 +5449,6 @@ VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR 
 VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_CORECLR
-    FireEtwStrongNameVerificationStop_V1(dwInFlags, result, strFullyQualifiedAssemblyName, GetClrInstanceId());
-#endif // !FEATURE_CORECLR
 }
 
 /****************************************************************************/

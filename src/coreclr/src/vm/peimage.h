@@ -261,13 +261,6 @@ public:
     void VerifyIsAssembly();
     void VerifyIsNIAssembly();
 
-#ifndef FEATURE_CORECLR
-    BOOL IsReportedToUsageLog();
-    void SetReportedToUsageLog();
-#ifndef DACCESS_COMPILE
-    HRESULT GetILFingerprint(IILFingerprint **ppFingerprint);
-#endif //!DACCESS_COMPILE
-#endif //!FEATURE_CORECLR
 
     static void GetAll(SArray<PEImage*> &images);
 
@@ -359,9 +352,6 @@ private:
     BOOL        m_bIsTrustedNativeImage;
     BOOL        m_bIsNativeImageInstall;
     BOOL        m_bPassiveDomainOnly;
-#ifndef FEATURE_CORECLR
-    BOOL        m_fReportedToUsageLog;
-#endif // !FEATURE_CORECLR
 #ifdef FEATURE_LAZY_COW_PAGES
     BOOL        m_bAllocatedLazyCOWPages;
 #endif // FEATURE_LAZY_COW_PAGES
@@ -463,9 +453,6 @@ private:
     DWORD m_dwMachine;
     BOOL  m_fCachedKindAndMachine;
 
-#ifdef FEATURE_APTCA
-    BOOL  m_fMayBeConditionalAptca;
-#endif // FEATURE_APTCA
 
 #ifdef FEATURE_FUSION
     PEFingerprint *m_pILFingerprint; // has to be the real type (as opposed to an interface) so we can delete it
@@ -478,10 +465,6 @@ public:
     PEKIND GetFusionProcessorArchitecture();
 #endif
 
-#ifdef FEATURE_APTCA
-    inline BOOL MayBeConditionalAptca();
-    inline void SetIsNotConditionalAptca();
-#endif // FEATURE_APTCA
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

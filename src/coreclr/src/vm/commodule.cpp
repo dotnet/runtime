@@ -45,12 +45,6 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
     // 
     ESymbolFormat symFormatToUse = eSymbolFormatILDB;
 
-#ifndef FEATURE_CORECLR // On desktop only we still use PDB format if the symbols are savable to disk
-    if(mod->GetAssembly()->HasSaveAccess())
-    {
-        symFormatToUse = eSymbolFormatPDB;
-    }
-#endif
    
     static ConfigDWORD dbgForcePDBSymbols;
     if(dbgForcePDBSymbols.val_DontUse_(W("DbgForcePDBSymbols"), 0) == 1)
@@ -951,13 +945,6 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != 0) {
-#ifndef FEATURE_CORECLR
-            // workaround - lie about where mscorlib is. Mscorlib is now loaded out of the GAC, 
-            // but some apps query its location to find the system directory. (Notably CodeDOM)
-            if (pModule->IsSystem())
-                retString.Set(SystemDomain::System()->BaseLibrary());
-            else
-#endif // !FEATURE_CORECLR
             {
 #ifdef FEATURE_WINDOWSPHONE
                 //
@@ -1182,60 +1169,6 @@ Object* GetTypesInner(Module* pModule)
     RETURN(OBJECTREFToObject(refArrClasses));
 }
 
-#if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
-//+--------------------------------------------------------------------------
-//  
-//  Member:     COMModule::GetSignerCertificate()
-//  
-//  Synopsis:   Gets the certificate with which the module was signed.
-//
-//  Effects:    Creates an X509Certificate and returns it.
-// 
-//  Arguments:  None.
-//
-//  Returns:    OBJECTREF to an X509Certificate object containing the 
-//              signer certificate.
-//
-//---------------------------------------------------------------------------
-
-void QCALLTYPE COMModule::GetSignerCertificate(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retData)
-{
-    QCALL_CONTRACT;
-    
-    BEGIN_QCALL;
-
-    PCOR_TRUST                  pCorTrust = NULL;
-    IAssemblySecurityDescriptor* pSecDesc = NULL;
-    PBYTE                       pbSigner = NULL;
-    DWORD                       cbSigner = 0;
-
-    // ******** Get the security descriptor ********
-
-    // Get a pointer to the module security descriptor
-    pSecDesc = pModule->GetSecurityDescriptor();
-    _ASSERTE(pSecDesc);
-
-    // ******** Get COR_TRUST info from module security descriptor ********
-    if (FAILED(pSecDesc->LoadSignature(&pCorTrust)))
-    {
-        COMPlusThrow(kArgumentNullException, W("InvalidOperation_MetaDataError"));
-    }
-
-    if( pCorTrust )
-    {
-        // Get a pointer to the signer certificate information in the COR_TRUST
-        pbSigner = pCorTrust->pbSigner;
-        cbSigner = pCorTrust->cbSigner;
-
-        if( pbSigner && cbSigner )
-        {
-            retData.SetByteArray(pbSigner, cbSigner);
-        }
-    }
-
-    END_QCALL;
-}
-#endif // #if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
 
 FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSAFE)
 {
@@ -1248,7 +1181,6 @@ FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSA
 }
 FCIMPLEND
 
-#ifdef FEATURE_CORECLR
 
 //---------------------------------------------------------------------
 // Helper code for PunkSafeHandle class. This does the Release in the
@@ -1283,6 +1215,5 @@ FCIMPL0(void*, COMPunkSafeHandle::nGetDReleaseTarget)
     return (void*)DReleaseTarget;
 }
 FCIMPLEND
-#endif //FEATURE_CORECLR
 
 

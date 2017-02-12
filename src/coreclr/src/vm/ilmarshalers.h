@@ -600,7 +600,7 @@ public:
                 nativeSize = wNativeSize;
             }
 
-#if defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN64) && !defined(FEATURE_CORECLR))
+#if defined(_TARGET_X86_)
             // JIT32 and JIT64 (which is only used on the Windows Desktop CLR) has a problem generating
             // code for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
             // change the signature of calli to return void and make the return buffer as first argument. 
@@ -2716,42 +2716,6 @@ protected:
 };
 
 
-#ifndef FEATURE_CORECLR
-class ILBlittableValueClassWithCopyCtorMarshaler : public ILMarshaler
-{
-public:
-    enum
-    {
-        c_fInOnly               = TRUE,
-        c_nativeSize            = VARIABLESIZE,
-        c_CLRSize               = sizeof(OBJECTREF),
-    };
-
-    LocalDesc GetManagedType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc();
-    }
-
-    LocalDesc GetNativeType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc();
-    }
-
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
-                                            BOOL               byref,
-                                            BOOL               fin,
-                                            BOOL               fout,
-                                            BOOL               fManagedToNative,
-                                            OverrideProcArgs*  pargs,
-                                            UINT*              pResID,
-                                            UINT               argidx,
-                                            UINT               nativeStackOffset);
-
-
-};
-#endif // !FEATURE_CORECLR
 
 
 class ILArgIteratorMarshaler : public ILMarshaler

@@ -70,28 +70,6 @@ HRESULT Assembler::InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileNam
     if(!Init()) goto exit; // close and re-open CeeFileGen and CeeFile
     hr = S_OK;
 
-#ifndef FEATURE_CORECLR
-    hr = CoCreateInstance(CLSID_CorSymWriter_SxS,
-                           NULL,
-                           CLSCTX_INPROC_SERVER,
-                           IID_ISymUnmanagedWriter,
-                           (void **)&m_pSymWriter);
-    if(SUCCEEDED(hr))
-    {
-        WCHAR* pwc = &wzOrigFileName[wcslen(wzOrigFileName)];
-        wcscat_s(wzOrigFileName,MAX_SCOPE_LENGTH,W(".pdb"));
-        if(m_pSymWriter) m_pSymWriter->Initialize((IUnknown*)m_pEmitter,
-                                                  wzOrigFileName,
-                                                  NULL,
-                                                  TRUE);
-        *pwc = 0;
-    }
-    else 
-    {
-        fprintf(stderr, "Error: CoCreateInstance(IID_ISymUnmanagedWriter) returns %X\n",hr);
-        m_pSymWriter = NULL;
-    }
-#endif
 
 exit:
     return hr;
@@ -453,43 +431,6 @@ REPT_STEP
         pBaseMDEmit->Release();
     }
 
-#if(0)
-//===================================================================================
-    // release SymWriter interfaces
-    if (m_pSymWriter != NULL)
-    {
-        m_pSymWriter->Close();
-        m_pSymWriter->Release();
-        m_pSymWriter = NULL;
-    }
-
-    hr = CoCreateInstance(CLSID_CorSymWriter_SxS,
-                           NULL,
-                           CLSCTX_INPROC_SERVER,
-                           IID_ISymUnmanagedWriter,
-                           (void **)&m_pSymWriter);
-    if(SUCCEEDED(hr))
-    {
-        WCHAR* pwc = &pwzOutputFilename[wcslen(pwzOutputFilename)];
-        wcscat(pwzOutputFilename,L".pdb");
-        if(m_pSymWriter) m_pSymWriter->Initialize((IUnknown*)m_pEmitter,
-                                                  pwzOutputFilename,
-                                                  NULL,
-                                                  TRUE);
-        *pwc = 0;
-    }
-    else 
-    {
-        fprintf(stderr, "Error: CoCreateInstance(IID_ISymUnmanagedWriter) returns %X\n",hr);
-        m_pSymWriter = NULL;
-    }
-    
-    m_fENCMode = FALSE;
-    if(FAILED(hr=CreatePEFile(pwzOutputFilename))) 
-        report->msg("Could not create output file, error code=0x%08X\n",hr);
-    m_fENCMode = TRUE;
-//=====================================================================================    
-#endif
 
     // release all interfaces
     if (m_pSymWriter != NULL)

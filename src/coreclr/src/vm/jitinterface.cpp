@@ -160,11 +160,9 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
     {
         *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccess;
 
-#ifdef FEATURE_CORECLR
         // For compatibility, don't do transparency checks from dynamic methods in FT CoreCLR.
         if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
             *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_COMPRESSEDSTACK
         if (dwSecurityFlags & DynamicResolver::HasCreationContext)
@@ -173,11 +171,9 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
     }
     else
     {
-#ifdef FEATURE_CORECLR
         // For compatibility, don't do transparency checks from dynamic methods in FT CoreCLR.
         if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
             *pAccessCheckType = AccessCheckOptions::kNormalAccessNoTransparency;
-#endif // FEATURE_CORECLR
     }
 
     return doAccessCheck;
@@ -537,14 +533,12 @@ CEEInfo::ConvToJitSig(
         IfFailThrow(sig.GetCallingConvInfo(&data));
         sigRet->callConv = (CorInfoCallConv) data;
 
-#if defined(FEATURE_CORECLR)
         if ((isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
             (isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
         {
             // This signature corresponds to a method that uses varargs, which are not supported.
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
-#endif // FEATURE_CORECLR        
 
         // Skip number of type arguments
         if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -5588,11 +5582,9 @@ void CEEInfo::getCallInfo(
         //This just throws.
         if (pCalleeForSecurity->RequiresLinktimeCheck())
         {
-#ifdef FEATURE_CORECLR
             //hostProtectionAttribute(HPA) can be removed for coreclr mscorlib.dll
             //So if the call to LinktimeCheckMethod() is only b'coz of HPA then skip it
             if (!pCalleeForSecurity->RequiresLinkTimeCheckHostProtectionOnly())
-#endif
                 Security::LinktimeCheckMethod(pCallerForSecurity->GetAssembly(), pCalleeForSecurity);
         }
 
@@ -5630,11 +5622,7 @@ void CEEInfo::getCallInfo(
                                                      pCalleeForSecurity,
                                                      NULL,
                                                      accessCheckOptions,
-#ifdef FEATURE_CORECLR
                                                      FALSE,
-#else
-                                                     TRUE,
-#endif //FEATURE_CORECLR
                                                      TRUE
                                                     );
 
@@ -5691,7 +5679,6 @@ void CEEInfo::getCallInfo(
             {
                 BOOL fNeedsTransparencyCheck = TRUE;
 
-#ifdef FEATURE_CORECLR
                 // All LCG methods are transparent in CoreCLR. When we switch from PT
                 // to FT most user assemblies will become opportunistically critical.
                 // If a LCG method calls a method in such an assembly it will stop working.
@@ -5704,7 +5691,6 @@ void CEEInfo::getCallInfo(
                 // See also AccessCheckOptions::DemandMemberAccess.
                 if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted() && pCallerForSecurity->IsLCGMethod())
                     fNeedsTransparencyCheck = FALSE;
-#endif // FEATURE_CORECLR
 
                 if (fNeedsTransparencyCheck)
                 {
@@ -5818,9 +5804,7 @@ BOOL CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
         doCheck = ModifyCheckForDynamicMethod(GetMethod(hCaller)->AsDynamicMethodDesc()->GetResolver(),
                                               &accessingType, &accessCheckOptions, &pIgnored);
         if (accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccess 
-#ifdef FEATURE_CORECLR
             || accessCheckOptions == AccessCheckOptions::kRestrictedMemberAccessNoTransparency
-#endif //FEATURE_CORECLR
             )
             doCheck = FALSE;
     }
@@ -9773,11 +9757,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     pEEInfoOut->osPageSize = OS_PAGE_SIZE;
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
-#if defined(FEATURE_CORECLR)
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
-#else
-    pEEInfoOut->targetAbi = CORINFO_DESKTOP_ABI;
-#endif
 
     OSVERSIONINFO   sVerInfo;
     sVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -11792,10 +11772,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
-#if !defined(FEATURE_CORECLR)
-    // Ask the JIT to generate desktop-quirk-compatible code.
-    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DESKTOP_QUIRKS);
-#endif
 
     comp->setJitFlags(jitFlags);
 
@@ -11807,14 +11783,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     BEGIN_SO_TOLERANT_CODE(GetThread());
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    ret = getJit()->compileMethod( comp,
-                                   info,
-                                   CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                   nativeEntry,
-                                   nativeSizeOfCode);
-
-#else // defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
 #if defined(ALLOW_SXS_JIT) && !defined(CROSSGEN_COMPILE)
     if (FAILED(ret) && jitMgr->m_alternateJit
@@ -11912,7 +11880,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     }
 #endif // !defined(CROSSGEN_COMPILE)
     
-#endif // defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 
 #if defined(FEATURE_GDBJIT)
     if (SUCCEEDED(ret) && *nativeEntry != NULL)
@@ -12119,12 +12086,10 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     //Right now if we don't have a debug interface on CoreCLR, we can't generate debug info.  So, in those
     //cases don't attempt it.
     if (!g_pDebugInterface)
         return flags;
-#endif //FEATURE_CORECLR
 
 #ifdef DEBUGGING_SUPPORTED
 

@@ -2199,9 +2199,7 @@ public:
     // ICorDebug
     //-----------------------------------------------------------
 
-#ifdef FEATURE_CORECLR
     HRESULT SetTargetCLR(HMODULE hmodTargetCLR);
-#endif // FEATURE_CORECLR
 
     COM_METHOD Initialize();
     COM_METHOD Terminate();

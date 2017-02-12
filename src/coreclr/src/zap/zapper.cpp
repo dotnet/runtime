@@ -13,14 +13,8 @@
 #include "metahost.h"
 #endif
 
-#if defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
-#include "AppXUtil.h"
-#include "AssemblyUsageLogManager.h"
-#endif
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 #include "coregen.h"
-#endif
 
 #include "clr/fs/dir.h"
 #ifdef FEATURE_FUSION
@@ -55,21 +49,14 @@ extern "C" HRESULT STDMETHODCALLTYPE InitializeFusion();
 
 extern const WCHAR g_pwBaseLibrary[];
 extern bool g_fAllowNativeImages;
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 bool g_fNGenMissingDependenciesOk;
-#endif
 bool g_fNGenWinMDResilient;
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-extern int g_ningenState;
-#endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
 bool g_fReadyToRunCompilation;
 #endif
 
-#ifdef FEATURE_CORECLR
 static bool s_fNGenNoMetaData;
-#endif
 
 // Event logging helper
 void Zapper::ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...)
@@ -140,7 +127,6 @@ static HRESULT GetAssemblyName(
 // For side by side issues, it's best to use the exported API calls to generate a
 // Zapper Object instead of creating one on your own.
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
 {    
@@ -185,9 +171,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         ngo.fNgenLastRetry = false;
 
-#ifdef FEATURE_CORECLR
         s_fNGenNoMetaData = (dwFlags & NGENWORKER_FLAGS_NO_METADATA) != 0;
-#endif
 
         zap = Zapper::NewZapper(&ngo);
 
@@ -209,7 +193,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         if (pwzPlatformWinmdPaths != nullptr)
             zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         if (pwszCLRJITPath != nullptr)
             zap->SetCLRJITPath(pwszCLRJITPath);
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
@@ -255,7 +239,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
         zap = Zapper::NewZapper(&ngo);
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         zap->SetDontLoadJit();
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
@@ -277,7 +261,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
         if (pwzPlatformWinmdPaths != nullptr)
             zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
 
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#if !defined(NO_NGENPDB)
         if (pwzDiasymreaderPath != nullptr)
             zap->SetDiasymreaderPath(pwzDiasymreaderPath);
 #endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
@@ -310,100 +294,6 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
     return hr;
 }
 
-#else // FEATURE_CORECLR || CROSSGEN_COMPILE
-
-STDAPI LegacyNGenCreateZapper(HANDLE* hZapper, NGenOptions* opt)
-{
-    if (hZapper == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    Zapper* zap = NULL;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    EX_TRY
-    {
-        zap = Zapper::NewZapper(opt);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    END_ENTRYPOINT_NOTHROW;
-
-    IfFailRet(hr);
-
-    if (zap == NULL)
-        return E_OUTOFMEMORY;
-
-    zap->SetLegacyMode();
-
-    *hZapper = (HANDLE)zap;
-
-    return S_OK;
-}// NGenCreateZapper
-
-STDAPI LegacyNGenFreeZapper(HANDLE hZapper)
-{
-    if (hZapper == NULL || hZapper == INVALID_HANDLE_VALUE)
-        return E_HANDLE;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    Zapper *zapper = (Zapper*)hZapper;
-    delete zapper;
-    END_ENTRYPOINT_NOTHROW;
-
-    return S_OK;
-}// NGenFreeZapper
-
-#ifdef FEATURE_FUSION
-STDAPI LegacyNGenTryEnumerateFusionCache(HANDLE hZapper, LPCWSTR assemblyName, bool fPrint, bool fDelete)
-{
-
-    HRESULT hr = S_OK;
-    if (hZapper == NULL || hZapper == INVALID_HANDLE_VALUE)
-        return E_HANDLE;
-    
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    Zapper *zapper = (Zapper*)hZapper;
-    hr =  zapper->TryEnumerateFusionCache(assemblyName, fPrint, fDelete);
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-
-}// NGenTryEnumerateFusionCache
-#endif //FEATURE_FUSION
-
-STDAPI_(BOOL) LegacyNGenCompile(HANDLE hZapper, LPCWSTR path)
-{
-    CONTRACTL{
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    if (hZapper == NULL || hZapper == INVALID_HANDLE_VALUE)
-        return FALSE;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_VOIDRET;
-
-    Zapper *zapper = (Zapper*)hZapper;
-
-    EX_TRY
-    {
-        hr = zapper->Compile(path);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    END_ENTRYPOINT_VOIDRET;
-
-    return (hr == S_OK) ? TRUE : FALSE;
-}// NGenCompile
-
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
 /* --------------------------------------------------------------------------- *
  * Options class
@@ -427,9 +317,7 @@ ZapperOptions::ZapperOptions() :
   m_fNGenLastRetry(false),
   m_compilerFlags(),
   m_legacyMode(false)
-#ifdef FEATURE_CORECLR
   ,m_fNoMetaData(s_fNGenNoMetaData)
-#endif
 {
     m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_RELOC);
     m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PREJIT);
@@ -691,7 +579,7 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
     _ASSERTE(SUCCEEDED(hr));
 #endif
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     m_fDontLoadJit = false;
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
@@ -719,13 +607,12 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
 
     HRESULT hr = E_FAIL;
 
-#if defined(FEATURE_CORECLR) || defined(FEATURE_MERGE_JIT_AND_ENGINE)
     // Note: FEATURE_MERGE_JIT_AND_ENGINE is defined for the Desktop crossgen compilation as well.
     //
     PathString CoreClrFolder;
     extern HINSTANCE g_hThisInst;
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (m_fDontLoadJit)
     {
         return;
@@ -761,9 +648,6 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
             hr = S_OK;
         }
     }
-#else
-    hr = g_pCLRRuntime->LoadLibrary(pwzJitName, phJit);
-#endif
 
     if (FAILED(hr))
     {
@@ -771,7 +655,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         ThrowLastError();
     }
 
-#if (defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST)) && !defined(CROSSGEN_COMPILE)
+#if !defined(CROSSGEN_COMPILE)
     typedef void (__stdcall* pSxsJitStartup) (CoreClrCallbacks const & cccallbacks);
     pSxsJitStartup sxsJitStartupFn = (pSxsJitStartup) GetProcAddress(*phJit, "sxsJitStartup");
     if (sxsJitStartupFn == NULL)
@@ -898,39 +782,11 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
 
     CorCompileRuntimeDlls ngenDllId;
 
-#if !defined(FEATURE_CORECLR)    
-    ngenDllId = NGEN_COMPILER_INFO;
-#else // FEATURE_CORECLR
     ngenDllId = CROSSGEN_COMPILER_INFO;
-#endif
 
     LPCWSTR pwzJitName = CorCompileGetRuntimeDllName(ngenDllId);
     LoadAndInitializeJITForNgen(pwzJitName, &m_hJitLib, &m_pJitCompiler);
     
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    // For reasons related to servicing, and RyuJIT rollout on .NET 4.6 and beyond, we only use RyuJIT when the registry
-    // value UseRyuJIT (type DWORD), under key HKLM\SOFTWARE\Microsoft\.NETFramework, is set to 1. Otherwise, we fall back
-    // to JIT64.
-    //
-    // See the document "RyuJIT Compatibility Fallback Specification.docx" for details.
-    //
-    // Also see the code and comments in EEJitManager::LoadJIT().
-
-    if (!UseRyuJit())        // Do we need to fall back to JIT64 for NGEN?
-    {
-        LPCWSTR pwzJitName = MAKEDLLNAME_W(L"compatjit");
-
-        // Note: if the compatjit fails to load, we ignore it, and continue to use the main JIT for
-        // everything. You can imagine a policy where if the user requests the compatjit, and we fail
-        // to load it, that we fail noisily. We don't do that currently.
-        ICorJitCompiler* fallbackICorJitCompiler;
-        LoadAndInitializeJITForNgen(pwzJitName, &m_hJitLegacy, &fallbackICorJitCompiler);
-
-        // Tell the main JIT to fall back to the "fallback" JIT compiler, in case some
-        // obfuscator tries to directly call the main JIT's getJit() function.
-        m_pJitCompiler->setRealJit(fallbackICorJitCompiler);
-    }
-#endif // defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT_NGEN
@@ -2029,21 +1885,11 @@ void Zapper::CreateDependenciesLookupDomainInCurrentDomain()
     SetContextInfo();
 }
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-void ZapperSetPlatformAssembliesPaths(SString &platformAssembliesPaths);
-#endif
 
-#ifdef FEATURE_CORECLR
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths);
-#endif
 
 void Zapper::CreateCompilationDomain()
 {
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    // Platform assemblies paths have to be set before appdomain is setup so that
-    // mscorlib.dll can be loaded from them.
-    ZapperSetPlatformAssembliesPaths(m_platformAssembliesPaths);
-#endif
 
     BOOL fForceDebug = FALSE;
     if (!m_pOpt->m_autodebug)
@@ -2069,7 +1915,6 @@ void Zapper::CreateCompilationDomain()
     IfFailThrow(m_pDomain->SetPlatformWinmdPaths(m_platformWinmdPaths));
 #endif
 
-#ifdef FEATURE_CORECLR
     // we support only TPA binding on CoreCLR
 
     if (!m_trustedPlatformAssemblies.IsEmpty())
@@ -2078,7 +1923,6 @@ void Zapper::CreateCompilationDomain()
         // Add the trusted paths and apppath to the binding list
         ZapperSetBindingPaths(m_pDomain, m_trustedPlatformAssemblies, m_platformResourceRoots, m_appPaths, m_appNiPaths);
     }
-#endif
 }
 
 void Zapper::CreateDependenciesLookupDomain()
@@ -2249,7 +2093,7 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
         }
 
         LPCWSTR pDiasymreaderPath = nullptr;
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#if !defined(NO_NGENPDB)
         if (m_DiasymreaderPath.GetCount() > 0)
         {
             pDiasymreaderPath = m_DiasymreaderPath.GetUnicode();
@@ -2321,29 +2165,6 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
     }
     else
     {
-#if defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
-        if (m_pOpt->m_fAutoNGen)
-        {
-            // Make sure we're not been spoofed into loading an assembly that might be unsafe to load.
-            // Loading by path so we better be AppX or a WinMD
-            StackSString s(pAssemblyString);
-            SString literalWinMD(SString::Literal, W(".winmd"));
-            BOOL isWinMD = (s.GetCount() > 6) && s.MatchCaseInsensitive(s.End() - 6, literalWinMD);
-            if (!AppX::IsAppXProcess() && !isWinMD)
-            {
-                Error(W("Cannot load assembly %s for automatic NGen.\n"), pAssemblyString);
-                ThrowHR(E_FAIL);
-            }
-
-            // Is AppX NGen disabled?
-            if ((AssemblyUsageLogManager::GetUsageLogFlags() & AssemblyUsageLogManager::ASSEMBLY_USAGE_LOG_FLAGS_APPLOCALNGENDISABLED) != 0)
-            {
-                memset(pNativeImageSig, 0, sizeof(*pNativeImageSig));   // Fake NI signature to disable NGen.
-                Warning(W("NGen disabled for this application.\n"));
-                return;
-            }
-        }
-#endif
 
         hr = m_pEECompileInfo->LoadAssemblyByPath(pAssemblyString,
                                                   FALSE,  // fExplicitBindToNativeImage
@@ -2363,13 +2184,6 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
         IfFailThrow(hr);
     }
 
-#ifndef FEATURE_CORECLR
-    if (m_pOpt->m_fAutoNGen && !m_pEECompileInfo->SupportsAutoNGen(hAssembly))
-    {
-        Error(W("Assembly %s does not support automatic NGen.\n"), pAssemblyString);
-        ThrowHR(E_FAIL);
-    }
-#endif // FEATURE_CORECLR
 
     //
     // Check if we have a native image already, and if so get its GUID
@@ -2603,25 +2417,8 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
     {
         fMscorlib = true;
     }
-#ifndef FEATURE_CORECLR
-    else
-    if (_wcsnicmp(fileName, W("mscorlib"), 8) == 0 && (wcslen(fileName) == 8 || fileName[8] == W(',')))
-    {
-        fMscorlib = true;
-    }
-#endif
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    if (fMscorlib)
-    {
-        //
-        // Enable ningen by default for mscorlib to get identical images between ngen and crossgen
-        //
-        g_ningenState = 1;
-    }
-#endif
 
-#if defined(CROSSGEN_COMPILE) || defined(FEATURE_CORECLR)
     if (fMscorlib)
     {
         //
@@ -2629,7 +2426,6 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
         //
         g_fAllowNativeImages = false;
     }
-#endif
 
     // the errors in CreateCompilationDomain are fatal - propogate them up
     CreateCompilationDomain();
@@ -2680,11 +2476,6 @@ void Zapper::CompileInCurrentDomain(__in LPCWSTR string, CORCOMPILE_NGEN_SIGNATU
     
     BEGIN_ENTRYPOINT_VOIDRET;
 
-#ifndef FEATURE_CORECLR
-    // Set the hard binding list.  This needs to be done early, before we attempt to use any
-    // softbound native images, in order to ensure NGen determinism.
-    SetAssemblyHardBindList();
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_FUSION
     // Set the context info for the current domain
@@ -3382,15 +3173,8 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
 
-#if !defined(FEATURE_CORECLR)
-    if (CPU_X86_USE_SSE2(pVersionInfo->cpuInfo.dwFeatures))
-    {
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-    }
-#else
     // .NET Core requires SSE2.
     m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-#endif // !defined(FEATURE_CORECLR)
 
 #endif // _TARGET_X86_
 
@@ -4079,7 +3863,7 @@ void Zapper::PrintErrorMessage(CorZapLogLevel level, HRESULT hr)
     Print(level, W("%s"), message.GetUnicode());
 }
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 void Zapper::SetCLRJITPath(LPCWSTR pwszCLRJITPath)
 {
     m_CLRJITPath.Set(pwszCLRJITPath);
@@ -4091,14 +3875,13 @@ void Zapper::SetDontLoadJit()
 }
 #endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#if !defined(NO_NGENPDB)
 void Zapper::SetDiasymreaderPath(LPCWSTR pwzDiasymreaderPath)
 {
     m_DiasymreaderPath.Set(pwzDiasymreaderPath);
 }
 #endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
 void Zapper::SetPlatformAssembliesPaths(LPCWSTR pwzPlatformAssembliesPaths)
 {
@@ -4135,7 +3918,6 @@ void Zapper::SetForceFullTrust(bool val)
     m_fForceFullTrust = val;
 }
 
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
 
 void Zapper::SetOutputFilename(LPCWSTR pwzOutputFilename)

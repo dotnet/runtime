@@ -301,14 +301,6 @@ public:
         return m_pWinRTPCEventArgsToSystemPCEventArgsMD;
     }
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    BOOL IsEventArgsHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (pMD == m_pSystemNCCEventArgsToWinRTNCCEventArgsMD || pMD == m_pWinRTNCCEventArgsToSystemNCCEventArgsMD ||
-                pMD == m_pSystemPCEventArgsToWinRTPCEventArgsMD   || pMD == m_pWinRTPCEventArgsToSystemPCEventArgsMD);
-    }
-#endif // #if defined(_DEBUG) && !defined(FEATURE_CORECLR)
 
 private:
     TypeHandle m_hndSystemNCCEventArgsType;
@@ -384,13 +376,6 @@ public:
         return m_SystemUriOriginalStringGetterMD;
     }
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    BOOL IsUriHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pMD == m_SystemUriCtorMD || pMD == m_SystemUriOriginalStringGetterMD;
-    }
-#endif // #if defined(_DEBUG) && !defined(FEATURE_CORECLR)
 
 private:
     TypeHandle m_hndSystemUriType;
@@ -429,13 +414,6 @@ public:
         return m_SystemColorToOleColorMD;
     }
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    BOOL IsOleColorHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pMD == m_OleColorToSystemColorMD || pMD == m_SystemColorToOleColorMD;
-    }
-#endif // #if defined(_DEBUG) && !defined(FEATURE_CORECLR)
 
 private:
     TypeHandle  m_hndColorType;
@@ -470,25 +448,6 @@ public:
     UriMarshalingInfo *GetUriMarshalingInfo();
     EventArgsMarshalingInfo *GetEventArgsMarshalingInfo();
 
-#if defined(_DEBUG) && !defined(FEATURE_CORECLR)
-    BOOL IsOleColorHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pOleColorInfo != NULL && m_pOleColorInfo->IsOleColorHelperMethod(pMD);
-    }
-
-    BOOL IsUriHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pUriInfo != NULL && m_pUriInfo->IsUriHelperMethod(pMD);
-    }
-
-    BOOL IsEventArgsHelperMethod(MethodDesc *pMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pEventArgsInfo != NULL && m_pEventArgsInfo->IsEventArgsHelperMethod(pMD);
-    }
-#endif // #if defined(_DEBUG) && !defined(FEATURE_CORECLR)
 
 #endif // FEATURE_COMINTEROP
 

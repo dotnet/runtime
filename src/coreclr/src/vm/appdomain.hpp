@@ -42,10 +42,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderwinrt.h"
-#ifndef FEATURE_CORECLR
-#include "clrprivbinderreflectiononlywinrt.h"
-#include "clrprivtypecachereflectiononlywinrt.h"
-#endif
 #include "..\md\winmd\inc\adapter.h"
 #include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
@@ -1988,13 +1984,8 @@ public:
     inline LPCWSTR GetAppDomainManagerType();
     inline EInitializeNewDomainFlags GetAppDomainManagerInitializeNewDomainFlags();
 
-#ifndef FEATURE_CORECLR
-    inline BOOL AppDomainManagerSetFromConfig();
-    Assembly *GetAppDomainManagerEntryAssembly();
-    void ComputeTargetFrameworkName();
-#endif // FEATURE_CORECLR
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMINTEROP)
     HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
 #endif // FEATURE_CORECLR && FEATURE_COMINTEROP
 
@@ -2032,10 +2023,6 @@ public:
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
-#ifndef FEATURE_CORECLR
-    void InitializeSorting(OBJECTREF* ppAppdomainSetup);
-    void InitializeHashing(OBJECTREF* ppAppdomainSetup);
-#endif
 
     OBJECTREF DoSetup(OBJECTREF* setupInfo);
 
@@ -2290,7 +2277,6 @@ public:
         return AssemblyIterator::Create(this, assemblyIterationFlags);
     }
 
-#ifdef FEATURE_CORECLR
 private:
     struct NativeImageDependenciesEntry
     {
@@ -2346,7 +2332,6 @@ public:
     void SetNativeDllSearchDirectories(LPCWSTR paths);
     BOOL HasNativeDllSearchDirectories();
     void ShutdownNativeDllSearchDirectories();
-#endif // FEATURE_CORECLR
 
 public:
     SIZE_T GetAssemblyCount()
@@ -2485,10 +2470,6 @@ public:
     //****************************************************************************************
     // Determines if the image is to be loaded into the shared assembly or an individual
     // appdomains.
-#ifndef FEATURE_CORECLR    
-    BOOL ApplySharePolicy(DomainAssembly *pFile);
-    BOOL ApplySharePolicyFlag(DomainAssembly *pFile);
-#endif    
 #endif // FEATURE_LOADER_OPTIMIZATION
 
     BOOL HasSetSecurityPolicy();
@@ -3480,9 +3461,6 @@ private:
         BOOL isTerminating;
         BOOL *pResult;
     };
-    #ifndef FEATURE_CORECLR 
-    static void RaiseUnhandledExceptionEvent_Wrapper(LPVOID /* RaiseUnhandled_Args * */);
-    #endif
 
 
     static void AllowThreadEntrance(AppDomain *pApp);
@@ -3843,11 +3821,9 @@ public:
         ILLEGAL_VERIFICATION_DOMAIN =       0x8000, // This can't be a verification domain
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
         ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
-#ifdef FEATURE_CORECLR
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
         ENABLE_ASSEMBLY_LOADFILE        = 0x400000, // Allow Assembly.LoadFile in CoreCLR
         DISABLE_TRANSPARENCY_ENFORCEMENT= 0x800000, // Disable enforcement of security transparency rules
-#endif        
     };
 
     SecurityContext *m_pSecContext;
@@ -3861,9 +3837,7 @@ public:
     BOOL    m_fAppDomainManagerSetInConfig;
     EInitializeNewDomainFlags m_dwAppDomainManagerInitializeDomainFlags;
 
-#ifdef FEATURE_CORECLR 
     ArrayList m_NativeDllSearchDirectories;
-#endif
     BOOL m_ReversePInvokeCanEnter;
     bool m_ForceTrivialWaitOperations;
     // Section to support AD unload due to escalation
@@ -3891,10 +3865,8 @@ public:
         return (m_Stage == STAGE_UNLOAD_REQUESTED);
     }
 
-#ifdef FEATURE_CORECLR
     BOOL IsImageFromTrustedPath(PEImage* pImage);
     BOOL IsImageFullyTrusted(PEImage* pImage);
-#endif
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
@@ -3941,15 +3913,6 @@ private:
 #endif //FEATURE_COMINTEROP
 
 public:
-#ifndef FEATURE_CORECLR
-    BOOL m_bUseOsSorting;
-    DWORD m_sortVersion;
-    COMNlsCustomSortLibrary *m_pCustomSortLibrary;
-#if _DEBUG
-    BOOL m_bSortingInitialized;
-#endif // _DEBUG
-    COMNlsHashProvider *m_pNlsHashProvider;
-#endif // !FEATURE_CORECLR
 
 private:
     // This is the root-level default load context root binder. If null, then
@@ -4367,9 +4330,6 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR    
-	static void ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path = NULL);
-#endif
     static void ActivateApplication(int *pReturnValue);
 
     static void InitializeDefaultDomain(BOOL allowRedirects, ICLRPrivBinder * pBinder = NULL);

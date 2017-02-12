@@ -21,17 +21,11 @@ inline ApplicationSecurityDescriptor::ApplicationSecurityDescriptor(AppDomain *p
     m_fIsDefaultAppdomainEvidence(FALSE),
     m_fHomogeneous(FALSE),
     m_fRuntimeSuppliedHomogenousGrantSet(FALSE),
-#ifdef FEATURE_CAS_POLICY
-    m_fLegacyCasPolicy(Security::IsProcessWideLegacyCasPolicyEnabled()),
-#endif // FEATURE_CAS_POLICY
     m_dwHostSecurityManagerFlags(HOST_NONE),
     m_fContainsAnyRefusedPermissions(FALSE),
     m_fIsPreResolved(FALSE),
     m_fPreResolutionFullTrust(FALSE),
     m_fPreResolutionHomogeneous(FALSE)
-#ifdef FEATURE_APTCA
-    ,m_pConditionalAptcaCache(new ConditionalAptcaCache(pAppDomain))
-#endif // FEATURE_APTCA
 {
     CONTRACTL
     {
@@ -45,20 +39,6 @@ inline ApplicationSecurityDescriptor::ApplicationSecurityDescriptor(AppDomain *p
     return;
 }
 
-#ifdef FEATURE_APTCA
-inline ApplicationSecurityDescriptor::~ApplicationSecurityDescriptor()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    delete m_pConditionalAptcaCache;
-}
-#endif // FEATURE_APTCA
 
 inline void ApplicationSecurityDescriptor::ResetInitializationInProgress()
 {
@@ -93,34 +73,6 @@ inline void ApplicationSecurityDescriptor::SetHomogeneousFlag(BOOL fRuntimeSuppl
     m_fRuntimeSuppliedHomogenousGrantSet = fRuntimeSuppliedHomogenousGrantSet;
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-// Does the domain's HSM need to be consulted for assemblies loaded into the domain
-inline BOOL ApplicationSecurityDescriptor::CallHostSecurityManagerForAssemblies()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We always need to call the HSM if it wants to specify the assembly's grant set
-    if (m_dwHostSecurityManagerFlags & HOST_RESOLVE_POLICY)
-    {
-        return TRUE;
-    }
-
-    // In legacy CAS mode, we also need to call the HSM if it wants to supply evidence or if we have an
-    // AppDomain policy level
-    if (IsLegacyCasPolicyEnabled())
-    {
-        if ((m_dwHostSecurityManagerFlags & HOST_ASM_EVIDENCE) ||
-            (m_dwHostSecurityManagerFlags & HOST_POLICY_LEVEL))
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 #endif // #ifndef DACCESS_COMPILE
 
