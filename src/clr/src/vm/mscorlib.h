@@ -259,10 +259,6 @@ DEFINE_METHOD(ASSEMBLY,             ON_MODULE_RESOLVE,      OnModuleResolveEvent
 DEFINE_METHOD(ASSEMBLY,             DEMAND_PERMISSION,      DemandPermission,           SM_Str_Bool_Int_RetV)
 #endif
 
-#ifdef FEATURE_COMINTEROP_REGISTRATION
-DEFINE_CLASS(ASSEMBLY_REGISTRATION_FLAGS, Interop,          AssemblyRegistrationFlags)
-#endif // FEATURE_COMINTEROP_REGISTRATION
-
 #ifdef FEATURE_REMOTING
 DEFINE_CLASS(ACTIVATION_SERVICES,   Activation,             ActivationServices)
 DEFINE_METHOD(ACTIVATION_SERVICES,  IS_CURRENT_CONTEXT_OK,  IsCurrentContextOK,         SM_Class_ArrObject_Bool_RetMarshalByRefObject)
@@ -1097,12 +1093,6 @@ DEFINE_METHOD(REAL_PROXY,           SUPPORTSINTERFACE,      SupportsInterface,  
 
 #endif // FEATURE_COMINTEROP
 #endif // FEATURE_REMOTING
-
-#ifdef FEATURE_COMINTEROP_REGISTRATION
-DEFINE_CLASS(REGISTRATION_SERVICES, Interop,                RegistrationServices)
-DEFINE_METHOD(REGISTRATION_SERVICES,REGISTER_ASSEMBLY,      RegisterAssembly,           IM_AssemblyBase_AssemblyRegistrationFlags_RetBool)
-DEFINE_METHOD(REGISTRATION_SERVICES,UNREGISTER_ASSEMBLY,    UnregisterAssembly,         IM_AssemblyBase_RetBool)
-#endif // FEATURE_COMINTEROP_REGISTRATION
 
 #ifdef FEATURE_RWLOCK
 DEFINE_CLASS_U(Threading,              ReaderWriterLock,           CRWLock)
