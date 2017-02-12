@@ -70,7 +70,6 @@
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
         <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
-        <CDefines Condition="'$(FeatureSyntheticCultures)' == 'true'">$(CDefines);FEATURE_SYNTHETIC_CULTURES</CDefines>
         <CDefines Condition="'$(FeatureTypeEquivalence)' == 'true'">$(CDefines);FEATURE_TYPEEQUIVALENCE</CDefines>
         <CDefines Condition="'$(FeatureUefChainmanager)' == 'true'">$(CDefines);FEATURE_UEF_CHAINMANAGER</CDefines>
         <CDefines Condition="'$(FeatureUseLcid)' == 'true'">$(CDefines);FEATURE_USE_LCID</CDefines>
@@ -126,7 +125,6 @@
         <DefineConstants Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(DefineConstants);FEATURE_REFLECTION_ONLY_LOAD</DefineConstants>
         <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>
