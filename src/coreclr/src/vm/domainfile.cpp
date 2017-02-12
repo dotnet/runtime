@@ -1258,7 +1258,7 @@ void DomainFile::FinishLoad()
             }
         }
     }
-#endif // defined(FEATURE_CORECLR) && defined(FEATURE_COMINTEROP)
+#endif //defined(FEATURE_COMINTEROP)
 #endif // FEATURE_PREJIT
 
     // Flush any log messages

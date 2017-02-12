@@ -147,7 +147,7 @@ void PrintUsageHelper()
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
        W("    /JITPath <path>\n")
        W("                         - Specifies the absolute file path to JIT compiler to be used.\n")
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 #ifdef FEATURE_READYTORUN_COMPILER
        W("    /ReadyToRun          - Generate images resilient to the runtime and\n")
        W("                           dependency versions\n")
@@ -443,7 +443,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     LPCWSTR pwszCLRJITPath = nullptr;
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     LPCWSTR pwzDiasymreaderPath = nullptr;
 
@@ -794,7 +794,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         Output(W("The /JITPath switch can not be used with the /CreatePDB switch.\n"));
         exit(FAILURE_RESULT);
     }
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #if !defined(NO_NGENPDB)
     if (pwzDiasymreaderPath != nullptr && !fCreatePDB)
@@ -802,7 +802,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         Output(W("The /DiasymreaderPath switch can only be used with the /CreatePDB switch.\n"));
         exit(FAILURE_RESULT);
     }
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif // !defined(NO_NGENPDB)
 
     if ((pwzTrustedPlatformAssemblies != nullptr) && (pwzPlatformAssembliesPaths != nullptr))
     {
@@ -949,7 +949,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         ,
         NULL, // ICorSvcLogger
         pwszCLRJITPath   
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
          );
     }
     

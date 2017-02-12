@@ -4793,10 +4793,8 @@ HRESULT InitCorDebugInterface()
     // Need to pick the appropriate SKU of CLR to detect
 #if defined(FEATURE_CORESYSTEM)
     GUID skuId = CLR_ID_ONECORE_CLR;
-#elif defined(FEATURE_CORECLR)
-    GUID skuId = CLR_ID_CORECLR;
 #else
-    GUID skuId = CLR_ID_V4_DESKTOP;
+    GUID skuId = CLR_ID_CORECLR;
 #endif
     CLRDebuggingImpl* pDebuggingImpl = new CLRDebuggingImpl(skuId);
     hr = pDebuggingImpl->QueryInterface(IID_ICLRDebugging, (LPVOID *)&pClrDebugging);

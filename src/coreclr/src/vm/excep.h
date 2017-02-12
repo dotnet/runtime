@@ -193,7 +193,7 @@ void UninstallUnhandledExceptionFilter();
 // section that comes after UEF section, it can affect the UEF section and we will
 // assert about it in "CExecutionEngine::ClrVirtualProtect".
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#endif //!defined(FEATURE_PAL)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
 
 

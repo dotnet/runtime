@@ -1964,7 +1964,7 @@ void NotifyDebuggerOfTelestoStartup()
     g_hContinueStartupEvent = NULL;
 }
 
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
 //---------------------------------------------------------------------------------------
 //
@@ -2016,7 +2016,7 @@ HRESULT Debugger::Startup(void)
         // The transport requires the debug pack to be present.  Otherwise it'll raise a fatal error.
         return S_FALSE;
     }
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
     {
         DebuggerLockHolder dbgLockHolder(this);
