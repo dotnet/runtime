@@ -1017,58 +1017,59 @@ mono_gc_cleanup (void)
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
 			int ret;
-			gint64 start_ticks = mono_msec_ticks ();
-			gint64 end_ticks = start_ticks + 40000;
+			gint64 start;
+			const gint64 timeout = 40 * 1000;
 
 			mono_gc_finalize_notify ();
+
+			start = mono_msec_ticks ();
+
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds per finalizer thread */
 			/* and 40 seconds for all finalizers to finish */
-			while (!finalizer_thread_exited) {
-				gint64 current_ticks = mono_msec_ticks ();
-				guint32 timeout;
+			for (;;) {
+				gint64 elapsed;
 
-				if (current_ticks >= end_ticks)
+				if (finalizer_thread_exited) {
+					/* Wait for the thread to actually exit. We don't want the wait
+					 * to be alertable, because we assert on the result to be SUCCESS_0 */
+					ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
+					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
+
+					mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
 					break;
-				else
-					timeout = end_ticks - current_ticks;
+				}
+
+				elapsed = mono_msec_ticks () - start;
+				if (elapsed >= timeout) {
+					/* timeout */
+
+					/* Set a flag which the finalizer thread can check */
+					suspend_finalizers = TRUE;
+					mono_gc_suspend_finalizers ();
+
+					/* Try to abort the thread, in the hope that it is running managed code */
+					mono_thread_internal_abort (gc_thread);
+
+					/* Wait for it to stop */
+					ret = guarded_wait (gc_thread->handle, 100, FALSE);
+					if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT) {
+						/* The finalizer thread refused to exit, suspend it forever. */
+						mono_thread_internal_suspend_for_shutdown (gc_thread);
+						break;
+					}
+
+					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
+
+					mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
+					break;
+				}
+
 				mono_finalizer_lock ();
 				if (!finalizer_thread_exited)
-					mono_coop_cond_timedwait (&exited_cond, &finalizer_mutex, timeout);
+					mono_coop_cond_timedwait (&exited_cond, &finalizer_mutex, timeout - elapsed);
 				mono_finalizer_unlock ();
 			}
-
-			if (!finalizer_thread_exited) {
-				/* Set a flag which the finalizer thread can check */
-				suspend_finalizers = TRUE;
-				mono_gc_suspend_finalizers ();
-
-				/* Try to abort the thread, in the hope that it is running managed code */
-				mono_thread_internal_abort (gc_thread);
-
-				/* Wait for it to stop */
-				ret = guarded_wait (gc_thread->handle, 100, TRUE);
-
-				if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT) {
-					/*
-					 * The finalizer thread refused to exit. Make it stop.
-					 */
-					mono_thread_internal_stop (gc_thread);
-					ret = guarded_wait (gc_thread->handle, 100, TRUE);
-					g_assert (ret != MONO_THREAD_INFO_WAIT_RET_TIMEOUT);
-					/* The thread can't set this flag */
-					finalizer_thread_exited = TRUE;
-				}
-			}
-
-
-			/* Wait for the thread to actually exit. We don't want the wait
-			 * to be alertable, because we assert on the result to be SUCCESS_0 */
-			ret = guarded_wait (gc_thread->handle, MONO_INFINITE_WAIT, FALSE);
-			g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
-
-			mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
-			g_assert (finalizer_thread_exited);
 		}
 		gc_thread = NULL;
 		mono_gc_base_cleanup ();

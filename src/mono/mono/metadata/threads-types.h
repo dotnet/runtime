@@ -178,6 +178,7 @@ void mono_thread_internal_check_for_interruption_critical (MonoInternalThread *t
 
 void mono_thread_internal_stop (MonoInternalThread *thread);
 void mono_thread_internal_abort (MonoInternalThread *thread);
+void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
 gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain);
 
