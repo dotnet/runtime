@@ -70,7 +70,7 @@ namespace System.Threading.Tests
             }
             else if (mutexWh != null)
             {
-                Assert.Throws<Exception>(() => mutexWh.ReleaseMutex());
+                Assert.Throws<ApplicationException>(() => mutexWh.ReleaseMutex());
             }
             else
             {
@@ -111,7 +111,6 @@ namespace System.Threading.Tests
         [Theory]
         [MemberData(nameof(SignalAndWait_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)] // other platforms don't support SignalAndWait
-        [ActiveIssue(16074)]
         private static void SignalAndWait(
             WaitHandle toSignal,
             AutoResetEvent toWaitOn,
