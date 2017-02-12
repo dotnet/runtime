@@ -13,7 +13,6 @@
         <CDefines Condition="'$(FeatureCominterop)' == 'true'">$(CDefines);FEATURE_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureICastable)' == 'true'">$(CDefines);FEATURE_ICASTABLE</CDefines>
         <CDefines Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_APARTMENT_SUPPORT</CDefines>
-        <CDefines Condition="'$(FeatureCominteropRegistration)' == 'true'">$(CDefines);FEATURE_COMINTEROP_REGISTRATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropTlbSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_TLB_SUPPORT</CDefines>
         <CDefines Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</CDefines>  <!-- Enables code required to activate managed winrt from native-->
