@@ -1513,6 +1513,11 @@ namespace System.Numerics
                 return Zero;
             }
 
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign & right._sign;
+            }
+
             uint[] x = left.ToUInt32Array();
             uint[] y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
@@ -1534,6 +1539,11 @@ namespace System.Numerics
                 return right;
             if (right.IsZero)
                 return left;
+            
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign | right._sign;
+            }
 
             uint[] x = left.ToUInt32Array();
             uint[] y = right.ToUInt32Array();
@@ -1552,6 +1562,11 @@ namespace System.Numerics
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
         {
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign ^ right._sign;
+            }
+
             uint[] x = left.ToUInt32Array();
             uint[] y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];
