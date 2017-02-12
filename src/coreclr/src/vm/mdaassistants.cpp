@@ -139,7 +139,6 @@ void TriggerGCForMDAInternal()
     {
         GCHeapUtilities::GetGCHeap()->GarbageCollect();
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         //
         // It is very dangerous to wait for finalizer thread here if we are inside a wait 
         // operation, as the wait operation might call into interop which calls this MDA
@@ -150,7 +149,6 @@ void TriggerGCForMDAInternal()
         // So, if we are inside a SyncContext.Wait, don't call out to FinalizerThreadWait
         //
         if (!GetThread()->HasThreadStateNC(Thread::TSNC_InsideSyncContextWait))
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT            
             // It is possible that user code run as part of finalization will wait for this thread.
             // To avoid deadlocks, we limit the wait time to 10 seconds (an arbitrary number).
             FinalizerThread::FinalizerThreadWait(10 * 1000);

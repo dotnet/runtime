@@ -1599,7 +1599,6 @@ typedef SecurityContextObject*     SECURITYCONTEXTREF;
 #endif
 #endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 #define SYNCCTXPROPS_REQUIRESWAITNOTIFICATION 0x1 // Keep in sync with SynchronizationContext.cs SynchronizationContextFlags
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
@@ -1620,7 +1619,6 @@ public:
         return FALSE;
     }
 };
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_REMOTING
 class CallContextRemotingDataObject : public Object
@@ -1737,17 +1735,13 @@ typedef LogicalCallContextObject*     LOGICALCALLCONTEXTREF;
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
 typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
@@ -2109,13 +2103,11 @@ public:
     }
 #endif // FEATURE_LEAK_CULTURE_INFO
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     OBJECTREF GetSynchronizationContext()
     {
         LIMITED_METHOD_CONTRACT;
         return m_SynchronizationContext;
     }
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_COMPRESSEDSTACK    
     COMPRESSEDSTACKREF GetCompressedStack()

@@ -569,10 +569,8 @@ DEFINE_METASIG_T(SM(Obj_ArrStr_ArrObj_OutStreamingContext_RetSerializationInfo, 
 #endif // FEATURE_SERIALIZATION
 DEFINE_METASIG(SM(Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj, j r(s) r(s) r(a(s)) r(a(j)), j))
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 // Execution Context
 DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT) a(I) F i, i))
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
