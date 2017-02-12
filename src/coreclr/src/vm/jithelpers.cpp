@@ -5413,7 +5413,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             EEPolicy::HandleOutOfMemory();
         }
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // If the flag indicating ForeignExceptionRaise has been set,
         // then do not clear the "_stackTrace" field of the exception object.
         if (GetThread()->GetExceptionState()->IsRaisingForeignException())
@@ -5421,7 +5420,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
         else
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
         {
             ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
         }

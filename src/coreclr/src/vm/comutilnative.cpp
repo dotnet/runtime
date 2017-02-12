@@ -778,7 +778,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsTransient, INT32 hresult)
 FCIMPLEND
 
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
 // This FCall sets a flag against the thread exception state to indicate to
 // IL_Throw and the StackTraceInfo implementation to account for the fact
 // that we have restored a foreign exception dispatch details.
@@ -979,7 +978,6 @@ FCIMPL1(Object*, ExceptionNative::CopyDynamicMethods, Object* pDynamicMethodsUNS
 }
 FCIMPLEND
 
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
 BSTR BStrFromString(STRINGREF s)
 {

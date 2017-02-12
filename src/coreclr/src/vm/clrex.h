@@ -28,11 +28,9 @@ struct StackTraceElement
     UINT_PTR        ip;
     UINT_PTR        sp;
     PTR_MethodDesc  pFunc;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // TRUE if this element represents the last frame of the foreign
     // exception stack trace.
     BOOL			fIsLastFrameFromForeignStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
     bool operator==(StackTraceElement const & rhs) const
     {
