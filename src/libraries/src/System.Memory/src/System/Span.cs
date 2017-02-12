@@ -111,7 +111,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe Span(void* pointer, int length)
         {
-            if (!SpanHelpers.IsReferenceFree<T>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -261,19 +261,19 @@ namespace System
             }
             else
             {
-                if (SpanHelpers.IsReferenceFree<T>())
-                {
-                    ref byte b = ref Unsafe.As<T, byte>(ref DangerousGetPinnableReference());
-
-                    SpanHelpers.ClearPointerSizedWithoutReferences(ref b, byteLength);
-                }
-                else
+                if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     UIntPtr pointerSizedLength = (UIntPtr)((length * Unsafe.SizeOf<T>()) / sizeof(IntPtr));
 
                     ref IntPtr ip = ref Unsafe.As<T, IntPtr>(ref DangerousGetPinnableReference());
 
                     SpanHelpers.ClearPointerSizedWithReferences(ref ip, pointerSizedLength);
+                }
+                else
+                {
+                    ref byte b = ref Unsafe.As<T, byte>(ref DangerousGetPinnableReference());
+
+                    SpanHelpers.ClearPointerSizedWithoutReferences(ref b, byteLength);
                 }
             }
         }
@@ -562,7 +562,7 @@ namespace System
         public static Span<byte> AsBytes<T>(this Span<T> source)
             where T : struct
         {
-            if (!SpanHelpers.IsReferenceFree<T>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
 
             int newLength = checked(source.Length * Unsafe.SizeOf<T>());
@@ -584,7 +584,7 @@ namespace System
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
             where T : struct
         {
-            if (!SpanHelpers.IsReferenceFree<T>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
 
             int newLength = checked(source.Length * Unsafe.SizeOf<T>());
@@ -610,10 +610,10 @@ namespace System
             where TFrom : struct
             where TTo : struct
         {
-            if (!SpanHelpers.IsReferenceFree<TFrom>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<TFrom>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TFrom));
 
-            if (!SpanHelpers.IsReferenceFree<TTo>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
 
             int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
@@ -639,10 +639,10 @@ namespace System
             where TFrom : struct
             where TTo : struct
         {
-            if (!SpanHelpers.IsReferenceFree<TFrom>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<TFrom>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TFrom));
 
-            if (!SpanHelpers.IsReferenceFree<TTo>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
 
             int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
