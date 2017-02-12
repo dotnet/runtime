@@ -1184,13 +1184,6 @@ FCFuncEnd()
 
 
 
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-FCFuncStart(gTypeLibConverterFuncs)
-    FCFuncElement("nConvertAssemblyToTypeLib", COMTypeLibConverter::ConvertAssemblyToTypeLib)
-    FCFuncElement("nConvertTypeLibToMetadata", COMTypeLibConverter::ConvertTypeLibToMetadata)
-    QCFuncElement("LoadInMemoryTypeByName", COMModule::LoadInMemoryTypeByName)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP_TLB_SUPPORT
 
 #ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
 FCFuncStart(gRegistrationFuncs)
@@ -1696,9 +1689,6 @@ FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("TimerQueue", "System.Threading", gTimerFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-FCClassElement("TypeLibConverter", "System.Runtime.InteropServices", gTypeLibConverterFuncs)
-#endif
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
 FCClassElement("TypeNameBuilder", "System.Reflection.Emit", gTypeNameBuilder)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)
