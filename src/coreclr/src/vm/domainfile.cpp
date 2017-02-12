@@ -3135,7 +3135,6 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
             AssemblySpec name;
             name.InitializeSpec(pDependencies->dwAssemblyDef, pNativeImage->GetNativeMDImport(), this);
             
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)            
             if (!name.IsAssemblySpecForMscorlib())
             {
                 // We just initialized the assembly spec for the NI dependency. This will not have binding context
@@ -3145,7 +3144,6 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
                 _ASSERTE(pParentAssemblyBindingContext);
                 name.SetBindingContext(pParentAssemblyBindingContext);
             }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
             
             GetAppDomain()->CheckForMismatchedNativeImages(&name, &pDependencies->signAssemblyDef.mvid);
         }

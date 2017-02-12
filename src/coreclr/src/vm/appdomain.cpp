@@ -758,9 +758,7 @@ BaseDomain::BaseDomain()
     m_fDisableInterfaceCache = FALSE;
 
     m_pFusionContext = NULL;
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)  
     m_pTPABinderContext = NULL;
-#endif
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pLargeHeapHandleTable = NULL;
@@ -1071,12 +1069,10 @@ void BaseDomain::ClearFusionContext()
         m_pFusionContext->Release();
         m_pFusionContext = NULL;
     }
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)  
     if (m_pTPABinderContext) {
         m_pTPABinderContext->Release();
         m_pTPABinderContext = NULL;
     }
-#endif
 }
 
 #ifdef  FEATURE_PREJIT
@@ -4611,9 +4607,7 @@ AppDomain::AppDomain()
     m_pDomainFileWithNativeImageList = NULL;
 #endif
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     m_fIsBindingModelLocked.Store(FALSE);
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 } // AppDomain::AppDomain
 
@@ -9504,10 +9498,8 @@ IUnknown *AppDomain::CreateFusionContext()
         IfFailThrow(CCoreCLRBinderHelper::DefaultBinderSetupContext(GetId().m_dwId, &pTPABinder));
         m_pFusionContext = reinterpret_cast<IUnknown *>(pTPABinder);
         
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)  
         // By default, initial binding context setup for CoreCLR is also the TPABinding context
         (m_pTPABinderContext = pTPABinder)->AddRef();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }
 
@@ -13267,7 +13259,7 @@ BOOL AppDomain::IsImageFullyTrusted(PEImage* pPEImage)
 
 #endif //!DACCESS_COMPILE
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 // Returns a BOOL indicating if the binding model has been locked for the AppDomain
 BOOL AppDomain::IsBindingModelLocked()
@@ -13509,7 +13501,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
     return hr;
     
 }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 //approximate size of loader data
 //maintained for each assembly

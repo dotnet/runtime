@@ -1256,7 +1256,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         }
     }
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     if (GetPreferFallbackLoadContextBinder())
     {
         // If we have been asked to use the fallback load context binder (currently only supported for AssemblyLoadContext.LoadFromAssemblyName),
@@ -1323,7 +1322,6 @@ ICLRPrivBinder* AssemblySpec::GetBindingContextFromParentAssembly(AppDomain *pDo
         // used as the parent assembly binder.
         pParentAssemblyBinder = static_cast<ICLRPrivBinder*>(pDomain->GetFusionContext());
     }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     
     return pParentAssemblyBinder;
 }
