@@ -2168,7 +2168,7 @@ HRESULT CCLRGCManager::_SetGCMaxGen0Size(SIZE_T MaxGen0Size)
 }
 
 static CCLRGCManager s_GCManager;
-#endif // !FEATURE_CORECLR || FEATURE_WINDOWSPHONE
+#endif //FEATURE_WINDOWSPHONE
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 class CCLRAppDomainResourceMonitor : public ICLRAppDomainResourceMonitor
@@ -2343,7 +2343,7 @@ public:
             return S_OK;
         }
         else
-#endif // !FEATURE_CORECLR || defined(FEATURE_WINDOWSPHONE)
+#endif //defined(FEATURE_WINDOWSPHONE)
         if (g_fEEStarted && !m_fFullAccess)
         {
             // If runtime has been started, do not allow user to obtain CLR managers.
@@ -2364,7 +2364,7 @@ public:
             *ppObject = &s_GCManager;
             return S_OK;
         }
-#endif // !FEATURE_CORECLR || FEATURE_WINDOWSPHONE
+#endif //FEATURE_WINDOWSPHONE
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
         else if (riid == IID_ICLRAppDomainResourceMonitor)
@@ -4902,7 +4902,7 @@ SIZE_T STDMETHODCALLTYPE CExecutionEngine::ClrVirtualQuery(LPCVOID lpAddress,
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && FEATURE_CORECLR && !FEATURE_PAL
+#endif // _DEBUG && !FEATURE_PAL
 
 #undef ClrVirtualProtect
 
@@ -5018,7 +5018,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && FEATURE_CORECLR && !FEATURE_PAL
+#endif // _DEBUG && !FEATURE_PAL
 
     return EEVirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }

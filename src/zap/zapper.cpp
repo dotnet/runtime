@@ -196,7 +196,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         if (pwszCLRJITPath != nullptr)
             zap->SetCLRJITPath(pwszCLRJITPath);
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
 
@@ -241,7 +241,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         zap->SetDontLoadJit();
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         if (pwzPlatformAssembliesPaths != nullptr)
             zap->SetPlatformAssembliesPaths(pwzPlatformAssembliesPaths);
@@ -264,7 +264,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 #if !defined(NO_NGENPDB)
         if (pwzDiasymreaderPath != nullptr)
             zap->SetDiasymreaderPath(pwzDiasymreaderPath);
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif // !defined(NO_NGENPDB)
 
         // Avoid unnecessary security failures, since permissions are irrelevant when
         // generating NGEN PDBs
@@ -581,7 +581,7 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     m_fDontLoadJit = false;
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     m_fForceFullTrust = false;
 }
@@ -625,7 +625,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         hr = S_OK;
     }
     else 
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
         hr = CopySystemDirectory(CoreClrFolder, CoreClrFolder);
@@ -2098,7 +2098,7 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
         {
             pDiasymreaderPath = m_DiasymreaderPath.GetUnicode();
         }
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif //!defined(NO_NGENPDB)
 
         IfFailThrow(::CreatePdb(hAssembly, pNativeImagePath, pPdbPath, pdbLines, pManagedPdbSearchPath, pDiasymreaderPath));
     }
@@ -3873,14 +3873,14 @@ void Zapper::SetDontLoadJit()
 {
     m_fDontLoadJit = true;
 }
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #if !defined(NO_NGENPDB)
 void Zapper::SetDiasymreaderPath(LPCWSTR pwzDiasymreaderPath)
 {
     m_DiasymreaderPath.Set(pwzDiasymreaderPath);
 }
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif // !defined(NO_NGENPDB)
 
 
 void Zapper::SetPlatformAssembliesPaths(LPCWSTR pwzPlatformAssembliesPaths)

@@ -989,4 +989,4 @@ ClrCaptureContext(__out PCONTEXT ctx)
         ret  4
     }
 }
-#endif // _TARGET_X86_ && FEATURE_CORECLR
+#endif // _TARGET_X86

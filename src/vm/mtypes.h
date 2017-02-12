@@ -60,7 +60,7 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_UTF8_BUFFER,     UTF8BufferMarshaler,        
 // CoreCLR doesn't have any support for marshalling interface pointers.
 // Not even support for fake CCWs.
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_INTERFACE,       InterfaceMarshaler,                  true)
-#endif // defined(FEATURE_COMINTEROP) || !defined(FEATURE_CORECLR)
+#endif // defined(FEATURE_COMINTEROP) 
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_SAFEARRAY,       SafeArrayMarshaler,                  false)
