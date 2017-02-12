@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Theory]
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Fact]
         public static void TestPrivateKeyProperty()
         {
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void EphemeralImport_HasNoKeyName()
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
 
-#if netcoreapp11
+#if netcoreapp
                 yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
 #endif
             }

@@ -654,7 +654,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestExportSingleCert(X509ContentType.Cert);
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Fact]
         public static void ExportCert_SecureString()
         {
@@ -1401,7 +1401,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netcoreapp11
+#if netcoreapp
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.CreatePfxDataPasswordSecureString(), Cert.EphemeralIfPossible))
@@ -1486,7 +1486,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
 
-#if netcoreapp11
+#if netcoreapp
                 yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
 #endif
             }

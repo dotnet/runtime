@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     internal static class Cert
     {
         internal const X509KeyStorageFlags EphemeralIfPossible =
-#if netcoreapp11
+#if netcoreapp
             X509KeyStorageFlags.EphemeralKeySet;
 #else
             X509KeyStorageFlags.DefaultKeySet;
