@@ -89,9 +89,6 @@ DEFINE_FIELD_U(_RemotingData,              AppDomainBaseObject, m_pURITable)
 DEFINE_FIELD_U(_processExit,               AppDomainBaseObject, m_pProcessExitEventHandler)
 DEFINE_FIELD_U(_domainUnload,              AppDomainBaseObject, m_pDomainUnloadEventHandler)
 DEFINE_FIELD_U(_unhandledException,        AppDomainBaseObject, m_pUnhandledExceptionEventHandler)
-#ifdef FEATURE_APTCA
-DEFINE_FIELD_U(_aptcaVisibleAssemblies,  AppDomainBaseObject, m_aptcaVisibleAssemblies)
-#endif
 DEFINE_FIELD_U(_compatFlags,              AppDomainBaseObject, m_compatFlags)
 DEFINE_FIELD_U(_firstChanceException,      AppDomainBaseObject, m_pFirstChanceExceptionHandler)
 DEFINE_FIELD_U(_pDomain,                   AppDomainBaseObject, m_pDomain)
@@ -137,10 +134,6 @@ DEFINE_METHOD(APP_DOMAIN,           TURN_ON_BINDING_REDIRECTS, TurnOnBindingRedi
 DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
-#ifdef FEATURE_APTCA
-DEFINE_METHOD(APP_DOMAIN,           IS_ASSEMBLY_ON_APTCA_VISIBLE_LIST, IsAssemblyOnAptcaVisibleList, IM_Assembly_RetBool)
-DEFINE_METHOD(APP_DOMAIN,           IS_ASSEMBLY_ON_APTCA_VISIBLE_LIST_RAW, IsAssemblyOnAptcaVisibleListRaw, IM_PtrChar_Int_PtrByte_Int_RetBool)
-#endif // FEATURE_APTCA
 #ifndef FEATURE_CORECLR
 DEFINE_METHOD(APP_DOMAIN,           PAUSE, Pause, SM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           RESUME, Resume, SM_RetVoid)
@@ -171,9 +164,6 @@ DEFINE_FIELD_U(_ApplicationTrust,                  AppDomainSetupObject,   m_App
 DEFINE_FIELD_U(_ConfigurationBytes,                AppDomainSetupObject,   m_ConfigurationBytes)
 DEFINE_FIELD_U(_AppDomainManagerAssembly,          AppDomainSetupObject,   m_AppDomainManagerAssembly)
 DEFINE_FIELD_U(_AppDomainManagerType,              AppDomainSetupObject,   m_AppDomainManagerType)
-#if FEATURE_APTCA
-DEFINE_FIELD_U(_AptcaVisibleAssemblies,            AppDomainSetupObject,   m_AptcaVisibleAssemblies)
-#endif
 DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
 DEFINE_FIELD_U(_TargetFrameworkName,               AppDomainSetupObject,   m_TargetFrameworkName)
 DEFINE_FIELD_U(_LoaderOptimization,                AppDomainSetupObject,   m_LoaderOptimization)
@@ -233,9 +223,6 @@ DEFINE_FIELD_U(_Flags,                     AssemblyNameBaseObject, m_Flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
 DEFINE_METHOD(ASSEMBLY_NAME,        INIT,                   Init,                      IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_SNKP_RetV)
 DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
-#ifdef FEATURE_APTCA
-DEFINE_METHOD(ASSEMBLY_NAME,        GET_NAME_WITH_PUBLIC_KEY, GetNameWithPublicKey,    IM_RetStr)
-#endif // FEATURE_APTCA
 
 DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
 DEFINE_FIELD_U(_Major,                     VersionBaseObject,    m_Major)
@@ -264,9 +251,6 @@ DEFINE_FIELD_U(m_flags,                    AssemblyBaseObject,     m_flags)
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
 DEFINE_FIELD(ASSEMBLY,              HANDLE,                 m_assembly)
 DEFINE_METHOD(ASSEMBLY,             GET_NAME,               GetName,                    IM_RetAssemblyName)
-#ifdef FEATURE_APTCA
-DEFINE_METHOD(ASSEMBLY,             GET_NAME_FOR_CONDITIONAL_APTCA, GetNameForConditionalAptca, IM_RetStr)
-#endif // FEATURE_APTCA
 #ifdef FEATURE_FUSION
 DEFINE_METHOD(ASSEMBLY,             LOAD_WITH_PARTIAL_NAME_HACK,  LoadWithPartialNameHack, SM_Str_Bool_RetAssembly)
 #endif // FEATURE_FUSION
