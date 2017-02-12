@@ -3964,13 +3964,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
 
     EX_TRY
     {
-        // We have used both the FEATURE_ defines here since without CSE feature,
-        // this aspect of notification feature is pointless. And skipping
-        // FEATURE_EXCEPTION_NOTIFICATIONS with only FEATURE_CORRUPTING_EXCEPTIONS
-        // specified would enable this change for builds that dont support
-        // FEATURE_EXCEPTION_NOTIFICATIONS, like CoreCLR. We dont want that to happen
-        // as well.
-#if defined(FEATURE_CORRUPTING_EXCEPTIONS) && defined(FEATURE_EXCEPTION_NOTIFICATIONS)
+#if defined(FEATURE_CORRUPTING_EXCEPTIONS)
         BOOL fCanMethodHandleException = g_pConfig->LegacyCorruptedStateExceptionsPolicy();
         if (!fCanMethodHandleException)
         {
@@ -4002,7 +3996,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
         }
 
         if (fCanMethodHandleException)
-#endif // defined(FEATURE_CORRUPTING_EXCEPTIONS) && defined(FEATURE_EXCEPTION_NOTIFICATIONS)
+#endif // defined(FEATURE_CORRUPTING_EXCEPTIONS)
         {
             // We've already exercised the prestub on this delegate's COMDelegate::GetMethodDesc,
             // as part of wiring up a reliable event sink. Deliver the notification.

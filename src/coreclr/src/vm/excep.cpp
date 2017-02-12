@@ -12515,9 +12515,6 @@ void ReturnToPreviousAppDomainHolder::SuppressRelease()
 #ifndef DACCESS_COMPILE
 // This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
 // checking whether the delegate can be invoked for the exception's corruption severity.
-//
-// This has been factored out of the #IFDEF FEATURE_EXCEPTION_NOTIFICATIONS so that existing ADUEN mechanism can be integrated with
-// the enhanced exception notifications.
 void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
         OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
 {
@@ -12543,7 +12540,6 @@ void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationH
     CALL_MANAGED_METHOD_NORET(args);
 }
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 // To include definition of COMDelegate::GetMethodDesc
 #include "comdelegate.h"
 
@@ -12954,7 +12950,6 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
 }
 
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 #ifdef WIN64EXCEPTIONS
 struct TAResetStateCallbackData

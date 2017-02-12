@@ -2211,13 +2211,11 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
 #if defined(DEBUGGING_SUPPORTED)
                 if (ExceptionTracker::NotifyDebuggerOfStub(pThread, sf, pFrame))
                 {
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Deliver the FirstChanceNotification after the debugger, if not already delivered.
                     if (!this->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
 #endif // DEBUGGING_SUPPORTED
 
@@ -2551,14 +2549,12 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                     }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Attempt to deliver the first chance notification to the AD only *AFTER* the debugger
                     // has done that, provided we have not already delivered it.
                     if (!this->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
                 else
                 {
