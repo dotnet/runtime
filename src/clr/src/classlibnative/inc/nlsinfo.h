@@ -68,9 +68,6 @@ class CultureDataBaseObject;
 class COMNlsInfo {
 
 public:
-#ifdef FEATURE_SYNTHETIC_CULTURES
-    static INT32  WstrToInteger4(__in_z LPCWSTR wstrLocale, __in int Radix);
-#endif // FEATURE_SYNTHETIC_CULTURES
 
     static INT32 GetCHTLanguage();
     static INT32 CallGetSystemDefaultUILanguage();

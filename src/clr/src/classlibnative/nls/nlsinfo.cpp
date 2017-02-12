@@ -480,54 +480,6 @@ INT_PTR COMNlsInfo::EnsureValidSortHandle(INT_PTR handle, INT_PTR handleOrigin, 
     return handle;
 }
 
-#ifdef FEATURE_SYNTHETIC_CULTURES
-////////////////////////////////////////////////////////////////////////////
-//
-//  WstrToInteger4
-//
-////////////////////////////////////////////////////////////////////////////
-
-/*=================================WstrToInteger4==================================
-**Action: Convert a Unicode string to an integer.  Error checking is ignored.
-**Returns: The integer value of wstr
-**Arguments:
-**      wstr: NULL terminated wide string.  Can have character 0'-'9', 'a'-'f', and 'A' - 'F'
-**      Radix: radix to be used in the conversion.
-**Exceptions: None.
-==============================================================================*/
-
-INT32 COMNlsInfo::WstrToInteger4(
-    __in_z LPCWSTR wstr,
-    __in int Radix)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(wstr));
-        PRECONDITION(Radix > 1 && Radix <= 16);
-    } CONTRACTL_END;
-    INT32 Value = 0;
-    int Base = 1;
-
-    for (int Length = Wszlstrlen(wstr) - 1; Length >= 0; Length--)
-
-    {
-        WCHAR ch = wstr[Length];
-        _ASSERTE((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
-        if (ch >= 'a')
-        {
-            ch = ch - 'a' + 'A';
-        }
-
-        Value += ((ch >= 'A') ? (ch - 'A' + 10) : (ch - '0')) * Base;
-        Base *= Radix;
-    }
-
-    return (Value);
-}
-#endif // FEATURE_SYNTHETIC_CULTURES
 
 
 
