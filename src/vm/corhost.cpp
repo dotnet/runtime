@@ -5224,64 +5224,6 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
 #endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION
 
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-
-HRESULT STDMETHODCALLTYPE GetClassActivatorForApplicationImpl(HSTRING appPath, IWinRTClassActivator** ppActivator)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-    {
-        if (GetAppDomain()->GetWinRtBinder()->SetLocalWinMDPath(appPath))
-        {
-            GCX_COOP();
-
-            struct
-            {
-                STRINGREF appbase;
-            } gc;
-            ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
-            UINT32 appPathLength = 0;
-            PCWSTR wszAppPath = WindowsGetStringRawBuffer(appPath, &appPathLength);
-
-            gc.appbase = StringObject::NewString(wszAppPath, appPathLength);
-
-            MethodDescCallSite getClassActivator(METHOD__WINDOWSRUNTIMEMARSHAL__GET_CLASS_ACTIVATOR_FOR_APPLICATION);
-
-            ARG_SLOT args[] =
-            {
-                ObjToArgSlot(gc.appbase)
-            };
-
-            IWinRTClassActivator* pActivator = reinterpret_cast<IWinRTClassActivator *>(getClassActivator.Call_RetLPVOID(args));
-            *ppActivator = pActivator;
-
-            GCPROTECT_END();
-        }
-        else
-        {
-            hr = CO_E_BAD_PATH;
-        }
-    }
-    END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
 
 #endif // !DACCESS_COMPILE

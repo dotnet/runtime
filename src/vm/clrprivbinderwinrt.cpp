@@ -135,9 +135,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     , m_fNamespaceResolutionKind(fNamespaceResolutionKind)
     , m_pApplicationContext(nullptr)
     , m_appLocalWinMDPath(nullptr)
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-    , m_fCanSetLocalWinMDPath(TRUE)
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 {
     STANDARD_VM_CONTRACT;
     PRECONDITION(CheckPointer(pWinRtTypeCache));
@@ -153,9 +150,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
                     INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
     m_MapsAddLock.Init(CrstCLRPrivBinderMapsAdd);
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-    m_localWinMDPathLock.Init(CrstCrstCLRPrivBinderLocalWinMDPath);
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
     // Copy altpaths
     if (cAltPaths > 0)
@@ -471,38 +465,6 @@ HRESULT CLRPrivBinderWinRT::BindAssemblyToNativeAssembly(CLRPrivAssemblyWinRT *p
 }
 #endif
 
-#if defined(FEATURE_COMINTEROP_WINRT_DESKTOP_HOST) && !defined(CROSSGEN_COMPILE)
-BOOL CLRPrivBinderWinRT::SetLocalWinMDPath(HSTRING localWinMDPath)
-{
-    STANDARD_VM_CONTRACT;
-    STATIC_CONTRACT_CAN_TAKE_LOCK;
-
-    CrstHolder lock(&m_localWinMDPathLock);
-
-    // We use the empty string as a sential, so don't allow explicitly setting the binding base to empty.
-    if (localWinMDPath == nullptr)
-    {
-        return FALSE;
-    }
-
-    // If we've already set a binding base, then the current base must match the exisitng one exactly
-    if (!m_localWinMDPath.IsEmpty())
-    {
-        return m_localWinMDPath.CompareOrdinal(clr::winrt::StringReference(localWinMDPath)) == 0;
-    }
-
-    // If we've already done WinRT binding, we can't set the binding base because that could lead to inconsistent results when binding
-    // the same name after the base is set.
-    if (!m_fCanSetLocalWinMDPath)
-    {
-        return FALSE;
-    }
-
-    m_localWinMDPath.Initialize(localWinMDPath);
-
-    return TRUE;
-}
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST && !CROSSGEN_COMPILE
 
 //=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
@@ -854,55 +816,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
                 }
             }
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-            // If we failed to find the requested name, but we have an application local probing path setup, then
-            // we can use that to try to find the name now.
-            if (hr == RO_E_METADATA_NAME_NOT_FOUND || hr == HRESULT_FROM_WIN32(APPMODEL_ERROR_NO_PACKAGE))
-            {
-                // We only want to probe the application local path for 3rd party WinMDs as these are the only ones
-                // which do not have code sharing enabled.  Although we currently only allow a single alternate probing
-                // path per process, shutting this off now will give us easier behavior to support in the future if we
-                // do need to enable per-domain local paths.
-                if (!IsWindowsNamespace(wszNamespaceRoResolve))
-                {
-                    HSTRING localWinMDPath = nullptr;
-                    {
-                        CrstHolder lock(&m_localWinMDPathLock);
-
-                        localWinMDPath = m_localWinMDPath.Get();
-
-                        // If the host has not configured the local winmd path, and we have not yet done any winmd probing
-                        // then see if we have config to setup a local winmd path.
-                        if (localWinMDPath == nullptr && m_fCanSetLocalWinMDPath)
-                        {
-                            NewArrayHolder<WCHAR> configWinMDPath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LocalWinMDPath));
-                            if (!configWinMDPath.IsNull())
-                            {
-                                m_localWinMDPath.Initialize(configWinMDPath);
-                                localWinMDPath = m_localWinMDPath.Get();
-                            }
-                        }
-
-                        // Do not allow any further setting of the application binding base at this point, since if it
-                        // is not currently set, setting it in the future could result in different binding results.
-                        m_fCanSetLocalWinMDPath = FALSE;
-                    }
-
-                    if (localWinMDPath != nullptr)
-                    {
-                        hr = RoResolveNamespace(
-                            WinRtStringRef(wszNamespaceRoResolve, cchNamespaceRoResolve),
-                            wszWinMDPath != nullptr ? (HSTRING)WinRtStringRef(wszWinMDPath, cchWinMDPath) : nullptr, // hsWindowsSdkPath
-                            1,        // cPackageGraph
-                            &localWinMDPath, // rgPackageGraph
-                            &cFileNames,
-                            &rgFileNames,
-                            nullptr,    // pcDirectNamespaceChildren
-                            nullptr);  // rgDirectNamespaceChildren
-                    }
-                }
-            }
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
             IfFailRet(hr);
             if (hr != S_OK)
