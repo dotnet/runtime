@@ -411,30 +411,8 @@ inline BOOL MethodSecurityDescriptor::IsDeclSecurityCASDemandsOnly(DWORD dwMethD
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     // Non-CAS demands are not supported in CoreCLR
     return TRUE;
-#else
-    GCX_COOP();
-
-    PsetCacheEntry *tokenSetIndexes[dclMaximumValue + 1];
-    SecurityDeclarative::DetectDeclActionsOnToken(_mdToken, dwMethDeclFlags, tokenSetIndexes, pInternalImport);
-    SecurityProperties sp(dwMethDeclFlags);
-    if (!sp.FDemandsOnly())
-        return FALSE;
-        
-    DWORD dwLocalAction;
-    bool builtInCASPermsOnly = true;
-    for (dwLocalAction = 0; dwLocalAction <= dclMaximumValue && builtInCASPermsOnly; dwLocalAction++)
-    {
-        if (tokenSetIndexes[dwLocalAction] != NULL)
-        {
-            builtInCASPermsOnly = builtInCASPermsOnly && (tokenSetIndexes[dwLocalAction]->ContainsBuiltinCASPermsOnly(dwLocalAction));
-        }
-    }
-
-    return (builtInCASPermsOnly); // we only get here if there are only demands...so it suffices to return this value directly
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -632,9 +610,6 @@ inline BOOL TypeSecurityDescriptor::IsCritical()
     }
 
     return  pClass->IsAllCritical()
-#ifndef FEATURE_CORECLR
-            || pClass->IsCritical()
-#endif // !FEATURE_CORECLR
             ;
 }
 
@@ -1101,25 +1076,15 @@ inline BOOL ModuleSecurityDescriptor::IsMixedTransparency()
     return !IsAllCritical() && !IsAllTransparent();
 }
 
-#ifndef FEATURE_CORECLR
 
-inline BOOL ModuleSecurityDescriptor::CanTransparentCodeSkipVerification()
-{
-    WRAPPER_NO_CONTRACT;
-    VerifyDataComputed();
-    return !!(m_flags & ModuleSecurityDescriptorFlags_SkipFullTrustVerification);
-}
-
-#endif // !FEATURE_CORECLR
-
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 inline BOOL ModuleSecurityDescriptor::IsAPTCA()
 {
     WRAPPER_NO_CONTRACT;
     VerifyDataComputed();
     return !!(m_flags & ModuleSecurityDescriptorFlags_IsAPTCA);
 }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 // Get the set of security rules that the assembly is using
 inline SecurityRuleSet ModuleSecurityDescriptor::GetSecurityRuleSet()
@@ -1139,12 +1104,6 @@ inline SecurityRuleSet ModuleSecurityDescriptor::GetSecurityRuleSet()
     {
         return ::GetSecurityRuleSet(tokenFlags);
     }
-#ifndef FEATURE_CORECLR
-    else if (AssemblyVersionRequiresLegacyTransparency())
-    {
-        return SecurityRuleSet_Level1;
-    }
-#endif // !FEATURE_CORECLR
     else
     {
         // The assembly hasn't specified the rule set that it needs to use.  We'll just use the default rule

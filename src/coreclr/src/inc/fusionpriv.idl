@@ -39,9 +39,6 @@ import "objidl.idl";
 import "oleidl.idl";
 import "fusion.idl";
 
-#ifndef FEATURE_CORECLR
-import "binderngen.idl";
-#endif
 
 cpp_quote("#ifdef _MSC_VER")
 cpp_quote("#pragma once")
@@ -955,16 +952,3 @@ interface IHostAssemblyModuleImport : IUnknown
 cpp_quote("#define EXPLICITBIND_FLAGS_NON_BINDABLE          0x0")
 cpp_quote("#define EXPLICITBIND_FLAGS_EXE                   0x1")
 
-#ifndef FEATURE_CORECLR
-#pragma midl_echo("HRESULT BindToSystem(IAssemblyName *pNameSystem, LPCWSTR pcwzSystemDirectory, IUnknown *pNIEva, IApplicationContext *pAppCtx, IAssembly **ppAsmOut, IBindResult **ppNIAsmOut, IFusionBindLog **ppdbglog);")
-
-#pragma midl_echo("HRESULT ExplicitBind(LPCWSTR wzPath, IApplicationContext *pAppCtx, DWORD dwFlags, IUnknown *pNIEva, IAssembly **ppAsmOut, IBindResult **ppNIAsmOut, IFusionBindLog **ppdbglog);")
-
-#pragma midl_echo("HRESULT GetBindContextFromApplicationContext(IApplicationContext *pAppCtx, IBindContext **ppBindCtx);")
-
-#pragma midl_echo("HRESULT SetApplicationContext_WinRTBinder(IApplicationContext * pAppCtx, IBindContext * pWinRTBinder);")
-
-// Used by InstallNativeImage() to extract dependency names from the NI's CORCOMPILE_DEPENDENCY_INFO records.
-#pragma midl_echo("STDAPI FusionGetAssemblyNameRefFromMDImport(IMetaDataAssemblyImport *pMDImport, /* This is really an mdAssemblyRef */ DWORD mdar, DWORD dwFlags, IAssemblyName **ppName);")
-
-#endif //!FEATURE_CORECLR

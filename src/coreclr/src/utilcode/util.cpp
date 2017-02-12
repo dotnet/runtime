@@ -19,9 +19,6 @@
 #include "cor.h"
 #include "corinfo.h"
 
-#ifndef FEATURE_CORECLR
-#include "metahost.h"
-#endif // !FEATURE_CORECLR
 
 const char g_RTMVersion[]= "v1.0.3705";
 
@@ -3322,114 +3319,6 @@ BOOL FileExists(LPCWSTR filename)
     return TRUE;                
 }
 
-#ifndef FEATURE_CORECLR
-// Current users for FileLock are ngen and ngen service
-
-FileLockHolder::FileLockHolder()
-{
-    _hLock = INVALID_HANDLE_VALUE;
-}
-    
-FileLockHolder::~FileLockHolder()
-{
-    Release();
-}
-
-// the amount of time we want to wait
-#define FILE_LOCK_RETRY_TIME 100
-
-void FileLockHolder::Acquire(LPCWSTR lockName, HANDLE hInterrupt, BOOL* pInterrupted)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD dwErr = 0;
-    DWORD dwAccessDeniedRetry = 0;
-    const DWORD MAX_ACCESS_DENIED_RETRIES = 10;
-
-    if (pInterrupted)
-    {
-        *pInterrupted = FALSE;
-    }
-
-    _ASSERTE(_hLock == INVALID_HANDLE_VALUE);
-
-    for (;;) {
-        _hLock = WszCreateFile(lockName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_FLAG_DELETE_ON_CLOSE, NULL);
-        if (_hLock != INVALID_HANDLE_VALUE) {
-            return; 
-        }
-
-        dwErr = GetLastError();
-        // Logically we should only expect ERROR_SHARING_VIOLATION, but Windows can also return
-        // ERROR_ACCESS_DENIED for underlying NtStatus DELETE_PENDING.  That happens when another process
-        // (gacutil.exe or indexer) have the file opened.  Unfortunately there is no public API that would
-        // allow us to detect this NtStatus and distinguish it from 'real' access denied (candidates are
-        // RtlGetLastNtStatus that is not documented on MSDN and NtCreateFile that is internal and can change
-        // at any time), so we retry on access denied, but only for a limited number of times.
-        if (dwErr == ERROR_SHARING_VIOLATION ||
-            (dwErr == ERROR_ACCESS_DENIED && ++dwAccessDeniedRetry <= MAX_ACCESS_DENIED_RETRIES))
-        {
-            // Somebody is holding the lock. Let's sleep, and come back again.
-            if (hInterrupt)
-            {
-                _ASSERTE(pInterrupted && 
-                    "If you can be interrupted, you better want to know if you actually were interrupted");
-                if (WaitForSingleObject(hInterrupt, FILE_LOCK_RETRY_TIME) == WAIT_OBJECT_0)
-                {
-                      if (pInterrupted)
-                      {
-                        *pInterrupted = TRUE;
-                      }
-
-                      // We've been interrupted, so return without acquiring
-                      return;
-                }
-            }
-            else
-            {
-                ClrSleepEx(FILE_LOCK_RETRY_TIME, FALSE);
-            }
-        }
-        else {
-            ThrowHR(HRESULT_FROM_WIN32(dwErr));
-        }
-    }
-}
-
-
-HRESULT FileLockHolder::AcquireNoThrow(LPCWSTR lockName, HANDLE hInterrupt, BOOL* pInterrupted)
-{
-    HRESULT hr = S_OK;
-    
-    EX_TRY
-    {
-        Acquire(lockName, hInterrupt, pInterrupted);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
-BOOL FileLockHolder::IsTaken(LPCWSTR lockName)
-{
-    
-    // We don't want to do an acquire the lock to know if its taken, so we want to see if the file
-    // exists. However, in situations like unplugging a machine, a DELETE_ON_CLOSE still leaves the file
-    // around. We try to delete it here. If the lock is acquired, DeleteFile will fail, as the file is
-    // not opened with SHARE_DELETE.
-    WszDeleteFile(lockName);
-
-    return FileExists(lockName);
-}
-
-void FileLockHolder::Release()
-{
-    if (_hLock != INVALID_HANDLE_VALUE) {
-        CloseHandle(_hLock);
-        _hLock = INVALID_HANDLE_VALUE;
-    }
-}
-#endif // FEATURE_CORECLR
 
 //======================================================================
 // This function returns true, if it can determine that the instruction pointer
@@ -3587,59 +3476,6 @@ RUNTIMEVERSIONINFO RUNTIMEVERSIONINFO::notDefined;
 
 BOOL IsV2RuntimeLoaded(void)
 {
-#ifndef FEATURE_CORECLR
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    ReleaseHolder<ICLRMetaHost>    pMetaHost(NULL);
-    ReleaseHolder<IEnumUnknown>    pEnum(NULL);
-    ReleaseHolder<IUnknown>        pUnk(NULL);
-    ReleaseHolder<ICLRRuntimeInfo> pRuntime(NULL);
-    HRESULT hr;
-
-    HModuleHolder hModule = WszLoadLibrary(MSCOREE_SHIM_W);
-    if (hModule == NULL)
-        return FALSE;
-
-    CLRCreateInstanceFnPtr pfnCLRCreateInstance = (CLRCreateInstanceFnPtr)::GetProcAddress(hModule, "CLRCreateInstance");
-    if (pfnCLRCreateInstance == NULL)
-        return FALSE;
-
-    hr = (*pfnCLRCreateInstance)(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID *)&pMetaHost);
-    if (FAILED(hr))
-        return FALSE;
-
-    hr = pMetaHost->EnumerateLoadedRuntimes(GetCurrentProcess(), &pEnum);
-    if (FAILED(hr))
-        return FALSE;
-
-    while (pEnum->Next(1, &pUnk, NULL) == S_OK)
-    {
-        hr = pUnk->QueryInterface(IID_ICLRRuntimeInfo, (void **)&pRuntime);
-        if (FAILED(hr))
-            continue;
-
-        WCHAR wszVersion[30];
-        DWORD cchVersion = _countof(wszVersion);
-        hr = pRuntime->GetVersionString(wszVersion, &cchVersion);
-        if (FAILED(hr))
-            continue;
-
-        // Is it a V2 runtime?
-        if ((cchVersion < 3) || 
-            ((wszVersion[0] != W('v')) && (wszVersion[0] != W('V'))) || 
-            (wszVersion[1] != W('2')) || 
-            (wszVersion[2] != W('.')))
-            continue;
-
-        return TRUE;
-    }
-#endif //  FEATURE_CORECLR
 
     return FALSE;
 }
@@ -3663,54 +3499,6 @@ BOOL IsClrHostedLegacyComObject(REFCLSID rclsid)
 
 
 
-#if !defined(FEATURE_CORECLR) && !defined(SELF_NO_HOST) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-
-namespace UtilCode
-{
-
-#pragma warning(push)
-#pragma warning(disable:4996) // For use of deprecated LoadLibraryShim
-
-    // When a NULL version is passed to LoadLibraryShim, this told the shim to bind the already-loaded
-    // runtime or to the latest runtime. In hosted environments, we already know a runtime (or two) is
-    // loaded, and since we are no longer guaranteed that a call to mscoree!LoadLibraryShim with a NULL
-    // version will return the correct runtime, this code uses the ClrCallbacks infrastructure
-    // available to get the ICLRRuntimeInfo for the runtime in which this code is hosted, and then
-    // calls ICLRRuntimeInfo::LoadLibrary to make sure that the load occurs within the context of the
-    // correct runtime.
-    HRESULT LoadLibraryShim(LPCWSTR szDllName, LPCWSTR szVersion, LPVOID pvReserved, HMODULE *phModDll)
-    {
-        HRESULT hr = S_OK;
-
-        if (szVersion != NULL)
-        {   // If a version is provided, then we just fall back to the legacy function to allow
-            // it to construct the explicit path and load from that location.
-            //@TODO: Can we verify that all callers of LoadLibraryShim in hosted environments always pass null and eliminate this code?
-            return ::LoadLibraryShim(szDllName, szVersion, pvReserved, phModDll);
-        }
-
-        //
-        // szVersion is NULL, which means we should load the DLL from the hosted environment's directory.
-        //
-
-        typedef ICLRRuntimeInfo *GetCLRRuntime_t();
-        GetCLRRuntime_t *pfnGetCLRRuntime =
-            reinterpret_cast<GetCLRRuntime_t *>((*GetClrCallbacks().m_pfnGetCLRFunction)("GetCLRRuntime"));
-        if (pfnGetCLRRuntime == NULL)
-            return E_UNEXPECTED;
-
-        ICLRRuntimeInfo* pRI = (*pfnGetCLRRuntime)();
-        if (pRI == NULL)
-            return E_UNEXPECTED;
-
-        return pRI->LoadLibrary(szDllName, phModDll);
-    }
-
-#pragma warning(pop)
-
-}
-
-#endif //!FEATURE_CORECLR && !SELF_NO_HOST && !FEATURE_UTILCODE_NO_DEPENDENCIES
 
 namespace Clr
 {

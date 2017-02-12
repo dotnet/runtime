@@ -1420,10 +1420,6 @@ public:
     void EnableDeltaMetadataGeneration() 
     {
         _ASSERTE(m_OptionValue.m_UpdateMode == MDUpdateENC);
-#ifndef FEATURE_CORECLR
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_UseMinimalDeltas))
-            m_OptionValue.m_UpdateMode = MDUpdateDelta;
-#endif //!FEATURE_CORECLR
     }
     void DisableDeltaMetadataGeneration() {m_OptionValue.m_UpdateMode = MDUpdateENC;}
 

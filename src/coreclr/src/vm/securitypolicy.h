@@ -36,9 +36,6 @@ class SystemNative;
 class NDirect;
 class SystemDomain;
 class AssemblySecurityDescriptor;
-#ifndef FEATURE_CORECLR
-class PEFileSecurityDescriptor;
-#endif
 class SharedSecurityDescriptor;
 class SecurityStackWalkData;
 class DemandStackWalk;
@@ -80,9 +77,6 @@ namespace SecurityPolicy
 #endif // #ifdef FEATURE_IMPERSONATION
 
     FCDECL0(FC_BOOL_RET, IsDefaultThreadSecurityInfo);
-#ifdef FEATURE_CAS_POLICY
-    SecZone QCALLTYPE CreateFromUrl(LPCWSTR wszUrl);
-#endif // FEATURE_CAS_POLICY
     void QCALLTYPE _GetLongPathName(LPCWSTR wszPath, QCall::StringHandleOnStack retLongPath);
     
     BOOL QCALLTYPE IsLocalDrive(LPCWSTR wszPath);
@@ -97,35 +91,6 @@ namespace SecurityPolicy
 
     FCDECL0(VOID, DecrementAssertCount);
 
-#ifdef FEATURE_CAS_POLICY
-    //
-    // Evidence QCalls
-    // 
-
-//public:
-    void QCALLTYPE FireEvidenceGeneratedEvent(PEFile *pPEFile, EvidenceType type);
-
-    void QCALLTYPE GetEvidence(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retEvidence);
-
-    void QCALLTYPE GetAssemblyPermissionRequests(QCall::AssemblyHandle pAssembly,
-                                                 QCall::ObjectHandleOnStack retMinimumPermissions,
-                                                 QCall::ObjectHandleOnStack retOptionalPermissions,
-                                                 QCall::ObjectHandleOnStack retRefusedPermissions);
-
-    void QCALLTYPE GetAssemblySuppliedEvidence(PEFile *pPEFile, QCall::ObjectHandleOnStack retSerializedEvidence);
-
-    void QCALLTYPE GetLocationEvidence(PEFile *pPEFile, SecZone *pZone, QCall::StringHandleOnStack retUrl);
-
-    void QCALLTYPE GetPublisherCertificate(PEFile *pPEFile, QCall::ObjectHandleOnStack retCertificate);
-
-    void QCALLTYPE GetStrongNameInformation(QCall::AssemblyHandle pAssembly,
-                                            QCall::ObjectHandleOnStack retPublicKeyBlob,
-                                            QCall::StringHandleOnStack retSimpleName,
-                                            USHORT *piMajorVersion,
-                                            USHORT *piMinorVersion,
-                                            USHORT *piBuild,
-                                            USHORT *piRevision);
-#endif // FEATURE_CAS_POLICY
 
 //private:
     // -----------------------------------------------------------
@@ -142,12 +107,6 @@ namespace SecurityPolicy
     //     <currently unused> @TODO: shouldn't EEShutDownHelper call this?
     void Stop();
 
-#ifdef FEATURE_CAS_POLICY
-    // Saves security cache data
-    //   Callers:
-    //     EEShutDownHelper
-    void SaveCache();
-#endif
 
 
     // -----------------------------------------------------------
@@ -169,41 +128,9 @@ namespace SecurityPolicy
 
     BOOL CanSkipVerification(DomainAssembly * pAssembly);
 
-#ifdef FEATURE_CAS_POLICY
-    void TraceEvidenceGeneration(EvidenceType type, PEFile *pPEFile);
-
-    // Map a URL to a zone, applying any user supplied policy
-    SecZone MapUrlToZone(__in_z LPCWSTR wszUrl);
-
-    // Apply user supplied policy to a zone
-    HRESULT ApplyCustomZoneOverride(SecZone *pdwZone);
-
-    // Determine what the grant set of an assembly is
-    OBJECTREF ResolveGrantSet(OBJECTREF evidence, OUT DWORD *pdwSpecialFlags, BOOL fcheckExecutionPermission);
-
-    // Resolve legacy CAS policy on the assembly
-    //   Callers:
-    //     SecurityDescriptor::ResolveWorker
-    OBJECTREF ResolveCasPolicy(OBJECTREF evidence,
-                                      OBJECTREF reqdPset,
-                                      OBJECTREF optPset,
-                                      OBJECTREF denyPset,
-                                      OBJECTREF* grantdenied,
-                                      DWORD* pdwSpecialFlags,
-                                      BOOL checkExecutionPermission);
-
-    // Load the policy config/cache files at EE startup
-    void InitPolicyConfig();
-
-    BOOL WasStrongNameEvidenceUsed(OBJECTREF evidence);
-#endif
     // Like WszGetLongPathName, but it works with nonexistant files too
     size_t GetLongPathNameHelper( const WCHAR* wszShortPath, SString& wszBuffer);
 
-#ifdef FEATURE_CAS_POLICY
-    extern CrstStatic s_crstPolicyInit;
-    extern bool s_fPolicyInitialized;
-#endif // FEATURE_CAS_POLICY
 }
 
 struct SharedPermissionObjects

@@ -36,9 +36,7 @@ protected:
     ICLRPrivBinder             *m_pHostBinder;
     int                         m_ownedFlags;
     BOOL                        m_fIntrospectionOnly;
-#if defined(FEATURE_CORECLR)
     ICLRPrivBinder             *m_pBindingContext;
-#endif // defined(FEATURE_CORECLR)
 
 public:
     enum 
@@ -76,7 +74,6 @@ public:
     VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
-#if defined(FEATURE_CORECLR)
     inline void SetBindingContext(ICLRPrivBinder *pBindingContext)
     {
         LIMITED_METHOD_CONTRACT;
@@ -92,7 +89,6 @@ public:
     }
     
     BOOL IsAssemblySpecForMscorlib();
-#endif // defined(FEATURE_CORECLR)
     
     HRESULT ParseName();
     DWORD Hash();

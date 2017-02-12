@@ -1186,18 +1186,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
         // TODO: We also should check for type/member visibility here. To do that we can replace
         // the following chunk of code with a simple InvokeUtil::CanAccessClass call.
         // But it's too late to make this change in Dev10 and we want SL4 to be compatible with Dev10.
-#ifndef FEATURE_CORECLR
-        // Make sure security allows us access to the array type - if it is critical, convert that to a
-        // demand for full trust
-        if (!SecurityStackWalk::HasFlagsOrFullyTrusted(0))
-        {
-            if (Security::TypeRequiresTransparencyCheck(pMT, true))
-            {
-                // If we're creating a critical type, convert the critical check into a demand for full trust
-                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-            }
-        }
-#else
         if (Security::TypeRequiresTransparencyCheck(pMT))
         {
             // The AccessCheckOptions flag doesn't matter because we just need to get the caller.
@@ -1210,7 +1198,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             
             accessCheckOptions.DemandMemberAccessOrFail(&sCtx, pMT, FALSE /*visibilityCheck*/);
         }        
-#endif // !FEATURE_CORECLR
 
         // Check for byref-like types.
         if (pMT->IsByRefLike())

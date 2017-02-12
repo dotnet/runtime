@@ -623,20 +623,6 @@ void NativeImageDumper::DumpAssemblySignature(CORCOMPILE_ASSEMBLY_SIGNATURE & as
                           CORCOMPILE_ASSEMBLY_SIGNATURE, COR_INFO );
 }
 
-#ifndef FEATURE_CORECLR
-
-const NativeImageDumper::EnumMnemonics s_CorCompileDependencyInfoFlags[] =
-{
-#define CMDI_ENTRY(f) NativeImageDumper::EnumMnemonics(CORCOMPILE_DEPENDENCY_ ## f, W(#f))
-
-#ifdef FEATURE_APTCA
-    CMDI_ENTRY(IS_APTCA),
-    CMDI_ENTRY(IS_CAPTCA),
-#endif //FEATURE_APTCA
-#undef CMDI_ENTRY
-};
-
-#endif //!FEATURE_CORECLR
 
 //error code return?
 void
@@ -1102,12 +1088,6 @@ NativeImageDumper::DumpNativeImage()
             WriteFieldMDTokenImport( dwAssemblyDef, deps[i].dwAssemblyDef,
                                      CORCOMPILE_DEPENDENCY, COR_INFO,
                                      m_manifestImport );
-#ifndef FEATURE_CORECLR
-            DisplayWriteFieldEnumerated( dependencyInfo, deps[i].dependencyInfo,
-                                         CORCOMPILE_DEPENDENCY,
-                                         s_CorCompileDependencyInfoFlags, W(", "),
-                                         COR_INFO );
-#endif // !FEATURE_CORECLR
             DisplayStartStructureWithOffset( signAssemblyDef,
                                              DPtrToPreferredAddr(deps + i) + offsetof(CORCOMPILE_DEPENDENCY, signAssemblyDef),
                                              sizeof(deps[i]).signAssemblyDef,
@@ -3749,9 +3729,6 @@ const NativeImageDumper::EnumMnemonics s_MSDFlags[] =
 {
 #define MSD_ENTRY(f) NativeImageDumper::EnumMnemonics(ModuleSecurityDescriptorFlags_ ## f, W(#f))
     MSD_ENTRY(IsComputed),
-#ifdef FEATURE_APTCA
-    MSD_ENTRY(IsAPTCA),
-#endif // FEATURE_APTCA
     MSD_ENTRY(IsAllCritical),
     MSD_ENTRY(IsAllTransparent),
     MSD_ENTRY(IsTreatAsSafe),

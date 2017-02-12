@@ -21,7 +21,7 @@ void VoidStrongNameFreeBuffer(__in T *pBuffer)
 }
 NEW_WRAPPER_TEMPLATE1(StrongNameBufferHolder, VoidStrongNameFreeBuffer<_TYPE>);
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX)
 // Holder for HCRYPTPROV handles directly allocated from CAPI
 inline void ReleaseCapiProvider(HCRYPTPROV hProv)
 {

@@ -23,10 +23,6 @@
 #include "peinformation.h"
 //
 
-#ifndef FEATURE_CORECLR
-interface IILFingerprint;
-interface IILFingerprintFactory;
-#endif
 interface IAssemblyName;
 
 // PE images loaded through the runtime.
@@ -331,11 +327,6 @@ STDAPI RuntimeOpenImageInternal(LPCWSTR pszFileName, HCORMODULE* hHandle,
 STDAPI RuntimeOpenImageByStream(IStream* pIStream, UINT64 AssemblyId, DWORD dwModuleId,
                                 HCORMODULE* hHandle, DWORD *pdwLength, MDInternalImportFlags flags);
 
-#ifndef FEATURE_CORECLR
-// NOTE: Performance critical codepaths should cache the result of this function.
-STDAPI RuntimeGetILFingerprintForPath(LPCWSTR path, IILFingerprint **ppFingerprint);
-STDAPI RuntimeCreateCachingILFingerprintFactory(IILFingerprintFactory **ppILFingerprintFactory);
-#endif //!FEATURE_CORECLR
 void   RuntimeAddRefHandle(HCORMODULE hHandle);
 STDAPI RuntimeReleaseHandle(HCORMODULE hHandle);
 STDAPI RuntimeGetImageBase(HCORMODULE hHandle, LPVOID* base, BOOL bMapped, COUNT_T* dwSize);
@@ -720,11 +711,6 @@ BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_DEPENDENCY   *pExpected
 
 
 
-#ifndef FEATURE_CORECLR
-
-#include "iilfingerprint.h"
-
-#endif //!FEATURE_CORECLR
 
 #endif  // _CORPRIV_H_
 // EOF =======================================================================

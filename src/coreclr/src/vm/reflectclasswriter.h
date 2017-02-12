@@ -91,11 +91,6 @@ public:
         m_pOnDiskEmitter = pOnDiskEmitter;
     }
 
-#ifndef FEATURE_CORECLR
-    //HRESULT EnsureCeeFileGenCreated(DWORD corhFlags = COMIMAGE_FLAGS_ILONLY, DWORD peFlags = ICEE_CREATE_FILE_PURE_IL);
-    HRESULT EnsureCeeFileGenCreated(DWORD corhFlags, DWORD peFlags);
-    HRESULT DestroyCeeFileGen();
-#endif
 
 	~RefClassWriter();
 };

@@ -194,9 +194,6 @@ public:
     BOOL Equals(PEImage *pImage);
 #endif // DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR
-    BOOL  IsShareable();
-#endif
 
     void GetMVID(GUID *pMvid);
 
@@ -291,9 +288,6 @@ public:
     LPCSTR GetLocale();
     DWORD GetFlags();
     HRESULT GetFlagsNoTrigger(DWORD * pdwFlags);
-#ifdef FEATURE_CAS_POLICY
-    COR_TRUST *GetAuthenticodeSignature();
-#endif
     // ------------------------------------------------------------
     // PE file access
     // ------------------------------------------------------------
@@ -347,9 +341,6 @@ public:
 
     ULONG GetILImageTimeDateStamp();
 
-#ifdef FEATURE_CAS_POLICY
-    SAFEHANDLE GetSafeHandle();
-#endif // FEATURE_CAS_POLICY
 
     // ------------------------------------------------------------
     // Image memory access
@@ -520,10 +511,6 @@ protected:
     void ConvertMDInternalToReadWrite();
     void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
 
-#ifdef FEATURE_CAS_POLICY
-    // Check the Authenticode signature of a PE file
-    void CheckAuthenticodeSignature();
-#endif // FEATURE_CAS_POLICY
 
     friend class Module;
 #ifdef FEATURE_PREJIT
@@ -572,21 +559,11 @@ protected:
 #endif
     IMetaDataImport2        *m_pImporter;
     IMetaDataEmit           *m_pEmitter;
-#ifndef FEATURE_CORECLR
-    IMetaDataAssemblyImport *m_pAssemblyImporter;
-    IMetaDataAssemblyEmit   *m_pAssemblyEmitter;
-#endif
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
     SBuffer                 *m_hash;                   // cached SHA1 hash value
     int                     m_flags;
     BOOL                    m_fStrongNameVerified;
-#ifdef FEATURE_CAS_POLICY
-    COR_TRUST               *m_certificate;
-    BOOL                    m_fCheckedCertificate;
-    IInternetSecurityManager    *m_pSecurityManager;
-    Crst                         m_securityManagerLock;
-#endif // FEATURE_CAS_POLICY
 
 #ifdef DEBUGGING_SUPPORTED
 #ifdef FEATURE_PREJIT
@@ -728,19 +705,6 @@ class PEAssembly : public PEFile
     // Public API
     // ------------------------------------------------------------
 
-#if !defined(FEATURE_CORECLR)
-    static PEAssembly * Open(
-        PEAssembly *       pParentAssembly,
-        PEImage *          pPEImageIL, 
-        PEImage *          pPEImageNI, 
-        ICLRPrivAssembly * pHostAssembly, 
-        BOOL               fIsIntrospectionOnly);
-    
-    static PEAssembly * Open(
-        PEAssembly * pParentAssembly, 
-        PEImage *    pPEImageIL, 
-        BOOL         isIntrospectionOnly = FALSE);
-#else //!FEATURE_CORECLR
     // CoreCLR's PrivBinder PEAssembly creation entrypoint
     static PEAssembly * Open(
         PEAssembly *       pParent,
@@ -748,7 +712,6 @@ class PEAssembly : public PEFile
         PEImage *          pPEImageNI, 
         ICLRPrivAssembly * pHostAssembly, 
         BOOL               fIsIntrospectionOnly = FALSE);
-#endif //!FEATURE_CORECLR
 
     // This opens the canonical mscorlib.dll
 #ifdef FEATURE_FUSION
@@ -846,9 +809,7 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     BOOL IsSourceGAC();
-#ifdef FEATURE_CORECLR
     BOOL IsProfileAssembly();
-#endif // FEATURE_CORECLR
 
     ULONG HashIdentity();
 #ifdef FEATURE_FUSION
@@ -968,10 +929,6 @@ class PEAssembly : public PEFile
 #endif
 #endif
 
-#ifndef FEATURE_CORECLR
-    BOOL IsReportedToUsageLog();
-    void SetReportedToUsageLog();
-#endif // !FEATURE_CORECLR
 
   protected:
 
@@ -1067,11 +1024,7 @@ class PEAssembly : public PEFile
     // things
     SString                  m_sTextualIdentity;
 #endif
-#ifdef FEATURE_CORECLR
     int                      m_fProfileAssembly; // Tri-state cache
-#else
-    BOOL                     m_fStrongNameBypassed;
-#endif
 
   public:
     PTR_PEFile GetCreator()

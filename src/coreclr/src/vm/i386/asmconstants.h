@@ -34,12 +34,7 @@
 #endif
 
 //***************************************************************************
-#if defined(_DEBUG) && defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
- #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 1
- #define TRACK_CXX_EXCEPTION_CODE_HACK
-#else
  #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 0
-#endif
 
 #define INITIAL_SUCCESS_COUNT               0x100
 

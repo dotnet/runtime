@@ -408,19 +408,6 @@ public:
         // CoreCLR: Do RestrictedMemberAcess visibility checks but bypass transparency checks.
         kRestrictedMemberAccessNoTransparency,
 
-#ifndef FEATURE_CORECLR
-        // Used by DynamicMethod with kRestrictedMemberAccess in Win8 immersive mode.
-        // Desktop: Equals kNormalAccessibilityChecks for non-framework code calling framework code,
-        //          kRestrictedMemberAccess otherwise.
-        kUserCodeOnlyRestrictedMemberAccess,
-
-        // A variation of kUserCodeOnlyRestrictedMemberAccess, but without transparency checks.
-        // This is used for reflection invocation in Win8 immersive when all domains on the call stack is full trust.
-        // This is an optimization to avoid stackwalks for transparency checks in full trust.
-        // Note that both kUserCodeOnlyRestrictedMemberAccess and kUserCodeOnlyRestrictedMemberAccessNoTransparency
-        // are needed because we restrict user code from accessing framework internals in Win8 immersive even in full trust.
-        kUserCodeOnlyRestrictedMemberAccessNoTransparency
-#endif
     };
 
     AccessCheckOptions(
@@ -472,11 +459,7 @@ public:
     BOOL TransparencyCheckNeeded() const
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_CORECLR
         return (m_accessCheckType != kNormalAccessNoTransparency && m_accessCheckType != kRestrictedMemberAccessNoTransparency);
-#else //FEATURE_CORECLR
-        return (m_accessCheckType != kUserCodeOnlyRestrictedMemberAccessNoTransparency);
-#endif //FEATURE_CORECLR
     }
 
     static AccessCheckOptions* s_pNormalAccessChecks;

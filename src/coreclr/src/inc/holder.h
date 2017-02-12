@@ -112,9 +112,6 @@ struct AutoExpVisibleValue
         const class AppXBindResultImpl                      *_asAppXBindResultImpl;
 #endif
 
-#ifndef FEATURE_CORECLR
-        const class PEFingerprint                           *_asPEFingerprint;
-#endif //!FEATURE_CORECLR
         const void                                          *_pPreventEmptyUnion;
     };
 };
@@ -1214,7 +1211,7 @@ FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath
 typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
 #endif // WszDeleteFile
 
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_CRYPTO)
+#if defined(FEATURE_CRYPTO)
 // Crypto holders
 FORCEINLINE void VoidCryptReleaseContext(HCRYPTPROV h) { CryptReleaseContext(h, 0); }
 FORCEINLINE void VoidCryptDestroyHash(HCRYPTHASH h) { CryptDestroyHash(h); }

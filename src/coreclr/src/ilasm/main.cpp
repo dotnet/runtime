@@ -248,12 +248,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     else if (!_stricmp(szOpt, "DEB"))
                     {
                       pAsm->m_dwIncludeDebugInfo = 0x101;
-#ifdef FEATURE_CORECLR
                       // PDB is ignored under 'DEB' option for ilasm on CoreCLR.
                       // https://github.com/dotnet/coreclr/issues/2982
-#else
-                      pAsm->m_fGeneratePDB = TRUE;
-#endif
                       bNoDebug = FALSE;
 
                       WCHAR *pStr = EqualOrColon(argv[i]);
@@ -281,12 +277,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "PDB"))
                     {
-#ifdef FEATURE_CORECLR
                       // 'PDB' option is ignored for ilasm on CoreCLR.
                       // https://github.com/dotnet/coreclr/issues/2982
-#else
-                      pAsm->m_fGeneratePDB = TRUE;
-#endif
                       bNoDebug = FALSE;
                     }
                     else if (!_stricmp(szOpt, "CLO"))
@@ -746,21 +738,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     exitval = 1;
                                     pParser->msg("Failed to write output file, error code=0x%08X\n",hr);
                                 }
-#ifndef FEATURE_CORECLR
-                                else if (pAsm->m_pManifest->m_sStrongName.m_fFullSign)
-                                {
-                                    // Strong name sign the resultant assembly.
-                                    if(pAsm->m_fReportProgress) pParser->msg("Signing file with strong name\n");
-                                    if (FAILED(hr=pAsm->StrongNameSign()))
-                                    {
-                                        exitval = 1;
-                                        pParser->msg("Failed to strong name sign output file, error code=0x%08X\n",hr);
-                                    }
-                                }
-#endif
                                 if(bClock) cw.cEnd = GetTickCount();
 #define ENC_ENABLED
-#ifdef ENC_ENABLED
                                 if(exitval==0)
                                 {
                                     pAsm->m_fENCMode = TRUE;
@@ -857,7 +836,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                         }
                                     } // end for(iFile)
                                 } // end if(exitval==0)
-#endif
                             }
 
                         }
@@ -922,12 +900,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 #pragma warning(pop)
 #endif
 
-#ifndef FEATURE_CORECLR
-HINSTANCE GetModuleInst()
-{
-    return (NULL);
-}
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_PAL
 int main(int argc, char* str[])

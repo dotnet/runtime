@@ -5,7 +5,7 @@
 #ifndef _METADATATRACKER_H_
 #define _METADATATRACKER_H_
 
-#if defined(FEATURE_PREJIT) && (!defined(FEATURE_CORECLR) || defined(FEATURE_WINDOWSPHONE))
+#if defined(FEATURE_PREJIT) && defined(FEATURE_WINDOWSPHONE)
 
 #define METADATATRACKER_DATA 1
 #if !defined(DACCESS_COMPILE)

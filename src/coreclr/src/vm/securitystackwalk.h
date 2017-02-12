@@ -169,9 +169,6 @@ public:
     //   Callers:
     //     CanAccess (ReflectionInvocation)
     //     ReflectionSerialization::GetSafeUninitializedObject
-#ifdef FEATURE_APTCA
-    //     SecurityDeclarative::DoUntrustedCallerChecks
-#endif // FEATURE_APTCA
     static void DemandSet(SecurityStackWalkType eType, OBJECTREF demand);
 
     // Native version of PermissionSet.Demand() that delays instantiating the PermissionSet object

@@ -992,9 +992,6 @@ HRESULT AccountingInfo::Lock()
     DWORD dwRet;
     {
         // m_hLock is a mutex
-#ifndef FEATURE_CORECLR        
-        Thread::BeginThreadAffinityAndCriticalRegion();
-#endif
         dwRet = WaitForSingleObject(m_hLock, INFINITE);
     }
 
@@ -1065,9 +1062,6 @@ void AccountingInfo::Unlock()
     InterlockedDecrement((LPLONG)&m_dwNumLocks);
 #endif
 
-#ifndef FEATURE_CORECLR        
-    Thread::EndThreadAffinityAndCriticalRegion();
-#endif
 }
 
 #endif
