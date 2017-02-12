@@ -112,7 +112,7 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(1024));
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024));
 
-                GC.EndNoGCRegion();
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
                 return SuccessExitCode;
             }, options).Dispose();
@@ -129,7 +129,7 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(1024, true));
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, true));
 
-                GC.EndNoGCRegion();
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
                 return SuccessExitCode;
             }, options).Dispose();
@@ -146,7 +146,7 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(1024, 1024));
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024));
 
-                GC.EndNoGCRegion();
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
                 return SuccessExitCode;
             }, options).Dispose();
@@ -163,7 +163,7 @@ namespace System.Tests
                 Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
                 Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024, true));
 
-                GC.EndNoGCRegion();
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
                 return SuccessExitCode;
             }, options).Dispose();
