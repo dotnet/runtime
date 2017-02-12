@@ -11,6 +11,7 @@
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="EnumArithmeticTests.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
     <Compile Include="RuntimeBinderTests.cs" />
   </ItemGroup>
