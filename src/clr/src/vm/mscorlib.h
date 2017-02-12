@@ -134,12 +134,6 @@ DEFINE_METHOD(APP_DOMAIN,           TURN_ON_BINDING_REDIRECTS, TurnOnBindingRedi
 DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
-#ifndef FEATURE_CORECLR
-DEFINE_METHOD(APP_DOMAIN,           PAUSE, Pause, SM_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           RESUME, Resume, SM_RetVoid)
-DEFINE_CLASS(APPDOMAIN_MANAGER,     System,                 AppDomainManager)
-DEFINE_PROPERTY(APPDOMAIN_MANAGER,  ENTRY_ASSEMBLY,         EntryAssembly,          AssemblyBase)
-#endif // FEATURE_CORECLR
 
 DEFINE_CLASS(CLEANUP_WORK_LIST,     StubHelpers,            CleanupWorkList)
 
@@ -167,9 +161,6 @@ DEFINE_FIELD_U(_AppDomainManagerType,              AppDomainSetupObject,   m_App
 DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
 DEFINE_FIELD_U(_TargetFrameworkName,               AppDomainSetupObject,   m_TargetFrameworkName)
 DEFINE_FIELD_U(_LoaderOptimization,                AppDomainSetupObject,   m_LoaderOptimization)
-#ifndef FEATURE_CORECLR
-DEFINE_FIELD_U(_AppDomainSortingSetupInfo,         AppDomainSetupObject,   m_AppDomainSortingSetupInfo)
-#endif // FEATURE_CORECLR
 #ifdef FEATURE_COMINTEROP
 DEFINE_FIELD_U(_DisableInterfaceCache,             AppDomainSetupObject,   m_DisableInterfaceCache)
 #endif // FEATURE_COMINTEROP
@@ -245,9 +236,6 @@ DEFINE_FIELD_U(_ModuleResolve,             AssemblyBaseObject,     m_pModuleEven
 DEFINE_FIELD_U(m_fullname,                 AssemblyBaseObject,     m_fullname)
 DEFINE_FIELD_U(m_syncRoot,                 AssemblyBaseObject,     m_pSyncRoot)
 DEFINE_FIELD_U(m_assembly,                 AssemblyBaseObject,     m_pAssembly)
-#ifndef FEATURE_CORECLR
-DEFINE_FIELD_U(m_flags,                    AssemblyBaseObject,     m_flags)
-#endif
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
 DEFINE_FIELD(ASSEMBLY,              HANDLE,                 m_assembly)
 DEFINE_METHOD(ASSEMBLY,             GET_NAME,               GetName,                    IM_RetAssemblyName)
@@ -391,18 +379,6 @@ DEFINE_METHOD(CONTEXT,              RESERVE_SLOT,           ReserveSlot,        
 DEFINE_CLASS(CONTEXT_BOUND_OBJECT,  System,                 ContextBoundObject)
 #endif
 
-#ifndef FEATURE_CORECLR
-DEFINE_CLASS_U(Globalization,          AppDomainSortingSetupInfo,           AppDomainSortingSetupInfoObject)
-DEFINE_FIELD_U(_pfnIsNLSDefinedString,             AppDomainSortingSetupInfoObject,   m_pfnIsNLSDefinedString)
-DEFINE_FIELD_U(_pfnCompareStringEx,                AppDomainSortingSetupInfoObject,   m_pfnCompareStringEx)
-DEFINE_FIELD_U(_pfnLCMapStringEx,                  AppDomainSortingSetupInfoObject,   m_pfnLCMapStringEx)
-DEFINE_FIELD_U(_pfnFindNLSStringEx,                AppDomainSortingSetupInfoObject,   m_pfnFindNLSStringEx)
-DEFINE_FIELD_U(_pfnCompareStringOrdinal,           AppDomainSortingSetupInfoObject,   m_pfnCompareStringOrdinal)
-DEFINE_FIELD_U(_pfnGetNLSVersionEx,                AppDomainSortingSetupInfoObject,   m_pfnGetNLSVersionEx)
-DEFINE_FIELD_U(_pfnFindStringOrdinal,              AppDomainSortingSetupInfoObject,   m_pfnFindStringOrdinal)
-DEFINE_FIELD_U(_useV2LegacySorting,                AppDomainSortingSetupInfoObject,   m_useV2LegacySorting)
-DEFINE_FIELD_U(_useV4LegacySorting,                AppDomainSortingSetupInfoObject,   m_useV4LegacySorting)
-#endif // FEATURE_CORECLR
 
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_CLASS_U(Globalization,          CultureData,           CultureDataBaseObject)
@@ -579,9 +555,7 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
-#ifdef FEATURE_CORECLR
 DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
-#endif
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
@@ -632,12 +606,10 @@ DEFINE_METHOD(EXCEPTION,            ADD_EXCEPTION_DATA_FOR_RESTRICTED_ERROR_INFO
 DEFINE_METHOD(EXCEPTION,            TRY_GET_RESTRICTED_LANGUAGE_ERROR_OBJECT,     TryGetRestrictedLanguageErrorObject, IM_RefObject_RetBool)
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_CORECLR
 
 DEFINE_CLASS(CROSSAPPDOMAINMARSHALEDEXCEPTION,  System,      CrossAppDomainMarshaledException)
 DEFINE_METHOD(CROSSAPPDOMAINMARSHALEDEXCEPTION, STR_INT_CTOR, .ctor, IM_Str_Int_RetVoid)
 
-#endif //FEATURE_CORECLR
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -677,22 +649,6 @@ DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_INFO,            Reflection,             FieldInfo)
 
-#ifndef FEATURE_CORECLR
-DEFINE_CLASS_U(IO,               FileStreamAsyncResult, AsyncResultBase)
-DEFINE_FIELD_U(_userCallback,          AsyncResultBase,    _userCallback)
-DEFINE_FIELD_U(_userStateObject,       AsyncResultBase,    _userStateObject)
-DEFINE_FIELD_U(_waitHandle,            AsyncResultBase,    _waitHandle)
-DEFINE_FIELD_U(_handle,                AsyncResultBase,    _fileHandle)
-DEFINE_FIELD_U(_overlapped,            AsyncResultBase,    _overlapped)
-DEFINE_FIELD_U(_EndXxxCalled,          AsyncResultBase,    _EndXxxCalled)
-DEFINE_FIELD_U(_numBytes,              AsyncResultBase,    _numBytes)
-DEFINE_FIELD_U(_errorCode,             AsyncResultBase,    _errorCode)
-DEFINE_FIELD_U(_numBufferedBytes,      AsyncResultBase,    _numBufferedBytes)
-DEFINE_FIELD_U(_isWrite,               AsyncResultBase,    _isWrite)
-DEFINE_FIELD_U(_isComplete,            AsyncResultBase,    _isComplete)
-DEFINE_FIELD_U(_completedSynchronously, AsyncResultBase, _completedSynchronously)
-DEFINE_CLASS(FILESTREAM_ASYNCRESULT, IO,               FileStreamAsyncResult)
-#endif // !FEATURE_CORECLR
 
 DEFINE_CLASS(GUID,                  System,                 Guid)
 
@@ -1195,9 +1151,6 @@ DEFINE_METHOD(SAFE_HANDLE,          RELEASE_HANDLE,         ReleaseHandle,      
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE,                Dispose,                    IM_RetVoid)
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
-#ifndef FEATURE_CORECLR
-DEFINE_CLASS(SAFE_TOKENHANDLE, SafeHandles, SafeAccessTokenHandle)
-#endif
 
 DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
 
@@ -1283,9 +1236,6 @@ DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_INTERNAL,ReplaceBufferInterna
 DEFINE_METHOD(STRING_BUILDER,       REPLACE_BUFFER_ANSI_INTERNAL,ReplaceBufferAnsiInternal, IM_PtrSByt_Int_RetVoid)
 
 DEFINE_CLASS(STRONG_NAME_KEY_PAIR,  Reflection,             StrongNameKeyPair)
-#ifndef FEATURE_CORECLR
-DEFINE_METHOD(STRONG_NAME_KEY_PAIR, GET_KEY_PAIR,           GetKeyPair,                 IM_RefObject_RetBool) 
-#endif
 
 DEFINE_CLASS_U(Threading,              SynchronizationContext, SynchronizationContextObject)
 DEFINE_FIELD_U(_props, SynchronizationContextObject, _props)
@@ -1303,9 +1253,6 @@ DEFINE_CLASS(CROSS_CONTEXT_DELEGATE, Threading, InternalCrossContextDelegate)
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 #ifdef FEATURE_REMOTING
 DEFINE_FIELD_U(m_Context,                  ThreadBaseObject,   m_ExposedContext)
-#endif
-#ifndef FEATURE_CORECLR
-DEFINE_FIELD_U(m_ExecutionContext,         ThreadBaseObject,   m_ExecutionContext)
 #endif
 DEFINE_FIELD_U(m_Name,                     ThreadBaseObject,   m_Name)
 DEFINE_FIELD_U(m_Delegate,                 ThreadBaseObject,   m_Delegate)
@@ -1428,13 +1375,6 @@ DEFINE_METHOD(STUBHELPERS,          IS_QCALL,               IsQCall,            
 DEFINE_METHOD(STUBHELPERS,          INIT_DECLARING_TYPE,    InitDeclaringType,          SM_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_NDIRECT_TARGET,     GetNDirectTarget,           SM_IntPtr_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RefIntPtr_RetIntPtr)
-#ifndef FEATURE_CORECLR // CAS
-DEFINE_METHOD(STUBHELPERS,          DEMAND_PERMISSION,      DemandPermission,           SM_IntPtr_RetVoid)
-#ifdef _TARGET_X86_
-DEFINE_METHOD(STUBHELPERS,          SET_COPY_CTOR_COOKIE_CHAIN, SetCopyCtorCookieChain, SM_IntPtr_IntPtr_Int_IntPtr_RetVoid)
-DEFINE_FIELD(STUBHELPERS,           COPY_CTOR_STUB_DESC,    s_copyCtorStubDesc)
-#endif // _TARGET_X86_
-#endif // !FEATURE_CORECLR
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_Obj_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT_WINRT,        GetCOMHRExceptionObject_WinRT,      SM_Int_IntPtr_Obj_RetException)
@@ -1453,13 +1393,11 @@ DEFINE_METHOD(STUBHELPERS,          GET_OUTER_INSPECTABLE,                    Ge
 DEFINE_METHOD(STUBHELPERS,          TRIGGER_EXCEPTION_SWALLOWED_MDA,          TriggerExceptionSwallowedMDA,       SM_Exception_IntPtr_RetException)
 #endif // MDA_SUPPORTED
 #endif // FEATURE_COMINTEROP
-#if defined(MDA_SUPPORTED) || (defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR))
+#if defined(MDA_SUPPORTED)
 DEFINE_METHOD(STUBHELPERS,          CHECK_COLLECTED_DELEGATE_MDA, CheckCollectedDelegateMDA, SM_IntPtr_RetVoid)
 #endif // MDA_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,               SM_RetVoid)
-#ifdef FEATURE_CORECLR
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
-#endif
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST,    AddToCleanupList,           SM_RefCleanupWorkList_SafeHandle_RetIntPtr)
@@ -1503,12 +1441,6 @@ DEFINE_METHOD(STUBHELPERS,          ARRAY_TYPE_CHECK,    ArrayTypeCheck,        
 #ifdef FEATURE_STUBS_AS_IL
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
 #endif
-
-#if defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
-DEFINE_CLASS(COPYCTORSTUBCOOKIE,    StubHelpers,            CopyCtorStubCookie)
-DEFINE_METHOD(COPYCTORSTUBCOOKIE,   SET_DATA,               SetData,                    IM_IntPtr_UInt_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(COPYCTORSTUBCOOKIE,   SET_NEXT,               SetNext,                    IM_IntPtr_RetVoid)
-#endif // _TARGET_X86_ && !FEATURE_CORECLR
 
 DEFINE_CLASS(ANSICHARMARSHALER,     StubHelpers,            AnsiCharMarshaler)
 DEFINE_METHOD(ANSICHARMARSHALER,    CONVERT_TO_NATIVE,      ConvertToNative,            SM_Char_Bool_Bool_RetByte)

@@ -1498,7 +1498,7 @@ void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_CORESYSTEM)
+#if !defined(FEATURE_CORESYSTEM)
     // Callers of memcpy do expect and handle access violations in some scenarios.
     // Access violations in the runtime dll are turned into fail fast by the vector exception handler by default.
     // We need to supress this behavior for CoreCLR using AVInRuntimeImplOkayHolder because of memcpy is statically linked in.

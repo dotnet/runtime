@@ -1979,7 +1979,7 @@ public:
 
 #if defined(FEATURE_COMINTEROP)
     HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
-#endif // FEATURE_CORECLR && FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
     BOOL CanReversePInvokeEnter();
     void SetReversePInvokeCannotEnter();

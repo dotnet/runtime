@@ -5141,18 +5141,6 @@ void MethodTableBuilder::SetSecurityFlagsOnMethod(bmtRTMethod* pParentMethod,
     // for linktime checks on these.
     // Also place linktime checks on all P/Invoke calls.
     if (
-#ifndef FEATURE_CORECLR 
-        (IsInterface() &&
-        (GetMDImport()->GetCustomAttributeByName(GetCl(),
-                                                                COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                                NULL,
-                                                                NULL) == S_OK ||
-         GetMDImport()->GetCustomAttributeByName(pNewMD->GetMemberDef(),
-                                                                COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                                NULL,
-                                                                NULL) == S_OK) ) ||
-
-#endif  // !FEATURE_CORECLR
         pNewMD->IsNDirect() ||
         (pNewMD->IsComPlusCall() && !IsInterface()))
     {
@@ -12177,19 +12165,6 @@ VOID MethodTableBuilder::VerifyClassInheritanceSecurityHelper(
     // This method throws on failure.
     Security::ClassInheritanceCheck(pChildMT, pParentMT);
 
-#ifndef FEATURE_CORECLR
-    // Check the entire parent chain for inheritance permission demands.
-    while (pParentMT != NULL)
-    {
-        if (pParentMT->GetClass()->RequiresInheritanceCheck())
-        {
-            // This method throws on failure.
-            Security::ClassInheritanceCheck(pChildMT, pParentMT);
-        }
-
-        pParentMT = pParentMT->GetParentMethodTable();
-    }
-#endif // !FEATURE_CORECLR
 }
 
 //*******************************************************************************
@@ -12208,74 +12183,6 @@ VOID MethodTableBuilder::VerifyMethodInheritanceSecurityHelper(
 
     Security::MethodInheritanceCheck(pChildMD, pParentMD);
 
-#ifndef FEATURE_CORECLR
-
-    // If no inheritance checks are required, just return.
-    if (!pParentMD->RequiresInheritanceCheck() &&
-        !pParentMD->ParentRequiresInheritanceCheck())
-    {
-        return;
-    }
-
-    DWORD dwSlot = pParentMD->GetSlot();
-
-#ifdef _DEBUG 
-    // Get the name and signature for the method so we can find the new parent method desc.
-    // We use the parent MethodDesc for this because the child could actually have a very
-    // different name in the case that the child is MethodImpling the parent.
-
-    // Get the name.
-    LPCUTF8            szName;
-    szName = pParentMD->GetName();
-
-    // Get the signature.
-    PCCOR_SIGNATURE    pSignature;
-    DWORD              cSignature;
-    pParentMD->GetSig(&pSignature, &cSignature);
-    Module            *pModule = pParentMD->GetModule();
-#endif // _DEBUG
-
-    do
-    {
-        if (pParentMD->RequiresInheritanceCheck())
-        {
-            Security::MethodInheritanceCheck(pChildMD, pParentMD);
-        }
-
-        if (pParentMD->ParentRequiresInheritanceCheck())
-        {
-            MethodTable *pGrandParentMT = pParentMD->GetMethodTable()->GetParentMethodTable();
-            CONSISTENCY_CHECK(CheckPointer(pGrandParentMT));
-
-            // Find this method in the parent.
-            // If it does exist in the parent, it would be at the same vtable slot.
-            if (dwSlot >= pGrandParentMT->GetNumVirtuals())
-            {
-                // Parent does not have this many vtable slots, so it doesn't exist there
-                pParentMD = NULL;
-            }
-            else
-            {
-                // It is in the vtable of the parent
-                pParentMD = pGrandParentMT->GetMethodDescForSlot(dwSlot);
-                _ASSERTE(pParentMD != NULL);
-
-#ifdef _DEBUG 
-                _ASSERTE(pParentMD == MemberLoader::FindMethod(pGrandParentMT,
-                    szName,
-                    pSignature,
-                    cSignature,
-                    pModule));
-#endif // _DEBUG
-            }
-        }
-        else
-        {
-            pParentMD = NULL;
-        }
-    } while (pParentMD != NULL);
-
-#endif // !FEATURE_CORECLR
 }
 
 //*******************************************************************************
@@ -12520,7 +12427,6 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
     // permission demands on the current class. If these first checks
     // succeeded, then the cached declared method list is scanned for
     // methods that have inheritance permission demands.
-#ifdef FEATURE_CORECLR
     //
     // If we are transparent, and every class up the inheritence chain is also entirely transparent,
     // that means that no inheritence rules could be broken.  If that's the case, we don't need to check
@@ -12551,12 +12457,9 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
 
         }
     }
-#endif // FEATURE_CORECLR
 
     if (GetParentMethodTable() != NULL
-#if FEATURE_CORECLR
         && !fInheritenceChainTransparent
-#endif // FEATURE_CORECLR
         )
     {
         // Check the parent for inheritance permission demands.
@@ -12641,18 +12544,10 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
             MethodTable *pCurItfMT = itfIt.GetInterface();
             CONSISTENCY_CHECK(CheckPointer(pCurItfMT));
 
-#ifdef FEATURE_CORECLR
             if (fNeedTransparencyInheritanceCheck && 
                 !(Security::IsTypeAllTransparent(itfIt.GetInterface()) &&
                     fCurrentTypeAllTransparent) 
                 )
-#else // FEATURE_CORECLR
-            EEClass * pCurItfCls = pCurItfMT->GetClass();
-            if (fNeedTransparencyInheritanceCheck ||
-                fNeedPartialTrustInterfaceMappingCheck ||
-                pCurItfCls->RequiresInheritanceCheck() ||
-                pCurItfCls->SomeMethodsRequireInheritanceCheck())
-#endif // !FEATURE_CORECLR
             {
                 // An interface is introduced by this type either if it is explicitly declared on the
                 // type's interface list or if one of the type's explicit interfaces requires the

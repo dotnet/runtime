@@ -43,19 +43,8 @@
 #include "policy.h"
 #endif
 
-#ifdef FEATURE_CORECLR
 #include "appdomainnative.hpp"
 #include "../binder/inc/clrprivbindercoreclr.h"
-#endif // FEATURE_CORECLR
-
-#ifndef FEATURE_CORECLR
-#include "assemblynativeresource.h"
-#endif // !FEATURE_CORECLR
-
-#if !defined(FEATURE_CORECLR)
-#include "clrprivbinderloadfile.h" 
-#endif
-
 
 #ifdef FEATURE_FUSION
 //----------------------------------------------------------------------------------------------------
@@ -318,12 +307,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     if (pAssemblyData == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_Array"));
 
-#ifndef FEATURE_CORECLR
-    // Event Tracing for Windows is used to log data for performance and functional testing purposes.
-    // The events in this function are used to help measure the performance of assembly loading as a whole when loading from a buffer.
-     FireEtwLoaderPhaseStart(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, NULL, NULL, GetClrInstanceId());
-#endif // FEATURE_CORECLR
-
     if (fForIntrospection) {
         if (!GetThread()->GetDomain()->IsVerificationDomain())
             GetThread()->GetDomain()->SetIllegalVerificationDomain();
@@ -356,13 +339,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
         GCX_PREEMP();
 
         CLRPrivBinderLoadFile* pBinderToUse = NULL;
-
-#if !defined(FEATURE_CORECLR)
-        if (GetAppDomain()->HasLoadContextHostBinder())
-        {
-            pBinderToUse = CLRPrivBinderLoadFile::GetOrCreateBinder();
-        }
-#endif // !FEATURE_CORECLR
 
         pFile = PEAssembly::OpenMemory(pCallersAssembly->GetManifestFile(),
                                                   pAssemblyData, (COUNT_T)uAssemblyLength, 
@@ -447,9 +423,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     }
 #endif // FEATURE_REFLECTION_ONLY_LOAD    
 
-#ifndef FEATURE_CORECLR
-    FireEtwLoaderPhaseEnd(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, NULL, NULL, GetClrInstanceId());
-#endif // FEATURE_CORECLR
     LOG((LF_CLASSLOADER, 
          LL_INFO100, 
          "\tLoaded in-memory module\n"));
@@ -1120,15 +1093,6 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
 
     BEGIN_QCALL;
 
-#ifndef FEATURE_CORECLR
-    // workaround - lie about where mscorlib is. Mscorlib is now loaded out of the GAC, 
-    // but some apps query its location to find the system directory. (Notably system.web)
-    if (pAssembly->IsSystem())
-    {
-        retString.Set(SystemDomain::System()->BaseLibrary());
-    }
-    else
-#endif // !FEATURE_CORECLR
     {
         retString.Set(pAssembly->GetFile()->GetPath());
     }
@@ -1225,26 +1189,6 @@ void QCALLTYPE AssemblyNative::GetPublicKey(QCall::AssemblyHandle pAssembly, QCa
     END_QCALL;
 }
 
-#if !FEATURE_CORECLR
-
-BYTE QCALLTYPE AssemblyNative::GetSecurityRuleSet(QCall::AssemblyHandle pAssembly)
-{
-    QCALL_CONTRACT;
-
-    SecurityRuleSet ruleSet = SecurityRuleSet_Default;
-
-    BEGIN_QCALL;
-
-    ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pAssembly->GetAssembly());
-    ruleSet = pMSD->GetSecurityRuleSet();
-
-    END_QCALL;
-
-    return static_cast<BYTE>(ruleSet);
-}
-
-#endif // !FEATURE_CORECLR
-
 void QCALLTYPE AssemblyNative::GetSimpleName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retSimpleName)
 {
     QCALL_CONTRACT;
@@ -1277,14 +1221,6 @@ void QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL
 
     StackSString codebase;
 
-#ifndef FEATURE_CORECLR
-    if (pAssembly->IsSystem()) {
-        // workaround: lie about the location of mscorlib.  Some callers assume it is in the install dir.
-        codebase.Set(SystemDomain::System()->BaseLibrary());
-        PEAssembly::PathToUrl(codebase);
-    }
-    else 
-#endif // !FEATURE_CORECLR
     {
         pAssembly->GetFile()->GetCodeBase(codebase);
     }
@@ -1349,23 +1285,6 @@ BYTE * QCALLTYPE AssemblyNative::GetResource(QCall::AssemblyHandle pAssembly, LP
     // Can return null if resource file is zero-length
     return pbInMemoryResource;
 }
-
-#ifndef FEATURE_CORECLR
-
-BOOL QCALLTYPE AssemblyNative::UseRelativeBindForSatellites()
-{
-    QCALL_CONTRACT;
-
-    BOOL retVal = TRUE;
-
-    BEGIN_QCALL;
-    retVal  = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RelativeBindForResources);
-    END_QCALL;
-
-    return retVal;
-
-}
-#endif // !FEATURE_CORECLR
 
 INT32 QCALLTYPE AssemblyNative::GetManifestResourceInfo(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, QCall::ObjectHandleOnStack retAssembly, QCall::StringHandleOnStack retFileName, QCall::StackCrawlMarkHandle stackMark)
 {
@@ -1878,121 +1797,6 @@ void QCALLTYPE AssemblyNative::GetEntryPoint(QCall::AssemblyHandle pAssembly, QC
     return;
 }
 
-#ifndef FEATURE_CORECLR
-// prepare saving manifest to disk
-void QCALLTYPE AssemblyNative::PrepareForSavingManifestToDisk(QCall::AssemblyHandle pAssembly, QCall::ModuleHandle pAssemblyModule)
-{
-    QCALL_CONTRACT;
-    
-    BEGIN_QCALL;
-
-    pAssembly->GetAssembly()->PrepareSavingManifest((ReflectionModule *)(Module *)pAssemblyModule);
-
-    END_QCALL;
-}
-
-#endif    
-
-#ifndef FEATURE_CORECLR
-// add a file name to the file list of this assembly. On disk only.
-mdFile QCALLTYPE AssemblyNative::AddFile(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName)
-{
-    QCALL_CONTRACT;
-    
-    mdFile      retVal = 0;
-
-    BEGIN_QCALL;
-    
-    retVal = pAssembly->GetAssembly()->AddFile(wszFileName);
-
-    END_QCALL;
-
-    return retVal;
-}
-#endif //FEATURE_CORECLR   
-
-#ifndef FEATURE_CORECLR
-// set the hash value on a file.
-void QCALLTYPE AssemblyNative::SetFileHashValue(QCall::AssemblyHandle pAssembly, INT32 tkFile, LPCWSTR wszFullFileName)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    pAssembly->GetAssembly()->SetFileHashValue(tkFile, wszFullFileName);
-
-    END_QCALL;
-}
-#endif //FEATURE_CORECLR   
-
-#ifndef FEATURE_CORECLR
-// Add a Type name to the ExportedType table in the on-disk assembly manifest.
-mdExportedType QCALLTYPE AssemblyNative::AddExportedTypeOnDisk(QCall::AssemblyHandle pAssembly, LPCWSTR wszCOMTypeName, INT32 tkImpl, INT32 tkTypeDef, INT32 flags)
-{
-    QCALL_CONTRACT;
-
-    mdExportedType  retVal = 0;
-
-    BEGIN_QCALL;
-    
-    retVal = pAssembly->GetAssembly()->AddExportedTypeOnDisk(wszCOMTypeName, tkImpl, tkTypeDef, (CorTypeAttr)flags);
-
-    END_QCALL;
-
-    return retVal;
-}
-
-// Add a Type name to the ExportedType table in the in-memory assembly manifest.
-mdExportedType QCALLTYPE AssemblyNative::AddExportedTypeInMemory(QCall::AssemblyHandle pAssembly, LPCWSTR wszCOMTypeName, INT32 tkImpl, INT32 tkTypeDef, INT32 flags)
-{
-    QCALL_CONTRACT;
-
-    mdExportedType  retVal = 0;
-
-    BEGIN_QCALL;
-    
-    retVal = pAssembly->GetAssembly()->AddExportedTypeInMemory(wszCOMTypeName, tkImpl, tkTypeDef, (CorTypeAttr)flags);
-
-    END_QCALL;
-
-    return retVal;
-}
-#endif //FEATURE_CORECLR   
-
-#ifndef FEATURE_CORECLR
-// add a Stand alone resource to ManifestResource table
-void QCALLTYPE AssemblyNative::AddStandAloneResource(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, LPCWSTR wszFileName, LPCWSTR wszFullFileName, INT32 iAttribute)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    pAssembly->GetAssembly()->AddStandAloneResource(
-        wszName, 
-        NULL,
-        NULL,
-        wszFileName,
-        wszFullFileName,        
-        iAttribute); 
-
-    END_QCALL;
-}
-#endif //FEATURE_CORECLR   
-
-#ifndef FEATURE_CORECLR
-// Save security permission requests.
-void QCALLTYPE AssemblyNative::AddDeclarativeSecurity(QCall::AssemblyHandle pAssembly, INT32 action, PVOID blob, INT32 length)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    pAssembly->GetAssembly()->AddDeclarativeSecurity(action, blob, length);
-
-    END_QCALL;
-}
-#endif //FEATURE_CORECLR   
-
 //---------------------------------------------------------------------------------------
 //
 // Get the raw bytes making up this assembly
@@ -2056,27 +1860,6 @@ void QCALLTYPE AssemblyNative::ReleaseSafePEFileHandle(PEFile *pPEFile)
 extern void ManagedBitnessFlagsToUnmanagedBitnessFlags(
     INT32 portableExecutableKind, INT32 imageFileMachine,
     DWORD* pPeFlags, DWORD* pCorhFlags);
-
-#ifndef FEATURE_CORECLR
-void QCALLTYPE AssemblyNative::SaveManifestToDisk(QCall::AssemblyHandle pAssembly, 
-                                                  LPCWSTR wszManifestFileName,
-                                                  INT32 entrypoint, 
-                                                  INT32 fileKind, 
-                                                  INT32 portableExecutableKind, 
-                                                  INT32 imageFileMachine)
-{
-    QCALL_CONTRACT;
-    
-    BEGIN_QCALL;
-
-    DWORD peFlags = 0, corhFlags = 0;
-    ManagedBitnessFlagsToUnmanagedBitnessFlags(portableExecutableKind, imageFileMachine, &peFlags, &corhFlags);   
-
-    pAssembly->GetAssembly()->SaveManifestToDisk(wszManifestFileName, entrypoint, fileKind, corhFlags, peFlags);
-    
-    END_QCALL;
-}
-#endif // !FEATURE_CORECLR
 
 void QCALLTYPE AssemblyNative::GetFullName(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
@@ -2258,89 +2041,6 @@ FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, As
 }
 FCIMPLEND
 
-
-#ifndef FEATURE_CORECLR
-// Create a stand-alone resource file for version resource.
-void QCALLTYPE AssemblyNative::CreateVersionInfoResource(LPCWSTR    pwzFilename,
-                                                         LPCWSTR    pwzTitle,
-                                                         LPCWSTR    pwzIconFilename,
-                                                         LPCWSTR    pwzDescription,
-                                                         LPCWSTR    pwzCopyright,
-                                                         LPCWSTR    pwzTrademark,
-                                                         LPCWSTR    pwzCompany,
-                                                         LPCWSTR    pwzProduct,
-                                                         LPCWSTR    pwzProductVersion,
-                                                         LPCWSTR    pwzFileVersion,
-                                                         INT32 lcid,
-                                                         BOOL       fIsDll,
-                                                         QCall::StringHandleOnStack retFileName)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    Win32Res    res;                    // Resource helper object.
-    const void  *pvData=0;              // Pointer to the resource.
-    ULONG       cbData;                 // Size of the resource data.
-    ULONG       cbWritten;
-    PathString       szFile;     // File name for resource file.
-    PathString       szPath;     // Path name for resource file.
-    HandleHolder hFile;
-
-    res.SetInfo(pwzFilename, 
-                pwzTitle, 
-                pwzIconFilename, 
-                pwzDescription, 
-                pwzCopyright, 
-                pwzTrademark,
-                pwzCompany, 
-                pwzProduct, 
-                pwzProductVersion, 
-                pwzFileVersion, 
-                lcid,
-                fIsDll);
-
-    res.MakeResFile(&pvData, &cbData);
-
-    //<TODO>Change the COMPlusThrowWin32's to exceptions with
-    // messages including the path/file name</TODO>
-
-    // Persist to a file.
-    if (!WszGetTempPath(szPath))
-        COMPlusThrowWin32();
-    if (!WszGetTempFileName(szPath.GetUnicode(), W("RES"), 0, szFile))
-        COMPlusThrowWin32();
-
-    hFile = WszCreateFile(szFile, GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-        COMPlusThrowWin32();
-
-    if (!WriteFile(hFile, pvData, cbData, &cbWritten, NULL))
-        COMPlusThrowWin32();
-
-    retFileName.Set(szFile);
-
-    END_QCALL;
-}
-#endif // !FEATURE_CORECLR
-
-#ifndef FEATURE_CORECLR
-FCIMPL1(FC_BOOL_RET, AssemblyNative::IsGlobalAssemblyCache, AssemblyBaseObject* pAssemblyUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-    
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-
-    FC_RETURN_BOOL(pAssembly->GetFile()->IsSourceGAC());
-}
-FCIMPLEND
-#endif // !FEATURE_CORECLR
-
 void QCALLTYPE AssemblyNative::GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
@@ -2355,9 +2055,6 @@ void QCALLTYPE AssemblyNative::GetImageRuntimeVersion(QCall::AssemblyHandle pAss
     IfFailThrow(pPEFile->GetMDImport()->GetVersionString(&pszVersion));
 
     SString version(SString::Utf8, pszVersion);
- #ifndef FEATURE_CORECLR   
-    AdjustImageRuntimeVersion(&version);
-#endif // FEATURE_CORECLR   
 
     // Allocate a managed string that contains the version and return it.
     retString.Set(version);

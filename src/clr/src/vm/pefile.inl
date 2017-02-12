@@ -1333,7 +1333,7 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
             TADDR taddrILMetadata = dac_cast<TADDR>(pDecoder->GetMetadata(&cbILMetadata));
             return ((taddrILMetadata <= taddrData) && (taddrData < taddrILMetadata + cbILMetadata));
         }
-#endif // defined(FEATURE_PREJIT) && defined(FEATURE_CORECLR)
+#endif // defined(FEATURE_PREJIT)
         return GetOpenedILimage()->IsPtrInImage(data);
     }
     else

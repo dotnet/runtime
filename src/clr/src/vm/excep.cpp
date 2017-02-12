@@ -5579,7 +5579,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 //------------------------------------------------------------------------------
 #if !defined(FEATURE_PAL)
 #pragma code_seg(push, uef, CLR_UEF_SECTION_NAME)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or EXCEPTION_CONTINUE_EXECUTION
     EXCEPTION_POINTERS *pExceptionInfo)         // Information about the exception.
 {
@@ -5621,7 +5621,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 } // LONG __stdcall COMUnhandledExceptionFilter()
 #if !defined(FEATURE_PAL)
 #pragma code_seg(pop, uef)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
 void PrintStackTraceToStdout();
 
@@ -7026,9 +7026,9 @@ DWORD GetGcMarkerExceptionCode(LPVOID ip)
     {
         return STATUS_CLR_GCCOVER_CODE;
     }
-#else // !(defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR))
+#else // defined(HAVE_GCCOVER)
     LIMITED_METHOD_CONTRACT;
-#endif // defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+#endif // defined(HAVE_GCCOVER)
     return 0;
 }
 
@@ -11268,7 +11268,7 @@ PTR_VOID EHWatsonBucketTracker::RetrieveWatsonBuckets()
     {
         return NULL;
     }
-#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#endif //!defined(DACCESS_COMPILE)
 
     CONTRACTL
     {
