@@ -15,7 +15,6 @@
 
 #include "methodtablebuilder.h"
 
-#include "constrainedexecutionregion.h"
 #include "sigbuilder.h"
 #include "dllimport.h"
 #include "fieldmarshaler.h"
@@ -191,18 +190,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
         pEEClass->GetSecurityProperties()->SetFlags(dwSecFlags, dwNullDeclFlags);
     }
 
-#ifdef FEATURE_CER
-    // Cache class level reliability contract info.
-    DWORD dwReliabilityContract = ::GetReliabilityContract(pInternalImport, cl);
-    if (dwReliabilityContract != RC_NULL)
-    {
-        // Reliability contract is an optional field. If we have a non-default value we need to ensure the
-        // optional field descriptor has been allocated.
-        EnsureOptionalFieldsAreAllocated(pEEClass, pamTracker, pAllocator->GetLowFrequencyHeap());
-        
-        pEEClass->SetReliabilityContract(dwReliabilityContract);
-    }
-#endif // FEATURE_CER
 
     if (fHasLayout)
         pEEClass->SetHasLayout();

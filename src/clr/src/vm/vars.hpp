@@ -408,9 +408,6 @@ GPTR_DECL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_DECL(MethodTable,      g_pValueTypeClass);
 GPTR_DECL(MethodTable,      g_pEnumClass);
 GPTR_DECL(MethodTable,      g_pThreadClass);
-#ifdef FEATURE_CER
-GPTR_DECL(MethodTable,      g_pCriticalFinalizerObjectClass);
-#endif
 GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
@@ -426,9 +423,6 @@ GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
 GPTR_DECL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
 
-#ifdef FEATURE_CER
-GPTR_DECL(MethodDesc,       g_pPrepareConstrainedRegionsMethod);
-#endif
 GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
 GPTR_DECL(MethodDesc,       g_pObjectCtorMD);

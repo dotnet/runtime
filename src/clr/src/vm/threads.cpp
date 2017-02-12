@@ -72,7 +72,6 @@ CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 
 #ifndef DACCESS_COMPILE
 
-#include "constrainedexecutionregion.h"
 
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
