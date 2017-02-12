@@ -31,7 +31,6 @@
 #include "virtualcallstub.h"
 #include "typeparse.h"
 #include "typestring.h"
-#include "constrainedexecutionregion.h"
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "stringarraylist.h"
@@ -6492,9 +6491,6 @@ void CEEPreloader::PrePrepareMethodIfNecessary(CORINFO_METHOD_HANDLE hMethod)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_CER
-    ::PrePrepareMethodIfNecessary(hMethod);
-#endif
 }
 
 static void SetStubMethodDescOnInteropMethodDesc(MethodDesc* pInteropMD, MethodDesc* pStubMD, bool fReverseStub)

@@ -13,7 +13,6 @@
 #include "common.h"
 #include <openum.h>
 #include <mdaassistants.h>
-#include <constrainedexecutionregion.h>
 #include <ecmakey.h>
 #include <typestring.h>
 #include <jitinterface.h>

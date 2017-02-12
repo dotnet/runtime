@@ -51,7 +51,6 @@
 #include "genericdict.h"
 #include "array.h"
 #include "debuginfostore.h"
-#include "constrainedexecutionregion.h"
 #include "security.h"
 #include "safemath.h"
 #include "runtimehandles.h"
@@ -5086,29 +5085,6 @@ void CEEInfo::getCallInfo(
     }
 
 
-#ifdef FEATURE_CER
-    if (pMD == g_pPrepareConstrainedRegionsMethod && !isVerifyOnly())
-    {
-        MethodDesc * methodFromContext = GetMethodFromContext(pResolvedToken->tokenContext);
-
-        if (methodFromContext != NULL && methodFromContext->IsIL())
-        {
-            SigTypeContext typeContext;
-            GetTypeContext(pResolvedToken->tokenContext, &typeContext);
-
-            // If the method whose context we're in is attempting a call to PrepareConstrainedRegions() then we've found the root
-            // method in a Constrained Execution Region (CER). Prepare the call graph of the critical parts of that method now so
-            // they won't fail because of us at runtime.
-            MethodCallGraphPreparer mcgp(methodFromContext, &typeContext, false, false);
-            bool fMethodHasCallsWithinExplicitCer = mcgp.Run();
-            if (! g_pConfig->ProbeForStackOverflow() || ! fMethodHasCallsWithinExplicitCer)
-            {
-                // if the method does not contain any CERs that call out, we can optimize the probe away
-                pMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__PREPARE_CONSTRAINED_REGIONS_NOOP);
-            }
-        }
-    }
-#endif // FEATURE_CER
 
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
@@ -8237,16 +8213,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
-#ifdef FEATURE_CER
-    // We cannot tail call from a root CER method, the thread abort algorithm to
-    // detect CERs depends on seeing such methods on the stack.
-    if (IsCerRootMethod(pCaller))
-    {
-        result = false;
-        szFailReason = "Caller is a CER root";
-        goto exit;
-    }
-#endif // FEATURE_CER
 
     result = true;
 
