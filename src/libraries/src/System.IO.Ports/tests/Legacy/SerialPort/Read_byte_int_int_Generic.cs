@@ -6,6 +6,7 @@ using System;
 using System.IO.Ports;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Linq;
 using Legacy.Support;
 using Xunit;
 
@@ -249,7 +250,7 @@ public class Read_byte_int_int_Generic : PortsTest
             com1.Read(actualBytes, 0, actualBytes.Length);
 
             //Compare the chars that were written with the ones we expected to read
-            Assert.Equal(expectedBytes, actualBytes);
+            Assert.Equal(expectedBytes, actualBytes.Take(expectedBytes.Length).ToArray());
 
             if (1 < com1.BytesToRead)
             {

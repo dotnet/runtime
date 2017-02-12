@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.IO.PortsTests;
@@ -11,7 +12,7 @@ using Xunit;
 public class Event_Close_Stress : PortsTest
 {
     //Maximum time to wait for all of the expected events to be firered
-    public static readonly int MAX_TEST_TIME = 3 * 60 * 1000;
+    private static readonly TimeSpan TestDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(3);
 
     #region Test Cases
 
@@ -28,7 +29,7 @@ public class Event_Close_Stress : PortsTest
             com2.Open();
 
             stopwatch.Start();
-            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < MAX_TEST_TIME)
+            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
             {
                 com1.Open();
 
@@ -66,7 +67,7 @@ public class Event_Close_Stress : PortsTest
             com2.Open();
 
             stopwatch.Start();
-            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < MAX_TEST_TIME)
+            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
             {
                 com1.Open();
 
@@ -114,7 +115,7 @@ public class Event_Close_Stress : PortsTest
             frameErrorBytes[0] = 0x01;
 
             stopwatch.Start();
-            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < MAX_TEST_TIME)
+            while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
             {
                 com1.Open();
 

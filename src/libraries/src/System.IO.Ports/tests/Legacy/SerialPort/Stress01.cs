@@ -16,7 +16,7 @@ public class Write_char_int_int_stress01 : PortsTest
     private const int TRANSMIT_BUFFER_SIZE = 4096;
     private const int MAX_BUFFER_SIZE = 4096;
 
-    private const int MAX_RUN_TIME = 1000 * 60 * 20;
+    private static readonly TimeSpan TestDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(20);
 
     [ConditionalFact(nameof(HasNullModem))]
     public void WriteChars()
@@ -42,7 +42,7 @@ public class Write_char_int_int_stress01 : PortsTest
                 com2.Open();
 
             sw.Start();
-            while (sw.ElapsedMilliseconds < MAX_RUN_TIME)
+            while (sw.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
             {
                 switch (random.Next(0, 2))
                 {
