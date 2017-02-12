@@ -68,33 +68,37 @@ namespace System.Linq.Expressions
             return ReduceMemberInit(NewExpression, Bindings, keepOnStack: true);
         }
 
-        internal static Expression ReduceMemberInit(Expression objExpression, ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack)
+        private static Expression ReduceMemberInit(
+            Expression objExpression, ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack)
         {
-            ParameterExpression objVar = Expression.Variable(objExpression.Type, name: null);
+            ParameterExpression objVar = Variable(objExpression.Type);
             int count = bindings.Count;
-            var block = new Expression[count + 2];
-            block[0] = Expression.Assign(objVar, objExpression);
+            Expression[] block = new Expression[count + 2];
+            block[0] = Assign(objVar, objExpression);
             for (int i = 0; i < count; i++)
             {
                 block[i + 1] = ReduceMemberBinding(objVar, bindings[i]);
             }
+
             block[count + 1] = keepOnStack ? (Expression)objVar : Utils.Empty;
-            return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
+            return Block(new[] {objVar}, block);
         }
 
-        internal static Expression ReduceListInit(Expression listExpression, ReadOnlyCollection<ElementInit> initializers, bool keepOnStack)
+        internal static Expression ReduceListInit(
+            Expression listExpression, ReadOnlyCollection<ElementInit> initializers, bool keepOnStack)
         {
-            ParameterExpression listVar = Expression.Variable(listExpression.Type, name: null);
+            ParameterExpression listVar = Variable(listExpression.Type);
             int count = initializers.Count;
-            var block = new Expression[count + 2];
-            block[0] = Expression.Assign(listVar, listExpression);
+            Expression[] block = new Expression[count + 2];
+            block[0] = Assign(listVar, listExpression);
             for (int i = 0; i < count; i++)
             {
                 ElementInit element = initializers[i];
-                block[i + 1] = Expression.Call(listVar, element.AddMethod, element.Arguments);
+                block[i + 1] = Call(listVar, element.AddMethod, element.Arguments);
             }
+
             block[count + 1] = keepOnStack ? (Expression)listVar : Utils.Empty;
-            return Expression.Block(new TrueReadOnlyCollection<Expression>(block));
+            return Block(new[] {listVar}, block);
         }
 
         internal static Expression ReduceMemberBinding(ParameterExpression objVar, MemberBinding binding)
