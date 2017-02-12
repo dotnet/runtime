@@ -313,11 +313,6 @@ DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,   
 
 DEFINE_CLASS(RUNTIME_CLASS,                  WinRT,         RuntimeClass)
 
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-DEFINE_CLASS(ITYPE_LIB_IMPORTER_NOTIFY_SINK, Interop,       ITypeLibImporterNotifySink)
-DEFINE_CLASS(ITYPE_LIB_EXPORTER_NOTIFY_SINK, Interop,       ITypeLibExporterNotifySink)
-#endif //FEATURE_COMINTEROP_TLB_SUPPORT
-
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS_U(Interop,                CriticalHandle,             CriticalHandle)
@@ -1296,11 +1291,6 @@ DEFINE_CLASS_U(Threading,              SynchronizationContext, SynchronizationCo
 DEFINE_FIELD_U(_props, SynchronizationContextObject, _props)
 DEFINE_CLASS(SYNCHRONIZATION_CONTEXT,    Threading,              SynchronizationContext)
 DEFINE_METHOD(SYNCHRONIZATION_CONTEXT,  INVOKE_WAIT_METHOD_HELPER, InvokeWaitMethodHelper, SM_SyncCtx_ArrIntPtr_Bool_Int_RetInt)
-
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-DEFINE_CLASS(TCE_EVENT_ITF_INFO,    InteropTCE,             EventItfInfo)
-DEFINE_METHOD(TCE_EVENT_ITF_INFO,   CTOR,                   .ctor,                      IM_Str_Str_Str_Assembly_Assembly_RetVoid)
-#endif // FEATURE_COMINTEROP_TLB_SUPPORT
 
 DEFINE_CLASS(CONTEXTCALLBACK,       Threading,       ContextCallback)
 
