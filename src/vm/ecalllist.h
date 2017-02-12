@@ -748,7 +748,6 @@ FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
 FCFuncEnd()
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InitializeAssemblyLoadContext", AssemblyNative::InitializeAssemblyLoadContext)
     QCFuncElement("LoadFromPath", AssemblyNative::LoadFromPath)
@@ -763,7 +762,6 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InternalStartProfile",   MultiCoreJITNative::InternalStartProfile)
 #endif // defined(FEATURE_MULTICOREJIT)
 FCFuncEnd()
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 FCFuncStart(gAssemblyNameFuncs)
     FCFuncElement("nInit", AssemblyNameNative::Init)
@@ -1551,9 +1549,7 @@ FCClassElement("AssemblyBuilder", "System.Reflection.Emit", gAssemblyBuilderFunc
 
 FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExtensionsFuncs)
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Assert", "System.Diagnostics", gDiagnosticsAssert)

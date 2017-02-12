@@ -1339,9 +1339,7 @@ public:
 #else
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
     
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #endif
 
@@ -1393,9 +1391,7 @@ protected:
 #else
     IUnknown *m_pFusionContext; // Current binding context for the domain
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #endif    
 
@@ -2773,7 +2769,6 @@ public:
     IUnknown *CreateFusionContext();
 #endif // FEATURE_VERSIONING
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     void OverrideDefaultContextBinder(IUnknown *pOverrideBinder)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2784,7 +2779,6 @@ public:
         m_pFusionContext = pOverrideBinder;
     }
     
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #ifdef FEATURE_PREJIT
     CorCompileConfigFlags GetNativeConfigFlags();
@@ -3785,14 +3779,12 @@ private:
 #endif
 public:
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 private:
     Volatile<BOOL> m_fIsBindingModelLocked;
 public:
     BOOL IsHostAssemblyResolverInUse();
     BOOL IsBindingModelLocked();
     BOOL LockBindingModel();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 

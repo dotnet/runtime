@@ -243,7 +243,6 @@ FCIMPL10(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSA
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
     if (ptrLoadContextBinder != NULL)
@@ -258,7 +257,6 @@ FCIMPL10(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSA
         PEFile *pRefAssemblyManifestFile = pRefAssembly->GetManifestFile();
         spec.SetFallbackLoadContextBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackLoadContextBinder());
     }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     AssemblyLoadSecurity loadSecurity;
     loadSecurity.m_pAdditionalEvidence = &gc.security;
@@ -647,7 +645,6 @@ FCIMPL2(Object*, AssemblyNative::LoadFile, StringObject* pathUNSAFE, Object* sec
 }
 FCIMPLEND
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
@@ -927,7 +924,6 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     END_QCALL;
 }
 
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 /* static */
 Assembly* AssemblyNative::GetPostPolicyAssembly(PEAssembly *pFile,
@@ -2410,7 +2406,6 @@ BOOL QCALLTYPE AssemblyNative::IsDesignerBindingContext(QCall::AssemblyHandle pA
 }
 #endif // FEATURE_APPX
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 /*static*/
 INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext)
 {
@@ -2569,7 +2564,6 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     
     return ptrManagedAssemblyLoadContext;
 }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 // static
 BOOL QCALLTYPE AssemblyNative::InternalTryGetRawMetadata(

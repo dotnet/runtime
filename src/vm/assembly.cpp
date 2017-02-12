@@ -739,7 +739,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit, args->access & ASSEMBLY_ACCESS_REFLECTION_ONLY);
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
         // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
         // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
@@ -785,7 +784,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         // Set it as the fallback load context binder for the dynamic assembly being created
         pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }            
     

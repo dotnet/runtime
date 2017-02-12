@@ -42,13 +42,11 @@ class AssemblySpec  : public BaseAssemblySpec
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
     ICLRPrivBinder *m_pFallbackLoadContextBinder;
 
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
     bool m_fPreferFallbackLoadContextBinder;
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     BOOL IsValidAssemblyName();
     
@@ -76,10 +74,8 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         m_pFallbackLoadContextBinder = NULL;     
         m_fPreferFallbackLoadContextBinder = false;   
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }
 #endif //!DACCESS_COMPILE
@@ -89,10 +85,8 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT
         m_pParentAssembly = NULL;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         m_pFallbackLoadContextBinder = NULL;
         m_fPreferFallbackLoadContextBinder = false;        
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }
 
@@ -175,7 +169,6 @@ class AssemblySpec  : public BaseAssemblySpec
 #endif
     }
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     void SetFallbackLoadContextBinderForRequestingAssembly(ICLRPrivBinder *pFallbackLoadContextBinder)
     {
        LIMITED_METHOD_CONTRACT;
@@ -203,7 +196,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
         return m_fPreferFallbackLoadContextBinder;
     }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     // Note that this method does not clone the fields!
     void CopyFrom(AssemblySpec* pSource)
@@ -221,11 +213,9 @@ class AssemblySpec  : public BaseAssemblySpec
         SetIntrospectionOnly(pSource->IsIntrospectionOnly());
         SetParentAssembly(pSource->GetParentAssembly());
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         // Copy the details of the fallback load context binder
         SetFallbackLoadContextBinderForRequestingAssembly(pSource->GetFallbackLoadContextBinderForRequestingAssembly());
         m_fPreferFallbackLoadContextBinder = pSource->GetPreferFallbackLoadContextBinder();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
         m_HashForControl = pSource->m_HashForControl;
         m_dwHashAlg = pSource->m_dwHashAlg;

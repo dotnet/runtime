@@ -76,6 +76,4 @@
 
 #define g_ExceptionServicesNS         g_RuntimeNS ".ExceptionServices"
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 #define g_LoaderNS         g_RuntimeNS ".Loader" 
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
