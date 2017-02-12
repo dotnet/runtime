@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Equal(false, output.CanRead);
             }
 
-#if netcoreapp11
+#if netcoreapp
             using (MemoryStream output = new MemoryStream())
             {
                 using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: false))
