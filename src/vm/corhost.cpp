@@ -5126,12 +5126,10 @@ void CExecutionEngine::GetLastThrownObjectExceptionFromThread(void **ppvExceptio
 } // HRESULT CExecutionEngine::GetLastThrownObjectExceptionFromThread()
 
 
-#ifdef FEATURE_VERSIONING
 LocaleID RuntimeGetFileSystemLocale()
 {
     return PEImage::GetFileSystemLocale();
 };
-#endif
 
 HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName, IActivationFactory ** factory)
 {

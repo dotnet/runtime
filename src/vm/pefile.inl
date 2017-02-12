@@ -106,19 +106,7 @@ inline ULONG PEAssembly::HashIdentity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_VERSIONING
     return BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pHostAssembly)->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
-#else
-    if (!m_identity->HasID())
-    {
-        if (!IsLoaded())
-            return 0;
-        else
-            return (ULONG) dac_cast<TADDR>(GetLoaded()->GetBase());
-    }
-    else
-        return m_identity->GetIDHash();
-#endif
 }
 
 inline void PEFile::ValidateForExecution()

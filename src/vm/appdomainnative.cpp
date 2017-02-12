@@ -23,9 +23,7 @@
 #include "clrprivbinderappx.h"
 #include "clrprivtypecachewinrt.h"
 #endif // FEATURE_APPX_BINDER
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/clrprivbindercoreclr.h"
-#endif
 
 #include "clr/fs/path.h"
 using namespace clr::fs;
@@ -503,7 +501,6 @@ FCIMPL3(void, AppDomainNative::UpdateContextProperty, LPVOID fusionContext, Stri
 FCIMPLEND
 #endif  // FEATURE_FUSION
 
-#ifdef FEATURE_VERSIONING
 FCIMPL1(void,
         AppDomainNative::CreateContext,
         AppDomainBaseObject *refThisUNSAFE)
@@ -563,7 +560,6 @@ void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatf
     END_QCALL;
 }
 
-#endif // FEATURE_VERSIONING
 
 FCIMPL9(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array *securityRulesBlobUNSAFE, U1Array *aptcaBlobUNSAFE, INT32 access, INT32 dwFlags, SecurityContextSource securityContextSource)
 {
