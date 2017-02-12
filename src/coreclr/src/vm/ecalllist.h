@@ -1285,9 +1285,7 @@ FCFuncStart(gCompilerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     FCFuncElement("WaitHelperNative", SynchronizationContextNative::WaitHelper)
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 #ifdef FEATURE_APPX
     QCFuncElement("GetWinRTDispatcherForCurrentThread", SynchronizationContextNative::GetWinRTDispatcherForCurrentThread)
 #endif
@@ -1695,9 +1693,7 @@ FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StringBuilder", "System.Text", gStringBufferFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
-#if defined(FEATURE_SYNCHRONIZATIONCONTEXT_WAIT) || defined(FEATURE_APPX)
 FCClassElement("SynchronizationContext", "System.Threading", gContextSynchronizationFuncs)
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT || FEATURE_APPX
 #if !defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("TextInfo", "System.Globalization", gTextInfoFuncs)
 #endif // !defined(FEATURE_COREFX_GLOBALIZATION)
