@@ -392,7 +392,6 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult result)
         {
-            if (IsCompleted) return false;
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
@@ -413,12 +412,13 @@ namespace System.Threading.Tasks
                 // and which can be summarized more concisely with the following snippet from
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
                 Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
-                
-                var cp = m_contingentProperties;
-                if (cp != null) cp.SetCompleted();
-
-                FinishStageThree();
-
+                ContingentProperties props = m_contingentProperties;
+                if (props != null)
+                {
+                    NotifyParentIfPotentiallyAttachedTask();
+                    props.SetCompleted();
+                }
+                FinishContinuations();
                 return true;
             }
 

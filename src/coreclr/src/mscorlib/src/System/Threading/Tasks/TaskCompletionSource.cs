@@ -276,7 +276,7 @@ namespace System.Threading.Tasks
         public bool TrySetResult(TResult result)
         {
             bool rval = m_task.TrySetResult(result);
-            if (!rval && !m_task.IsCompleted) SpinUntilCompleted();
+            if (!rval) SpinUntilCompleted();
             return rval;
         }
 
