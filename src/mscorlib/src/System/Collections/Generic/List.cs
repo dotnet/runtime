@@ -12,14 +12,13 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections.Generic {
-
+namespace System.Collections.Generic
+{
     using System;
-    using System.Runtime;
-    using System.Runtime.Versioning;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
     using System.Collections.ObjectModel;
+    using Runtime.CompilerServices;
 
     // Implements a variable-size List that uses an array of objects to store the
     // elements. A List has a capacity, which is the allocated length
@@ -291,13 +290,23 @@ namespace System.Collections.Generic {
 
     
         // Clears the contents of List.
-        public void Clear() {
-            if (_size > 0)
+        public void Clear()
+        {
+            if (JitHelpers.ContainsReferences<T>())
             {
-                Array.Clear(_items, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+                int size = _size;
                 _size = 0;
+                _version++;
+                if (size > 0)
+                {
+                    Array.Clear(_items, 0, size); // Clear the elements so that the gc can reclaim the references.
+                }
             }
-            _version++;
+            else
+            {
+                _size = 0;
+                _version++;
+            }
         }
     
         // Contains returns true if the specified element is in the List.
@@ -852,9 +861,13 @@ namespace System.Collections.Generic {
                     // copy item to the free slot.
                     _items[freeIndex++] = _items[current++];
                 }
-            }                       
-            
-            Array.Clear(_items, freeIndex, _size - freeIndex);
+            }
+
+            if (JitHelpers.ContainsReferences<T>())
+            {
+                Array.Clear(_items, freeIndex, _size - freeIndex); // Clear the elements so that the gc can reclaim the references.
+            }
+
             int result = _size - freeIndex;
             _size = freeIndex;
             _version++;
@@ -870,10 +883,14 @@ namespace System.Collections.Generic {
             }
             Contract.EndContractBlock();
             _size--;
-            if (index < _size) {
+            if (index < _size)
+            {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
-            _items[_size] = default(T);
+            if (JitHelpers.ContainsReferences<T>())
+            {
+                _items[_size] = default(T);
+            }
             _version++;
         }
     
@@ -898,8 +915,12 @@ namespace System.Collections.Generic {
                 if (index < _size) {
                     Array.Copy(_items, index + count, _items, index, _size - index);
                 }
-                Array.Clear(_items, _size, count);
+
                 _version++;
+                if (JitHelpers.ContainsReferences<T>())
+                {
+                    Array.Clear(_items, _size, count);
+                }
             }
         }
     
