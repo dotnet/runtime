@@ -888,10 +888,8 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 enum ExceptionNotificationHandlerType
 {
     UnhandledExceptionHandler   = 0x1
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     ,
     FirstChanceExceptionHandler = 0x2
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 };
 
 // Defined in Frames.h
@@ -900,7 +898,6 @@ enum ExceptionNotificationHandlerType
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
     void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
@@ -932,7 +929,6 @@ public:
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     BOOL static CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity);
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 public:
     void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, 
