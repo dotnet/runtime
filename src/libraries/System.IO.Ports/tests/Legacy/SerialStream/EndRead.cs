@@ -17,8 +17,7 @@ namespace Legacy.SerialStream
     {
         #region Test Cases
 
-        [ActiveIssue(16055)]
-        [ConditionalFact(nameof(HasNullModem))]
+       [ConditionalFact(nameof(HasNullModem))]
         public void EndReadAfterClose()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -42,9 +41,10 @@ namespace Legacy.SerialStream
 
                 VerifyEndReadException(serialStream, asyncResult, null);
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasNullModem))]
         public void EndReadAfterSerialStreamClose()
         {
@@ -69,9 +69,10 @@ namespace Legacy.SerialStream
 
                 VerifyEndReadException(serialStream, asyncResult, null);
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
@@ -84,7 +85,6 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_WriteResult()
         {
@@ -98,9 +98,11 @@ namespace Legacy.SerialStream
                 IAsyncResult writeAsyncResult = com.BaseStream.BeginWrite(new byte[8], 0, 8, null, null);
                 VerifyEndReadException(com.BaseStream, writeAsyncResult, typeof(ArgumentException));
             }
+            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
+
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleSameResult()
         {
@@ -121,9 +123,11 @@ namespace Legacy.SerialStream
 
                 VerifyEndReadException(com1.BaseStream, readAsyncResult, typeof(ArgumentException));
             }
+            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
+
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleInOrder()
         {
@@ -166,9 +170,11 @@ namespace Legacy.SerialStream
                         endReadReturnValue);
                 }
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
+
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleOutOfOrder()
         {
@@ -212,9 +218,9 @@ namespace Legacy.SerialStream
                     Fail("ERROR!!! Expected EndRead to return={0} actual={1} for first read", numBytesToRead1,
                         endReadReturnValue);
                 }
-
-
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
         #endregion
 

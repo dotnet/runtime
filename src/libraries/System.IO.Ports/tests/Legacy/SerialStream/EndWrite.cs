@@ -16,8 +16,7 @@ namespace Legacy.SerialStream
     public class EndWrite : PortsTest
     {
         #region Test Cases
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void EndWriteAfterClose()
         {
@@ -33,9 +32,10 @@ namespace Legacy.SerialStream
 
                 VerifyEndWriteException(serialStream, asyncResult, null);
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void EndWriteAfterSerialStreamClose()
         {
@@ -50,15 +50,11 @@ namespace Legacy.SerialStream
                 serialStream.Close();
 
                 VerifyEndWriteException(serialStream, asyncResult, null);
-
-                com.Close();
-                Thread.Sleep(200);
-
-                // Give the port time to finish closing since we have an unclosed BeginWrite - see  - see Dev10 #591344
             }
+            // Give the port time to finish closing since we have an unclosed BeginWrite - see  - see Dev10 #591344
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_Null()
         {
@@ -71,7 +67,6 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_ReadResult()
         {
@@ -84,15 +79,14 @@ namespace Legacy.SerialStream
                 com.BaseStream.BeginWrite(new byte[8], 0, 8, null, null);
                 com.BaseStream.BeginWrite(new byte[8], 0, 8, null, null);
 
-                IAsyncResult writeAsyncResult = com.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
-                VerifyEndWriteException(com.BaseStream, writeAsyncResult, typeof(ArgumentException));
+                IAsyncResult readAsyncResult = com.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
+                VerifyEndWriteException(com.BaseStream, readAsyncResult, typeof(ArgumentException));
 
-                // Not needed if this scenario is run last.
-                // System.Threading.Thread.Sleep(200);  // Give the port time to finish closing since we have an unclosed BeginWrite
             }
+            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleSameResult()
         {
@@ -109,9 +103,10 @@ namespace Legacy.SerialStream
 
                 VerifyEndWriteException(com.BaseStream, writeAsyncResult, typeof(ArgumentException));
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleInOrder()
         {
@@ -131,9 +126,11 @@ namespace Legacy.SerialStream
                 com.BaseStream.EndWrite(readAsyncResult2);
                 com.BaseStream.EndWrite(readAsyncResult3);
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleOutOfOrder()
         {
@@ -154,9 +151,10 @@ namespace Legacy.SerialStream
                 com.BaseStream.EndWrite(readAsyncResult3);
                 com.BaseStream.EndWrite(readAsyncResult1);
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void InBreak()
         {
@@ -173,6 +171,8 @@ namespace Legacy.SerialStream
 
                 com1.DiscardOutBuffer();
             }
+            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
         #endregion
 

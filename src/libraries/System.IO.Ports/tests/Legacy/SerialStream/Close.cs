@@ -18,8 +18,7 @@ namespace Legacy.SerialStream
         // The number of the bytes that should read/write buffers
         private static readonly int numReadBytes = 32;
         private static readonly int numWriteBytes = 32;
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_WriteMethods()
         {
@@ -36,7 +35,6 @@ namespace Legacy.SerialStream
                 catch (InvalidOperationException)
                 {
                 }
-            
 
                 try
                 {
@@ -63,8 +61,7 @@ namespace Legacy.SerialStream
                 }
             }
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_ReadMethods()
         {
@@ -123,8 +120,7 @@ namespace Legacy.SerialStream
                 }
             }
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_DiscardMethods()
         {
@@ -152,7 +148,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_OpenClose()
         {
@@ -183,7 +179,6 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_Properties()
         {
@@ -201,8 +196,7 @@ namespace Legacy.SerialStream
                 serPortProp.VerifyPropertiesAndPrint(com);
             }
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasNullModem))]
         public void OpenFillBuffersClose()
         {
@@ -257,9 +251,10 @@ namespace Legacy.SerialStream
                 {
                 }
             }
+            // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
+            Thread.Sleep(200);
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenCloseNewInstanceOpen()
         {
@@ -297,8 +292,7 @@ namespace Legacy.SerialStream
                 }
             }
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Open()
         {
@@ -317,8 +311,7 @@ namespace Legacy.SerialStream
                 serPortProp.VerifyPropertiesAndPrint(com);
             }
         }
-
-        [ActiveIssue(16055)]
+        
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Close()
         {
@@ -339,7 +332,6 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16055)]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_MultipleBaseStreamClose()
         {
