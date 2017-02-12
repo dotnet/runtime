@@ -1929,51 +1929,6 @@ BOOL QCALLTYPE ThreadNative::YieldThread()
     return ret;
 }
 
-#ifdef FEATURE_COMPRESSEDSTACK
-FCIMPL2(void*, ThreadNative::SetAppDomainStack, ThreadBaseObject* pThis, SafeHandle* hcsUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    void* pRet = NULL;
-    SAFEHANDLE hcsSAFE = (SAFEHANDLE) hcsUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(hcsSAFE);
-
-
-    void* unmanagedCompressedStack = NULL;
-    if (hcsSAFE != NULL)
-    {
-        unmanagedCompressedStack = (void *)hcsSAFE->GetHandle();
-    }
-
-
-    VALIDATEOBJECT(pThis);
-    Thread *pThread = pThis->GetInternal();
-    if (pThread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    pRet = StackCompressor::SetAppDomainStack(pThread, unmanagedCompressedStack);
-    HELPER_METHOD_FRAME_END_POLL();
-    return pRet;
-}
-FCIMPLEND
-
-
-FCIMPL2(void, ThreadNative::RestoreAppDomainStack, ThreadBaseObject* pThis, void* appDomainStack)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    VALIDATEOBJECT(pThis);
-    Thread *pThread = pThis->GetInternal();
-    if (pThread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    StackCompressor::RestoreAppDomainStack(pThread, appDomainStack);
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-#endif //#ifdef FEATURE_COMPRESSEDSTACK
 
 FCIMPL0(void, ThreadNative::FCMemoryBarrier)
 {

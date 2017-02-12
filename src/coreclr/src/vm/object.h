@@ -1508,10 +1508,6 @@ class PermissionListSetObject: public Object
 private:
     OBJECTREF _firstPermSetTriple;
     OBJECTREF _permSetTriples;
-#ifdef FEATURE_COMPRESSEDSTACK
-    OBJECTREF _zoneList;
-    OBJECTREF _originList;
-#endif // FEATURE_COMPRESSEDSTACK
 
 public:
     BOOL IsEmpty() 
@@ -1519,10 +1515,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (_firstPermSetTriple == NULL &&
                 _permSetTriples == NULL
-#ifdef FEATURE_COMPRESSEDSTACK
-                && _zoneList == NULL &&
-                _originList == NULL
-#endif // FEATURE_COMPRESSEDSTACK
                 );
     }
 };
@@ -1532,36 +1524,8 @@ typedef REF<PermissionListSetObject> PERMISSIONLISTSETREF;
 #else
 typedef PermissionListSetObject*     PERMISSIONLISTSETREF;
 #endif
-#ifdef FEATURE_COMPRESSEDSTACK
-class CompressedStackObject: public Object
-{
-    friend class MscorlibBinder;
-
-private:
-    // These field are also defined in the managed representation.  (CompressedStack.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size. 
-    PERMISSIONLISTSETREF m_pls;
-    SAFEHANDLEREF m_compressedStackHandle;
-
-public:
-    void* GetUnmanagedCompressedStack();
-    BOOL IsEmptyPLS() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pls == NULL || m_pls->IsEmpty());
-    }
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<CompressedStackObject> COMPRESSEDSTACKREF;
-#else
-typedef CompressedStackObject*     COMPRESSEDSTACKREF;
-#endif
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
     
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
 class SecurityContextObject: public Object
 {
     friend class MscorlibBinder;
@@ -1577,19 +1541,9 @@ private:
 #ifdef FEATURE_IMPERSONATION
     OBJECTREF               _windowsIdentity;
 #endif // FEATURE_IMPERSONATION
-#ifdef FEATURE_COMPRESSEDSTACK
-    COMPRESSEDSTACKREF      _compressedStack;
-#endif // FEATURE_COMPRESSEDSTACK
     INT32                   _disableFlow;
     CLR_BOOL                _isNewCapture;
 public:
-#ifdef FEATURE_COMPRESSEDSTACK    
-    COMPRESSEDSTACKREF GetCompressedStack()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _compressedStack;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -1597,7 +1551,7 @@ typedef REF<SecurityContextObject> SECURITYCONTEXTREF;
 #else
 typedef SecurityContextObject*     SECURITYCONTEXTREF;
 #endif
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#endif // #if defined(FEATURE_IMPERSONATION)
 
 #define SYNCCTXPROPS_REQUIRESWAITNOTIFICATION 0x1 // Keep in sync with SynchronizationContext.cs SynchronizationContextFlags
 class ThreadBaseObject;
@@ -2109,15 +2063,6 @@ public:
         return m_SynchronizationContext;
     }
 
-#ifdef FEATURE_COMPRESSEDSTACK    
-    COMPRESSEDSTACKREF GetCompressedStack()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (m_ExecutionContext != NULL)
-            return m_ExecutionContext->GetCompressedStack();
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
     // SetDelegate is our "constructor" for the pathway where the exposed object is
     // created first.  InitExisting is our "constructor" for the pathway where an
     // existing physical thread is later exposed.
@@ -2683,20 +2628,6 @@ class FrameSecurityDescriptorBaseObject : public Object
     }
 };
 
-#ifdef FEATURE_COMPRESSEDSTACK
-class FrameSecurityDescriptorWithResolverBaseObject : public FrameSecurityDescriptorBaseObject
-{
-public:
-    OBJECTREF m_resolver;
-
-public:
-    void SetDynamicMethodResolver(OBJECTREF resolver)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_resolver, resolver, this->GetAppDomain());
-    }
-};
-#endif // FEATURE_COMPRESSEDSTACK
 
 class WeakReferenceObject : public Object
 {
@@ -2730,9 +2661,6 @@ typedef REF<VersionBaseObject> VERSIONREF;
 
 typedef REF<FrameSecurityDescriptorBaseObject> FRAMESECDESCREF;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-typedef REF<FrameSecurityDescriptorWithResolverBaseObject> FRAMESECDESWITHRESOLVERCREF;
-#endif // FEATURE_COMPRESSEDSTACK
 
 typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
 
@@ -2785,9 +2713,6 @@ typedef MarshalByRefObjectBaseObject* MARSHALBYREFOBJECTBASEREF;
 typedef VersionBaseObject* VERSIONREF;
 typedef FrameSecurityDescriptorBaseObject* FRAMESECDESCREF;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-typedef FrameSecurityDescriptorWithResolverBaseObject* FRAMESECDESWITHRESOLVERCREF;
-#endif // FEATURE_COMPRESSEDSTACK
 
 typedef WeakReferenceObject* WEAKREFERENCEREF;
 #endif // #ifndef DACCESS_COMPILE

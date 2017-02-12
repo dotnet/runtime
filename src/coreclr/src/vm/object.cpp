@@ -25,13 +25,6 @@
 #include "gcscan.h"
 #include "argdestination.h"
 
-#ifdef FEATURE_COMPRESSEDSTACK
-void* CompressedStackObject::GetUnmanagedCompressedStack()
-{
-    LIMITED_METHOD_CONTRACT;  
-    return ((m_compressedStackHandle != NULL)?m_compressedStackHandle->GetHandle():NULL);
-}
-#endif // FEATURE_COMPRESSEDSTACK
 
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 

@@ -135,10 +135,6 @@ namespace Security
     inline void FullTrustLinkDemand(Assembly *pTargetAssembly);
 
     // Compressed Stack
-#ifdef FEATURE_COMPRESSEDSTACK
-    inline COMPRESSEDSTACKREF GetCSFromContextTransitionFrame(Frame *pFrame) ;
-    inline BOOL IsContextTransitionFrameWithCS(Frame *pFrame);
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     // Misc - todo: put these in better categories
     

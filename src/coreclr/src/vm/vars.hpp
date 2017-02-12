@@ -177,12 +177,9 @@ class OBJECTREF {
         class TransparentProxyObject* m_asTP;
 
         class ReflectClassBaseObject* m_asReflectClass;
-#ifdef FEATURE_COMPRESSEDSTACK        
-        class CompressedStackObject* m_asCompressedStack;
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
         class SecurityContextObject* m_asSecurityContext;
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#endif // #if defined(FEATURE_IMPERSONATION)
         class ExecutionContextObject* m_asExecutionContext;
         class AppDomainBaseObject* m_asAppDomainBase;
         class PermissionSetObject* m_asPermissionSetObject;
