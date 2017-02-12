@@ -85,10 +85,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(pCertContext, h);
                 pCertContext = IntPtr.Zero;
 
-#if netstandard17
                 Assert.Equal(rawData, c.GetRawCertData());
                 Assert.Equal(rawData, c.GetRawCertDataString().HexToByteArray());
-#endif
 
                 string issuer = c.Issuer;
                 Assert.Equal(

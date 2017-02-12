@@ -11,7 +11,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup>
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Read.netstandard.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.netstandard.cs" />

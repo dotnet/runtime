@@ -109,8 +109,6 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="TypeBuilder\TypeBuilderCreateType.netstandard.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

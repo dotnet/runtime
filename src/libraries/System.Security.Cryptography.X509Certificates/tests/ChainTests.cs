@@ -63,7 +63,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static void VerifyChainFromHandle()
@@ -194,7 +193,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(valid, "Chain built validly after reset");
             }
         }
-#endif
 
         /// <summary>
         /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,

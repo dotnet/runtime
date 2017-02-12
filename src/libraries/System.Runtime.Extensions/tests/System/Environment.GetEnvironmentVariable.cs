@@ -18,7 +18,6 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
             Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
 
-#if netstandard17
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
@@ -29,7 +28,6 @@ namespace System.Tests
             {
                 Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
-#endif
         }
 
         [Fact]
@@ -149,7 +147,6 @@ namespace System.Tests
             }
         }
 
-#if netstandard17
         public void EnvironmentVariablesAreHashtable()
         {
             // On NetFX, the type returned was always Hashtable
@@ -213,7 +210,6 @@ namespace System.Tests
                 }
             }
         }
-#endif
 
         private static void SetEnvironmentVariableWithPInvoke(string name, string value)
         {

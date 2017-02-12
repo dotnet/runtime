@@ -45,7 +45,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <ItemGroup>
     <Compile Include="KeyedCollection\Serialization.netstandard.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.netstandard.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_Serialization.netstandard.cs" />

@@ -20,7 +20,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
         protected override int BlockSize { get { return 128; } }
 
-#if netstandard17
         [Fact]
         public void ProduceLegacyHmacValues()
         {
@@ -31,7 +30,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => h.ProduceLegacyHmacValues = true);
             }
         }
-#endif
 
         [Fact]
         public void HmacSha384_Rfc4231_1()

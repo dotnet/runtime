@@ -10,10 +10,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="WebSocketTests.cs" />
-  </ItemGroup>
   <ItemGroup>
+    <Compile Include="WebSocketTests.cs" />
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
   </ItemGroup>

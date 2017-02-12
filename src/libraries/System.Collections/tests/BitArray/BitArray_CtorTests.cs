@@ -236,7 +236,6 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentException>("bytes", () => new BitArray(new byte[int.MaxValue / BitsPerByte + 1 ]));
         }
 
-#if netstandard17
         [Fact]
         public static void Ctor_Simple_Method_Tests()
         {
@@ -258,6 +257,5 @@ namespace System.Collections.Tests
 
             Assert.Equal(bitArray.Length, clone.Length);  
         }
-#endif //netstandard17
     }
 }

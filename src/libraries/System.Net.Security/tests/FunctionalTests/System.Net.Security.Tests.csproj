@@ -89,7 +89,7 @@
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <ItemGroup>
     <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>

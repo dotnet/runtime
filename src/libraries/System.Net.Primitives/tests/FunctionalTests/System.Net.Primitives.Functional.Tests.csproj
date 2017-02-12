@@ -4,9 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{E671BC9F-A64C-4504-8B00-7A3215B99AF9}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <DefineConstants>NetStandard17</DefineConstants>
-  </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
@@ -27,8 +24,6 @@
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
     <Compile Include="SocketAddressTest.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="LoggingTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />

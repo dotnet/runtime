@@ -241,7 +241,6 @@ Wry5FNNo
             }
         }
 
-#if netstandard17
         [Fact]
         public static void TestPrivateKey()
         {
@@ -250,7 +249,6 @@ Wry5FNNo
                 Assert.Null(c.PrivateKey);
             }
         }
-#endif
 
         [Fact]
         public static void TestVersion()

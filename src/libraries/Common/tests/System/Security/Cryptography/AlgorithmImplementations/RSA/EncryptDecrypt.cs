@@ -215,7 +215,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-#if netstandard17
         [Fact]
         public static void NotSupportedValueMethods()
         {
@@ -225,6 +224,5 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
             }
         }
-#endif
     }
 }
