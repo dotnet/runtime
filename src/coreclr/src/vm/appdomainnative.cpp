@@ -19,10 +19,6 @@
 #if defined(FEATURE_APPX)
 #include "appxutil.h"
 #endif // FEATURE_APPX
-#if defined(FEATURE_APPX_BINDER)
-#include "clrprivbinderappx.h"
-#include "clrprivtypecachewinrt.h"
-#endif // FEATURE_APPX_BINDER
 #include "../binder/inc/clrprivbindercoreclr.h"
 
 #include "clr/fs/path.h"
@@ -1412,55 +1408,4 @@ FCIMPL0(INT64, AppDomainNative::GetLastSurvivedProcessMemorySize)
 FCIMPLEND
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
-#if defined(FEATURE_APPX_BINDER)
-ICLRPrivBinder * QCALLTYPE AppDomainNative::CreateDesignerContext(LPCWSTR *rgPaths, 
-                                                            UINT cPaths,
-                                                            BOOL fShared)
-{
-    QCALL_CONTRACT;
-
-    ICLRPrivBinder *pRetVal = nullptr;
-
-    BEGIN_QCALL;
-    ReleaseHolder<ICLRPrivBinder> pBinder;
-
-     // The runtime check is done on the managed side to enable the debugger to use
-     // FuncEval to create designer contexts outside of DesignMode.
-    _ASSERTE(AppX::IsAppXDesignMode() || (AppX::IsAppXProcess() && CORDebuggerAttached()));
-
-    AppDomain *pAppDomain = GetAppDomain();
-
-    pBinder = CLRPrivBinderAppX::CreateParentedBinder(fShared ? pAppDomain->GetLoadContextHostBinder() : pAppDomain->GetSharedContextHostBinder(), CLRPrivTypeCacheWinRT::GetOrCreateTypeCache(), rgPaths, cPaths, fShared /* fCanUseNativeImages */);
-
-    {
-        BaseDomain::LockHolder lh(pAppDomain);
-        pAppDomain->AppDomainInterfaceReleaseList.Append(pRetVal);
-    }
-    pBinder.SuppressRelease();
-    pRetVal = pBinder;
-    
-    END_QCALL;
-
-    return pRetVal;
-}
-
-void QCALLTYPE AppDomainNative::SetCurrentDesignerContext(BOOL fDesignerContext, ICLRPrivBinder *newContext)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    if (fDesignerContext)
-    {
-        GetAppDomain()->SetCurrentContextHostBinder(newContext);
-    }
-    else
-    {
-        // Managed code is responsible for ensuring this isn't called more than once per AppDomain.
-        GetAppDomain()->SetSharedContextHostBinder(newContext);
-    }
-
-    END_QCALL;
-}
-#endif // defined(FEATURE_APPX_BINDER)
 

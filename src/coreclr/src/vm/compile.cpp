@@ -48,11 +48,6 @@
 #include "cgensys.h"
 #include "peimagelayout.inl"
 
-#if defined(FEATURE_APPX_BINDER)
-#include "appxutil.h"
-#include "clrprivbinderappx.h"
-#include "clrprivtypecachewinrt.h"
-#endif // defined(FEATURE_APPX_BINDER)
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderwinrt.h"
@@ -160,17 +155,6 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
     if (pEmitter)
         pCompilationDomain->SetDependencyEmitter(pEmitter);
     
-#if defined(FEATURE_APPX_BINDER)
-    if (AppX::IsAppXProcess())
-    {
-        HRESULT hr = S_OK;
-        ReleaseHolder<ICLRPrivBinder> pBinderInterface;
-        CLRPrivBinderAppX * pBinder = CLRPrivBinderAppX::GetOrCreateBinder();
-        
-        IfFailThrow(pBinder->QueryInterface(IID_ICLRPrivBinder, &pBinderInterface));
-        pCompilationDomain->SetLoadContextHostBinder(pBinderInterface);
-    }
-#endif // defined(FEATURE_APPX_BINDER)
 
 #ifdef DEBUGGING_SUPPORTED 
     // Notify the debugger here, before the thread transitions into the
@@ -498,10 +482,8 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-#ifndef FEATURE_APPX_BINDER
             if (spec.CanUseWithBindingCache() && pDomainAssembly->CanUseWithBindingCache())
                 pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
-#endif
 
 
             {

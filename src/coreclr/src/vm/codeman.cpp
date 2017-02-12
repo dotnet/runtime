@@ -1669,23 +1669,6 @@ BOOL EEJitManager::LoadJIT()
             }
         }
 
-#if defined(FEATURE_APPX_BINDER)
-        if (!fUsingCompatJit)
-        {
-            // AppX applications don't have a .config file for per-app configuration. So, we allow the placement of a single
-            // distinguished file, "UseLegacyJit.txt" in the root of the app's package to indicate that the app should fall
-            // back to JIT64. This same file is also used to prevent this app from participating in AutoNgen.
-            if (AppX::IsAppXProcess())
-            {
-                WCHAR szPathName[MAX_LONGPATH];
-                UINT32 cchPathName = MAX_LONGPATH;
-                if (AppX::FindFileInCurrentPackage(L"UseLegacyJit.txt", &cchPathName, szPathName, PACKAGE_FILTER_HEAD) == S_OK)
-                {
-                    fUsingCompatJit = TRUE;
-                }
-            }
-        }
-#endif // FEATURE_APPX_BINDER
 
         if (fUsingCompatJit)
         {

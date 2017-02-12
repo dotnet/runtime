@@ -117,13 +117,6 @@ public:
 
 
 
-#if defined(FEATURE_APPX_BINDER)
-    static
-    ICLRPrivBinder * QCALLTYPE CreateDesignerContext(LPCWSTR *rgPaths, UINT cPaths, BOOL fShared);
-
-    static
-    void QCALLTYPE SetCurrentDesignerContext(BOOL fDesignerContext, ICLRPrivBinder *newContext);
-#endif
 };
 
 #endif
