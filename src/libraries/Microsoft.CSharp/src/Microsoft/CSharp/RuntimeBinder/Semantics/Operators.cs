@@ -540,6 +540,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return bofs.pfn(ek, flags, expr1, expr2);
             }
             Debug.Assert(bofs.fnkind != BinOpFuncKind.BoolBitwiseOp);
+            if (IsEnumArithmeticBinOp(ek, info))
+            {
+                EXPR expr1 = info.arg1;
+                EXPR expr2 = info.arg2;
+                if (bofs.ConvertOperandsBeforeBinding())
+                {
+                    expr1 = mustConvert(expr1, bofs.Type1());
+                    expr2 = mustConvert(expr2, bofs.Type2());
+                }
+
+                return BindLiftedEnumArithmeticBinOp(ek, flags, expr1, expr2);
+            }
             return BindLiftedStandardBinOp(info, bofs, ek, flags);
         }
         private EXPR BindLiftedStandardBinOp(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
@@ -846,6 +858,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 prgbofs.Add(new BinOpFullSig(typeSig1, typeSig2, BindEnumBinOp, OpSigFlags.Value, grflt, BinOpFuncKind.EnumBinOp));
             }
+            return false;
+        }
+
+        private bool IsEnumArithmeticBinOp(ExpressionKind ek, BinOpArgInfo info)
+        {
+            switch (ek)
+            {
+                case ExpressionKind.EK_ADD:
+                    return info.typeRaw1.isEnumType() ^ info.typeRaw2.isEnumType();
+                case ExpressionKind.EK_SUB:
+                    return info.typeRaw1.isEnumType() | info.typeRaw2.isEnumType();
+            }
+
             return false;
         }
 
@@ -2364,6 +2389,64 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(!typeDst.isPredefType(PredefinedType.PT_BOOL));
                 exprRes = mustCast(exprRes, typeDst, CONVERTTYPE.NOUDC);
+            }
+
+            return exprRes;
+        }
+
+        private EXPR BindLiftedEnumArithmeticBinOp(ExpressionKind ek, EXPRFLAG flags, EXPR arg1, EXPR arg2)
+        {
+            Debug.Assert(ek == ExpressionKind.EK_ADD || ek == ExpressionKind.EK_SUB);
+            CType nonNullableType1 = arg1.type.IsNullableType() ? arg1.type.AsNullableType().UnderlyingType : arg1.type;
+            CType nonNullableType2 = arg2.type.IsNullableType() ? arg2.type.AsNullableType().UnderlyingType : arg2.type;
+            if (nonNullableType1.IsNullType())
+            {
+                nonNullableType1 = nonNullableType2.underlyingEnumType();
+            }
+            else if (nonNullableType2.IsNullType())
+            {
+                nonNullableType2 = nonNullableType1.underlyingEnumType();
+            }
+
+            NullableType typeDst = GetTypes().GetNullable(GetEnumBinOpType(ek, nonNullableType1, nonNullableType2, out AggregateType typeEnum));
+
+            Debug.Assert(typeEnum != null);
+            PredefinedType ptOp;
+
+            switch (typeEnum.fundType())
+            {
+                default:
+                    // Promote all smaller types to int.
+                    ptOp = PredefinedType.PT_INT;
+                    break;
+                case FUNDTYPE.FT_U4:
+                    ptOp = PredefinedType.PT_UINT;
+                    break;
+                case FUNDTYPE.FT_I8:
+                    ptOp = PredefinedType.PT_LONG;
+                    break;
+                case FUNDTYPE.FT_U8:
+                    ptOp = PredefinedType.PT_ULONG;
+                    break;
+            }
+
+            NullableType typeOp = GetTypes().GetNullable(GetReqPDT(ptOp));
+            arg1 = mustCast(arg1, typeOp, CONVERTTYPE.NOUDC);
+            arg2 = mustCast(arg2, typeOp, CONVERTTYPE.NOUDC);
+
+            EXPRBINOP exprRes = GetExprFactory().CreateBinop(ek, typeOp, arg1, arg2);
+            exprRes.isLifted = true;
+            exprRes.flags |= flags;
+            Debug.Assert((exprRes.flags & EXPRFLAG.EXF_LVALUE) == 0);
+
+            if (!exprRes.isOK())
+            {
+                return exprRes;
+            }
+
+            if (exprRes.type != typeDst)
+            {
+                return mustCast(exprRes, typeDst, CONVERTTYPE.NOUDC);
             }
 
             return exprRes;
