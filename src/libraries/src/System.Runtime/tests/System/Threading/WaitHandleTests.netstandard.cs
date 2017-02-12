@@ -111,6 +111,7 @@ namespace System.Threading.Tests
         [Theory]
         [MemberData(nameof(SignalAndWait_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)] // other platforms don't support SignalAndWait
+        [ActiveIssue(16074)]
         private static void SignalAndWait(
             WaitHandle toSignal,
             AutoResetEvent toWaitOn,

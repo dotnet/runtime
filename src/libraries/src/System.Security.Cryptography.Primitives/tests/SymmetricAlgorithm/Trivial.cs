@@ -10,8 +10,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
 {
     public static class TrivialTests
     {
-        
-#if netstandard17 
         [Theory]
         [InlineData(-1)]
         [InlineData(0)]
@@ -60,7 +58,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 Assert.True(t.IsDisposed);
             }
         }
-#endif
 
         [Fact]
         public static void TestAutomaticKey()
@@ -378,14 +375,10 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 PaddingValue = (PaddingMode)anyValue;
             }
 
-#if netstandard17
-
             public void SetFeedbackSize(int value)
             {
                 FeedbackSizeValue = value;
             }
-
-#endif
 
             public static readonly byte[] GeneratedKey = GenerateRandom(13);
             public static readonly byte[] GeneratedIV = GenerateRandom(5);

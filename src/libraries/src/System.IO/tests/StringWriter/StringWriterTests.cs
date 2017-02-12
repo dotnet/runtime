@@ -235,7 +235,6 @@ namespace System.IO.Tests
             Assert.Equal(sb.ToString(), sw.GetStringBuilder().ToString());
         }
 
-#if netstandard17
         [Fact]
         public static void Closed_DisposedExceptions()
         {
@@ -243,7 +242,6 @@ namespace System.IO.Tests
             sw.Close();
             ValidateDisposedExceptions(sw);
         }
-#endif //netstandard17
 
         [Fact]
         public static void Disposed_DisposedExceptions()

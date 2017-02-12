@@ -64,7 +64,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.10040.4.1", pk.Oid.Value);
         }
 
-#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_RSA()
         {
@@ -118,7 +117,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expected_q, dsaParameters.Q);
             Assert.Equal(expected_y, dsaParameters.Y);
         }
-#endif
 
         [Fact]
         public static void TestEncodedKeyValue_RSA()
@@ -310,7 +308,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_ECDsa()
         {
@@ -320,7 +317,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<NotSupportedException>(() => cert.PublicKey.Key);
             }
         }
-#endif
 
         [Fact]
         public static void TestECDsaPublicKey_ValidatesSignature()

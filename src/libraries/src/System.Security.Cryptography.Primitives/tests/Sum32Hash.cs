@@ -8,17 +8,10 @@ namespace System.Security.Cryptography.Hashing.Tests
     {
         private uint _sum;
 
-#if netstandard17
         public Sum32Hash()
         {
             HashSizeValue = sizeof(uint);
         }
-#else
-        public override int HashSize
-        {
-            get { return sizeof(uint); }
-        }
-#endif
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {

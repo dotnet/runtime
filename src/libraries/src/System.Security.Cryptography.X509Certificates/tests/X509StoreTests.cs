@@ -18,7 +18,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [Fact]
         public static void Constructor_DefaultStoreName()
         {
@@ -94,7 +93,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             Assert.Throws<CryptographicException>(() => store.StoreHandle);
         }
-#endif
 
         [Fact]
         public static void ReadMyCertificates()
@@ -216,10 +214,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestAddAndRemove() {}
 
-#if netstandard17
         [Fact]
         public static void TestAddRangeAndRemoveRange() {}
-#endif
         */
 
         [Fact]

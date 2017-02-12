@@ -297,7 +297,6 @@ namespace System.Collections.Tests
 
         #region CreateSetComparer
 
-#if netstandard17
         [Fact]
         public void SetComparer_SetEqualsTests()
         {
@@ -331,7 +330,6 @@ namespace System.Collections.Tests
             Assert.True(comparerSet1.SetEquals(set));
             Assert.True(comparerSet2.SetEquals(set));
         }
-#endif
         #endregion
     }
 }

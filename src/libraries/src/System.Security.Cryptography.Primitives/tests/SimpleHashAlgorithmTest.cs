@@ -146,7 +146,6 @@ namespace System.Security.Cryptography.Hashing.Tests
             }
         }
 
-#if netstandard17 
         [Fact]
         public void ClearIsDispose()
         {
@@ -160,7 +159,6 @@ namespace System.Security.Cryptography.Hashing.Tests
                 Assert.Throws<ObjectDisposedException>(() => hash.ComputeHash(stream));
             }
         }
-#endif
 
         private void ArrayHash(byte[] array)
         {

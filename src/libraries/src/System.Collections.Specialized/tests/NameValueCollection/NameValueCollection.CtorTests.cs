@@ -20,7 +20,7 @@ namespace System.Collections.Specialized.Tests
 
             Assert.False(((ICollection)nameValueCollection).IsSynchronized);
         }
-#if netstandard17
+
         [Fact]
         public void Ctor_Provider_Comparer()
         {
@@ -46,7 +46,6 @@ namespace System.Collections.Specialized.Tests
 
             Assert.False(((ICollection)nameValueCollection).IsSynchronized);
         }
-#endif //netstandard17
 
         [Theory]
         [InlineData(0)]
