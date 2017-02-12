@@ -32,9 +32,7 @@
 #endif
 #include "strongnameinternal.h"
 
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
-#endif
 
 #ifndef FEATURE_FUSION
 #include "clrprivbinderutil.h"

@@ -31,9 +31,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
-#endif // FEATURE_VERSIONING
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1785,9 +1783,7 @@ public:
 protected:
     DWORD m_type;
     LPVOID m_value;
-#if FEATURE_VERSIONING    
     ULONG   m_uIdentityHash;
-#endif
 };
 #endif // FEATURE_LOADER_OPTIMIZATION
 
@@ -2765,9 +2761,7 @@ public:
     IApplicationContext *CreateFusionContext();
     void SetupLoaderOptimization(DWORD optimization);
 #endif
-#ifdef FEATURE_VERSIONING
     IUnknown *CreateFusionContext();
-#endif // FEATURE_VERSIONING
 
     void OverrideDefaultContextBinder(IUnknown *pOverrideBinder)
     {
@@ -4703,15 +4697,8 @@ private:
 
     InlineSString<100>  m_BaseLibrary;
 
-#ifdef FEATURE_VERSIONING
-
     InlineSString<100>  m_SystemDirectory;
 
-#else
-
-    LPCWSTR             m_SystemDirectory;
-
-#endif
 
     LPWSTR      m_pwDevpath;
     DWORD       m_dwDevpath;

@@ -92,9 +92,7 @@
 
 #include "stringarraylist.h"
 
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/clrprivbindercoreclr.h"
-#endif
 
 #if defined(FEATURE_APPX_BINDER)
 #include "appxutil.h"
@@ -2514,7 +2512,6 @@ void SystemDomain::Init()
 
     DWORD size = 0;
 
-#ifdef FEATURE_VERSIONING
 
     // Get the install directory so we can find mscorlib
     hr = GetInternalSystemDirectory(NULL, &size);
@@ -2529,11 +2526,6 @@ void SystemDomain::Init()
 
     // At this point m_SystemDirectory should already be canonicalized
 
-#else
-
-    m_SystemDirectory = GetInternalSystemDirectory(&size);
-
-#endif // FEATURE_VERSIONING
 
     m_BaseLibrary.Append(m_SystemDirectory);
     if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
@@ -9220,9 +9212,7 @@ void AppDomain::InitializeDomainContext(BOOL allowRedirects,
         CreateFusionContext();
 #endif // FEATURE_FUSION
 
-#ifdef FEATURE_VERSIONING
         CreateFusionContext();
-#endif // FEATURE_VERSIONING
 
         return;
     }
@@ -9472,7 +9462,6 @@ BOOL AppDomain::SetContextProperty(IApplicationContext* pFusionContext,
 }
 #endif // FEATURE_FUSION
 
-#ifdef FEATURE_VERSIONING
 IUnknown *AppDomain::CreateFusionContext()
 {
     CONTRACT(IUnknown *)
@@ -9503,7 +9492,6 @@ IUnknown *AppDomain::CreateFusionContext()
 
     RETURN m_pFusionContext;
 }
-#endif // FEATURE_VERSIONING
 
 #ifdef FEATURE_FUSION
 LPWSTR AppDomain::GetDynamicDir()

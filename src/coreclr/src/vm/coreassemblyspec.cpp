@@ -85,7 +85,6 @@ STDAPI BinderGetDisplayName(PEAssembly *pAssembly,
 }
 
 
-#ifdef FEATURE_VERSIONING
 
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
@@ -222,7 +221,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
 }
 
-#endif // FEATURE_VERSIONING
 
 STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
                             PEImage **ppPEImage,
