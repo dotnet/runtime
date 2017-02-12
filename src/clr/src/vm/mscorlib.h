@@ -93,9 +93,7 @@ DEFINE_FIELD_U(_unhandledException,        AppDomainBaseObject, m_pUnhandledExce
 DEFINE_FIELD_U(_aptcaVisibleAssemblies,  AppDomainBaseObject, m_aptcaVisibleAssemblies)
 #endif
 DEFINE_FIELD_U(_compatFlags,              AppDomainBaseObject, m_compatFlags)
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 DEFINE_FIELD_U(_firstChanceException,      AppDomainBaseObject, m_pFirstChanceExceptionHandler)
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 DEFINE_FIELD_U(_pDomain,                   AppDomainBaseObject, m_pDomain)
 DEFINE_FIELD_U(_HasSetPolicy,                     AppDomainBaseObject, m_bHasSetPolicy)
 DEFINE_FIELD_U(_IsFastFullTrustDomain,            AppDomainBaseObject, m_bIsFastFullTrustDomain)
@@ -1417,10 +1415,8 @@ DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
 DEFINE_CLASS(UNHANDLED_EVENTARGS,   System,                 UnhandledExceptionEventArgs)
 DEFINE_METHOD(UNHANDLED_EVENTARGS,  CTOR,                   .ctor,                      IM_Obj_Bool_RetVoid)
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 DEFINE_CLASS(FIRSTCHANCE_EVENTARGS,   ExceptionServices,      FirstChanceExceptionEventArgs)
 DEFINE_METHOD(FIRSTCHANCE_EVENTARGS,  CTOR,                   .ctor,                      IM_Exception_RetVoid)
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 

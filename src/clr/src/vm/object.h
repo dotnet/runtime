@@ -2298,9 +2298,7 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 
     OBJECTREF    m_compatFlags;
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     OBJECTREF    m_pFirstChanceExceptionHandler; // Delegate for 'FirstChance Exception' event
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
     CLR_BOOL     m_bHasSetPolicy;               // SetDomainPolicy has been called for this domain
@@ -2376,7 +2374,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     }
 #endif // FEATURE_CLICKONCE
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     // Returns the reference to the delegate of the first chance exception notification handler
     OBJECTREF GetFirstChanceExceptionNotificationHandler()
     {
@@ -2384,7 +2381,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 
         return m_pFirstChanceExceptionHandler;
     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 };
 
 
