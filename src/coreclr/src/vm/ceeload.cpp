@@ -78,7 +78,6 @@
 #include "perflog.h"
 #include "ecall.h"
 #include "../md/compiler/custattr.h"
-#include "constrainedexecutionregion.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
 #include "ildbsymlib.h"
@@ -1653,24 +1652,6 @@ void Module::Destruct()
     m_InstMethodHashTableCrst.Destroy();
     m_ISymUnmanagedReaderCrst.Destroy();
 
-#ifdef FEATURE_CER
-    if (m_pCerPrepInfo)
-    {
-        _ASSERTE(m_pCerCrst != NULL);
-        CrstHolder sCrstHolder(m_pCerCrst);
-
-        EEHashTableIteration sIter;
-        m_pCerPrepInfo->IterateStart(&sIter);
-        while (m_pCerPrepInfo->IterateNext(&sIter)) {
-            CerPrepInfo *pPrepInfo = (CerPrepInfo*)m_pCerPrepInfo->IterateGetValue(&sIter);
-            delete pPrepInfo;
-        }
-
-        delete m_pCerPrepInfo;
-    }
-    if (m_pCerCrst)
-        delete m_pCerCrst;
-#endif // FEATURE_CER
 
     if (m_debuggerSpecificData.m_pDynamicILCrst)
     {
@@ -1701,10 +1682,6 @@ void Module::Destruct()
     }
 
 #ifdef FEATURE_PREJIT 
-#ifdef FEATURE_CER
-    if (m_pCerNgenRootTable && (m_dwTransientFlags & M_CER_ROOT_TABLE_ON_HEAP))
-        delete m_pCerNgenRootTable;
-#endif
 
     if (HasNativeImage())
     {
@@ -3155,34 +3132,6 @@ BOOL Module::IsPreV4Assembly()
     return !!(m_dwPersistedFlags & IS_PRE_V4_ASSEMBLY);
 }
 
-#ifdef FEATURE_CER
-DWORD Module::GetReliabilityContract()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_RELIABILITY_CONTRACT))
-    {
-        // The flags should be precomputed in native images
-        _ASSERTE(!HasNativeImage());
-
-        // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
-        // Thus, we should ever need it for manifest module only.
-        IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
-
-        m_dwReliabilityContract = ::GetReliabilityContract(mdImport, TokenFromRid(1, mdtAssembly));
-
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_RELIABILITY_CONTRACT);
-    }
-
-    return m_dwReliabilityContract;
-}
-#endif // FEATURE_CER
 
 ArrayDPTR(FixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
 {
@@ -9827,12 +9776,6 @@ void Module::PrepareTypesForSave(DataImage *image)
             PrepareRemotableMethodInfo(pMT);
 #endif // FEATURE_REMOTING
 
-#ifdef FEATURE_CER
-            // If this module defines any CriticalFinalizerObject derived classes,
-            // then we'll prepare these types for Constrained Execution Regions (CER) now.
-            // (Normally they're prepared at object instantiation time, a little too late for ngen).
-            PrepareCriticalType(pMT);
-#endif // FEATURE_CER
         }
     }
 
@@ -9916,9 +9859,6 @@ void Module::Save(DataImage *image)
     // Cache values of all persisted flags computed from custom attributes
     IsNoStringInterning();
     IsRuntimeWrapExceptions();
-#ifdef FEATURE_CER
-    GetReliabilityContract();
-#endif
     IsPreV4Assembly();
 
     HasDefaultDllImportSearchPathsAttribute();
@@ -10273,12 +10213,6 @@ void Module::Save(DataImage *image)
                           m_nPropertyNameSet * sizeof(BYTE),
                           DataImage::ITEM_PROPERTY_NAME_SET);
 
-#ifdef FEATURE_CER
-    // Save Constrained Execution Region (CER) fixup information (used to eagerly fixup trees of methods to avoid any runtime
-    // induced failures when invoking the tree).
-    if (m_pCerNgenRootTable != NULL)
-        m_pCerNgenRootTable->Save(image, profileData);
-#endif
 
     // Sort the list of RVA statics in an ascending order wrt the RVA
     // and save them.
@@ -10734,18 +10668,6 @@ void Module::PlaceMethod(DataImage *image, MethodDesc *pMD, DWORD profilingFlags
         image->PlaceStructureForAddress(pMD, CORCOMPILE_SECTION_WRITE);
     }
 
-#ifdef FEATURE_CER
-    if (profilingFlags & (1 << ReadCerMethodList))
-    {
-        // protect against stale IBC data
-        // Check if the profiling data incorrectly set the ReadCerMethodList bit.
-        // This is more likely to happen with incremental IBC.
-        if ((m_pCerNgenRootTable != NULL) && m_pCerNgenRootTable->IsNgenRootMethod(pMD))
-        {
-            image->PlaceStructureForAddress(m_pCerNgenRootTable->GetList(pMD), CORCOMPILE_SECTION_HOT);
-        }
-    }
-#endif // FEATURE_CER
 
     if (profilingFlags & (1 << WriteMethodPrecode))
     {
@@ -11289,24 +11211,6 @@ void Module::Fixup(DataImage *image)
     image->ZeroField(m_FileReferencesMap.pTable, 0,
                      m_FileReferencesMap.GetSize() * sizeof(void*));
 
-#ifdef FEATURE_CER
-    //
-    // Fixup Constrained Execution Regions restoration records.
-    //
-    if (m_pCerNgenRootTable != NULL)
-    {
-        image->BeginRegion(CORINFO_REGION_HOT);
-        image->FixupPointerField(this, offsetof(Module, m_pCerNgenRootTable));
-        m_pCerNgenRootTable->Fixup(image);
-        image->EndRegion(CORINFO_REGION_HOT);
-    }
-    else
-        image->ZeroPointerField(this, offsetof(Module, m_pCerNgenRootTable));
-
-    // Zero out fields we always compute at runtime lazily.
-    image->ZeroField(this, offsetof(Module, m_pCerPrepInfo), sizeof(m_pCerPrepInfo));
-    image->ZeroField(this, offsetof(Module, m_pCerCrst), sizeof(m_pCerCrst));
-#endif // FEATURE_CER
 
     image->ZeroField(this, offsetof(Module, m_debuggerSpecificData), sizeof(m_debuggerSpecificData));
 
@@ -15570,159 +15474,6 @@ FieldDesc *Module::LookupFieldDef(mdFieldDef token)
 #endif // DACCESS_COMPILE
 
 
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_CER)
-
-// Access to CerPrepInfo, the structure used to track CERs prepared at runtime (as opposed to ngen time). GetCerPrepInfo will
-// return the structure associated with the given method desc if it exists or NULL otherwise. CreateCerPrepInfo will get the
-// structure if it exists or allocate and return a new struct otherwise. Creation of CerPrepInfo structures is automatically
-// synchronized by the CerCrst (lazily allocated as needed).
-CerPrepInfo *Module::GetCerPrepInfo(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    if (m_pCerPrepInfo == NULL)
-        return NULL;
-
-    // Don't need a crst for read only access to the hash table.
-    HashDatum sDatum;
-    if (m_pCerPrepInfo->GetValue(pMD, &sDatum))
-        return (CerPrepInfo*)sDatum;
-    else
-        return NULL;
-}
-
-CerPrepInfo *Module::CreateCerPrepInfo(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    // Lazily allocate a Crst to serialize update access to the info structure.
-    // Carefully synchronize to ensure we don't leak a Crst in race conditions.
-    if (m_pCerCrst == NULL)
-    {
-        Crst *pCrst = new Crst(CrstCer);
-        if (InterlockedCompareExchangeT(&m_pCerCrst, pCrst, NULL) != NULL)
-            delete pCrst;
-    }
-
-    CrstHolder sCrstHolder(m_pCerCrst);
-
-    // Lazily allocate the info structure.
-    if (m_pCerPrepInfo == NULL)
-    {
-        LockOwner sLock = {m_pCerCrst, IsOwnerOfCrst};
-        NewHolder <EEPtrHashTable> tempCerPrepInfo (new EEPtrHashTable());
-        if (!tempCerPrepInfo->Init(CER_DEFAULT_HASH_SIZE, &sLock))
-            COMPlusThrowOM();
-        m_pCerPrepInfo = tempCerPrepInfo.Extract ();
-    }
-    else
-    {
-        // Try getting an existing value first.
-        HashDatum sDatum;
-        if (m_pCerPrepInfo->GetValue(pMD, &sDatum))
-            return (CerPrepInfo*)sDatum;
-    }
-
-    // We get here if there was no info structure or no existing method desc entry. Either way we now have an info structure and
-    // need to create a new method desc entry.
-    NewHolder<CerPrepInfo> pInfo(new CerPrepInfo());
-
-    m_pCerPrepInfo->InsertValue(pMD, (HashDatum)pInfo);
-
-    return pInfo.Extract();
-}
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-// Access to CerNgenRootTable which holds holds information for all the CERs rooted at a method in this module (that were
-// discovered during an ngen).
-
-// Add a list of MethodContextElements representing a CER to the root table keyed by the MethodDesc* of the root method. Creates
-// or expands the root table as necessary. This should only be called during ngen (at runtime we only read the table).
-void Module::AddCerListToRootTable(MethodDesc *pRootMD, MethodContextElement *pList)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(IsCompilationProcess());
-    }
-    CONTRACTL_END;
-
-    // Although this is only called during ngen we still get cases where a module comes through here already ngen'd (because of
-    // ngen's habit of letting code execute during compilation). Until that's fixed we'll just back out if the module has already
-    // fixed the root table into unwriteable storage.
-    if (m_pCerNgenRootTable && !(m_dwTransientFlags & M_CER_ROOT_TABLE_ON_HEAP))
-        return;
-
-    // Lazily allocate a Crst to serialize update access to the info structure.
-    // Carefully synchronize to ensure we don't leak a Crst in race conditions.
-    if (m_pCerCrst == NULL)
-    {
-        Crst *pCrst = new Crst(CrstCer);
-        if (InterlockedCompareExchangeT(&m_pCerCrst, pCrst, NULL) != NULL)
-            delete pCrst;
-    }
-
-    CrstHolder sCrstHolder(m_pCerCrst);
-
-    // Lazily allocate the root table structure.
-    if (m_pCerNgenRootTable == NULL)
-    {
-        FastInterlockOr(&m_dwTransientFlags, M_CER_ROOT_TABLE_ON_HEAP);
-        m_pCerNgenRootTable = new CerNgenRootTable();
-    }
-
-    _ASSERTE(m_dwTransientFlags & M_CER_ROOT_TABLE_ON_HEAP);
-
-    // And add the new element.
-    m_pCerNgenRootTable->AddRoot(pRootMD, pList);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
-#ifdef FEATURE_PREJIT 
-// Returns true if the given method is a CER root detected at ngen time.
-bool Module::IsNgenCerRootMethod(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    _ASSERTE(pMD->GetModule() == this);
-    if (m_pCerNgenRootTable)
-        return m_pCerNgenRootTable->IsNgenRootMethod(pMD);
-    return false;
-}
-
-// Restores the CER rooted at this method (no-op if this method isn't a CER root).
-void Module::RestoreCer(MethodDesc *pMD)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD->GetModule() == this);
-    if (m_pCerNgenRootTable)
-        m_pCerNgenRootTable->Restore(pMD);
-}
-
-#endif // FEATURE_PREJIT
-
-#endif // !DACCESS_COMPILE && FEATURE_CER
 
 
 

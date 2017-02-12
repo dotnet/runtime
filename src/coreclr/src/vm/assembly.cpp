@@ -56,7 +56,6 @@
 #include "customattribute.h"
 #include "winnls.h"
 
-#include "constrainedexecutionregion.h"
 #include "caparser.h"
 #include "../md/compiler/custattr.h"
 #include "mdaassistants.h"

@@ -12,7 +12,6 @@
 #include "compile.h"
 
 #include "field.h"
-#include "constrainedexecutionregion.h"
 
 //
 // Include Zapper infrastructure here
@@ -892,10 +891,6 @@ void DataImage::FixupRVAs()
     FixupModuleRVAs();
     FixupRvaStructure();
 
-#ifdef FEATURE_CER
-    if (m_module->m_pCerNgenRootTable != NULL)
-        m_module->m_pCerNgenRootTable->FixupRVAs(this);
-#endif
 
     // Dev11 bug 181494 instrumentation
     if (m_Fixups.GetCount() != m_iCurrentFixup) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
