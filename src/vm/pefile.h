@@ -1039,11 +1039,7 @@ class PEAssembly : public PEFile
     inline bool CanUseWithBindingCache()
     {
             STATIC_CONTRACT_WRAPPER;
-#if !defined(FEATURE_APPX_BINDER)
             return (HasBindableIdentity());
-#else
-            return (PEFile::CanUseWithBindingCache() && HasBindableIdentity());
-#endif // FEATURE_CORECLR
     }
 };
 

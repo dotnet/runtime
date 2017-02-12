@@ -47,9 +47,6 @@
 #include <xcordebug.h>
 #include "dacimpl.h"
 
-#if defined(FEATURE_APPX_BINDER)
-#include <clrprivbinderappx.h>
-#endif // defined(FEATURE_APPX)
 
 #define STRSAFE_NO_DEPRECATE
 #include <strsafe.h>

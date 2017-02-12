@@ -2617,11 +2617,7 @@ Retry:
     fInsertIntoAssemblySpecBindingCache = GetFile()->GetLoadContext() == LOADCTX_TYPE_DEFAULT;
 #endif
     
-#if defined(FEATURE_APPX_BINDER)
-    fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && !GetFile()->HasHostAssembly();
-#else
     fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && GetFile()->CanUseWithBindingCache();
-#endif
 
     if (fInsertIntoAssemblySpecBindingCache)
     {

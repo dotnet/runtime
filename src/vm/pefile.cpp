@@ -2803,16 +2803,6 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
 
     PEAssembly* pPEAssembly = new PEAssembly(image, NULL, pIAssembly,pNativeFusionAssembly, NULL, pFusionLog, NULL, NULL, TRUE, FALSE);
 
-#ifdef FEATURE_APPX_BINDER
-    if (AppX::IsAppXProcess())
-    {
-        // Since mscorlib is loaded as a special case, create and assign an ICLRPrivAssembly for the new PEAssembly here.
-        CLRPrivBinderAppX *   pBinder = CLRPrivBinderAppX::GetOrCreateBinder();
-        CLRPrivBinderFusion * pFusionBinder = pBinder->GetFusionBinder();
-        
-        pFusionBinder->BindMscorlib(pPEAssembly);
-    }
-#endif
     
     RETURN pPEAssembly;
 #else // FEATURE_FUSION
