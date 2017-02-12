@@ -50,10 +50,6 @@ public:
 
     static FCDECL1(void, RunClassConstructor, ReflectClassBaseObject *pTypeUNSAFE);
     static FCDECL1(void, RunModuleConstructor, ReflectModuleBaseObject *pModuleUNSAFE);
-#ifndef FEATURE_CORECLR
-    static FCDECL3(void, PrepareMethod, ReflectMethodObject* pMethodUNSAFE, TypeHandle *pInstantiation, UINT32 cInstantiation);
-    static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
-#endif // !FEATURE_CORECLR
     static FCDECL1(void, PrepareContractedDelegate, Object* delegateUNSAFE);
     static FCDECL0(void, ProbeForSufficientStack);    
     static FCDECL0(void, EnsureSufficientExecutionStack);

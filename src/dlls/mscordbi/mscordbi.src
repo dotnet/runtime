@@ -18,9 +18,7 @@ EXPORTS
     OpenVirtualProcess private 
     OpenVirtualProcess2
 
-#ifdef FEATURE_CORECLR
     CoreCLRCreateCordbObject private
-#endif // FEATURE_CORECLR
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     DllGetClassObject private

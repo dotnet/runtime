@@ -16,9 +16,6 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#ifndef FEATURE_CORECLR
-#include "comutilnative.h"
-#endif // !FEATURE_CORECLR
 #if defined(FEATURE_APPX)
 #include "appxutil.h"
 #endif // FEATURE_APPX
@@ -177,12 +174,6 @@ void AppDomainNative::CreateDomainHelper (STRINGREF* ppFriendlyName, OBJECTREF* 
 
         setupInfo = prepareDataForSetup.Call_RetOBJECTREF(args);
 
-#ifndef FEATURE_CORECLR
-        // We need to setup domain sorting before any other managed code runs in the domain, since that code 
-        // could end up caching data based on the sorting mode of the domain.
-        pDomain->InitializeSorting(ppAppdomainSetup);
-        pDomain->InitializeHashing(ppAppdomainSetup);
-#endif
 
         // We need to ensure that the AppDomainProxy is generated before we call into DoSetup, since
         // GetAppDomainProxy will ensure that remoting is correctly configured in the domain.  DoSetup can
@@ -289,12 +280,6 @@ void QCALLTYPE AppDomainNative::SetupDomainSecurity(QCall::AppDomainHandle pDoma
         }
     }
 
-#ifdef FEATURE_CAS_POLICY
-    if (gc.orEvidence != NULL)
-    {
-        pSecDesc->SetEvidence(gc.orEvidence);
-    }
-#endif // FEATURE_CAS_POLICY
 
     // We need to downgrade sharing level if the AppDomain is homogeneous and not fully trusted, or the
     // AppDomain is in legacy mode.  Effectively, we need to be sure that all assemblies loaded into the
@@ -868,59 +853,7 @@ void QCALLTYPE AppDomainNative::SetSecurityHomogeneousFlag(QCall::AppDomainHandl
     END_QCALL;
 }
 
-#ifdef FEATURE_CAS_POLICY
 
-// static
-void QCALLTYPE AppDomainNative::SetLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-    pAppSecDesc->SetLegacyCasPolicyEnabled();
-
-    END_QCALL;
-}
-
-// static
-BOOL QCALLTYPE AppDomainNative::IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget)
-{
-    QCALL_CONTRACT;
-
-    BOOL fLegacyCasPolicy = FALSE;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-    fLegacyCasPolicy = !!pAppSecDesc->IsLegacyCasPolicyEnabled();
-
-    END_QCALL;
-
-    return fLegacyCasPolicy;
-}
-
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_APTCA
-
-// static
-void QCALLTYPE AppDomainNative::SetCanonicalConditionalAptcaList(QCall::AppDomainHandle adhTarget,
-                                                                 LPCWSTR wszCanonicalConditionalAptcaList)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-
-    GCX_COOP();
-    pAppSecDesc->SetCanonicalConditionalAptcaList(wszCanonicalConditionalAptcaList);
-
-    END_QCALL;
-}
-
-#endif // FEATURE_APTCA
 
 FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisUNSAFE)
 {
@@ -1360,7 +1293,6 @@ FCIMPL1(void , AppDomainNative::PublishAnonymouslyHostedDynamicMethodsAssembly, 
 }
 FCIMPLEND
 
-#ifdef FEATURE_CORECLR    
 
 void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wszNativeDllSearchDirectories)
 {
@@ -1417,7 +1349,6 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
     END_QCALL;
 }
 
-#endif // FEATURE_CORECLR    
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 FCIMPL0(void, AppDomainNative::EnableMonitoring)

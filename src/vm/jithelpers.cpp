@@ -63,9 +63,7 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifdef FEATURE_CORECLR
 #include "runtimehandles.h"
-#endif
 
 //========================================================================
 //
@@ -5830,13 +5828,11 @@ HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORIN
 {
     FCALL_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     // If we're in full trust, then we don't enforce the delegate binding rules
     if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     // Tailcall to the real implementation
     ENDFORBIDGC();
@@ -6107,16 +6103,9 @@ NOINLINE HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HAN
     
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
     {
-#ifdef FEATURE_CORECLR
         // Transparent methods that contains unverifiable code is not allowed.
         MethodDesc *pMethod = GetMethod(methHnd_);
         SecurityTransparent::ThrowMethodAccessException(pMethod);
-#else // FEATURE_CORECLR        
-    //
-    // inject a full-demand for unmanaged code permission at runtime
-    // around methods in transparent assembly that contains unverifiable code
-        Security::SpecialDemand(SSWT_DECLARATIVE_DEMAND, SECURITY_UNMANAGED_CODE);
-#endif // FEATURE_CORECLR
     }
     HELPER_METHOD_FRAME_END_POLL();
 }

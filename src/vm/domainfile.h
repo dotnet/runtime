@@ -810,11 +810,6 @@ private:
     ULONG HashIdentity();
 
  private:
-#ifdef FEATURE_CAS_POLICY
-    // Pulls in URLMON's security manager. It is used to translate a codebase
-    // into a zone and site
-    void InitializeSecurityManager();
-#endif // FEATURE_CAS_POLICY
 
     BOOL ShouldLoadDomainNeutral();
     BOOL ShouldLoadDomainNeutralHelper();

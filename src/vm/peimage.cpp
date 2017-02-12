@@ -475,103 +475,13 @@ BOOL PEImage::Equals(PEImage *pImage)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     // PEImage is always unique on CoreCLR so a simple pointer check is sufficient
     _ASSERTE(m_bInHashMap || GetPath().IsEmpty());
     _ASSERTE(pImage->m_bInHashMap || pImage->GetPath().IsEmpty());
 
     return dac_cast<TADDR>(pImage) == dac_cast<TADDR>(this);
-#else // FEATURE_CORECLR
-    if (pImage == this)
-        return TRUE;
-
-    if (GetPath().IsEmpty())
-    {
-#ifdef FEATURE_FUSION
-        if (m_fIsIStream && pImage->m_fIsIStream)
-        {
-            return (m_StreamAsmId == pImage->m_StreamAsmId) && (m_dwStreamModuleId == pImage->m_dwStreamModuleId);
-        }
-#endif
-
-        return FALSE;
-    }
-    else
-    {
-        BOOL ret = FALSE;
-        HRESULT hr;
-        EX_TRY
-        {
-            if (PathEquals(GetPath(), pImage->GetPath()))
-                ret = TRUE;
-        }
-        EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
-        return ret;
-    }
-#endif // FEATURE_CORECLR
 }
 
-#ifndef FEATURE_CORECLR
-void PEImage::ComputeHash(ALG_ID algorithm, SBuffer &result)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckStartup());
-        PRECONDITION(CheckValue(result));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    PEImageLayoutHolder pview(GetLayout(PEImageLayout::LAYOUT_FLAT,PEImage::LAYOUT_CREATEIFNEEDED));
-
-    if (algorithm == CALG_SHA1)
-    {
-        SHA1Hash hasher;
-        hasher.AddData((BYTE *) pview->GetBase(), pview->GetSize());
-        result.Set(hasher.GetHash(), SHA1_HASH_SIZE);
-        return;
-    }
-
-    DWORD size = 0;
-    if(!StrongNameHashSize(algorithm, &size))
-    {
-        ThrowHR(StrongNameErrorInfo());
-    }
-
-    BYTE *buffer = result.OpenRawBuffer(size);
-    
-    DWORD hashSize;
-    IfFailThrow(GetHashFromBlob((BYTE *) pview->GetBase(), pview->GetSize(), &algorithm, buffer, size, &hashSize));
-
-    _ASSERTE(size == hashSize);
-
-    result.CloseRawBuffer(hashSize);
-}
-
-CHECK PEImage::CheckHash(ALG_ID algorithm, const void *pbHash, COUNT_T cbHash)
-{
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckStartup());
-        INSTANCE_CHECK;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACT_CHECK_END;
-
-    StackSBuffer hash;
-    ComputeHash(algorithm, hash);
-
-    CHECK(hash.Equals((const BYTE *) pbHash, cbHash));
-
-    CHECK_OK;
-}
-#endif // FEATURE_CORECLR
 
 IMDInternalImport* PEImage::GetMDImport()
 {
@@ -1419,9 +1329,6 @@ PEImage::PEImage():
     m_bIsTrustedNativeImage(FALSE),
     m_bIsNativeImageInstall(FALSE),
     m_bPassiveDomainOnly(FALSE),
-#ifndef FEATURE_CORECLR
-    m_fReportedToUsageLog(FALSE),
-#endif // !FEATURE_CORECLR
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
@@ -1444,9 +1351,6 @@ PEImage::PEImage():
     m_dwPEKind(0),
     m_dwMachine(0),
     m_fCachedKindAndMachine(FALSE)
-#ifdef FEATURE_APTCA
-    , m_fMayBeConditionalAptca(TRUE)
-#endif // FEATURE_APTCA
 #ifdef FEATURE_LAZY_COW_PAGES
     ,m_bAllocatedLazyCOWPages(FALSE)
 #endif // FEATURE_LAZY_COW_PAGES
@@ -1526,34 +1430,12 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         {
             PEImageLayout * pLoadLayout = NULL;
 
-#ifdef FEATURE_CORECLR
             if (m_bIsTrustedNativeImage || IsFile())
             {
                 // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
                 // regular mapping - but not for native images.
                 pLoadLayout = PEImageLayout::Load(this, TRUE /* bNTSafeLoad */, m_bIsTrustedNativeImage /* bThrowOnError */);
             }
-#else
-            if (m_bIsTrustedNativeImage)
-            {
-                pLoadLayout = PEImageLayout::Load(this, FALSE);
-            }
-            else if (m_bIsNativeImageInstall)
-            {
-                // When ESB (extended secure boot) is enabled, a native image that is being installed can
-                // only be loaded flat.
-                PEImageLayout* pFlatLayout=PEImageLayout::LoadFlat(GetFileHandle(),this);
-                SetLayout(IMAGE_FLAT,pFlatLayout);
-                pLoadLayout = new ConvertedImageLayout(pFlatLayout);
-            }
-#ifdef FEATURE_READYTORUN
-            else if (ReadyToRunInfo::IsReadyToRunEnabled() && IsFile())
-            {
-                pLoadLayout = PEImageLayout::Load(this, FALSE, FALSE);
-            }
-#endif // FEATURE_READYTORUN
-
-#endif // FEATURE_CORECLR
 
             if (pLoadLayout != NULL)
             {
@@ -1572,46 +1454,9 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
                 // since LoadLibrary is needed if we are to actually load code.  
                 if (pLayout->HasCorHeader() && pLayout->IsILOnly())
                 {    
-#ifdef FEATURE_CORECLR
                     // For CoreCLR, IL only images will always be mapped. We also dont bother doing the conversion of PE header on 64bit,
                     // as done below for the desktop case, as there is no appcompat burden for CoreCLR on 64bit to have that conversion done.
                     fMarkAnyCpuImageAsLoaded = true;
-#else // !FEATURE_CORECLR
-
-#ifdef _WIN64
-                    // When attempting to load an assembly using LoadLibrary on x64,
-                    // the execution will go via the shell-shim that will try to determine
-                    // if the assembly is ILOnly with Pe32 header (i.e. built as anycpu). If it is,
-                    // it will convert the in-memory PEheader of the image to be PE32+ (i.e. mark it as 64bit image).
-                    //
-                    // Since we are trying to avoid mapping twice for ILOnly images by simply memory mapping them,
-                    // we should emulate the shell-shim behaviour for 64bit. This will allow inproc-components (e.g. ASP.NET),
-                    // which check for Pe32+ header, to continue working as expected.
-                    //
-                    // If we fail for some reason to change the header, in retail build, we will simply fallback to the double-loading behaviour without
-                    // any functional problems.
-                    if (pLayout->Has32BitNTHeaders())
-                    {
-                        fMarkAnyCpuImageAsLoaded = pLayout->ConvertILOnlyPE32ToPE64();
-                    }
-                    else
-                    {
-                        // Before assuming that PE32+ file can be loaded, confirm that
-                        // it is the expected machine type. This will ensure AMD64 does not load ARM64 or IA64 assemblies (and likewise).
-                        // If the machine type does not match, the Loader will fail the load at a later point.
-                        if (pLayout->GetMachine() == IMAGE_FILE_MACHINE_NATIVE)
-                        {
-                            fMarkAnyCpuImageAsLoaded = true; // PE32+ (aka native 64bit) binaries dont require any extra processing.
-                        }
-                    }
-#else // !_WIN64
-                    // Why can we not blindly assume that on 32bit OS, image should always be loaded? This is because it is possible to load
-                    // PE32+ image and map it to the 32bit process in WOW64.
-                    if (pLayout->Has32BitNTHeaders())
-                        fMarkAnyCpuImageAsLoaded = true;
-#endif // _WIN64
-
-#endif // FEATURE_CORECLR
                 }
 
                 pLayout.SuppressRelease();
@@ -1720,36 +1565,8 @@ void PEImage::Load()
     }
     else
     {
-#ifdef FEATURE_CORECLR
         if(m_pLayouts[IMAGE_LOADED]==NULL)
             SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
-#else
-
-        //as part of Load() call we may initialize loaded image in DllMain
-        //so we have to leave the lock and be prepared that when PEImageLayout::Load returns
-        //m_pLayouts[IMAGE_LOADED] is set to something else
-        lock.Release();
-
-        FileHandleHolder pProtect=GetProtectingFileHandle(FALSE);
-
-        // if the image is IL-only, try to load it in the safe manner 
-        
-        // using the Internal function here because we are under the writer lock
-        PEImageLayoutHolder pLayout=GetLayoutInternal(PEImageLayout::LAYOUT_ANY,0);
-        BOOL bPreferSafeLoad=(pLayout && pLayout->IsILOnly());
-
-        // Always use safe load during NGen to avoid running unmanaged code in IJW assemblies
-        if (IsCompilationProcess())
-            bPreferSafeLoad = TRUE;
-
-        PEImageLayoutHolder pLoaded(PEImageLayout::Load(this,bPreferSafeLoad)); 
-
-        lock.Acquire();
-
-        if(m_pLayouts[IMAGE_LOADED]==NULL)
-            SetLayout(IMAGE_LOADED,pLoaded.Extract());
-
-#endif // FEATURE_CORECLR
     }
 }
 

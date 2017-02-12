@@ -35,7 +35,7 @@ bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey);
 
 bool StrongNameIsTheKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey);
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX)
 
 // Verify the format of a public key blob
 bool StrongNameIsValidKeyPair(__in_ecount(cbKeyPair) const BYTE *pbKeyPair, DWORD cbKeyPair);
@@ -45,9 +45,7 @@ bool GetBytesFromHex(LPCUTF8 szHexString, ULONG cchHexString, BYTE** buffer, ULO
 bool StrongNameCryptAcquireContext(HCRYPTPROV *phProv, LPCWSTR pwszContainer, LPCWSTR pwszProvider, DWORD dwProvType, DWORD dwFlags);
 #endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 
-#ifdef FEATURE_CORECLR
 bool StrongNameIsSilverlightPlatformKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey);
 bool StrongNameIsSilverlightPlatformKey(const PublicKeyBlob &keyPublicKey);
-#endif // FEATURE_CORECLR
 
 #endif // !_STRONGNAME_INTERNAL_H

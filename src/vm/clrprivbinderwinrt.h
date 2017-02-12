@@ -32,10 +32,8 @@ typedef CoreBindResult IBindResult;
 // Forward declarations
 class CLRPrivBinderWinRT;
 class CLRPrivAssemblyWinRT;
-#ifdef FEATURE_CORECLR
 class BINDER_SPACE::ApplicationContext;
 class BINDER_SPACE::Assembly;
-#endif
 
 typedef DPTR(CLRPrivBinderWinRT)     PTR_CLRPrivBinderWinRT;
 typedef DPTR(CLRPrivAssemblyWinRT)   PTR_CLRPrivAssemblyWinRT;
@@ -242,12 +240,10 @@ public:
 #ifndef FEATURE_FUSION
     HRESULT GetAssemblyAndTryFindNativeImage(SString &sWinmdFilename, LPCWSTR pwzSimpleName, BINDER_SPACE::Assembly ** ppAssembly);
 #endif
-#ifdef FEATURE_CORECLR
     // On Phone the application's APP_PATH CoreCLR hosting config property is used as the app
     // package graph for RoResolveNamespace to find 3rd party WinMDs.  This method wires up
     // the app paths so the WinRT binder will find 3rd party WinMDs.
     HRESULT SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, SString &appLocalWinMD);
-#endif
     // Finds assembly with WinRT type if it is already loaded
     // Note: This method could implement interface code:ICLRPrivWinRtTypeBinder if it is ever needed
     PTR_Assembly FindAssemblyForTypeIfLoaded(
@@ -331,10 +327,8 @@ private:
     HRESULT GetParentIBindContext(IBindContext **ppIBindContext);
 #endif //FEATURE_FUSION
 
-#ifdef FEATURE_CORECLR
     BINDER_SPACE::ApplicationContext * m_pApplicationContext;
     NewArrayHolder<WCHAR> m_appLocalWinMDPath;
-#endif
 
 #ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
     // App-local location that can be probed for WinMD files

@@ -8228,19 +8228,6 @@ CMiniMdRW::ResetENCLog()
     // Get the module record.
     IfFailGo(GetModuleRecord(1, &pMod));
     
-#ifndef FEATURE_CORECLR
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_UseMinimalDeltas))
-    {   // Update the ENC Guids
-        GUID encid;
-        // Copy EncId as BaseId.
-        ULONG uVal = GetCol(TBL_Module, ModuleRec::COL_EncId, pMod);
-        IfFailGo(PutCol(TBL_Module, ModuleRec::COL_EncBaseId, pMod, uVal));
-
-        // Allocate a new GUID for EncId.
-        IfFailGo(CoCreateGuid(&encid));
-        IfFailGo(PutGuid(TBL_Module, ModuleRec::COL_EncId, pMod, encid));
-    }
-#endif //!FEATURE_CORECLR
     
     // Reset the pool deltas
     m_StringHeap.StartNewEnCSession();

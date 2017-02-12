@@ -1251,28 +1251,5 @@ BOOL
 CLiteWeightStgdbRW::IsValidFileNameLength(
     const WCHAR * wszFileName)
 {
-#ifdef FEATURE_CORECLR
     return TRUE;
-#else
-    static const WCHAR const_wszLongPathPrefix[] = W("\\\\?\\");
-
-    if (wszFileName == NULL)
-    {
-        return TRUE;
-    }
-    size_t cchFileName = wcslen(wszFileName);
-    if (cchFileName < _MAX_PATH)
-    {
-        return TRUE;
-    }
-    if (SString::_wcsnicmp(wszFileName, const_wszLongPathPrefix, _countof(const_wszLongPathPrefix) - 1) != 0)
-    {   // Path does not have long path prefix \\?\ (as required by CreateFile API)
-        return FALSE;
-    }
-    if (cchFileName < 32767)
-    {   // Limit for the long path length as defined in CreateFile API
-        return TRUE;
-    }
-    return FALSE;
-#endif
 } // CLiteWeightStgdbRW::IsValidFileNameLength

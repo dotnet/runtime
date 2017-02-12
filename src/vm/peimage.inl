@@ -405,47 +405,6 @@ inline const BOOL PEImage::HasStrongNameSignature()
 
 #ifndef DACCESS_COMPILE
 
-#if !defined(FEATURE_CORECLR)
-inline const HRESULT PEImage::VerifyStrongName(DWORD* verifyOutputFlags)  
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(verifyOutputFlags);
-    if (m_bSignatureInfoCached)
-    {
-        if (SUCCEEDED(m_hrSignatureInfoStatus))
-            *verifyOutputFlags=m_dwSignatureInfo;
-        return m_hrSignatureInfoStatus;
-    }
-
-    BOOL result = FALSE;
-
-    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_FLAT,0));
-    if(pLayout!=NULL)
-    {
-        result = StrongNameSignatureVerificationFromImage((BYTE *) pLayout->GetBase(), pLayout->GetSize(), 
-                                                            SN_INFLAG_INSTALL|SN_INFLAG_ALL_ACCESS, 
-                                                            verifyOutputFlags);
-    }
-    else
-    {
-        CONSISTENCY_CHECK(!GetPath().IsEmpty());
-        _ASSERTE(IsFileLocked());
-        result = StrongNameSignatureVerification(GetPath(),
-                                                    SN_INFLAG_INSTALL|SN_INFLAG_ALL_ACCESS|SN_INFLAG_RUNTIME,
-                                                    verifyOutputFlags);
-    }
-
-    HRESULT hr=result?S_OK: StrongNameErrorInfo();
-
-    if (SUCCEEDED(hr) || !Exception::IsTransient(hr))
-    {
-        m_hrSignatureInfoStatus=hr;
-        m_dwSignatureInfo=*verifyOutputFlags;
-        m_bSignatureInfoCached=TRUE;
-    }
-    return hr;
-}    
-#endif // !FEATURE_CORECLR
 
 #endif // !DACCESS_COMPILE
 
@@ -579,59 +538,6 @@ inline void  PEImage::Init(LPCWSTR pPath)
 }
 #ifndef DACCESS_COMPILE
 
-#if !defined(FEATURE_CORECLR)
-/*static*/
-inline PTR_PEImage PEImage::FindByLongPath(LPCWSTR pPath)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(s_hashLock.OwnedByCurrentThread());
-    }
-    CONTRACTL_END;
-
-    PathString sLongPath;
-    COUNT_T nLen = WszGetLongPathName(pPath, sLongPath);
-   
-    // Check for any kind of error other than an insufficient buffer result.
-    if (nLen == 0)
-    {
-        HRESULT hr=HRESULT_FROM_WIN32(GetLastError());
-        if(Exception::IsTransient(hr))
-            ThrowHR(hr);
-        return (PEImage*)INVALIDENTRY;
-    }
-    return FindByPath(sLongPath.GetUnicode());
-}
-
-/*static*/
-inline PTR_PEImage PEImage::FindByShortPath(LPCWSTR pPath)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(s_hashLock.OwnedByCurrentThread());
-    }
-    CONTRACTL_END;
-
-    PathString sShortPath;
-    COUNT_T nLen = WszGetShortPathName(pPath, sShortPath);
-
-    // Check for any kind of error other than an insufficient buffer result.
-    if (nLen == 0)
-    {
-        HRESULT hr=HRESULT_FROM_WIN32(GetLastError());
-        if(Exception::IsTransient(hr))
-            ThrowHR(hr);
-        return (PEImage*)INVALIDENTRY;
-    }
-    return FindByPath(sShortPath.GetUnicode());
-}
-#endif // !FEATURE_CORECLR
 
 /*static*/
 inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath)
@@ -673,13 +579,6 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     
     PEImage* found = FindByPath(pPath);
 
-#if !defined(FEATURE_CORECLR)
-    if(found == (PEImage*) INVALIDENTRY && (flags & MDInternalImport_CheckLongPath))
-         found=FindByLongPath(pPath);
-
-    if(found == (PEImage*) INVALIDENTRY && (flags & MDInternalImport_CheckShortPath))
-         found=FindByShortPath(pPath);
-#endif
 
     if (found == (PEImage*) INVALIDENTRY)
     {
@@ -873,33 +772,7 @@ inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
         *pdwMachine = m_dwMachine;
 }
 
-#ifdef FEATURE_APTCA
-inline BOOL PEImage::MayBeConditionalAptca()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fMayBeConditionalAptca;
-}
 
-inline void PEImage::SetIsNotConditionalAptca()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fMayBeConditionalAptca = FALSE;
-}
-#endif // FEATURE_APTCA
-
-#ifndef FEATURE_CORECLR
-inline BOOL PEImage::IsReportedToUsageLog()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fReportedToUsageLog;
-}
-
-inline void PEImage::SetReportedToUsageLog()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fReportedToUsageLog = TRUE;
-}
-#endif // !FEATURE_CORECLR
 
 #ifndef DACCESS_COMPILE
 inline void PEImage::AllocateLazyCOWPages()

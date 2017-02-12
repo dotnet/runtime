@@ -1294,14 +1294,6 @@ STRINGREF NumberToString(NUMBER* number, wchar format, int nMaxDigits, NUMFMTREF
     STRINGREF sZero=NULL;
 
     // @TODO what if not sequential?
-#ifndef FEATURE_CORECLR
-    if (numfmt->iDigitSubstitution == 2) // native digits
-    {
-        PTRARRAYREF aDigits = numfmt->sNativeDigits;
-        if (aDigits!=NULL && aDigits->GetNumComponents()>0)
-            sZero=(STRINGREF)aDigits->GetAt(0);
-    }
-#endif    
 
     // Do the worst case calculation
     /* US English - for Double.MinValue.ToString("C99"); we require 514 characters
@@ -2557,51 +2549,6 @@ FCIMPL3_VII(Object*, COMNumber::FormatUInt64, UINT64 value, StringObject* format
 }
 FCIMPLEND
 
-#if !defined(FEATURE_CORECLR)
-//
-// Used by base types that are not in mscorlib.dll (such as System.Numerics.BigInteger in System.Core.dll)
-// Note that the allDigits buffer must be fixed across this call or you will introduce a GC Hole.
-//
-FCIMPL4(Object*, COMNumber::FormatNumberBuffer, BYTE* number, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE, __in_z wchar_t* allDigits)
-{
-    FCALL_CONTRACT;
-
-    wchar fmt;
-    int digits;
-    NUMBER* pNumber;
-
-    struct _gc
-    {
-        STRINGREF   refFormat;
-        NUMFMTREF   refNumFmt;
-        STRINGREF   refRetString;
-    } gc;
-
-    gc.refFormat    = ObjectToSTRINGREF(formatUNSAFE);
-    gc.refNumFmt    = (NUMFMTREF)numfmtUNSAFE;
-    gc.refRetString = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    if (gc.refNumFmt == 0) COMPlusThrowArgumentNull(W("NumberFormatInfo"));
-
-    pNumber = (NUMBER*) number;
-
-    pNumber->allDigits = allDigits;
-
-    fmt = ParseFormatSpecifier(gc.refFormat, &digits);
-    if (fmt != 0) {
-        gc.refRetString = NumberToString(pNumber, fmt, digits, gc.refNumFmt);
-    }
-    else {
-        gc.refRetString = NumberToStringFormat(pNumber, gc.refFormat, gc.refNumFmt);
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.refRetString);
-}
-FCIMPLEND
-
-#endif // !FEATURE_CORECLR
 
 FCIMPL2(FC_BOOL_RET, COMNumber::NumberBufferToDecimal, BYTE* number, DECIMAL* value)
 {

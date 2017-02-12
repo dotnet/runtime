@@ -608,12 +608,7 @@ FORCEINLINE BOOL StressLog::InlinedETWLogOn(unsigned facility, unsigned level)
     STATIC_CONTRACT_LEAF;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
-    return ((Microsoft_Windows_DotNETRuntimeStressHandle != 0) && 
-        (ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_Context, (UCHAR)level, facility) != 0));
-#else
     return FALSE;
-#endif
 }
 
 BOOL StressLog::ETWLogOn(unsigned facility, unsigned level)
@@ -671,28 +666,6 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
     }
 
 // Stress Log ETW feature available only on the desktop versions of the runtime
-#if !defined(FEATURE_CORECLR)
-    // The previous LogMsg call could have modified the Args, so we need to reset it
-    if(InlinedETWLogOn(facility, level))
-    {
-#define MAX_STRESSLOG_DATA_ETW_LENGTH 256
-        CHAR logMessage[MAX_STRESSLOG_DATA_ETW_LENGTH];
-
-        va_start(Args, format);
-        ULONG messageLength = (USHORT)_vsnprintf_s(logMessage, COUNTOF(logMessage), MAX_STRESSLOG_DATA_ETW_LENGTH-1, format, Args);
-        va_end(Args);
-        
-        if(messageLength >= 0 && 
-           messageLength < MAX_STRESSLOG_DATA_ETW_LENGTH) // this condition has been added to make prefast happy
-        {
-            logMessage[messageLength] = 0;
-        }
-        messageLength++;
-        logMessage[MAX_STRESSLOG_DATA_ETW_LENGTH-1] = 0;
-        FireEtwStressLogEvent_V1((UINT32)facility, (UCHAR)level, logMessage, GetClrInstanceId());
-#undef MAX_STRESSLOG_DATA_ETW_LENGTH
-    }
-#endif // !FEATURE_CORECLR
 #endif //!DACCESS_COMPILE
 }
 

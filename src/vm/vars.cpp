@@ -85,9 +85,6 @@ GPTR_IMPL(MethodTable,      g_pThreadClass);
 #ifdef FEATURE_CER
 GPTR_IMPL(MethodTable,      g_pCriticalFinalizerObjectClass);
 #endif
-#ifndef FEATURE_CORECLR
-GPTR_IMPL(MethodTable,      g_pAsyncFileStream_AsyncResultClass);
-#endif // !FEATURE_CORECLR
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_IMPL(MethodTable,      g_pOverlappedDataClass);
 
@@ -138,9 +135,6 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 // <TODO> @TODO Remove eventually - </TODO> determines whether the verifier throws an exception when something fails
 bool                g_fVerifierOff;
 
-#ifndef FEATURE_CORECLR
-IAssemblyUsageLog   *g_pIAssemblyUsageLogGac;
-#endif
 
 // <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
