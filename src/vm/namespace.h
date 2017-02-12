@@ -74,9 +74,7 @@
 
 #define g_WindowsFoundationDiagNS    "Windows.Foundation.Diagnostics"
 
-#if defined(FEATURE_CORRUPTING_EXCEPTIONS) || defined(FEATURE_EXCEPTION_NOTIFICATIONS)
 #define g_ExceptionServicesNS         g_RuntimeNS ".ExceptionServices"
-#endif // defined(FEATURE_CORRUPTING_EXCEPTION) || defined(FEATURE_EXCEPTION_NOTIFICATIONS)
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 #define g_LoaderNS         g_RuntimeNS ".Loader" 
