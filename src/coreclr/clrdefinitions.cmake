@@ -141,7 +141,6 @@ if (NOT CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DFEATURE_MANAGED_ETW)
 endif(NOT CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
-add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 
 if(FEATURE_MERGE_JIT_AND_ENGINE)
   # Disable the following for UNIX altjit on Windows

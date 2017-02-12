@@ -41,7 +41,6 @@
         <CDefines Condition="'$(FeatureManagedEtw)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW</CDefines>
         <CDefines Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW_CHANNELS</CDefines>
         <CDefines Condition="'$(FeatureMdaSupported)' == 'true'">$(CDefines);MDA_SUPPORTED</CDefines>
-        <CDefines Condition="'$(FeatureMergeCultureSupportAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE</CDefines>
         <CDefines Condition="'$(FeatureMergeJitAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_JIT_AND_ENGINE</CDefines>
         <CDefines Condition="'$(FeatureMetadataEmit)' == 'true'">$(CDefines);FEATURE_METADATA_EMIT</CDefines>
         <CDefines Condition="'$(FeatureMetadataEmitAll)' == 'true'">$(CDefines);FEATURE_METADATA_EMIT_ALL</CDefines>
