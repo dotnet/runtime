@@ -599,10 +599,6 @@ FCFuncEnd()
 
 FCFuncStart(gAppDomainManagerFuncs)
     QCFuncElement("GetEntryAssembly", AssemblyNative::GetEntryAssembly)
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    FCFuncElement("HasHost", AppDomainNative::HasHost)
-    QCFuncElement("RegisterWithHost", AppDomainNative::RegisterWithHost)
-#endif    
 FCFuncEnd()
 
 #ifdef FEATURE_FUSION
