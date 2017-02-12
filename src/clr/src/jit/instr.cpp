@@ -2597,15 +2597,6 @@ AGAIN:
                 constVal = (ssize_t)(tree->gtLngCon.gtLconVal >> 32);
                 size     = EA_4BYTE;
             }
-#if defined(_TARGET_ARM_) && CPU_LONG_USES_REGPAIR
-            if ((ins != INS_mov) && !arm_Valid_Imm_For_Instr(ins, constVal, flags))
-            {
-                regNumber constReg = (offs == 0) ? genRegPairLo(tree->gtRegPair) : genRegPairHi(tree->gtRegPair);
-                instGen_Set_Reg_To_Imm(size, constReg, constVal);
-                getEmitter()->emitIns_R_R(ins, size, reg, constReg, flags);
-                break;
-            }
-#endif // _TARGET_ARM_ && CPU_LONG_USES_REGPAIR
 
             inst_RV_IV(ins, reg, constVal, size, flags);
             break;
