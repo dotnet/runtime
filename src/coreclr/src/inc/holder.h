@@ -1211,16 +1211,6 @@ FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath
 typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
 #endif // WszDeleteFile
 
-#if defined(FEATURE_CRYPTO)
-// Crypto holders
-FORCEINLINE void VoidCryptReleaseContext(HCRYPTPROV h) { CryptReleaseContext(h, 0); }
-FORCEINLINE void VoidCryptDestroyHash(HCRYPTHASH h) { CryptDestroyHash(h); }
-FORCEINLINE void VoidCryptDestroyKey(HCRYPTKEY h) { CryptDestroyKey(h); }
-
-typedef Wrapper<HCRYPTPROV, DoNothing, VoidCryptReleaseContext, 0> HandleCSPHolder;
-typedef Wrapper<HCRYPTHASH, DoNothing, VoidCryptDestroyHash, 0> HandleHashHolder;
-typedef Wrapper<HCRYPTKEY, DoNothing, VoidCryptDestroyKey, 0> HandleKeyHolder;
-#endif // !FEATURE_CORECLR || FEATURE_CRYPTO
 
 //-----------------------------------------------------------------------------
 // Misc holders
