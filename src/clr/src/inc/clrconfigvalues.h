@@ -123,13 +123,9 @@ CONFIG_DWORD_INFO(INTERNAL_AppDomainNoUnload, W("AppDomainNoUnload"), 0, "Not us
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_TargetFrameworkMoniker, W("TargetFrameworkMoniker"), "Allows the test team to specify what TargetFrameworkMoniker to use.", CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::IgnoreConfigFiles | CLRConfig::IgnoreWindowsQuirkDB)
 RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_AppContextSwitchOverrides, W("AppContextSwitchOverrides"), "Allows default switch values defined in AppContext to be overwritten by values in the Config", CLRConfig::IgnoreEnv | CLRConfig::IgnoreHKLM | CLRConfig::IgnoreHKCU | CLRConfig::IgnoreWindowsQuirkDB | CLRConfig::ConfigFile_ApplicationFirst)
 
-#ifdef FEATURE_CORECLR
 // For the proposal and discussion on why finalizers are not run on shutdown by default anymore in CoreCLR, see the API review:
 // https://github.com/dotnet/corefx/issues/5205
 #define DEFAULT_FinalizeOnShutdown (0)
-#else
-#define DEFAULT_FinalizeOnShutdown (1)
-#endif
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_FinalizeOnShutdown, W("FinalizeOnShutdown"), DEFAULT_FinalizeOnShutdown, "When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects")
 
 //
@@ -312,9 +308,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConcurrent, W("gcConcurrent"), (DWORD)-1,
 #ifdef FEATURE_CONSERVATIVE_GC
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConservative, W("gcConservative"), 0, "Enables/Disables conservative GC")
 #endif
-#ifdef FEATURE_CORECLR
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcServer, W("gcServer"), 0, "Enables server GC")
-#endif
 CONFIG_STRING_INFO(INTERNAL_GcCoverage, W("GcCoverage"), "specify a method or regular expression of method names to run with GCStress")
 CONFIG_STRING_INFO(INTERNAL_SkipGCCoverage, W("SkipGcCoverage"), "specify a list of assembly names to skip with GC Coverage")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_gcForceCompact, W("gcForceCompact"), "When set to true, always do compacting GC")
@@ -386,7 +380,7 @@ CONFIG_STRING_INFO_EX(INTERNAL_JitDebugBreak, W("JitDebugBreak"), "", CLRConfig:
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JitDebuggable, W("JitDebuggable"), "")
 CONFIG_DWORD_INFO_EX(INTERNAL_JitDefaultFill, W("JitDefaultFill"), 0xDD, "In debug builds, initialize the memory allocated by the nra with this byte.", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitDirectAlloc, W("JitDirectAlloc"), 0, "", CLRConfig::REGUTIL_default)
-#if (!defined(DEBUG) && !defined(_DEBUG)) || (defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR))
+#if !defined(DEBUG) && !defined(_DEBUG)
 #define INTERNAL_JitEnableNoWayAssert_Default 0
 #else
 #define INTERNAL_JitEnableNoWayAssert_Default 1
@@ -477,7 +471,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseLegacyJit, W("useLegacyJit"), 0, "Set to 1 
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DisableNativeImageLoadList, W("DisableNativeImageLoadList"), "Refuse to load native images corresponding to one of the assemblies on this semicolon-delimited list of assembly names.", CLRConfig::REGUTIL_default)
 #endif
 
-#if defined(FEATURE_CORECLR) && defined(_TARGET_X86_)
+#if defined(_TARGET_X86_)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseWindowsX86CoreLegacyJit, W("UseWindowsX86CoreLegacyJit"), 0, "Set to 1 to do all JITing with compatjit.dll. Only applicable to Windows x86 .NET Core.")
 #endif
 
@@ -670,9 +664,6 @@ CONFIG_DWORD_INFO_EX(INTERNAL_MD_RegMetaDump, W("MD_RegMetaDump"), 0, "? Dump MD
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_TlbImp_BreakOnErr, W("MD_TlbImp_BreakOnErr"), 0, "ASSERT when importing TLB into MD", CLRConfig::REGUTIL_default)
 CONFIG_STRING_INFO_EX(INTERNAL_MD_TlbImp_BreakOnTypeImport, W("MD_TlbImp_BreakOnTypeImport"), "ASSERT when importing a type from TLB", (CLRConfig::LookupOptions) (CLRConfig::REGUTIL_default | CLRConfig::DontPrependCOMPlus_))
 // MetaData - Desktop-only
-#ifndef FEATURE_CORECLR
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_MD_UseMinimalDeltas, W("MD_UseMinimalDeltas"), 1, "? Some MD modifications when applying EnC?", CLRConfig::REGUTIL_default)
-#endif //!FEATURE_CORECLR
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_WinMD_Disable, W("MD_WinMD_Disable"), 0, "Never activate the WinMD import adapter", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_MD_WinMD_AssertOnIllegalUsage, W("MD_WinMD_AssertOnIllegalUsage"), 0, "ASSERT if a WinMD import adapter detects a tool incompatibility", CLRConfig::REGUTIL_default)
 
@@ -777,12 +768,7 @@ RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_NicPath, W("NicPath"), "Redirects NIC a
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenTaskDelayStart, W("NGenTaskDelayStart"), 0, "Use NGen Task delay start trigger, instead of critical idle task")
 
 // Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
-#ifdef FEATURE_CORECLR
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Ningen, W("Ningen"), 1, "Enable no-impact ngen")
-#else
-// Ningen is off by default for desktop to reduce compat risk
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_Ningen, W("Ningen"), 0, "Enable no-impact ngen")
-#endif
 
 CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run.")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NgenAllowOutput, W("NgenAllowOutput"), 0, "If set to 1, the NGEN worker will bind to the parent console, thus allowing stdout output to work", CLRConfig::REGUTIL_default)
@@ -1027,11 +1013,7 @@ CONFIG_DWORD_INFO(INTERNAL_DebugAssertOnMissedCOWPage, W("DebugAssertOnMissedCOW
 
 #endif //FEATURE_LAZY_COW_PAGES
 
-#ifdef FEATURE_CORECLR
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
-#else
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 0, "Enable/disable use of ReadyToRun native code") // Off by default for desktop
-#endif
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunLogFile, W("ReadyToRunLogFile"), "Name of file to log success/failure of using Ready to Run images")
 
@@ -1128,11 +1110,7 @@ CONFIG_DWORD_INFO_EX(INTERNAL_MscorsnLogging, W("MscorsnLogging"), 0, "Enables s
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NativeImageRequire, W("NativeImageRequire"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_NestedEhOom, W("NestedEhOom"), 0, "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NO_SO_NOT_MAINLINE, W("NO_SO_NOT_MAINLINE"), 0, "", CLRConfig::REGUTIL_default)
-#if defined(CROSSGEN_COMPILE) || defined(FEATURE_CORECLR)
 #define INTERNAL_NoGuiOnAssert_Default 1
-#else
-#define INTERNAL_NoGuiOnAssert_Default 0
-#endif
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_NoGuiOnAssert, W("NoGuiOnAssert"), INTERNAL_NoGuiOnAssert_Default, "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NoProcedureSplitting, W("NoProcedureSplitting"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_NoStringInterning, W("NoStringInterning"), 1, "Disallows string interning. I see no value in it anymore.", CLRConfig::REGUTIL_default)

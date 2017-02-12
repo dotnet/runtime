@@ -5,9 +5,6 @@
 #ifndef _SNCORECLR_H
 #define _SNCORECLR_H
 
-#if !defined(FEATURE_CORECLR)
-#error sncoreclr.h should only be used on CoreCLR builds
-#endif // !FEATURE_CORECLR
 
 void InitUtilcode();
 

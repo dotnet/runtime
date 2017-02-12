@@ -1551,14 +1551,6 @@ void InvokeUtil::CanAccessClass(RefSecContext*  pCtx,
 
     InvokeUtil::CheckAccessClass(pCtx, pClass, checkAccessForImplicitValueTypeCtor);
 
-#ifndef FEATURE_CORECLR
-    // Reflection invocation should turn critical method access into a full demand of full trust
-    // for level 2 assemblies.
-    if (InvokeUtil::IsCriticalWithConversionToFullDemand(pClass))
-    {
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-    }
-#endif //FEATURE_CORECLR
 }
 
 #ifndef DACCESS_COMPILE
@@ -1579,30 +1571,12 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    // Security checks are expensive as they involve stack walking. Avoid them if we can.
-    // In immersive we don't allow private reflection to framework code. So we need to perform
-    // the access check even if all the domains on the stack are fully trusted.
-    if (Security::AllDomainsOnStackFullyTrusted() && !AppX::IsAppXProcess() && !pParentMT->GetAssembly()->IsDisabledPrivateReflection())
-        return;
-#endif // FEATURE_CORECLR
 
     InvokeUtil::CheckAccessMethod(pSCtx,
                                   pParentMT,
                                   pInstanceMT,
                                   pMeth);
 
-#ifndef FEATURE_CORECLR
-    // Reflection invocation should turn critical method access into a full demand of full trust
-    // for level 2 assemblies.
-    if (fCriticalToFullDemand && InvokeUtil::IsCriticalWithConversionToFullDemand(pMeth, pParentMT))
-    {
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-
-        // No need to do any more checks if a full trust full demand has succeeded.
-        return;
-    }
-#endif //FEATURE_CORECLR
 
     if (pMeth->RequiresLinktimeCheck())
     {
@@ -1610,25 +1584,6 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
         // stack walks in order to close security holes in poorly written
         // reflection users.
 
-#ifdef FEATURE_APTCA
-        if (Security::IsUntrustedCallerCheckNeeded(pMeth))
-        {
-            if (pSCtx->GetCallerMT()) 
-            { 
-                // Check for untrusted caller
-                // It is possible that wrappers like VBHelper libraries that are
-                // fully trusted, make calls to public methods that do not have
-                // safe for Untrusted caller custom attribute set.
-                // Like all other link demand that gets transformed to a full stack 
-                // walk for reflection, calls to public methods also gets 
-                // converted to full stack walk
-    
-                Security::DoUntrustedCallerChecks(
-                    pSCtx->GetCallerMT()->GetAssembly(), pMeth,
-                    TRUE);
-            }
-        }
-#endif // FEATURE_APTCA
 
         struct _gc
         {
@@ -1667,7 +1622,6 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
 
         GCPROTECT_END();
 
-#ifdef FEATURE_CORECLR                
         if (pMeth->IsNDirect() ||
             (pMeth->IsComPlusCall() && !pMeth->IsInterface()))
         {
@@ -1683,27 +1637,6 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
             }
         }
 
-#else  // FEATURE_CORECLR
-        // We perform automatic linktime checks for UnmanagedCode in three cases:
-        //   o  P/Invoke calls.
-        //   o  Calls through an interface that have a suppress runtime check
-        //      attribute on them (these are almost certainly interop calls).
-        //   o  Interop calls made through method impls.
-        if (pMeth->IsNDirect() ||
-            (pMeth->IsInterface() &&
-             (pMeth->GetMDImport()->GetCustomAttributeByName(pParentMT->GetCl(),
-                                                           COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                           NULL,
-                                                           NULL) == S_OK ||
-              pMeth->GetMDImport()->GetCustomAttributeByName(pMeth->GetMemberDef(),
-                                                           COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                           NULL,
-                                                           NULL) == S_OK) ) ||
-            (pMeth->IsComPlusCall() && !pMeth->IsInterface()))
-        {
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);
-        }
-#endif // FEATURE_CORECLR
     }
 
     // @todo: 
@@ -1731,9 +1664,6 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
             }
         }
 
-#ifndef FEATURE_CORECLR
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
-#endif // !FEATURE_CORECLR
     }
 }
 #endif // #ifndef DACCESS_COMPILE
@@ -1753,14 +1683,6 @@ void InvokeUtil::CanAccessField(RefSecContext*  pCtx,
 
     InvokeUtil::CheckAccessField(pCtx, pTargetMT, pInstanceMT, pTargetField);
 
-#ifndef FEATURE_CORECLR
-    // Reflection invocation should turn critical method access into a full demand of full trust
-    // for level 2 assemblies.
-    if (InvokeUtil::IsCriticalWithConversionToFullDemand(pTargetField, pInstanceMT))
-    {
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-    }
-#endif //FEATURE_CORECLR
 }
 
 //
@@ -2009,7 +1931,6 @@ AccessCheckOptions::AccessCheckType InvokeUtil::GetInvocationAccessCheckType(BOO
 
     AppDomain * pAppDomain = GetAppDomain();
 
-#ifdef FEATURE_CORECLR
 
     if (pAppDomain->GetSecurityDescriptor()->IsFullyTrusted())
         // Ignore transparency so that reflection invocation is consistenct with LCG.
@@ -2018,14 +1939,6 @@ AccessCheckOptions::AccessCheckType InvokeUtil::GetInvocationAccessCheckType(BOO
 
     return AccessCheckOptions::kMemberAccess;
 
-#else // !FEATURE_CORECLR
-    return 
-        AppX::IsAppXProcess() ?
-           (Security::AllDomainsOnStackFullyTrusted() ? 
-                AccessCheckOptions::kUserCodeOnlyRestrictedMemberAccessNoTransparency : 
-                AccessCheckOptions::kUserCodeOnlyRestrictedMemberAccess) :
-           AccessCheckOptions::kRestrictedMemberAccess;
-#endif //FEATURE_CORECLR
 }
 
 #endif // CROSSGEN_COMPILE

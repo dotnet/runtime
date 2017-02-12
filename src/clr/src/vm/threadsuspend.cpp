@@ -3328,32 +3328,6 @@ void Thread::RareDisablePreemptiveGC()
 #endif // PROFILING_SUPPORTED
 
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-                    // First, check to see if there's an IDbgThreadControl interface that needs
-                    // notification of the suspension
-                    if (m_State & TS_DebugSuspendPending)
-                    {
-                        IDebuggerThreadControl *pDbgThreadControl = CorHost::GetDebuggerThreadControl();
-
-                        if (pDbgThreadControl)
-                            pDbgThreadControl->ThreadIsBlockingForDebugger();
-
-                    }
-
-                    if (CLRGCHosted())
-                    {
-                        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-                        CorHost2::GetHostGCManager()->ThreadIsBlockingForSuspension();
-                        END_SO_TOLERANT_CODE_CALLING_HOST;
-                    }
-
-                    // If not, check to see if there's an IGCThreadControl interface that needs
-                    // notification of the suspension
-                    IGCThreadControl *pGCThreadControl = CorHost::GetGCThreadControl();
-
-                    if (pGCThreadControl)
-                        pGCThreadControl->ThreadIsBlockingForSuspension();
-#endif // !defined(FEATURE_CORECLR)
 
                     DWORD status = S_OK;
                     SetThreadStateNC(TSNC_WaitUntilGCFinished);
@@ -3453,32 +3427,6 @@ void Thread::RareDisablePreemptiveGC()
 #endif // PROFILING_SUPPORTED
 
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-        // First, check to see if there's an IDbgThreadControl interface that needs
-        // notification of the suspension
-        if (m_State & TS_DebugSuspendPending)
-        {
-            IDebuggerThreadControl *pDbgThreadControl = CorHost::GetDebuggerThreadControl();
-
-            if (pDbgThreadControl)
-                pDbgThreadControl->ThreadIsBlockingForDebugger();
-
-        }
-
-        if (CLRGCHosted())
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            CorHost2::GetHostGCManager()->ThreadIsBlockingForSuspension();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-
-        // If not, check to see if there's an IGCThreadControl interface that needs
-        // notification of the suspension
-        IGCThreadControl *pGCThreadControl = CorHost::GetGCThreadControl();
-
-        if (pGCThreadControl)
-            pGCThreadControl->ThreadIsBlockingForSuspension();
-#endif // !defined(FEATURE_CORECLR)
 
         // The thread is blocked for shutdown.  We do not concern for GC violation.
         CONTRACT_VIOLATION(GCViolation);
@@ -3819,34 +3767,12 @@ void Thread::RareEnablePreemptiveGC()
             // Life's much simpler this way...
 
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-            // Check to see if there's an IDbgThreadControl interface that needs
-            // notification of the suspension
-            if (m_State & TS_DebugSuspendPending)
-            {
-                IDebuggerThreadControl *pDbgThreadControl = CorHost::GetDebuggerThreadControl();
-
-                if (pDbgThreadControl)
-                    pDbgThreadControl->ThreadIsBlockingForDebugger();
-
-            }
-#endif // !defined(FEATURE_CORECLR)
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef LOGGING
-#if !defined(FEATURE_CORECLR) // simple hosting
-            if (!CorHost::IsDebuggerSpecialThread(GetThreadId()))
-#endif // !defined(FEATURE_CORECLR)
             {
                 LOG((LF_CORDB, LL_INFO1000, "[0x%x] SUSPEND: suspended while enabling gc.\n", GetThreadId()));
             }
-#if !defined(FEATURE_CORECLR) // simple hosting
-            else
-            {
-                LOG((LF_CORDB, LL_INFO1000,
-                     "[0x%x] ALERT: debugger special thread did not suspend while enabling gc.\n", GetThreadId()));
-            }
-#endif // !defined(FEATURE_CORECLR)
 #endif
 
             WaitSuspendEvents(); // sets bits, too
@@ -4186,20 +4112,8 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
             // Notify the interface of the pending suspension
             switch (reason) {
             case RedirectReason_GCSuspension:
-#if !defined(FEATURE_CORECLR) // simple hosting
-                if (CorHost::GetGCThreadControl())
-                    CorHost::GetGCThreadControl()->ThreadIsBlockingForSuspension();
-                if (CLRGCHosted())
-                {
-                    NotifyHostOnGCSuspension();
-                }
-#endif // !defined(FEATURE_CORECLR)
                 break;
             case RedirectReason_DebugSuspension:
-#if !defined(FEATURE_CORECLR) // simple hosting
-                if (CorHost::GetDebuggerThreadControl() && CorHost::IsDebuggerSpecialThread(pThread->GetThreadId()))
-                    CorHost::GetDebuggerThreadControl()->ThreadIsBlockingForDebugger();
-#endif // !defined(FEATURE_CORECLR)
                 break;
             case RedirectReason_UserSuspension:
                 // Do nothing;
@@ -4857,21 +4771,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime(reason=0x%x)\n", reason);
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    // Alert the host that a GC is starting, in case the host is scheduling threads
-    // for non-runtime tasks during GC.
-    IGCThreadControl    *pGCThreadControl = CorHost::GetGCThreadControl();
-
-    if (pGCThreadControl)
-        pGCThreadControl->SuspensionStarting();
-
-    if (CLRGCHosted())
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        CorHost2::GetHostGCManager()->SuspensionStarting();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // !defined(FEATURE_CORECLR)
 
 #ifdef PROFILING_SUPPORTED
     // If the profiler desires information about GCs, then let it know that one
@@ -5562,33 +5461,6 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
     //
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    // Alert the host that a GC is ending, in case the host is scheduling threads
-    // for non-runtime tasks during GC.
-    IGCThreadControl    *pGCThreadControl = CorHost::GetGCThreadControl();
-
-    if (pGCThreadControl)
-    {
-        // If we the suspension was for a GC, tell the host what generation GC.
-        DWORD   Generation = (bFinishedGC
-                              ? GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration()
-                              : ~0U);
-
-        pGCThreadControl->SuspensionEnding(Generation);
-    }
-
-    if (CLRGCHosted())
-    {
-        // If we the suspension was for a GC, tell the host what generation GC.
-        DWORD   Generation = (bFinishedGC
-                              ? GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration()
-                              : ~0U);
-
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        CorHost2::GetHostGCManager()->SuspensionEnding(Generation);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // !defined(FEATURE_CORECLR)
 
 #ifdef PROFILING_SUPPORTED
     // Need to give resume event for the GC thread
@@ -5961,13 +5833,6 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
     // Caller is expected to be holding the ThreadStore lock
     _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    // If there is a debugging thread control object, tell it we're suspending the Runtime.
-    IDebuggerThreadControl *pDbgThreadControl = CorHost::GetDebuggerThreadControl();
-
-    if (pDbgThreadControl)
-        pDbgThreadControl->StartBlockingForDebugger(0);
-#endif // !defined(FEATURE_CORECLR)
 
     // NOTE::NOTE::NOTE::NOTE::NOTE
     // This function has parallel logic in SuspendRuntime.  Please make
@@ -6341,16 +6206,6 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
 
     LOG((LF_CORDB, LL_INFO1000, "RESUME: starting resume AD:0x%x.\n", pAppDomain));
 
-#if !defined(FEATURE_CORECLR) // simple hosting
-    // Notify the client that it should release any threads that it had doing work
-    // while the runtime was debugger-suspended.
-    IDebuggerThreadControl *pIDTC = CorHost::GetDebuggerThreadControl();
-    if (pIDTC)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "RESUME: notifying IDebuggerThreadControl client.\n"));
-        pIDTC->ReleaseAllRuntimeThreads();
-    }
-#endif // !defined(FEATURE_CORECLR)
 
     // Make sure we completed the previous sync
     _ASSERTE(m_DebugWillSyncCount == -1);
@@ -6407,321 +6262,6 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
     LOG((LF_CORDB, LL_INFO1000, "RESUME: resume complete. Trap count: %d\n", g_TrapReturningThreads.Load()));
 }
 
-#ifndef FEATURE_CORECLR
-
-// Suspend a thread at the system level.  We distinguish between user suspensions,
-// and system suspensions so that a VB program cannot resume a thread we have
-// suspended for GC.
-//
-// This service won't return until the suspension is complete.  This deserves some
-// explanation.  The thread is considered to be suspended if it can make no further
-// progress within the EE.  For example, a thread that has exited the EE via
-// COM Interop or N/Direct is considered suspended -- if we've arranged it so that
-// the thread cannot return back to the EE without blocking.
-void Thread::UserSuspendThread()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // Read the general comments on thread suspension earlier, to understand why we
-    // take these locks.
-
-    // GC can occur in here:
-    STRESS_LOG0(LF_SYNC, LL_INFO100, "UserSuspendThread obtain lock\n");
-    ThreadStoreLockHolder tsl;
-
-    // User suspensions (e.g. from VB and C#) are distinguished from internal
-    // suspensions so a poorly behaved program cannot resume a thread that the system
-    // has suspended for GC.
-    if (m_State & TS_UserSuspendPending)
-    {
-        // This thread is already experiencing a user suspension, so ignore the
-        // new request.
-        _ASSERTE(!ThreadStore::HoldingThreadStore(this));
-    }
-    else
-    if (this != GetThread())
-    {
-        // First suspension of a thread other than the current one.
-        if (m_State & TS_Unstarted)
-        {
-            // There is an important window in here.  T1 can call T2.Start() and then
-            // T2.Suspend().  Suspend is disallowed on an unstarted thread.  But from T1's
-            // point of view, T2 is started.  In reality, T2 hasn't been scheduled by the
-            // OS, so it is still an unstarted thread.  We don't want to perform a normal
-            // suspension on it in this case, because it is currently contributing to the
-            // PendingThreadCount.  We want to get it fully started before we suspend it.
-            // This is particularly important if its background status is changing
-            // underneath us because otherwise we might not detect that the process should
-            // be exited at the right time.
-            //
-            // It turns out that this is a simple situation to implement.  We are holding
-            // the ThreadStoreLock.  TransferStartedThread will likewise acquire that
-            // lock.  So if we detect it, we simply set a bit telling the thread to
-            // suspend itself.  This is NOT the normal suspension request because we don't
-            // want the thread to suspend until it has fully started.
-            FastInterlockOr((ULONG *) &m_State, TS_SuspendUnstarted);
-        }
-        else if (m_State & (TS_Detached | TS_Dead))
-        {
-            return;
-        }
-        else
-        {
-            // We just want to trap this thread if it comes back into cooperative mode
-            SetupForSuspension(TS_UserSuspendPending);
-            m_SafeEvent.Reset();
-
-            // Pause it so we can operate on it without it squirming under us.
-RetrySuspension:
-            // We can not allocate memory after we suspend a thread.
-            // Otherwise, we may deadlock the process when CLR is hosted.
-            ThreadStore::AllocateOSContext();
-
-            SuspendThreadResult str = SuspendThread();
-
-            // The only safe place to suspend a thread asynchronously is if it is in
-            // fully interruptible cooperative JIT code.  Preemptive mode can hold all
-            // kinds of locks that make it unsafe to suspend.  All other cases are
-            // handled somewhat synchronously (e.g. through hijacks, GC mode toggles, etc.)
-            //
-            // For example, on a SMP if the thread is blocked waiting for the ThreadStore
-            // lock, it can cause a deadlock if we suspend it (even though it is in
-            // preemptive mode).
-            //
-            // If a thread is in preemptive mode (including the tricky optimized N/Direct
-            // case), we can just mark it for suspension.  It will make no further progress
-            // in the EE.
-            if (str == STR_NoStressLog)
-            {
-                // We annot assume anything about the thread's current state.
-                goto RetrySuspension;
-            }
-            else if (!m_fPreemptiveGCDisabled)
-            {
-                MarkForSuspension(TS_UserSuspendPending);
-
-                // Let the thread run until it reaches a safe spot.
-                if (str == STR_Success)
-                {
-                    ResumeThread();
-                }
-            }
-            else if (str == STR_Failure || str == STR_UnstartedOrDead)
-            {
-                // The thread cannot be unstarted, as we have already
-                // checked for that above.
-                _ASSERTE(!(m_State & TS_Unstarted));
-
-                // Nothing to do if the thread has already terminated.
-            }
-            else if (str == STR_SwitchedOut)
-            {
-                goto RetrySuspension;
-            }
-            else
-            {
-                _ASSERTE(str == STR_Success);
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
-                WorkingOnThreadContextHolder workingOnThreadContext(this);
-                if (workingOnThreadContext.Acquired() && HandledJITCase())
-                {
-                    _ASSERTE(m_fPreemptiveGCDisabled);
-                    // Redirect thread so we can capture a good thread context
-                    // (GetThreadContext is not sufficient, due to an OS bug).
-                    // If we don't succeed (should only happen on Win9X, due to
-                    // a different OS bug), we must resume the thread and try
-                    // again.
-                    if (!CheckForAndDoRedirectForUserSuspend())
-                    {
-                        ResumeThread();
-                        goto RetrySuspension;
-                    }
-                }
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
-
-                // Thread is executing in cooperative mode.  We're going to have to
-                // move it to a safe spot.
-                MarkForSuspension(TS_UserSuspendPending);
-
-                // Let the thread run until it reaches a safe spot.
-                ResumeThread();
-
-                // wait until it leaves cooperative GC mode or is JIT suspended
-                FinishSuspendingThread();
-            }
-        }
-    }
-    else
-    {
-        GCX_PREEMP();
-        SetupForSuspension(TS_UserSuspendPending);
-        MarkForSuspension(TS_UserSuspendPending);
-
-        // prepare to block ourselves
-        tsl.Release();
-        _ASSERTE(!ThreadStore::HoldingThreadStore(this));
-
-        WaitSuspendEvents();
-    }
-}
-
-
-// if the only suspension of this thread is user imposed, resume it.  But don't
-// resume from any system suspensions (like GC).
-BOOL Thread::UserResumeThread()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // If we are attempting to resume when we aren't in a user suspension,
-    // its an error.
-    BOOL    res = FALSE;
-
-    // Note that the model does not count.  In other words, you can call Thread.Suspend()
-    // five times and Thread.Resume() once.  The result is that the thread resumes.
-
-    STRESS_LOG0(LF_SYNC, INFO3, "UserResumeThread obtain lock\n");
-    ThreadStoreLockHolder TSLockHolder;
-
-    // If we have marked a thread for suspension, while that thread is still starting
-    // up, simply remove the bit to resume it.
-    if (m_State & TS_SuspendUnstarted)
-    {
-        _ASSERTE((m_State & TS_UserSuspendPending) == 0);
-        FastInterlockAnd((ULONG *) &m_State, ~TS_SuspendUnstarted);
-        res = TRUE;
-    }
-
-    // If we are still trying to suspend the thread, forget about it.
-    if (m_State & TS_UserSuspendPending)
-    {
-        ReleaseFromSuspension(TS_UserSuspendPending);
-        SetSafeEvent();
-        res = TRUE;
-    }
-
-    return res;
-}
-
-
-// We are asynchronously trying to suspend this thread.  Stay here until we achieve
-// that goal (in fully interruptible JIT code), or the thread dies, or it leaves
-// the EE (in which case the Pending flag will cause it to synchronously suspend
-// itself later, or if the thread tells us it is going to synchronously suspend
-// itself because of hijack activity, etc.
-void Thread::FinishSuspendingThread()
-{
-    CONTRACTL {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    DWORD   res;
-
-    // There are two threads of interest -- the current thread and the thread we are
-    // going to wait for.  Since the current thread is about to wait, it's important
-    // that it be in preemptive mode at this time.
-
-#if _DEBUG
-    DWORD   dbgTotalTimeout = 0;
-#endif
-
-    // Wait for us to enter the ping period, then check if we are in interruptible
-    // JIT code.
-    while (TRUE)
-    {
-        ThreadSuspend::UnlockThreadStore();
-        res = m_SafeEvent.Wait(PING_JIT_TIMEOUT,FALSE);
-        STRESS_LOG0(LF_SYNC, INFO3, "FinishSuspendingThread obtain lock\n");
-        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
-
-        if (res == WAIT_TIMEOUT)
-        {
-#ifdef _DEBUG
-            if ((dbgTotalTimeout += PING_JIT_TIMEOUT) >= g_pConfig->SuspendDeadlockTimeout())
-            {
-                _ASSERTE(!"Timeout detected trying to synchronously suspend a thread");
-                dbgTotalTimeout = 0;
-            }
-#endif
-            // Suspend the thread and see if we are in interruptible code (placing
-            // a hijack if warranted).
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
-        RetrySuspension:
-#endif
-            // The thread is detached/dead.  Suspend is no op.
-            if (m_State & (TS_Detached | TS_Dead))
-            {
-                return;
-            }
-
-            // We can not allocate memory after we suspend a thread.
-            // Otherwise, we may deadlock the process when CLR is hosted.
-            ThreadStore::AllocateOSContext();
-
-            SuspendThreadResult str = SuspendThread();
-
-            if (m_fPreemptiveGCDisabled && str == STR_Success)
-            {
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
-                WorkingOnThreadContextHolder workingOnThreadContext(this);
-                if (workingOnThreadContext.Acquired() && HandledJITCase())
-                {
-                    _ASSERTE(m_State & TS_UserSuspendPending);
-                    // Redirect thread so we can capture a good thread context
-                    // (GetThreadContext is not sufficient, due to an OS bug).
-                    // If we don't succeed (should only happen on Win9X, due to
-                    // a different OS bug), we must resume the thread and try
-                    // again.
-                    if (!CheckForAndDoRedirectForUserSuspend())
-                    {
-                        ResumeThread();
-                        goto RetrySuspension;
-                    }
-                }
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
-                // Keep trying...
-                ResumeThread();
-            }
-            else if (!m_fPreemptiveGCDisabled)
-            {
-                // The thread has transitioned out of the EE.  It can't get back in
-                // without synchronously suspending itself.  We can now return to our
-                // caller since this thread cannot make further progress within the
-                // EE.
-                if (str == STR_Success)
-                {
-                    ResumeThread();
-                }
-                break;
-            }
-            else if (str == STR_SwitchedOut)
-            {
-                // The task has been switched out while in Cooperative GC mode.
-                // We will wait for the thread again.
-            }
-        }
-        else
-        {
-            // SafeEvent has been set so we don't need to actually suspend.  Either
-            // the thread died, or it will enter a synchronous suspension based on
-            // the UserSuspendPending bit.
-            _ASSERTE(res == WAIT_OBJECT_0);
-            _ASSERTE(!ThreadStore::HoldingThreadStore(this));
-            break;
-        }
-    }
-}
-
-#endif // FEATURE_CORECLR
 
 
 void Thread::SetSafeEvent()

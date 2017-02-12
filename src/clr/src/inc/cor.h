@@ -190,13 +190,8 @@ DEPRECATED_CLR_STDAPI_(void)   CoEEShutDownCOM(void);
 #endif //FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME
 
 
-#ifdef FEATURE_CORECLR
 #define MSCOREE_SHIM_W               MAIN_CLR_DLL_NAME_W
 #define MSCOREE_SHIM_A               MAIN_CLR_DLL_NAME_A
-#else
-#define MSCOREE_SHIM_W                L"mscoree.dll"
-#define MSCOREE_SHIM_A                "mscoree.dll"
-#endif // FEATURE_CORECLR
 
 #define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
 

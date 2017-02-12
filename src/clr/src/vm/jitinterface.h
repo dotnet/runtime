@@ -413,59 +413,11 @@ extern "C"
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
 };
 
-#ifndef FEATURE_CORECLR
-//
-// Obfluscators that are hacking into the JIT expect certain methods to exist in certain places of CEEInfo vtable. Add artifical slots 
-// to the vtable to avoid breaking apps by .NET 4.5 in-place update.
-//
-
-class ICorMethodInfo_Hack
-{
-public:
-    virtual const char* __stdcall ICorMethodInfo_Hack_getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName) = 0;
-};
-
-class ICorModuleInfo_Hack
-{
-public:
-    virtual void ICorModuleInfo_Hack_dummy() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-};
-
-class ICorClassInfo_Hack
-{
-public:
-    virtual void ICorClassInfo_Hack_dummy1() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy2() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy3() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy4() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy5() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy6() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy7() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy8() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy9() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy10() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy11() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy12() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy13() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-    virtual void ICorClassInfo_Hack_dummy14() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-
-    virtual mdMethodDef __stdcall ICorClassInfo_Hack_getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod) = 0;
-};
-
-class ICorStaticInfo_Hack : public virtual ICorMethodInfo_Hack, public virtual ICorModuleInfo_Hack, public virtual ICorClassInfo_Hack
-{
-    virtual void ICorStaticInfo_Hack_dummy() { LIMITED_METHOD_CONTRACT; UNREACHABLE(); };
-};
-
-#endif // FEATURE_CORECLR
 
 
 /*********************************************************************/
 /*********************************************************************/
 class CEEInfo : public ICorJitInfo
-#ifndef FEATURE_CORECLR
-    , public virtual ICorStaticInfo_Hack
-#endif
 {
     friend class CEEDynamicCodeInfo;
     

@@ -321,9 +321,6 @@ BOOL ApplicationSecurityDescriptor::IsDefaultAppDomain() const
 {
     LIMITED_METHOD_CONTRACT;
     return  m_fIsDefaultAppdomain
-#ifndef FEATURE_CORECLR
-            && !m_fHomogeneous
-#endif // FEATURE_CORECLR
             ;
 }
 
@@ -355,19 +352,6 @@ BOOL ApplicationSecurityDescriptor::DomainMayContainPartialTrustCode()
     return !m_fHomogeneous || !IsFullyTrusted();
 }
 
-#ifdef FEATURE_APTCA
-ConditionalAptcaCache *ApplicationSecurityDescriptor::GetConditionalAptcaCache()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pConditionalAptcaCache;
-}
-
-void ApplicationSecurityDescriptor::SetCanonicalConditionalAptcaList(LPCWSTR wszCanonicalConditionalAptcaList)
-{
-    WRAPPER_NO_CONTRACT;
-    return this->GetConditionalAptcaCache()->SetCanonicalConditionalAptcaList(wszCanonicalConditionalAptcaList);
-}
-#endif // FEATURE_APTCA
 
 #endif // !DACCESS_COMPILE
 

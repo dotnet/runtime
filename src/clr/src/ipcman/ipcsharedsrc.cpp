@@ -18,9 +18,6 @@
 #include "ipcshared.h"
 #include "ipcmanagerinterface.h"
 
-#ifndef FEATURE_CORECLR
-#include "AppXUtil.h"
-#endif
 
 #if defined(FEATURE_IPCMAN)
 
@@ -170,41 +167,6 @@ HRESULT IPCShared::GenerateBlockTableName(DWORD pid, SString & sName, HANDLE & p
         return hr;
     }
 
-#ifndef FEATURE_CORECLR
-    // when pid != GetCurrentProcessId() it means we're the consumer opening other process perf counter data
-    if (pid != GetCurrentProcessId())
-    {
-        // if the target process is inside an appcontainer we need to add the appcontainer SID to the boundary descriptor.
-        NewArrayHolder<BYTE> pbTokenMem;
-        hr = AppX::GetAppContainerTokenInfoForProcess(pid, pbTokenMem);
-
-        if (FAILED(hr))
-        {
-            // failed to open the target's process, continue on
-            // assuming that the process isn't in an AppContainer.
-            _ASSERTE(pbTokenMem == NULL);
-        }
-        else
-        {
-            if (hr == S_FALSE)
-            {
-                // not an appcontainer
-                _ASSERTE(pbTokenMem == NULL);
-            }
-            else
-            {
-                // process is an appcontainer so add the SID
-                PTOKEN_APPCONTAINER_INFORMATION pAppContainerTokenInfo =
-                    reinterpret_cast<PTOKEN_APPCONTAINER_INFORMATION>(pbTokenMem.GetValue());
-                _ASSERTE(pAppContainerTokenInfo);
-                _ASSERTE(pAppContainerTokenInfo->TokenAppContainer);
-
-                if (!(*pAddSIDToBoundaryDescriptor)(&pBoundaryDesc, pAppContainerTokenInfo->TokenAppContainer))
-                    return HRESULT_FROM_WIN32(GetLastError());
-            }
-        }
-    }
-#endif // FEATURE_CORECLR
     
     if(bCreate)
     {
@@ -666,10 +628,6 @@ BOOL IPCShared::InitializeGenericIPCAcl(DWORD pid, BOOL bRestrictiveACL, PACL *p
     int iSIDforAdmin = -1;
     int iSIDforUsers = -1;
     int iSIDforLoggingUsers = -1;
-#if !defined (DACCESS_COMPILE) && !defined(FEATURE_CORECLR)
-    NewArrayHolder<BYTE> pbTokenMem;
-    PTOKEN_APPCONTAINER_INFORMATION pAppContainerTokenInfo = NULL;
-#endif
 
     PermStruct[0].rgPSID = NULL;
 
@@ -802,39 +760,6 @@ BOOL IPCShared::InitializeGenericIPCAcl(DWORD pid, BOOL bRestrictiveACL, PACL *p
             // non-fatal error, so don't goto errorexit
         }
 
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CORECLR)
-        // when running on win8 if the process is an appcontainer then add the appcontainer SID to the ACL
-        // going down this code path means we're creating the descriptor for our current PID.
-        _ASSERTE(pid == GetCurrentProcessId());
-        hr = AppX::GetAppContainerTokenInfoForProcess(pid, pbTokenMem);
-
-        if (FAILED(hr))
-        {
-            // failed to open the target's process, continue on
-            // assuming that the process isn't in an AppContainer.
-            _ASSERTE(pbTokenMem == NULL);
-        }
-        else
-        {
-            if (hr == S_FALSE)
-            {
-                // not an appcontainer
-                _ASSERTE(pbTokenMem == NULL);
-            }
-            else
-            {
-                // process is an appcontainer so add the SID
-                pAppContainerTokenInfo =
-                    reinterpret_cast<PTOKEN_APPCONTAINER_INFORMATION>(pbTokenMem.GetValue());
-                _ASSERTE(pAppContainerTokenInfo);
-                _ASSERTE(pAppContainerTokenInfo->TokenAppContainer);
-
-                PermStruct[cActualACECount].rgPSID = pAppContainerTokenInfo->TokenAppContainer;
-                PermStruct[cActualACECount].rgAccessFlags = GetAccessFlagsForObject(whatObject, FALSE);
-                ++cActualACECount;
-            }
-        }
-#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CORECLR)        
     }
 
     _ASSERTE(cActualACECount <= MaxNumberACEs);

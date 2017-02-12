@@ -1774,12 +1774,10 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(Enum_StdInterfaces index)
 
     else if (index == enum_IDispatchEx)
     {
-#ifdef FEATURE_CORECLR
         if (AppX::IsAppXProcess())
         { 
             RETURN NULL;
         }
-#endif // FEATURE_CORECLR
 
         if (SupportsIReflect(m_pMT))
         {
@@ -1988,9 +1986,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
             // Keeping the Apollo behaviour also ensures that we allow SL 8.1 scenarios (which do not pass the AppX flag like the modern host) 
             // to use CorDispatcher for async, in the expected manner, as the OS implementation for CoreDispatcher expects objects to be Agile.
             if (!IsAggregated() 
-#if !defined(FEATURE_CORECLR)
-            && AppX::IsAppXProcess()
-#endif // !defined(FEATURE_CORECLR)
             )
             {
                 ComCallWrapperTemplate *pTemplate = GetComCallWrapperTemplate();
@@ -3614,12 +3609,10 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     }                    
     if (IsIDispatch(riid))
     {
-#ifdef FEATURE_CORECLR
         if (AppX::IsAppXProcess())
         { 
             RETURN NULL;
         }
-#endif // FEATURE_CORECLR
 
         // We don't do visibility checks on IUnknown.
         RETURN pWrap->GetIDispatchIP();
@@ -4735,11 +4728,6 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     SLOT *pComVtable;
     unsigned i;
 
-#ifndef FEATURE_CORECLR
-    // Skip this unnecessary expensive check for CoreCLR
-    if (!CheckSigTypesCanBeLoaded(pItfClass))
-        return FALSE;
-#endif
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutInterfaceMethodTable: %s, this: %p\n", pItfClass->GetDebugClassName(), this));
 

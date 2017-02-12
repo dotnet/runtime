@@ -95,7 +95,6 @@ class PersistentInlineTrackingMap;
 #define GUID_TO_TYPE_HASH_BUCKETS 16
             
 // The native symbol reader dll name
-#ifdef FEATURE_CORECLR
 #if defined(_AMD64_)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
 #elif defined(_X86_)
@@ -105,9 +104,6 @@ class PersistentInlineTrackingMap;
 #elif defined(_ARM64_)
 // Use diasymreader until the package has an arm64 version - issue #7360
 //#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
-#endif
-#else
 #define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
 #endif
 
@@ -3449,9 +3445,7 @@ public:
     }
 #endif // !DACCESS_COMPILE && FEATURE_CER
 
-#ifdef FEATURE_CORECLR
     void VerifyAllMethods();
-#endif //FEATURE_CORECLR
 
     CrstBase *GetLookupTableCrst()
     {

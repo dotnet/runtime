@@ -50,11 +50,7 @@ using namespace CorUnix;
 /* append mode file I/O is safer */
 #define _PAL_APPEND_DBG_OUTPUT_
 
-#if defined(_PAL_APPEND_DBG_OUTPUT_)
 static const char FOPEN_FLAGS[] = "at";
-#else
-static const char FOPEN_FLAGS[] = "wt";
-#endif
 
 /* number of ENTRY nesting levels to indicate with a '.' */
 #define MAX_NESTING 50

@@ -41,9 +41,6 @@
 #include "../binder/inc/coreclrbindercommon.h"
 #endif
 
-#ifdef FEATURE_CAS_POLICY
-#include <wintrust.h>
-#endif
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -83,21 +80,11 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     m_pMDImport(NULL),
     m_pImporter(NULL),
     m_pEmitter(NULL),
-#ifndef FEATURE_CORECLR
-    m_pAssemblyImporter(NULL),
-    m_pAssemblyEmitter(NULL),
-#endif
     m_pMetadataLock(::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT)),
     m_refCount(1),
     m_hash(NULL),
     m_flags(0),
     m_fStrongNameVerified(FALSE)
-#ifdef FEATURE_CAS_POLICY
-    ,m_certificate(NULL),
-    m_fCheckedCertificate(FALSE)
-    ,m_pSecurityManager(NULL)
-    ,m_securityManagerLock(CrstPEFileSecurityManager)
-#endif // FEATURE_CAS_POLICY
     ,m_pHostAssembly(nullptr)
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     ,m_pFallbackLoadContextBinder(nullptr)
@@ -126,12 +113,6 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     }
 
 
-#ifdef FEATURE_CAS_POLICY
-    if (fCheckAuthenticodeSignature)
-    {
-        CheckAuthenticodeSignature();
-    }
-#endif // FEATURE_CAS_POLICY
 }
 
 
@@ -168,14 +149,6 @@ PEFile::~PEFile()
         m_identity->Release();
     if (m_pMetadataLock)
         delete m_pMetadataLock;
-#ifdef FEATURE_CAS_POLICY
-    if (m_pSecurityManager) {
-        m_pSecurityManager->Release();
-        m_pSecurityManager = NULL;
-    }
-    if (m_certificate && !g_pCertificateCache->Contains(m_certificate))
-        CoTaskMemFree(m_certificate);
-#endif // FEATURE_CAS_POLICY
 
     if (m_pHostAssembly != NULL)
     {
@@ -839,86 +812,6 @@ void PEFile::GetCodeBaseOrName(SString &result)
         result.SetUTF8(GetSimpleName());
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-// Returns security information for the assembly based on the codebase
-void PEFile::GetSecurityIdentity(SString &codebase, SecZone *pdwZone, DWORD dwFlags, BYTE *pbUniqueID, DWORD *pcbUniqueID)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pdwZone));
-        PRECONDITION(CheckPointer(pbUniqueID));
-        PRECONDITION(CheckPointer(pcbUniqueID));
-    }
-    CONTRACTL_END;
-
-    if (IsAssembly())
-    {
-        ((PEAssembly*)this)->GetCodeBase(codebase);
-    }
-    else if (m_identity != NULL && !m_identity->GetPath().IsEmpty())
-    {
-        codebase.Set(W("file:///"));
-        codebase.Append(m_identity->GetPath());
-    }
-    else
-    {
-        _ASSERTE( !"Unable to determine security identity" );
-    }
-
-    GCX_PREEMP();
-
-    if(!codebase.IsEmpty())
-    {
-        *pdwZone = NoZone;
-
-        InitializeSecurityManager();
-
-        // We have a class name, return a class factory for it
-        _ASSERTE(sizeof(SecZone) == sizeof(DWORD));
-        IfFailThrow(m_pSecurityManager->MapUrlToZone(codebase,
-                                                     reinterpret_cast<DWORD *>(pdwZone),
-                                                     dwFlags));
-
-        if (*pdwZone>=NumZones)            
-            IfFailThrow(SecurityPolicy::ApplyCustomZoneOverride(pdwZone));
-        
-        IfFailThrow(m_pSecurityManager->GetSecurityId(codebase,
-                                                      pbUniqueID,
-                                                      pcbUniqueID,
-                                                      0));
-    }
-}
-
-void PEFile::InitializeSecurityManager()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        CAN_TAKE_LOCK;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    if(m_pSecurityManager == NULL)
-    {
-        CrstHolder holder(&m_securityManagerLock);
-        if (m_pSecurityManager == NULL)
-        {
-                IfFailThrow(CoInternetCreateSecurityManager(NULL,
-                                                            &m_pSecurityManager,
-                                                            0));
-        }
-    }
-}
-
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // Checks
@@ -945,42 +838,6 @@ CHECK PEFile::CheckLoaded(BOOL bAllowNativeSkip/*=TRUE*/)
     CHECK_OK;
 }
 
-#ifndef FEATURE_CORECLR
-// ------------------------------------------------------------
-// Hash support
-// ------------------------------------------------------------
-
-#ifndef SHA1_HASH_SIZE
-#define SHA1_HASH_SIZE 20
-#endif
-
-void PEFile::GetSHA1Hash(SBuffer &result)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckValue(result));
-        THROWS;
-        MODE_ANY;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Cache the SHA1 hash in a buffer
-    if (m_hash == NULL)
-    {
-        // We shouldn't have to compute a SHA1 hash in any scenarios
-        // where the image opening should be suppressed.
-        EnsureImageOpened();
-
-        m_hash = new InlineSBuffer<SHA1_HASH_SIZE>();
-        GetILimage()->ComputeHash(CALG_SHA1, *m_hash);
-    }
-
-    result.Set(*m_hash);
-}
-#endif // FEATURE_CORECLR
 
 // ------------------------------------------------------------
 // Metadata access
@@ -1242,9 +1099,7 @@ void PEFile::OpenMDImport_Unsafe()
         return;
 #ifdef FEATURE_PREJIT    
     if (m_nativeImage != NULL
-#ifdef FEATURE_CORECLR
         && m_nativeImage->GetMDImport() != NULL
-#endif
         )
     {
         // Use native image for metadata
@@ -1297,58 +1152,6 @@ void PEFile::OpenEmitter()
         pIMDEmit->Release();
 }
 
-#ifndef FEATURE_CORECLR
-void PEFile::OpenAssemblyImporter()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite();
-
-    // Get the interface
-    IMetaDataAssemblyImport *pIMDAImport = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetPersistentMDImport(), 
-                                                       IID_IMetaDataAssemblyImport, 
-                                                       (void **)&pIMDAImport));
-
-    // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pAssemblyImporter, pIMDAImport, NULL) != NULL)
-        pIMDAImport->Release();
-}
-
-void PEFile::OpenAssemblyEmitter()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite();
-
-    IMetaDataAssemblyEmit *pIMDAssemblyEmit = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetPersistentMDImport(),
-                                                       IID_IMetaDataAssemblyEmit,
-                                                       (void **)&pIMDAssemblyEmit));
-
-    // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pAssemblyEmitter, pIMDAssemblyEmit, NULL) != NULL)
-        pIMDAssemblyEmit->Release();
-}
-#endif // FEATURE_CORECLR
 
 void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=FALSE*/)
 {
@@ -1362,18 +1165,6 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
     }
     CONTRACTL_END;
     _ASSERTE(bDestructor || !m_bHasPersistentMDImport);
-#ifndef FEATURE_CORECLR
-    if (m_pAssemblyImporter != NULL)
-    {
-        m_pAssemblyImporter->Release();
-        m_pAssemblyImporter = NULL;
-    }
-    if(m_pAssemblyEmitter)
-    {
-        m_pAssemblyEmitter->Release();
-        m_pAssemblyEmitter=NULL;
-    }
-#endif
 
     if (m_pImporter != NULL)
     {
@@ -1393,161 +1184,6 @@ void PEFile::ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData/*=
      }
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-void PEFile::CheckAuthenticodeSignature()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Check any security signature in the header.
-
-    // This publisher data can potentially be cached and passed back in via
-    // PEAssembly::CreateDelayed.
-    //
-    // HOWEVER - even if we cache it, the certificate still may need to be verified at
-    // load time.  The only real caching can be done when the COR_TRUST certificate is
-    // ABSENT.
-    //
-    // (In the case where it is present, we could still theoretically
-    // cache the certificate and re-verify it and at least avoid touching the image
-    // again, however this path is not implemented yet, so this is TBD if we decide
-    // it is an important case to optimize for.)
-
-    if (!HasSecurityDirectory())
-    {
-        LOG((LF_SECURITY, LL_INFO1000, "No certificates found in module\n"));
-    }
-    else if(g_pConfig->GeneratePublisherEvidence())
-    {
-        // <TODO>@todo: Just because we don't have a file path, doesn't mean we can't have a certicate (does it?)</TODO>
-        if (!GetPath().IsEmpty())
-        {
-            GCX_PREEMP();
-
-            // Ignore any errors here - if we fail to validate a certificate, we just don't
-            // include it as evidence.
-
-            DWORD size;
-            CoTaskNewHolder<COR_TRUST> pCor = NULL;
-            // Failing to find a signature is OK.
-            LPWSTR pFileName = (LPWSTR) GetPath().GetUnicode();
-            DWORD dwAuthFlags = COR_NOUI|COR_NOPOLICY;
-#ifndef FEATURE_CORECLR
-            // Authenticode Verification Start
-            FireEtwAuthenticodeVerificationStart_V1(dwAuthFlags, 0, pFileName, GetClrInstanceId());            
-#endif // !FEATURE_CORECLR
-
-            HRESULT hr = ::GetPublisher(pFileName,
-                                          NULL,
-                                          dwAuthFlags,
-                                          &pCor,
-                                          &size);
-
-#ifndef FEATURE_CORECLR
-            // Authenticode Verification End
-            FireEtwAuthenticodeVerificationStop_V1(dwAuthFlags, (ULONG)hr, pFileName, GetClrInstanceId());            
-#endif // !FEATURE_CORECLR
-
-            if( SUCCEEDED(hr) ) { 
-                DWORD index = 0;
-                EnumCertificateAdditionFlags dwFlags = g_pCertificateCache->AddEntry(pCor, &index);
-                switch (dwFlags) {
-                case CacheSaturated:
-                    pCor.SuppressRelease();
-                    m_certificate = pCor.GetValue();
-                    break;
-
-                case Success:
-                    pCor.SuppressRelease();
-                    // falling through
-                case AlreadyExists:
-                    m_certificate = g_pCertificateCache->GetEntry(index);
-                    _ASSERTE(m_certificate);
-                    break;
-                }
-            }
-        }
-    }
-    else 
-    {
-        LOG((LF_SECURITY, LL_INFO1000, "Assembly has an Authenticode signature, but Publisher evidence has been disabled.\n"));
-    }
-
-    m_fCheckedCertificate = TRUE;
-}
-
-HRESULT STDMETHODCALLTYPE
-GetPublisher(__in __in_z IN LPWSTR pwsFileName,      // File name, this is required even with the handle
-             IN HANDLE hFile,            // Optional file name
-             IN DWORD  dwFlags,          // COR_NOUI or COR_NOPOLICY
-             OUT PCOR_TRUST *pInfo,      // Returns a PCOR_TRUST (Use FreeM)
-             OUT DWORD      *dwInfo)     // Size of pInfo.                           
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    
-    GUID gV2 = COREE_POLICY_PROVIDER;
-    COR_POLICY_PROVIDER sCorPolicy;
-    
-    WINTRUST_DATA      sWTD;
-    WINTRUST_FILE_INFO sWTFI;
-    
-    // Set up the COR trust provider
-    memset(&sCorPolicy, 0, sizeof(COR_POLICY_PROVIDER));
-    sCorPolicy.cbSize = sizeof(COR_POLICY_PROVIDER);
-    
-    // Set up the winverify provider structures
-    memset(&sWTD, 0x00, sizeof(WINTRUST_DATA));
-    memset(&sWTFI, 0x00, sizeof(WINTRUST_FILE_INFO));
-    
-    sWTFI.cbStruct      = sizeof(WINTRUST_FILE_INFO);
-    sWTFI.hFile         = hFile;
-    sWTFI.pcwszFilePath = pwsFileName;
-    
-    sWTD.cbStruct       = sizeof(WINTRUST_DATA);
-    sWTD.pPolicyCallbackData = &sCorPolicy; // Add in the cor trust information!!
-    if (dwFlags & COR_NOUI)
-    {
-        sWTD.dwUIChoice     = WTD_UI_NONE;        // No bad UI is overridden in COR TRUST provider
-    }
-    else
-    {
-        sWTD.dwUIChoice     = WTD_UI_ALL;        // No bad UI is overridden in COR TRUST provider
-    }
-    sWTD.dwUnionChoice  = WTD_CHOICE_FILE;
-    sWTD.pFile          = &sWTFI;
-    
-    // Set the policies for the VM (we have stolen VMBased and use it like a flag)
-    if (dwFlags != 0)
-        sCorPolicy.VMBased = dwFlags;
-    
-    LeaveRuntimeHolder holder((size_t)WinVerifyTrust);
-    
-    // WinVerifyTrust calls mscorsecimpl.dll to do the policy check
-    hr = WinVerifyTrust(GetFocus(), &gV2, &sWTD);
-    
-    *pInfo  = sCorPolicy.pbCorTrust;
-    *dwInfo = sCorPolicy.cbCorTrust;
-    
-    return hr;
-} // GetPublisher
-
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // PE file access
@@ -1743,17 +1379,10 @@ static void RuntimeVerifyLog(DWORD level, LoggableAssembly *pLogAsm, const WCHAR
 
 static const LPCWSTR CorCompileRuntimeDllNames[NUM_RUNTIME_DLLS] =
 {
-#ifdef FEATURE_CORECLR
     MAKEDLLNAME_W(W("coreclr")),
-#else
-    MAKEDLLNAME_W(W("CLR")),
-#endif
     MAKEDLLNAME_W(W("clrjit"))
 };
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-static LPCWSTR s_ngenCompilerDllName = NULL;
-#endif //!FEATURE_CORECLR && !CROSSGEN_COMPILE
 
 LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
 {
@@ -1767,36 +1396,6 @@ LPCWSTR CorCompileGetRuntimeDllName(CorCompileRuntimeDlls id)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    if (id == NGEN_COMPILER_INFO)
-    {
-        // The NGen compiler needs to be handled differently as it can be customized,
-        // unlike the other runtime DLLs.
-
-        if (s_ngenCompilerDllName == NULL)
-        {
-            // Check if there is an override for the compiler DLL
-            LPCWSTR ngenCompilerOverride = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NGen_JitName);
-
-            if (ngenCompilerOverride == NULL)
-            {
-                s_ngenCompilerDllName = DEFAULT_NGEN_COMPILER_DLL_NAME;
-            }
-            else
-            {
-                if (wcsstr(ngenCompilerOverride, W(".dll")) == NULL)
-                {
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
-                        NGEN_COMPILER_OVERRIDE_KEY W(" should have a .DLL suffix"));
-                }
-
-                s_ngenCompilerDllName = ngenCompilerOverride;
-            }
-        }
-
-        return s_ngenCompilerDllName;
-    }
-#endif //!FEATURE_CORECLR && !CROSSGEN_COMPILE
 
     return CorCompileRuntimeDllNames[id];
 }
@@ -1823,33 +1422,17 @@ extern HMODULE CorCompileGetRuntimeDll(CorCompileRuntimeDlls id)
     CONTRACTL_END;
 
     // Currently special cased for every entry.
-#ifdef FEATURE_CORECLR
     static_assert_no_msg(NUM_RUNTIME_DLLS == 2);
     static_assert_no_msg(CORECLR_INFO == 0);
-#else // !FEATURE_CORECLR
-    static_assert_no_msg(NUM_RUNTIME_DLLS == 2);
-    static_assert_no_msg(CLR_INFO == 0);
-    static_assert_no_msg(NGEN_COMPILER_INFO == 1);
-#endif // else FEATURE_CORECLR
 
     HMODULE hMod = NULL;
 
     // Try to load the correct DLL
     switch (id)
     {
-#ifdef FEATURE_CORECLR
     case CORECLR_INFO:
         hMod = GetCLRModule();
         break;
-#else // !FEATURE_CORECLR
-    case CLR_INFO:
-        hMod = GetCLRModule();
-        break;
-
-    case NGEN_COMPILER_INFO:
-        hMod = s_ngenCompilerDll;
-        break;
-#endif // else FEATURE_CORECLR
 
     default:
         COMPlusThrowNonLocalized(kExecutionEngineException,
@@ -1869,68 +1452,6 @@ static BOOL RuntimeVerifyNativeImageTimestamps(const CORCOMPILE_VERSION_INFO *in
 {
     STANDARD_VM_CONTRACT;
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    //
-    // We will automatically fail any zap files which were compiled with different runtime dlls.
-    // This is so that we don't load bad ngen images after recompiling or patching the runtime.
-    //
-
-    for (DWORD index = 0; index < NUM_RUNTIME_DLLS; index++)
-    {
-        HMODULE hMod = CorCompileGetRuntimeDll((CorCompileRuntimeDlls)index);
-
-        if (hMod == NULL)
-        {
-            // Unless this is an NGen worker process, we don't want to load JIT compiler just to do a timestamp check.
-            // In an ideal case, all assemblies have native images, and JIT compiler never needs to be loaded at runtime.
-            // Loading JIT compiler just to check its timestamp would reduce the benefits of have native images.
-            // Since CLR and JIT are intended to be serviced together, the possibility of accidentally using native
-            // images created by an older JIT is very small, and is deemed an acceptable risk.
-            // Note that when multiple JIT compilers are used (e.g., clrjit.dll and compatjit.dll on x64 in .NET 4.6),
-            // they must all be in the same patch family.
-            if (!IsCompilationProcess())
-                continue;
-
-            // If we are doing ngen, then eagerly make sure all the system
-            // dependencies are loaded. Else ICorCompileInfo::CheckAssemblyZap()
-            // will not work correctly.
-
-            LPCWSTR wszDllName = CorCompileGetRuntimeDllName((CorCompileRuntimeDlls)index);
-            if (FAILED(g_pCLRRuntime->LoadLibrary(wszDllName, &hMod)))
-            {
-                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unable to load CLR DLL during ngen"));
-            }
-        }
-
-        _ASSERTE(hMod != NULL);
-
-        PEDecoder pe(hMod);
-
-        // Match NT header timestamp and checksum to test DLL identity
-
-        if ((info->runtimeDllInfo[index].timeStamp == pe.GetTimeDateStamp()
-             || info->runtimeDllInfo[index].timeStamp == 0)
-            && (info->runtimeDllInfo[index].virtualSize == pe.GetVirtualSize()
-                || info->runtimeDllInfo[index].virtualSize == 0))
-        {
-            continue;
-        }
-
-        {
-            // set "ComPlus_CheckNGenImageTimeStamp" to 0 to ignore time-stamp-checking
-            static ConfigDWORD checkNGenImageTimeStamp;
-            BOOL enforceCheck = checkNGenImageTimeStamp.val(CLRConfig::EXTERNAL_CheckNGenImageTimeStamp);
-
-            RuntimeVerifyLog(enforceCheck ? LL_ERROR : LL_WARNING,
-                             pLogAsm,
-                             W("Compiled with different CLR DLL (%s). Exact match expected."),
-                             CorCompileGetRuntimeDllName((CorCompileRuntimeDlls)index));
-
-            if (enforceCheck)
-                return FALSE;
-        }
-    }
-#endif // !CROSSGEN_COMPILE && !FEATURE_CORECLR
 
     return TRUE;
 }
@@ -1955,12 +1476,8 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
 
     if (!image->CheckNativeHeaderVersion())
     {
-#ifdef FEATURE_CORECLR
         // Wrong native image version is fatal error on CoreCLR
         ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-#else
-        return FALSE;
-#endif
     }
 
     CORCOMPILE_VERSION_INFO *info = image->GetNativeVersionInfo();
@@ -1970,15 +1487,10 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
     LoggablePEAssembly logAsm(this);
     if (!RuntimeVerifyNativeImageVersion(info, &logAsm))
     {
-#ifdef FEATURE_CORECLR
         // Wrong native image version is fatal error on CoreCLR
         ThrowHR(COR_E_NI_AND_RUNTIME_VERSION_MISMATCH);
-#else
-        return FALSE;
-#endif
     }
 
-#ifdef FEATURE_CORECLR
     CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
 
     if (IsSystem())
@@ -1999,36 +1511,10 @@ BOOL PEAssembly::CheckNativeImageVersion(PEImage *peimage)
     {
         return FALSE;
     }
-#else
-    //
-    // Check image flavor. Skip this check in RuntimeVerifyNativeImageVersion called from fusion - fusion is responsible for choosing the right flavor.
-    //
-    if (!RuntimeVerifyNativeImageFlavor(info, &logAsm))
-    {
-        return FALSE;
-    }
-#endif
 
     return TRUE;
 }
 
-#ifndef FEATURE_CORECLR
-//===========================================================================================================
-// Validates that an NI matches the required flavor (debug, instrumented, etc.)
-//
-//===========================================================================================================
-BOOL RuntimeVerifyNativeImageFlavor(const CORCOMPILE_VERSION_INFO *info, LoggableAssembly *pLogAsm)
-{
-    STANDARD_VM_CONTRACT;
-
-    CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-
-    if ((info->wConfigFlags & configFlags) != configFlags)
-        return FALSE;
-
-    return TRUE;
-}
-#endif
 
 //===========================================================================================================
 // Validates that an NI matches the running CLR, OS, CPU, etc.
@@ -2100,18 +1586,6 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, Loggab
     }
 #endif // CROSSGEN_COMPILE
 
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
-    //
-    // Check the right JIT compiler
-    //
-
-    bool nativeImageBuiltWithRyuJit = ((info->wCodegenFlags & CORCOMPILE_CODEGEN_USE_RYUJIT) != 0);
-    if (UseRyuJit() != nativeImageBuiltWithRyuJit)
-    {
-        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("JIT compiler used to generate native image doesn't match current JIT compiler."));
-        return FALSE;
-    }
-#endif
 
     //
     // The zap is up to date.
@@ -2765,39 +2239,6 @@ ULONG PEFile::GetILImageTimeDateStamp()
     return GetLoadedIL()->GetTimeDateStamp();
 }
 
-#ifdef FEATURE_CAS_POLICY
-
-//---------------------------------------------------------------------------------------
-//
-// Get a SafePEFileHandle for this PEFile
-//
-
-SAFEHANDLE PEFile::GetSafeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    SAFEHANDLE objSafeHandle = NULL;
-
-    GCPROTECT_BEGIN(objSafeHandle);
-
-    objSafeHandle = (SAFEHANDLE)AllocateObject(MscorlibBinder::GetClass(CLASS__SAFE_PEFILE_HANDLE));
-    CallDefaultConstructor(objSafeHandle);
-
-    this->AddRef();
-    objSafeHandle->SetHandle(this);
-
-    GCPROTECT_END();
-
-    return objSafeHandle;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 // ================================================================================
 // PEAssembly class - a PEFile which represents an assembly
@@ -2990,11 +2431,7 @@ PEAssembly::PEAssembly(
     m_creator(clr::SafeAddRef(creator)),
     m_bIsFromGAC(FALSE),
     m_bIsOnTpaList(FALSE)
-#ifdef FEATURE_CORECLR
     ,m_fProfileAssembly(0)
-#else
-    ,m_fStrongNameBypassed(FALSE)
-#endif
 {
     CONTRACTL
     {
@@ -3621,18 +3058,6 @@ PEAssembly *PEAssembly::DoOpenMemory(
     if (!image->CheckILFormat())
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
-#if !defined(FEATURE_CORECLR)
-    if(pBinderToUse != NULL && !isIntrospectionOnly)
-    {
-        ReleaseHolder<ICLRPrivAssembly> pAsm;
-        ReleaseHolder<IAssemblyName> pAssemblyName;
-        IfFailThrow(pBinderToUse->BindAssemblyExplicit(image, &pAssemblyName, &pAsm));
-        PEAssembly* pFile = nullptr;
-        IfFailThrow(GetAppDomain()->BindHostedPrivAssembly(pParentAssembly, pAsm, pAssemblyName, &pFile));
-        _ASSERTE(pFile);
-        RETURN pFile;
-    }
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_FUSION    
     RETURN new PEAssembly(image, NULL, NULL, NULL, NULL, NULL, NULL, pParentAssembly, FALSE, isIntrospectionOnly);
@@ -4203,35 +3628,13 @@ void PEAssembly::VerifyStrongName()
     // checked, to handle the case where we are not loading m_image.
     EnsureImageOpened();
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    if (IsWindowsRuntime())
-    {
-        // Winmd files are always loaded in full trust.
-        m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-        m_fStrongNameVerified = TRUE;        
-        return;
-    }
-#endif
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     if (m_nativeImage == NULL && !GetILimage()->IsTrustedNativeImage())
-#else
-    if (!GetILimage()->IsTrustedNativeImage())
-#endif
     {
         if (!GetILimage()->CheckILFormat())
             ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    // Do not validate strong name signature during CrossGen. This is necessary
-    // to make build-lab scenarios to work.
-    if (IsCompilationProcess())
-    {
-        m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-    }
-    else
-#endif
     // Check the strong name if present.
     if (IsIntrospectionOnly())
     {
@@ -4239,59 +3642,16 @@ void PEAssembly::VerifyStrongName()
         // need to do module hash checks.
         m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
     }
-#if !defined(FEATURE_CORECLR)    
-    //We do this to early out for WinMD files that are unsigned but have NI images as well.
-    else if (!HasStrongNameSignature())
-    {
-#ifdef FEATURE_CAS_POLICY
-        // We only check module hashes if there is a strong name or Authenticode signature
-        if (m_certificate == NULL)
-        {
-            m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-        }
-#endif
-    }
-#endif // !defined(FEATURE_CORECLR)    
     else
     {
-#ifdef FEATURE_CORECLR
         // Runtime policy on CoreCLR is to skip verification of ALL assemblies
         m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
         m_fStrongNameVerified = TRUE;
-#else
-        DWORD verifyOutputFlags = 0;
-        HRESULT hr = GetILimage()->VerifyStrongName(&verifyOutputFlags);
-
-        if (SUCCEEDED(hr))
-        {
-            // Strong name verified or delay sign OK'ed.
-            // We will skip verification of modules in the delay signed case.
-
-            if ((verifyOutputFlags & SN_OUTFLAG_WAS_VERIFIED) == 0)
-                m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-        }
-        else
-        {
-            // Strong name missing or error.  Throw in the latter case.
-            if (hr != CORSEC_E_MISSING_STRONGNAME)
-                ThrowHR(hr);
-
-#ifdef FEATURE_CAS_POLICY
-            // Since we are not strong named, don't check module hashes.
-            // (Unless we have a security certificate, in which case check anyway.)
-
-            if (m_certificate == NULL)
-                m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-#endif
-        }
-
-#endif // FEATURE_CORECLR
     }
 
     m_fStrongNameVerified = TRUE;
 }
 
-#ifdef FEATURE_CORECLR
 BOOL PEAssembly::IsProfileAssembly()
 {
     CONTRACTL
@@ -4324,7 +3684,6 @@ BOOL PEAssembly::IsProfileAssembly()
     m_fProfileAssembly = bProfileAssembly ? 1 : -1;
     return bProfileAssembly;
 }
-#endif // FEATURE_CORECLR
 
 // ------------------------------------------------------------
 // Descriptive strings
@@ -5097,26 +4456,6 @@ LPCWSTR PEFile::GetPathForErrorMessages()
     }
 }
 
-#ifndef FEATURE_CORECLR
-BOOL PEAssembly::IsReportedToUsageLog()
-{
-    LIMITED_METHOD_CONTRACT;
-    BOOL fReported = TRUE;
-
-    if (!IsDynamic())
-        fReported = m_identity->IsReportedToUsageLog();
-
-    return fReported;
-}
-
-void PEAssembly::SetReportedToUsageLog()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsDynamic())
-        m_identity->SetReportedToUsageLog();
-}
-#endif // !FEATURE_CORECLR
 
 #ifdef DACCESS_COMPILE
 TADDR PEFile::GetMDInternalRWAddress()
@@ -5149,12 +4488,10 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
     
     PTR_ICLRPrivBinder pBindingContext = NULL;
     
-#if defined(FEATURE_CORECLR)    
     // Mscorlib is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* TPAbinder is initialized, we dont have a binding context to publish against.
     // Thus, we will always return NULL for its binding context.
     if (!IsSystem())
-#endif // defined(FEATURE_CORECLR)    
     {
         pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
     }

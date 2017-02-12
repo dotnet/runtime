@@ -352,13 +352,6 @@ FCIMPL3(void, RuntimeMethodHandle::CheckLinktimeDemands, ReflectMethodObject *pM
             }
         }
 
-#ifndef FEATURE_CORECLR    
-        if (pCallee->RequiresLinktimeCheck())
-        {
-            Module *pModule = refModule->GetModule();
-            Security::LinktimeCheckMethod(pDecoratedModule->GetAssembly(), pCallee);
-        }
-#endif // !FEATURE_CORECLR
     }
     HELPER_METHOD_FRAME_END();
 }
@@ -568,43 +561,6 @@ FCIMPLEND
 
 
 
-#ifndef FEATURE_CORECLR
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL bResult = FALSE;
-
-    REFLECTCLASSBASEREF rtType1 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType1UNSAFE);
-    REFLECTCLASSBASEREF rtType2 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType2UNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rtType1, rtType2);
-    if (rtType1 == NULL)
-        COMPlusThrowArgumentNull(W("rtType1"));
-    if (rtType2 == NULL)
-        COMPlusThrowArgumentNull(W("rtType2"));
-
-    bResult = rtType1->GetType().IsEquivalentTo(rtType2->GetType());
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentType, ReflectClassBaseObject *rtTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL bResult = FALSE;
-
-    TypeHandle typeHandle = rtTypeUNSAFE->GetType();
-    if (!typeHandle.IsTypeDesc())
-        bResult = typeHandle.AsMethodTable()->GetClass()->IsEquivalentType();
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_COMINTEROP
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE)
@@ -3263,36 +3219,6 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
 }
 FCIMPLEND
 
-#ifdef FEATURE_APTCA
-FCIMPL2(FC_BOOL_RET, AssemblyHandle::AptcaCheck, AssemblyBaseObject* pTargetAssemblyUNSAFE,  AssemblyBaseObject* pSourceAssemblyUNSAFE) 
-{
-    FCALL_CONTRACT;
-
-    ASSEMBLYREF refTargetAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pTargetAssemblyUNSAFE);
-    ASSEMBLYREF refSourceAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pSourceAssemblyUNSAFE);
-    
-    if ((refTargetAssembly == NULL) || (refSourceAssembly == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pTargetAssembly = refTargetAssembly->GetDomainAssembly();
-    DomainAssembly *pSourceAssembly = refSourceAssembly->GetDomainAssembly();
-    
-    if (pTargetAssembly == pSourceAssembly)
-        FC_RETURN_BOOL(TRUE);
-
-    BOOL bResult = TRUE;
-    
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refSourceAssembly, refTargetAssembly);
-    {
-        bResult = ( pTargetAssembly->GetAssembly()->AllowUntrustedCaller() || // target assembly allows untrusted callers unconditionally
-                    pSourceAssembly->GetSecurityDescriptor()->IsFullyTrusted());
-    }
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-#endif // FEATURE_APTCA
     
 void QCALLTYPE ModuleHandle::GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine)
 {

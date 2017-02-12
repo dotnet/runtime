@@ -291,9 +291,9 @@ public:
 
     BOOL GetModuleZapFile(LPCWSTR name, SString &path);
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
     BOOL AllowUntrustedCaller();
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
     
 #ifdef LOGGING
     LPCWSTR GetDebugName()
@@ -531,23 +531,7 @@ public:
     void AddType(Module* pModule,
                  mdTypeDef cl);
     void AddExportedType(mdExportedType cl);
-#ifndef FEATURE_CORECLR
-    void PrepareSavingManifest(ReflectionModule *pAssemblyModule);
-    mdFile AddFile(LPCWSTR wszFileName);
-    void SetFileHashValue(mdFile tkFile, LPCWSTR wszFullFileName);
-#endif
     mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter = NULL, BOOL fUsePublicKeyToken = TRUE);
-#ifndef FEATURE_CORECLR
-    mdExportedType AddExportedTypeOnDisk(LPCWSTR wszExportedType, mdToken tkImpl, mdToken tkTypeDef, CorTypeAttr flags);
-    mdExportedType AddExportedTypeInMemory(LPCWSTR wszExportedType, mdToken tkImpl, mdToken tkTypeDef, CorTypeAttr flags);
-    void AddStandAloneResource(LPCWSTR wszName, LPCWSTR wszDescription, LPCWSTR wszMimeType, LPCWSTR wszFileName, LPCWSTR wszFullFileName, int iAttribute);
-    void SaveManifestToDisk(LPCWSTR wszFileName, int entrypoint, int fileKind, DWORD corhFlags, DWORD peFlags);
-#endif // FEATURE_CORECLR
-#ifndef FEATURE_CORECLR
-    void AddDeclarativeSecurity(DWORD dwAction, void const *pValue, DWORD cbValue);
-
-    IMetaDataAssemblyEmit *GetOnDiskMDAssemblyEmitter();
-#endif // FEATURE_CORECLR
 
     //****************************************************************************************
 
@@ -714,13 +698,6 @@ public:
     IWinMDImport *GetManifestWinMDImport();
 #endif
 
-#ifndef FEATURE_CORECLR
-    BOOL SupportsAutoNGen()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_fSupportsAutoNGen;
-    }
-#endif
 
 protected:
 
@@ -797,15 +774,6 @@ private:
 
     void CacheFriendAssemblyInfo();
    
-#ifndef FEATURE_CORECLR
-    void GenerateBreadcrumbForServicing();
-    void WriteBreadcrumb(const SString &ssDisplayName);
-    bool HasServiceableAttribute();
-    bool IsExistingOobAssembly();
-    void CheckDenyList(const SString &ssDisplayName);
-
-    BOOL SupportsAutoNGenWorker();
-#endif
 
     PTR_BaseDomain        m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
@@ -870,9 +838,6 @@ private:
 
     DWORD                 m_dwReliabilityContract;
 
-#ifndef FEATURE_CORECLR
-    BOOL                  m_fSupportsAutoNGen;
-#endif
 };
 
 typedef Assembly::ModuleIterator ModuleIterator;
@@ -923,25 +888,6 @@ public:
         return IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies);
     }
 
-#ifndef FEATURE_CORECLR
-    //------------------------------------------------------------------------------
-    // It is undesirable to reintroduce the concept of inquiring about friendship without specifying a member or type
-    // but necessary for TP. In case of doubt, it's safer to return "true" as this won't affect
-    // correctness (but might cause unnecessary ngen's when updating assemblies.)
-    //------------------------------------------------------------------------------
-    bool MightGrantFriendAccessTo(PEAssembly *pAccessingAssembly)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            PRECONDITION(CheckPointer(pAccessingAssembly));
-        }
-        CONTRACTL_END;
-
-        return IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies);
-    }
-#endif // !FEATURE_CORECLR
 
     bool IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     {
@@ -977,25 +923,5 @@ private:
 
 #endif // !DACCESS_COMPILE
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-class ExistingOobAssemblyList
-{
-public:
-#ifndef DACCESS_COMPILE
-    ExistingOobAssemblyList();
-
-    bool IsOnlist(Assembly *pAssembly);
-
-    static void Init();
-    static ExistingOobAssemblyList *Instance() { return s_pInstance; }
-#endif
-
-private:
-    ArrayList m_alExistingOobAssemblies;
-
-    // The single instance of this class:
-    static ExistingOobAssemblyList *s_pInstance;
-};
-#endif // !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
 
 #endif

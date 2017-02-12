@@ -66,9 +66,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsFrameworkAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
     static FCDECL1(UINT32,  GetAppDomainId, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void , PublishAnonymouslyHostedDynamicMethodsAssembly, AssemblyBaseObject * pAssemblyUNSAFE);
-#ifdef FEATURE_CORECLR    
     static void QCALLTYPE SetNativeDllSearchDirectories(__in_z LPCWSTR wszAssembly);
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     static FCDECL0(void,  EnableMonitoring);
@@ -121,19 +119,7 @@ public:
     void QCALLTYPE SetSecurityHomogeneousFlag(QCall::AppDomainHandle adhTarget,
                                               BOOL fRuntimeSuppliedHomgenousGrantSet);
 
-#ifdef FEATURE_CAS_POLICY
-    static
-    void QCALLTYPE SetLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
 
-    static
-    BOOL QCALLTYPE IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
-#endif // FEATURE_CAS_POLICY
-
-#ifdef FEATURE_APTCA
-    static
-    void QCALLTYPE SetCanonicalConditionalAptcaList(QCall::AppDomainHandle adhTarget,
-                                                    LPCWSTR wszCanonicalConditionalAptcaList);
-#endif // FEATURE_APTCA
 
 #ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
     static

@@ -40,18 +40,14 @@
 #include "safemath.h"
 
 
-#ifdef _ASSERTE
 #undef _ASSERTE
-#endif
 
-#ifndef _ASSERTE
 #ifdef _DEBUG
 #define _ASSERTE(expr)         \
     do { if (!(expr) ) { ExtErr("_ASSERTE fired:\n\t%s\n", #expr); if (IsDebuggerPresent()) DebugBreak(); } } while (0)
 #else
 #define _ASSERTE(x)
 #endif
-#endif // ASSERTE
 
 inline size_t ALIGN_DOWN( size_t val, size_t alignment )
 {

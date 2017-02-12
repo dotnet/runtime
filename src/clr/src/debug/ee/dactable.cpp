@@ -40,11 +40,7 @@ extern DWORD gThreadTLSIndex;
 extern DWORD gAppDomainTLSIndex;
 
 #ifdef FEATURE_APPX
-#if defined(FEATURE_CORECLR)
 extern BOOL g_fAppX;
-#else
-extern PTR_AppXRTInfo g_pAppXRTInfo;
-#endif
 #endif // FEATURE_APPX
 
 DacGlobals g_dacTable;

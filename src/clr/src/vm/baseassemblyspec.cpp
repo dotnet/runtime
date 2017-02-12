@@ -122,7 +122,6 @@ BOOL BaseAssemblySpec::IsMscorlib()
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
 
-#ifdef FEATURE_CORECLR
 BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 {
     CONTRACTL
@@ -150,9 +149,6 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 }
 
 #define MSCORLIB_PUBLICKEY g_rbTheSilverlightPlatformKey
-#else
-#define MSCORLIB_PUBLICKEY g_rbNeutralPublicKey
-#endif
 
 
 // A satellite assembly for mscorlib is named "mscorlib.resources" or 

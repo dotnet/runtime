@@ -2729,12 +2729,10 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     if (AppX::IsAppXProcess())
     { 
         COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
     }
-#endif // FEATURE_CORECLR
     
     SafeVariantClear(pOle);
 
@@ -2859,12 +2857,10 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
    if (AppX::IsAppXProcess())
    { 
        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
    }
-#endif // FEATURE_CORECLR
 
     HRESULT hr = MarshalCommonOleRefVariantForObject(pObj, pOle);
 
@@ -3084,12 +3080,10 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
     }
     CONTRACT_END;
 
-#ifdef FEATURE_CORECLR
     if (AppX::IsAppXProcess())
     { 
         COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
     }
-#endif // FEATURE_CORECLR
 
 #ifdef MDA_SUPPORTED
     MdaInvalidVariant* pProbe = MDA_GET_ASSISTANT(InvalidVariant);

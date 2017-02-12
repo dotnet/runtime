@@ -38,16 +38,10 @@ inline SecurityDescriptor::SecurityDescriptor(AppDomain *pAppDomain,
                                               DomainAssembly *pAssembly,
                                               PEFile* pPEFile,
                                               LoaderAllocator *pLoaderAllocator) :
-#ifdef FEATURE_CAS_POLICY
-    m_hAdditionalEvidence(NULL),
-#endif // FEATURE_CAS_POLICY
     m_pAssem(pAssembly),
     m_pPEFile(pPEFile),
     m_pAppDomain(pAppDomain),
     m_fSDResolved(FALSE),
-#ifdef FEATURE_CAS_POLICY
-    m_fEvidenceComputed(FALSE),
-#endif // FEATURE_CAS_POLICY
     m_dwSpecialFlags(0),
     m_pLoaderAllocator(pLoaderAllocator)
 #ifndef CROSSGEN_COMPILE
@@ -59,14 +53,6 @@ inline SecurityDescriptor::SecurityDescriptor(AppDomain *pAppDomain,
 }
 #endif // !DACCESS_COMPILE
 
-#ifdef FEATURE_CAS_POLICY
-inline void SecurityDescriptor::SetEvidenceComputed()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fEvidenceComputed = TRUE;
-}
-
-#endif // FEATURE_CAS_POLICY
 
 // Checks for one of the special security flags such as FullTrust or UnmanagedCode
 FORCEINLINE BOOL SecurityDescriptor::CheckSpecialFlag (DWORD flags) const
@@ -94,16 +80,5 @@ inline SecurityDescriptorBase<IT>::SecurityDescriptorBase(AppDomain *pAppDomain,
 }
 #endif // !DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR
-
-#ifndef DACCESS_COMPILE
-inline PEFileSecurityDescriptor::PEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile) :
-    SecurityDescriptorBase<IPEFileSecurityDescriptor>(pDomain, NULL,pPEFile, pDomain->GetLoaderAllocator())
-{
-    LIMITED_METHOD_CONTRACT
-}
-#endif // !DACCESS_COMPILE
-
-#endif // !FEATURE_CORECLR
 
 #endif // #define __SECURITYDESCRIPTOR_INL__

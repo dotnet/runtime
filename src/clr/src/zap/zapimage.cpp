@@ -41,10 +41,6 @@ ZapImage::ZapImage(Zapper *zapper)
   : m_zapper(zapper)
     /* Everything else is initialized to 0 by default */
 {
-#ifndef FEATURE_CORECLR
-    if (m_zapper->m_pOpt->m_statOptions)
-        m_stats = new ZapperStats();
-#endif
 }
 
 ZapImage::~ZapImage()
@@ -57,10 +53,6 @@ ZapImage::~ZapImage()
     //
     // Clean up.
     //
-#ifndef FEATURE_CORECLR
-    if (m_stats != NULL)
-        delete m_stats;
-#endif
 
     if (m_pModuleFileName != NULL)
         delete [] m_pModuleFileName;
@@ -172,9 +164,7 @@ void ZapImage::InitializeSections()
 
     m_pHelperThunks = new (GetHeap()) ZapNode * [CORINFO_HELP_COUNT];
 
-#ifdef FEATURE_CORECLR
     if (!m_zapper->m_pOpt->m_fNoMetaData)
-#endif
     {
         m_pILMetaData = new (GetHeap()) ZapILMetaData(this);
         m_pILMetaDataSection->Place(m_pILMetaData);
@@ -226,11 +216,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
     m_pHeaderSection->Place(m_pImportSectionsTable);
 
     {
-#ifdef FEATURE_CORECLR
 #define COMPILER_NAME "CoreCLR"
-#else
-#define COMPILER_NAME "CLR"
-#endif
 
         const char * pCompilerIdentifier = COMPILER_NAME " " FX_FILEVERSION_STR " " QUOTE_MACRO(__BUILDMACHINE__);
         ZapBlob * pCompilerIdentifierBlob = new (GetHeap()) ZapBlobPtr((PVOID)pCompilerIdentifier, strlen(pCompilerIdentifier) + 1);
@@ -1186,10 +1172,6 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
 
     HANDLE hFile = GenerateFile(wszOutputFileName, pNativeImageSig);
 
-#ifndef FEATURE_CORECLR
-    if (m_stats != NULL)
-        PrintStats(wszOutputFileName);
-#endif
 
 #ifdef FEATURE_FUSION
     CompressFile(wszOutputFileName[0], hFile);
@@ -1354,10 +1336,6 @@ void ZapImage::CalculateZapBaseAddress()
         //
         // CoreCLR currently always loads both the IL and the native image, so
         // move the native image out of the way.
-#ifndef FEATURE_CORECLR
-        if (!m_ModuleDecoder.IsDll() ||     // exes always get loaded to their preferred base address
-            !m_ModuleDecoder.IsILOnly())    // since the IL (IJW) image will be loaded first
-#endif // !FEATURE_CORECLR
         {
             baseAddress += m_ModuleDecoder.GetVirtualSize();
         }
@@ -1498,54 +1476,6 @@ void ZapImage::Open(CORINFO_MODULE_HANDLE hModule,
     CalculateZapBaseAddress();
 }
 
-#if !defined(FEATURE_CORECLR)
-
-#if (_WIN32_WINNT < _WIN32_WINNT_WIN8)
-
-typedef struct _WIN32_MEMORY_RANGE_ENTRY {
-
-    PVOID VirtualAddress;
-    SIZE_T NumberOfBytes;
-
-} WIN32_MEMORY_RANGE_ENTRY, *PWIN32_MEMORY_RANGE_ENTRY;
-
-#endif
-
-typedef BOOL  
-(WINAPI *PfnPrefetchVirtualMemory)(  
-    _In_ HANDLE hProcess,  
-    _In_ ULONG_PTR NumberOfEntries,  
-    _In_reads_(NumberOfEntries) PWIN32_MEMORY_RANGE_ENTRY VirtualAddresses,  
-    _In_ ULONG Flags  
-    );  
-  
-
-void PrefetchVM(void * pStartAddress, SIZE_T size)
-{
-    static PfnPrefetchVirtualMemory s_pfnPrefetchVirtualMemory = NULL;  
-
-    if (s_pfnPrefetchVirtualMemory == NULL)
-    {
-        s_pfnPrefetchVirtualMemory = (PfnPrefetchVirtualMemory) GetProcAddress(WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W), "PrefetchVirtualMemory");  
-
-        if (s_pfnPrefetchVirtualMemory == NULL)
-        {
-            s_pfnPrefetchVirtualMemory = (PfnPrefetchVirtualMemory) (1);
-        }
-    }
-
-    if (s_pfnPrefetchVirtualMemory > (PfnPrefetchVirtualMemory) (1))
-    {
-        WIN32_MEMORY_RANGE_ENTRY range;
-
-        range.VirtualAddress = pStartAddress;
-        range.NumberOfBytes  = size;
-
-        s_pfnPrefetchVirtualMemory(GetCurrentProcess(), 1, & range, 0);
-    }
-}
-
-#endif
 
 
 
@@ -1555,10 +1485,6 @@ void PrefetchVM(void * pStartAddress, SIZE_T size)
 
 void ZapImage::Preload()
 {
-#if !defined(FEATURE_CORECLR)
-    // Prefetch the whole IL image into memory to avoid small reads (usually 16kb blocks)
-    PrefetchVM(m_ModuleDecoder.GetBase(), m_ModuleDecoder.GetSize());
-#endif
 
     CorProfileData *  pProfileData = NewProfileData();
     m_pPreloader = m_zapper->m_pEECompileInfo->PreloadModule(m_hModule, this, pProfileData);
@@ -1698,14 +1624,6 @@ void ZapImage::OutputTables()
 
     if (IsReadyToRunCompilation())
     {
-#ifndef FEATURE_CORECLR
-        // Some older versions of Windows (e.g., Win7) can incorrectly fixup
-        // relocations if IsDll is not set. In CoreCLR, we handle this by
-        // always using the default value of IsDll, which is true. We can't
-        // use the same fix in desktop CLR, since in this case the ReadyToRun
-        // image can be used to create processes.
-        SetIsDll(m_ModuleDecoder.IsDll());
-#endif
 
         SetSizeOfStackReserve(m_ModuleDecoder.GetSizeOfStackReserve());
         SetSizeOfStackCommit(m_ModuleDecoder.GetSizeOfStackCommit());
@@ -1714,7 +1632,7 @@ void ZapImage::OutputTables()
 #if defined(FEATURE_PAL)
     // PAL library requires native image sections to align to page bounaries.
     SetFileAlignment(0x1000);
-#elif defined(_TARGET_ARM_) && defined(FEATURE_CORECLR) && defined(FEATURE_CORESYSTEM)
+#elif defined(_TARGET_ARM_) && defined(FEATURE_CORESYSTEM)
     if (!IsReadyToRunCompilation())
     {
         // On ARM CoreSys builds, crossgen will use 4k file alignment, as requested by Phone perf team
@@ -2627,15 +2545,6 @@ HRESULT ZapImage::parseProfileData()
     }
 
     // CoreCLR should never be presented with V1 IBC data.
-#ifndef FEATURE_CORECLR
-    if ((fileHeader->Version == CORBBTPROF_V1_VERSION) && CanConvertIbcData())
-    {
-        // Read and convert V1 data
-        m_zapper->Info(W("Converting V1 IBC data to latest format.\n"));
-        convertFromV1 = true;
-    }
-    else
-#endif
     if (fileHeader->Version == CORBBTPROF_V3_VERSION)
     {
         CORBBTPROF_FILE_OPTIONAL_HEADER *optionalHeader =
@@ -3576,23 +3485,17 @@ void ZapImage::FileNotFoundError(LPCWSTR pszMessage)
     level = CORZAP_LOGLEVEL_ERROR;
 #endif
 
-#ifndef FEATURE_CORECLR
-    m_zapper->Print(level, W("Warning: %s. If this assembly is found during runtime of an application, then the native image currently being generated will not be used.\n"), pszMessage);
-#else
     m_zapper->Print(level, W("Warning: %s.\n"), pszMessage);
-#endif
 
     fileNotFoundErrorsTable.Append(message);
 }
 
 void ZapImage::Error(mdToken token, HRESULT hr, LPCWSTR message)
 {
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     // Missing dependencies are reported as fatal errors in code:CompilationDomain::BindAssemblySpec.
     // Avoid printing redundant error message for them.
     if (FAILED(g_hrFatalError))
         ThrowHR(g_hrFatalError);
-#endif
 
     CorZapLogLevel level = CORZAP_LOGLEVEL_ERROR;
 

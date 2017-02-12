@@ -263,18 +263,6 @@ CMiniMdRW::ApplyDelta(
         return E_INVALIDARG;
     }
     
-#ifndef FEATURE_CORECLR    
-    // Verify that the delta is based on the base.
-    IfFailGo(mdDelta.getEncBaseIdOfModule(pModDelta, &GuidDelta));
-    IfFailGo(getEncBaseIdOfModule(pModBase,&GuidBase));
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_DeltaCheck) && 
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_UseMinimalDeltas) &&
-        (GuidDelta != GuidBase))
-    {
-        _ASSERTE(!"The Delta MetaData is based on a different generation than the current MetaData.");
-        return E_INVALIDARG;
-    }
-#endif //!FEATURE_CORECLR    
     
     // Let the other md prepare for sparse records.
     IfFailGo(mdDelta.StartENCMap());
@@ -390,19 +378,6 @@ ErrExit:
     HRESULT hrReturn = hr;
     IfFailRet(mdDelta.EndENCMap());
     
-#ifndef FEATURE_CORECLR
-    if (SUCCEEDED(hrReturn) && 
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_DeltaCheck) && 
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_UseMinimalDeltas))
-    {
-        GUID GuidNewBase;
-        
-        // We'll use the delta's 'delta guid' for our new base guid
-        IfFailRet(mdDelta.getEncIdOfModule(pModDelta, &GuidNewBase));
-        
-        IfFailRet(PutGuid(TBL_Module, ModuleRec::COL_EncBaseId, pModBase, GuidNewBase));
-    }
-#endif //!FEATURE_CORECLR
     
     return hrReturn;
 } // CMiniMdRW::ApplyDelta

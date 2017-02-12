@@ -339,10 +339,6 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
 #endif
 
-#ifndef FEATURE_CORECLR
-DEFINE_METASIG_T(SM(ExecutionContext_ContextCallback_Object_Bool_RetVoid, \
-                 C(EXECUTIONCONTEXT) C(CONTEXTCALLBACK) j F, v))
-#endif
 #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
 DEFINE_METASIG_T(SM(SecurityContext_ContextCallback_Object_RetVoid, \
                  C(SECURITYCONTEXT) C(CONTEXTCALLBACK) j, v))
@@ -368,9 +364,6 @@ DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
 DEFINE_METASIG_T(SM(Evidence_RetEvidence, C(EVIDENCE), C(EVIDENCE)))
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METASIG_T(SM(PEFile_Evidence_RetEvidence, C(SAFE_PEFILE_HANDLE) C(EVIDENCE), C(EVIDENCE)))
-#endif // FEATURE_CAS_POLICY
 DEFINE_METASIG_T(SM(Evidence_Asm_RetEvidence, C(EVIDENCE) C(ASSEMBLY), C(EVIDENCE)))
 DEFINE_METASIG_T(IM(Evidence_RetVoid, C(EVIDENCE), v))
 
@@ -405,9 +398,6 @@ DEFINE_METASIG(IM(RetBool, _, F))
 DEFINE_METASIG(IM(RetArrByte, _, a(b)))
 DEFINE_METASIG_T(IM(RetArrParameterInfo, _, a(C(PARAMETER))))
 DEFINE_METASIG_T(IM(RetCultureInfo, _, C(CULTURE_INFO)))
-#ifdef FEATURE_CAS_POLICY
-DEFINE_METASIG_T(IM(RetSecurityElement, _, C(SECURITY_ELEMENT)))
-#endif // FEATURE_CAS_POLICY
 
 DEFINE_METASIG_T(SM(RetThread, _, C(THREAD)))
 
@@ -564,9 +554,6 @@ DEFINE_METASIG_T(SM(Str_Evidence_AppDomainSetup_RetAppDomain, s C(EVIDENCE) C(AP
 DEFINE_METASIG_T(SM(Str_Evidence_Str_Str_Bool_RetAppDomain, s C(EVIDENCE) s s F, C(APP_DOMAIN)))
 DEFINE_METASIG_T(SM(Str_RetAppDomain, s, C(APP_DOMAIN)))
 DEFINE_METASIG_T(SM(Str_AppDomainSetup_Evidence_Evidence_IntPtr_Str_ArrStr_ArrStr_RetObj, s C(APPDOMAIN_SETUP) C(EVIDENCE) C(EVIDENCE) I s a(s) a(s), j))
-#ifdef FEATURE_APTCA
-DEFINE_METASIG(IM(PtrChar_Int_PtrByte_Int_RetBool, P(u) i P(b) i, F))
-#endif //FEATURE_APTCA
 #ifdef FEATURE_COMINTEROP
 // System.AppDomain.OnReflectionOnlyNamespaceResolveEvent
 DEFINE_METASIG_T(IM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))

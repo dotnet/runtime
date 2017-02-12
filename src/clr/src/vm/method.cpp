@@ -31,9 +31,6 @@
 #include "jitinterface.h"
 #include "runtimehandles.h"
 #include "eventtrace.h"
-#ifndef FEATURE_CORECLR
-#include "fxretarget.h"
-#endif
 #include "interoputil.h"
 #include "prettyprintsig.h"
 #include "formattype.h"
@@ -5227,36 +5224,6 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
     DWORD nbytes = (DWORD)(strlen(GetEntrypointName()) + 1);
     szAnsiEntrypointName[nbytes] = '\0'; // Add an extra '\0'.
 
-#if !defined(FEATURE_CORECLR) && defined(_WIN64)
-    //
-    // Forward {Get|Set}{Window|Class}Long to their corresponding Ptr version
-    //
-
-    // LONG      SetWindowLong(   HWND hWnd, int nIndex, LONG     dwNewLong);
-    // LONG_PTR  SetWindowLongPtr(HWND hWnd, int nIndex, LONG_PTR dwNewLong);
-    // 
-    // LONG      GetWindowLong(   HWND hWnd, int nIndex);
-    // LONG_PTR  GetWindowLongPtr(HWND hWnd, int nIndex);
-    // 
-    // DWORD     GetClassLong(    HWND hWnd, int nIndex);
-    // ULONG_PTR GetClassLongPtr( HWND hWnd, int nIndex);
-    // 
-    // DWORD     SetClassLong(    HWND hWnd, int nIndex, LONG     dwNewLong);
-    // ULONG_PTR SetClassLongPtr( HWND hWnd, int nIndex, LONG_PTR dwNewLong);
-
-    if (!SString::_stricmp(GetEntrypointName(), "SetWindowLong") ||
-        !SString::_stricmp(GetEntrypointName(), "GetWindowLong") ||
-        !SString::_stricmp(GetEntrypointName(), "SetClassLong") ||
-        !SString::_stricmp(GetEntrypointName(), "GetClassLong"))
-    {
-        szAnsiEntrypointName[nbytes-1] = 'P';
-        szAnsiEntrypointName[nbytes+0] = 't';
-        szAnsiEntrypointName[nbytes+1] = 'r';
-        szAnsiEntrypointName[nbytes+2] = '\0';
-        szAnsiEntrypointName[nbytes+3] = '\0';
-        nbytes += 3;
-    }
-#endif // !FEATURE_CORECLR && _WIN64
 
     // If the program wants the ANSI api or if Unicode APIs are unavailable.
     if (IsNativeAnsi())
@@ -5279,25 +5246,6 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
 
     if (!pFunc)
     {
-#if !defined(FEATURE_CORECLR)
-        if (hMod == CLRGetModuleHandle(W("kernel32.dll")))
-        {
-            szAnsiEntrypointName[nbytes-1] = '\0';
-            if (0==strcmp(szAnsiEntrypointName, "MoveMemory") ||
-                0==strcmp(szAnsiEntrypointName, "CopyMemory"))
-            {
-                pFunc = GetProcAddress(hMod, funcName = "RtlMoveMemory");
-            }
-            else if (0==strcmp(szAnsiEntrypointName, funcName = "FillMemory"))
-            {
-                pFunc = GetProcAddress(hMod, funcName = "RtlFillMemory");
-            }
-            else if (0==strcmp(szAnsiEntrypointName, funcName = "ZeroMemory"))
-            {
-                pFunc = GetProcAddress(hMod, funcName = "RtlZeroMemory");
-            }
-        }
-#endif // !FEATURE_CORECLR
 
 #if defined(_TARGET_X86_)
         /* try mangled names only for __stdcalls */
@@ -5365,29 +5313,6 @@ void MethodDesc::ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImpo
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    // We only care about this bit for NDirect and ComPlusCall
-    if (!IsNDirect() && !IsComPlusCall())
-        return;
-
-    BOOL hasAttr = FALSE;
-    HRESULT hr = pImport->GetCustomAttributeByName(GetMemberDef(),
-                                                    COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                    NULL,
-                                                    NULL);
-    IfFailThrow(hr);
-    hasAttr = (hr == S_OK);
-
-
-    if (IsNDirect())
-        ((NDirectMethodDesc*)this)->SetSuppressUnmanagedCodeAccessAttr(hasAttr);
-
-#ifdef FEATURE_COMINTEROP
-    if (IsComPlusCall())
-        ((ComPlusCallMethodDesc*)this)->SetSuppressUnmanagedCodeAccessAttr(hasAttr);
-#endif
-
-#endif // FEATURE_COMINTEROP
 }
 
 //*******************************************************************************
@@ -5402,7 +5327,6 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
         g_NativeCallableAttribute,
         NULL,
@@ -5411,7 +5335,6 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     {
         return TRUE;
     }
-#endif //FEATURE_CORECLR
 
     return FALSE;
 }
@@ -5421,27 +5344,7 @@ BOOL MethodDesc::HasSuppressUnmanagedCodeAccessAttr()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     return TRUE;
-#else // FEATURE_CORECLR
-
-    // In AppX processes, there is only one full trust AppDomain, so there is never any need to do a security
-    // callout on interop stubs
-    if (AppX::IsAppXProcess())
-    {
-        return TRUE;
-    }
-
-    if (IsNDirect())
-        return ((NDirectMethodDesc*)this)->HasSuppressUnmanagedCodeAccessAttr();
-#ifdef FEATURE_COMINTEROP
-    else if (IsComPlusCall())
-        return ((ComPlusCallMethodDesc*)this)->HasSuppressUnmanagedCodeAccessAttr();
-#endif  // FEATURE_COMINTEROP
-    else
-        return FALSE;
-
-#endif // FEATURE_CORECLR
 }
 
 #ifdef FEATURE_COMINTEROP
