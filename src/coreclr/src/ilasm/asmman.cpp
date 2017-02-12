@@ -150,8 +150,6 @@ void    AsmMan::SetModuleName(__inout_opt __nullterminated char* szName)
     }
 }
 //==============================================================================================================
-// Borrowed from VM\assembly.cpp
-//==============================================================================================================
 
 void    AsmMan::AddFile(__in __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob)
 {
