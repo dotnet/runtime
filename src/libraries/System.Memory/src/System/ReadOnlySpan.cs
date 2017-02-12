@@ -111,7 +111,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlySpan(void* pointer, int length)
         {
-            if (!SpanHelpers.IsReferenceFree<T>())
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
