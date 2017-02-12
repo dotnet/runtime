@@ -3390,15 +3390,9 @@ private:
 
     void InitializeDefaultDomainManager ();
 
-#ifdef FEATURE_CLICKONCE
-    void InitializeDefaultClickOnceDomain();
-#endif // FEATURE_CLICKONCE
 
     void InitializeDefaultDomainSecurity();
 public:
-#ifdef FEATURE_CLICKONCE
-    BOOL IsClickOnceAppDomain();
-#endif // FEATURE_CLICKONCE
 
 protected:
     BOOL PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,

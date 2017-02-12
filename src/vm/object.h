@@ -2273,10 +2273,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 #ifdef FEATURE_REMOTING
     OBJECTREF    m_pDefaultContext;     // Default managed context for this AD.
 #endif    
-#ifdef FEATURE_CLICKONCE
-    OBJECTREF    m_pActivationContext;   // ClickOnce ActivationContext.
-    OBJECTREF    m_pApplicationIdentity; // App ApplicationIdentity.
-#endif    
     OBJECTREF    m_pApplicationTrust;    // App ApplicationTrust.
 #ifdef FEATURE_IMPERSONATION
     OBJECTREF    m_pDefaultPrincipal;  // Lazily computed default principle object used by threads
@@ -2358,13 +2354,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
         return m_bHasSetPolicy;
     }
 
-#ifdef FEATURE_CLICKONCE
-    BOOL HasActivationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pActivationContext != NULL;
-    }
-#endif // FEATURE_CLICKONCE
 
     // Returns the reference to the delegate of the first chance exception notification handler
     OBJECTREF GetFirstChanceExceptionNotificationHandler()
@@ -2386,9 +2375,6 @@ class AppDomainSetupObject : public Object
     STRINGREF m_AppBase;
     OBJECTREF m_AppDomainInitializer;
     PTRARRAYREF m_AppDomainInitializerArguments;
-#ifdef FEATURE_CLICKONCE
-    OBJECTREF m_ActivationArguments;
-#endif // FEATURE_CLICKONCE
     STRINGREF m_ApplicationTrust;
     I1ARRAYREF m_ConfigurationBytes;
     STRINGREF m_AppDomainManagerAssembly;
