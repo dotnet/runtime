@@ -2467,12 +2467,10 @@ BOOL MethodDesc::IsFCallOrIntrinsic()
     if (IsFCall() || IsArray())
         return TRUE;
 
-#ifdef FEATURE_SPAN_OF_T
     // Intrinsic methods on ByReference<T> or Span<T>
     MethodTable * pMT = GetMethodTable();
     if (pMT->IsByRefLike() && pMT->GetModule()->IsSystem())
         return TRUE;
-#endif
 
     return FALSE;
 }
