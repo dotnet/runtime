@@ -6,7 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-#if netcoreapp11
+#if netcoreapp
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Tests;
 #endif
@@ -778,7 +778,7 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => ((IStructuralComparable)a).CompareTo("string", DummyTestComparer.Instance));
 
             Assert.Equal("(1, 2, 3, 4, 5, 6, 7, )", CreateLong(1, 2, 3, 4, 5, 6, 7, new ValueTuple()).ToString());
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create();
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Throws<IndexOutOfRangeException>(() => it[0].ToString());
@@ -809,7 +809,7 @@ namespace System.Tests
             Assert.Equal("()", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -841,7 +841,7 @@ namespace System.Tests
             Assert.Equal("(, )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -876,7 +876,7 @@ namespace System.Tests
             Assert.Equal("(, , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2, 3);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -915,7 +915,7 @@ namespace System.Tests
             Assert.Equal("(, , , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2, 3, 4);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -957,7 +957,7 @@ namespace System.Tests
             Assert.Equal("(, , , , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2, 3, 4, 5);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -1002,7 +1002,7 @@ namespace System.Tests
             Assert.Equal("(, , , , , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2, 3, 4, 5, 6);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -1050,7 +1050,7 @@ namespace System.Tests
             Assert.Equal("(, , , , , , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7);
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -1122,7 +1122,7 @@ namespace System.Tests
             Assert.Equal("(, , , , , , , )", vtWithNull.ToString());
             Assert.Equal(tupleWithNull.ToString(), vtWithNull.ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8));
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -1211,7 +1211,7 @@ namespace System.Tests
 
             Assert.Equal("(1, 2, 3, 4, 5, 6, 7, 1, 0, 0, 0, 0, 0, 0, 42)", CreateLong(1, 2, 3, 4, 5, 6, 7, d).ToString());
 
-#if netcoreapp11
+#if netcoreapp
             ITuple it = d;
             Assert.Throws<IndexOutOfRangeException>(() => it[-1].ToString());
             Assert.Equal(1, it[0]);
@@ -1226,7 +1226,7 @@ namespace System.Tests
 #endif
         }
 
-#if netcoreapp11
+#if netcoreapp
         [Fact]
         public static void ValueTupleSerialization()
         {
