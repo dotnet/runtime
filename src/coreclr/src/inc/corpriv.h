@@ -40,9 +40,7 @@ STDAPI MetaDataGetDispenser(            // Return HRESULT
 STDAPI RuntimeCheckLocationAccess(LPCWSTR wszLocation);
 STDAPI RuntimeIsNativeImageOptedOut(IAssemblyName* pAssemblyDef);
 
-#ifdef FEATURE_VERSIONING
 LocaleID RuntimeGetFileSystemLocale();
-#endif // FEATURE_VERSIONING
 
 BOOL RuntimeFileNotFound(HRESULT hr);
 

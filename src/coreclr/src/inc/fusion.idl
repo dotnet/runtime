@@ -31,11 +31,6 @@ cpp_quote("#ifdef _MSC_VER")
 cpp_quote("#pragma once")
 cpp_quote("#endif")
 
-#if !defined(FEATURE_FUSION) && !defined(FEATURE_VERSIONING)
-cpp_quote("#if defined(_CLR_BLD) && !defined(FEATURE_FUSION)")
-cpp_quote("#error FEATURE_FUSION is not enabled, please do not include fusion.h")
-cpp_quote("#endif")
-#endif // !defined(FEATURE_FUSION) && !defined(FEATURE_VERSIONING)
 
 interface IAssemblyCache;
 interface IAssemblyCacheItem;

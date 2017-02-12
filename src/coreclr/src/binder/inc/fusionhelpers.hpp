@@ -21,12 +21,6 @@
 #include "ex.h"
 #include "fusion.h"
 
-#ifndef FEATURE_VERSIONING
-// Rename the fusion bind result to avoid collision with core bind result
-#define IBindResult IBindResult_Fusion
-#include "binderngen.h"
-#undef IBindResult
-#endif
 
 #include "peinformation.h"
 
