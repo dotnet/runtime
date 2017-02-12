@@ -10220,7 +10220,6 @@ void MethodTableBuilder::CheckForSystemTypes()
     // We can exit early for generic types - there are just a few cases to check for.
     if (bmtGenerics->HasInstantiation() && g_pNullableClass != NULL)
     {
-#ifdef FEATURE_SPAN_OF_T
         _ASSERTE(g_pByReferenceClass != NULL);
         _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
@@ -10237,7 +10236,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 #endif
             return;
         }
-#endif
 
         _ASSERTE(g_pNullableClass->IsNullable());
 
@@ -10293,7 +10291,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-#ifdef FEATURE_SPAN_OF_T
         else if (strcmp(name, g_ByReferenceName) == 0)
         {
             pMT->SetIsByRefLike();
@@ -10306,7 +10303,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
 #endif
         }
-#endif
         else if (strcmp(name, g_ArgIteratorName) == 0)
         {
             // Mark the special types that have embeded stack poitners in them

@@ -6960,7 +6960,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
-#ifdef FEATURE_SPAN_OF_T
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
     {
         // Compare the two arguments
@@ -6992,12 +6991,10 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-#endif // FEATURE_SPAN_OF_T
 
     return false;
 }
 
-#ifdef FEATURE_SPAN_OF_T
 bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
                                            CORINFO_METHOD_INFO * methInfo)
 {
@@ -7100,7 +7097,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
     return false;
 }
-#endif // FEATURE_SPAN_OF_T
 
 bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
                                              CORINFO_METHOD_INFO * methInfo)
@@ -7323,12 +7319,10 @@ getMethodInfoHelper(
         {
             fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
         }
-#ifdef FEATURE_SPAN_OF_T
         else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
         {
             fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
         }
-#endif
         else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
         {
             fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
