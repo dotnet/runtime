@@ -40,30 +40,20 @@ namespace System.Threading.Tasks
     public class TaskFactory
     {
         // member variables
-        private CancellationToken m_defaultCancellationToken;
-        private TaskScheduler m_defaultScheduler;
-        private TaskCreationOptions m_defaultCreationOptions;
-        private TaskContinuationOptions m_defaultContinuationOptions;
+        private readonly CancellationToken m_defaultCancellationToken;
+        private readonly TaskScheduler m_defaultScheduler;
+        private readonly TaskCreationOptions m_defaultCreationOptions;
+        private readonly TaskContinuationOptions m_defaultContinuationOptions;
 
-
-        private TaskScheduler DefaultScheduler
-        {
-            get
-            {
-                if (m_defaultScheduler == null) return TaskScheduler.Current;
-                else return m_defaultScheduler;
-            }
-        }
+        private TaskScheduler DefaultScheduler => m_defaultScheduler ?? TaskScheduler.Current;
 
         // sister method to above property -- avoids a TLS lookup
         private TaskScheduler GetDefaultScheduler(Task currTask)
         {
-            if (m_defaultScheduler != null) return m_defaultScheduler;
-            else if ((currTask != null)
-                && ((currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
-                )
-                return currTask.ExecutingTaskScheduler;
-            else return TaskScheduler.Default;
+            return
+                m_defaultScheduler ??
+                (currTask != null && (currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0 ? currTask.ExecutingTaskScheduler :
+                 TaskScheduler.Default);
         }
 
         /* Constructors */
@@ -2337,7 +2327,8 @@ namespace System.Threading.Tasks
 
             public void Invoke(Task completingTask)
             {
-                if (Interlocked.CompareExchange(ref m_firstTaskAlreadyCompleted, 1, 0) == 0)
+                if (m_firstTaskAlreadyCompleted == 0 &&
+                    Interlocked.Exchange(ref m_firstTaskAlreadyCompleted, 1) == 0)
                 {
                     if (AsyncCausalityTracer.LoggingOn)
                     {
