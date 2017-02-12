@@ -434,7 +434,7 @@ public class ReadLine : PortsTest
 
             com1.Encoding = Encoding.Unicode;
             com2.Encoding = Encoding.Unicode;
-            com1.ReadTimeout = 500; // 20 seconds
+            com1.ReadTimeout = 1500; 
 
             com1.Open();
 
@@ -662,7 +662,7 @@ public class ReadLine : PortsTest
             // Write one byte at the begining because we are going to read this to buffer the rest of the data    
         com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-        while (com1.BytesToRead < bytesToWrite.Length)
+        while (com1.BytesToRead < bytesToWrite.Length+1)
         {
             Thread.Sleep(50);
         }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.IO.PortsTests;
+using System.Linq;
 using Legacy.Support;
 using Xunit;
 
@@ -302,7 +303,7 @@ public class ErrorEvent : PortsTest
                     }
                 }
             }
-            Assert.True(false, $"Failed to validate expected type {eventType}, bytesToRead {bytesToRead}, actualTypes {string.Join(",", EventType)}");
+            Assert.True(false, $"Failed to validate expected type {eventType}, bytesToRead {bytesToRead}, actualTypes (first 6) {string.Join(",", EventType.Take(6))}");
         }
     }
     #endregion

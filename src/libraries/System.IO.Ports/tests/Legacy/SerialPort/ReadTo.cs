@@ -445,14 +445,13 @@ public class ReadTo : PortsTest
             string endString = "END";
             char endChar = endString[0];
             char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
-            string result;
 
             Debug.WriteLine("Verifying that ReadTo(string) works appropriately after TimeoutException has been thrown");
 
-            //Ensure the new line is not in charXmitBuffer
+            // Ensure the new line is not in charXmitBuffer
             for (int i = 0; i < charXmitBuffer.Length; ++i)
             {
-//Se any appearances of a character in the new line string to some other char
+                // Set any appearances of a character in the new line string to some other char
                 if (endChar == charXmitBuffer[i])
                 {
                     charXmitBuffer[i] = notEndChar;
@@ -461,7 +460,7 @@ public class ReadTo : PortsTest
 
             com1.Encoding = Encoding.Unicode;
             com2.Encoding = Encoding.Unicode;
-            com1.ReadTimeout = 500; // 20 seconds
+            com1.ReadTimeout = 2000;
 
             com1.Open();
 
@@ -472,13 +471,10 @@ public class ReadTo : PortsTest
 
             Assert.Throws<TimeoutException>(() => com1.ReadTo(endString));
 
-            if (2 * charXmitBuffer.Length != com1.BytesToRead)
-            {
-                Fail("Err_0585haieidp Expected BytesToRead: {0} actual: {1}", 2 * charXmitBuffer.Length, com1.BytesToRead);
-            }
+            Assert.Equal(2 * charXmitBuffer.Length, com1.BytesToRead);
 
             com2.Write(endString);
-            result = com1.ReadTo(endString);
+            string result = com1.ReadTo(endString);
             char[] charRcvBuffer = result.ToCharArray();
 
             Assert.Equal(charRcvBuffer, charXmitBuffer);
@@ -693,7 +689,7 @@ public class ReadTo : PortsTest
         com2.Write(bytesToWrite, 0, 1); // Write one byte at the beginning because we are going to read this to buffer the rest of the data    
         com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-        while (com1.BytesToRead < bytesToWrite.Length)
+        while (com1.BytesToRead < bytesToWrite.Length+1)
         {
             Thread.Sleep(50);
         }

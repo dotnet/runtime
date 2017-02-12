@@ -53,24 +53,15 @@ namespace Legacy.Support
         private static void GenerateSerialInfo()
         {
             string[] installedPortNames = PortHelper.GetPorts();
-            Console.WriteLine("Installed ports : " + string.Join(",", installedPortNames));
             bool nullModemPresent = false;
-
             string portName1 = null, portName2 = null, loopbackPortName = null;
 
             Array.Sort(installedPortNames);
+            Console.WriteLine("Installed ports : " + string.Join(",", installedPortNames));
 
-            var openablePortNames = CheckPortsCanBeOpened(installedPortNames);
+            IList<string> openablePortNames = CheckPortsCanBeOpened(installedPortNames);
 
-            // Find the first port which is looped-back
-            foreach (var portName in openablePortNames)
-            {
-                if (SerialPortConnection.VerifyLoopback(portName))
-                {
-                    loopbackPortName = portName;
-                    break;
-                }
-            }
+            Console.WriteLine("Openable ports  : " + string.Join(",", openablePortNames));
 
             // Find any pair of ports which are null-modem connected
             // If there is a pair like this, then they take precedence over any other way of identifying two available ports
@@ -95,9 +86,22 @@ namespace Legacy.Support
 
             if (!nullModemPresent)
             {
-                // If we don't have a null-modem connection, we'll just use the first two ports
-                portName1 = openablePortNames.FirstOrDefault();
-                portName2 = openablePortNames.Skip(1).FirstOrDefault();
+                // If we don't have a null-modem connection - check for a loopback connection
+                foreach (var portName in openablePortNames)
+                {
+                    if (SerialPortConnection.VerifyLoopback(portName))
+                    {
+                        portName1 = loopbackPortName = portName;
+                        break;
+                    }
+                }
+
+                if (portName1 == null)
+                {
+                    portName1 = openablePortNames.FirstOrDefault();
+                }
+
+                portName2 = openablePortNames.FirstOrDefault(name => name != portName1);
             }
 
             s_localMachineSerialInfo = new LocalMachineSerialInfo(portName1, portName2, loopbackPortName, nullModemPresent);
@@ -239,16 +243,14 @@ namespace Legacy.Support
 
         public delegate T ValueGenerator<T>();
 
-        public static bool WaitForPredicate(Predicate predicate, int maxWait, string errorMessageFormat, params object[] formatArgs)
+        public static void WaitForPredicate(Predicate predicate, int maxWait, string errorMessageFormat, params object[] formatArgs)
         {
-            return WaitForPredicate(predicate, maxWait, string.Format(errorMessageFormat, formatArgs));
+            WaitForPredicate(predicate, maxWait, string.Format(errorMessageFormat, formatArgs));
         }
-        public static bool WaitForPredicate(Predicate predicate, int maxWait, string errorMessage)
+        public static void WaitForPredicate(Predicate predicate, int maxWait, string errorMessage)
         {
-            Stopwatch stopWatch = new Stopwatch();
+            Stopwatch stopWatch = Stopwatch.StartNew();
             bool predicateValue = false;
-
-            stopWatch.Start();
 
             while (!predicateValue && stopWatch.ElapsedMilliseconds < maxWait)
             {
@@ -256,10 +258,7 @@ namespace Legacy.Support
                 System.Threading.Thread.Sleep(10);
             }
 
-            if (!predicateValue)
-                Debug.WriteLine(errorMessage);
-
-            return predicateValue;
+            Assert.True(predicateValue, errorMessage);
         }
 
         public static void WaitForExpected<T>(ValueGenerator<T> actualValueGenerator, T expectedValue, int maxWait, string errorMessage)
