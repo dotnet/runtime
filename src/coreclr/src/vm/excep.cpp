@@ -2287,7 +2287,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // Preallocated exceptions will never have this flag set. However, its possible
         // that after this flag is set for a regular exception but before we throw, we have an async
         // exception like a RudeThreadAbort, which will replace the exception
@@ -2297,7 +2296,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
         // preallocated exception will not have the restored (or any) stack trace.
         PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
         pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         return;
     }
@@ -2310,14 +2308,12 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     bool         fSuccess = false;
     MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetTrueMethodTable();
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
     // normally.
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
     if (bAllowAllocMem && m_dFrameCount != 0)
     {
@@ -2358,19 +2354,15 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 struct _gc
                 {
                     StackTraceArray stackTrace;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     StackTraceArray stackTraceTemp;
                     PTRARRAYREF dynamicMethodsArrayTemp;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
                     PTRARRAYREF pOrigDynamicArray;
 
                     _gc()
                         : stackTrace()
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                         , stackTraceTemp()
                         , dynamicMethodsArrayTemp(static_cast<PTRArray *>(NULL))
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)                        
                         , dynamicMethodsArray(static_cast<PTRArray *>(NULL))
                         , pOrigDynamicArray(static_cast<PTRArray *>(NULL))
                     {}
@@ -2379,7 +2371,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 _gc gc;
                 GCPROTECT_BEGIN(gc);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                 // If the flag indicating foreign exception raise has been setup, then check 
                 // if the exception object has stacktrace or not. If we have an async non-preallocated
                 // exception after setting this flag but before we throw, then the new
@@ -2394,14 +2385,11 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         fRaisingForeignException = FALSE;
                     }
                 }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                 // Replace stack (i.e. build a new stack trace) only if we are not raising a foreign exception.
                 // If we are, then we will continue to extend the existing stack trace.
                 if (bReplaceStack
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     && (!fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                 {
                     // Cleanup previous info
@@ -2435,7 +2423,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     // Fetch the stacktrace and the dynamic method array
                     ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pOrigDynamicArray);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     if (fRaisingForeignException)
                     {
                         // Just before we append to the stack trace, mark the last recorded frame to be from
@@ -2450,7 +2437,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             refLastElementFromForeignStackTrace.fIsLastFrameFromForeignStackTrace = TRUE;
                         }
                     }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                     if (bSkipLastElement && gc.stackTrace.Size() != 0)
                         gc.stackTrace.AppendSkipLast(m_pStackTrace, m_pStackTrace + m_dFrameCount);
@@ -2472,9 +2458,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     }
 
                     if ((gc.pOrigDynamicArray != NULL)
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     || (fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                     {
                         // Since we have just restored the dynamic method array as well,
@@ -3768,12 +3752,10 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         pStackTraceElem->ip = currentIP;
         pStackTraceElem->sp = currentSP;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // When we are building stack trace as we encounter managed frames during exception dispatch,
         // then none of those frames represent a stack trace from a foreign exception (as they represent
         // the current exception). Hence, set the corresponding flag to FALSE.
         pStackTraceElem->fIsLastFrameFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
