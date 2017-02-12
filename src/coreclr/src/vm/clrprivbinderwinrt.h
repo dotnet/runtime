@@ -251,9 +251,6 @@ public:
         LPCUTF8       szNamespace, 
         LPCUTF8       szClassName);
 
-#if defined(FEATURE_COMINTEROP_WINRT_DESKTOP_HOST) && !defined(CROSSGEN_COMPILE)
-    BOOL SetLocalWinMDPath(HSTRING localWinMDPath);
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST && !CROSSGEN_COMPILE
 
 private:
     //=============================================================================================
@@ -330,14 +327,6 @@ private:
     BINDER_SPACE::ApplicationContext * m_pApplicationContext;
     NewArrayHolder<WCHAR> m_appLocalWinMDPath;
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-    // App-local location that can be probed for WinMD files
-    BOOL m_fCanSetLocalWinMDPath;
-    CrstExplicitInit m_localWinMDPathLock;
-#ifndef CROSSGEN_COMPILE
-    clr::winrt::String m_localWinMDPath;
-#endif // !CROSSGEN_COMPILE
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
 };  // class CLRPrivBinderWinRT
 
