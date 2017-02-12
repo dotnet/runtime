@@ -5,11 +5,10 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 public class DosDevices : IEnumerable<KeyValuePair<string, string>>
 {
-    private Dictionary<string, string> _dosDevices;
+    private readonly Dictionary<string, string> _dosDevices;
 
     public DosDevices()
     {
@@ -17,28 +16,6 @@ public class DosDevices : IEnumerable<KeyValuePair<string, string>>
         Initialize();
     }
 
-/*
-    public static void Main()
-    {
-        DosDevices dosDevices = new DosDevices();
-
-        foreach (KeyValuePair<string, string> keyValuePair in dosDevices)
-        {
-            Debug.WriteLine("'{0}'='{1}'", keyValuePair.Key, keyValuePair.Value.Trim());
-        }
-
-        Debug.WriteLine("CommonNameExists(\"LPT1\")={0}", dosDevices.CommonNameExists("LPT1"));
-        Debug.WriteLine("CommonNameExists(\"A:\")={0}", dosDevices.CommonNameExists("A:"));
-
-        Debug.WriteLine("CommonNameExists(\"LPT\")={0}", dosDevices.CommonNameExists("LPT"));
-
-        string s = dosDevices["LPT1"];
-        for (int i = 0; i < s.Length; ++i)
-        {
-            Debug.WriteLine("{0}({1})", (int)s[i], s[i]);
-        }
-    }
-    */
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
     {
         return _dosDevices.GetEnumerator();
@@ -161,5 +138,5 @@ public class DosDevices : IEnumerable<KeyValuePair<string, string>>
     public const int ERROR_MORE_DATA = 234;
 
     [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    internal static extern int QueryDosDevice(string lpDeviceName, char[] lpTargetPath, int ucchMax);
+    private static extern int QueryDosDevice(string lpDeviceName, char[] lpTargetPath, int ucchMax);
 }

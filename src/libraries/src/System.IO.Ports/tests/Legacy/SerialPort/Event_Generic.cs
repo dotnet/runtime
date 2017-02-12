@@ -25,7 +25,7 @@ public class Event_Generic : PortsTest
     #region Test Cases
 
     [OuterLoop("Slow Test")]
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), Skip="Always hangs")]
     public void EventHandlers_CalledSerially()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

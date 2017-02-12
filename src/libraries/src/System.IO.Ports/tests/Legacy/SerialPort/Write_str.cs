@@ -11,7 +11,7 @@ using Xunit;
 
 public class Write_str : PortsTest
 {
-    //The string size used when veryifying encoding 
+    // The string size used when verifying encoding 
     public static readonly int ENCODING_STRING_SIZE = 4;
 
     //The string size used for large string testing
@@ -182,10 +182,7 @@ public class Write_str : PortsTest
             actualBytes[index] = (byte)byteRead;
             index++;
 
-            if (actualBytes.Length - index != com2.BytesToRead)
-            {
-                Fail("ERROR!!!: Expected BytesToRead={0} actual={1}", actualBytes.Length - index, com2.BytesToRead);
-            }
+            Assert.Equal(actualBytes.Length - index, com2.BytesToRead);
         }
 
         actualChars = com1.Encoding.GetChars(actualBytes);

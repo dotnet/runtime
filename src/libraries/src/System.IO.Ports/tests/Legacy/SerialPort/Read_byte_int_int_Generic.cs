@@ -47,7 +47,6 @@ public class Read_byte_int_int_Generic : PortsTest
         using (SerialPort com = new SerialPort())
         {
             Debug.WriteLine("Verifying read method throws exception without a call to Open()");
-
             VerifyReadException(com, typeof(InvalidOperationException));
         }
     }
@@ -65,7 +64,6 @@ public class Read_byte_int_int_Generic : PortsTest
             VerifyReadException(com, typeof(InvalidOperationException));
         }
     }
-
 
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void ReadAfterClose()
@@ -117,14 +115,13 @@ public class Read_byte_int_int_Generic : PortsTest
         }
     }
 
-
     [ConditionalFact(nameof(HasNullModem))]
     public void SuccessiveReadTimeoutSomeData()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
             Random rndGen = new Random();
-            System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(WriteToCom1));
+            System.Threading.Thread t = new System.Threading.Thread(WriteToCom1);
 
             com1.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
             com1.Encoding = new System.Text.UTF8Encoding();
@@ -154,7 +151,6 @@ public class Read_byte_int_int_Generic : PortsTest
         }
     }
 
-
     private void WriteToCom1()
     {
         using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
@@ -174,20 +170,17 @@ public class Read_byte_int_int_Generic : PortsTest
         }
     }
 
-
+    [ConditionalFact(nameof(HasNullModem))]
     public void DefaultParityReplaceByte()
     {
         VerifyParityReplaceByte(-1, numRndBytesPairty - 2);
     }
 
-
     [ConditionalFact(nameof(HasNullModem))]
     public void NoParityReplaceByte()
     {
         Random rndGen = new Random();
-
-        //		if(!VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndBytesPairty - 1), new System.Text.UTF7Encoding())){
-        VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndBytesPairty - 1), System.Text.Encoding.UTF32);
+        VerifyParityReplaceByte('\0', rndGen.Next(0, numRndBytesPairty - 1), System.Text.Encoding.UTF32);
     }
 
 
@@ -198,8 +191,7 @@ public class Read_byte_int_int_Generic : PortsTest
 
         VerifyParityReplaceByte(rndGen.Next(0, 128), 0, new System.Text.UTF8Encoding());
     }
-
-
+    
     [ConditionalFact(nameof(HasNullModem))]
     public void ParityErrorOnLastByte()
     {
@@ -225,10 +217,10 @@ public class Read_byte_int_int_Generic : PortsTest
                 expectedBytes[i] = randByte;
             }
 
+            // Create a parity error on the last byte
             bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] | 0x80);
-                //Create a parity error on the last byte
+            // Set the last expected byte to be the ParityReplace Byte
             expectedBytes[expectedBytes.Length - 1] = com1.ParityReplace;
-                // Set the last expected byte to be the ParityReplace Byte
 
             com1.Parity = Parity.Space;
             com1.DataBits = 7;
@@ -249,7 +241,7 @@ public class Read_byte_int_int_Generic : PortsTest
 
             com1.Read(actualBytes, 0, actualBytes.Length);
 
-            //Compare the chars that were written with the ones we expected to read
+            // Compare the chars that were written with the ones we expected to read
             Assert.Equal(expectedBytes, actualBytes.Take(expectedBytes.Length).ToArray());
 
             if (1 < com1.BytesToRead)
@@ -259,7 +251,7 @@ public class Read_byte_int_int_Generic : PortsTest
             }
 
             bytesToWrite[bytesToWrite.Length - 1] = (byte)(bytesToWrite[bytesToWrite.Length - 1] & 0x7F);
-                //Clear the parity error on the last byte
+            // Clear the parity error on the last byte
             expectedBytes[expectedBytes.Length - 1] = bytesToWrite[bytesToWrite.Length - 1];
             VerifyRead(com1, com2, bytesToWrite, expectedBytes, expectedBytes.Length / 2);
         }
@@ -269,22 +261,18 @@ public class Read_byte_int_int_Generic : PortsTest
     public void BytesToRead_RND_Buffer_Size()
     {
         Random rndGen = new Random(-55);
-
         VerifyBytesToRead(rndGen.Next(1, 2 * numRndBytesToRead));
     }
 
     [ConditionalFact(nameof(HasNullModem))]
     public void BytesToRead_1_Buffer_Size()
     {
-        //		if(!VerifyBytesToRead(1, new System.Text.UTF7Encoding())){
         VerifyBytesToRead(1, System.Text.Encoding.Unicode);
     }
 
     [ConditionalFact(nameof(HasNullModem))]
     public void BytesToRead_Equal_Buffer_Size()
     {
-        Random rndGen = new Random(-55);
-
         VerifyBytesToRead(numRndBytesToRead, new System.Text.UTF8Encoding());
     }
     #endregion
@@ -297,7 +285,7 @@ public class Read_byte_int_int_Generic : PortsTest
         int actualTime = 0;
         double percentageDifference;
 
-        //Warm up read method
+        // Warm up read method
         Assert.Throws<TimeoutException>(() => com.Read(new byte[defaultByteArraySize], 0, defaultByteArraySize));
 
         System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
@@ -316,25 +304,24 @@ public class Read_byte_int_int_Generic : PortsTest
         actualTime /= NUM_TRYS;
         percentageDifference = Math.Abs((expectedTime - actualTime) / (double)expectedTime);
 
-        //Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
+        // Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
         if (maxPercentageDifference < percentageDifference)
         {
             Fail("ERROR!!!: The read method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
         }
     }
 
-
     private void VerifyReadException(SerialPort com, Type expectedException)
     {
         Assert.Throws(expectedException, () => com.Read(new byte[defaultByteArraySize], 0, defaultByteArraySize));
     }
 
-    public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex)
+    private void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex)
     {
         VerifyParityReplaceByte(parityReplace, parityErrorIndex, new System.Text.ASCIIEncoding());
     }
 
-public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, System.Text.Encoding encoding)
+    private void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, System.Text.Encoding encoding)
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
@@ -344,7 +331,7 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
             byte[] expectedBytes = new byte[numRndBytesPairty];
             byte expectedByte;
 
-            //Genrate random characters without an parity error
+            // Generate random characters without an parity error
             for (int i = 0; i < bytesToWrite.Length; i++)
             {
                 byte randByte = (byte)rndGen.Next(0, 128);
@@ -355,25 +342,25 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
 
             if (-1 == parityReplace)
             {
-                //If parityReplace is -1 and we should just use the default value
+                // If parityReplace is -1 and we should just use the default value
                 expectedByte = com1.ParityReplace;
             }
             else if ('\0' == parityReplace)
             {
-                //If parityReplace is the null charachater and parity replacement should not occur
+                // If parityReplace is the null charachater and parity replacement should not occur
                 com1.ParityReplace = (byte)parityReplace;
                 expectedByte = bytesToWrite[parityErrorIndex];
             }
             else
             {
-                //Else parityReplace was set to a value and we should expect this value to be returned on a parity error
+                // Else parityReplace was set to a value and we should expect this value to be returned on a parity error
                 com1.ParityReplace = (byte)parityReplace;
                 expectedByte = (byte)parityReplace;
             }
 
-            //Create an parity error by setting the highest order bit to true
+            // Create an parity error by setting the highest order bit to true
             bytesToWrite[parityErrorIndex] = (byte)(bytesToWrite[parityErrorIndex] | 0x80);
-            expectedBytes[parityErrorIndex] = (byte)expectedByte;
+            expectedBytes[parityErrorIndex] = expectedByte;
 
             Debug.WriteLine("Verifying ParityReplace={0} with an ParityError at: {1} ", com1.ParityReplace,
                 parityErrorIndex);
@@ -402,12 +389,10 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
             Random rndGen = new Random(-55);
             byte[] bytesToWrite = new byte[numRndBytesToRead];
 
-            //Genrate random characters 
+            // Generate random characters 
             for (int i = 0; i < bytesToWrite.Length; i++)
             {
-                byte randByte = (byte)rndGen.Next(0, 256);
-
-                bytesToWrite[i] = randByte;
+                bytesToWrite[i] = (byte)rndGen.Next(0, 256);
             }
 
             Debug.WriteLine("Verifying BytesToRead with a buffer of: {0} ", numBytesRead);
@@ -425,7 +410,7 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
     {
         byte[] rcvBuffer = new byte[rcvBufferSize];
         byte[] buffer = new byte[bytesToWrite.Length];
-        int bytesRead, totalBytesRead;
+        int totalBytesRead;
         int bytesToRead;
         int waitTime = 0;
 
@@ -443,6 +428,7 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
 
         while (true)
         {
+            int bytesRead;
             try
             {
                 bytesRead = com1.Read(rcvBuffer, 0, rcvBufferSize);
@@ -478,14 +464,8 @@ public void VerifyParityReplaceByte(int parityReplace, int parityErrorIndex, Sys
             bytesToRead = com1.BytesToRead;
         }
 
-        //Compare the bytes that were written with the ones we expected to read
-        for (int i = 0; i < bytesToWrite.Length; i++)
-        {
-            if (expectedBytes[i] != buffer[i])
-            {
-                Fail("ERROR!!!: Expected to read {0}  actual read  {1}", expectedBytes[i], buffer[i]);
-            }
-        }
+        // Compare the bytes that were written with the ones we expected to read
+        Assert.Equal(expectedBytes, buffer);
     }
 
     #endregion

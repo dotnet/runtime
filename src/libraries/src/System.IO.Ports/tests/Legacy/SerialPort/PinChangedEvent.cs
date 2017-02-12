@@ -98,7 +98,6 @@ public class PinChangedEvent : PortsTest
         {
             PinChangedEventHandler eventHandler = new PinChangedEventHandler(com1);
             
-
             Debug.WriteLine("Verifying DsrChanged event");
             com1.PinChanged += eventHandler.HandleEvent;
             com1.Open();
@@ -108,7 +107,7 @@ public class PinChangedEvent : PortsTest
             {
                 com2.DtrEnable = true;
 
-                Fail("Verifying when DtrEnable set to true on remote port {0}", i);
+                Debug.WriteLine("Verifying when DtrEnable set to true on remote port {0}", i);
                 eventHandler.WaitForEvent(MAX_TIME_WAIT, 2);
 
                 if (!eventHandler.Validate(SerialPinChange.DsrChanged, 0))
@@ -154,7 +153,7 @@ public class PinChangedEvent : PortsTest
             for (int i = 0; i < NUM_TRYS; i++)
             {
                 com2.BreakState = true;
-                Fail("Verifying when Break set to true on remote port try: {0}", i);
+                Debug.WriteLine("Verifying when Break set to true on remote port try: {0}", i);
                 eventHandler.WaitForEvent(MAX_TIME_WAIT, 1);
 
                 if (!eventHandler.Validate(SerialPinChange.Break, 0))

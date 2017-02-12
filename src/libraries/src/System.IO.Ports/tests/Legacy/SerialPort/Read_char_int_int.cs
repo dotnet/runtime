@@ -396,8 +396,8 @@ public class Read_char_int_int : PortsTest
 
             asyncReadThread.Start();
             asyncRead.ReadStartedEvent.WaitOne();
-                //This only tells us that the thread has started to execute code in the method
-            System.Threading.Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+            // The WaitOne only tells us that the thread has started to execute code in the method
+            System.Threading.Thread.Sleep(2000); // We need to wait to guarantee that we are executing code in SerialPort
             com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
 
             asyncRead.ReadCompletedEvent.WaitOne();
@@ -410,18 +410,13 @@ public class Read_char_int_int : PortsTest
             }
             else
             {
-                System.Threading.Thread.Sleep(1000); //We need to wait for all of the bytes to be received
-                int readResult = com1.Read(charRcvBuffer, asyncRead.Result, charRcvBuffer.Length - asyncRead.Result);
-
-                if (asyncRead.Result + readResult != charXmitBuffer.Length)
+                int receivedLength = asyncRead.Result;
+                while (receivedLength < charRcvBuffer.Length)
                 {
-                    Fail("Err_051884ajoedo Expected Read to read {0} characters actually read {1}",
-                        charXmitBuffer.Length - asyncRead.Result, readResult);
+                    receivedLength += com1.Read(charRcvBuffer, receivedLength, charRcvBuffer.Length - receivedLength);
                 }
-                else
-                {
-                    Assert.Equal(charXmitBuffer, charRcvBuffer);
-                }
+                Assert.Equal(charXmitBuffer.Length, receivedLength);
+                Assert.Equal(charXmitBuffer, charRcvBuffer);
             }
         }
     }
@@ -825,17 +820,11 @@ public class Read_char_int_int : PortsTest
     private void PerformReadOnCom1FromCom2(SerialPort com1, SerialPort com2, char[] expectedChars, char[] rcvBuffer, int offset, int count)
     {
         char[] buffer = new char[expectedChars.Length];
-        int totalBytesRead;
-        int totalCharsRead;
         char[] oldRcvBuffer = (char[])rcvBuffer.Clone();
-        int bytesToRead;
         int numBytesWritten = com1.Encoding.GetByteCount(expectedChars);
-        bool isUTF7Encoding = com1.Encoding.EncodingName == System.Text.Encoding.UTF7.EncodingName;
 
-        totalBytesRead = 0;
-        totalCharsRead = 0;
-
-        bytesToRead = com1.BytesToRead;
+        int totalBytesRead = 0;
+        int totalCharsRead = 0;
 
         while (true)
         {
@@ -849,19 +838,13 @@ public class Read_char_int_int : PortsTest
                 break;
             }
 
-            //While their are more characters to be read
-            if (isUTF7Encoding)
-                totalBytesRead = GetUTF7EncodingBytes(expectedChars, 0, totalCharsRead + charsRead);
-            else
-            {
-                int bytesRead = com1.Encoding.GetByteCount(rcvBuffer, offset, charsRead);
-                totalBytesRead += bytesRead;
-            }
+            // While there are more characters to be read
+            int bytesRead = com1.Encoding.GetByteCount(rcvBuffer, offset, charsRead);
+            totalBytesRead += bytesRead;
 
             if (expectedChars.Length < totalCharsRead + charsRead)
             {
-                //If we have read in more characters then we expect
-
+                //If we have read in more characters than we expect
 
                 //1<DEBUG>
                 Debug.WriteLine("count={0}, charsRead={1} expectedChars.Length={2}, totalCharsRead={3}", count, charsRead, expectedChars.Length, totalCharsRead);
@@ -902,13 +885,9 @@ public class Read_char_int_int : PortsTest
 
             totalCharsRead += charsRead;
 
-            if (numBytesWritten - totalBytesRead != com1.BytesToRead)
-            {
-                Fail("ERROR!!!: Expected BytesToRead={0} actual={1}", numBytesWritten - totalBytesRead, com1.BytesToRead);
-            }
+            Assert.Equal(numBytesWritten - totalBytesRead, com1.BytesToRead);
 
             oldRcvBuffer = (char[])rcvBuffer.Clone();
-            bytesToRead = com1.BytesToRead;
         }
 
         VerifyBuffer(rcvBuffer, oldRcvBuffer, 0, rcvBuffer.Length);
@@ -922,11 +901,7 @@ public class Read_char_int_int : PortsTest
             }
         }
 
-        if (!isUTF7Encoding && 0 != com1.BytesToRead)
-        {
-            Fail("ERROR!!!: Expected BytesToRead=0  actual BytesToRead={0}", com1.BytesToRead);
-        }
-
+        Assert.Equal(0, com1.BytesToRead);
     }
 
     private void VerifyBytesFollowedByChars(System.Text.Encoding encoding)
@@ -1037,20 +1012,7 @@ public class Read_char_int_int : PortsTest
 
     }
 
-    private int GetUTF7EncodingBytes(char[] chars, int index, int count)
-    {
-        byte[] bytes = System.Text.Encoding.UTF7.GetBytes(chars, index, count);
-        int byteCount = bytes.Length;
-
-        while (System.Text.Encoding.UTF7.GetCharCount(bytes, 0, byteCount) == count)
-        {
-            --byteCount;
-        }
-
-        return byteCount + 1;
-    }
-
-    public class ASyncRead
+    private class ASyncRead
     {
         private readonly SerialPort _com;
         private readonly char[] _buffer;

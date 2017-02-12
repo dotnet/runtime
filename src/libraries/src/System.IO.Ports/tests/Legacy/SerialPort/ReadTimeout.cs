@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.IO.PortsTests;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 
@@ -29,8 +30,6 @@ public class ReadTimeout_Property : PortsTest
 
     //The default new lint to read from when testing timeout with ReadTo(str)
     public static readonly string DEFAULT_READ_TO_STRING = "\r\n";
-
-    public delegate void ReadMethodDelegate(SerialPort com);
 
     private enum ThrowAt { Set, Open };
 
@@ -216,13 +215,11 @@ public class ReadTimeout_Property : PortsTest
     #endregion
 
     #region Verification for Test Cases
-    public void VerifyInfiniteTimeout(ReadMethodDelegate readMethod, bool setInfiniteTimeout)
+    public void VerifyInfiniteTimeout(Action<SerialPort> readMethod, bool setInfiniteTimeout)
     {
         using (SerialPort com1 = TCSupport.InitFirstSerialPort())
         using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            ReadDelegateThread readThread = new ReadDelegateThread(com1, readMethod);
-            System.Threading.Thread t = new System.Threading.Thread(readThread.CallRead);
             SerialPortProperties serPortProp = new SerialPortProperties();
 
             serPortProp.SetAllPropertiesToOpenDefaults();
@@ -231,6 +228,8 @@ public class ReadTimeout_Property : PortsTest
 
             com1.WriteTimeout = 10;
             com1.Open();
+
+            serPortProp.VerifyPropertiesAndPrint(com1);
 
             if (!com2.IsOpen)
                 com2.Open();
@@ -241,21 +240,21 @@ public class ReadTimeout_Property : PortsTest
                 com1.ReadTimeout = SerialPort.InfiniteTimeout;
             }
 
-            t.Start();
+            Task task = Task.Run(() => readMethod(com1));
+
             System.Threading.Thread.Sleep(DEFAULT_WAIT_INFINITE_TIMEOUT);
 
-            Assert.True(t.IsAlive);
+            Assert.True(!task.IsCompleted);
 
             serPortProp.VerifyPropertiesAndPrint(com1);
 
             com2.WriteLine(string.Empty);
 
-            while (t.IsAlive)
-                System.Threading.Thread.Sleep(10);
+            Assert.True(task.Wait(2000));
         }
     }
 
-    private void VerifyZeroTimeoutBeforeOpen(ReadMethodDelegate readMethod)
+    private void VerifyZeroTimeoutBeforeOpen(Action<SerialPort> readMethod)
     {
         using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
@@ -266,7 +265,7 @@ public class ReadTimeout_Property : PortsTest
         }
     }
 
-    private void VerifyZeroTimeoutAfterOpen(ReadMethodDelegate readMethod)
+    private void VerifyZeroTimeoutAfterOpen(Action<SerialPort> readMethod)
     {
         using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         {
@@ -277,7 +276,7 @@ public class ReadTimeout_Property : PortsTest
         }
     }
 
-    private void VerifyZeroTimeout(SerialPort com, ReadMethodDelegate readMethod)
+    private void VerifyZeroTimeout(SerialPort com, Action<SerialPort> readMethod)
     {
         SerialPortProperties serPortProp = new SerialPortProperties();
         Stopwatch sw = new Stopwatch();
@@ -472,25 +471,6 @@ public class ReadTimeout_Property : PortsTest
             com.ReadTo(com.NewLine);
         }
         catch (TimeoutException) { }
-    }
-
-
-
-    public class ReadDelegateThread
-    {
-        public ReadDelegateThread(SerialPort com, ReadMethodDelegate readMethod)
-        {
-            _com = com;
-            _readMethod = readMethod;
-        }
-
-        public void CallRead()
-        {
-            _readMethod(_com);
-        }
-
-        private ReadMethodDelegate _readMethod;
-        private SerialPort _com;
     }
 
     #endregion

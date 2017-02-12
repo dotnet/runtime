@@ -24,8 +24,9 @@ public class Event_Close_Stress : PortsTest
         {
             Stopwatch stopwatch = new Stopwatch();
             int count = 0;
+            int pinChangedCount = 0;
 
-            com1.PinChanged += CatchPinChangedEvent;
+            com1.PinChanged += (sender, e) => { ++pinChangedCount; };
             com2.Open();
 
             stopwatch.Start();
@@ -43,15 +44,8 @@ public class Event_Close_Stress : PortsTest
                 ++count;
             }
 
-            Debug.WriteLine("PinChanged={0}", _pinChangedCount);
+            Debug.WriteLine("PinChanged={0}", pinChangedCount);
         }
-    }
-
-    private int _pinChangedCount = 0;
-
-    public void CatchPinChangedEvent(object sender, SerialPinChangedEventArgs e)
-    {
-        ++_pinChangedCount;
     }
 
     [ConditionalFact(nameof(HasNullModem))]
@@ -61,9 +55,10 @@ public class Event_Close_Stress : PortsTest
         using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
             Stopwatch stopwatch = new Stopwatch();
+            int dataReceivedCount = 0;
             int count = 0;
 
-            com1.DataReceived += CatchDataReceivedEvent;
+            com1.DataReceived += (sender, e) => { ++dataReceivedCount; };
             com2.Open();
 
             stopwatch.Start();
@@ -83,16 +78,9 @@ public class Event_Close_Stress : PortsTest
 
             com2.Close();
 
-            Debug.WriteLine("DataReceived={0}", _dataReceivedCount);
+            Debug.WriteLine("DataReceived={0}", dataReceivedCount);
 
         }
-    }
-
-    private int _dataReceivedCount = 0;
-
-    public void CatchDataReceivedEvent(object sender, SerialDataReceivedEventArgs e)
-    {
-        ++_dataReceivedCount;
     }
 
     [ConditionalFact(nameof(HasNullModem))]
@@ -103,10 +91,11 @@ public class Event_Close_Stress : PortsTest
         {
             byte[] frameErrorBytes = new byte[1];
             Stopwatch stopwatch = new Stopwatch();
+            int errorReceivedCount = 0;
             int count = 0;
 
             com1.DataBits = 7;
-            com1.ErrorReceived += CatchErrorReceivedEvent;
+            com1.ErrorReceived += (sender, e) => { ++errorReceivedCount; };
             com2.Open();
 
             //This should cause a fame error since the 8th bit is not set 
@@ -131,16 +120,10 @@ public class Event_Close_Stress : PortsTest
 
             com2.Close();
 
-            Debug.WriteLine("ERRORReceived={0}", _errorReceivedCount);
+            Debug.WriteLine("ERRORReceived={0}", errorReceivedCount);
         }
     }
 
-    private int _errorReceivedCount = 0;
-
-    public void CatchErrorReceivedEvent(object sender, SerialErrorReceivedEventArgs e)
-    {
-        ++_errorReceivedCount;
-    }
     #endregion
 
     #region Verification for Test Cases

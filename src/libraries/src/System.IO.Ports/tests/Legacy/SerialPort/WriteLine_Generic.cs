@@ -7,6 +7,7 @@ using System.IO.Ports;
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 
@@ -457,14 +458,11 @@ public class WriteLine_Generic : PortsTest
     }
 
 
-    public void Verify_Handshake(Handshake handshake)
+    private void Verify_Handshake(Handshake handshake)
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com1, STRING_SIZE_HANDSHAKE);
-            Thread t = new Thread(asyncWriteRndStr.WriteRndStr);
-
             byte[] XOffBuffer = new byte[1];
             byte[] XOnBuffer = new byte[1];
 
@@ -472,17 +470,17 @@ public class WriteLine_Generic : PortsTest
             XOnBuffer[0] = 17;
 
             int numNewLineBytes;
-            int waitTime;
 
             Debug.WriteLine("Verifying Handshake={0}", handshake);
 
+            com1.WriteTimeout = 3000;
             com1.Handshake = handshake;
             com1.Open();
             com2.Open();
 
             numNewLineBytes = com1.Encoding.GetByteCount(com1.NewLine.ToCharArray());
 
-            //Setup to ensure write will bock with type of handshake method being used
+            //Setup to ensure write will block with type of handshake method being used
             if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
             {
                 com2.RtsEnable = false;
@@ -495,29 +493,34 @@ public class WriteLine_Generic : PortsTest
             }
 
             //Write a random string asynchronously so we can verify some things while the write call is blocking
-            t.Start();
-            waitTime = 0;
+            string randomLine = TCSupport.GetRandomString(STRING_SIZE_HANDSHAKE, TCSupport.CharacterOptions.Surrogates);
+            byte[] randomLineBytes = com1.Encoding.GetBytes(randomLine);
+            Task task = Task.Run(() => com1.WriteLine(randomLine));
 
-            while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+            Stopwatch sw = Stopwatch.StartNew();
+
+            while (task.Status != TaskStatus.Running)
             {
                 //Wait for the thread to start
                 Thread.Sleep(50);
-                waitTime += 50;
+                Assert.False(sw.ElapsedMilliseconds > 2000, "Timeout waiting for task to start");
             }
 
-            waitTime = 0;
 
-            while (STRING_SIZE_HANDSHAKE + numNewLineBytes > com1.BytesToWrite && waitTime < 500)
+            sw.Restart();
+
+            int expectedWriteLengthBytes = randomLineBytes.Length + numNewLineBytes;
+                
+            while (expectedWriteLengthBytes > com1.BytesToWrite)
             {
                 Thread.Sleep(50);
-                waitTime += 50;
+                Assert.False(sw.ElapsedMilliseconds > 1000, $"Timeout waiting for write to enqueue (queued {com1.BytesToWrite}, expected {expectedWriteLengthBytes})");
             }
 
+            int bytesInBuffer = com1.BytesToWrite;
+
             //Verify that the correct number of bytes are in the buffer
-            if (STRING_SIZE_HANDSHAKE + numNewLineBytes != com1.BytesToWrite)
-            {
-                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1}", STRING_SIZE_HANDSHAKE, com1.BytesToWrite);
-            }
+            Assert.Equal(expectedWriteLengthBytes, bytesInBuffer);
 
             //Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
             if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && com1.CtsHolding)
@@ -537,8 +540,7 @@ public class WriteLine_Generic : PortsTest
             }
 
             //Wait till write finishes
-            while (t.IsAlive)
-                Thread.Sleep(100);
+            Assert.True(task.Wait(2000), "Waiting for task to complete");
 
             Assert.Equal(0, com1.BytesToWrite);
 

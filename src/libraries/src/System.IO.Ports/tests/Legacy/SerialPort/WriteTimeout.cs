@@ -6,6 +6,8 @@ using System;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.IO.PortsTests;
+using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 
@@ -192,12 +194,10 @@ public class WriteTimeout_Property : PortsTest
 
     #region Verification for Test Cases
 
-    private void VerifyInfiniteTimeout(WriteMethodDelegate readMethod, bool setInfiniteTimeout)
+    private void VerifyInfiniteTimeout(WriteMethodDelegate writeMethod, bool setInfiniteTimeout)
     {
         using (SerialPort com1 = TCSupport.InitFirstSerialPort())
         {
-            WriteDelegateThread readThread = new WriteDelegateThread(com1, readMethod);
-            System.Threading.Thread t = new System.Threading.Thread(readThread.CallWrite);
             SerialPortProperties serPortProp = new SerialPortProperties();
         
             serPortProp.SetAllPropertiesToOpenDefaults();
@@ -216,15 +216,14 @@ public class WriteTimeout_Property : PortsTest
                 com1.WriteTimeout = SerialPort.InfiniteTimeout;
             }
 
-            t.Start();
-            System.Threading.Thread.Sleep(DEFAULT_WAIT_INFINITE_TIMEOUT);
+            Task task = Task.Run(() => writeMethod(com1));
+            Thread.Sleep(DEFAULT_WAIT_INFINITE_TIMEOUT);
 
-            Assert.True(t.IsAlive);
+            Assert.False(task.IsCompleted, "Task should not have completed while tx is blocked by flow-control");
 
             com1.Handshake = Handshake.None;
 
-            while (t.IsAlive)
-                System.Threading.Thread.Sleep(10);
+            Assert.True(task.Wait(2000), "Waiting for task to complete");
 
             com1.DiscardOutBuffer();
             // If we're looped-back, then there will be data queud on the receive side which we need to discard
@@ -436,23 +435,6 @@ public class WriteTimeout_Property : PortsTest
         catch (TimeoutException)
         {
         }
-    }
-
-    public class WriteDelegateThread
-    {
-        public WriteDelegateThread(SerialPort com, WriteMethodDelegate writeMethod)
-        {
-            _com = com;
-            _writeMethod = writeMethod;
-        }
-
-        public void CallWrite()
-        {
-            _writeMethod(_com);
-        }
-
-        private readonly WriteMethodDelegate _writeMethod;
-        private readonly SerialPort _com;
     }
 
     #endregion

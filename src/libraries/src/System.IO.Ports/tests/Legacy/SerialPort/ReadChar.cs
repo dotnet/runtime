@@ -336,28 +336,17 @@ public class ReadChar : PortsTest
             }
             else
             {
-                System.Threading.Thread.Sleep(1000); //We need to wait for all of the bytes to be received
                 charRcvBuffer[0] = (char)asyncRead.Result;
-                int readResult = com1.Read(charRcvBuffer, 1, charRcvBuffer.Length - 1);
 
-                if (readResult + 1 != charXmitBuffer.Length)
+                int receivedLength = 1;
+                while (receivedLength < charXmitBuffer.Length)
                 {
-                    Fail("Err_051884ajoedo Expected Read to read {0} characters actually read {1}",
-                        charXmitBuffer.Length - 1, readResult);
+                    receivedLength += com1.Read(charRcvBuffer, receivedLength, charRcvBuffer.Length - receivedLength);
                 }
-                else
-                {
-                    for (int i = 0; i < charXmitBuffer.Length; ++i)
-                    {
-                        if (charRcvBuffer[i] != charXmitBuffer[i])
-                        {
-                            Fail("Err_05188ahed Characters differ at {0} expected:{1}({1:X}) actual:{2}({2:X}) asyncRead.Result={3}",
-                                i, charXmitBuffer[i], charRcvBuffer[i], asyncRead.Result);
-                        }
-                    }
-                }
+
+                Assert.Equal(receivedLength, charXmitBuffer.Length);
+                Assert.Equal(charXmitBuffer, charRcvBuffer);
             }
-
         }
     }
 
