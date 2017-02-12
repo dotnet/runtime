@@ -267,42 +267,6 @@ public class ReceivedBytesThreshold_Property : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem), Skip="Was not run in legacy tests")]
-    public void ReceivedBytesThreshold_Twice()
-    {
-        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-        using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
-        {
-            ReceivedEventHandler rcvEventHandler = new ReceivedEventHandler(com1);
-            SerialPortProperties serPortProp = new SerialPortProperties();
-
-            Random rndGen = new Random(-55);
-            int receivedBytesThreshold = rndGen.Next(MIN_RND_THRESHOLD, MAX_RND_THRESHOLD);
-
-            com1.ReceivedBytesThreshold = receivedBytesThreshold;
-            com1.Open();
-            com2.Open();
-            com1.DataReceived += rcvEventHandler.HandleEvent;
-
-            serPortProp.SetAllPropertiesToOpenDefaults();
-            serPortProp.SetProperty("ReceivedBytesThreshold", receivedBytesThreshold);
-            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-
-            Debug.WriteLine(
-                "Verifying writing twice the number of bytes of ReceivedBytesThreshold and ReceivedEvent firered twice");
-
-            com2.Write(new byte[com1.ReceivedBytesThreshold * 2], 0, com1.ReceivedBytesThreshold * 2);
-
-            rcvEventHandler.WaitForEvent(SerialData.Chars, 2, MAX_TIME_WAIT);
-            
-            com1.DiscardInBuffer();
-
-            serPortProp.VerifyPropertiesAndPrint(com1);
-            rcvEventHandler.Validate(SerialData.Chars, com1.ReceivedBytesThreshold, 0);
-            rcvEventHandler.Validate(SerialData.Chars, 2 * com1.ReceivedBytesThreshold, 1);
-        }
-    }
-
     [ConditionalFact(nameof(HasNullModem))]
     public void ReceivedBytesThreshold_Int32MinValue()
     {

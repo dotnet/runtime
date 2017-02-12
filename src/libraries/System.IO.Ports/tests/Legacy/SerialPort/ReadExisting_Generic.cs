@@ -6,6 +6,7 @@ using System;
 using System.IO.Ports;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Linq;
 using Legacy.Support;
 using Xunit;
 
@@ -180,7 +181,7 @@ public class ReadExisting_Generic : PortsTest
             char[] actualChars = (com1.ReadExisting()).ToCharArray();
 
             //Compare the chars that were written with the ones we expected to read
-            Assert.Equal(expectedChars, actualChars);
+            Assert.Equal(expectedChars, actualChars.Take(expectedChars.Length).ToArray());
 
             if (1 < com1.BytesToRead)
             {

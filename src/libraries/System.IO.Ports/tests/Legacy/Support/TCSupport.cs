@@ -230,6 +230,11 @@ namespace Legacy.Support
             }
         }
 
+        /// <summary>
+        /// Set this true to shorten the very long-running stress tests
+        /// </summary>
+        public static bool RunShortStressTests { get; set; } = true;
+
         public delegate bool Predicate();
 
         public delegate T ValueGenerator<T>();

@@ -25,8 +25,8 @@ public class Open_stress : PortsTest
 
             try
             {
-                // TODO - Verify number of iterations (original is 1000 which makes test very slow)
-                for (int i = 0; i < 10; ++i)
+                int iterationCount = TCSupport.RunShortStressTests ? 10 : 1000;
+                for (int i = 0; i < iterationCount; ++i)
                 {
                     com.RtsEnable = true;
                     com.Open();
@@ -76,12 +76,11 @@ public class Open_stress : PortsTest
 
             for (int i = 0; i < xmitBytes.Length; ++i)
                 xmitBytes[i] = (byte)i;
-
-
+            
             try
             {
-                // TODO - Verify number of iterations (original is 1000 which makes test very slow)
-                for (int i = 0; i < 10; ++i)
+                int iterationCount = TCSupport.RunShortStressTests ? 10 : 1000;
+                for (int i = 0; i < iterationCount; ++i)
                 {
                     com.Open();
                     com.Handshake = Handshake.RequestToSend;
