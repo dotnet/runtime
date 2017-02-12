@@ -163,10 +163,6 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
         if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
             *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-        if (dwSecurityFlags & DynamicResolver::HasCreationContext)
-            *ppAccessContext = pResolver;
-#endif // FEATURE_COMPRESSEDSTACK
     }
     else
     {
@@ -6622,12 +6618,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
     if (pMD->IsLCGMethod()) 
     {
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_COMPRESSEDSTACK
-        if(SecurityStackWalk::MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(pMD))
-        {
-            return CORINFO_FLG_STATIC | CORINFO_FLG_DONT_INLINE | CORINFO_FLG_SECURITYCHECK;
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 #endif // !CROSSGEN_COMPILE
 
         return CORINFO_FLG_STATIC | CORINFO_FLG_DONT_INLINE | CORINFO_FLG_NOSECURITYWRAP;
