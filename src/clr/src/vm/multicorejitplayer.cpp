@@ -482,17 +482,6 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit, b
     
     LOADCTX_TYPE context = pAssembly->GetManifestFile()->GetLoadContext();
 
-#if defined(FEATURE_APPX_BINDER)
-
-    if (fAppx)
-    {
-        if (context == LOADCTX_TYPE_HOSTED)
-        {
-            return true;
-        }
-    }
-
-#endif
 
     return ((context == LOADCTX_TYPE_DEFAULT) || (context == LOADCTX_TYPE_LOADFROM));
 

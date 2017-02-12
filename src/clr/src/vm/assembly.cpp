@@ -2486,29 +2486,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
         if (pMeth) {
             RunMainPre();
 
-#if defined(FEATURE_APPX_BINDER) && defined(FEATURE_MULTICOREJIT)
-            if (AppX::IsAppXProcess())
-            {
-                GCX_PREEMP();
-                
-                // we call this to obtain and cache the PRAID value which is used
-                // by multicore JIT manager and watson bucket params generation.
-
-                // NOTE: this makes a COM call into WinRT so we must do this after we've
-                //       set the thread's apartment state which will do CoInitializeEx().
-                LPCWSTR praid;
-                hr = AppX::GetApplicationId(praid);
-                _ASSERTE(SUCCEEDED(hr));
-
-                if (!pMeth->GetModule()->HasNativeImage())
-                {
-                    // For Appx, multicore JIT is only needed when root assembly does not have NI image
-                    // When it has NI image, we can't generate profile, and do not need to playback profile
-                    AppDomain * pDomain = pThread->GetDomain();
-                    pDomain->GetMulticoreJitManager().AutoStartProfileAppx(pDomain);
-                }
-            }
-#endif // FEATURE_APPX_BINDER && FEATURE_MULTICOREJIT
             
             // Set the root assembly as the assembly that is containing the main method
             // The root assembly is used in the GetEntryAssembly method that on CoreCLR is used

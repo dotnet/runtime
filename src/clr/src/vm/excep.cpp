@@ -58,10 +58,6 @@ IUEFManager * g_pUEFManager = NULL;
 // Support for extracting MethodDesc of a delegate.
 #include "comdelegate.h"
 
-#if defined(FEATURE_APPX_BINDER) && !defined(DACCESS_COMPILE)
-// For determining if we have a framework assembly trying to handle a corrupted state exception
-#include "policy.h"
-#endif // FEATURE_APPX && !DACCESS_COMPILE
 
 #ifndef FEATURE_PAL
 // Windows uses 64kB as the null-reference area
@@ -11554,25 +11550,6 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_APPX_BINDER
-    // In an Metro application, disallow application code to catch any corrupted state exception
-    if (AppX::IsAppXProcess())
-    {
-        // This call to GetFusionAssemblyNameNoCreate will return a valid fusion assembly name
-        // in the second pass of exception dispatch as the name would have been created in the first pass,
-        // if not already existent.
-        IAssemblyName *pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyNameNoCreate();
-        if (!pIAssemblyName)
-        {
-            pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyName();
-        }
-        
-        if (Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName) != S_OK)
-        {
-            return FALSE;
-        }
-    }
-#endif // FEATURE_APPX
 
     if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
     {

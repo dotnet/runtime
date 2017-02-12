@@ -49,10 +49,6 @@
 #include "winrttypenameconverter.h"
 #endif
 
-#if defined(FEATURE_APPX_BINDER)
-#include "clrprivbinderappx.h"
-#include "clrprivtypecachewinrt.h"
-#endif
 
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
@@ -5198,16 +5194,6 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
             } gc;
             memset(&gc, 0, sizeof(gc));
 
-#if defined(FEATURE_MULTICOREJIT) && defined(FEATURE_APPX_BINDER)
-            // For Appx, multicore JIT is only needed when root assembly does not have NI image
-            // When it has NI image, we can't generate profile, and do not need to playback profile
-            if (AppX::IsAppXProcess() && ! typeHandle.IsZapped())
-            {
-                GCX_PREEMP();
-
-                pDomain->GetMulticoreJitManager().AutoStartProfileAppx(pDomain);
-            }
-#endif
 
             IActivationFactory* activationFactory;
             GCPROTECT_BEGIN(gc);

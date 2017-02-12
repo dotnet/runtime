@@ -369,11 +369,7 @@ class AssemblySpec  : public BaseAssemblySpec
     inline BOOL CanUseWithBindingCache() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-#if defined(FEATURE_APPX_BINDER)
-        return (GetHostBinder() == nullptr) && HasUniqueIdentity();
-#else
         return HasUniqueIdentity(); 
-#endif
     }
 
     inline ICLRPrivBinder *GetHostBinder() const
