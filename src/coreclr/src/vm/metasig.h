@@ -339,15 +339,10 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
 #endif
 
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
 DEFINE_METASIG_T(SM(SecurityContext_ContextCallback_Object_RetVoid, \
                  C(SECURITYCONTEXT) C(CONTEXTCALLBACK) j, v))
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)                 
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METASIG_T(SM(CompressedStack_ContextCallback_Object_RetVoid, \
-                 C(COMPRESSED_STACK) C(CONTEXTCALLBACK) j, v))
-DEFINE_METASIG_T(SM(IntPtr_RetDCS, I, C(DOMAIN_COMPRESSED_STACK)))                 
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
+#endif // #if defined(FEATURE_IMPERSONATION) 
 DEFINE_METASIG(SM(Str_RetInt, s, i))
 DEFINE_METASIG_T(SM(Str_RetICustomMarshaler, s, C(ICUSTOM_MARSHALER)))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))

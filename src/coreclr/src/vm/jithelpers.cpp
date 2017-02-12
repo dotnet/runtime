@@ -6036,9 +6036,6 @@ NOINLINE HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd
         if ((pCurrent->IsInterceptedForDeclSecurity() &&
             !(pCurrent->IsInterceptedForDeclSecurityCASDemandsOnly() &&
                 SecurityStackWalk::HasFlagsOrFullyTrusted(0)))
-#ifdef FEATURE_COMPRESSEDSTACK
-                || SecurityStackWalk::MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(pCurrent)
-#endif //FEATURE_COMPRESSEDSTACK
                 )
         {
             MethodSecurityDescriptor MDSecDesc(pCurrent);
