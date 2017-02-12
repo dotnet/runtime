@@ -94,10 +94,6 @@
 
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-#if defined(FEATURE_APPX_BINDER)
-#include "appxutil.h"
-#include "clrprivbinderappx.h"
-#endif
 
 #include "clrprivtypecachewinrt.h"
 
@@ -852,9 +848,6 @@ void BaseDomain::Init()
     // Allocate the managed standard interfaces information.
     m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
     
-#if defined(FEATURE_APPX_BINDER)
-    if (!AppX::IsAppXProcess())
-#endif
     {
         CLRPrivBinderWinRT::NamespaceResolutionKind fNamespaceResolutionKind = CLRPrivBinderWinRT::NamespaceResolutionKind_WindowsAPI;
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DesignerNamespaceResolutionEnabled) != FALSE)
@@ -3462,13 +3455,6 @@ void SystemDomain::InitializeDefaultDomain(
     {
         pDefaultDomain->SetLoadContextHostBinder(pBinder);
     }
-    #ifdef FEATURE_APPX_BINDER
-        else if (AppX::IsAppXProcess())
-        {
-            CLRPrivBinderAppX * pAppXBinder = CLRPrivBinderAppX::GetOrCreateBinder();
-            pDefaultDomain->SetLoadContextHostBinder(pAppXBinder);
-        }
-    #endif
 
     {
         GCX_COOP();
@@ -4834,18 +4820,6 @@ void AppDomain::Init()
         m_pReflectionOnlyWinRtBinder = clr::SafeAddRef(new CLRPrivBinderReflectionOnlyWinRT(m_pReflectionOnlyWinRtTypeCache));
 #endif
     }
-#ifdef FEATURE_APPX_BINDER
-    else if (g_fEEStarted && !IsDefaultDomain())
-    {   // Non-default domain in an AppX process. This exists only for designers and we'd better be in dev mode.
-        _ASSERTE(IsCompilationProcess() || AppX::IsAppXDesignMode());
-
-        // Inherit AppX binder from default domain.
-        SetLoadContextHostBinder(SystemDomain::System()->DefaultDomain()->GetLoadContextHostBinder());
-
-        // Note: LoadFrom, LoadFile, Load(byte[], ...), ReflectionOnlyLoad, LoadWithPartialName,
-        /// etc. are not supported and are actively blocked.
-    }
-#endif //FEATURE_APPX_BINDER
 #endif //FEATURE_COMINTEROP
 
 #endif // CROSSGEN_COMPILE
@@ -7943,144 +7917,11 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     BOOL fForceReThrow = FALSE;
 
-#if defined(FEATURE_APPX_BINDER)
-    //
-    // If there is a host binder available and this is an unparented bind within the
-    // default load context, then the bind will be delegated to the domain-wide host
-    // binder. If there is a parent assembly, then a bind will occur only if it has
-    // an associated ICLRPrivAssembly to serve as the binder.
-    //
-    // fUseHostBinderIfAvailable can be false if this method is called by
-    // CLRPrivBinderFusion::BindAssemblyByName, which explicitly indicates that it
-    // wants to use the fusion binder.
-    //
-
-    if (AppX::IsAppXProcess() &&
-        fUseHostBinderIfAvailable &&
-        (
-         ( pSpec->HasParentAssembly()
-           ? // Parent assembly is hosted
-             pSpec->GetParentAssembly()->GetFile()->HasHostAssembly()
-           : // Non-parented default context bind
-             ( HasLoadContextHostBinder() &&
-               !pSpec->IsIntrospectionOnly() 
-             )
-         ) ||
-         (pSpec->GetHostBinder() != nullptr)
-         )
-       )
-    {
-        HRESULT hr = S_OK;
-
-        if (pSpec->GetCodeBase() != nullptr)
-        {   // LoadFrom is not supported in AppX (we should never even get here)
-            IfFailThrow(E_INVALIDARG);
-        }
-        
-        // Get the assembly display name.
-        ReleaseHolder<IAssemblyName> pAssemblyName;
-        IfFailThrow(pSpec->CreateFusionName(&pAssemblyName, TRUE, TRUE));
-        
-        // Create new binding scope for fusion logging.
-        fusion::logging::BindingScope defaultScope(pAssemblyName, FUSION_BIND_LOG_CATEGORY_DEFAULT);
-        
-        PEAssemblyHolder pAssembly;
-        EX_TRY
-        {
-            // If there is a specified binder, then it is used.
-            // Otherwise if there exist a parent assembly, then it provides the binding context
-            // Otherwise the domain's root-level binder is used.
-            ICLRPrivBinder * pBinder = nullptr;
-
-            if (pSpec->GetHostBinder() != nullptr)
-            {
-                pBinder = pSpec->GetHostBinder();
-            }
-            else
-            {
-                PEAssembly * pParentAssembly =
-                    (pSpec->GetParentAssembly() == nullptr) ? nullptr : pSpec->GetParentAssembly()->GetFile();
-
-                if ((pParentAssembly != nullptr) && (pParentAssembly->HasHostAssembly()))
-                {
-                    BOOL fMustUseOriginalLoadContextBinder = FALSE;
-                    if (pSpec->IsContentType_WindowsRuntime())
-                    {
-                        // Ugly, but we need to handle Framework assemblies that contain WinRT type references,
-                        // and the Fusion binder won't resolve these in AppX processes. The shareable flag is currently
-                        // a reasonable proxy for these cases. (It also catches first party WinMD files, but depedencies
-                        // from those can also be resolved by the original load context binder).
-                        // TODO! Update the fusion binder to resolve WinMD references correctly.
-                        IfFailThrow(pParentAssembly->GetHostAssembly()->IsShareable(&fMustUseOriginalLoadContextBinder));
-                    }
-
-                    if (fMustUseOriginalLoadContextBinder)
-                    {
-                        pBinder = GetLoadContextHostBinder();
-                    }
-                    else
-                    {
-                        pBinder = pParentAssembly->GetHostAssembly();
-                    }
-                }
-                else
-                {
-                    pBinder = GetCurrentLoadContextHostBinder();
-                }
-            }
-            _ASSERTE(pBinder != nullptr);
-            
-            hr = BindAssemblySpecForHostedBinder(pSpec, pAssemblyName, pBinder, &pAssembly);
-            if (FAILED(hr))
-            {
-                goto EndTry1;
-            }
-EndTry1:;
-        }
-        // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions 
-        // thrown in scenarios where the exception does not escape the method. We cannot get rid of the try/catch block, as
-        // there are cases within some of the clrpriv binder's which throw.
-        // Note: In theory, FileNotFound should always come here as HRESULT, never as exception.
-        EX_CATCH_HRESULT_IF(hr,
-            !fThrowOnFileNotFound && Assembly::FileNotFound(hr))
-
-        if (FAILED(hr) && (fThrowOnFileNotFound || !Assembly::FileNotFound(hr)))
-        {
-            if (Assembly::FileNotFound(hr))
-            {
-                _ASSERTE(fThrowOnFileNotFound);
-                // Uses defaultScope
-                EEFileLoadException::Throw(pSpec, fusion::logging::GetCurrentFusionBindLog(), hr);
-            }
-            if ((hr == CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT) && pSpec->IsContentType_WindowsRuntime())
-            {   // Error returned e.g. for WinRT type name without namespace
-                if (fThrowOnFileNotFound)
-                {   // Throw ArgumentException (with the HRESULT) wrapped by TypeLoadException to give user type name for diagnostics
-                    // Note: TypeLoadException is equivalent of FileNotFound in WinRT world
-                    EEMessageException ex(hr);
-                    EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), &ex);
-                }
-            }
-            else
-            {
-                IfFailThrow(hr);
-            }
-        }
-
-        _ASSERTE((pAssembly != nullptr) || (FAILED(hr) && !fThrowOnFileNotFound));
-        return pAssembly.Extract();
-    }
-    else
-#endif // FEATURE_APPX_BINDER
 #if defined(FEATURE_COMINTEROP)
     // Handle WinRT assemblies in the classic/hybrid scenario. If this is an AppX process,
     // then this case will be handled by the previous block as part of the full set of
     // available binding hosts.
-#ifndef FEATURE_APPX_BINDER
     if (pSpec->IsContentType_WindowsRuntime())
-#else
-    if (!AppX::IsAppXProcess() && pSpec->IsContentType_WindowsRuntime())
-#endif
     {
         HRESULT hr = S_OK;
 
@@ -13811,10 +13652,6 @@ void AppDomain::PublishHostedAssembly(
     }
     else
     {
-#ifdef FEATURE_APPX_BINDER
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
-#endif
     }
 }
 
@@ -13882,10 +13719,6 @@ void AppDomain::UpdatePublishHostedAssembly(
     }
     else
     {
-#ifdef FEATURE_APPX_BINDER
-        // In AppX processes, all PEAssemblies that are reach this stage should have host binders.
-        _ASSERTE(!AppX::IsAppXProcess());
-#endif
 
         pAssembly->UpdatePEFileWorker(pFile);
     }

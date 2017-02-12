@@ -33,49 +33,6 @@
 
 const wchar_t * AppxProfile    = W("Application.Profile");
 
-#if defined(FEATURE_APPX_BINDER)
-
-//static 
-bool MulticoreJitManager::IsLoadOkay(Module * pModule)
-{
-    CONTRACTL
-    {
-        THROWS;
-        SO_INTOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pModule->GetAssembly()->GetManifestFile()->IsWindowsRuntime())
-    {
-        PEFile * pFile = pModule->GetFile();
-    
-        ICLRPrivAssembly * pHostAsm = pFile->GetHostAssembly();
-
-        // Allow first party WinMD to load in multicore JIT background thread
-        if (pHostAsm != NULL)
-        {
-            BOOL shared = FALSE;
-
-            if (SUCCEEDED(pHostAsm->IsShareable(& shared)))
-            {
-                if (shared)
-                {
-                    LPCUTF8 simpleName = pModule->GetSimpleName();
-
-                    if (IsWindowsNamespace(simpleName))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-#endif
 
 
 void MulticoreJitFireEtw(const wchar_t * pAction, const wchar_t * pTarget, int p1, int p2, int p3)
@@ -379,15 +336,6 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
 
-#if defined(FEATURE_APPX_BINDER)
-
-    // Allow certain modules to load on background thread
-    if (AppX::IsAppXProcess() && MulticoreJitManager::IsLoadOkay(pMod))
-    {
-        flags |= FLAG_LOADOKAY;
-    }
-
-#endif
 
     return  moduleVersion.GetModuleVersion(pMod);
 }
@@ -716,60 +664,6 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 }
 
 
-#if defined(FEATURE_APPX_BINDER)
-// ProfileName = ProcessName_CoreAppId.Profile   ; for server process, always use it for output
-//               ProcessName.Profile
-
-void AppendAppxProfileName(SString & name)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    {
-        WCHAR wszProcessName[_MAX_PATH];
-
-        if (WszGetModuleFileName(NULL, wszProcessName, _MAX_PATH) != 0)
-        {
-            WCHAR * pNameOnly = wcsrchr(wszProcessName, W('\\'));
-     
-            if (pNameOnly == NULL)
-            {
-                pNameOnly = wszProcessName;
-            }
-            else
-            {
-                pNameOnly ++;
-            }
-
-            WCHAR * pExt = wcsrchr(pNameOnly, W('.')); // last .
-
-            if (pExt != NULL)
-            {
-                * pExt = 0;
-            }
-
-            // Use process name only
-            name.Append(pNameOnly);
-            name.Append(W("_"));
-        }
-    }
-
-    LPCWSTR pAppId = NULL;
-    if (SUCCEEDED(AppX::GetApplicationId(pAppId)))
-    {
-        name.Append(pAppId);
-        name.Append(W(".Profile"));
-
-        return;
-    }
-
-    // default name
-    name.Append(AppxProfile);
-}
-#endif
 
 // static: single instace within a process
 
@@ -796,25 +690,6 @@ MulticoreJitRecorder::WriteMulticoreJitProfiler(PTP_CALLBACK_INSTANCE pInstance,
 
     if (pRecorder != NULL)
     {
-#if defined(FEATURE_APPX_BINDER)
-        if (pRecorder->m_fAppxMode)
-        {
-            const wchar_t * pOutputDir = NULL;
-
-            HRESULT hr = Clr::Util::GetLocalAppDataDirectory(&pOutputDir);
-
-            if (SUCCEEDED(hr))
-            {
-                pRecorder->m_fullFileName = pOutputDir;
-                pRecorder->m_fullFileName.Append(W("\\"));
-
-                AppendAppxProfileName(pRecorder->m_fullFileName);
-
-                pRecorder->StopProfile(false);
-            }
-        }
-        else
-#endif
         {
             pRecorder->StopProfile(false);
         }
@@ -1360,48 +1235,6 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
     }
 }
 
-#if defined(FEATURE_APPX_BINDER)
-
-// Called from CorHost2::ExecuteMain
-void MulticoreJitManager::AutoStartProfileAppx(AppDomain * pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (InterlockedCompareExchange(& m_fAutoStartCalled, SETPROFILEROOTCALLED, 0) == 0) // Only allow the first call
-    {
-        WCHAR wzFilePath[_MAX_PATH];
-
-        UINT32 cchFilePath = NumItems(wzFilePath);
-
-        SString profileName;
-
-        // Try to find ProcessName_AppId.Profile
-        AppendAppxProfileName(profileName);
-
-        // Search for Application.Profile within the package
-        HRESULT hr = AppX::FindFileInCurrentPackage(profileName, &cchFilePath, wzFilePath);
-
-        if (SUCCEEDED(hr))
-        {
-            m_fAppxMode = true;
-            SetProfileRoot(pDomain, W("")); // Fake a SetProfileRoot call
-            StartProfile(pDomain, NULL, wzFilePath);
-        }
-        else
-        {
-            _FireEtwMulticoreJit(W("AUTOSTARTPROFILEAPPX"), profileName, hr, 0, 0);
-        }
-    }
-}
-
-#endif
 
 // Constructor
 

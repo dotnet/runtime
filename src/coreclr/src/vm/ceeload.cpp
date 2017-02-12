@@ -83,9 +83,6 @@
 #include "peimagelayout.inl"
 #include "ildbsymlib.h"
 
-#if defined(FEATURE_APPX_BINDER)
-#include "clrprivbinderappx.h"
-#endif // defined(FEATURE_APPX_BINDER)
 
 #if defined(PROFILING_SUPPORTED)
 #include "profilermetadataemitvalidator.h"
@@ -5782,14 +5779,6 @@ Module::GetAssemblyIfLoaded(
 #endif //!DACCESS_COMPILE
                     if (pAssembly == nullptr)
                     {   
-#if defined(FEATURE_APPX_BINDER)
-                        // Use WinRT binder from "global" AppX binder (there's only 1 AppDomain in non-design mode)
-                        CLRPrivBinderAppX * pAppXBinder = CLRPrivBinderAppX::GetBinderOrNull();
-                        if (pAppXBinder != nullptr)
-                        {
-                            pWinRtBinder = pAppXBinder->GetWinRtBinder();
-                        }
-#endif // defined(FEATURE_APPX_BINDER)
                     }
                 }
                 
@@ -5839,20 +5828,6 @@ Module::GetAssemblyIfLoaded(
                 }
                 DomainAssembly * pDomainAssembly = nullptr;
 
-#ifdef FEATURE_APPX_BINDER
-                if (AppX::IsAppXProcess_Initialized_NoFault() && GetAssembly()->GetManifestFile()->HasHostAssembly())
-                {
-                    ICLRPrivAssembly * pPrivBinder = GetAssembly()->GetManifestFile()->GetHostAssembly();
-                    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-                    HRESULT hrCachedResult;
-                    if (SUCCEEDED(pPrivBinder->FindAssemblyBySpec(pAppDomainExamine, &spec, &hrCachedResult, &pPrivAssembly)) &&
-                        SUCCEEDED(hrCachedResult))
-                    {
-                        pDomainAssembly = pAppDomainExamine->FindAssembly(pPrivAssembly);
-                    }
-                }
-                else
-#endif // FEATURE_APPX_BINDER
                 {
                     pDomainAssembly = pAppDomainExamine->FindCachedAssembly(&spec, FALSE /*fThrow*/);
                 }

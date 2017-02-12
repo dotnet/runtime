@@ -1358,13 +1358,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         pBinder = GetBindingContextFromParentAssembly(pDomain);
     }
 
-#ifdef FEATURE_APPX_BINDER
-    // If no explicit or parent binder, check domain.
-    if (pBinder == nullptr && AppX::IsAppXProcess())
-    {
-        pBinder = pDomain->GetCurrentLoadContextHostBinder();
-    }
-#endif
 
     if (pBinder != nullptr)
     {
@@ -2231,11 +2224,6 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     AssemblySpec *a1 = (AssemblySpec *) (u1 << 1);
     AssemblySpec *a2 = (AssemblySpec *) u2;
 
-#if defined(FEATURE_APPX_BINDER)
-    _ASSERTE(a1->GetAppDomain() == a2->GetAppDomain());
-    if (a1->GetAppDomain()->HasLoadContextHostBinder())
-        return (CLRPrivBinderUtil::CompareHostBinderSpecs(a1,a2));
-#endif
 
     if ((!a1->CompareEx(a2)) ||
         (a1->IsIntrospectionOnly() != a2->IsIntrospectionOnly()))

@@ -198,9 +198,6 @@ CLRPrivBinderWinRT::GetOrCreateBinder(
     HRESULT hr = S_OK;
 
     // This should be allocated directly by CLRPrivBinderAppX in the AppX scenario.
-#ifdef FEATURE_APPX_BINDER
-	_ASSERTE(!AppX::IsAppXProcess());
-#endif
 
     if (s_pSingleton == nullptr)
     {
