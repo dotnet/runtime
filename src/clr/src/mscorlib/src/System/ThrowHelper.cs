@@ -362,6 +362,7 @@ namespace System {
         text,
         callBack,
         type,
+        stateMachine,
     }
 
     //
@@ -467,6 +468,7 @@ namespace System {
         ConcurrentCollection_SyncRoot_NotSupported,
         ArgumentOutOfRange_Enum,
         InvalidOperation_HandleIsNotInitialized,
+        AsyncMethodBuilder_InstanceNotInitialized,
     }
 }
 
