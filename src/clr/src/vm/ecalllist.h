@@ -642,9 +642,7 @@ FCFuncStart(gAppDomainFuncs)
 #if FEATURE_COMINTEROP
     FCFuncElement("nSetDisableInterfaceCache", AppDomainNative::SetDisableInterfaceCache)
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_VERSIONING
     FCFuncElement("nCreateContext", AppDomainNative::CreateContext)
-#endif // FEATURE_VERSIONING
 #ifdef FEATURE_REMOTING
     FCFuncElement("nUnload", AppDomainNative::Unload)
 #endif // FEATURE_REMOTING

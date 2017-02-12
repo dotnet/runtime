@@ -3250,7 +3250,6 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 }
 #endif
 
-#ifdef FEATURE_VERSIONING
 
 BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 {
@@ -3280,7 +3279,6 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
     return TRUE;
 }
 
-#endif // FEATURE_VERSIONING
 
 #endif // FEATURE_LOADER_OPTIMIZATION
 
