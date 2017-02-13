@@ -381,7 +381,7 @@ VOID CRemotingServices::InitRemotingServicesClass()
     
     s_pCheckCast = MscorlibBinder::GetMethod(METHOD__REMOTING_SERVICES__CHECK_CAST);
 
-    // Need these to call wrap/unwrap from the VM (message.cpp).
+    // Need these to call wrap/unwrap from the VM.
     // Also used by JIT helpers to wrap/unwrap
     s_pWrapMethodDesc = MscorlibBinder::GetMethod(METHOD__REMOTING_SERVICES__WRAP);
     s_pProxyForDomainDesc = MscorlibBinder::GetMethod(METHOD__REMOTING_SERVICES__CREATE_PROXY_FOR_DOMAIN);
