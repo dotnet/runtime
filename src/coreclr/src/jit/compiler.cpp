@@ -7807,6 +7807,9 @@ void JitTimer::PrintCsvHeader()
     FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
     if (fp != nullptr)
     {
+        // Seek to the end of the file s.t. `ftell` doesn't lie to us on Windows
+        fseek(fp, 0, SEEK_END);
+
         // Write the header if the file is empty
         if (ftell(fp) == 0)
         {
