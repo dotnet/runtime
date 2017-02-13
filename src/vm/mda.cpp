@@ -5,7 +5,16 @@
 
 #include "common.h"
 #include "eeconfig.h"
-#include "eeconfigfactory.h"
+
+#include <xmlparser.h>
+#include <objbase.h>
+#include "unknwn.h"
+#include "../xmlparser/_reference.h"
+#include "../xmlparser/_unknown.h"
+#include "eehash.h"
+#include "eeconfig.h"
+
+#define CONFIG_KEY_SIZE 128
 #include "corhlpr.h"
 #include <xmlparser.h>
 #include <mscorcfg.h>
