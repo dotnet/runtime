@@ -947,7 +947,7 @@ endif
 	$(MCS) -r:System.dll -target:library -out:$@ $<
 
 reference-loader.exe: reference-loader.cs TestingReferenceAssembly.dll TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_DEPEND)
-	$(MCS) -r:System.dll -r:TestDriver.dll -r:TestingReferenceAssembly.dll -r:TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ reference-loader.cs
+	$(MCS) -r:System.dll -r:TestDriver.dll -r:TestingReferenceAssembly.dll -r:TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $(srcdir)/reference-loader.cs
 
 TestingReferenceAssembly.dll: TestingReferenceAssembly.cs
 	$(MCS) -target:library -out:$@ $<
