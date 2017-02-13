@@ -58,10 +58,6 @@ IUEFManager * g_pUEFManager = NULL;
 // Support for extracting MethodDesc of a delegate.
 #include "comdelegate.h"
 
-#if defined(FEATURE_APPX_BINDER) && !defined(DACCESS_COMPILE)
-// For determining if we have a framework assembly trying to handle a corrupted state exception
-#include "policy.h"
-#endif // FEATURE_APPX && !DACCESS_COMPILE
 
 #ifndef FEATURE_PAL
 // Windows uses 64kB as the null-reference area
@@ -2287,7 +2283,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // Preallocated exceptions will never have this flag set. However, its possible
         // that after this flag is set for a regular exception but before we throw, we have an async
         // exception like a RudeThreadAbort, which will replace the exception
@@ -2297,7 +2292,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
         // preallocated exception will not have the restored (or any) stack trace.
         PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
         pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         return;
     }
@@ -2310,14 +2304,12 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     bool         fSuccess = false;
     MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetTrueMethodTable();
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
     // normally.
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
     if (bAllowAllocMem && m_dFrameCount != 0)
     {
@@ -2358,19 +2350,15 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 struct _gc
                 {
                     StackTraceArray stackTrace;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     StackTraceArray stackTraceTemp;
                     PTRARRAYREF dynamicMethodsArrayTemp;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
                     PTRARRAYREF pOrigDynamicArray;
 
                     _gc()
                         : stackTrace()
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                         , stackTraceTemp()
                         , dynamicMethodsArrayTemp(static_cast<PTRArray *>(NULL))
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)                        
                         , dynamicMethodsArray(static_cast<PTRArray *>(NULL))
                         , pOrigDynamicArray(static_cast<PTRArray *>(NULL))
                     {}
@@ -2379,7 +2367,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 _gc gc;
                 GCPROTECT_BEGIN(gc);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                 // If the flag indicating foreign exception raise has been setup, then check 
                 // if the exception object has stacktrace or not. If we have an async non-preallocated
                 // exception after setting this flag but before we throw, then the new
@@ -2394,14 +2381,11 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         fRaisingForeignException = FALSE;
                     }
                 }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                 // Replace stack (i.e. build a new stack trace) only if we are not raising a foreign exception.
                 // If we are, then we will continue to extend the existing stack trace.
                 if (bReplaceStack
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     && (!fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                 {
                     // Cleanup previous info
@@ -2435,7 +2419,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     // Fetch the stacktrace and the dynamic method array
                     ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pOrigDynamicArray);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     if (fRaisingForeignException)
                     {
                         // Just before we append to the stack trace, mark the last recorded frame to be from
@@ -2450,7 +2433,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             refLastElementFromForeignStackTrace.fIsLastFrameFromForeignStackTrace = TRUE;
                         }
                     }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                     if (bSkipLastElement && gc.stackTrace.Size() != 0)
                         gc.stackTrace.AppendSkipLast(m_pStackTrace, m_pStackTrace + m_dFrameCount);
@@ -2472,9 +2454,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     }
 
                     if ((gc.pOrigDynamicArray != NULL)
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     || (fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                     {
                         // Since we have just restored the dynamic method array as well,
@@ -3768,12 +3748,10 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         pStackTraceElem->ip = currentIP;
         pStackTraceElem->sp = currentSP;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // When we are building stack trace as we encounter managed frames during exception dispatch,
         // then none of those frames represent a stack trace from a foreign exception (as they represent
         // the current exception). Hence, set the corresponding flag to FALSE.
         pStackTraceElem->fIsLastFrameFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
@@ -5601,7 +5579,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 //------------------------------------------------------------------------------
 #if !defined(FEATURE_PAL)
 #pragma code_seg(push, uef, CLR_UEF_SECTION_NAME)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or EXCEPTION_CONTINUE_EXECUTION
     EXCEPTION_POINTERS *pExceptionInfo)         // Information about the exception.
 {
@@ -5643,7 +5621,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 } // LONG __stdcall COMUnhandledExceptionFilter()
 #if !defined(FEATURE_PAL)
 #pragma code_seg(pop, uef)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
 void PrintStackTraceToStdout();
 
@@ -7048,9 +7026,9 @@ DWORD GetGcMarkerExceptionCode(LPVOID ip)
     {
         return STATUS_CLR_GCCOVER_CODE;
     }
-#else // !(defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR))
+#else // defined(HAVE_GCCOVER)
     LIMITED_METHOD_CONTRACT;
-#endif // defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+#endif // defined(HAVE_GCCOVER)
     return 0;
 }
 
@@ -11290,7 +11268,7 @@ PTR_VOID EHWatsonBucketTracker::RetrieveWatsonBuckets()
     {
         return NULL;
     }
-#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#endif //!defined(DACCESS_COMPILE)
 
     CONTRACTL
     {
@@ -11572,25 +11550,6 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_APPX_BINDER
-    // In an Metro application, disallow application code to catch any corrupted state exception
-    if (AppX::IsAppXProcess())
-    {
-        // This call to GetFusionAssemblyNameNoCreate will return a valid fusion assembly name
-        // in the second pass of exception dispatch as the name would have been created in the first pass,
-        // if not already existent.
-        IAssemblyName *pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyNameNoCreate();
-        if (!pIAssemblyName)
-        {
-            pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyName();
-        }
-        
-        if (Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName) != S_OK)
-        {
-            return FALSE;
-        }
-    }
-#endif // FEATURE_APPX
 
     if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
     {
@@ -12515,9 +12474,6 @@ void ReturnToPreviousAppDomainHolder::SuppressRelease()
 #ifndef DACCESS_COMPILE
 // This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
 // checking whether the delegate can be invoked for the exception's corruption severity.
-//
-// This has been factored out of the #IFDEF FEATURE_EXCEPTION_NOTIFICATIONS so that existing ADUEN mechanism can be integrated with
-// the enhanced exception notifications.
 void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
         OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
 {
@@ -12543,7 +12499,6 @@ void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationH
     CALL_MANAGED_METHOD_NORET(args);
 }
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 // To include definition of COMDelegate::GetMethodDesc
 #include "comdelegate.h"
 
@@ -12954,7 +12909,6 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
 }
 
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 #ifdef WIN64EXCEPTIONS
 struct TAResetStateCallbackData
@@ -13774,24 +13728,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowSO()
 // Throw an InvalidCastException
 //==========================================================================
 
-#ifdef FEATURE_FUSION
-static const WCHAR *GetContextName(LOADCTX_TYPE kLoadContext,
-                                   BOOL         fIntrospectionOnly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Context names are treated as symbols and therefore not localized
-    switch (kLoadContext)
-    {
-    case LOADCTX_TYPE_DEFAULT:
-        return W("Default");
-    case LOADCTX_TYPE_LOADFROM:
-        return W("LoadFrom");
-    default:
-        return (fIntrospectionOnly ? W("InspectionContext") : W("LoadNeither"));
-    }
-}
-#endif
 
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
@@ -13801,12 +13737,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     WRAPPER_NO_CONTRACT;
 
     InlineSString<MAX_LONGPATH> sFormat;
-#ifdef FEATURE_FUSION
-    const WCHAR *pwzLoadContext = GetContextName(pPEAssembly->GetLoadContext(),
-                                                 pPEAssembly->IsIntrospectionOnly());
-#else
     const WCHAR *pwzLoadContext = W("Default");
-#endif
 
     if (pPEAssembly->GetPath().IsEmpty())
     {

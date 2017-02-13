@@ -95,13 +95,11 @@ public:
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
     static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static void QCALLTYPE GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg);
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
     static FCDECL1(Object*, CopyStackTrace, Object* pStackTraceUNSAFE);
     static FCDECL1(Object*, CopyDynamicMethods, Object* pDynamicMethodsUNSAFE);
     static FCDECL3(VOID, GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
 
     // NOTE: caller cleans up any partially initialized BSTRs in pED

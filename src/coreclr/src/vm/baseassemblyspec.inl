@@ -265,14 +265,6 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
         m_ownedFlags |= BAD_NAME_OWNED;
     }
 
-#ifdef FEATURE_FUSION
-    IAssemblyName* pNameAfterPolicy=pSpec->GetNameAfterPolicy();
-    if (pNameAfterPolicy)
-    {
-        pNameAfterPolicy->AddRef();
-        SetNameAfterPolicy(pNameAfterPolicy);
-    }
-#endif
 
     m_pBindingContext = pSpec->m_pBindingContext;
 
@@ -339,9 +331,6 @@ inline DWORD BaseAssemblySpec::Hash()
         hash = _rotl(hash, 4);
     }
 
-#ifdef FEATURE_FUSION
-    hash ^= (m_fParentLoadContext == LOADCTX_TYPE_LOADFROM);
-#endif
 
     return hash;
 }
@@ -360,12 +349,6 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
     }
 
     // Compare fields
-#ifdef FEATURE_FUSION
-    BOOL fIsInLoadFromContext = (m_fParentLoadContext == LOADCTX_TYPE_LOADFROM);
-    BOOL fSpecIsInLoadFromContext = (pSpec->m_fParentLoadContext == LOADCTX_TYPE_LOADFROM);
-    if (fIsInLoadFromContext != fSpecIsInLoadFromContext)
-        return FALSE;
-#endif
 
     if (m_pAssemblyName != pSpec->m_pAssemblyName
         && (m_pAssemblyName == NULL || pSpec->m_pAssemblyName == NULL
@@ -403,19 +386,6 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
             || strcmp(m_context.szLocale, pSpec->m_context.szLocale)))
         return FALSE;
 
-#ifdef FEATURE_FUSION
-    if (!IsIntrospectionOnly() && !pSpec->IsIntrospectionOnly()) {
-        // Post-policy load-neither binds can be picked up by nobody
-        // except their own parent assembly. This only applies to executable assemblies.
-        BOOL bParentsMustMatch;
-
-        // doesn't need the check if one is in load context
-        bParentsMustMatch = (m_fParentLoadContext == LOADCTX_TYPE_UNKNOWN && pSpec->m_fParentLoadContext == LOADCTX_TYPE_UNKNOWN);
-        
-        if ( bParentsMustMatch && GetParentAssemblyPtr() != pSpec->GetParentAssemblyPtr())
-            return FALSE;
-    }
-#endif
 
     // If the assemblySpec contains the binding context, then check if they match.
     if (!(pSpec->IsAssemblySpecForMscorlib() && IsAssemblySpecForMscorlib()))

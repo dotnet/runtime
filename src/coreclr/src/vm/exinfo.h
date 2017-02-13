@@ -109,7 +109,6 @@ public:
     }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
     
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;
 public:
@@ -126,7 +125,6 @@ public:
     
         m_fDeliveredFirstChanceNotification = fDelivered;
     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     // Returns the exception tracker previous to the current
     inline PTR_ExInfo GetPreviousExceptionTracker()

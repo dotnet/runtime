@@ -22,7 +22,6 @@
 #include "contractimpl.h"
 #include "virtualcallstub.h"
 #include "comdelegate.h"
-#include "constrainedexecutionregion.h"
 #include "generics.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -2263,103 +2262,9 @@ FCIMPL1(void, ReflectionInvocation::PrepareContractedDelegate, Object * delegate
     }
     CONTRACTL_END;
     
-#ifdef FEATURE_CER
-    if (delegateUNSAFE == NULL)
-        return;
-
-    OBJECTREF delegate = ObjectToOBJECTREF(delegateUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_1(delegate);
-
-    PrepareDelegateHelper(&delegate, TRUE);
-
-    HELPER_METHOD_FRAME_END();
-#endif // FEATURE_CER
 }
 FCIMPLEND
 
-#ifdef FEATURE_CER
-void ReflectionInvocation::PrepareDelegateHelper(OBJECTREF *pDelegate, BOOL onlyContractedMethod)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDelegate));
-        PRECONDITION(CheckPointer(OBJECTREFToObject(*pDelegate)));
-    }
-    CONTRACTL_END;
-    
-    // Make sure the delegate subsystem itself is prepared.
-    // Force the immediate creation of any global stubs required. This is platform specific.
-#ifdef _TARGET_X86_
-    {
-        GCX_PREEMP();
-        COMDelegate::TheDelegateInvokeStub();
-    }
-#endif
-
-    MethodDesc *pMDTarget = COMDelegate::GetMethodDesc(*pDelegate);
-    MethodDesc *pMDInvoke = COMDelegate::FindDelegateInvokeMethod((*pDelegate)->GetMethodTable());
-
-    // If someone does give us a multicast delegate, then both MDs will be the same -- they
-    // will both be the Delegate's Invoke member.  Normally, pMDTarget points at the method
-    // the delegate is wrapping, of course.
-    if (pMDTarget == pMDInvoke)
-    {
-        pMDTarget->CheckRestore();
-
-        // The invoke method itself is never generic, but the delegate class itself might be.
-        PrepareMethodDesc(pMDInvoke,
-                          pMDInvoke->GetExactClassInstantiation((*pDelegate)->GetTypeHandle()),
-                          Instantiation(),
-                          onlyContractedMethod);
-    }
-    else
-    {
-        pMDTarget->CheckRestore();
-        pMDInvoke->CheckRestore();
-
-        // Prepare the eventual target method first.
-
-        // Load the exact type of the method if it needs to be instantiated (because it's a generic type definition, e.g. C<T>, or a
-        // shared type instantiation, e.g. C<Object>).
-        MethodTable *pExactMT = pMDTarget->GetMethodTable();
-        if (pExactMT->IsGenericTypeDefinition() || pExactMT->IsSharedByGenericInstantiations())
-        {
-            OBJECTREF targetObj = COMDelegate::GetTargetObject(*pDelegate);
-
-#ifdef FEATURE_REMOTING
-            // We prepare the delegate for the sole purpose of reliability (CER).
-            // If the target is a transparent proxy, we cannot guarantee reliability anyway.
-            if (CRemotingServices::IsTransparentProxy(OBJECTREFToObject(targetObj)))
-                return;
-#endif //FEATURE_REMOTING
-
-            pExactMT = targetObj->GetMethodTable();
-        }
-
-
-        // For delegates with generic target methods it must be the case that we are passed an instantiating stub -- there's no
-        // other way the necessary method instantiation information can be passed to us.
-        // The target MD may be shared by generic instantiations as long as it does not require extra instantiation arguments.
-        // We have the actual target object so we can extract the exact class instantiation from it.
-        _ASSERTE(!pMDTarget->RequiresInstArg() &&
-                 !pMDTarget->ContainsGenericVariables());
-
-        PrepareMethodDesc(pMDTarget,
-                          pMDTarget->GetExactClassInstantiation(TypeHandle(pExactMT)),
-                          pMDTarget->GetMethodInstantiation(),
-                          onlyContractedMethod);
-
-        // Now prepare the delegate invoke method.
-        // The invoke method itself is never generic, but the delegate class itself might be.
-        PrepareMethodDesc(pMDInvoke,
-                          pMDInvoke->GetExactClassInstantiation((*pDelegate)->GetTypeHandle()),
-                          Instantiation(),
-                          onlyContractedMethod);
-    }
-}
-#endif // FEATURE_CER
 
 FCIMPL0(void, ReflectionInvocation::ProbeForSufficientStack)
 {
@@ -2606,18 +2511,6 @@ FCIMPL3(void, ReflectionInvocation::ExecuteCodeWithGuaranteedCleanup, Object* co
     if (gc.backoutDelegate == NULL)
         COMPlusThrowArgumentNull(W("backoutCode"));
 
-#ifdef FEATURE_CER
-    if (!IsCompilationProcess())
-    {
-        // Delegates are prepared as part of the ngen process, so only prepare the backout 
-        // delegate for non-ngen processes. 
-        PrepareDelegateHelper((OBJECTREF *)&gc.backoutDelegate, FALSE);
-
-        // Make sure the managed backout code helper function has been prepared before we 
-        // attempt to run the backout code.
-        PrepareMethodDesc(g_pExecuteBackoutCodeHelperMethod, Instantiation(), Instantiation(), FALSE, TRUE);
-    }
-#endif // FEATURE_CER
 
     ExecuteCodeWithGuaranteedCleanupHelper(&gc);
 

@@ -51,7 +51,6 @@
 #include "genericdict.h"
 #include "array.h"
 #include "debuginfostore.h"
-#include "constrainedexecutionregion.h"
 #include "security.h"
 #include "safemath.h"
 #include "runtimehandles.h"
@@ -164,10 +163,6 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
         if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
             *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-        if (dwSecurityFlags & DynamicResolver::HasCreationContext)
-            *ppAccessContext = pResolver;
-#endif // FEATURE_COMPRESSEDSTACK
     }
     else
     {
@@ -5086,29 +5081,6 @@ void CEEInfo::getCallInfo(
     }
 
 
-#ifdef FEATURE_CER
-    if (pMD == g_pPrepareConstrainedRegionsMethod && !isVerifyOnly())
-    {
-        MethodDesc * methodFromContext = GetMethodFromContext(pResolvedToken->tokenContext);
-
-        if (methodFromContext != NULL && methodFromContext->IsIL())
-        {
-            SigTypeContext typeContext;
-            GetTypeContext(pResolvedToken->tokenContext, &typeContext);
-
-            // If the method whose context we're in is attempting a call to PrepareConstrainedRegions() then we've found the root
-            // method in a Constrained Execution Region (CER). Prepare the call graph of the critical parts of that method now so
-            // they won't fail because of us at runtime.
-            MethodCallGraphPreparer mcgp(methodFromContext, &typeContext, false, false);
-            bool fMethodHasCallsWithinExplicitCer = mcgp.Run();
-            if (! g_pConfig->ProbeForStackOverflow() || ! fMethodHasCallsWithinExplicitCer)
-            {
-                // if the method does not contain any CERs that call out, we can optimize the probe away
-                pMD = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__PREPARE_CONSTRAINED_REGIONS_NOOP);
-            }
-        }
-    }
-#endif // FEATURE_CER
 
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
@@ -6646,12 +6618,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
     if (pMD->IsLCGMethod()) 
     {
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_COMPRESSEDSTACK
-        if(SecurityStackWalk::MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(pMD))
-        {
-            return CORINFO_FLG_STATIC | CORINFO_FLG_DONT_INLINE | CORINFO_FLG_SECURITYCHECK;
-        }
-#endif // FEATURE_COMPRESSEDSTACK
 #endif // !CROSSGEN_COMPILE
 
         return CORINFO_FLG_STATIC | CORINFO_FLG_DONT_INLINE | CORINFO_FLG_NOSECURITYWRAP;
@@ -6960,7 +6926,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
             return true;
         }
     }
-#ifdef FEATURE_SPAN_OF_T
     else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__BYREF_LESSTHAN)->GetMemberDef())
     {
         // Compare the two arguments
@@ -6992,12 +6957,10 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-#endif // FEATURE_SPAN_OF_T
 
     return false;
 }
 
-#ifdef FEATURE_SPAN_OF_T
 bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
                                            CORINFO_METHOD_INFO * methInfo)
 {
@@ -7100,7 +7063,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
     return false;
 }
-#endif // FEATURE_SPAN_OF_T
 
 bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
                                              CORINFO_METHOD_INFO * methInfo)
@@ -7323,12 +7285,10 @@ getMethodInfoHelper(
         {
             fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
         }
-#ifdef FEATURE_SPAN_OF_T
         else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
         {
             fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
         }
-#endif
         else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
         {
             fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
@@ -8243,16 +8203,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
-#ifdef FEATURE_CER
-    // We cannot tail call from a root CER method, the thread abort algorithm to
-    // detect CERs depends on seeing such methods on the stack.
-    if (IsCerRootMethod(pCaller))
-    {
-        result = false;
-        szFailReason = "Caller is a CER root";
-        goto exit;
-    }
-#endif // FEATURE_CER
 
     result = true;
 

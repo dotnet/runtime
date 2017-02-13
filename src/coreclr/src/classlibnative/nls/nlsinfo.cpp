@@ -33,7 +33,6 @@
 #include "metasig.h"
 #include "nls.h"
 #include "nlsinfo.h"
-#include "nlstable.h"
 
 //#include <mlang.h>
 #include "sortversioning.h"
@@ -138,72 +137,6 @@ PFN_NORMALIZATION_NORMALIZE_STRING COMNlsInfo::m_pfnNormalizationNormalizeString
 PFN_NORMALIZATION_INIT_NORMALIZATION COMNlsInfo::m_pfnNormalizationInitNormalizationFunc = NULL;
 #endif // FEATURE_COREFX_GLOBALIZATION
 
-#if FEATURE_CODEPAGES_FILE
-/*============================nativeCreateOpenFileMapping============================
-**Action: Create or open a named memory file mapping.
-**Returns: Pointer to named section, or NULL if failed
-**Arguments:
-**  StringObject*   inSectionName  - name of section to open/create
-**  int             inBytesToAllocate - desired size of memory section in bytes
-**                      We use the last 4 bytes (must be aligned, so only choose
-**                      inBytesToAllocate in multiples of 4) to indicate if the
-**                      section is set or not.  AFTER section is initialized, set
-**                      those 4 bytes to non-0, otherwise you'll get get new
-**                      heap memory all the time.
-**  HANDLE*         mappedFile - is the handle of the memory mapped file. this is
-**                      out parameter.
-**
-** NOTE: We'll try to open the same object, so we can share names.  We don't lock
-**       though, so 2 thread could get the same object, but thread 1 might not
-**       have initialized it yet.
-**
-** NOTE: For NT you should add a Global\ to the beginning of the name if you
-**       want to share it machine wide.
-**
-==============================================================================*/
-FCIMPL3(LPVOID, COMNlsInfo::nativeCreateOpenFileMapping,
-            StringObject* inSectionNameUNSAFE, int inBytesToAllocate, HANDLE *mappedFile)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(inSectionNameUNSAFE));
-        PRECONDITION(inBytesToAllocate % 4 == 0);
-        PRECONDITION(inBytesToAllocate > 0);
-        PRECONDITION(CheckPointer(mappedFile));
-    } CONTRACTL_END;
-
-    // Need a place for our result
-    LPVOID pResult = NULL;
-
-    STRINGREF inString(inSectionNameUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(inString);
-
-    _ASSERTE(inBytesToAllocate % 4 == 0);   // Expected 4 bytes boundaries so we don't get unaligned
-    _ASSERTE(inBytesToAllocate > 0);        // Pointless to have <=0 allocation
-
-    StackSString inNameStackBuffer (inString->GetBuffer());
-    pResult = NLSTable::OpenOrCreateMemoryMapping((LPCWSTR)inNameStackBuffer, inBytesToAllocate, mappedFile);
-
-    // Worst case allocate some memory, use holder
-    //    if (pResult == NULL) pResult = new BYTE[inBytesToAllocate];
-    if (pResult == NULL)
-    {
-        // Need to use a NewHolder
-        NewArrayHolder<BYTE> holder (new BYTE[inBytesToAllocate]);
-        pResult = holder;
-        // Zero out the mapCodePageCached field (an int value, and it's used to check if the section is initialized or not.)
-        BYTE* pByte = (BYTE*)pResult;
-        FillMemory(pByte + inBytesToAllocate - sizeof(int), sizeof(int), 0);
-        holder.SuppressRelease();
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return pResult;
-}
-FCIMPLEND
-#endif // FEATURE_CODEPAGES_FILE
 
 // InternalIsSortable
 //
@@ -480,54 +413,6 @@ INT_PTR COMNlsInfo::EnsureValidSortHandle(INT_PTR handle, INT_PTR handleOrigin, 
     return handle;
 }
 
-#ifdef FEATURE_SYNTHETIC_CULTURES
-////////////////////////////////////////////////////////////////////////////
-//
-//  WstrToInteger4
-//
-////////////////////////////////////////////////////////////////////////////
-
-/*=================================WstrToInteger4==================================
-**Action: Convert a Unicode string to an integer.  Error checking is ignored.
-**Returns: The integer value of wstr
-**Arguments:
-**      wstr: NULL terminated wide string.  Can have character 0'-'9', 'a'-'f', and 'A' - 'F'
-**      Radix: radix to be used in the conversion.
-**Exceptions: None.
-==============================================================================*/
-
-INT32 COMNlsInfo::WstrToInteger4(
-    __in_z LPCWSTR wstr,
-    __in int Radix)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(wstr));
-        PRECONDITION(Radix > 1 && Radix <= 16);
-    } CONTRACTL_END;
-    INT32 Value = 0;
-    int Base = 1;
-
-    for (int Length = Wszlstrlen(wstr) - 1; Length >= 0; Length--)
-
-    {
-        WCHAR ch = wstr[Length];
-        _ASSERTE((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
-        if (ch >= 'a')
-        {
-            ch = ch - 'a' + 'A';
-        }
-
-        Value += ((ch >= 'A') ? (ch - 'A' + 10) : (ch - '0')) * Base;
-        Base *= Radix;
-    }
-
-    return (Value);
-}
-#endif // FEATURE_SYNTHETIC_CULTURES
 
 
 

@@ -397,34 +397,6 @@ FCIMPL0(void, SecurityPolicy::DecrementAssertCount)
 FCIMPLEND
 
 
-#ifdef FEATURE_FUSION 
-static void GetFusionNameFromAssemblyQualifiedTypeName(LPCWSTR pAssemblyQualifedTypeName, IAssemblyName ** ppFusionName)
-{
-    STANDARD_VM_CONTRACT;
-
-    StackSString ssAssemblyQualifedTypeName(pAssemblyQualifedTypeName);
-    StackSString ssAssemblyName;
-
-    SString::Iterator iter = ssAssemblyQualifedTypeName.Begin();
-
-    if (ssAssemblyQualifedTypeName.Find( iter, ',' ))
-    {
-    iter++;
-    while (*iter == ' ' )
-        iter++;
-
-    ssAssemblyName.Set( ssAssemblyQualifedTypeName,
-                        iter,
-                        ssAssemblyQualifedTypeName.End() );
-}
-
-    StackScratchBuffer sBuffer;
-    AssemblySpec spec;
-    spec.Init(ssAssemblyName.GetANSI(sBuffer));
-
-    IfFailThrow(spec.CreateFusionName(ppFusionName));
-}
-#endif // FEATURE_FUSION 
 
 BOOL QCALLTYPE SecurityPolicy::IsSameType(LPCWSTR pLeft, LPCWSTR pRight)
 {
@@ -436,36 +408,7 @@ BOOL QCALLTYPE SecurityPolicy::IsSameType(LPCWSTR pLeft, LPCWSTR pRight)
 
 // @telesto: Is this #ifdef-#else-#endif required anymore? Used to be needed when security was bypassing
 // loader and accessing Fusion interfaces. Seems like that's been fixed to use GetFusionNameFrom...
-#ifdef FEATURE_FUSION 
-
-    AppDomain* pDomain = GetAppDomain();
-    IApplicationContext* pAppCtx = pDomain->GetFusionContext();
-
-    _ASSERTE( pAppCtx != NULL && "Fusion context not setup yet" );
-
-    SafeComHolderPreemp<IAssemblyName> pAssemblyNameLeft;
-    SafeComHolderPreemp<IAssemblyName> pAssemblyNameRight;
-    
-    GetFusionNameFromAssemblyQualifiedTypeName(pLeft, &pAssemblyNameLeft);
-    GetFusionNameFromAssemblyQualifiedTypeName(pRight, &pAssemblyNameRight);
-
-    SafeComHolderPreemp<IAssemblyName> pAssemblyNamePostPolicyLeft;
-    SafeComHolderPreemp<IAssemblyName> pAssemblyNamePostPolicyRight;
-
-    if (FAILED(PreBindAssembly(pAppCtx, pAssemblyNameLeft,  NULL, &pAssemblyNamePostPolicyLeft,  NULL)) ||
-        FAILED(PreBindAssembly(pAppCtx, pAssemblyNameRight, NULL, &pAssemblyNamePostPolicyRight, NULL)))
-    {
-        // version-agnostic comparison.
-        bEqual = pAssemblyNameLeft->IsEqual(pAssemblyNameRight, ASM_CMPF_NAME | ASM_CMPF_PUBLIC_KEY_TOKEN | ASM_CMPF_CULTURE) == S_OK;
-    }
-    else
-    {
-        // version-agnostic comparison.
-        bEqual = pAssemblyNamePostPolicyLeft->IsEqual(pAssemblyNamePostPolicyRight, ASM_CMPF_NAME | ASM_CMPF_PUBLIC_KEY_TOKEN | ASM_CMPF_CULTURE) == S_OK;
-    }
-#else // FEATURE_FUSION
     bEqual=TRUE;
-#endif // FEATURE_FUSION
 
     END_QCALL;
 

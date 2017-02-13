@@ -215,21 +215,6 @@ inline void Security::FullTrustLinkDemand(Assembly *pTargetAssembly)
     WRAPPER_NO_CONTRACT;
 }
 
-#ifdef FEATURE_COMPRESSEDSTACK
-// Compressed Stack
-
-inline COMPRESSEDSTACKREF Security::GetCSFromContextTransitionFrame(Frame *pFrame) 
-{
-    WRAPPER_NO_CONTRACT; 
-    return SecurityStackWalk::GetCSFromContextTransitionFrame(pFrame); 
-}
-
-inline BOOL Security::IsContextTransitionFrameWithCS(Frame *pFrame) 
-{
-    WRAPPER_NO_CONTRACT;
-    return SecurityStackWalk::IsContextTransitionFrameWithCS(pFrame); 
-}
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 // Misc - todo: put these in better categories
 
 FORCEINLINE  VOID Security::IncrementSecurityPerfCounter() 

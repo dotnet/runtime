@@ -286,13 +286,11 @@ FCFuncStart(gExceptionFuncs)
     FCFuncElement("nIsTransient", ExceptionNative::IsTransient)
     FCFuncElement("GetMethodFromStackTrace", SystemNative::GetMethodFromStackTrace)
     QCFuncElement("GetMessageFromNativeResources", ExceptionNative::GetMessageFromNativeResources)
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     FCFuncElement("PrepareForForeignExceptionRaise", ExceptionNative::PrepareForForeignExceptionRaise)
     FCFuncElement("CopyStackTrace", ExceptionNative::CopyStackTrace)
     FCFuncElement("CopyDynamicMethods", ExceptionNative::CopyDynamicMethods)
     FCFuncElement("GetStackTracesDeepCopy", ExceptionNative::GetStackTracesDeepCopy)
     FCFuncElement("SaveStackTracesFromDeepCopy", ExceptionNative::SaveStackTracesFromDeepCopy)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 FCFuncEnd()
 
 FCFuncStart(gSafeHandleFuncs)
@@ -601,26 +599,14 @@ FCFuncEnd()
 
 FCFuncStart(gAppDomainManagerFuncs)
     QCFuncElement("GetEntryAssembly", AssemblyNative::GetEntryAssembly)
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    FCFuncElement("HasHost", AppDomainNative::HasHost)
-    QCFuncElement("RegisterWithHost", AppDomainNative::RegisterWithHost)
-#endif    
 FCFuncEnd()
 
-#ifdef FEATURE_FUSION
-FCFuncStart(gAppDomainSetupFuncs)
-    FCFuncElement("UpdateContextProperty", AppDomainNative::UpdateContextProperty)
-FCFuncEnd()
-#endif // FEATURE_FUSION
 
 
 FCFuncStart(gAppDomainFuncs)
 #ifdef FEATURE_REMOTING 
     FCFuncElement("GetDefaultDomain", AppDomainNative::GetDefaultDomain)
 #endif    
-#ifdef FEATURE_FUSION
-    FCFuncElement("GetFusionContext", AppDomainNative::GetFusionContext)
-#endif // FEATURE_FUSION
     FCFuncElement("IsStringInterned", AppDomainNative::IsStringInterned)
     FCFuncElement("IsUnloadingForcedFinalize", AppDomainNative::IsUnloadingForcedFinalize)
 #ifdef FEATURE_REMOTING    
@@ -644,9 +630,7 @@ FCFuncStart(gAppDomainFuncs)
 #if FEATURE_COMINTEROP
     FCFuncElement("nSetDisableInterfaceCache", AppDomainNative::SetDisableInterfaceCache)
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_VERSIONING
     FCFuncElement("nCreateContext", AppDomainNative::CreateContext)
-#endif // FEATURE_VERSIONING
 #ifdef FEATURE_REMOTING
     FCFuncElement("nUnload", AppDomainNative::Unload)
 #endif // FEATURE_REMOTING
@@ -750,7 +734,6 @@ FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
 FCFuncEnd()
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InitializeAssemblyLoadContext", AssemblyNative::InitializeAssemblyLoadContext)
     QCFuncElement("LoadFromPath", AssemblyNative::LoadFromPath)
@@ -765,7 +748,6 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InternalStartProfile",   MultiCoreJITNative::InternalStartProfile)
 #endif // defined(FEATURE_MULTICOREJIT)
 FCFuncEnd()
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 FCFuncStart(gAssemblyNameFuncs)
     FCFuncElement("nInit", AssemblyNameNative::Init)
@@ -1194,13 +1176,6 @@ FCFuncEnd()
 
 
 
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-FCFuncStart(gTypeLibConverterFuncs)
-    FCFuncElement("nConvertAssemblyToTypeLib", COMTypeLibConverter::ConvertAssemblyToTypeLib)
-    FCFuncElement("nConvertTypeLibToMetadata", COMTypeLibConverter::ConvertTypeLibToMetadata)
-    QCFuncElement("LoadInMemoryTypeByName", COMModule::LoadInMemoryTypeByName)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP_TLB_SUPPORT
 
 #ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
 FCFuncStart(gRegistrationFuncs)
@@ -1289,9 +1264,7 @@ FCFuncStart(gCompilerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gContextSynchronizationFuncs)
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     FCFuncElement("WaitHelperNative", SynchronizationContextNative::WaitHelper)
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 #ifdef FEATURE_APPX
     QCFuncElement("GetWinRTDispatcherForCurrentThread", SynchronizationContextNative::GetWinRTDispatcherForCurrentThread)
 #endif
@@ -1543,9 +1516,6 @@ FCFuncEnd()
 
 FCClassElement("AppDomain", "System", gAppDomainFuncs)
 FCClassElement("AppDomainManager", "System", gAppDomainManagerFuncs)
-#ifdef FEATURE_FUSION
-FCClassElement("AppDomainSetup", "System", gAppDomainSetupFuncs)
-#endif // FEATURE_FUSION
 FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("ArrayWithOffset", "System.Runtime.InteropServices", gArrayWithOffsetFuncs)
@@ -1553,9 +1523,7 @@ FCClassElement("AssemblyBuilder", "System.Reflection.Emit", gAssemblyBuilderFunc
 
 FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExtensionsFuncs)
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Assert", "System.Diagnostics", gDiagnosticsAssert)
@@ -1701,9 +1669,7 @@ FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StringBuilder", "System.Text", gStringBufferFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
-#if defined(FEATURE_SYNCHRONIZATIONCONTEXT_WAIT) || defined(FEATURE_APPX)
 FCClassElement("SynchronizationContext", "System.Threading", gContextSynchronizationFuncs)
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT || FEATURE_APPX
 #if !defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("TextInfo", "System.Globalization", gTextInfoFuncs)
 #endif // !defined(FEATURE_COREFX_GLOBALIZATION)
@@ -1712,9 +1678,6 @@ FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("TimerQueue", "System.Threading", gTimerFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-FCClassElement("TypeLibConverter", "System.Runtime.InteropServices", gTypeLibConverterFuncs)
-#endif
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
 FCClassElement("TypeNameBuilder", "System.Reflection.Emit", gTypeNameBuilder)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)

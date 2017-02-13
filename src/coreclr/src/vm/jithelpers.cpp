@@ -50,7 +50,6 @@
 #include "genericdict.h"
 #include "array.h"
 #include "debuginfostore.h"
-#include "constrainedexecutionregion.h"
 #include "security.h"
 #include "safemath.h"
 #include "threadstatics.h"
@@ -5413,7 +5412,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             EEPolicy::HandleOutOfMemory();
         }
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // If the flag indicating ForeignExceptionRaise has been set,
         // then do not clear the "_stackTrace" field of the exception object.
         if (GetThread()->GetExceptionState()->IsRaisingForeignException())
@@ -5421,7 +5419,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
         else
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
         {
             ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
         }
@@ -6039,9 +6036,6 @@ NOINLINE HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd
         if ((pCurrent->IsInterceptedForDeclSecurity() &&
             !(pCurrent->IsInterceptedForDeclSecurityCASDemandsOnly() &&
                 SecurityStackWalk::HasFlagsOrFullyTrusted(0)))
-#ifdef FEATURE_COMPRESSEDSTACK
-                || SecurityStackWalk::MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(pCurrent)
-#endif //FEATURE_COMPRESSEDSTACK
                 )
         {
             MethodSecurityDescriptor MDSecDesc(pCurrent);

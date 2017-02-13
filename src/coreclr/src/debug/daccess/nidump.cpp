@@ -19,7 +19,6 @@
 #include <algorithm>
 #endif
 
-#include <constrainedexecutionregion.h>
 
 #include <formattype.h>
 
@@ -4065,25 +4064,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                  (int)(module->m_maxDynamicEntries
                  * sizeof(*(module->m_pDynamicStaticsInfo))));
 
-#ifdef FEATURE_CER
-    DisplayWriteFieldInt( m_dwReliabilityContract,
-                          module->m_dwReliabilityContract, Module, MODULE );
-
-    DisplayWriteFieldPointer( m_pCerPrepInfo,
-                              DataPtrToDisplay((TADDR)module->m_pCerPrepInfo),
-                              Module, MODULE );
-    DisplayWriteFieldPointer( m_pCerCrst, DataPtrToDisplay((TADDR)module->m_pCerCrst),
-                              Module, MODULE );
-    _ASSERTE(module->m_pCerPrepInfo == NULL && module->m_pCerCrst == NULL);
-
-    IF_OPT_OR(MODULE, SLIM_MODULE_TBLS)
-    {
-        PTR_CerNgenRootTable table( TO_TADDR(module->m_pCerNgenRootTable) );
-        DumpNgenRootTable( table, "m_pCerNgenRootTable",
-                           offsetof(Module, m_pCerNgenRootTable),
-                           fieldsize(Module, m_pCerNgenRootTable) );
-    }
-#endif
 
 
     _ASSERTE(module->m_debuggerSpecificData.m_pDynamicILCrst == NULL);
@@ -4131,87 +4111,6 @@ bool NativeImageDumper::isPrecode(TADDR maybePrecode)
     return !!module->IsZappedPrecode(maybePrecode);
 }
 
-#ifdef FEATURE_CER
-void NativeImageDumper::DumpNgenRootTable( PTR_CerNgenRootTable table,
-                                           const char * name, unsigned offset,
-                                           unsigned fieldSize )
-{
-    if( table == NULL )
-    {
-        IF_OPT(MODULE)
-        {
-            m_display->WriteFieldPointer( name, (unsigned)DPtrToPreferredAddr(table),
-                                          offset, fieldSize );
-        }
-        return;
-    }
-    IF_OPT(MODULE)
-    {
-        m_display->StartStructureWithOffset( name, offset, fieldSize,
-                                             DPtrToPreferredAddr(table),
-                                             sizeof(*table) ); 
-    }
-
-    DisplayWriteFieldPointer( m_cRoots, table->GetRootCount(),
-                              CerNgenRootTable, MODULE );
-    DisplayWriteFieldAddress( m_pRestoreBitmap,
-                              DataPtrToDisplay((TADDR)table->GetRestoreBitmap()),
-                              table->SizeOfRestoreBitmap(),
-                              CerNgenRootTable, MODULE );
-    DisplayWriteFieldInt( m_cSlots, table->m_cSlots, CerNgenRootTable,
-                          MODULE );
-    DisplayStartArray( "Roots", NULL, SLIM_MODULE_TBLS );
-
-    PTR_CerRoot roots(TO_TADDR(table->GetRoots()));
-    for( unsigned i = 0; i < table->GetRootCount(); ++i )
-    {
-        PTR_CerRoot root = roots + i;
-        DisplayStartStructure( "CerRoot", DPtrToPreferredAddr(root),
-                               sizeof(*root), SLIM_MODULE_TBLS );
-        WriteFieldMethodDesc( m_pRootMD,
-                              PTR_MethodDesc(TO_TADDR(root->m_pRootMD)),
-                              CerRoot, SLIM_MODULE_TBLS );
-
-        DisplayStartArray( "MethodContexts", NULL, SLIM_MODULE_TBLS );
-
-        PTR_MethodContextElement ctx(TO_TADDR(root->m_pList));
-        bool dumpedSentinel = false;
-        while( !dumpedSentinel )
-        {
-            DisplayStartStructure( "MethodContext",
-                                   DPtrToPreferredAddr(ctx),
-                                   sizeof(*ctx), SLIM_MODULE_TBLS );
-            if( ctx->m_pMethodDesc.IsNull() )
-                dumpedSentinel = true;
-            WriteFieldMethodDesc( m_pMethodDesc,
-                                  ctx->m_pMethodDesc.GetValue(),
-                                  MethodContextElement, SLIM_MODULE_TBLS );
-
-            if (!ctx->m_pExactMT.IsNull())
-            {
-                WriteFieldMethodTable( m_pExactMT,
-                                       ctx->m_pExactMT.GetValue(),
-                                       MethodContextElement, SLIM_MODULE_TBLS );    
-            }
-
-            DisplayEndStructure( SLIM_MODULE_TBLS ); //MethodContext
-            ++ctx;
-        }
-
-        DisplayEndArray( "Total Contexts", SLIM_MODULE_TBLS); //MethodContexts
-        DisplayEndStructure(SLIM_MODULE_TBLS); //CerRoot
-    }
-
-    DisplayEndArray( "Total Roots", SLIM_MODULE_TBLS ); //Roots
-
-    /* REVISIT_TODO Wed 10/05/2005
-     * m_cSlots seems to be set to something, but the number seems
-     * completely useless.  What is up with that?
-     */
-
-    DisplayEndStructure( MODULE ); //CERNgenRootTable
-}
-#endif // FEATURE_CER
 
 void NativeImageDumper::IterateTypeDefToMTCallback( TADDR mtTarget,
                                                     TADDR flags,
@@ -9016,14 +8915,6 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
         DisplayWriteFieldInt( m_cbModuleDynamicID, pClassOptional->m_cbModuleDynamicID,
                               EEClassOptionalFields, EECLASSES );
 
-#ifdef FEATURE_CER
-        /* REVISIT_TODO Fri 10/14/2005
-         * Use the macros from ConstrainedExecutionRegion.cpp on this?
-         */
-        DisplayWriteFieldUInt( m_dwReliabilityContract,
-                               clazz->GetReliabilityContract(),
-                               EEClassOptionalFields, EECLASSES );
-#endif
 
         DisplayWriteFieldEnumerated( m_SecProps, clazz->GetSecurityProperties()->dwFlags,
                                      EEClassOptionalFields, s_SecurityProperties, W("|"),

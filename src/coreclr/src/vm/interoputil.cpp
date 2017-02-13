@@ -46,9 +46,6 @@
 #include "clrtocomcall.h"
 #include "comcache.h"
 #include "commtmemberinfomap.h"
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include "comtypelibconverter.h"
-#endif
 #include "olevariant.h"
 #include "stdinterfaces.h"
 #include "notifyexternals.h"
@@ -2355,48 +2352,7 @@ HRESULT LoadTypeLibExWithFlags(LPCOLESTR  szFile,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_COMINTEROP_TLB_SUPPORT
     return E_FAIL;
-#else //FEATURE_COMINTEROP_TLB_SUPPORT
-
-    *pptlib = NULL;
-
-    GCX_PREEMP();
-
-    REGKIND rk = REGKIND_NONE;
-
-    if ((flags & TlbExporter_ExportAs64Bit) == TlbExporter_ExportAs64Bit)
-    {
-        rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_64BIT);
-    }
-    else if ((flags & TlbExporter_ExportAs32Bit) == TlbExporter_ExportAs32Bit)
-    {
-        rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_32BIT);
-    }
-
-    HRESULT hr = S_OK;
-    
-    EX_TRY
-    {
-        LeaveRuntimeHolder lrh((size_t)LoadTypeLibEx);
-        
-        hr = LoadTypeLibEx(szFile, rk, pptlib);
-
-        // If we fail with E_INVALIDARG, it's probably because we're on a downlevel
-        //  platform that doesn't support loading type libraries by bitness.
-        if (hr == E_INVALIDARG)
-        {
-            hr = LoadTypeLibEx(szFile, REGKIND_NONE, pptlib);
-        }
-    }
-    EX_CATCH
-    {
-        hr = E_OUTOFMEMORY;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return hr;
-#endif //FEATURE_COMINTEROP_TLB_SUPPORT
 }
 
 

@@ -67,11 +67,11 @@ public:
     HRESULT PreBindByteArray(PEImage  *pPEImage, BOOL fInspectionOnly);
 #endif // CROSSGEN_COMPILE
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     HRESULT BindUsingPEImage( /* in */ PEImage *pPEImage, 
                               /* in */ BOOL fIsNativeImage, 
                               /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,

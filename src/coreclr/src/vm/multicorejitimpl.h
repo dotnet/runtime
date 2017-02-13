@@ -392,10 +392,6 @@ public:
         m_fAborted          = false;
         m_fAppxMode         = fAppxMode;
 
-#if defined(FEATURE_APPX_BINDER)
-
-        s_delayedWriteTimer = NULL;
-#endif
 
         m_stats.Clear();
     }
