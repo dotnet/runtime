@@ -7692,10 +7692,33 @@ DONE_CALL:
                         call           = gtNewLclvNode(calliSlot, type);
                     }
                 }
+
                 // For non-candidates we must also spill, since we
                 // might have locals live on the eval stack that this
                 // call can modify.
-                impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
+                //
+                // Suppress this for certain well-known call targets
+                // that we know won't modify locals, eg calls that are
+                // recognized in gtCanOptimizeTypeEquality. Otherwise
+                // we may break key fragile pattern matches later on.
+                bool spillStack = true;
+                if (call->IsCall())
+                {
+                    GenTreeCall* callNode = call->AsCall();
+                    if ((callNode->gtCallType == CT_HELPER) && gtIsTypeHandleToRuntimeTypeHelper(callNode))
+                    {
+                        spillStack = false;
+                    }
+                    else if ((callNode->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+                    {
+                        spillStack = false;
+                    }
+                }
+
+                if (spillStack)
+                {
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
+                }
             }
         }
 
@@ -12813,7 +12836,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
 #if 0 // DevDiv 410397 - This breaks too many obfuscated apps to do this in an in-place release
-     
+
                 // DevDiv 291703 - we need to check for accessibility between the caller of InitializeArray
                 // and the field it is reading, thus it is now unverifiable to not immediately precede with
                 // ldtoken <filed token>, and we now check accessibility
