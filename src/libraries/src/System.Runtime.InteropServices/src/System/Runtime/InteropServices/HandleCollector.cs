@@ -90,13 +90,7 @@ namespace System.Runtime.InteropServices
                     (_gc_counts[gen_collect] == GC.CollectionCount(gen_collect))))
             {
                 GC.Collect(gen_collect);
-#if NETNATIVE
-                // TODO: Delete once RuntimeThread is reconciled between 
-                // CoreCLR and CoreRT
-                System.Threading.RuntimeThread.Sleep(10 * gen_collect);
-#else
                 Internal.Runtime.Augments.RuntimeThread.Sleep(10 * gen_collect);
-#endif
             }
 
             //don't bother with gen0. 
