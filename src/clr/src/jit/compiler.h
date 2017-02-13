@@ -917,7 +917,7 @@ struct ArrayInfo
 // partition a compilation.
 enum Phases
 {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) enum_nm,
 #include "compphases.h"
     PHASE_NUMBER_OF
 };
@@ -952,6 +952,7 @@ struct CompTimeInfo
 
     static bool PhaseHasChildren[];
     static int  PhaseParent[];
+    static bool PhaseReportsIRSize[];
 
     unsigned         m_byteCodeBytes;
     unsigned __int64 m_totalCycles;
@@ -961,6 +962,9 @@ struct CompTimeInfo
     unsigned __int64 m_CLRinvokesByPhase[PHASE_NUMBER_OF];
     unsigned __int64 m_CLRcyclesByPhase[PHASE_NUMBER_OF];
 #endif
+
+    unsigned m_nodeCountAfterPhase[PHASE_NUMBER_OF];
+
     // For better documentation, we call EndPhase on
     // non-leaf phases.  We should also call EndPhase on the
     // last leaf subphase; obviously, the elapsed cycles between the EndPhase
@@ -1077,7 +1081,7 @@ public:
     static void PrintCsvHeader();
 
     // Ends the current phase (argument is for a redundant check).
-    void EndPhase(Phases phase);
+    void EndPhase(Compiler* compiler, Phases phase);
 
 #if MEASURE_CLRAPI_CALLS
     // Start and end a timed CLR API call.
@@ -3469,6 +3473,8 @@ public:
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
+
+    unsigned fgMeasureIR();
 
 #if OPT_BOOL_OPS // Used to detect multiple logical "not" assignments.
     bool fgMultipleNots;
