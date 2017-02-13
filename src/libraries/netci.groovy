@@ -332,6 +332,39 @@ def buildArchConfiguration = ['Debug': 'x86',
 }
 
 // **************************
+// Define AllConfigurations builds that will run on every merge.
+// **************************
+[true, false].each { isPR ->
+    ['Debug'].each { configurationGroup ->
+        ['Windows_NT'].each { osName ->
+            def osGroup = osGroupMap[osName]
+            def osForMachineAffinity = osName
+
+            def newJobName = "AllConfigurations_${configurationGroup.toLowerCase()}"
+
+            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
+                // On Windows we use the packer to put together everything. On *nix we use tar
+                steps {
+                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -allConfigurations")
+                }
+            }
+            // Set the affinity.
+            Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
+            // Set up standard options.
+            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+            // Set up triggers
+            if (isPR) {
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${configurationGroup} AllConfigurations Build")
+            }
+            else {
+                // Set a push trigger
+                Utilities.addGithubPushTrigger(newJob)
+            }
+        }
+    }
+}
+
+// **************************
 // Define innerloop testing.  These jobs run on every merge and a subset of them run on every PR, the ones
 // that don't run per PR can be requested via a magic phrase.
 // **************************
