@@ -7466,6 +7466,10 @@ VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_IsInstanceOf;
             break;
 
+        case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+            vnf = VNF_TypeHandleToRuntimeType;
+            break;
+
         case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
             vnf = VNF_ReadyToRunIsInstanceOf;
             break;
