@@ -18,9 +18,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
-    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\Attributes.cs" />
     <Compile Include="System\Runtime\InteropServices\Attributes.cs" />
