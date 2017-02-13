@@ -20,13 +20,6 @@ namespace System.Runtime.ConstrainedExecution {
     using System.Runtime.InteropServices;
     using System;
 
-    // **************************************************************************************************************************
-    //
-    // Note that if you change either of the enums below or the constructors, fields or properties of the custom attribute itself
-    // you must also change the logic and definitions in vm\ConstrainedExecutionRegion.cpp to match.
-    //
-    // **************************************************************************************************************************
-
     [Serializable]
     public enum Consistency : int
     {
