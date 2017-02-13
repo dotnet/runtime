@@ -31,8 +31,11 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID ensures that you get only one request that matches.  
-        /// It is generated when <see cref="Start"/> is called.
+        /// to a particular ID insures that you get only one request that matches.  
+        /// Id has a hierarchical structure: /root-id.id1.id2.id3.  Id is generated when 
+        /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Paren.Id
+        /// or ParentId; Activity has no Id until it started
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for nore details
         /// </summary>
         public string Id { get; private set; }
 
@@ -57,6 +60,36 @@ namespace System.Diagnostics
         /// Note this can be null if this is a root Activity (it has no parent)
         /// </summary>
         public string ParentId { get; private set; }
+
+
+        /// <summary>
+        /// Root Id is substring from Activity,Id or ParentId between '/' (or beginning) and first '.'.
+        /// It is common for all Activities involved in operation processing. 
+        /// Filtering by root Id allows to find all Activities involved in operation processing.
+        /// RootId may be null if Activity has neither ParentId nor Id.
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for more details
+        /// </summary>
+        public string RootId
+        {
+            get
+            {
+                //we expect RootId to be requested at any time after activity is created, 
+                //possibly even before it was started for sampling or logging purposes
+                //Presumably, it will be called by logging systems for every log record, so we cache it.
+                if (_rootId == null)
+                {
+                    if (Id != null)
+                    {
+                        _rootId = getRootId(Id);
+                    }
+                    else if (ParentId != null)
+                    {
+                        _rootId = getRootId(ParentId);
+                    }
+                }
+                return _rootId;
+            }
+        }
 
         /// <summary>
         /// Tags are string-string key-value pairs that represent information that will
@@ -263,7 +296,6 @@ namespace System.Diagnostics
                 Current = Parent;
             }
         }
-
         #region private 
 
         private string GenerateId()
@@ -279,7 +311,11 @@ namespace System.Diagnostics
             {
                 // Start from outside the process (e.g. incoming HTTP)
                 Debug.Assert(ParentId.Length != 0);
-                ret = appendSuffix(ParentId, "I_" + Interlocked.Increment(ref s_currentRootId));
+
+                //sanitize external RequestId as it may not be hierarchical. 
+                //we cannot update ParentId, we must let it be logged exactly as it was passed.
+                string parentId = ParentId[0] == s_rootIdPrefix ? ParentId : s_rootIdPrefix + ParentId;
+                ret = appendSuffix(parentId, "I_" + Interlocked.Increment(ref s_currentRootId));
             }
             else
             {
@@ -290,6 +326,17 @@ namespace System.Diagnostics
             return ret;
         }
 
+        private string getRootId(string id)
+        {
+            //id MAY start with '/' and contain '.'. We return substring between them
+            //ParentId MAY NOT have hierarchical structure and at least initial rootId not probably was started with '/',
+            //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id
+            int rootEnd = id.IndexOf('.');
+            if (rootEnd < 0)
+                rootEnd = id.Length;
+            int rootStart = id[0] == s_rootIdPrefix ? 1 : 0;
+            return id.Substring(rootStart, rootEnd - rootStart);
+        }
 
         private string appendSuffix(string parentId, string suffix)
         {
@@ -297,7 +344,7 @@ namespace System.Diagnostics
             suffix = OperationName + "_" + suffix;
 #endif
             if (parentId.Length + suffix.Length <= 127)
-                return parentId + s_idDelimiter +  suffix;
+                return parentId + s_idDelimiter + suffix;
 
             //Id overflow:
             //find position in RequestId to trim
@@ -346,6 +393,7 @@ namespace System.Diagnostics
         private static int s_currentRootId;      // A unique number inside the appdomain.
         private static string s_uniqPrefix;
 
+        private string _rootId;
         private static char s_idDelimiter = '.';
         private static char s_overflowDelimiter = '#';
         private static char s_rootIdPrefix = '/';
