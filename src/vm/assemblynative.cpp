@@ -29,7 +29,6 @@
 #include "frames.h"
 #include "typeparse.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 #include "stackprobe.h"
 
