@@ -7519,9 +7519,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         else
         {
             _ASSERTE(mt->GetNumVtableSlots() > 0 );
-            /* REVISIT_TODO Tue 12/13/2005
-             * One liner copied from CrossDomainCalls.cpp
-             */
+
             unsigned size = sizeof(RemotableMethodInfo) * mt->GetNumVtableSlots();
             //one remotable method info for each method.
             m_display->StartStructureWithOffset( "OptionalMember_RemotableMethodInfo",
