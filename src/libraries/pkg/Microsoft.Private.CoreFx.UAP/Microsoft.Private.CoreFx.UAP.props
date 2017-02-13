@@ -13,7 +13,6 @@
       <PropertyGroup>
         <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)$(_aotSuffix)</PackageRID>
         <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)$(_aotSuffix)</PackageRID>
-        <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)$(_aotSuffix)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
@@ -31,18 +30,12 @@
     <OfficialBuildRID Include="win8-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="win10-arm64">
-      <Platform>arm64</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win7-x86-aot">
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win7-x64-aot" />
     <OfficialBuildRID Include="win8-arm-aot">
       <Platform>arm</Platform>
-    </OfficialBuildRID>
-    <OfficialBuildRID Include="win10-arm64-aot">
-      <Platform>arm64</Platform>
     </OfficialBuildRID>
 
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
