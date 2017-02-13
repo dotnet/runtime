@@ -93,7 +93,7 @@ namespace System.Numerics
                 else
                 {
                     _bits = new uint[2];
-                    _bits[0] = (uint)x;
+                    _bits[0] = unchecked((uint)x);
                     _bits[1] = (uint)(x >> kcbitUint);
                 }
             }

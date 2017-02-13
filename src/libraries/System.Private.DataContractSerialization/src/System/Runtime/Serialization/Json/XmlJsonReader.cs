@@ -900,7 +900,7 @@ namespace System.Runtime.Serialization.Json
                     return originalLength; // Invalid utf8 sequence - can't break
                 }
                 // Count how many bytes follow the lead char
-                byte b = (byte)(buffer[offset + length] << 2);
+                byte b = unchecked((byte)(buffer[offset + length] << 2));
                 int byteCount = 2;
                 while ((b & 0x80) == 0x80)
                 {

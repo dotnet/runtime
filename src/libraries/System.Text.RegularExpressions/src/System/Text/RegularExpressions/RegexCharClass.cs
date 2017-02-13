@@ -619,8 +619,11 @@ namespace System.Text.RegularExpressions
                         chMaxT = (char)lc._data;
                         break;
                     case LowercaseAdd:
-                        chMinT += (char)lc._data;
-                        chMaxT += (char)lc._data;
+                        unchecked
+                        {
+                            chMinT += (char)lc._data;
+                            chMaxT += (char)lc._data;
+                        }
                         break;
                     case LowercaseBor:
                         chMinT |= (char)1;

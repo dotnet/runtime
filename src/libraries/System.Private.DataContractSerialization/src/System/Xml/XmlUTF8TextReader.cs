@@ -1228,11 +1228,11 @@ namespace System.Xml
                 if (length == 0)
                     return originalLength; // Invalid utf8 sequence - can't break
                 // Count how many bytes follow the lead char
-                byte b = (byte)(buffer[offset + length] << 2);
+                byte b = unchecked((byte)(buffer[offset + length] << 2));
                 int byteCount = 2;
                 while ((b & 0x80) == 0x80)
                 {
-                    b = (byte)(b << 1);
+                    b = unchecked((byte)(b << 1));
                     byteCount++;
                     // There shouldn't be more than 3 bytes following the lead char
                     if (byteCount > 4)

@@ -177,7 +177,7 @@ namespace System.Numerics
             for (; i < left.Length; i++)
             {
                 ulong digits = (ulong)left[i] * right + carry;
-                bits[i] = (uint)digits;
+                bits[i] = unchecked((uint)digits);
                 carry = digits >> 32;
             }
             bits[i] = (uint)carry;

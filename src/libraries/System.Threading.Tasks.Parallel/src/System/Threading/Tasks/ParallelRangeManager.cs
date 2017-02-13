@@ -108,7 +108,7 @@ namespace System.Threading.Tasks
                         // we found work
 
                         nFromInclusiveLocal = currentRange._nFromInclusive + nMyOffset;
-                        nToExclusiveLocal = nFromInclusiveLocal + _nIncrementValue;
+                        nToExclusiveLocal = unchecked(nFromInclusiveLocal + _nIncrementValue);
 
                         // Check for going past end of range, or wrapping
                         if ((nToExclusiveLocal > currentRange._nToExclusive) || (nToExclusiveLocal < currentRange._nFromInclusive))
@@ -242,10 +242,10 @@ namespace System.Threading.Tasks
                 _indexRanges[i]._bRangeFinished = 0;
 
                 // now increment it to find the toExclusive value for our range
-                nCurrentIndex += nRangeSize;
+                nCurrentIndex = unchecked(nCurrentIndex + nRangeSize);
 
                 // detect integer overflow or range overage and snap to nToExclusive
-                if (nCurrentIndex < nCurrentIndex - nRangeSize ||
+                if (nCurrentIndex < unchecked(nCurrentIndex - nRangeSize) ||
                     nCurrentIndex > nToExclusive)
                 {
                     // this should only happen at the last index

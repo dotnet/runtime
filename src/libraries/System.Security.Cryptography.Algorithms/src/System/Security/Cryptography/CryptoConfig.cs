@@ -452,14 +452,14 @@ namespace System.Security.Cryptography
             uint[] oidNums = new uint[oidString.Length];
             for (int i = 0; i < oidString.Length; i++)
             {
-                oidNums[i] = (uint)int.Parse(oidString[i], CultureInfo.InvariantCulture);
+                oidNums[i] = unchecked((uint)int.Parse(oidString[i], CultureInfo.InvariantCulture));
             }
 
             // Handle the first two oidNums special
             if (oidNums.Length < 2)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_InvalidOID);
 
-            uint firstTwoOidNums = (oidNums[0] * 40) + oidNums[1];
+            uint firstTwoOidNums = unchecked((oidNums[0] * 40) + oidNums[1]);
 
             // Determine length of output array
             int encodedOidNumsLength = 2; // Reserve first two bytes for later
@@ -500,7 +500,7 @@ namespace System.Security.Cryptography
             {
                 if (destination != null)
                 {
-                    destination[index++] = (byte)value;
+                    destination[index++] = unchecked((byte)value);
                 }
                 else
                 {
@@ -523,9 +523,12 @@ namespace System.Security.Cryptography
             {
                 if (destination != null)
                 {
-                    destination[index++] = (byte)((value >> 14) | 0x80);
-                    destination[index++] = (byte)((value >> 7) | 0x80);
-                    destination[index++] = (byte)(value & 0x7f);
+                    unchecked
+                    {
+                        destination[index++] = (byte)((value >> 14) | 0x80);
+                        destination[index++] = (byte)((value >> 7) | 0x80);
+                        destination[index++] = (byte)(value & 0x7f);
+                    }
                 }
                 else
                 {
@@ -536,10 +539,13 @@ namespace System.Security.Cryptography
             {
                 if (destination != null)
                 {
-                    destination[index++] = (byte)((value >> 21) | 0x80);
-                    destination[index++] = (byte)((value >> 14) | 0x80);
-                    destination[index++] = (byte)((value >> 7) | 0x80);
-                    destination[index++] = (byte)(value & 0x7f);
+                    unchecked
+                    {
+                        destination[index++] = (byte)((value >> 21) | 0x80);
+                        destination[index++] = (byte)((value >> 14) | 0x80);
+                        destination[index++] = (byte)((value >> 7) | 0x80);
+                        destination[index++] = (byte)(value & 0x7f);
+                    }
                 }
                 else
                 {
@@ -550,11 +556,14 @@ namespace System.Security.Cryptography
             {
                 if (destination != null)
                 {
-                    destination[index++] = (byte)((value >> 28) | 0x80);
-                    destination[index++] = (byte)((value >> 21) | 0x80);
-                    destination[index++] = (byte)((value >> 14) | 0x80);
-                    destination[index++] = (byte)((value >> 7) | 0x80);
-                    destination[index++] = (byte)(value & 0x7f);
+                    unchecked
+                    {
+                        destination[index++] = (byte)((value >> 28) | 0x80);
+                        destination[index++] = (byte)((value >> 21) | 0x80);
+                        destination[index++] = (byte)((value >> 14) | 0x80);
+                        destination[index++] = (byte)((value >> 7) | 0x80);
+                        destination[index++] = (byte)(value & 0x7f);
+                    }
                 }
                 else
                 {

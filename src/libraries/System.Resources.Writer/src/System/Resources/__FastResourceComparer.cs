@@ -30,7 +30,7 @@ namespace System.Resources
             // have a copy of it in InternalResGen as well.
             uint hash = 5381;
             for (int i = 0; i < key.Length; i++)
-                hash = ((hash << 5) + hash) ^ key[i];
+                hash = unchecked((hash << 5) + hash) ^ key[i];
             return (int)hash;
         }
 
