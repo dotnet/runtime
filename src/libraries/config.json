@@ -24,6 +24,12 @@
       "values": ["x64", "x86", "arm", "arm64"],
       "defaultValue": "x64"
     },
+    "BuildAllConfigurations": {
+      "description": "Builds projects for all BuildConfigurations rather than determining best configuration for TargetGroup/OSGroup.",
+      "valueType": "property",
+      "values": ["True", "False"],
+      "defaultValue": false
+    },
     "RuntimeOS": {
       "description": "The RuntimeOS used for building and restoring native OS dependent assets (i.e. RID specific binaries)",
       "valueType": "property",
@@ -275,6 +281,12 @@
             "ConfigurationGroup": "Release"
           }
         },
+        "allConfigurations": {
+          "description": "Builds all configurations instead of only those specified by framework/os.",
+          "settings": {
+            "BuildAllConfigurations":"true"
+          }
+        },
         "framework": {
           "description": "Sets target framework for managed build configuration and only builds the libraries applicable for that framework. (/p:TargetGroup=[value])",
           "settings": {
@@ -341,6 +353,12 @@
           "description": "Sets optimization level to release for native build configuration.",
           "settings": {
             "CmakeBuildType": "Release"
+          }
+        },
+        "allConfigurations": {
+          "description": "Builds all configurations instead of only those specified by framework/os.",
+          "settings": {
+            "BuildAllConfigurations":"true"
           }
         },
         "framework": {
