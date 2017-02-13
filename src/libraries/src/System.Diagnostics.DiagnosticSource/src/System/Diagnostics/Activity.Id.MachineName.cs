@@ -6,7 +6,7 @@
         private string generateUniquePrefix()
         {
             int uniqNum = unchecked((int)Stopwatch.GetTimestamp());
-            return $"{s_rootIdPrefix}{Environment.MachineName}_{uniqNum:x}";
+            return $"{s_rootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
         }
         #endregion
     }
