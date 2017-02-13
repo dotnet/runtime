@@ -9,7 +9,6 @@ set( CORGUIDS_IDL_SOURCES
   ivalidator.idl
   ivehandler.idl
   gchost.idl
-  fusionpriv.idl
   mscorsvc.idl
   tlbimpexp.idl
   clrprivappxhosting.idl

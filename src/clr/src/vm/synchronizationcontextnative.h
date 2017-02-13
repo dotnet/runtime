@@ -19,9 +19,7 @@ class SynchronizationContextNative
 {
 public:    
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     static FCDECL3(DWORD, WaitHelper, PTRArray *handleArrayUNSAFE, CLR_BOOL waitAll, DWORD millis);
-#endif
 
 #ifdef FEATURE_APPX
     static void* QCALLTYPE GetWinRTDispatcherForCurrentThread();

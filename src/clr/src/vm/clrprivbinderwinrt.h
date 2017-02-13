@@ -21,12 +21,10 @@
 #include "winrt/windowsstring.h"
 #include "appxutil.h"
 
-#ifndef FEATURE_FUSION
 #include "coreclr/corebindresult.h"
 
 // IBindResult maps directly to its one and only implementation on CoreCLR.
 typedef CoreBindResult IBindResult;
-#endif // FEATURE_FUSION
 
 //=====================================================================================================================
 // Forward declarations
@@ -46,9 +44,6 @@ IsWindowsNamespace(const char * wszNamespace);
 //=====================================================================================================================
 class CLRPrivBinderWinRT : 
     public IUnknownCommon<ICLRPrivBinder
-#ifdef FEATURE_FUSION
-     , IBindContext
-#endif //FEATURE_FUSION
     >
 {
     friend class CLRPrivAssemblyWinRT;
@@ -187,19 +182,6 @@ public:
         HRESULT * pResult,
         ICLRPrivAssembly ** ppAssembly);
 
-#ifdef FEATURE_FUSION	
-    //=============================================================================================
-    // IBindContext interface methods
-    
-    // Implements interface method code:IBindContext::PreBind.
-    STDMETHOD(PreBind)(
-        IAssemblyName * pIAssemblyName, 
-        DWORD           dwPreBindFlags, 
-        IBindResult **  ppIBindResult);
-    
-    // Implements interface method code:IBindContext::IsDefaultContext.
-    STDMETHOD(IsDefaultContext)();
-#endif //FEATURE_FUSION
 
     //=============================================================================================
     // Class methods
@@ -237,9 +219,7 @@ public:
         IBindResult ** ppIBindResult,
         BOOL fPreBind = FALSE);
 
-#ifndef FEATURE_FUSION
     HRESULT GetAssemblyAndTryFindNativeImage(SString &sWinmdFilename, LPCWSTR pwzSimpleName, BINDER_SPACE::Assembly ** ppAssembly);
-#endif
     // On Phone the application's APP_PATH CoreCLR hosting config property is used as the app
     // package graph for RoResolveNamespace to find 3rd party WinMDs.  This method wires up
     // the app paths so the WinRT binder will find 3rd party WinMDs.
@@ -251,9 +231,6 @@ public:
         LPCUTF8       szNamespace, 
         LPCUTF8       szClassName);
 
-#if defined(FEATURE_COMINTEROP_WINRT_DESKTOP_HOST) && !defined(CROSSGEN_COMPILE)
-    BOOL SetLocalWinMDPath(HSTRING localWinMDPath);
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST && !CROSSGEN_COMPILE
 
 private:
     //=============================================================================================
@@ -282,9 +259,6 @@ private:
         CLRPrivBinderUtil::WStringList *  pFileNameList, 
         CLRPrivBinderUtil::WStringList ** ppFileNameList);
     
-#ifdef FEATURE_FUSION
-    HRESULT BindAssemblyToNativeAssembly(CLRPrivAssemblyWinRT *pAssembly);
-#endif
 
 private:
     //=============================================================================================
@@ -316,28 +290,11 @@ private:
     CLRPrivBinderUtil::HSTRINGArrayHolder m_rgAltPaths;
 #endif
 
-#ifdef FEATURE_FUSION
-    // Native binder assisting logic
-    BOOL m_fCanUseNativeImages;
 
-    ReleaseHolder<IILFingerprintFactory> m_pFingerprintFactory;
-#endif
-
-#ifdef FEATURE_FUSION
-    HRESULT GetParentIBindContext(IBindContext **ppIBindContext);
-#endif //FEATURE_FUSION
 
     BINDER_SPACE::ApplicationContext * m_pApplicationContext;
     NewArrayHolder<WCHAR> m_appLocalWinMDPath;
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-    // App-local location that can be probed for WinMD files
-    BOOL m_fCanSetLocalWinMDPath;
-    CrstExplicitInit m_localWinMDPathLock;
-#ifndef CROSSGEN_COMPILE
-    clr::winrt::String m_localWinMDPath;
-#endif // !CROSSGEN_COMPILE
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
 };  // class CLRPrivBinderWinRT
 

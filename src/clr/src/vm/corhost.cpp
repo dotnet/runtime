@@ -49,10 +49,6 @@
 #include "winrttypenameconverter.h"
 #endif
 
-#if defined(FEATURE_APPX_BINDER)
-#include "clrprivbinderappx.h"
-#include "clrprivtypecachewinrt.h"
-#endif
 
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
@@ -2172,7 +2168,7 @@ HRESULT CCLRGCManager::_SetGCMaxGen0Size(SIZE_T MaxGen0Size)
 }
 
 static CCLRGCManager s_GCManager;
-#endif // !FEATURE_CORECLR || FEATURE_WINDOWSPHONE
+#endif //FEATURE_WINDOWSPHONE
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 class CCLRAppDomainResourceMonitor : public ICLRAppDomainResourceMonitor
@@ -2347,7 +2343,7 @@ public:
             return S_OK;
         }
         else
-#endif // !FEATURE_CORECLR || defined(FEATURE_WINDOWSPHONE)
+#endif //defined(FEATURE_WINDOWSPHONE)
         if (g_fEEStarted && !m_fFullAccess)
         {
             // If runtime has been started, do not allow user to obtain CLR managers.
@@ -2368,7 +2364,7 @@ public:
             *ppObject = &s_GCManager;
             return S_OK;
         }
-#endif // !FEATURE_CORECLR || FEATURE_WINDOWSPHONE
+#endif //FEATURE_WINDOWSPHONE
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
         else if (riid == IID_ICLRAppDomainResourceMonitor)
@@ -4906,7 +4902,7 @@ SIZE_T STDMETHODCALLTYPE CExecutionEngine::ClrVirtualQuery(LPCVOID lpAddress,
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && FEATURE_CORECLR && !FEATURE_PAL
+#endif // _DEBUG && !FEATURE_PAL
 
 #undef ClrVirtualProtect
 
@@ -5022,7 +5018,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && FEATURE_CORECLR && !FEATURE_PAL
+#endif // _DEBUG && !FEATURE_PAL
 
     return EEVirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
@@ -5126,12 +5122,10 @@ void CExecutionEngine::GetLastThrownObjectExceptionFromThread(void **ppvExceptio
 } // HRESULT CExecutionEngine::GetLastThrownObjectExceptionFromThread()
 
 
-#ifdef FEATURE_VERSIONING
 LocaleID RuntimeGetFileSystemLocale()
 {
     return PEImage::GetFileSystemLocale();
 };
-#endif
 
 HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName, IActivationFactory ** factory)
 {
@@ -5200,16 +5194,6 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
             } gc;
             memset(&gc, 0, sizeof(gc));
 
-#if defined(FEATURE_MULTICOREJIT) && defined(FEATURE_APPX_BINDER)
-            // For Appx, multicore JIT is only needed when root assembly does not have NI image
-            // When it has NI image, we can't generate profile, and do not need to playback profile
-            if (AppX::IsAppXProcess() && ! typeHandle.IsZapped())
-            {
-                GCX_PREEMP();
-
-                pDomain->GetMulticoreJitManager().AutoStartProfileAppx(pDomain);
-            }
-#endif
 
             IActivationFactory* activationFactory;
             GCPROTECT_BEGIN(gc);
@@ -5240,64 +5224,6 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
 #endif // !FEATURE_COMINTEROP_MANAGED_ACTIVATION
 
 
-#ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
-
-HRESULT STDMETHODCALLTYPE GetClassActivatorForApplicationImpl(HSTRING appPath, IWinRTClassActivator** ppActivator)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-    {
-        if (GetAppDomain()->GetWinRtBinder()->SetLocalWinMDPath(appPath))
-        {
-            GCX_COOP();
-
-            struct
-            {
-                STRINGREF appbase;
-            } gc;
-            ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
-            UINT32 appPathLength = 0;
-            PCWSTR wszAppPath = WindowsGetStringRawBuffer(appPath, &appPathLength);
-
-            gc.appbase = StringObject::NewString(wszAppPath, appPathLength);
-
-            MethodDescCallSite getClassActivator(METHOD__WINDOWSRUNTIMEMARSHAL__GET_CLASS_ACTIVATOR_FOR_APPLICATION);
-
-            ARG_SLOT args[] =
-            {
-                ObjToArgSlot(gc.appbase)
-            };
-
-            IWinRTClassActivator* pActivator = reinterpret_cast<IWinRTClassActivator *>(getClassActivator.Call_RetLPVOID(args));
-            *ppActivator = pActivator;
-
-            GCPROTECT_END();
-        }
-        else
-        {
-            hr = CO_E_BAD_PATH;
-        }
-    }
-    END_EXTERNAL_ENTRYPOINT;
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-#endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
 
 
 #endif // !DACCESS_COMPILE

@@ -43,7 +43,7 @@ bool StrongNameIsValidKeyPair(__in_ecount(cbKeyPair) const BYTE *pbKeyPair, DWOR
 bool GetBytesFromHex(LPCUTF8 szHexString, ULONG cchHexString, BYTE** buffer, ULONG *cbBufferSize);
 
 bool StrongNameCryptAcquireContext(HCRYPTPROV *phProv, LPCWSTR pwszContainer, LPCWSTR pwszProvider, DWORD dwProvType, DWORD dwFlags);
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 
 bool StrongNameIsSilverlightPlatformKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey);
 bool StrongNameIsSilverlightPlatformKey(const PublicKeyBlob &keyPublicKey);

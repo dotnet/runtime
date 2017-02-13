@@ -446,7 +446,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers,
                             pStackFrameHelper->GetAppDomain());
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
         // When StackFrameHelper.IsLastFrameFromForeignExceptionStackTrace is invoked in managed code,
@@ -467,7 +466,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL,
                                 pStackFrameHelper->GetAppDomain());
         }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // Determine if there are any dynamic methods in the stack trace.  If there are,
         // allocate an ObjectArray large enough to hold an ObjRef to each one.
@@ -518,7 +516,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             I4 *pILI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
@@ -526,7 +523,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                                             ->GetDirectPointerToNonObjectElements();
                 pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace; 
             }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
 
@@ -1162,10 +1158,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // By default, assume that we have no frames from foreign exception stack trace.
         pData->fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // Now we know the size, allocate the information for the data struct
         if (pData->cElements != 0)
@@ -1178,7 +1172,6 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
             {
                 StackTraceElement const & cur = traceData[i];
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                 // If we come across any frame representing foreign exception stack trace,
                 // then set the flag indicating so. This will be used to allocate the
                 // corresponding array in StackFrameHelper.
@@ -1186,7 +1179,6 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 {
                     pData->fDoWeHaveAnyFramesFromForeignStackTrace = TRUE;
                 }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                 // Fill out the MethodDesc*
                 MethodDesc *pMD = cur.pFunc;
@@ -1209,9 +1201,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 }
 
                 pData->pElements[i].InitPass1(dwNativeOffset, pMD, (PCODE) cur.ip
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     , cur.fIsLastFrameFromForeignStackTrace
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     );
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();            
@@ -1233,9 +1223,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     , BOOL fIsLastFrameFromForeignStackTrace /*= FALSE*/
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1247,9 +1235,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     this->fIsLastFrameFromForeignStackTrace = fIsLastFrameFromForeignStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 }
 
 #ifndef DACCESS_COMPILE

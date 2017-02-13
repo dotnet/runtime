@@ -68,9 +68,6 @@ class CultureDataBaseObject;
 class COMNlsInfo {
 
 public:
-#ifdef FEATURE_SYNTHETIC_CULTURES
-    static INT32  WstrToInteger4(__in_z LPCWSTR wstrLocale, __in int Radix);
-#endif // FEATURE_SYNTHETIC_CULTURES
 
     static INT32 GetCHTLanguage();
     static INT32 CallGetSystemDefaultUILanguage();
@@ -117,10 +114,6 @@ public:
     static FCDECL0(INT32, nativeGetNumEncodingItems);
     static FCDECL0(EncodingDataItem *, nativeGetEncodingTableDataPointer);
     static FCDECL0(CodePageDataItem *, nativeGetCodePageTableDataPointer);
-#if FEATURE_CODEPAGES_FILE
-    static FCDECL3(LPVOID, nativeCreateOpenFileMapping,
-                       StringObject* inSectionNameUNSAFE, int inBytesToAllocate, HANDLE *mappedFile);
-#endif // FEATURE_CODEPAGES_FILE
 
     //
     //  Native helper function for methods in CharacterInfo

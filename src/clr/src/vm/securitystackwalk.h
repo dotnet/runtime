@@ -22,10 +22,6 @@
 #include "appdomainhelper.h"
 #endif
 
-#ifdef FEATURE_COMPRESSEDSTACK
-class NewCompressedStack;
-class DomainCompressedStack;
-#endif // FEATURE_COMPRESSEDSTACK
 class ApplicationSecurityDescriptor;
 class DemandStackWalk;
 class CountOverridesStackWalk;
@@ -208,25 +204,6 @@ public:
     // Compressed Stack
     // ----------------------------------------------------
 public:
-#ifdef FEATURE_COMPRESSEDSTACK
-    static FCDECL2(Object*, EcallGetDelayedCompressedStack, StackCrawlMark* stackMark, CLR_BOOL fWalkStack);
-    static FCDECL1(VOID, FcallDestroyDelayedCompressedStack, void *compressedStack);
-    static COMPRESSEDSTACKREF GetCSFromContextTransitionFrame(Frame *pFrame);
-    static BOOL IsContextTransitionFrameWithCS(Frame *pFrame)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        return (GetCSFromContextTransitionFrame(pFrame) != NULL);
-    }
-    static BOOL MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(MethodDesc* pMeth);
-
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
 #ifndef DACCESS_COMPILE
     FORCEINLINE static BOOL HasFlagsOrFullyTrustedIgnoreMode (DWORD flags);   

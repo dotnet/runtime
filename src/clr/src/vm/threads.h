@@ -1269,9 +1269,7 @@ public:
                                                       // effort.
                                                       // 
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         TSNC_InsideSyncContextWait      = 0x02000000, // Whether we are inside DoSyncContextWait
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -2692,7 +2690,6 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     void GetSynchronizationContext(OBJECTREF *pSyncContextObj)
     {
         CONTRACTL
@@ -2710,24 +2707,7 @@ public:
         if (ExposedThreadObj != NULL)
             *pSyncContextObj = ExposedThreadObj->GetSynchronizationContext();
     }
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
-#ifdef FEATURE_COMPRESSEDSTACK    
-    OBJECTREF GetCompressedStack()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-        THREADBASEREF ExposedThreadObj = (THREADBASEREF)GetExposedObjectRaw();
-        if (ExposedThreadObj != NULL)
-            return (OBJECTREF)(ExposedThreadObj->GetCompressedStack());
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
@@ -3406,9 +3386,7 @@ private:
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
 #endif // !FEATURE_PAL
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 public:
 
     //************************************************************************

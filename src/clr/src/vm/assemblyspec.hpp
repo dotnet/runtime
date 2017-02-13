@@ -17,9 +17,6 @@
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
 #include "memorypool.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "assemblyspecbase.h"
 #include "domainfile.h"
 #include "genericstackprobe.h"
@@ -42,13 +39,11 @@ class AssemblySpec  : public BaseAssemblySpec
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
     ICLRPrivBinder *m_pFallbackLoadContextBinder;
 
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
     bool m_fPreferFallbackLoadContextBinder;
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     BOOL IsValidAssemblyName();
     
@@ -76,10 +71,8 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         m_pFallbackLoadContextBinder = NULL;     
         m_fPreferFallbackLoadContextBinder = false;   
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }
 #endif //!DACCESS_COMPILE
@@ -89,18 +82,11 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT
         m_pParentAssembly = NULL;
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         m_pFallbackLoadContextBinder = NULL;
         m_fPreferFallbackLoadContextBinder = false;        
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }
 
-#ifdef FEATURE_FUSION
-    virtual IAssembly* GetParentIAssembly();
-
-    virtual LPCVOID GetParentAssemblyPtr();
-#endif
 
     DomainAssembly* GetParentAssembly();
     
@@ -127,11 +113,6 @@ class AssemblySpec  : public BaseAssemblySpec
             EEFileLoadException::Throw(this,hr);
     };
 
-#ifdef FEATURE_FUSION
-    void InitializeSpec(IAssemblyName *pName,
-                        DomainAssembly *pStaticParent = NULL,
-                        BOOL fIntrospectionOnly = FALSE);
-#endif // FEATURE_FUSION
 
     void InitializeSpec(PEAssembly *pFile);
     HRESULT InitializeSpec(StackingAllocator* alloc,
@@ -164,18 +145,8 @@ class AssemblySpec  : public BaseAssemblySpec
         CONTRACTL_END;
 
         m_pParentAssembly = pAssembly;
-#ifdef FEATURE_FUSION
-        if (pAssembly)
-        {
-            _ASSERTE(GetHostBinder() == nullptr);
-            m_fParentLoadContext=pAssembly->GetFile()->GetLoadContext();
-        }
-        else
-            m_fParentLoadContext = LOADCTX_TYPE_DEFAULT;
-#endif
     }
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     void SetFallbackLoadContextBinderForRequestingAssembly(ICLRPrivBinder *pFallbackLoadContextBinder)
     {
        LIMITED_METHOD_CONTRACT;
@@ -203,7 +174,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
         return m_fPreferFallbackLoadContextBinder;
     }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     // Note that this method does not clone the fields!
     void CopyFrom(AssemblySpec* pSource)
@@ -221,20 +191,16 @@ class AssemblySpec  : public BaseAssemblySpec
         SetIntrospectionOnly(pSource->IsIntrospectionOnly());
         SetParentAssembly(pSource->GetParentAssembly());
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         // Copy the details of the fallback load context binder
         SetFallbackLoadContextBinderForRequestingAssembly(pSource->GetFallbackLoadContextBinderForRequestingAssembly());
         m_fPreferFallbackLoadContextBinder = pSource->GetPreferFallbackLoadContextBinder();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
         m_HashForControl = pSource->m_HashForControl;
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
 
 
-#ifndef FEATURE_FUSION     
     HRESULT CheckFriendAssemblyName();
-#endif // FEATURE_FUSION
 
 
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit, 
@@ -250,15 +216,8 @@ class AssemblySpec  : public BaseAssemblySpec
         FILE_WEBPERM         = 0x3
     };
 
-#ifdef FEATURE_FUSION    
-    static void DemandFileIOPermission(LPCWSTR wszCodeBase,
-                                       BOOL fHavePath,
-                                       DWORD dwDemandFlag);
-    void DemandFileIOPermission(PEAssembly *pFile);
-#endif
 
 
-#ifndef FEATURE_FUSION
     VOID Bind(
         AppDomain* pAppDomain, 
         BOOL fThrowOnFileNotFound,
@@ -266,7 +225,6 @@ class AssemblySpec  : public BaseAssemblySpec
         BOOL fNgenExplicitBind = FALSE, 
         BOOL fExplicitBindToNativeImage = FALSE,
         StackCrawlMark *pCallerStackMark  = NULL );
-#endif
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel, 
                            AssemblyLoadSecurity *pLoadSecurity = NULL,
@@ -288,27 +246,10 @@ class AssemblySpec  : public BaseAssemblySpec
                                   DWORD cbPublicKeyOrToken,
                                   DWORD dwFlags);
 
-#ifdef FEATURE_FUSION
-    //****************************************************************************************
-    //
-    HRESULT LoadAssembly(IApplicationContext *pFusionContext, 
-                         FusionSink *pSink,
-                         IAssembly** ppIAssembly,
-                         IHostAssembly** ppIHostAssembly,
-                         IBindResult **ppNativeFusionAssembly,
-                         BOOL fForIntrospectionOnly,
-                         BOOL fSuppressSecurityChecks);
-#endif
 
     // Load an assembly based on an explicit path
     static Assembly *LoadAssembly(LPCWSTR pFilePath);
 
-#ifdef FEATURE_FUSION
-    BOOL FindAssemblyFile(AppDomain *pAppDomain, BOOL fThrowOnFileNotFound,
-                          IAssembly** ppIAssembly, IHostAssembly **ppIHostAssembly, IBindResult** pNativeFusionAssembly,
-                          IFusionBindLog **ppFusionLog, HRESULT *pHRBindResult, StackCrawlMark *pCallerStackMark = NULL,
-                          AssemblyLoadSecurity *pLoadSecurity = NULL);
-#endif // FEATURE_FUSION
 
   private:
     void MatchRetargetedPublicKeys(Assembly *pAssembly);
@@ -379,11 +320,7 @@ class AssemblySpec  : public BaseAssemblySpec
     inline BOOL CanUseWithBindingCache() const
     {
         STATIC_CONTRACT_LIMITED_METHOD;
-#if defined(FEATURE_APPX_BINDER)
-        return (GetHostBinder() == nullptr) && HasUniqueIdentity();
-#else
         return HasUniqueIdentity(); 
-#endif
     }
 
     inline ICLRPrivBinder *GetHostBinder() const
@@ -687,7 +624,7 @@ class AssemblySpecBindingCache
             ++i;
         }
     }
-#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
     static BOOL CompareSpecs(UPTR u1, UPTR u2);
 };

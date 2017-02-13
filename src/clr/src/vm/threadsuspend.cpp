@@ -754,29 +754,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     }
     #undef METHODNAME
 
-#ifdef FEATURE_CER
-    // If we're asking about CERs and we don't yet have a definite answer either way then take a closer look at the current method.
-    if (pData->eType & StackCrawlContext::SCC_CheckWithinCer && !pData->fUnprotectedCode && !pData->fWithinCer)
-    {
-        // Check for CER root methods (these are never inlined). If we've found one of these at the root of a bunch of potential CER
-        // methods (i.e. those with a compatible reliability contract) then we're executing in a CER.
-        if (IsCerRootMethod(pMD))
-            pData->fWithinCer = true;
-
-        // Only need to look deeper if we couldn't decide if we're in a CER yet.
-        if (!pData->fWithinCer)
-        {
-            // IL stubs are transparent to CERs.
-            if (!pMD->IsILStub())
-                // Check for reliability contracts on the method (and class and assembly). If it's high enough level to be included
-                // in a CER then we can continue (hopefully finding a CER root method further down the stack). Otherwise we've got
-                // at least one method that's not part of a CER on the top of the stack so we're definitely not executing within a
-                // CER.
-                if (CheckForReliabilityContract(pMD) < RCL_BASIC_CONTRACT)
-                    pData->fUnprotectedCode = true;
-        }
-    }
-#endif // FEATURE_CER
 
     // If we weren't asked about EH clauses then we can return now (stop the stack trace if we have a definitive answer on the CER
     // question, move to the next frame otherwise).
@@ -1124,50 +1101,6 @@ struct CerStackCrawlContext
     bool        m_fWithinCer;           // The result
 };
 
-#ifdef FEATURE_CER
-// Callback used on the stack crawl described above.
-StackWalkAction CerStackCrawlCallBack(CrawlFrame *pCf, void *pData)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CerStackCrawlContext *pCtx = (CerStackCrawlContext *)pData;
-
-    // Skip initial frame which should be our target.
-    if (pCtx->m_fFirstFrame)
-    {
-        _ASSERTE(pCtx->m_pStartMethod == pCf->GetFunction());
-        pCtx->m_fFirstFrame = false;
-        return SWA_CONTINUE;
-    }
-
-    // If we get this far we've located the target method and are scanning the calling tree to see if we have a chain of methods
-    // marked with strong reliability contracts terminated by a CER root method.
-    MethodDesc *pMD = pCf->GetFunction();
-    _ASSERTE(pMD != NULL);
-
-    // If the current method is the root of a CER then we can say the target method was executing in a CER and terminate the stack
-    // walk.
-    // @TODO: Need to be more specific than this: only certain areas of the root method are actually in the CER.
-    if (IsCerRootMethod(pMD))
-    {
-        pCtx->m_fWithinCer = true;
-        return SWA_ABORT;
-    }
-
-    // Now look at reliability contracts on the current method. If they're missing or very weak then the chain is broken and the
-    // target method cannot possibly be in a CER.
-    if (CheckForReliabilityContract(pMD) < RCL_BASIC_CONTRACT)
-        return SWA_ABORT;
-
-    // Otherwise everything looks OK so far and we need to investigate the next frame.
-    return SWA_CONTINUE;
-}
-#endif // FEATURE_CER
 
 // Determine whether the method at the given depth in the thread's execution stack is executing within a CER.
 BOOL Thread::IsWithinCer(CrawlFrame *pCf)
@@ -1179,126 +1112,7 @@ BOOL Thread::IsWithinCer(CrawlFrame *pCf)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CER
     return FALSE;
-#else
-    // There had better be a method associated with this frame.
-    MethodDesc *pMD = pCf->GetFunction();
-    _ASSERTE(pMD != NULL);
-
-    // Try the cheap checks first (before resorting to an actual stackwalk).
-
-    // Handle IL stubs specially. We get called for these guys and they always appear to have a strong reliability contract (due to
-    // the System.StubHelpers class they're placed in) but the stack walking logic we have below will skip them (messing up our
-    // accounting). For simplicitly and speed we'll just always say these guys are in a CER (we trust the code and it won't block
-    // indefinitely so it's a safe guess).
-    if (pMD->IsILStub())
-        return TRUE;
-
-    // If the method is itself the root of a CER then we say yes immediately.
-    // @TODO: Need to be more specific than this: only certain areas of the root method are actually in the CER.
-    if (IsCerRootMethod(pMD))
-        return TRUE;
-
-    // Now look at reliability contracts on the method. If they're missing or very weak then this method cannot possibly be in a
-    // CER.
-    if (CheckForReliabilityContract(pMD) < RCL_BASIC_CONTRACT)
-        return FALSE;
-
-    // No way around it: this method has a good reliability contract but is not the root of a CER. We'll have to have to walk the
-    // stack to determine whether it was called from a good root.
-
-    // Now things get really tricky. We want to perform a recursive stackwalk (we're called as part of an ongoing stackwalk and we
-    // wish to recursively look at one or more of the callers of the current frame).
-    //
-    // On x86 this is relatively straightforward -- we make a copy of the current crawl frame context (since walking the stack
-    // updates the context) and build a new regdisplay around it. We can then start a new crawl from that context (ignoring the
-    // first frame of course, because that's this frame).
-    //
-    // 64-bit is trickier because the context provided by the OS might not be (from our point of view) a valid current context. In
-    // particular IA64 provides a mostly valid context except that the SP is from the caller. AMD64 on the other hand will always
-    // provide a consistent context, but it may belong to either the current or caller frame. As noted above though, we're really
-    // not all that interested in the current context, so as long as we can get to a consistent caller context we're happy.
-    //
-    // So for AMD64 we'll either have a complete current context and we'll use the the x86 algorithm or we have a complete caller
-    // context and we can use more or less the x86 algorithm except we don't need to skip the first frame on the stackwalk callback.
-    //
-    // IA64 is trickier since it doesn't always give us a consistent context (current or caller). Here we'll have to bite the bullet
-    // and perform a full stackwalk to build the context we're after. We'll use a combination of the caller SP and the current BSP
-    // as a discriminator (to determine when the full stackwalk has synchronized with this frame and the real walk can begin, it's
-    // the same discriminator the OS uses).
-    //
-    // <REVISIT_TODO> We will want to try and cache the context we eventually arrive at from this stack walk, since we're likely to see
-    // further calls to IsWithinCer further down the stack and we can use the end context as a much faster way to sync to a valid
-    // context in those cases. The chief technical difficulty there is cache management since the OS is handling the actual
-    // exception walk (so we're not sure when to invalidate our cached data, which presumably we'd store on the Thread). Look into
-    // hooking into the ExceptionTracker mechanism for this.</REVISIT_TODO>
-
-    REGDISPLAY *pCurrentRd = pCf->GetRegisterSet();
-    REGDISPLAY  rd;
-    CONTEXT     ctx;
-    CerStackCrawlContext sContext = { pMD, true, false };
-
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
-    // This check is similar to the one in ExceptionTracker::InitializeCrawlFrame. 
-    //
-    // However, on ARM, we can easily check if we have the caller context (or not) by 
-    // checking the IsCallerContextValid field of RegDisplay, which is set during
-    // the first pass of exception dispatch since the OS always passes us the caller
-    // context in that scenario (refer to ExceptionTracker::InitializeCrawlFrame
-    // implementation for details).
-    if (ARM_ONLY(pCurrentRd->IsCallerContextValid) NOT_ARM(GetControlPC(pCurrentRd) != GetIP(pCurrentRd->pCurrentContext)))
-    {
-        // This is the case on AMD64, or ARM, where the OS has handed us the caller context. Build a regdisplay around that (pretending that
-        // it's the current context) and reset our first frame flag so the stack walk we're about to do thinks we've already
-        // processed the current frame.
-        ctx = *pCurrentRd->pCallerContext;
-        FillRegDisplay(&rd, &ctx);
-        sContext.m_fFirstFrame = false;
-    }
-    else
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
-    {
-        // On x86, ARM or AMD64, where the OS gave us the current context, we just copy that into a new regdisplay (our stackwalking
-        // callback will skip the first (current) frame for us).
-        CopyRegDisplay(pCurrentRd, &rd, &ctx);
-    }
-
-    // The stackwalker requires a starting frame as input. If we're currently inspecting an explicit frame then it's easy -- we just
-    // pass that. Otherwise (we're on some frameless managed method) we look at all of the frames for the current thread and choose
-    // the one that would synchronize us for walking to the next frame.
-    Frame *pFrame;
-    if (pCf->IsFrameless())
-    {
-#if defined(_TARGET_X86_)
-        TADDR limitSP = GetRegdisplaySP(&rd);
-#else
-        TADDR limitSP = (TADDR)( EECodeManager::GetCallerSp(&rd) );
-#endif
-        pFrame = GetFrame();
-        while (pFrame && (TADDR)(pFrame) < limitSP)
-            pFrame = pFrame->Next();
-    }
-    else
-    {
-        pFrame = pCf->GetFrame();
-
-#ifdef _TARGET_X86_
-        if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
-        {
-            // If we walk from an ICF, the function will not be reported again because X86 stack walker handles managed stack frame
-            // before explicit frames contained in it.
-            sContext.m_fFirstFrame = false;
-        }
-#endif // _TARGET_X86_
-    }
-
-    StackWalkFramesEx(&rd, CerStackCrawlCallBack, &sContext, QUICKUNWIND | FUNCTIONSONLY, pFrame);
-
-    _ASSERTE(!sContext.m_fFirstFrame);
-
-    return sContext.m_fWithinCer;
-#endif // FEATURE_CER
 }
 
 #if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)

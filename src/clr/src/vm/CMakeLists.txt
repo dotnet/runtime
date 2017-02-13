@@ -240,12 +240,6 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_GDBJIT}
 )
 
-if(FEATURE_CER)
-    list(APPEND VM_SOURCES_WKS
-        constrainedexecutionregion.cpp
-        )
-endif(FEATURE_CER)
-
 if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS
         eventtrace.cpp

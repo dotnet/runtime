@@ -85,11 +85,9 @@ public:
         m_CorruptionSeverity = NotSet;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
         m_fDeliveredFirstChanceNotification = FALSE;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         m_sfFirstPassTopmostFrame.Clear();
         
@@ -147,11 +145,9 @@ public:
         m_CorruptionSeverity = NotSet;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // By default, mark the tracker as not having delivered the first
         // chance exception notification
         m_fDeliveredFirstChanceNotification = FALSE;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
         m_dwIndexClauseForCatch = 0;
         m_sfEstablisherOfActualHandlerFrame.Clear();
@@ -616,7 +612,6 @@ public:
     }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
     BOOL                    m_fDeliveredFirstChanceNotification;
 
@@ -634,7 +629,6 @@ public:
     
         m_fDeliveredFirstChanceNotification = fDelivered;
     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     // Returns the exception tracker previous to the current
     inline PTR_ExceptionTracker GetPreviousExceptionTracker()

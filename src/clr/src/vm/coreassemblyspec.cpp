@@ -24,7 +24,6 @@
 #include "compile.h"
 #endif
 
-#ifndef FEATURE_FUSION
 
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
@@ -85,7 +84,6 @@ STDAPI BinderGetDisplayName(PEAssembly *pAssembly,
 }
 
 
-#ifdef FEATURE_VERSIONING
 
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
@@ -222,7 +220,6 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
 }
 
-#endif // FEATURE_VERSIONING
 
 STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
                             PEImage **ppPEImage,
@@ -355,13 +352,13 @@ HRESULT BaseAssemblySpec::ParseName()
 
         if (pIUnknownBinder != NULL)
         {
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
             if (pDomain->GetFusionContext() != pDomain->GetTPABinderContext())
             {
                 pAppContext = (static_cast<CLRPrivBinderAssemblyLoadContext *>(pIUnknownBinder))->GetAppContext();
             }
             else
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
             {
                 pAppContext = (static_cast<CLRPrivBinderCoreCLR *>(pIUnknownBinder))->GetAppContext();
             }
@@ -596,4 +593,3 @@ VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
 }
 
 
-#endif // FEATURE_FUSION

@@ -21,7 +21,6 @@
 #include "threads.h"
 #include "fieldmarshaler.h"
 #include "interoputil.h"
-#include "constrainedexecutionregion.h"
 #include "dynamicmethod.h"
 #include "stubhelpers.h"
 #include "eventtrace.h"
@@ -1005,10 +1004,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
     g_IBCLogger.LogMethodTableAccess(pMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pMT));
 
-#ifdef FEATURE_CER
-    if (pMT->HasCriticalFinalizer())
-        PrepareCriticalFinalizerObject(pMT);
-#endif
 
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION

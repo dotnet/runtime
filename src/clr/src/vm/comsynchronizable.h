@@ -116,10 +116,6 @@ public:
     static FCDECL1(FC_BOOL_RET,SetThreadUILocale,              StringObject* localeNameUNSAFE);
 #endif // FEATURE_LEAK_CULTURE_INFO
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,             ThreadBaseObject* thread);
-#ifdef FEATURE_COMPRESSEDSTACK    
-    static FCDECL2(void*,    SetAppDomainStack, ThreadBaseObject* pThis, SafeHandle* hcsUNSAFE);
-    static FCDECL2(void,    RestoreAppDomainStack, ThreadBaseObject* pThis, void* appDomainStack);
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     static FCDECL0(void, FCMemoryBarrier);
     static FCDECL1(void, SetIsThreadStaticsArray, Object* pObject);

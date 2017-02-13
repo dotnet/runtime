@@ -129,9 +129,7 @@ private:
     static HMODULE LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
     static HMODULE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     static HMODULE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);
-#endif //defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #if !defined(FEATURE_CORESYSTEM)
     static HINSTANCE    CheckForWellKnownModules(LPCWSTR wszLibName, LoadLibErrorTracker *pErrorTracker);
