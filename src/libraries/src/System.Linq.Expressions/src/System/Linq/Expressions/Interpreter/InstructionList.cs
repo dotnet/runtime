@@ -783,6 +783,11 @@ namespace System.Linq.Expressions.Interpreter
             Emit(new NumericConvertInstruction.Unchecked(from, to, isLiftedToNull));
         }
 
+        public void EmitConvertToUnderlying(TypeCode to, bool isLiftedToNull)
+        {
+            Emit(new NumericConvertInstruction.ToUnderlying(to, isLiftedToNull));
+        }
+
         public void EmitCast(Type toType)
         {
             Emit(CastInstruction.Create(toType));
