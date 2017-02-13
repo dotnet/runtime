@@ -243,22 +243,19 @@ mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, Mo
 	return TRUE;
 }
 
-/* LOCKING: domains_lock must be held */
-static void
-tpdomain_add (ThreadPoolDomain *tpdomain)
+/* LOCKING: domains_lock must be held. */
+static ThreadPoolDomain *
+tpdomain_create (MonoDomain *domain)
 {
-	guint i, len;
+	ThreadPoolDomain *tpdomain;
 
-	g_assert (tpdomain);
+	tpdomain = g_new0 (ThreadPoolDomain, 1);
+	tpdomain->domain = domain;
+	mono_coop_cond_init (&tpdomain->cleanup_cond);
 
-	len = threadpool.domains->len;
-	for (i = 0; i < len; ++i) {
-		if (g_ptr_array_index (threadpool.domains, i) == tpdomain)
-			break;
-	}
+	g_ptr_array_add (threadpool.domains, tpdomain);
 
-	if (i == len)
-		g_ptr_array_add (threadpool.domains, tpdomain);
+	return tpdomain;
 }
 
 /* LOCKING: domains_lock must be held. */
@@ -271,10 +268,9 @@ tpdomain_remove (ThreadPoolDomain *tpdomain)
 
 /* LOCKING: domains_lock must be held */
 static ThreadPoolDomain *
-tpdomain_get (MonoDomain *domain, gboolean create)
+tpdomain_get (MonoDomain *domain)
 {
-	guint i;
-	ThreadPoolDomain *tpdomain;
+	gint i;
 
 	g_assert (domain);
 
@@ -286,16 +282,7 @@ tpdomain_get (MonoDomain *domain, gboolean create)
 			return tpdomain;
 	}
 
-	if (!create)
-		return NULL;
-
-	tpdomain = g_new0 (ThreadPoolDomain, 1);
-	tpdomain->domain = domain;
-	mono_coop_cond_init (&tpdomain->cleanup_cond);
-
-	tpdomain_add (tpdomain);
-
-	return tpdomain;
+	return NULL;
 }
 
 static void
@@ -619,7 +606,7 @@ mono_threadpool_remove_domain_jobs (MonoDomain *domain, int timeout)
 
 	domains_lock ();
 
-	tpdomain = tpdomain_get (domain, FALSE);
+	tpdomain = tpdomain_get (domain);
 	if (!tpdomain) {
 		domains_unlock ();
 		mono_refcount_dec (&threadpool);
@@ -803,14 +790,18 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 
 	domains_lock ();
 
-	/* synchronize with mono_threadpool_remove_domain_jobs */
-	if (mono_domain_is_unloading (domain)) {
-		domains_unlock ();
-		mono_refcount_dec (&threadpool);
-		return FALSE;
+	tpdomain = tpdomain_get (domain);
+	if (!tpdomain) {
+		/* synchronize with mono_threadpool_remove_domain_jobs */
+		if (mono_domain_is_unloading (domain)) {
+			domains_unlock ();
+			mono_refcount_dec (&threadpool);
+			return FALSE;
+		}
+
+		tpdomain = tpdomain_create (domain);
 	}
 
-	tpdomain = tpdomain_get (domain, TRUE);
 	g_assert (tpdomain);
 
 	tpdomain->outstanding_request ++;
