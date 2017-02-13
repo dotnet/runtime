@@ -33,7 +33,7 @@ namespace System.Diagnostics
         /// This is an ID that is specific to a particular request.   Filtering
         /// to a particular ID insures that you get only one request that matches.  
         /// Id has a hierarchical structure: /root-id.id1.id2.id3.  Id is generated when 
-        /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Paren.Id
+        /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Parent.Id
         /// or ParentId; Activity has no Id until it started
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for nore details
         /// </summary>
@@ -63,8 +63,7 @@ namespace System.Diagnostics
 
 
         /// <summary>
-        /// Root Id is substring from Activity,Id or ParentId between '/' (or beginning) and first '.'.
-        /// It is common for all Activities involved in operation processing. 
+        /// Root Id is substring from Activity.Id (or ParentId) between '/' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for more details
@@ -329,8 +328,8 @@ namespace System.Diagnostics
         private string getRootId(string id)
         {
             //id MAY start with '/' and contain '.'. We return substring between them
-            //ParentId MAY NOT have hierarchical structure and at least initial rootId not probably was started with '/',
-            //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id
+            //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '/',
+            //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id scenarios
             int rootEnd = id.IndexOf('.');
             if (rootEnd < 0)
                 rootEnd = id.Length;
