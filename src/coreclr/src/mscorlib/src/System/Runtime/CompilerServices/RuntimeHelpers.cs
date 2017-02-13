@@ -167,6 +167,14 @@ namespace System.Runtime.CompilerServices {
         {
             ((CleanupCode)backoutCode)(userData, exceptionThrown);
         }
+
+        /// <returns>true if given type is reference type or value type that contains references</returns>
+        static public bool IsReferenceOrContainsReferences<T>()
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
+            throw new InvalidOperationException();
+        }
     }
 }
 

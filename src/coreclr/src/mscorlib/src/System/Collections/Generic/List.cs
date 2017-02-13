@@ -12,14 +12,15 @@
 **
 ** 
 ===========================================================*/
+
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
+
 namespace System.Collections.Generic
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Collections.ObjectModel;
-    using Runtime.CompilerServices;
-
     // Implements a variable-size List that uses an array of objects to store the
     // elements. A List has a capacity, which is the allocated length
     // of the internal array. As elements are added to a List, the capacity
@@ -292,7 +293,7 @@ namespace System.Collections.Generic
         // Clears the contents of List.
         public void Clear()
         {
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 int size = _size;
                 _size = 0;
@@ -863,7 +864,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 Array.Clear(_items, freeIndex, _size - freeIndex); // Clear the elements so that the gc can reclaim the references.
             }
@@ -887,7 +888,7 @@ namespace System.Collections.Generic
             {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 _items[_size] = default(T);
             }
@@ -917,7 +918,7 @@ namespace System.Collections.Generic
                 }
 
                 _version++;
-                if (JitHelpers.ContainsReferences<T>())
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     Array.Clear(_items, _size, count);
                 }

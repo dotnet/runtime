@@ -1179,6 +1179,7 @@ DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS, PrepareConstrainedRegions, SM_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS_NOOP, PrepareConstrainedRegionsNoOP, SM_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      EXECUTE_BACKOUT_CODE_HELPER, ExecuteBackoutCodeHelper, SM_Obj_Obj_Bool_RetVoid)
+DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
 
 DEFINE_CLASS(JIT_HELPERS,           CompilerServices,       JitHelpers)
 #ifdef _DEBUG
@@ -1195,7 +1196,6 @@ DEFINE_METHOD(JIT_HELPERS,          UNSAFE_CAST_TO_STACKPTR,UnsafeCastToStackPoi
 #ifdef FEATURE_SPAN_OF_T
 DEFINE_METHOD(JIT_HELPERS,          BYREF_LESSTHAN,         ByRefLessThan, NoSig)
 DEFINE_METHOD(JIT_HELPERS,          GET_ARRAY_DATA,         GetArrayData, NoSig)
-DEFINE_METHOD(JIT_HELPERS,          CONTAINSREFERENCES,     ContainsReferences, NoSig)
 #endif
 
 #ifdef FEATURE_SPAN_OF_T

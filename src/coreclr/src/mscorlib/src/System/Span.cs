@@ -112,7 +112,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe Span(void* pointer, int length)
         {
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -451,7 +451,7 @@ namespace System
         public static Span<byte> AsBytes<T>(this Span<T> source)
             where T : struct
         {
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new Span<byte>(
@@ -470,7 +470,7 @@ namespace System
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
             where T : struct
         {
-            if (JitHelpers.ContainsReferences<T>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new ReadOnlySpan<byte>(
@@ -493,9 +493,9 @@ namespace System
             where TFrom : struct
             where TTo : struct
         {
-            if (JitHelpers.ContainsReferences<TFrom>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (JitHelpers.ContainsReferences<TTo>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
             return new Span<TTo>(
@@ -518,9 +518,9 @@ namespace System
             where TFrom : struct
             where TTo : struct
         {
-            if (JitHelpers.ContainsReferences<TFrom>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (JitHelpers.ContainsReferences<TTo>())
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
 
             return new ReadOnlySpan<TTo>(
@@ -597,7 +597,7 @@ namespace System
             if (Unsafe.AreSame(ref destination, ref source))
                 return;
 
-            if (!JitHelpers.ContainsReferences<T>())
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
                 {
