@@ -14,8 +14,8 @@
     <SkipValidatePackage>true</SkipValidatePackage>
 
     <RefBinDir>$(UAPPackageRefPath)</RefBinDir>
-    <LibBinDir Condition="'$(_bc_TargetGroup)'=='uap'">$(UAPPackageRuntimePath)</LibBinDir>
-    <LibBinDir Condition="'$(_bc_TargetGroup)'=='uapaot'">$(UAPAOTPackageRuntimePath)</LibBinDir>
+    <LibBinDir>$(UAPPackageRuntimePath)</LibBinDir>
+    <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
 
     <NETStandardVersion>2.0</NETStandardVersion>
   </PropertyGroup>
