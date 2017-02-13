@@ -2431,13 +2431,11 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
                     currentSP = (SIZE_T) ((void*) pFrameStub);
                     currentIP = 0; // no IP.
                     EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, (SIZE_T)currentIP, (SIZE_T)currentSP);
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Deliver the FirstChanceNotification after the debugger, if not already delivered.
                     if (!pExInfo->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
             }
         }
@@ -2486,14 +2484,12 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // Attempt to deliver the first chance notification to the AD only *AFTER* the debugger
         // has done that, provided we have not already done that.
         if (!pExInfo->DeliveredFirstChanceNotification())
         {
             ExceptionNotifications::DeliverFirstChanceNotification();
         }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
     }
     IJitManager* pJitManager = pCf->GetJitManager();
     _ASSERTE(pJitManager);

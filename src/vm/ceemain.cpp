@@ -240,9 +240,7 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
-#ifndef FEATURE_FUSION
 #include "../binder/inc/coreclrbindercommon.h"
-#endif // !FEATURE_FUSION
 
 #ifdef FEATURE_UEF_CHAINMANAGER
 // This is required to register our UEF callback with the UEF chain manager
@@ -271,9 +269,6 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 #endif // !CROSSGEN_COMPILE
 
 HRESULT EEStartup(COINITIEE fFlags);
-#ifdef FEATURE_FUSION
-extern "C" HRESULT STDMETHODCALLTYPE InitializeFusion();
-#endif
 
 #ifdef FEATURE_MIXEDMODE
 HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
@@ -782,15 +777,8 @@ void EEStartupHelper(COINITIEE fFlags)
 #endif
 
         // Fusion
-#ifdef FEATURE_FUSION 
-        {
-            ETWOnStartup (FusionInit_V1, FusionInitEnd_V1);
-            IfFailGoLog(InitializeFusion());
-        }
-#else // FEATURE_FUSION
         // Initialize the general Assembly Binder infrastructure
         IfFailGoLog(CCoreCLRBinderHelper::Init());
-#endif // FEATURE_FUSION
 
         if (g_pConfig != NULL)
         {
@@ -3132,125 +3120,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
     return TRUE;
 }
 
-#ifdef FEATURE_COMINTEROP_REGISTRATION
-//*****************************************************************************
-// Helper function to call the managed registration services.
-//*****************************************************************************
-enum EnumRegServicesMethods
-{
-    RegServicesMethods_RegisterAssembly = 0,
-    RegServicesMethods_UnregisterAssembly,
-    RegServicesMethods_LastMember
-};
-
-void InvokeRegServicesMethod(EnumRegServicesMethods Method, HMODULE hMod)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(Method == RegServicesMethods_RegisterAssembly ||
-                     Method == RegServicesMethods_UnregisterAssembly);
-    }
-    CONTRACT_END;
-
-    GCX_PREEMP();
-    Assembly *pAssembly = GetAppDomain()->LoadExplicitAssembly(hMod, TRUE);
-
-    {
-        GCX_COOP();
-
-        // The names of the RegistrationServices methods.
-        static const BinderMethodID aMethods[] =
-        {
-            METHOD__REGISTRATION_SERVICES__REGISTER_ASSEMBLY,
-            METHOD__REGISTRATION_SERVICES__UNREGISTER_ASSEMBLY
-        };
-
-        // Allocate the RegistrationServices object.
-        OBJECTREF RegServicesObj = AllocateObject(MscorlibBinder::GetClass(CLASS__REGISTRATION_SERVICES));
-        GCPROTECT_BEGIN(RegServicesObj)
-        {
-            MethodDescCallSite registrationMethod(aMethods[Method], &RegServicesObj);
-
-            ARG_SLOT Args[] =
-            {
-                ObjToArgSlot(RegServicesObj),
-                ObjToArgSlot(pAssembly->GetExposedObject()),
-                0       // unused by UnregisterAssembly
-            };
-
-            registrationMethod.Call(Args);
-        }
-        GCPROTECT_END();
-    }
-    RETURN;
-}
-
-//*****************************************************************************
-// This entry point is called to register the classes contained inside a
-// COM+ assembly.
-//*****************************************************************************
-STDAPI EEDllRegisterServer(HMODULE hMod)
-{
-
-    CONTRACTL{
-        NOTHROW;
-        GC_TRIGGERS;
-        ENTRY_POINT;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    // Start up the runtime since we are going to use managed code to actually
-    // do the registration.
-    IfFailGo(EnsureEEStarted(COINITEE_DEFAULT));
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        InvokeRegServicesMethod(RegServicesMethods_RegisterAssembly, hMod);
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-ErrExit:
-    
-
-    return hr;
-}
-
-//*****************************************************************************
-// This entry point is called to unregister the classes contained inside a
-// COM+ assembly.
-//*****************************************************************************
-STDAPI EEDllUnregisterServer(HMODULE hMod)
-{
-
-    CONTRACTL{
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    // Start up the runtime since we are going to use managed code to actually
-    // do the registration.
-    IfFailGo(EnsureEEStarted(COINITEE_DEFAULT));
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    {
-        InvokeRegServicesMethod(RegServicesMethods_UnregisterAssembly, hMod);
-    }
-    END_EXTERNAL_ENTRYPOINT;
-ErrExit:
-
-
-    return hr;
-}
-#endif // FEATURE_COMINTEROP_REGISTRATION
 
 #ifdef FEATURE_IPCMAN
 extern CCLRSecurityAttributeManager s_CLRSecurityAttributeManager;

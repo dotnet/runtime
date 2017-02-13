@@ -27,9 +27,6 @@
 #include "threads.h"
 #include "interoputil.h"
 #include "tlbexport.h"
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include "comtypelibconverter.h"
-#endif
 #include "comdelegate.h"
 #include "olevariant.h"
 #include "eeconfig.h"

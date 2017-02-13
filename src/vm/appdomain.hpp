@@ -19,9 +19,6 @@
 #include "assembly.hpp"
 #include "clsload.hpp"
 #include "eehash.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
@@ -31,9 +28,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
-#endif // FEATURE_VERSIONING
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1334,16 +1329,10 @@ public:
 
     BOOL ContainsOBJECTHANDLE(OBJECTHANDLE handle);
 
-#ifdef FEATURE_FUSION
-    IApplicationContext *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
-#else
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
     
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
-#endif
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1388,16 +1377,10 @@ protected:
     // Fusion context, used for adding assemblies to the is domain. It defines
     // fusion properties for finding assemblyies such as SharedBinPath,
     // PrivateBinPath, Application Directory, etc.
-#ifdef FEATURE_FUSION    
-    IApplicationContext* m_pFusionContext; // Binding context for the domain
-#else
     IUnknown *m_pFusionContext; // Current binding context for the domain
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
-#endif    
 
     HandleTableBucket *m_hHandleTableBucket;
 
@@ -1413,7 +1396,7 @@ protected:
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
     
-    // WinRT binder (only in classic = non-AppX; AppX has the WinRT binder inside code:CLRPrivBinderAppX)
+    // WinRT binder
     PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
 
@@ -1789,9 +1772,7 @@ public:
 protected:
     DWORD m_type;
     LPVOID m_value;
-#if FEATURE_VERSIONING    
     ULONG   m_uIdentityHash;
-#endif
 };
 #endif // FEATURE_LOADER_OPTIMIZATION
 
@@ -1801,9 +1782,6 @@ protected:
 struct FailedAssembly {
     SString displayName;
     SString location;
-#ifdef FEATURE_FUSION    
-    LOADCTX_TYPE context;
-#endif
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1826,9 +1804,6 @@ struct FailedAssembly {
         // If the parent hasn't been set but the code base has, use LoadFrom.
         // Otherwise, use the default.
         //
-#ifdef FEATURE_FUSION        
-        context = pSpec->GetParentIAssembly() ? pSpec->GetParentIAssembly()->GetFusionLoadContext() : LOADCTX_TYPE_LOADFROM;
-#endif // FEATURE_FUSION
     }
 };
 
@@ -1987,7 +1962,7 @@ public:
 
 #if defined(FEATURE_COMINTEROP)
     HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
-#endif // FEATURE_CORECLR && FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
     BOOL CanReversePInvokeEnter();
     void SetReversePInvokeCannotEnter();
@@ -2398,12 +2373,6 @@ public:
     DomainFile *LoadDomainNeutralModuleDependency(Module *pModule, FileLoadLevel targetLevel);
 #endif
 
-#ifdef FEATURE_FUSION
-    PEAssembly *BindExplicitAssembly(HMODULE hMod, BOOL bindable);
-    Assembly *LoadExplicitAssembly(HMODULE hMod, BOOL bindable);
-    void GetFileFromFusion(IAssembly *pIAssembly, LPCWSTR wszModuleName,
-                           SString &path);
-#endif
     // private:
     void LoadSystemAssemblies();
 
@@ -2558,19 +2527,11 @@ public:
 
     //****************************************************************************************
     //
-#ifdef FEATURE_FUSION    
-    static BOOL SetContextProperty(IApplicationContext* pFusionContext,
-                                   LPCWSTR pProperty,
-                                   OBJECTREF* obj);
-#endif
     //****************************************************************************************
     //
     // Uses the first assembly to add an application base to the Context. This is done
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
-#ifdef FEATURE_FUSION    
-    LPWSTR GetDynamicDir();
-#endif
 #ifndef DACCESS_COMPILE
     void OnAssemblyLoad(Assembly *assem);
     void OnAssemblyLoadUnlocked(Assembly *assem);
@@ -2765,15 +2726,8 @@ public:
 
     void InitializeDomainContext(BOOL allowRedirects, LPCWSTR pwszPath, LPCWSTR pwszConfig);
 
-#ifdef FEATURE_FUSION
-    IApplicationContext *CreateFusionContext();
-    void SetupLoaderOptimization(DWORD optimization);
-#endif
-#ifdef FEATURE_VERSIONING
     IUnknown *CreateFusionContext();
-#endif // FEATURE_VERSIONING
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     void OverrideDefaultContextBinder(IUnknown *pOverrideBinder)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2784,7 +2738,6 @@ public:
         m_pFusionContext = pOverrideBinder;
     }
     
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #ifdef FEATURE_PREJIT
     CorCompileConfigFlags GetNativeConfigFlags();
@@ -2803,9 +2756,6 @@ public:
     //****************************************************************************************
     // Manage a pool of asyncrhonous objects used to fetch assemblies.  When a sink is released
     // it places itself back on the pool list.  Only one object is kept in the pool.
-#ifdef FEATURE_FUSION
-    AssemblySink* AllocateAssemblySink(AssemblySpec* pSpec);
-#endif
     void SetIsUserCreatedDomain()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3402,15 +3352,9 @@ private:
 
     void InitializeDefaultDomainManager ();
 
-#ifdef FEATURE_CLICKONCE
-    void InitializeDefaultClickOnceDomain();
-#endif // FEATURE_CLICKONCE
 
     void InitializeDefaultDomainSecurity();
 public:
-#ifdef FEATURE_CLICKONCE
-    BOOL IsClickOnceAppDomain();
-#endif // FEATURE_CLICKONCE
 
 protected:
     BOOL PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
@@ -3780,19 +3724,14 @@ private:
     // Stub caches for Method stubs
     //---------------------------------------------------------
 
-#ifdef FEATURE_FUSION
-    void TurnOnBindingRedirects();
-#endif
 public:
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 private:
     Volatile<BOOL> m_fIsBindingModelLocked;
 public:
     BOOL IsHostAssemblyResolverInUse();
     BOOL IsBindingModelLocked();
     BOOL LockBindingModel();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 
@@ -4406,9 +4345,6 @@ public:
 
     //****************************************************************************************
     // return the dev path
-#ifdef FEATURE_FUSION    
-    void GetDevpathW(__out_ecount_opt(1) LPWSTR* pPath, DWORD* pSize);
-#endif
 
 #ifndef DACCESS_COMPILE
     void IncrementNumAppDomains ()
@@ -4711,15 +4647,8 @@ private:
 
     InlineSString<100>  m_BaseLibrary;
 
-#ifdef FEATURE_VERSIONING
-
     InlineSString<100>  m_SystemDirectory;
 
-#else
-
-    LPCWSTR             m_SystemDirectory;
-
-#endif
 
     LPWSTR      m_pwDevpath;
     DWORD       m_dwDevpath;

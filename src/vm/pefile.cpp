@@ -15,10 +15,6 @@
 #include "eecontract.h"
 #include "apithreadstress.h"
 #include "eeconfig.h"
-#ifdef FEATURE_FUSION
-#include "fusionpriv.h"
-#include "shlwapi.h"
-#endif
 #include "product_version.h"
 #include "eventtrace.h"
 #include "security.h"
@@ -32,14 +28,10 @@
 #endif
 #include "strongnameinternal.h"
 
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
-#endif
 
-#ifndef FEATURE_FUSION
 #include "clrprivbinderutil.h"
 #include "../binder/inc/coreclrbindercommon.h"
-#endif
 
 
 #ifdef FEATURE_PREJIT
@@ -52,11 +44,6 @@ SVAL_IMPL_INIT(DWORD, PEFile, s_NGENDebugFlags, 0);
 
 #include "sha1.h"
 
-#if defined(FEATURE_FUSION)
-#include "clrprivbinderfusion.h"
-#include "clrprivbinderappx.h"
-#include "clrprivbinderloadfile.h" 
-#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -86,9 +73,7 @@ PEFile::PEFile(PEImage *identity, BOOL fCheckAuthenticodeSignature/*=TRUE*/) :
     m_flags(0),
     m_fStrongNameVerified(FALSE)
     ,m_pHostAssembly(nullptr)
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     ,m_pFallbackLoadContextBinder(nullptr)
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 {
     CONTRACTL
     {
@@ -1335,19 +1320,6 @@ static void RuntimeVerifyVLog(DWORD level, LoggableAssembly *pLogAsm, const WCHA
         WszOutputDebugString(W("\n"));
     }
 
-#ifdef FEATURE_FUSION
-    IFusionBindLog *pFusionBindLog = pLogAsm->FusionBindLog();
-    if (pFusionBindLog)
-    {
-        pFusionBindLog->LogMessage(0, FUSION_BIND_LOG_CATEGORY_NGEN, message);
-
-        if (level == LL_ERROR) {
-            pFusionBindLog->SetResultCode(FUSION_BIND_LOG_CATEGORY_NGEN, E_FAIL);
-            pFusionBindLog->Flush(g_dwLogLevel, FUSION_BIND_LOG_CATEGORY_NGEN);
-            pFusionBindLog->Flush(g_dwLogLevel, FUSION_BIND_LOG_CATEGORY_DEFAULT);
-        }
-    }
-#endif //FEATURE_FUSION
 }
 
 
@@ -1361,9 +1333,6 @@ static void RuntimeVerifyLog(DWORD level, LoggableAssembly *pLogAsm, const WCHAR
     // Avoid calling RuntimeVerifyVLog unless logging is on
     if (   ((level == LL_ERROR) && IsDebuggerPresent()) 
         || LoggingOn(LF_ZAP, level)
-#ifdef FEATURE_FUSION
-        || (pLogAsm->FusionBindLog() != NULL)
-#endif
        ) 
     {
         va_list args;
@@ -1714,15 +1683,6 @@ BOOL RuntimeVerifyNativeImageDependency(const CORCOMPILE_NGEN_SIGNATURE &ngenSig
                          W("Rejecting native image because native image dependency %s ")
                          W("had a different identity than expected"),
                          displayString.GetUnicode());
-#if (defined FEATURE_PREJIT) && (defined FEATURE_FUSION)
-        if (pLogAsm->FusionBindLog())
-        {
-            if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEFUSION_KEYWORD))
-            { 
-                pLogAsm->FusionBindLog()->ETWTraceLogMessage(ETW::BinderLog::BinderStructs::NGEN_BIND_DEPENDENCY_HAS_DIFFERENT_IDENTITY, pLogAsm->FusionAssemblyName());
-            }
-        }
-#endif
 
         return FALSE;
     }
@@ -2251,169 +2211,6 @@ void PEAssembly::Attach()
     STANDARD_VM_CONTRACT;
 }
 
-#ifdef FEATURE_FUSION
-PEAssembly::PEAssembly(PEImage *image,
-                       IMetaDataEmit *pEmit,
-                       IAssembly *pIAssembly,
-                       IBindResult *pNativeFusionAssembly,
-                       PEImage *pPEImageNI,
-                       IFusionBindLog *pFusionLog,
-                       IHostAssembly *pIHostAssembly,
-                       PEFile *creator,
-                       BOOL system,
-                       BOOL introspectionOnly/*=FALSE*/,
-                       ICLRPrivAssembly * pHostAssembly)
-      : PEFile(image, FALSE),
-        m_creator(NULL),
-        m_pFusionAssemblyName(NULL),
-        m_pFusionAssembly(NULL),
-        m_pFusionLog(NULL),
-        m_bFusionLogEnabled(TRUE),
-        m_pIHostAssembly(NULL),
-        m_pNativeAssemblyLocation(NULL),
-        m_pNativeImageClosure(NULL),
-        m_fStrongNameBypassed(FALSE)
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        PRECONDITION(CheckPointer(image, NULL_OK));
-        PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(image != NULL || pEmit != NULL);
-        PRECONDITION(CheckPointer(pIAssembly, NULL_OK));
-        PRECONDITION(CheckPointer(pFusionLog, NULL_OK));
-        PRECONDITION(CheckPointer(pIHostAssembly, NULL_OK));
-        PRECONDITION(CheckPointer(creator, NULL_OK));
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;    
-
-    if (introspectionOnly)
-    {
-        if (!system)  // Implementation restriction: mscorlib.dll cannot be loaded as introspection. The architecture depends on there being exactly one mscorlib.
-        {
-            m_flags |= PEFILE_INTROSPECTIONONLY;
-#ifdef FEATURE_PREJIT
-            SetCannotUseNativeImage();
-#endif // FEATURE_PREJIT
-        }
-    }
-
-    if (pIAssembly)
-    {
-        m_pFusionAssembly = pIAssembly;
-        pIAssembly->AddRef();
-
-        IfFailThrow(pIAssembly->GetAssemblyNameDef(&m_pFusionAssemblyName));
-    }
-    else if (pIHostAssembly)
-    {
-        m_flags |= PEFILE_ISTREAM;
-#ifdef FEATURE_PREJIT
-        m_fCanUseNativeImage = FALSE;
-#endif // FEATURE_PREJIT
-
-        m_pIHostAssembly = pIHostAssembly;
-        pIHostAssembly->AddRef();
-
-        IfFailThrow(pIHostAssembly->GetAssemblyNameDef(&m_pFusionAssemblyName));
-    }
-
-    if (pFusionLog)
-    {
-        m_pFusionLog = pFusionLog;
-        pFusionLog->AddRef();
-    }
-
-    if (creator)
-    {
-        m_creator = creator;
-        creator->AddRef();
-    }
-
-    m_flags |= PEFILE_ASSEMBLY;
-    if (system)
-        m_flags |= PEFILE_SYSTEM;
-
-#ifdef FEATURE_PREJIT
-    // Find the native image
-    if (pIAssembly)
-    {
-        if (pNativeFusionAssembly != NULL)
-            SetNativeImage(pNativeFusionAssembly);
-    }
-    // Only one of pNativeFusionAssembly and pPEImageNI may be set.
-    _ASSERTE(!(pNativeFusionAssembly && pPEImageNI));
-
-    if (pPEImageNI != NULL)
-        this->PEFile::SetNativeImage(pPEImageNI);
-#endif  // FEATURE_PREJIT
-
-    // If we have no native image, we require a mapping for the file.
-    if (!HasNativeImage() || !IsILOnly())
-        EnsureImageOpened();
-
-    // Open metadata eagerly to minimize failure windows
-    if (pEmit == NULL)
-        OpenMDImport_Unsafe(); //constructor, cannot race with anything
-    else
-    {
-        _ASSERTE(!m_bHasPersistentMDImport);
-        IfFailThrow(GetMetaDataInternalInterfaceFromPublic(pEmit, IID_IMDInternalImport,
-                                                           (void **)&m_pMDImport));
-        m_pEmitter = pEmit;
-        pEmit->AddRef();
-        m_bHasPersistentMDImport=TRUE;
-        m_MDImportIsRW_Debugger_Use_Only = TRUE;
-    }
-
-    // m_pMDImport can be external
-    // Make sure this is an assembly
-    if (!m_pMDImport->IsValidToken(TokenFromRid(1, mdtAssembly)))
-        ThrowHR(COR_E_ASSEMBLYEXPECTED);
-
-    // Make sure we perform security checks after we've obtained IMDInternalImport interface
-    DoLoadSignatureChecks();
-
-    // Verify name eagerly
-    LPCUTF8 szName = GetSimpleName();
-    if (!*szName)
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_EMPTY_ASSEMDEF_NAME);
-    }
-
-#ifdef FEATURE_PREJIT
-    if (IsResource() || IsDynamic())
-        m_fCanUseNativeImage = FALSE;
-#endif // FEATURE_PREJIT
-
-    if (m_pFusionAssembly)
-    {
-        m_loadContext = m_pFusionAssembly->GetFusionLoadContext();
-        m_pFusionAssembly->GetAssemblyLocation(&m_dwLocationFlags);
-    }
-    else if (pHostAssembly != nullptr)
-    {
-        m_loadContext = LOADCTX_TYPE_HOSTED;
-        m_dwLocationFlags = ASMLOC_UNKNOWN;
-        m_pHostAssembly = clr::SafeAddRef(pHostAssembly); // Should use SetHostAssembly(pHostAssembly) here
-    }
-    else
-    {
-        m_loadContext = LOADCTX_TYPE_UNKNOWN;
-        m_dwLocationFlags = ASMLOC_UNKNOWN;
-    }
-
-    TESTHOOKCALL(CompletedNativeImageBind(image,szName,HasNativeImage()));
-
-#if _DEBUG
-    GetCodeBaseOrName(m_debugName);
-    m_debugName.Normalize();
-    m_pDebugName = m_debugName;
-#endif
-}
-
-#else // FEATURE_FUSION
 
 PEAssembly::PEAssembly(
                 CoreBindResult* pBindResultInfo, 
@@ -2536,58 +2333,8 @@ PEAssembly::PEAssembly(
                               m_sTextualIdentity);
 #endif
 }
-#endif // FEATURE_FUSION
 
 
-#ifdef FEATURE_FUSION
-
-PEAssembly *PEAssembly::Open(
-    PEAssembly *pParentAssembly,
-    PEImage *pPEImageIL,
-    BOOL isIntrospectionOnly)
-{
-    STANDARD_VM_CONTRACT;
-    PEAssembly * pPEAssembly = new PEAssembly(
-        pPEImageIL, // PEImage
-        nullptr,    // IMetaDataEmit
-        nullptr,    // IAssembly
-        nullptr,    // IBindResult pNativeFusionAssembly
-        nullptr,    // PEImage *pNIImage
-        nullptr,    // IFusionBindLog
-        nullptr,    // IHostAssembly
-        pParentAssembly,    // creator
-        FALSE,      // isSystem
-        isIntrospectionOnly,      // isIntrospectionOnly
-        NULL);
-
-    return pPEAssembly;
-}
-
-PEAssembly *PEAssembly::Open(
-    PEAssembly *       pParent,
-    PEImage *          pPEImageIL, 
-    PEImage *          pPEImageNI, 
-    ICLRPrivAssembly * pHostAssembly, 
-    BOOL               fIsIntrospectionOnly)
-{
-    STANDARD_VM_CONTRACT;
-    PEAssembly * pPEAssembly = new PEAssembly(
-        pPEImageIL, // PEImage
-        nullptr,    // IMetaDataEmit
-        nullptr,    // IAssembly
-        nullptr,    // IBindResult pNativeFusionAssembly
-        pPEImageNI, // Native Image PEImage
-        nullptr,    // IFusionBindLog
-        nullptr,    // IHostAssembly
-        pParent,    // creator
-        FALSE,      // isSystem
-        fIsIntrospectionOnly, 
-        pHostAssembly);
-
-    return pPEAssembly;
-}
-
-#else //FEATURE_FUSION
 
 PEAssembly *PEAssembly::Open(
     PEAssembly *       pParent,
@@ -2611,7 +2358,6 @@ PEAssembly *PEAssembly::Open(
     return pPEAssembly;
 }
 
-#endif // FEATURE_FUSION
 
 PEAssembly::~PEAssembly()
 {
@@ -2625,22 +2371,6 @@ PEAssembly::~PEAssembly()
     CONTRACTL_END;
 
     GCX_PREEMP();
-#ifdef FEATURE_FUSION    
-    if (m_pFusionAssemblyName != NULL)
-        m_pFusionAssemblyName->Release();
-    if (m_pFusionAssembly != NULL)
-        m_pFusionAssembly->Release();
-    if (m_pIHostAssembly != NULL)
-        m_pIHostAssembly->Release();
-    if (m_pNativeAssemblyLocation != NULL)
-    {
-        m_pNativeAssemblyLocation->Release();
-    }
-    if (m_pNativeImageClosure!=NULL)
-        m_pNativeImageClosure->Release();
-    if (m_pFusionLog != NULL)
-        m_pFusionLog->Release();
-#endif // FEATURE_FUSION
     if (m_creator != NULL)
         m_creator->Release();
 
@@ -2659,35 +2389,6 @@ void PEAssembly::ReleaseIL()
     CONTRACTL_END;
 
     GCX_PREEMP();
-#ifdef FEATURE_FUSION
-    if (m_pFusionAssemblyName != NULL)
-    {
-        m_pFusionAssemblyName->Release();
-        m_pFusionAssemblyName=NULL;
-    }
-    if (m_pFusionAssembly != NULL)
-    {
-        m_pFusionAssembly->Release();
-        m_pFusionAssembly=NULL;
-    }
-    if (m_pIHostAssembly != NULL)
-    {
-        m_pIHostAssembly->Release();
-        m_pIHostAssembly=NULL;
-    }
-    if (m_pNativeAssemblyLocation != NULL)
-    {
-        m_pNativeAssemblyLocation->Release();
-        m_pNativeAssemblyLocation=NULL;
-    }
-    _ASSERTE(m_pNativeImageClosure==NULL);
-    
-    if (m_pFusionLog != NULL)
-    {
-        m_pFusionLog->Release();
-        m_pFusionLog=NULL;
-    }
-#endif // FEATURE_FUSION
     if (m_creator != NULL)
     {
         m_creator->Release();
@@ -2700,11 +2401,7 @@ void PEAssembly::ReleaseIL()
 
 /* static */
 
-#ifdef FEATURE_FUSION
-PEAssembly *PEAssembly::OpenSystem(IApplicationContext * pAppCtx)
-#else
 PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
-#endif
 {
     STANDARD_VM_CONTRACT;
 
@@ -2729,11 +2426,7 @@ PEAssembly *PEAssembly::OpenSystem(IUnknown * pAppCtx)
 }
 
 /* static */
-#ifdef FEATURE_FUSION
-PEAssembly *PEAssembly::DoOpenSystem(IApplicationContext * pAppCtx)
-#else
 PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
-#endif
 {
     CONTRACT(PEAssembly *)
     {
@@ -2742,84 +2435,6 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     }
     CONTRACT_END;
 
-#ifdef FEATURE_FUSION
-    SafeComHolder<IAssemblyName> pName;
-    IfFailThrow(CreateAssemblyNameObject(&pName, W("mscorlib"), 0, NULL));
-
-    UINT64 publicKeyValue = I64(CONCAT_MACRO(0x, VER_ECMA_PUBLICKEY));
-    BYTE publicKeyToken[8] =
-        {
-            (BYTE) (publicKeyValue>>56),
-            (BYTE) (publicKeyValue>>48),
-            (BYTE) (publicKeyValue>>40),
-            (BYTE) (publicKeyValue>>32),
-            (BYTE) (publicKeyValue>>24),
-            (BYTE) (publicKeyValue>>16),
-            (BYTE) (publicKeyValue>>8),
-            (BYTE) (publicKeyValue),
-        };
-
-    IfFailThrow(pName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN, publicKeyToken, sizeof(publicKeyToken)));
-
-    USHORT version = VER_ASSEMBLYMAJORVERSION;
-    IfFailThrow(pName->SetProperty(ASM_NAME_MAJOR_VERSION, &version, sizeof(version)));
-    version = VER_ASSEMBLYMINORVERSION;
-    IfFailThrow(pName->SetProperty(ASM_NAME_MINOR_VERSION, &version, sizeof(version)));
-    version = VER_ASSEMBLYBUILD;
-    IfFailThrow(pName->SetProperty(ASM_NAME_BUILD_NUMBER, &version, sizeof(version)));
-    version = VER_ASSEMBLYBUILD_QFE;
-    IfFailThrow(pName->SetProperty(ASM_NAME_REVISION_NUMBER, &version, sizeof(version)));
-
-    IfFailThrow(pName->SetProperty(ASM_NAME_CULTURE, W(""), sizeof(WCHAR)));
-
-#ifdef FEATURE_PREJIT
-#ifdef PROFILING_SUPPORTED
-    if (NGENImagesAllowed())
-    {
-        // Binding flags, zap string
-        CorCompileConfigFlags configFlags = PEFile::GetNativeImageConfigFlagsWithOverrides();
-        IfFailThrow(pName->SetProperty(ASM_NAME_CONFIG_MASK, &configFlags, sizeof(configFlags)));
-
-        LPCWSTR configString = g_pConfig->ZapSet();
-        IfFailThrow(pName->SetProperty(ASM_NAME_CUSTOM, (PVOID)configString,
-                                        (DWORD) (wcslen(configString)+1)*sizeof(WCHAR)));
-
-        // @TODO: Need some fuslogvw logging here
-    }
-#endif //PROFILING_SUPPORTED
-#endif // FEATURE_PREJIT
-
-    SafeComHolder<IAssembly> pIAssembly;
-    SafeComHolder<IBindResult> pNativeFusionAssembly;
-    SafeComHolder<IFusionBindLog> pFusionLog;
-
-    {
-        ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
-        IfFailThrow(BindToSystem(pName, SystemDomain::System()->SystemDirectory(), NULL, pAppCtx, &pIAssembly, &pNativeFusionAssembly, &pFusionLog));
-    }
-
-    StackSString path;
-    FusionBind::GetAssemblyManifestModulePath(pIAssembly, path);
-
-    // Open the image with no required mapping.  This will be
-    // promoted to a real open if we don't have a native image.
-    PEImageHolder image (PEImage::OpenImage(path));
-
-    PEAssembly* pPEAssembly = new PEAssembly(image, NULL, pIAssembly,pNativeFusionAssembly, NULL, pFusionLog, NULL, NULL, TRUE, FALSE);
-
-#ifdef FEATURE_APPX_BINDER
-    if (AppX::IsAppXProcess())
-    {
-        // Since mscorlib is loaded as a special case, create and assign an ICLRPrivAssembly for the new PEAssembly here.
-        CLRPrivBinderAppX *   pBinder = CLRPrivBinderAppX::GetOrCreateBinder();
-        CLRPrivBinderFusion * pFusionBinder = pBinder->GetFusionBinder();
-        
-        pFusionBinder->BindMscorlib(pPEAssembly);
-    }
-#endif
-    
-    RETURN pPEAssembly;
-#else // FEATURE_FUSION
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     CoreBindResult bindResult;
     ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
@@ -2830,153 +2445,8 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     }
 
     RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE, FALSE);
-#endif // FEATURE_FUSION
 }
 
-#ifdef FEATURE_FUSION
-/* static */
-PEAssembly *PEAssembly::Open(IAssembly *pIAssembly,
-                             IBindResult *pNativeFusionAssembly,
-                             IFusionBindLog *pFusionLog/*=NULL*/,
-                             BOOL isSystemAssembly/*=FALSE*/,
-                             BOOL isIntrospectionOnly/*=FALSE*/)
-{
-    STANDARD_VM_CONTRACT;
-
-    PEAssembly *result = NULL;
-    EX_TRY
-    {
-        result = DoOpen(pIAssembly, pNativeFusionAssembly, pFusionLog, isSystemAssembly, isIntrospectionOnly);
-    }
-    EX_HOOK
-    {
-        Exception *ex = GET_EXCEPTION();
-
-        // Rethrow non-transient exceptions as file load exceptions with proper
-        // context
-        if (!ex->IsTransient())
-            EEFileLoadException::Throw(pIAssembly, NULL, ex->GetHR(), ex);
-    }
-    EX_END_HOOK;
-
-    return result;
-}
-
-// Thread stress
-class DoOpenIAssemblyStress : APIThreadStress
-{
-public:
-    IAssembly *pIAssembly;
-    IBindResult *pNativeFusionAssembly;
-    IFusionBindLog *pFusionLog;
-    DoOpenIAssemblyStress(IAssembly *pIAssembly, IBindResult *pNativeFusionAssembly, IFusionBindLog *pFusionLog)
-          : pIAssembly(pIAssembly), pNativeFusionAssembly(pNativeFusionAssembly),pFusionLog(pFusionLog) {LIMITED_METHOD_CONTRACT;}
-    void Invoke()
-    {
-        WRAPPER_NO_CONTRACT;
-        PEAssemblyHolder result (PEAssembly::Open(pIAssembly, pNativeFusionAssembly, pFusionLog, FALSE, FALSE));
-    }
-};
-
-/* static */
-PEAssembly *PEAssembly::DoOpen(IAssembly *pIAssembly,
-                               IBindResult *pNativeFusionAssembly,
-                               IFusionBindLog *pFusionLog,
-                               BOOL isSystemAssembly,
-                               BOOL isIntrospectionOnly/*=FALSE*/)
-{
-    CONTRACT(PEAssembly *)
-    {
-        PRECONDITION(CheckPointer(pIAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
-        STANDARD_VM_CHECK;
-    }
-    CONTRACT_END;
-
-    DoOpenIAssemblyStress ts(pIAssembly,pNativeFusionAssembly,pFusionLog);
-
-    PEImageHolder image;
-
-    StackSString path;
-    FusionBind::GetAssemblyManifestModulePath(pIAssembly, path);
-
-    // Open the image with no required mapping.  This will be
-    // promoted to a real open if we don't have a native image.
-    image = PEImage::OpenImage(path, MDInternalImport_NoCache); // "identity" does not need to be cached 
-
-    PEAssemblyHolder assembly (new PEAssembly(image, NULL, pIAssembly, pNativeFusionAssembly, NULL, pFusionLog,
-                                               NULL, NULL, isSystemAssembly, isIntrospectionOnly));
-
-    RETURN assembly.Extract();
-}
-
-/* static */
-PEAssembly *PEAssembly::Open(IHostAssembly *pIHostAssembly, BOOL isSystemAssembly, BOOL isIntrospectionOnly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PEAssembly *result = NULL;
-
-    EX_TRY
-    {
-        result = DoOpen(pIHostAssembly, isSystemAssembly, isIntrospectionOnly);
-    }
-    EX_HOOK
-    {
-        Exception *ex = GET_EXCEPTION();
-
-        // Rethrow non-transient exceptions as file load exceptions with proper
-        // context
-
-        if (!ex->IsTransient())
-            EEFileLoadException::Throw(NULL, pIHostAssembly, ex->GetHR(), ex);
-    }
-    EX_END_HOOK;
-    return result;
-}
-
-// Thread stress
-class DoOpenIHostAssemblyStress : APIThreadStress
-{
-public:
-    IHostAssembly *pIHostAssembly;
-    DoOpenIHostAssemblyStress(IHostAssembly *pIHostAssembly) :
-        pIHostAssembly(pIHostAssembly) {LIMITED_METHOD_CONTRACT;}
-    void Invoke()
-    {
-        WRAPPER_NO_CONTRACT;
-        PEAssemblyHolder result (PEAssembly::Open(pIHostAssembly, FALSE, FALSE));
-    }
-};
-
-/* static */
-PEAssembly *PEAssembly::DoOpen(IHostAssembly *pIHostAssembly, BOOL isSystemAssembly,
-                               BOOL isIntrospectionOnly)
-{
-    CONTRACT(PEAssembly *)
-    {
-        PRECONDITION(CheckPointer(pIHostAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    DoOpenIHostAssemblyStress ts(pIHostAssembly);
-
-    UINT64 AssemblyId;
-    IfFailThrow(pIHostAssembly->GetAssemblyId(&AssemblyId));
-
-    PEImageHolder image(PEImage::FindById(AssemblyId, 0));
-
-    PEAssemblyHolder assembly (new PEAssembly(image, NULL, NULL, NULL, NULL, NULL,
-                                              pIHostAssembly, NULL, isSystemAssembly, isIntrospectionOnly));
-
-    RETURN assembly.Extract();
-}
-#endif // FEATURE_FUSION
 
 #ifndef CROSSGEN_COMPILE
 /* static */
@@ -3059,16 +2529,12 @@ PEAssembly *PEAssembly::DoOpenMemory(
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
 
-#ifdef FEATURE_FUSION    
-    RETURN new PEAssembly(image, NULL, NULL, NULL, NULL, NULL, NULL, pParentAssembly, FALSE, isIntrospectionOnly);
-#else
     CoreBindResult bindResult;
     ReleaseHolder<ICLRPrivAssembly> assembly;
     IfFailThrow(CCoreCLRBinderHelper::GetAssemblyFromImage(image, NULL, &assembly));
     bindResult.Init(assembly,FALSE,FALSE);
 
     RETURN new PEAssembly(&bindResult, NULL, pParentAssembly, FALSE, isIntrospectionOnly);
-#endif
 }
 #endif // !CROSSGEN_COMPILE
 
@@ -3153,7 +2619,6 @@ PEAssembly *PEAssembly::DoOpenHMODULE(HMODULE hMod,
 #endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE
 
 
-#ifndef FEATURE_FUSION
 PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,
                                    BOOL isSystem, BOOL isIntrospectionOnly)
 {
@@ -3161,7 +2626,6 @@ PEAssembly* PEAssembly::Open(CoreBindResult* pBindResult,
     return new PEAssembly(pBindResult,NULL,NULL,isSystem,isIntrospectionOnly);
 
 };
-#endif
 
 /* static */
 PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
@@ -3181,99 +2645,14 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-#ifdef FEATURE_FUSION
-    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-    if (pParentAssembly->HasHostAssembly())
-    {
-        // Dynamic assemblies in AppX use their parent's ICLRPrivAssembly as the binding context.
-        pPrivAssembly = clr::SafeAddRef(new CLRPrivBinderUtil::CLRPrivBinderAsAssemblyWrapper(
-            pParentAssembly->GetHostAssembly()));
-    }
-
-    PEAssemblyHolder pFile(new PEAssembly(
-        NULL, pEmit, NULL, NULL, NULL, NULL, NULL, pParentAssembly,
-        FALSE, bIsIntrospectionOnly,
-        pPrivAssembly));
-#else
     PEAssemblyHolder pFile(new PEAssembly(NULL, pEmit, pParentAssembly, FALSE, bIsIntrospectionOnly));
-#endif
     RETURN pFile.Extract();
 }
 
 
 #ifdef FEATURE_PREJIT
 
-#ifdef FEATURE_FUSION
-BOOL PEAssembly::HasEqualNativeClosure(DomainAssembly * pDomainAssembly)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pDomainAssembly));
-    }
-    CONTRACTL_END;
-    if (IsSystem())
-        return TRUE;
-    HRESULT hr = S_OK;
 
-
-    if (m_pNativeImageClosure == NULL)
-        return FALSE;
-
-    // ensure theclosures are walked
-    IAssemblyBindingClosure * pClosure = pDomainAssembly->GetAssemblyBindingClosure(LEVEL_COMPLETE);
-    _ASSERTE(pClosure != NULL);
-
-    if (m_pNativeImageClosure->HasBeenWalked(LEVEL_COMPLETE) != S_OK )
-    {
-        GCX_COOP();
-
-        ENTER_DOMAIN_PTR(SystemDomain::System()->DefaultDomain(),ADV_DEFAULTAD);
-        {
-            GCX_PREEMP();
-            IfFailThrow(m_pNativeImageClosure->EnsureWalked(GetFusionAssembly(),GetAppDomain()->GetFusionContext(),LEVEL_COMPLETE));
-        }
-        END_DOMAIN_TRANSITION;
-    }
-
-
-    hr = pClosure->IsEqual(m_pNativeImageClosure);
-    IfFailThrow(hr);
-    return (hr == S_OK);
-}
-#endif //FEATURE_FUSION
-
-#ifdef FEATURE_FUSION
-void PEAssembly::SetNativeImage(IBindResult *pNativeFusionAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    StackSString path;
-    WCHAR pwzPath[MAX_LONGPATH];
-    DWORD dwCCPath = MAX_LONGPATH;
-    ReleaseHolder<IAssemblyLocation> pIAssemblyLocation;
-
-    IfFailThrow(pNativeFusionAssembly->GetAssemblyLocation(&pIAssemblyLocation));
-    IfFailThrow(pIAssemblyLocation->GetPath(pwzPath, &dwCCPath));
-    path.Set(pwzPath);
-
-    PEImageHolder image(PEImage::OpenImage(path));
-    image->Load();
-
-    // For desktop dev11, this verification is now done at native binding time.
-    _ASSERTE(CheckNativeImageVersion(image));
-
-    PEFile::SetNativeImage(image);
-    IfFailThrow(pNativeFusionAssembly->GetAssemblyLocation(&m_pNativeAssemblyLocation));
-}
-#else //FEATURE_FUSION
 void PEAssembly::SetNativeImage(PEImage * image)
 {
     CONTRACTL
@@ -3316,243 +2695,23 @@ void PEAssembly::SetNativeImage(PEImage * image)
         ExternalLog(LL_WARNING, "Native image is not correct version.");
     }
 }
-#endif //FEATURE_FUSION
 
-#ifdef FEATURE_FUSION
-void PEAssembly::ClearNativeImage()
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasNativeImage());
-        POSTCONDITION(!HasNativeImage());
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    PEFile::ClearNativeImage();
-
-    if (m_pNativeAssemblyLocation != NULL)
-        m_pNativeAssemblyLocation->Release();
-    m_pNativeAssemblyLocation = NULL;
-    if (m_pNativeImageClosure != NULL)
-        m_pNativeImageClosure->Release();
-    m_pNativeImageClosure = NULL;
-    RETURN;
-}
-#endif //FEATURE_FUSION
 #endif  // FEATURE_PREJIT
 
 
-#ifdef FEATURE_FUSION
-BOOL PEAssembly::IsBindingCodeBase()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (m_pIHostAssembly != NULL)
-        return FALSE;
-
-    if (m_pFusionAssembly == NULL)
-        return (!GetPath().IsEmpty());
-
-    if (m_dwLocationFlags == ASMLOC_UNKNOWN)
-        return FALSE;
-
-    return ((m_dwLocationFlags & ASMLOC_CODEBASE_HINT) != 0);
-}
-
-BOOL PEAssembly::IsSourceGAC()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ((m_pIHostAssembly != NULL) || (m_pFusionAssembly == NULL))
-    {
-        return FALSE;
-    }
-
-    return ((m_dwLocationFlags & ASMLOC_LOCATION_MASK) == ASMLOC_GAC);
-}
-
-BOOL PEAssembly::IsSourceDownloadCache()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ((m_pIHostAssembly != NULL) || (m_pFusionAssembly == NULL))
-    {
-        return FALSE;
-    }
-    
-    return ((m_dwLocationFlags & ASMLOC_LOCATION_MASK) == ASMLOC_DOWNLOAD_CACHE);
-}
-
-#else // FEATURE_FUSION
 BOOL PEAssembly::IsSourceGAC()
 {
     WRAPPER_NO_CONTRACT;
     return m_bIsFromGAC;
 };
 
-#endif // FEATURE_FUSION
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-BOOL PEAssembly::IsContextLoad()
-{
-    LIMITED_METHOD_CONTRACT;
-    if ((m_pIHostAssembly != NULL) || (m_pFusionAssembly == NULL))
-    {
-        return FALSE;
-    }
-    return (IsSystem() || (m_loadContext == LOADCTX_TYPE_DEFAULT));
-}
-
-LOADCTX_TYPE PEAssembly::GetLoadContext()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_loadContext;
-}
-
-DWORD PEAssembly::GetLocationFlags()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_dwLocationFlags;
-}
-
-#endif
 
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-PEKIND PEAssembly::GetFusionProcessorArchitecture()
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    PEImage * pImage = NULL;
-
-#ifdef FEATURE_PREJIT 
-    pImage = m_nativeImage;
-#endif
-
-    if (pImage == NULL)
-        pImage = GetILimage();
-
-    return pImage->GetFusionProcessorArchitecture();
-}
-
-IAssemblyName * PEAssembly::GetFusionAssemblyName()
-{
-    CONTRACT(IAssemblyName *)
-    {
-        INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    if (m_pFusionAssemblyName == NULL)
-    {
-        AssemblySpec spec;
-        spec.InitializeSpec(this);
-        PEImage * pImage = GetILimage();
-
-#ifdef FEATURE_PREJIT 
-        if ((pImage != NULL) && !pImage->MDImportLoaded())
-            pImage = m_nativeImage;
-#endif
-
-        if (pImage != NULL)
-        {
-            spec.SetPEKIND(pImage->GetFusionProcessorArchitecture());
-        }
-
-        GCX_PREEMP();
-
-        IfFailThrow(spec.CreateFusionName(&m_pFusionAssemblyName, FALSE));
-    }
-
-    RETURN m_pFusionAssemblyName;
-}
-
-// This version of GetFusionAssemlyName that can be used to return the reference in a
-// NOTHROW/NOTRIGGER fashion. This is useful for scenarios where you dont want to invoke the THROWS/GCTRIGGERS
-// version when you know the name would have been created and is available.
-IAssemblyName * PEAssembly::GetFusionAssemblyNameNoCreate()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pFusionAssemblyName;
-}
-
-IAssembly *PEAssembly::GetFusionAssembly()
-{
-    CONTRACT(IAssembly *)
-    {
-        INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    RETURN m_pFusionAssembly;
-}
-
-IHostAssembly *PEAssembly::GetIHostAssembly()
-{
-    CONTRACT(IHostAssembly *)
-    {
-        INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    RETURN m_pIHostAssembly;
-}
-
-IAssemblyLocation *PEAssembly::GetNativeAssemblyLocation()
-{
-    CONTRACT(IAssemblyLocation *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasNativeImage());
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    RETURN m_pNativeAssemblyLocation;
-}
-#endif // FEATURE_FUSION
 
 // ------------------------------------------------------------
 // Hash support
@@ -3576,13 +2735,8 @@ void PEAssembly::VerifyStrongName()
         return;
     }
 
-#ifdef FEATURE_FUSION
-    // System and dynamic assemblies don't need hash checks
-    if (IsSystem() || IsDynamic())
-#else
     // Without FUSION/GAC, we need to verify SN on all assemblies, except dynamic assemblies.
     if (IsDynamic())
-#endif
     {
 
         m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
@@ -3591,38 +2745,6 @@ void PEAssembly::VerifyStrongName()
     }
 
     // Next, verify the strong name, if necessary
-#ifdef FEATURE_FUSION
-    // See if the assembly comes from a secure location
-    IAssembly *pFusionAssembly = GetAssembly()->GetFusionAssembly();
-    if (pFusionAssembly)
-    {
-        DWORD dwLocation;
-        IfFailThrow(pFusionAssembly->GetAssemblyLocation(&dwLocation));
-
-        switch (dwLocation & ASMLOC_LOCATION_MASK)
-        {
-        case ASMLOC_GAC:
-        case ASMLOC_DOWNLOAD_CACHE:
-        case ASMLOC_DEV_OVERRIDE:
-            // Assemblies from the GAC or download cache have
-            // already been verified by Fusion.
-            m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-            m_fStrongNameVerified = TRUE;
-            return;
-
-        case ASMLOC_RUN_FROM_SOURCE:
-        case ASMLOC_UNKNOWN:
-            // For now, just verify these every time, we need to
-            // cache the fact that at least one verification has
-            // been performed (if strong name policy permits
-            // caching of verification results)
-            break;
-
-        default:
-            UNREACHABLE();
-        }
-    }
-#endif
 
     // Check format of image. Note we must delay this until after the GAC status has been
     // checked, to handle the case where we are not loading m_image.
@@ -3733,29 +2855,6 @@ void PEAssembly::GetCodeBase(SString &result, BOOL fCopiedName/*=FALSE*/)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-#ifdef FEATURE_FUSION
-    // For a copied name, we always use the actual file path rather than the fusion info
-    if (!fCopiedName && m_pFusionAssembly)
-    {
-        if ( ((m_dwLocationFlags & ASMLOC_LOCATION_MASK) == ASMLOC_RUN_FROM_SOURCE) ||
-             ((m_dwLocationFlags & ASMLOC_LOCATION_MASK) == ASMLOC_DOWNLOAD_CACHE) )
-        {
-            // Assemblies in the download cache or run from source should have
-            // a proper codebase set in them.
-            FusionBind::GetAssemblyNameStringProperty(GetFusionAssemblyName(),
-                                                      ASM_NAME_CODEBASE_URL,
-                                                      result);
-            return;
-        }
-    }
-    else if (m_pIHostAssembly)
-    {
-        FusionBind::GetAssemblyNameStringProperty(GetFusionAssemblyName(),
-                                                  ASM_NAME_CODEBASE_URL,
-                                                  result);
-        return;
-    }
-#endif    
 
     // All other cases use the file path.
     result.Set(GetEffectivePath());
@@ -3871,21 +2970,6 @@ void PEAssembly::ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_
 
     PEFile::ExternalVLog(facility, level, fmt, args);
 
-#ifdef FEATURE_FUSION
-    if (FusionLoggingEnabled())
-    {
-        DWORD dwLogCategory = (facility == LF_ZAP ? FUSION_BIND_LOG_CATEGORY_NGEN : FUSION_BIND_LOG_CATEGORY_DEFAULT);
-
-        StackSString message;
-        message.VPrintf(fmt, args);
-        m_pFusionLog->LogMessage(0, dwLogCategory, message);
-
-        if (level == LL_ERROR) {
-            m_pFusionLog->SetResultCode(dwLogCategory, E_FAIL);
-            FlushExternalLog();
-        }
-    }
-#endif //FEATURE_FUSION
 
     RETURN;
 }
@@ -3899,12 +2983,6 @@ void PEAssembly::FlushExternalLog()
     }
     CONTRACT_END;
 
-#ifdef FEATURE_FUSION
-    if (FusionLoggingEnabled()) {
-        m_pFusionLog->Flush(g_dwLogLevel,  FUSION_BIND_LOG_CATEGORY_NGEN);
-        m_pFusionLog->Flush(g_dwLogLevel,  FUSION_BIND_LOG_CATEGORY_DEFAULT);
-    }
-#endif //FEATURE_FUSION
 
     RETURN;
 }
@@ -4181,22 +3259,6 @@ PEModule *PEModule::DoOpen(PEAssembly *assembly, mdFile token,
     IfFailThrow(assembly->GetPersistentMDImport()->GetFileProps(token, NULL, NULL, NULL, &flags));
     
     PEImageHolder image;
-#ifdef FEATURE_FUSION
-    if (assembly->IsIStream())
-    {
-        SafeComHolder<IHostAssemblyModuleImport> pModuleImport;
-        IfFailThrow(assembly->GetIHostAssembly()->GetModuleByName(fileName, &pModuleImport));
-        
-        SafeComHolder<IStream> pIStream;
-        IfFailThrow(pModuleImport->GetModuleStream(&pIStream));
-        
-        DWORD dwModuleId;
-        IfFailThrow(pModuleImport->GetModuleId(&dwModuleId));
-        image = PEImage::OpenImage(pIStream, assembly->m_identity->m_StreamAsmId,
-                                   dwModuleId, (flags & ffContainsNoMetaData));
-    }
-    else
-#endif
     {
         image = PEImage::OpenImage(fileName);
     }

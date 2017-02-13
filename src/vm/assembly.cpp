@@ -22,11 +22,6 @@
 #include "perfcounters.h"
 #include "assemblyname.hpp"
 
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#include "assemblysink.h"
-#include "ngenoptout.h"
-#endif
 
 
 #include "eeprofinterfaces.h"
@@ -56,7 +51,6 @@
 #include "customattribute.h"
 #include "winnls.h"
 
-#include "constrainedexecutionregion.h"
 #include "caparser.h"
 #include "../md/compiler/custattr.h"
 #include "mdaassistants.h"
@@ -153,9 +147,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_fIsDomainNeutral(pDomain == SharedDomain::GetDomain()),
 #ifdef FEATURE_LOADER_OPTIMIZATION
     m_bMissingDependenciesCheckDone(FALSE),
-#ifdef FEATURE_FUSION
-    m_pBindingClosure(NULL),
-#endif
 #endif // FEATURE_LOADER_OPTIMIZATION
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE),
@@ -366,12 +357,6 @@ Assembly::~Assembly()
     if (m_pAllowedFiles)
         delete(m_pAllowedFiles);
 #endif 
-#ifdef FEATURE_FUSION
-    if (m_pBindingClosure) 
-    {
-        m_pBindingClosure->Release();
-    }
-#endif
     if (IsDynamic()) {
         if (m_pOnDiskManifest)
             // clear the on disk manifest if it is not cleared yet.
@@ -739,7 +724,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit, args->access & ASSEMBLY_ACCESS_REFLECTION_ONLY);
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
         // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
         // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
@@ -785,7 +769,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         // Set it as the fallback load context binder for the dynamic assembly being created
         pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }            
     
@@ -2488,29 +2471,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
         if (pMeth) {
             RunMainPre();
 
-#if defined(FEATURE_APPX_BINDER) && defined(FEATURE_MULTICOREJIT)
-            if (AppX::IsAppXProcess())
-            {
-                GCX_PREEMP();
-                
-                // we call this to obtain and cache the PRAID value which is used
-                // by multicore JIT manager and watson bucket params generation.
-
-                // NOTE: this makes a COM call into WinRT so we must do this after we've
-                //       set the thread's apartment state which will do CoInitializeEx().
-                LPCWSTR praid;
-                hr = AppX::GetApplicationId(praid);
-                _ASSERTE(SUCCEEDED(hr));
-
-                if (!pMeth->GetModule()->HasNativeImage())
-                {
-                    // For Appx, multicore JIT is only needed when root assembly does not have NI image
-                    // When it has NI image, we can't generate profile, and do not need to playback profile
-                    AppDomain * pDomain = pThread->GetDomain();
-                    pDomain->GetMulticoreJitManager().AutoStartProfileAppx(pDomain);
-                }
-            }
-#endif // FEATURE_APPX_BINDER && FEATURE_MULTICOREJIT
             
             // Set the root assembly as the assembly that is containing the main method
             // The root assembly is used in the GetEntryAssembly method that on CoreCLR is used
@@ -2700,20 +2660,6 @@ PEModule * Assembly::LoadModule_AddRef(mdFile kFile, BOOL fLoadResource)
         {
             GCX_PREEMP();
 
-#ifdef FEATURE_FUSION    // specific to remote modules
-            if (GetFusionAssembly()) {
-                StackSString path;
-                ::GetAppDomain()->GetFileFromFusion(GetFusionAssembly(),
-                                                  (LPCWSTR)name, path);
-                pModule = PEModule::Open(m_pManifestFile, kFile, path);
-                goto lDone;
-            }
-            
-            if (GetIHostAssembly()) {
-                pModule = PEModule::Open(m_pManifestFile, kFile, name);
-                goto lDone;
-            }
-#endif
             if (!m_pManifestFile->GetPath().IsEmpty()) {
                 StackSString path = m_pManifestFile->GetPath();
                 
@@ -2725,9 +2671,6 @@ PEModule * Assembly::LoadModule_AddRef(mdFile kFile, BOOL fLoadResource)
                 }
                 pModule = PEModule::Open(m_pManifestFile, kFile, path);
             }
-#ifdef FEATURE_FUSION        
-        lDone: ;
-#endif
         }
         EX_CATCH
         {
@@ -3071,188 +3014,7 @@ BOOL Assembly::MissingDependenciesCheckDone()
 };
 
 
-#ifdef FEATURE_FUSION
-void Assembly::SetBindingClosure(IAssemblyBindingClosure* pClosure) // Addrefs. It is assumed the caller did not addref pClosure for us.
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
 
-    _ASSERTE(m_pBindingClosure == NULL);
-    _ASSERTE(pClosure != NULL);
-
-    m_pBindingClosure = pClosure;
-    pClosure->AddRef(); // It is assumed the caller did not addref pBindingClosure for us.
-}
-
-IAssemblyBindingClosure * Assembly::GetBindingClosure()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pBindingClosure;
-}
-
-
-// The shared module list is effectively an extension of the shared domain assembly hash table.
-// It is the canonical list and aribiter of modules loaded from this assembly by any app domain.
-// Modules are stored here immediately on creating (to prevent duplicate creation), as opposed to
-// in the rid map, where they are only placed upon load completion.
-
-BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CODESHARING,
-         LL_INFO100,
-         "Checking if we can share: \"%S\" in domain 0x%x.\n",
-         GetDebugName(), pDomainAssembly->GetAppDomain()));
-
-    STRESS_LOG2(LF_CODESHARING, LL_INFO1000,"Checking whether DomainAssembly %p is compatible with Assembly %p",
-        pDomainAssembly,this);
-
-    // We must always share the same system assemblies
-    if (IsSystem())
-    {
-        STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"System assembly - sharing");
-        return TRUE;
-    }
-
-    if ((pDomainAssembly->GetDebuggerInfoBits()&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))
-        != (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO)))
-    {
-        LOG((LF_CODESHARING,
-             LL_INFO100,
-             "We can't share it, desired debugging flags %x are different than %x\n",
-             pDomainAssembly->GetDebuggerInfoBits(), (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))));
-        STRESS_LOG2(LF_CODESHARING, LL_INFO100,"Flags diff= %08x [%08x/%08x]",pDomainAssembly->GetDebuggerInfoBits(),
-                    m_debuggerFlags);
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_DebuggerFlagMismatch;
-        return FALSE;
-    }
-
-    PEAssembly * pDomainAssemblyFile = pDomainAssembly->GetFile();
-    if (pDomainAssemblyFile == NULL)
-    {
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_NullPeassembly;
-        return FALSE;
-    }
-    
-    IAssemblyBindingClosure * pContext = GetBindingClosure();
-    if (pContext == NULL)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"No context 1 - status=%d",pDomainAssemblyFile->IsSystem());
-        if (pDomainAssemblyFile->IsSystem())
-            return TRUE;
-        else
-        {
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingAssemblyClosure1;
-            return FALSE;
-        }
-    }
-
-    IAssemblyBindingClosure * pCurrentContext = pDomainAssembly->GetAssemblyBindingClosure(LEVEL_STARTING);
-    if (pCurrentContext == NULL)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"No context 2 - status=%d",pDomainAssemblyFile->IsSystem());
-        if (pDomainAssemblyFile->IsSystem())
-            return TRUE;
-        else
-        {
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingAssemblyClosure2;
-            return FALSE;
-        }
-    }
-
-    // ensure the closures are walked
-    {
-        ReleaseHolder<IBindResult> pWinRTBindResult;
-        
-        IUnknown * pUnk;
-        if (pDomainAssembly->GetFile()->IsWindowsRuntime())
-        {   // It is .winmd file (WinRT assembly)
-            IfFailThrow(CLRPrivAssemblyWinRT::GetIBindResult(pDomainAssembly->GetFile()->GetHostAssembly(), &pWinRTBindResult));
-            pUnk = pWinRTBindResult;
-        }
-        else
-        {
-            pUnk = pDomainAssembly->GetFile()->GetFusionAssembly();
-        }
-        
-        GCX_PREEMP();
-        IfFailThrow(pCurrentContext->EnsureWalked(pUnk, ::GetAppDomain()->GetFusionContext(), LEVEL_COMPLETE));
-    }
-
-    if ((pContext->HasBeenWalked(LEVEL_COMPLETE) != S_OK) || !MissingDependenciesCheckDone())
-    {
-        GCX_COOP();
-
-        BOOL fMissingDependenciesResolved = FALSE;
-
-        ENTER_DOMAIN_PTR(SystemDomain::System()->DefaultDomain(), ADV_DEFAULTAD);
-        {
-            {
-                ReleaseHolder<IBindResult> pWinRTBindResult;
-        
-                IUnknown * pUnk;
-                if (GetManifestFile()->IsWindowsRuntime())
-                {   // It is .winmd file (WinRT assembly)
-                    IfFailThrow(CLRPrivAssemblyWinRT::GetIBindResult(GetManifestFile()->GetHostAssembly(), &pWinRTBindResult));
-                    pUnk = pWinRTBindResult;
-                }
-                else
-                {
-                    pUnk = GetManifestFile()->GetFusionAssembly();
-                }
-                
-                GCX_PREEMP();
-                IfFailThrow(pContext->EnsureWalked(pUnk, ::GetAppDomain()->GetFusionContext(), LEVEL_COMPLETE));
-            }
-            DomainAssembly * domainAssembly = ::GetAppDomain()->FindDomainAssembly(this);
-            if (domainAssembly != NULL)
-            {
-                if (domainAssembly->CheckMissingDependencies() == CMD_Resolved)
-                {
-                    //cannot share
-                    fMissingDependenciesResolved = TRUE;
-                }
-            }
-        }
-        END_DOMAIN_TRANSITION;
-
-        if (fMissingDependenciesResolved)
-        {
-            STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"Missing dependencies resolved - not sharing");
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingDependenciesResolved;
-            return FALSE;
-        }
-    }
-
-    HRESULT hr = pContext->IsEqual(pCurrentContext);
-    IfFailThrow(hr);
-    if (hr != S_OK)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"Closure comparison returned %08x - not sharing",hr);        
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_ClosureComparisonFailed;
-        return FALSE;
-    }
-
-    LOG((LF_CODESHARING, LL_INFO100, "We can share it : \"%S\"\n", GetDebugName()));
-    STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"Everything is fine - sharing");                
-    return TRUE;
-}
-#endif
-
-#ifdef FEATURE_VERSIONING
 
 BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 {
@@ -3282,11 +3044,10 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
     return TRUE;
 }
 
-#endif // FEATURE_VERSIONING
 
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 BOOL Assembly::AllowUntrustedCaller()
 {
     CONTRACTL
@@ -3299,7 +3060,7 @@ BOOL Assembly::AllowUntrustedCaller()
 
     return ModuleSecurityDescriptor::GetModuleSecurityDescriptor(this)->IsAPTCA();
 }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {
@@ -3614,11 +3375,7 @@ FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
     while (itFullAccessAssemblies.Next())
     {
         FriendAssemblyName_t *pFriendAssemblyName = static_cast<FriendAssemblyName_t *>(itFullAccessAssemblies.GetElement());
-#ifdef FEATURE_FUSION
-        pFriendAssemblyName->Release();
-#else // FEATURE_FUSION
         delete pFriendAssemblyName;
-#endif // FEATURE_FUSION
     }
 }
 
@@ -3703,9 +3460,6 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
 
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
-#ifdef FEATURE_FUSION
-            hr = CreateAssemblyNameObject(&pFriendAssemblyName, displayName.GetUnicode(), CANOF_PARSE_FRIEND_DISPLAY_NAME, NULL);
-#else // FEATURE_FUSION
             StackScratchBuffer buffer;
             pFriendAssemblyName = new FriendAssemblyName_t;
             hr = pFriendAssemblyName->Init(displayName.GetUTF8(buffer));
@@ -3714,7 +3468,6 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
             {
                 hr = pFriendAssemblyName->CheckFriendAssemblyName();
             }
-#endif // FEATURE_FUSION
 
             if (FAILED(hr))
             {
@@ -3793,23 +3546,14 @@ bool FriendAssemblyDescriptor::IsAssemblyOnList(PEAssembly *pAssembly, const Arr
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_FUSION
     AssemblySpec asmDef;
     asmDef.InitializeSpec(pAssembly);
-#endif        
 
     ArrayList::ConstIterator itAssemblyNames = alAssemblyNames.Iterate();
     while (itAssemblyNames.Next())
     {
         const FriendAssemblyName_t *pFriendAssemblyName = static_cast<const FriendAssemblyName_t *>(itAssemblyNames.GetElement());
-#ifdef FEATURE_FUSION
-        // This is a const operation on the pointer, but Fusion is not const-correct.
-        //  @TODO - propigate const correctness through Fusion and remove this cast
-        HRESULT hr = const_cast<FriendAssemblyName_t *>(pFriendAssemblyName)->IsEqual(pAssembly->GetFusionAssemblyName(), ASM_CMPF_DEFAULT);
-        IfFailThrow(hr);
-#else       
         HRESULT hr = AssemblySpec::RefMatchesDef(pFriendAssemblyName, &asmDef) ? S_OK : S_FALSE;
-#endif
 
         if (hr == S_OK)
         {

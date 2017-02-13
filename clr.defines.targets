@@ -8,14 +8,11 @@
         <CDefines Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(CDefines);FEATURE_ARRAYSTUB_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureStubsAsIL)' == 'true'">$(CDefines);FEATURE_STUBS_AS_IL</CDefines>
         <CDefines Condition="'$(FeatureClassicCominterop)' == 'true'">$(CDefines);FEATURE_CLASSIC_COMINTEROP</CDefines>
-        <CDefines Condition="'$(FeatureClickonce)' == 'true'">$(CDefines);FEATURE_CLICKONCE</CDefines>
         <CDefines Condition="'$(FeatureTraceLogging)' == 'true'">$(CDefines);FEATURE_TRACELOGGING</CDefines>
         <CDefines Condition="'$(FeatureCollectibleTypes)' == 'true'">$(CDefines);FEATURE_COLLECTIBLE_TYPES</CDefines>
         <CDefines Condition="'$(FeatureCominterop)' == 'true'">$(CDefines);FEATURE_COMINTEROP</CDefines>
         <CDefines Condition="'$(FeatureICastable)' == 'true'">$(CDefines);FEATURE_ICASTABLE</CDefines>
         <CDefines Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_APARTMENT_SUPPORT</CDefines>
-        <CDefines Condition="'$(FeatureCominteropRegistration)' == 'true'">$(CDefines);FEATURE_COMINTEROP_REGISTRATION</CDefines>
-        <CDefines Condition="'$(FeatureCominteropTlbSupport)' == 'true'">$(CDefines);FEATURE_COMINTEROP_TLB_SUPPORT</CDefines>
         <CDefines Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</CDefines>
         <CDefines Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'">$(CDefines);FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION</CDefines>  <!-- Enables code required to activate managed winrt from native-->
         <CDefines Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(CDefines);FEATURE_COREFX_GLOBALIZATION</CDefines>
@@ -25,7 +22,6 @@
         <CDefines Condition="'$(FeatureEventTrace)' == 'true'">$(CDefines);FEATURE_EVENT_TRACE</CDefines>
         <CDefines Condition="'$(FeatureXplatEventSource)' == 'true'">$(CDefines);FEATURE_EVENTSOURCE_XPLAT</CDefines>
         <CDefines Condition="'$(FeatureFullNGen)' == 'true'">$(CDefines);FEATURE_FULL_NGEN</CDefines>
-        <CDefines Condition="'$(FeatureFusion)' == 'true'">$(CDefines);FEATURE_FUSION</CDefines>
         <CDefines Condition="'$(FeatureHijack)' == 'true'">$(CDefines);FEATURE_HIJACK</CDefines>
         <CDefines Condition="'$(FeatureImpersonation)' == 'true'">$(CDefines);FEATURE_IMPERSONATION</CDefines>
         <CDefines Condition="'$(FeatureIncludeAllInterfaces)' == 'true'">$(CDefines);FEATURE_INCLUDE_ALL_INTERFACES</CDefines>
@@ -41,7 +37,6 @@
         <CDefines Condition="'$(FeatureManagedEtw)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW</CDefines>
         <CDefines Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(CDefines);FEATURE_MANAGED_ETW_CHANNELS</CDefines>
         <CDefines Condition="'$(FeatureMdaSupported)' == 'true'">$(CDefines);MDA_SUPPORTED</CDefines>
-        <CDefines Condition="'$(FeatureMergeCultureSupportAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE</CDefines>
         <CDefines Condition="'$(FeatureMergeJitAndEngine)' == 'true'">$(CDefines);FEATURE_MERGE_JIT_AND_ENGINE</CDefines>
         <CDefines Condition="'$(FeatureMetadataEmit)' == 'true'">$(CDefines);FEATURE_METADATA_EMIT</CDefines>
         <CDefines Condition="'$(FeatureMetadataEmitAll)' == 'true'">$(CDefines);FEATURE_METADATA_EMIT_ALL</CDefines>
@@ -71,7 +66,6 @@
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
         <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
-        <CDefines Condition="'$(FeatureSyntheticCultures)' == 'true'">$(CDefines);FEATURE_SYNTHETIC_CULTURES</CDefines>
         <CDefines Condition="'$(FeatureTypeEquivalence)' == 'true'">$(CDefines);FEATURE_TYPEEQUIVALENCE</CDefines>
         <CDefines Condition="'$(FeatureUefChainmanager)' == 'true'">$(CDefines);FEATURE_UEF_CHAINMANAGER</CDefines>
         <CDefines Condition="'$(FeatureUseLcid)' == 'true'">$(CDefines);FEATURE_USE_LCID</CDefines>
@@ -97,7 +91,6 @@
         <DefineConstants Condition="'$(FeatureArrayStubAsIL)' == 'true'">$(DefineConstants);FEATURE_ARRAYSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureStubsAsIL)' == 'true'">$(DefineConstants);FEATURE_STUBS_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureClassicCominterop)' == 'true'">$(DefineConstants);FEATURE_CLASSIC_COMINTEROP</DefineConstants>
-        <DefineConstants Condition="'$(FeatureClickonce)' == 'true'">$(DefineConstants);FEATURE_CLICKONCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_UNMANAGED_ACTIVATION</DefineConstants>
@@ -105,7 +98,6 @@
         <DefineConstants Condition="'$(FeatureCoreFxGlobalization)' == 'true'">$(DefineConstants);FEATURE_COREFX_GLOBALIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayCultureInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_CULTURE_INFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureDisplayRegionInfo)' == 'true'">$(DefineConstants);FEATURE_DISPLAY_REGION_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
         <DefineConstants Condition="'$(FeatureHosting)' == 'true'">$(DefineConstants);FEATURE_HOSTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureIdentityReference)' == 'true'">$(DefineConstants);FEATURE_IDENTITY_REFERENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureImpersonation)' == 'true'">$(DefineConstants);FEATURE_IMPERSONATION</DefineConstants>
@@ -127,7 +119,6 @@
         <DefineConstants Condition="'$(FeatureReflectionOnlyLoad)' == 'true'">$(DefineConstants);FEATURE_REFLECTION_ONLY_LOAD</DefineConstants>
         <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
-        <DefineConstants Condition="'$(FeatureSyntheticCultures)' == 'true'">$(DefineConstants);FEATURE_SYNTHETIC_CULTURES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
         <DefineConstants Condition="'$(FeatureValidator)' == 'true'">$(DefineConstants);FEATURE_VALIDATOR</DefineConstants>

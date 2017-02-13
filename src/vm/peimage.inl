@@ -615,49 +615,6 @@ inline BOOL PEImage::IsFileLocked()
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-/* static */
-inline PTR_PEImage PEImage::FindById(UINT64 uStreamAsmId, DWORD dwModuleId)
-{
-    PEImageLocator locator(uStreamAsmId, dwModuleId);
-    CrstHolder holder(&s_hashLock);
-    PEImage* found = (PEImage *) s_Images->LookupValue(HashStreamIds(uStreamAsmId, dwModuleId), &locator);
-    if (found == (PEImage*) INVALIDENTRY)
-        return NULL;
-    found->AddRef();
-    return dac_cast<PTR_PEImage>(found);
-}
-
-/* static */
-inline PTR_PEImage PEImage::OpenImage(IStream *pIStream, UINT64 uStreamAsmId,
-                                      DWORD dwModuleId, BOOL resourceFile, MDInternalImportFlags flags /* = MDInternalImport_Default */)  
-{
-    BOOL fUseCache = !((flags & MDInternalImport_NoCache) == MDInternalImport_NoCache);
-
-    if (!fUseCache)
-    {
-        PEImageHolder pImage(new PEImage());
-        pImage->Init(pIStream, uStreamAsmId, dwModuleId, resourceFile);
-        return dac_cast<PTR_PEImage>(pImage.Extract());
-    }
-
-    
-    DWORD hash = HashStreamIds(uStreamAsmId, dwModuleId);
-    PEImageLocator locator(uStreamAsmId,dwModuleId);
-    CrstHolder holder(&s_hashLock);
-    PEImage* found = (PEImage *) s_Images->LookupValue(hash, &locator);
-    if (found != (PEImage*) INVALIDENTRY)
-    {
-        found->AddRef();
-        return dac_cast<PTR_PEImage>(found);
-    }
-    PEImageHolder pImage(new PEImage());
-    pImage->Init(pIStream, uStreamAsmId, dwModuleId, resourceFile);
-
-    pImage->AddToHashMap();
-    return dac_cast<PTR_PEImage>(pImage.Extract());
-}
-#endif // FEATURE_FUSION
 
 inline void PEImage::AddToHashMap()
 {
@@ -695,10 +652,6 @@ inline BOOL PEImage::HasID()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_FUSION
-    if (m_fIsIStream)
-        return TRUE;
-#endif
 
     return !GetPath().IsEmpty();
 }
@@ -714,10 +667,6 @@ inline ULONG PEImage::GetIDHash()
     }
     CONTRACT_END;
 
-#ifdef FEATURE_FUSION
-    if (m_fIsIStream)
-        RETURN HashStreamIds(m_StreamAsmId, m_dwStreamModuleId);
-#endif
 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     RETURN m_path.Hash();

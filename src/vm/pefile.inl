@@ -12,9 +12,6 @@
 
 #include "strongname.h"
 #include "strongnameholders.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "check.h"
 #include "simplerwlock.hpp"
 #include "eventtrace.h"
@@ -106,19 +103,7 @@ inline ULONG PEAssembly::HashIdentity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_VERSIONING
     return BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pHostAssembly)->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
-#else
-    if (!m_identity->HasID())
-    {
-        if (!IsLoaded())
-            return 0;
-        else
-            return (ULONG) dac_cast<TADDR>(GetLoaded()->GetBase());
-    }
-    else
-        return m_identity->GetIDHash();
-#endif
 }
 
 inline void PEFile::ValidateForExecution()
@@ -1345,7 +1330,7 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
             TADDR taddrILMetadata = dac_cast<TADDR>(pDecoder->GetMetadata(&cbILMetadata));
             return ((taddrILMetadata <= taddrData) && (taddrData < taddrILMetadata + cbILMetadata));
         }
-#endif // defined(FEATURE_PREJIT) && defined(FEATURE_CORECLR)
+#endif // defined(FEATURE_PREJIT)
         return GetOpenedILimage()->IsPtrInImage(data);
     }
     else
@@ -1644,9 +1629,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
  
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-    FusionBind::GetAssemblyNameDisplayName(GetFusionAssemblyName(), result, flags);
-#else
     if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
         !m_sTextualIdentity.IsEmpty())
     {
@@ -1658,7 +1640,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
         spec.InitializeSpec(this);
         spec.GetFileOrDisplayName(flags, result);
     }
-#endif // FEATURE_FUSION
 
 #else
     IMDInternalImport *pImport = GetMDImport();

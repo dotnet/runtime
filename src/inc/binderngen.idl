@@ -36,7 +36,6 @@ cpp_quote("#endif")
 
 // interface IAssemblyName defined in fusion.idl
 // interface IAssemblyEnum defined in fusion.idl
-// interface IFusionBindLog defined in fusionpriv.idl
 // interface ICorSvcLogger defined in mscorsvc.idl
 
 interface IAssemblyLocation;

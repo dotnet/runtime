@@ -82,9 +82,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include "comtypelibconverter.h"
-#endif
 #include "oavariant.h"
 #include "registration.h"
 #include "mngstdinterfaces.h"

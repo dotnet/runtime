@@ -18,10 +18,6 @@
 #include "ceeload.h"
 #include "exceptmacros.h"
 #include "clsload.hpp"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#include "fusionbind.h"
-#endif
 #include "eehash.h"
 #include "listlock.h"
 #include "iceefilegen.h"
@@ -565,10 +561,6 @@ public:
 #ifdef FEATURE_LOADER_OPTIMIZATION
     BOOL MissingDependenciesCheckDone();
     void SetMissingDependenciesCheckDone();
-#ifdef FEATURE_FUSION
-    void SetBindingClosure(IAssemblyBindingClosure* pClosure); // Addrefs. It is assumed the caller did not addref pClosure for us.
-    IAssemblyBindingClosure* GetBindingClosure();
-#endif
 #endif // FEATURE_LOADER_OPTIMIZATION
 
     void SetDomainNeutral() { LIMITED_METHOD_CONTRACT; m_fIsDomainNeutral = TRUE; }
@@ -585,31 +577,6 @@ public:
                                         HCEEFILE      ceeFile);
     HRESULT SignWithStrongName(LPCWSTR wszFileName);
 
-#ifdef FEATURE_FUSION
-    IAssembly* GetFusionAssembly()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_pManifestFile->GetFusionAssembly();
-    }
-
-    IAssemblyName* GetFusionAssemblyName()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_pManifestFile->GetFusionAssemblyName();
-    }
-
-    IAssemblyName* GetFusionAssemblyNameNoCreate()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_pManifestFile->GetFusionAssemblyNameNoCreate();
-    }
-    
-    IHostAssembly* GetIHostAssembly()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_pManifestFile->GetIHostAssembly();
-    }
-#endif// FEATURE_FUSION
 
 #ifdef FEATURE_COMINTEROP
     // Get any cached ITypeLib* for the assembly.
@@ -824,9 +791,6 @@ private:
     BOOL                   m_fIsDomainNeutral;
 #ifdef FEATURE_LOADER_OPTIMIZATION
     BOOL m_bMissingDependenciesCheckDone;
-#ifdef FEATURE_FUSION
-    IAssemblyBindingClosure * m_pBindingClosure;
-#endif
 #endif // FEATURE_LOADER_OPTIMIZATION
 
     DebuggerAssemblyControlFlags m_debuggerFlags;
@@ -895,13 +859,8 @@ public:
     }
 
 private:
-#ifdef FEATURE_FUSION
-    typedef IAssemblyName FriendAssemblyName_t;
-    typedef NonVMComHolder<IAssemblyName> FriendAssemblyNameHolder;
-#else // FEATURE_FUSION
     typedef AssemblySpec FriendAssemblyName_t;
     typedef NewHolder<AssemblySpec> FriendAssemblyNameHolder;
-#endif // FEATURE_FUSION
 
     ArrayList                  m_alFullAccessFriendAssemblies;      // Friend assemblies which have access to all internals
     ArrayList                  m_subjectAssemblies;                 // Subject assemblies which we will not perform access checks against

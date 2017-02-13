@@ -1508,10 +1508,6 @@ class PermissionListSetObject: public Object
 private:
     OBJECTREF _firstPermSetTriple;
     OBJECTREF _permSetTriples;
-#ifdef FEATURE_COMPRESSEDSTACK
-    OBJECTREF _zoneList;
-    OBJECTREF _originList;
-#endif // FEATURE_COMPRESSEDSTACK
 
 public:
     BOOL IsEmpty() 
@@ -1519,10 +1515,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (_firstPermSetTriple == NULL &&
                 _permSetTriples == NULL
-#ifdef FEATURE_COMPRESSEDSTACK
-                && _zoneList == NULL &&
-                _originList == NULL
-#endif // FEATURE_COMPRESSEDSTACK
                 );
     }
 };
@@ -1532,36 +1524,8 @@ typedef REF<PermissionListSetObject> PERMISSIONLISTSETREF;
 #else
 typedef PermissionListSetObject*     PERMISSIONLISTSETREF;
 #endif
-#ifdef FEATURE_COMPRESSEDSTACK
-class CompressedStackObject: public Object
-{
-    friend class MscorlibBinder;
-
-private:
-    // These field are also defined in the managed representation.  (CompressedStack.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size. 
-    PERMISSIONLISTSETREF m_pls;
-    SAFEHANDLEREF m_compressedStackHandle;
-
-public:
-    void* GetUnmanagedCompressedStack();
-    BOOL IsEmptyPLS() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pls == NULL || m_pls->IsEmpty());
-    }
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<CompressedStackObject> COMPRESSEDSTACKREF;
-#else
-typedef CompressedStackObject*     COMPRESSEDSTACKREF;
-#endif
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
     
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
 class SecurityContextObject: public Object
 {
     friend class MscorlibBinder;
@@ -1577,19 +1541,9 @@ private:
 #ifdef FEATURE_IMPERSONATION
     OBJECTREF               _windowsIdentity;
 #endif // FEATURE_IMPERSONATION
-#ifdef FEATURE_COMPRESSEDSTACK
-    COMPRESSEDSTACKREF      _compressedStack;
-#endif // FEATURE_COMPRESSEDSTACK
     INT32                   _disableFlow;
     CLR_BOOL                _isNewCapture;
 public:
-#ifdef FEATURE_COMPRESSEDSTACK    
-    COMPRESSEDSTACKREF GetCompressedStack()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _compressedStack;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -1597,9 +1551,8 @@ typedef REF<SecurityContextObject> SECURITYCONTEXTREF;
 #else
 typedef SecurityContextObject*     SECURITYCONTEXTREF;
 #endif
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#endif // #if defined(FEATURE_IMPERSONATION)
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 #define SYNCCTXPROPS_REQUIRESWAITNOTIFICATION 0x1 // Keep in sync with SynchronizationContext.cs SynchronizationContextFlags
 class ThreadBaseObject;
 class SynchronizationContextObject: public Object
@@ -1620,7 +1573,6 @@ public:
         return FALSE;
     }
 };
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_REMOTING
 class CallContextRemotingDataObject : public Object
@@ -1737,17 +1689,13 @@ typedef LogicalCallContextObject*     LOGICALCALLCONTEXTREF;
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
 typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
@@ -2109,23 +2057,12 @@ public:
     }
 #endif // FEATURE_LEAK_CULTURE_INFO
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     OBJECTREF GetSynchronizationContext()
     {
         LIMITED_METHOD_CONTRACT;
         return m_SynchronizationContext;
     }
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
-#ifdef FEATURE_COMPRESSEDSTACK    
-    COMPRESSEDSTACKREF GetCompressedStack()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (m_ExecutionContext != NULL)
-            return m_ExecutionContext->GetCompressedStack();
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
     // SetDelegate is our "constructor" for the pathway where the exposed object is
     // created first.  InitExisting is our "constructor" for the pathway where an
     // existing physical thread is later exposed.
@@ -2281,10 +2218,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 #ifdef FEATURE_REMOTING
     OBJECTREF    m_pDefaultContext;     // Default managed context for this AD.
 #endif    
-#ifdef FEATURE_CLICKONCE
-    OBJECTREF    m_pActivationContext;   // ClickOnce ActivationContext.
-    OBJECTREF    m_pApplicationIdentity; // App ApplicationIdentity.
-#endif    
     OBJECTREF    m_pApplicationTrust;    // App ApplicationTrust.
 #ifdef FEATURE_IMPERSONATION
     OBJECTREF    m_pDefaultPrincipal;  // Lazily computed default principle object used by threads
@@ -2298,9 +2231,7 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 
     OBJECTREF    m_compatFlags;
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     OBJECTREF    m_pFirstChanceExceptionHandler; // Delegate for 'FirstChance Exception' event
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
     CLR_BOOL     m_bHasSetPolicy;               // SetDomainPolicy has been called for this domain
@@ -2368,15 +2299,7 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
         return m_bHasSetPolicy;
     }
 
-#ifdef FEATURE_CLICKONCE
-    BOOL HasActivationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pActivationContext != NULL;
-    }
-#endif // FEATURE_CLICKONCE
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     // Returns the reference to the delegate of the first chance exception notification handler
     OBJECTREF GetFirstChanceExceptionNotificationHandler()
     {
@@ -2384,7 +2307,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
 
         return m_pFirstChanceExceptionHandler;
     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 };
 
 
@@ -2398,9 +2320,6 @@ class AppDomainSetupObject : public Object
     STRINGREF m_AppBase;
     OBJECTREF m_AppDomainInitializer;
     PTRARRAYREF m_AppDomainInitializerArguments;
-#ifdef FEATURE_CLICKONCE
-    OBJECTREF m_ActivationArguments;
-#endif // FEATURE_CLICKONCE
     STRINGREF m_ApplicationTrust;
     I1ARRAYREF m_ConfigurationBytes;
     STRINGREF m_AppDomainManagerAssembly;
@@ -2709,20 +2628,6 @@ class FrameSecurityDescriptorBaseObject : public Object
     }
 };
 
-#ifdef FEATURE_COMPRESSEDSTACK
-class FrameSecurityDescriptorWithResolverBaseObject : public FrameSecurityDescriptorBaseObject
-{
-public:
-    OBJECTREF m_resolver;
-
-public:
-    void SetDynamicMethodResolver(OBJECTREF resolver)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_resolver, resolver, this->GetAppDomain());
-    }
-};
-#endif // FEATURE_COMPRESSEDSTACK
 
 class WeakReferenceObject : public Object
 {
@@ -2756,9 +2661,6 @@ typedef REF<VersionBaseObject> VERSIONREF;
 
 typedef REF<FrameSecurityDescriptorBaseObject> FRAMESECDESCREF;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-typedef REF<FrameSecurityDescriptorWithResolverBaseObject> FRAMESECDESWITHRESOLVERCREF;
-#endif // FEATURE_COMPRESSEDSTACK
 
 typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
 
@@ -2811,9 +2713,6 @@ typedef MarshalByRefObjectBaseObject* MARSHALBYREFOBJECTBASEREF;
 typedef VersionBaseObject* VERSIONREF;
 typedef FrameSecurityDescriptorBaseObject* FRAMESECDESCREF;
 
-#ifdef FEATURE_COMPRESSEDSTACK
-typedef FrameSecurityDescriptorWithResolverBaseObject* FRAMESECDESWITHRESOLVERCREF;
-#endif // FEATURE_COMPRESSEDSTACK
 
 typedef WeakReferenceObject* WEAKREFERENCEREF;
 #endif // #ifndef DACCESS_COMPILE

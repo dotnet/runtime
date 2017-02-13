@@ -5,9 +5,6 @@
 
 #include "common.h"
 
-#ifdef FEATURE_FUSION
-#include "binderngen.h"
-#endif
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 #include "metahost.h"
@@ -17,9 +14,6 @@
 #include "coregen.h"
 
 #include "clr/fs/dir.h"
-#ifdef FEATURE_FUSION
-#include "ngenparser.inl"
-#endif
 
 /* --------------------------------------------------------------------------- *
  * Error Macros
@@ -38,9 +32,6 @@ BOOL g_fForceDebug, g_fForceProfile, g_fForceInstrument;
 #endif
 
 
-#ifdef FEATURE_FUSION
-extern "C" HRESULT STDMETHODCALLTYPE InitializeFusion();
-#endif
 
 #pragma warning(push)
 #pragma warning(disable: 4995)
@@ -84,38 +75,6 @@ void Zapper::ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...)
         Warning(W("%s\n"), s.GetUnicode());
 }
 
-#ifdef FEATURE_FUSION
-static HRESULT GetAssemblyName(
-    ICorCompileInfo * pCCI,
-    CORINFO_ASSEMBLY_HANDLE hAssembly,
-    SString & str,
-    DWORD dwFlags)
-{
-    DWORD dwSize = 0;
-    LPWSTR buffer = NULL;
-    COUNT_T allocation = str.GetUnicodeAllocation();
-    if (allocation > 0)
-    {
-        // pass in the buffer if we got one
-        dwSize = allocation + 1;
-        buffer = str.OpenUnicodeBuffer(allocation);
-    }
-    HRESULT hr = pCCI->GetAssemblyName(hAssembly, dwFlags, buffer, &dwSize);
-    if (hr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-    {
-        if (buffer != NULL) 
-            str.CloseBuffer(0);
-        buffer = str.OpenUnicodeBuffer(dwSize-1);
-        hr = pCCI->GetAssemblyName(hAssembly, dwFlags, buffer, &dwSize);
-    }
-    if (buffer != NULL)
-    {
-        str.CloseBuffer((SUCCEEDED(hr) && dwSize >= 1) ? (dwSize-1) : 0);
-    }
-
-    return hr;
-}
-#endif // FEATURE_FUSION
 
 /* --------------------------------------------------------------------------- *
  * Private fusion entry points
@@ -196,7 +155,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         if (pwszCLRJITPath != nullptr)
             zap->SetCLRJITPath(pwszCLRJITPath);
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
 
@@ -241,7 +200,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         zap->SetDontLoadJit();
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
         if (pwzPlatformAssembliesPaths != nullptr)
             zap->SetPlatformAssembliesPaths(pwzPlatformAssembliesPaths);
@@ -264,7 +223,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 #if !defined(NO_NGENPDB)
         if (pwzDiasymreaderPath != nullptr)
             zap->SetDiasymreaderPath(pwzDiasymreaderPath);
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif // !defined(NO_NGENPDB)
 
         // Avoid unnecessary security failures, since permissions are irrelevant when
         // generating NGEN PDBs
@@ -427,47 +386,6 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
     }
 
-#ifdef FEATURE_FUSION
-    if (pOptions->lpszRepositoryDir != NULL && pOptions->lpszRepositoryDir[0] != '\0')
-    {
-        size_t buflen = wcslen(pOptions->lpszRepositoryDir) + 1;
-        LPWSTR lpszDir = new WCHAR[buflen];
-        wcscpy_s(lpszDir, buflen, pOptions->lpszRepositoryDir);
-        zo->m_repositoryDir = lpszDir;
-    }
-    else
-    {
-        zo->m_repositoryDir = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RepositoryDir);
-    }
-
-    if (pOptions->repositoryFlags != RepositoryDefault)
-    {
-        zo->m_repositoryFlags = pOptions->repositoryFlags;
-    }
-    else
-    {
-        zo->m_repositoryFlags = (RepositoryFlags)REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_RepositoryFlags, RepositoryDefault);
-    }
-
-    // The default location of the repository is "repository" folder under framework version directory
-    if (zo->m_repositoryDir == NULL)
-    {
-        DWORD lgth = _MAX_PATH + 1;
-        WCHAR wszRepositoryDir[_MAX_PATH + 1];
-        IfFailThrow(GetInternalSystemDirectory(wszRepositoryDir, &lgth));
-
-        wcscat_s(wszRepositoryDir, COUNTOF(wszRepositoryDir), W("repository"));
-
-        size_t buflen = wcslen(wszRepositoryDir) + 1;
-        LPWSTR lpszDir = new WCHAR[buflen];
-        wcscpy_s(lpszDir, buflen, wszRepositoryDir);
-        zo->m_repositoryDir = lpszDir;
-
-        // Move the images by default
-        if (zo->m_repositoryFlags == RepositoryDefault)
-            zo->m_repositoryFlags = MoveFromRepository;
-    }
-#endif //FEATURE_FUSION
 
     if (pOptions->fInstrument)
         zo->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
@@ -574,14 +492,10 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
     hr = m_pMetaDataDispenser->SetOption(MetaDataCheckDuplicatesFor, &opt);
     _ASSERTE(SUCCEEDED(hr));
 
-#ifdef FEATURE_FUSION
-    hr = InitializeFusion();
-    _ASSERTE(SUCCEEDED(hr));
-#endif
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     m_fDontLoadJit = false;
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
     m_fForceFullTrust = false;
 }
@@ -625,7 +539,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         hr = S_OK;
     }
     else 
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder))
     {
         hr = CopySystemDirectory(CoreClrFolder, CoreClrFolder);
@@ -913,277 +827,6 @@ void Zapper::CleanupAssembly()
     }
 }
 
-#ifdef FEATURE_FUSION
-HRESULT Zapper::TryEnumerateFusionCache(LPCWSTR name, bool fPrint, bool fDelete)
-{
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        if (EnumerateFusionCache(name, fPrint, fDelete) == 0)
-            hr = S_FALSE;
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
-#define MAX_ZAP_STRING_SIZE 4
-
-int Zapper::EnumerateFusionCache(
-        LPCWSTR name,
-        bool fPrint, bool fDelete,
-        CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-{
-    _ASSERTE(pNativeImageSig == NULL || (*pNativeImageSig) != INVALID_NGEN_SIGNATURE);
-
-    int count = 0;
-
-    NonVMComHolder<IAssemblyName> pName;
-
-    //
-    // Decide whether the name is a file or assembly name
-    //
-
-    DWORD attributes = -1;
-
-    if (name != NULL)
-        attributes = WszGetFileAttributes(name);
-
-    if (attributes == -1)
-    {
-        IfFailThrow(CreateAssemblyNameObject(&pName, name,
-                                             name == NULL ? 0 :
-                                             CANOF_PARSE_DISPLAY_NAME, NULL));
-    }
-    else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
-    {
-        ClrDirectoryEnumerator de(name);
-
-        while (de.Next())
-        {
-            StackSString fullName;
-            fullName.Set(name, W("\\"), de.GetFileName());
-
-            if (de.GetFileAttributes() & FILE_ATTRIBUTE_DIRECTORY)
-            {
-                count += EnumerateFusionCache(fullName, fPrint, fDelete);
-            }
-            else 
-            if (IsAssembly(fullName))
-            {
-                if (TryEnumerateFusionCache(fullName, fPrint, fDelete) == S_OK)
-                    count++;
-            }
-        }
-    }
-    else
-    {
-        NonVMComHolder<IMetaDataAssemblyImport> pAssemblyImport;
-        IfFailThrow(m_pMetaDataDispenser->OpenScope(name, ofRead,
-                                                    IID_IMetaDataAssemblyImport,
-                                                    (IUnknown**)&pAssemblyImport));
-
-        pName = GetAssemblyFusionName(pAssemblyImport);
-    }
-
-    if (pName != NULL)
-    {
-        pName->SetProperty(ASM_NAME_CUSTOM, NULL, 0);
-
-        NonVMComHolder<IAssemblyEnum> pEnum;
-        HRESULT hr = CreateAssemblyEnum(&pEnum, NULL, pName, ASM_CACHE_ZAP, 0);
-        IfFailThrow(hr);
-
-        pName.Clear();
-
-        if (hr == S_OK)
-        {
-            //
-            // Scope the iteration by the zap set
-            //
-
-            LPCWSTR zapPrefix = m_pOpt->m_zapSet;
-            size_t zapPrefixSize = (zapPrefix != NULL) ? wcslen(zapPrefix) : 0;
-
-            for (;;)
-            {
-                NonVMComHolder<IApplicationContext> pContext;
-                NonVMComHolder<IAssemblyName> pEntryName;
-
-                if (pEnum->GetNextAssembly(&pContext, &pEntryName, 0) != S_OK)
-                    break;
-
-                //
-                // Only consider assemblies which have the proper zap string
-                // prefix.
-                //
-                if (zapPrefix != NULL)
-                {
-                    WCHAR zapString[MAX_ZAP_STRING_SIZE];
-                    DWORD zapStringSize = sizeof(zapString);
-
-                    hr = pEntryName->GetProperty(ASM_NAME_CUSTOM, (void*) zapString, &zapStringSize);
-                    if (hr != S_OK
-                        || wcslen(zapString) < zapPrefixSize
-                        || wcsncmp(zapString, zapPrefix, zapPrefixSize) != 0)
-                    {
-                        continue;
-                    }
-                }
-
-                count++;
-
-                if (pNativeImageSig)
-                {
-                    // If we are looking for a specific native image,
-                    // check that the signatures match.
-
-                    CORCOMPILE_NGEN_SIGNATURE sign;
-                    DWORD cbSign = sizeof(sign);
-
-                    IfFailThrow(pEntryName->GetProperty(ASM_NAME_MVID, &sign, &cbSign));
-                    _ASSERTE(cbSign == sizeof(sign));
-
-                    if (cbSign != sizeof(sign) || *pNativeImageSig != sign)
-                        continue;
-                }
-
-                if (fPrint)
-                {
-                    PrintFusionCacheEntry(LogLevel_Success, pEntryName);
-                }
-
-                if (fDelete)
-                {
-                    DeleteFusionCacheEntry(pEntryName);
-                }
-            }
-        }
-
-    }
-
-    return count;
-}
-
-void Zapper::PrintFusionCacheEntry(CorSvcLogLevel logLevel, IAssemblyName *pName)
-{
-    StackSString ss;
-    FusionBind::GetAssemblyNameDisplayName(pName, ss, 
-        ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN);
-
-    GetSvcLogger()->Printf(logLevel, W("%s"), ss.GetUnicode());
-
-    // Get the custom string
-    WCHAR zapString[MAX_ZAP_STRING_SIZE];
-    DWORD zapStringSize = sizeof(zapString);
-
-    HRESULT hr = pName->GetProperty(ASM_NAME_CUSTOM, (void*) zapString, &zapStringSize);
-    IfFailThrow(hr);
-    IfFailThrow((zapStringSize != 0) ? S_OK : E_FAIL);
-
-    // Get the config mask
-
-    DWORD mask = 0;
-    DWORD maskSize = sizeof(mask);
-
-    hr = pName->GetProperty(ASM_NAME_CONFIG_MASK, (void*) &mask, &maskSize);
-    IfFailThrow(hr);
-
-    // Pretty-print the custom string and the config mask
-
-    if (hr == S_OK)
-    {
-        DWORD maskStringLength;
-        IfFailThrow(GetNativeImageDescription(zapString, mask, NULL, &maskStringLength));
-
-        CQuickWSTR buffer;
-        buffer.ReSizeThrows(maskStringLength * sizeof(WCHAR));
-        IfFailThrow(GetNativeImageDescription(zapString, mask, buffer.Ptr(), &maskStringLength));
-
-        GetSvcLogger()->Printf(logLevel, W("%s"), buffer.Ptr());
-    }
-
-    GetSvcLogger()->Printf(logLevel, W("\n"));
-
-    StackSString s;
-    PrintAssemblyVersionInfo(pName, s);
-
-    GetSvcLogger()->Log(s.GetUnicode(), LogLevel_Info);
-}
-
-void Zapper::DeleteFusionCacheEntry(IAssemblyName *pName)
-{
-    IfFailThrow(UninstallNativeAssembly(pName, GetSvcLogger()->GetSvcLogger()));
-}
-
-void Zapper::DeleteFusionCacheEntry(LPCWSTR assemblyName, CORCOMPILE_NGEN_SIGNATURE *pNativeImageSig)
-{
-    _ASSERTE(assemblyName != NULL && pNativeImageSig != NULL);
-    _ASSERTE(*pNativeImageSig != INVALID_NGEN_SIGNATURE);
-    // assemblyName must be a display name, not a file name.
-    _ASSERTE(WszGetFileAttributes(assemblyName) == INVALID_FILE_ATTRIBUTES);
-
-    NonVMComHolder<IAssemblyName> pEntryName;
-    IfFailThrow(CreateAssemblyNameObject(&pEntryName, assemblyName, CANOF_PARSE_DISPLAY_NAME, NULL));
-
-    // Native Binder requires ASM_NAME_CUSTOM (zapset) not to be NULL while deleting a native image.
-    LPCWSTR zapSet = m_pOpt->m_zapSet != NULL ? m_pOpt->m_zapSet : W("");
-    pEntryName->SetProperty(ASM_NAME_CUSTOM, zapSet, DWORD(sizeof(WCHAR) * (wcslen(zapSet) + 1)));
-
-    pEntryName->SetProperty(ASM_NAME_MVID, pNativeImageSig, sizeof(*pNativeImageSig));
-
-    DeleteFusionCacheEntry(pEntryName);
-}
-
-// @TODO: Use the default flags like CORCOMPILE_CONFIG_DEBUG_DEFAULT
-
-__success(SUCCEEDED(return))
-STDAPI GetNativeImageDescription(__in_z LPCWSTR customString,
-                                 DWORD dwConfigMask,
-                                 __inout_ecount(*pdwLength) LPWSTR pwzString,
-                                 LPDWORD pdwLength)
-{
-    _ASSERTE(pdwLength);
-    //_ASSERTE(pwzString == NULL || (pwzString[(*pdwLength) - 1], true));
-
-    #define ZAP_STRING_DEBUG            W("<debug>")
-    #define ZAP_STRING_PROFILING        W("<profiling>")
-    #define ZAP_STRING_INSTRUMENTED     W("<instrumented>")
-
-    StackSString ssBuff;
-
-    if (customString[0] != W('\0'))
-    {
-        ssBuff.Append(W(" (set "));
-        ssBuff.Append(customString);
-        ssBuff.Append(W(')'));
-    }
-
-    if (dwConfigMask & CORCOMPILE_CONFIG_DEBUG)
-        ssBuff.Append(W(" ") ZAP_STRING_DEBUG);
-
-    if (dwConfigMask & CORCOMPILE_CONFIG_PROFILING)
-        ssBuff.Append(W(" ") ZAP_STRING_PROFILING);
-
-    if (dwConfigMask & CORCOMPILE_CONFIG_INSTRUMENTATION)
-        ssBuff.Append(W(" ") ZAP_STRING_INSTRUMENTED);
-
-    DWORD length = (DWORD) ssBuff.GetCount() + 1; // +1 for the null terminating character
-    DWORD inputLength = *pdwLength;
-
-    *pdwLength = length;
-    if (pwzString)
-    {
-        wcsncpy_s(pwzString, inputLength, ssBuff.GetUnicode(), _TRUNCATE);
-
-        if (length > inputLength)
-            return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    }
-
-    return S_OK;
-}
-#endif // FEATURE_FUSION
 
 //**********************************************************************
 // Copy of vm\i386\cgenCpu.h
@@ -1214,529 +857,6 @@ BOOL Runtime_Test_For_SSE2();
 
 #endif
 
-#ifdef FEATURE_FUSION
-void Zapper::PrintDependencies(
-        IMetaDataAssemblyImport * pAssemblyImport,
-        CORCOMPILE_DEPENDENCY * pDependencies,
-        COUNT_T cDependencies,
-        SString &s)
-{
-    if (cDependencies == 0)
-    {
-        s.AppendPrintf("\tNo dependencies\n");
-        return;
-    }
-
-    s.AppendASCII("\tDependencies:\n");
-
-    CORCOMPILE_DEPENDENCY *pDepsEnd = pDependencies + cDependencies;
-    for(CORCOMPILE_DEPENDENCY *pDeps = pDependencies; pDeps < pDepsEnd; pDeps++)
-    {
-        mdAssemblyRef assem = pDeps->dwAssemblyDef;
-        if (assem == mdAssemblyRefNil)
-            assem = pDeps->dwAssemblyRef;
-
-        NonVMComHolder<IAssemblyName> pNameHolder =
-                GetAssemblyRefFusionName(pAssemblyImport, assem);
-
-        StackSString ss;
-        FusionBind::GetAssemblyNameDisplayName(pNameHolder, ss, ASM_DISPLAYF_FULL);
-
-        s.AppendPrintf(W("\t\t%s:\n"), ss.GetUnicode());
-
-        if (pDeps->dwAssemblyDef == mdAssemblyRefNil)
-        {
-            s.AppendASCII("\t\t\t** Missing dependency assembly **\n");
-            continue;
-        }
-
-        //
-        // Dependency MVID/HASH
-        //
-
-        WCHAR szGuid[64];
-        GuidToLPWSTR(pDeps->signAssemblyDef.mvid, szGuid, NumItems(szGuid));
-        s.AppendPrintf(W("\t\t\tGuid:%s\n"), szGuid);
-
-        if (pDeps->dwAssemblyRef != pDeps->dwAssemblyDef)
-        {
-            // If there is a redirect, display the original dependency version
-
-            NonVMComHolder<IAssemblyName> pOrigName =
-              GetAssemblyRefFusionName(pAssemblyImport, pDeps->dwAssemblyRef);
-
-            StackSString ss;
-            FusionBind::GetAssemblyNameDisplayName(pOrigName, ss, ASM_DISPLAYF_VERSION);
-
-            s.AppendPrintf(W("\t\t\tOriginal Ref: %s\n"), ss.GetUnicode());
-        }
-
-        if (pDeps->signNativeImage != INVALID_NGEN_SIGNATURE)
-        {
-            GuidToLPWSTR(pDeps->signNativeImage, szGuid, NumItems(szGuid));
-            s.AppendPrintf(W("\t\t\tHardbound Guid:%s\n"), szGuid);
-        }
-    }
-
-    s.AppendASCII("\n");
-}
-
-
-BOOL Zapper::VerifyDependencies(
-        IMDInternalImport * pAssemblyImport,
-        CORCOMPILE_DEPENDENCY * pDependencies,
-        COUNT_T cDependencies)
-{
-    CORCOMPILE_DEPENDENCY *pDepsEnd = pDependencies + cDependencies;
-    for(CORCOMPILE_DEPENDENCY *pDeps = pDependencies; pDeps < pDepsEnd; pDeps++)
-    {
-        mdAssemblyRef assem = pDeps->dwAssemblyDef;
-
-        // TODO: Better support for images with unresolved dependencies?
-        if (assem == mdAssemblyRefNil)
-            continue;
-
-        CORINFO_ASSEMBLY_HANDLE hAssemblyRef;
-        if (m_pEECompileInfo->LoadAssemblyRef(pAssemblyImport, assem, &hAssemblyRef) != S_OK)
-            return FALSE;
-
-        CORCOMPILE_VERSION_INFO sourceVersionInfo;
-        IfFailThrow(m_pEECompileInfo->GetAssemblyVersionInfo(hAssemblyRef,
-                                                            &sourceVersionInfo));
-
-        // check the soft bound dependency
-        CORCOMPILE_ASSEMBLY_SIGNATURE * pSign1 = &pDeps->signAssemblyDef;
-        CORCOMPILE_ASSEMBLY_SIGNATURE * pSign2 = &sourceVersionInfo.sourceAssembly;
-
-        if (   (pSign1->mvid != pSign2->mvid)
-            || (pSign1->timeStamp != pSign2->timeStamp)
-            || (pSign1->ilImageSize != pSign2->ilImageSize) )
-        {
-            return FALSE;
-        }
-
-        if (pDeps->signNativeImage != INVALID_NGEN_SIGNATURE)
-        {
-            // check the hardbound dependency
-            CORCOMPILE_NGEN_SIGNATURE nativeImageSig;
-
-            if (!CheckAssemblyUpToDate(hAssemblyRef, &nativeImageSig))
-                return FALSE;
-
-            if (pDeps->signNativeImage != nativeImageSig)
-                return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
-void Zapper::PrintAssemblyVersionInfo(IAssemblyName *pName, SString &s)
-{
-    //
-    // Bind zap assembly to a path
-    //
-
-    WCHAR szGuid[64];
-    WCHAR path[MAX_LONGPATH];
-    DWORD cPath = MAX_LONGPATH;
-
-    IfFailThrow(QueryNativeAssemblyInfo(pName, path, &cPath));
-
-    // The LoadLibrary call fails occasionally in the lab due to sharing violation.  Retry when needed.
-    const int SHARING_VIOLATION_RETRY_TIMES = 10;
-    const DWORD SHARING_VIOLATION_RETRY_WAITING_TIME = 100;
-    HModuleHolder hMod;
-    DWORD err;
-    for (int i = 0; i < SHARING_VIOLATION_RETRY_TIMES; i++)
-    {
-        hMod = ::WszLoadLibrary(path);
-        if (! hMod.IsNull())
-            break;
-        // Save last error before ClrSleepEx overwrites it.
-        err = GetLastError();
-        ClrSleepEx(SHARING_VIOLATION_RETRY_WAITING_TIME, FALSE);
-    }
-    if (hMod.IsNull())
-        ThrowWin32(err);
-
-    PEDecoder pedecoder(hMod);
-
-    CORCOMPILE_VERSION_INFO *pVersionInfo = pedecoder.GetNativeVersionInfo();
-
-    COUNT_T cMeta;
-    const void *pMeta = pedecoder.GetNativeManifestMetadata(&cMeta);
-
-    NonVMComHolder<IMetaDataAssemblyImport> pAssemblyImport;
-    IfFailThrow(m_pMetaDataDispenser->OpenScopeOnMemory(pMeta, cMeta, ofRead,
-                                    IID_IMetaDataAssemblyImport,
-                                    (IUnknown**)&pAssemblyImport));
-
-    NonVMComHolder<IMetaDataImport> pImport;
-    IfFailThrow(pAssemblyImport->QueryInterface(IID_IMetaDataImport,
-                                                (void**)&pImport));
-
-    //
-    // Source MVID
-    //
-
-    GuidToLPWSTR(pVersionInfo->sourceAssembly.mvid, szGuid, NumItems(szGuid));
-    s.AppendPrintf(W("\tSource MVID:\t%s\n"), szGuid);
-
-    //
-    // Signature of generated ngen image
-    //
-
-    GuidToLPWSTR(pVersionInfo->signature, szGuid, NumItems(szGuid));
-    s.AppendPrintf(W("\tNGen GUID sign:\t%s\n"), szGuid);
-
-
-    s.AppendASCII("\tOS:\t\t");
-    switch (pVersionInfo->wOSPlatformID)
-    {
-    case VER_PLATFORM_WIN32_NT:
-        s.AppendASCII("WinNT");
-        break;
-    default:
-        s.AppendPrintf("<unknown> (%d)", pVersionInfo->wOSPlatformID);
-        break;
-    }
-    s.AppendASCII("\n");
-
-    //
-    // Processor
-    //
-
-    s.AppendASCII("\tProcessor:\t");
-
-    CORINFO_CPU cpuInfo = pVersionInfo->cpuInfo;
-
-    switch (pVersionInfo->wMachine)
-    {
-    case IMAGE_FILE_MACHINE_I386:
-    {
-        s.AppendASCII("x86");
-        DWORD cpuType = cpuInfo.dwCPUType;
-#ifdef _TARGET_X86_
-
-        //
-        // Specific processor ID
-        //
-
-        switch (CPU_X86_FAMILY(cpuType))
-        {
-        case CPU_X86_486:
-            s.AppendASCII("(486)");
-            break;
-
-        case CPU_X86_PENTIUM:
-            s.AppendASCII("(Pentium)");
-            break;
-
-        case CPU_X86_PENTIUM_PRO:
-            if(CPU_X86_MODEL(cpuType) == CPU_X86_MODEL_PENTIUM_PRO_BANIAS)
-            {
-                s.AppendASCII("(Pentium M)");
-            }
-            else
-            {
-                s.AppendASCII("(PentiumPro)");
-            }
-            break;
-
-        case CPU_X86_PENTIUM_4:
-            s.AppendASCII("(Pentium 4)");
-            break;
-
-        default:
-            s.AppendPrintf("(Family %d, Model %d (%03x))",
-                   CPU_X86_FAMILY(cpuType), CPU_X86_MODEL(cpuType), cpuType);
-            break;
-        }
-
-        s.AppendPrintf(" (features: %08x)", cpuInfo.dwFeatures);
-
-        break;
-
-#endif // _TARGET_X86_
-    }
-
-    case IMAGE_FILE_MACHINE_IA64:
-        s.AppendASCII("ia64");
-        break;
-
-    case IMAGE_FILE_MACHINE_AMD64:
-        s.AppendASCII("amd64");
-        break;
-
-    case IMAGE_FILE_MACHINE_ARMNT:
-        s.AppendASCII("arm");
-        break;
-    }
-    s.AppendASCII("\n");
-
-    //
-    // EE version
-    //
-
-    s.AppendPrintf("\tRuntime:\t%d.%d.%.d.%d\n",
-           pVersionInfo->wVersionMajor, pVersionInfo->wVersionMinor,
-           pVersionInfo->wVersionBuildNumber, pVersionInfo->wVersionPrivateBuildNumber);
-
-    s.AppendPrintf("\tclr.dll:\tTimeStamp=%08X, VirtualSize=%08X\n",
-           pVersionInfo->runtimeDllInfo[CLR_INFO].timeStamp,
-           pVersionInfo->runtimeDllInfo[CLR_INFO].virtualSize);
-
-    //
-    // Flags
-    //
-
-    s.AppendASCII("\tFlags:\t\t");
-    if (pVersionInfo->wBuild == CORCOMPILE_BUILD_CHECKED)
-    {
-        s.AppendASCII("<checked> ");
-    }
-
-    if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROFILING)
-    {
-        s.AppendASCII("<profiling> ");
-    }
-    else if ((pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_DEBUGGING))
-    {
-        s.AppendASCII("<debug> ");
-    }
-
-    if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROF_INSTRUMENTING)
-    {
-        s.AppendASCII("<instrumenting> ");
-    }
-    s.AppendASCII("\n");
-
-    //
-    // Config
-    //
-
-    s.AppendASCII("\tScenarios:\t\t");
-
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_DEBUG_NONE)
-    {
-        s.AppendASCII("<no debug info> ");
-    }
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_DEBUG)
-    {
-        s.AppendASCII("<debugger> ");
-    }
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_DEBUG_DEFAULT)
-    {
-        s.AppendASCII("<no debugger> ");
-    }
-
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_PROFILING_NONE)
-    {
-        s.AppendASCII("<no profiler> ");
-    }
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_PROFILING)
-    {
-        s.AppendASCII("<instrumenting profiler> ");
-    }
-
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_INSTRUMENTATION_NONE)
-    {
-        s.AppendASCII("<no instrumentation> ");
-    }
-
-    if (pVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_INSTRUMENTATION)
-    {
-        s.AppendASCII("<block instrumentation> ");
-    }
-
-    s.AppendASCII("\n");
-
-    //
-    // Native image file name
-    //
-
-    s.AppendPrintf(W("\tFile:\t\t%s\n"), path);
-
-    //
-    // Dependencies
-    //
-
-    COUNT_T cDependencies;
-    CORCOMPILE_DEPENDENCY *pDependencies = pedecoder.GetNativeDependencies(&cDependencies);
-
-    PrintDependencies(pAssemblyImport, pDependencies, cDependencies, s);
-}
-
-IAssemblyName *Zapper::GetAssemblyFusionName(IMetaDataAssemblyImport *pImport)
-{
-    IAssemblyName *pName;
-
-    mdAssembly a;
-    IfFailThrow(pImport->GetAssemblyFromScope(&a));
-
-    ASSEMBLYMETADATA md = {0};
-    LPWSTR szName;
-    ULONG cbName = 0;
-    const void *pbPublicKeyToken;
-    ULONG cbPublicKeyToken;
-    DWORD dwFlags;
-
-    IfFailThrow(pImport->GetAssemblyProps(a,
-                                          NULL, NULL, NULL,
-                                          NULL, 0, &cbName,
-                                          &md,
-                                          NULL));
-
-    szName = (LPWSTR) _alloca(cbName * sizeof(WCHAR));
-    md.szLocale = (LPWSTR) _alloca(md.cbLocale * sizeof(WCHAR));
-    md.rProcessor = (DWORD *) _alloca(md.ulProcessor * sizeof(DWORD));
-    md.rOS = (OSINFO *) _alloca(md.ulOS * sizeof(OSINFO));
-
-    IfFailThrow(pImport->GetAssemblyProps(a,
-                                          &pbPublicKeyToken, &cbPublicKeyToken, NULL,
-                                          szName, cbName, &cbName,
-                                          &md,
-                                          &dwFlags));
-
-    IfFailThrow(CreateAssemblyNameObject(&pName, szName, 0, NULL));
-
-    if (md.usMajorVersion != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_MAJOR_VERSION,
-                                       &md.usMajorVersion,
-                                       sizeof(USHORT)));
-    if (md.usMinorVersion != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_MINOR_VERSION,
-                                       &md.usMinorVersion,
-                                       sizeof(USHORT)));
-    if (md.usBuildNumber != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_BUILD_NUMBER,
-                                       &md.usBuildNumber,
-                                       sizeof(USHORT)));
-    if (md.usRevisionNumber != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_REVISION_NUMBER,
-                                       &md.usRevisionNumber,
-                                       sizeof(USHORT)));
-    if (md.ulProcessor > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_PROCESSOR_ID_ARRAY,
-                                       &md.rProcessor,
-                                       md.ulProcessor*sizeof(DWORD)));
-    if (md.ulOS > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_OSINFO_ARRAY,
-                                       &md.rOS,
-                                       md.ulOS*sizeof(OSINFO)));
-    if (md.cbLocale > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_CULTURE,
-                                       md.szLocale,
-                                       md.cbLocale*sizeof(WCHAR)));
-
-    if (cbPublicKeyToken > 0)
-    {
-        if (!StrongNameTokenFromPublicKey((BYTE*)pbPublicKeyToken, cbPublicKeyToken,
-                                          (BYTE**)&pbPublicKeyToken, &cbPublicKeyToken))
-            IfFailThrow(StrongNameErrorInfo());
-
-        IfFailThrow(pName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                       (void*)pbPublicKeyToken,
-                                       cbPublicKeyToken));
-
-        StrongNameFreeBuffer((BYTE*)pbPublicKeyToken);
-    }
-
-    return pName;
-}
-
-IAssemblyName *Zapper::GetAssemblyRefFusionName(IMetaDataAssemblyImport *pImport,
-                                                mdAssemblyRef ar)
-{
-    IAssemblyName *pName;
-
-    ASSEMBLYMETADATA md = {0};
-    LPWSTR szName;
-    ULONG cbName = 0;
-    const void *pbPublicKeyOrToken;
-    ULONG cbPublicKeyOrToken;
-    DWORD dwFlags;
-
-    IfFailThrow(pImport->GetAssemblyRefProps(ar,
-                                             NULL, NULL,
-                                             NULL, 0, &cbName,
-                                             &md,
-                                             NULL, NULL,
-                                             NULL));
-
-    szName = (LPWSTR) _alloca(cbName * sizeof(WCHAR));
-    md.szLocale = (LPWSTR) _alloca(md.cbLocale * sizeof(WCHAR));
-    md.rProcessor = (DWORD *) _alloca(md.ulProcessor * sizeof(DWORD));
-    md.rOS = (OSINFO *) _alloca(md.ulOS * sizeof(OSINFO));
-
-    IfFailThrow(pImport->GetAssemblyRefProps(ar,
-                                             &pbPublicKeyOrToken, &cbPublicKeyOrToken,
-                                             szName, cbName, &cbName,
-                                             &md,
-                                             NULL, NULL,
-                                             &dwFlags));
-
-    IfFailThrow(CreateAssemblyNameObject(&pName, szName, 0, NULL));
-
-    if (md.usMajorVersion != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_MAJOR_VERSION,
-                                       &md.usMajorVersion,
-                                       sizeof(USHORT)));
-    if (md.usMinorVersion != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_MINOR_VERSION,
-                                       &md.usMinorVersion,
-                                       sizeof(USHORT)));
-    if (md.usBuildNumber != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_BUILD_NUMBER,
-                                       &md.usBuildNumber,
-                                       sizeof(USHORT)));
-    if (md.usRevisionNumber != -1)
-        IfFailThrow(pName->SetProperty(ASM_NAME_REVISION_NUMBER,
-                                       &md.usRevisionNumber,
-                                       sizeof(USHORT)));
-    if (md.ulProcessor > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_PROCESSOR_ID_ARRAY,
-                                       &md.rProcessor,
-                                       md.ulProcessor*sizeof(DWORD)));
-    if (md.ulOS > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_OSINFO_ARRAY,
-                                       &md.rOS,
-                                       md.ulOS*sizeof(OSINFO)));
-    if (md.cbLocale > 0)
-        IfFailThrow(pName->SetProperty(ASM_NAME_CULTURE,
-                                       md.szLocale,
-                                       md.cbLocale*sizeof(WCHAR)));
-
-    if (cbPublicKeyOrToken > 0)
-    {
-        if (dwFlags & afPublicKey)
-            IfFailThrow(pName->SetProperty(ASM_NAME_PUBLIC_KEY,
-                                           (void*)pbPublicKeyOrToken,
-                                           cbPublicKeyOrToken));
-        else
-            IfFailThrow(pName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                           (void*)pbPublicKeyOrToken,
-                                           cbPublicKeyOrToken));
-    }
-    else
-    {
-        IfFailThrow(pName->SetProperty(ASM_NAME_NULL_PUBLIC_KEY_TOKEN,
-                                       NULL, 0));
-    }
-
-    // See if the assemblyref is retargetable (ie, for a generic assembly).
-    if (IsAfRetargetable(dwFlags))
-    {
-        BOOL bTrue = TRUE;
-        IfFailThrow(pName->SetProperty(ASM_NAME_RETARGET,
-                                       &bTrue,
-                                       sizeof(bTrue)));
-    }
-
-    return pName;
-}
-#endif //FEATURE_FUSION
 
 BOOL Zapper::IsAssembly(LPCWSTR path)
 {
@@ -2000,64 +1120,6 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
 
         m_pEECompileInfo->SetIsGeneratingNgenPDB(TRUE);
 
-#ifdef FEATURE_FUSION
-        ReleaseHolder<IAssemblyName> pAssemblyName(NULL);	
-        HRESULT hr;
-
-        if (pAssemblyPathOrName == NULL)
-        {
-            // No root was found, so we don't have an IL assembly path yet. Get IAssemblyName
-            // from the aux file next to pNativeImagePath, and load from that IAssemblyName
-            IfFailThrow(GetAssemblyNameFromNIPath(pNativeImagePath, &pAssemblyName));
-            IfFailThrow(m_pEECompileInfo->LoadAssemblyByIAssemblyName(pAssemblyName, &hAssembly));
-        }
-        else
-        {
-            DWORD attributes = WszGetFileAttributes(pAssemblyPathOrName);
-            if (attributes == INVALID_FILE_ATTRIBUTES || 
-                ((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY))
-            {
-                // pAssemblyPathOrName doesn't map to a valid file, so assume it's an
-                // assembly name that we can parse and generate an IAssemblyName from, and
-                // then load from the IAssemblyName
-
-                IfFailThrow(m_pEECompileInfo->LoadAssemblyByName(pAssemblyPathOrName, &hAssembly));
-
-            }
-            else
-            {
-                // pAssemblyPathOrName DOES map to a valid file, so load it directly.
-                IfFailThrow(m_pEECompileInfo->LoadAssemblyByPath(pAssemblyPathOrName, 
-                    // fExplicitBindToNativeImage: On the phone, a path to the NI is specified
-                    // explicitly (even with .ni. in the name). All other callers specify a path to
-                    // the IL, and the NI is inferred, so this is normally FALSE in those other
-                    // cases.
-                    FALSE,
-                    &hAssembly));
-            }
-        }
-
-        // Now is a good time to make sure pNativeImagePath is the same native image
-        // fusion loaded
-        {
-            WCHAR wzZapImagePath[MAX_LONGPATH] = {0};
-            DWORD dwZapImagePathLength = MAX_LONGPATH;
-
-            hr = E_FAIL;
-            if (m_pEECompileInfo->CheckAssemblyZap(hAssembly, wzZapImagePath, &dwZapImagePathLength))
-            {
-                if (_wcsicmp(wzZapImagePath, pNativeImagePath) != 0)
-                {
-                    GetSvcLogger()->Printf(
-                        W("Unable to load '%s'.  Please ensure that it is a native image and is up to date.  Perhaps you meant to specify this native image instead: '%s'\n"),
-                        pNativeImagePath,
-                        wzZapImagePath);
-
-                    ThrowHR(E_FAIL);
-                }
-            }
-        }
-#else // FEATURE_FUSION
         IfFailThrow(m_pEECompileInfo->LoadAssemblyByPath(
             pAssemblyPathOrName, 
 
@@ -2068,7 +1130,6 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
             TRUE, 
 
             &hAssembly));
-#endif // FEATURE_FUSION
 
 
         // Ensure all modules belonging to this assembly get loaded.  The CreatePdb() call
@@ -2098,7 +1159,7 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
         {
             pDiasymreaderPath = m_DiasymreaderPath.GetUnicode();
         }
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif //!defined(NO_NGENPDB)
 
         IfFailThrow(::CreatePdb(hAssembly, pNativeImagePath, pPdbPath, pdbLines, pManagedPdbSearchPath, pDiasymreaderPath));
     }
@@ -2116,272 +1177,8 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
 
 void Zapper::ComputeDependencies(LPCWSTR pAssemblyName, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 {
-#ifdef FEATURE_FUSION
-    class Callback : public DomainCallback
-    {
-    public:
-        Callback(Zapper *pZapper, LPCWSTR pAssemblyName, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-        {
-            this->pZapper         = pZapper;
-            this->pAssemblyName   = pAssemblyName;
-            this->pNativeImageSig = pNativeImageSig;
-        }
-
-        virtual void doCallback()
-        {
-            pZapper->ComputeDependenciesInCurrentDomain(pAssemblyName, pNativeImageSig);
-        }
-
-        Zapper* pZapper;
-        LPCWSTR pAssemblyName;
-        CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig;
-    };
-
-    _ASSERTE(m_pDomain);
-    Callback callback(this, pAssemblyName, pNativeImageSig);
-    InvokeDomainCallback(&callback);
-#endif // FEATURE_FUSION
 }
 
-#ifdef FEATURE_FUSION
-
-void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-{
-    //
-    // Load the assembly.
-    //
-    // "string" may be a path or assembly display name.
-    // To decide, we see if it is the name of a valid file.
-    //
-
-    CORINFO_ASSEMBLY_HANDLE hAssembly;
-    HRESULT                 hr;
-
-    DWORD attributes = WszGetFileAttributes(pAssemblyString);
-    if (attributes == INVALID_FILE_ATTRIBUTES || ((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY))
-    {
-        IfFailThrow(m_pEECompileInfo->LoadAssemblyByName(pAssemblyString,
-                                                         &hAssembly));
-    }
-    else
-    {
-
-        hr = m_pEECompileInfo->LoadAssemblyByPath(pAssemblyString,
-                                                  FALSE,  // fExplicitBindToNativeImage
-                                                  &hAssembly);
-        if (hr == CLR_E_BIND_TYPE_NOT_FOUND)
-        {   // This means we are ngen'ing WinMD file which does not have any public WinRT type - therefore cannot be ever used
-            // Note: It's comming from call to code:GetFirstWinRTTypeDef
-            
-            // Let's not create the ngen image
-            if (pNativeImageSig != NULL)
-            {
-                memset(pNativeImageSig, 0, sizeof(*pNativeImageSig));   // Fake NI signature to disable NGen.
-            }
-            Warning(W("NGen is not supported for empty WinMD files.\n"));
-            return;
-        }
-        IfFailThrow(hr);
-    }
-
-
-    //
-    // Check if we have a native image already, and if so get its GUID
-    //
-
-    WCHAR zapManifestPath[MAX_LONGPATH];
-    DWORD cZapManifestPath = MAX_LONGPATH;
-    if (pNativeImageSig &&
-        m_pEECompileInfo->CheckAssemblyZap(hAssembly, zapManifestPath, &cZapManifestPath))
-    {
-        NonVMComHolder<INativeImageInstallInfo> pNIInstallInfo;
-
-        IfFailThrow(GetAssemblyMDInternalImport(
-            zapManifestPath,
-            IID_INativeImageInstallInfo,
-            (IUnknown **)&pNIInstallInfo));
-
-        IfFailThrow(pNIInstallInfo->GetSignature(pNativeImageSig));
-    }
-
-    //
-    // Set the display name for the assembly
-    //
-
-    StackSString ss;
-    GetAssemblyName(m_pEECompileInfo, hAssembly, ss, ICorCompileInfo::GANF_Default);
-
-    m_assemblyDependencies.SetDisplayName(ss.GetUnicode());
-
-    ComputeAssemblyDependencies(hAssembly);
-}
-
-void Zapper::ComputeAssemblyDependencies(CORINFO_ASSEMBLY_HANDLE hAssembly)
-{
-    HRESULT hr = S_OK;
-    NonVMComHolder<IMDInternalImport> pAssemblyImport = m_pEECompileInfo->GetAssemblyMetaDataImport(hAssembly);
-
-    EX_TRY
-    {
-        //
-        // Enumerate the dependencies
-        //
-
-        HENUMInternalHolder hEnum(pAssemblyImport);
-        hEnum.EnumAllInit(mdtAssemblyRef);
-
-        // Need to reinitialize the dependencies list, since we could have been called for other assemblies
-        // belonging to the same root.  Zapper::ComputeAssemblyDependencies is first called for the root
-        // assembly, then called for each hard dependencies, and called for each soft dependencies unless
-        // /nodependencies switch is used.
-        m_assemblyDependencies.Reinitialize();
-
-        if (!CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenAllowMscorlibSoftbind))
-        {
-            // Force all assemblies (other than mscorlib itself) to hardbind to mscorlib.
-            // This ensures that mscorlib is NGen'ed before all other assemblies.
-            CORINFO_ASSEMBLY_HANDLE hAssemblyMscorlib = m_pEECompileInfo->GetModuleAssembly(m_pEECompileInfo->GetLoaderModuleForMscorlib());
-            if (hAssembly != hAssemblyMscorlib)
-            {
-                StackSString ss;
-                GetAssemblyName(m_pEECompileInfo, hAssemblyMscorlib, ss, ICorCompileInfo::GANF_Default);
-    
-                m_assemblyDependencies.Append(ss.GetUnicode(), LoadAlways, NGenDefault);
-            }
-        }
-
-        mdAssembly token;
-        mdMethodDef md;
-        while (pAssemblyImport->EnumNext(&hEnum, &token))
-        {
-            CORINFO_ASSEMBLY_HANDLE hAssemblyRef;
-            HRESULT hrLoad = m_pEECompileInfo->LoadAssemblyRef(pAssemblyImport, token, &hAssemblyRef);
-            if (FAILED(hrLoad))
-            {
-                // Failed to load a dependency.  Print a warning and move to the next dependency.
-
-                LPCSTR pszName;
-                IfFailThrow(pAssemblyImport->GetAssemblyRefProps(token, NULL, NULL,
-                                                         &pszName, NULL,
-                                                         NULL, NULL, NULL));
-
-                StackSString sName(SString::Utf8, pszName);
-
-                StackSString hrMsg;
-                GetHRMsg(hrLoad, hrMsg);
-
-                Warning(W("Failed to load dependency %s of assembly %s because of the following error : %s\n"),
-                        sName.GetUnicode(),
-                        m_assemblyDependencies.GetDisplayName(),
-                        hrMsg.GetUnicode());
-                continue;
-            }
-            else if (hrLoad == S_OK)
-            {
-                _ASSERTE(hAssemblyRef != NULL);
-
-                StackSString ss;
-                GetAssemblyName(m_pEECompileInfo, hAssemblyRef, ss, ICorCompileInfo::GANF_Default);
-
-                LoadHintEnum loadHint = LoadDefault;
-                IfFailThrow(m_pEECompileInfo->GetLoadHint(hAssembly, hAssemblyRef, &loadHint));
-
-                NGenHintEnum ngenHint = NGenDefault;
-                // Not supported
-                //IfFailThrow(m_pEECompileInfo->GetNGenHint(hAssemblyRef, &ngenHint));
-                m_assemblyDependencies.Append(ss.GetUnicode(), loadHint, ngenHint);
-            }
-        }
-
-#ifdef FEATURE_COMINTEROP
-        HENUMInternalHolder hTypeRefEnum(pAssemblyImport);
-        hTypeRefEnum.EnumAllInit(mdtTypeRef);
-
-        mdTypeRef tkTypeRef;
-        while(pAssemblyImport->EnumNext(&hTypeRefEnum, &tkTypeRef))
-        {
-            CORINFO_ASSEMBLY_HANDLE hAssemblyRef;
-            HRESULT hrLoad = m_pEECompileInfo->LoadTypeRefWinRT(pAssemblyImport, tkTypeRef, &hAssemblyRef);
-            if (FAILED(hrLoad))
-            {
-                // Failed to load a dependency.  Print a warning and move to the next dependency.
-                LPCSTR psznamespace;
-                LPCSTR pszname;
-                pAssemblyImport->GetNameOfTypeRef(tkTypeRef, &psznamespace, &pszname);
-                
-                StackSString sName(SString::Utf8, pszname);
-                StackSString sNamespace(SString::Utf8, psznamespace);
-                StackSString hrMsg;
-                GetHRMsg(hrLoad, hrMsg);
-
-                Warning(W("Failed to load WinRT type dependency %s.%s of assembly %s because of the following error : %s\n"),
-                        sNamespace.GetUnicode(),
-                        sName.GetUnicode(),
-                        m_assemblyDependencies.GetDisplayName(),
-                        hrMsg.GetUnicode());
-                continue;
-            }
-            else if (hrLoad == S_OK)
-            {
-                _ASSERTE(hAssemblyRef != NULL);
-                StackSString ss;
-
-                CORINFO_MODULE_HANDLE hModule = m_pEECompileInfo->GetAssemblyModule(hAssemblyRef);
-                m_pEECompileInfo->GetModuleFileName(hModule, ss);
-
-                LoadHintEnum loadHint = LoadDefault;
-                IfFailThrow(m_pEECompileInfo->GetLoadHint(hAssembly, hAssemblyRef, &loadHint));
-
-                NGenHintEnum ngenHint = NGenDefault;
-                
-                // Append verifies no duplicates
-                m_assemblyDependencies.Append(ss.GetUnicode(), loadHint, ngenHint);
-            }
-        }
-#endif
-        //
-        // Get the default NGen setting for the assembly
-        //
-
-        NGenHintEnum ngenHint = NGenDefault;
-        // Not supported
-        // IfFailThrow(m_pEECompileInfo->GetNGenHint(hAssembly, &ngenHint));
-        m_assemblyDependencies.SetNGenHint(ngenHint);
-    }
-    EX_CATCH
-    {
-        hr = GET_EXCEPTION()->GetHR();
-        RetailAssertIfExpectedClean();
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    IfFailThrow(hr);
-
-    HangWorker(W("NGenDependencyWorkerHang"), W("NGenDependencyWorkerInsideHang"));
-}
-
-void Zapper::HangWorker(LPCWSTR hangKey, LPCWSTR insideHangKey)
-{
-    if (REGUTIL::GetConfigDWORD_DontUse_(hangKey, 0) != 1)
-    {
-        return;
-    }
-
-    RegKeyHolder hKey;
-    if (WszRegCreateKeyEx(HKEY_LOCAL_MACHINE, FRAMEWORK_REGISTRY_KEY_W, 0,
-        NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS)
-    {
-        DWORD dwValue = 1;
-        WszRegSetValueEx(hKey, insideHangKey, 0, REG_DWORD,
-            reinterpret_cast<BYTE *>(&dwValue), sizeof(dwValue));
-    }
-
-    while (true)
-    {
-        ClrSleepEx(1000, FALSE);
-    }
-}
-#endif // FEATURE_FUSION
 
 //
 // Compile a module by name
@@ -2477,10 +1274,6 @@ void Zapper::CompileInCurrentDomain(__in LPCWSTR string, CORCOMPILE_NGEN_SIGNATU
     BEGIN_ENTRYPOINT_VOIDRET;
 
 
-#ifdef FEATURE_FUSION
-    // Set the context info for the current domain
-    SetContextInfo(string);
-#endif
 
     //
     // Load the assembly.
@@ -2492,71 +1285,10 @@ void Zapper::CompileInCurrentDomain(__in LPCWSTR string, CORCOMPILE_NGEN_SIGNATU
     _ASSERTE(m_hAssembly == NULL);
 
     //without fusion, this has to be a file name
-#ifdef FEATURE_FUSION
-    DWORD attributes = WszGetFileAttributes(string);
-    if (attributes == INVALID_FILE_ATTRIBUTES || ((attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY))
-    {
-        IfFailThrow(m_pEECompileInfo->LoadAssemblyByName(string, &m_hAssembly));
-
-        /* @TODO: If this is the first input, check if it is an EXE
-           using m_pEECompileInfo->GetAssemblyCodeBase(), and print a
-           warning that its better to use the EXE file name on the
-           command-line instead of the full assembly name, so that we
-           will pick the right runtime version from its config file
-           (if present). We could make this work even for full assembly name,
-           but that does not currently work, and this will not be an
-           issue once we require only one platform-runtime version
-           on the machine
-        */
-        StackSString codeBase;
-        m_pEECompileInfo->GetAssemblyCodeBase(m_hAssembly, codeBase);
-        if (codeBase.GetCount() > 4)
-        {
-            SString::Iterator i = codeBase.End() - 4;
-            if (codeBase.MatchCaseInsensitive(i, SL(".exe")))
-                Warning(W("Specify the input as a .EXE for ngen to pick up the config-file\n"));
-        }
-    }
-    else
-#endif //FEATURE_FUSION
     {
         IfFailThrow(m_pEECompileInfo->LoadAssemblyByPath(string, FALSE /* fExplicitBindToNativeImage */, &m_hAssembly));
     }
 
-#ifdef FEATURE_FUSION
-    //
-    // Skip the compilation if the assembly is up to date
-    //
-    if (CheckAssemblyUpToDate(m_hAssembly, pNativeImageSig))
-    {
-        Info(W("Assembly %s is up to date.\n"), string);
-        goto Exit;
-    }
-
-    //
-    // Try to install native image from repository
-    //
-    if (TryToInstallFromRepository(m_hAssembly, pNativeImageSig))
-    {
-        Success(W("Installed native image for assembly %s from repository.\n"), string);
-        goto Exit;
-    }
-
-    if (m_pOpt->m_fRepositoryOnly)
-    {
-        Info(W("Unable to find native image for assembly %s in repository, skipping.\n"), string);
-        goto Exit;
-    }
-
-    //
-    // Testing aid
-    //
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NativeImageRequire) != 0)
-    {
-        Error(W("Failed to find native image for assembly %s in repository.\n"), string);
-        ThrowHR(E_FAIL);
-    }
-#endif //FEATURE_FUSION
 
     //
     // Compile the assembly
@@ -2571,524 +1303,6 @@ Exit:
     return;
 }
 
-#ifdef FEATURE_FUSION
-BOOL Zapper::CheckAssemblyUpToDate(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-{
-    WCHAR zapManifestPath[MAX_LONGPATH];
-    DWORD cZapManifestPath = MAX_LONGPATH;
-
-    if (!m_pEECompileInfo->CheckAssemblyZap(
-        hAssembly,
-        zapManifestPath, &cZapManifestPath))
-        return FALSE;
-
-    if (pNativeImageSig)
-    {
-        NonVMComHolder<INativeImageInstallInfo> pNIInstallInfo;
-
-        IfFailThrow(GetAssemblyMDInternalImport(
-            zapManifestPath,
-            IID_INativeImageInstallInfo,
-            (IUnknown **)&pNIInstallInfo));
-
-        IfFailThrow(pNIInstallInfo->GetSignature(pNativeImageSig));
-    }
-
-    return TRUE;
-}
-
-BOOL Zapper::TryToInstallFromRepository(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-{
-    BOOL fHitMismatchedVersion = FALSE;
-    BOOL fHitMismatchedDependencies = FALSE;
-
-    if (!m_pOpt->m_repositoryDir || (m_pOpt->m_repositoryFlags & IgnoreRepository) != 0)
-    {
-        // No repository
-        return FALSE;
-    }
-
-    StackSString strSimpleName;
-    GetAssemblyName(m_pEECompileInfo, hAssembly, strSimpleName, ICorCompileInfo::GANF_Simple);
-
-    // First see if the NI is available in a folder named "NGen" under the CLR location.
-    // This folder is used by CBS to store build lab generated NIs.  Moving files out of
-    // this folder might confuse CBS, so we hard link NIs from this folder into the NIC.
-    WCHAR wszNGenPath[MAX_LONGPATH];
-    DWORD dwNGenPathLen = COUNTOF(wszNGenPath);
-    IfFailThrow(GetInternalSystemDirectory(wszNGenPath, &dwNGenPathLen));
-
-    wcscat_s(wszNGenPath, COUNTOF(wszNGenPath), W("NativeImages"));
-    if (TryToInstallFromRepositoryDir(StackSString(wszNGenPath), strSimpleName,
-                                      pNativeImageSig, &fHitMismatchedVersion, &fHitMismatchedDependencies, TRUE))
-    {
-        return TRUE;
-    }
-
-    // If we are moving files from repository, first try to look for the native image in the
-    // top-level directory of the repository. This is designed for scenarios where it is convenient
-    // to put all native images in a flat directory. We don't support this with CopyFromRepository
-    // switch, since it is tricky to figure out which files to copy.
-    if ((m_pOpt->m_repositoryFlags & MoveFromRepository) != 0 &&
-        TryToInstallFromRepositoryDir(StackSString(m_pOpt->m_repositoryDir), strSimpleName,
-                                      pNativeImageSig, &fHitMismatchedVersion, &fHitMismatchedDependencies))
-    {
-        // Try to remove the repository directory in case it has become empty.
-        // (Note that attempt to remove non-empty directory fails)
-        WszRemoveDirectory(m_pOpt->m_repositoryDir);
-        return TRUE;
-    }
-
-    // Copied from fusion\asmcache\cacheUtils.cpp
-    // TODO: Clean this up
-#define MAX_ZAP_NAME_LENGTH     20
-#define ZAP_ABBR_END_CHAR       W('#')
-    StackSString strSubDirName;
-    if (strSimpleName.GetCount() > MAX_ZAP_NAME_LENGTH)
-    {
-        strSubDirName.Set(strSimpleName.GetUnicode(), MAX_ZAP_NAME_LENGTH-1);
-        strSubDirName.Append(ZAP_ABBR_END_CHAR);           
-    }
-    else
-        strSubDirName.Set(strSimpleName);
-
-    StackSString strRepositorySubDir(StackSString(m_pOpt->m_repositoryDir), SL(W("\\")), strSubDirName);
-
-    DWORD attributes = WszGetFileAttributes(strRepositorySubDir);
-    if (attributes == INVALID_FILE_ATTRIBUTES || ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0))
-    {
-       return FALSE;
-    }
-
-    ClrDirectoryEnumerator de(strRepositorySubDir);
-   
-    //
-    // Try to find a matching native image
-    //
-    while (de.Next())
-    {
-        StackSString strNativeImageDir;
-        strNativeImageDir.Set(strRepositorySubDir, SL("\\"), de.GetFileName());
-
-        if (TryToInstallFromRepositoryDir(strNativeImageDir, strSimpleName,
-                                          pNativeImageSig, &fHitMismatchedVersion, &fHitMismatchedDependencies))
-        {
-            if (m_pOpt->m_repositoryFlags & MoveFromRepository)
-            {
-                // Close the iterator so that the directory can be deleted below
-                de.Close();
-
-                // Try to remove empty directories that are not needed anymore.
-                // (Note that attempt to remove non-empty directory fails)
-                if (WszRemoveDirectory(strNativeImageDir))
-                {
-                    if (WszRemoveDirectory(strRepositorySubDir))
-                    {
-                        WszRemoveDirectory(m_pOpt->m_repositoryDir);
-                    }
-                }
-            }
-
-            return TRUE;
-        }
-    }
-
-    if (fHitMismatchedVersion)
-    {
-        ReportEventNGEN(EVENTLOG_WARNING_TYPE, NGEN_REPOSITORY, W("Version or flavor did not match with repository: %s"), strSimpleName.GetUnicode());
-    }
-
-    if (fHitMismatchedDependencies)
-    {
-        ReportEventNGEN(EVENTLOG_WARNING_TYPE, NGEN_REPOSITORY, W("Dependencies did not match with repository: %s"), strSimpleName.GetUnicode());
-    }
-
-    return FALSE;
-}
-
-BOOL Zapper::TryToInstallFromRepositoryDir(
-    SString &strNativeImageDir, SString &strSimpleName,
-    CORCOMPILE_NGEN_SIGNATURE *pNativeImageSig, BOOL *pfHitMismatchedVersion, BOOL *pfHitMismatchedDependencies, BOOL useHardLink)
-{
-    StackSString strNativeImageName;
-    StackSString strNativeImagePath;
-
-    // probe for both .exe and .dll
-    static const LPCWSTR c_Suffixes[] = { W(".dll"), W(".exe"), W(".ni.dll"), W(".ni.exe") };
-
-    int suffix;
-    for (suffix = 0; suffix < NumItems(c_Suffixes); suffix++)
-    {
-        strNativeImageName.Set(strSimpleName, SL(c_Suffixes[suffix]));
-        strNativeImagePath.Set(strNativeImageDir, SL("\\"), strNativeImageName);
-
-        if (WszGetFileAttributes(strNativeImagePath) != INVALID_FILE_ATTRIBUTES)
-        {
-            break;
-        }
-    }
-    if (suffix == NumItems(c_Suffixes))
-    {
-        // No matching file
-        return FALSE;
-    }
-
-    // Make sure the native image is unmapped before we try to install it
-    {
-        HModuleHolder hMod(::WszLoadLibrary(strNativeImagePath));
-        if (hMod.IsNull())
-        {
-            // Corrupted image or something
-            return FALSE;
-        }
-
-        PEDecoder pedecoder(hMod);
-
-        if (!pedecoder.CheckNativeHeader())
-        {
-            // Corrupted image
-            return FALSE;
-        }
-
-        class LoggableNativeImage : public LoggableAssembly
-        {
-            LPCWSTR m_lpszNativeImage;
-
-        public:
-            LoggableNativeImage(LPCWSTR lpszNativeImage)
-                : m_lpszNativeImage(lpszNativeImage)
-            {
-            }
-
-            virtual SString DisplayString() { return m_lpszNativeImage; }
-#ifdef FEATURE_FUSION
-            virtual IAssemblyName*  FusionAssemblyName() { return NULL; }
-            virtual IFusionBindLog* FusionBindLog() { return NULL; }
-#endif // FEATURE_FUSION
-        }
-        loggableNativeImage(strNativeImagePath);
-
-        // Does the version info of the native image match what we are looking for?
-        CORCOMPILE_VERSION_INFO *pVersionInfo = pedecoder.GetNativeVersionInfo();
-        if (!RuntimeVerifyNativeImageVersion(pVersionInfo, &loggableNativeImage) ||
-            !RuntimeVerifyNativeImageFlavor(pVersionInfo, &loggableNativeImage))
-        {
-            // Version info does not match
-            *pfHitMismatchedVersion = TRUE;
-            return FALSE;
-        }
-
-        COUNT_T cDependencies;
-        CORCOMPILE_DEPENDENCY *pDependencies = pedecoder.GetNativeDependencies(&cDependencies);
-
-        COUNT_T cMeta;
-        const void *pMeta = pedecoder.GetNativeManifestMetadata(&cMeta);
-
-        NonVMComHolder<IMDInternalImport> pAssemblyImport;
-
-        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                                 cMeta,
-                                                 ofRead,
-                                                 IID_IMDInternalImport,
-                                                 (void **) &pAssemblyImport));
-
-        if (!VerifyDependencies(pAssemblyImport, pDependencies, cDependencies))
-        {
-            // Dependencies does not match
-            *pfHitMismatchedDependencies = TRUE;
-            return FALSE;
-        }
-    }
-
-    if (m_pOpt->m_repositoryFlags & MoveFromRepository && !useHardLink)
-    {
-        // Move files to save I/O bandwidth
-        InstallFromRepository(strNativeImagePath.GetUnicode(), pNativeImageSig);
-    }
-    else
-    {
-        // Copy files
-        CopyAndInstallFromRepository(strNativeImageDir.GetUnicode(), strNativeImageName.GetUnicode(), pNativeImageSig, useHardLink);
-    }
-
-    ReportEventNGEN(EVENTLOG_SUCCESS, NGEN_REPOSITORY, W("Installed from repository: %s"), strSimpleName.GetUnicode());
-    return TRUE;
-}
-
-void Zapper::InstallFromRepository(LPCWSTR lpszNativeImage, 
-                                   CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
-{
-    //
-    // Get the zap string.
-    //
-    HRESULT hr = S_OK;
-
-    NonVMComHolder<IAssemblyName> pName;
-    NonVMComHolder<IAssemblyLocation> pAssemblyLocation;
-
-    ReleaseHolder<IBindContext> pBindCtx;
-    if (FAILED(hr = m_pDomain->GetIBindContext(&pBindCtx)))
-    {
-        Error(W("Failed to get binding context.\n"));
-        ThrowHR(hr);
-    }
-
-    HRESULT hrInstallCustomAssembly = InstallNativeAssembly(lpszNativeImage, INVALID_HANDLE_VALUE, m_pOpt->m_zapSet, pBindCtx, &pName, &pAssemblyLocation);
-    if (FAILED(hrInstallCustomAssembly))
-    {
-        Error(W("Failed to install native image %s from repository.\n"), lpszNativeImage);
-        ThrowHR(hrInstallCustomAssembly);
-    }
-
-    // TODO: It would be nice to verify that the native image works by calling CheckAssemblyUpToDate.
-    // Unfortunately, it does not work since we have loaded the non-ngened image in this appdomain 
-    // already in CompileInCurrentDomain. We would need to create a new appdomain for the verification. 
-
-    //
-    // Print a success message
-    //
-    if (!m_pOpt->m_silent)
-    {
-        PrintFusionCacheEntry(LogLevel_Info, pName);
-    }
-
-    WCHAR zapManifestPath[MAX_LONGPATH];
-    DWORD cPath = MAX_LONGPATH;
-    IfFailThrow(pAssemblyLocation->GetPath(zapManifestPath, &cPath));
-
-    if (pNativeImageSig)
-    {
-        NonVMComHolder<INativeImageInstallInfo> pNIInstallInfo;
-
-        IfFailThrow(GetAssemblyMDInternalImport(
-            zapManifestPath,
-            IID_INativeImageInstallInfo,
-            (IUnknown **)&pNIInstallInfo));
-
-        IfFailThrow(pNIInstallInfo->GetSignature(pNativeImageSig));
-    }
-}
-
-void Zapper::CleanDirectory(LPCWSTR path)
-{
-    // Handle the case when we are given file instead of directory
-    DWORD dwAttributes = WszGetFileAttributes(path);
-    if (dwAttributes == INVALID_FILE_ATTRIBUTES)
-    {
-        // Directory does not exist
-        return;
-    }
-
-    if (!(dwAttributes & FILE_ATTRIBUTE_DIRECTORY))
-    {
-        if (dwAttributes & FILE_ATTRIBUTE_READONLY)
-            WszSetFileAttributes(path, dwAttributes&~FILE_ATTRIBUTE_READONLY);
-
-        if (!WszDeleteFile(path))
-        {
-            Warning(W("Cannot delete file %s\n"), path);
-            ThrowLastError();
-        }
-        return;
-    }
-
-    {
-        ClrDirectoryEnumerator de(path);
-
-        while (de.Next())
-        {
-            StackSString fullName;
-            fullName.Set(path, W("\\"), de.GetFileName());
-
-            if (de.GetFileAttributes() & FILE_ATTRIBUTE_DIRECTORY)
-            {
-                CleanDirectory(fullName);
-            }
-            else
-            {
-                if (de.GetFileAttributes() & FILE_ATTRIBUTE_READONLY)
-                    WszSetFileAttributes(fullName, de.GetFileAttributes()&~FILE_ATTRIBUTE_READONLY);
-
-                if (!WszDeleteFile(fullName))
-                {
-                    Warning(W("Cannot delete file %s\n"), fullName.GetUnicode());
-                    ThrowLastError();
-                }
-            }
-        }
-    }
-
-    if (!WszRemoveDirectory(path))
-    {
-        Warning(W("Cannot remove directory %s\n"), path);
-        ThrowLastError();
-    }
-}
-
-void Zapper::TryCleanDirectory(LPCWSTR path)
-{
-    EX_TRY
-    {
-        CleanDirectory(path);
-    }
-    EX_SWALLOW_NONTERMINAL;
-}
-
-//------------------------------------------------------------------------------
-
-// static
-void Zapper::TryCleanDirectory(Zapper * pZapper)
-{
-    // @CONSIDER: If this fails, block for some time, and try again.
-    // This will give more time for programs like Anti-virus software
-    // to release the file handle.
-    pZapper->TryCleanDirectory(pZapper->m_outputPath);
-}
-
-typedef Wrapper<Zapper*, DoNothing<Zapper*>, Zapper::TryCleanDirectory, NULL>
-    TryCleanDirectoryHolder;
-
-//------------------------------------------------------------------------------
-// Sets Zapper::m_outputPath to the folder where we should create the
-// ngen images.
-//------------------------------------------------------------------------------
-
-void Zapper::GetOutputFolder()
-{
-    /* We create a temporary folder in the NativeImageCache (NIC) instead of using
-       WszGetTempPath(). This is because WszGetTempPath() is a private folder
-       for the current user. Files created in there will have ACLs allowing
-       accesses only to the current user. Later InstallCustomAssembly()
-       will move the files to the NIC preserving the security attributes.
-       Now other users cannot use the ngen images, which is bad.
-    */
-    WCHAR tempFolder[MAX_LONGPATH];
-    DWORD tempFolderLen = NumItems(tempFolder);
-    IfFailThrow(GetCachePath(ASM_CACHE_ZAP, tempFolder, &tempFolderLen));
-
-    // Create the folder "NIC"
-
-    IfFailThrow(clr::fs::Dir::CreateRecursively(tempFolder));
-
-    // Create the folder "NIC\Temp"
-
-    StackSString tempPath(tempFolder);
-    tempPath += W("\\Temp");
-    if (!WszCreateDirectory(tempPath, NULL))
-    {
-        if (GetLastError() != ERROR_ALREADY_EXISTS)
-            ThrowLastError();
-    }
-
-    // Create the folder "NIC\Temp\P-N", where P is the current process ID, and NN is a serial number. 
-    // Start with N=0.  If that directory name is already in use, clean up that directory (it can't be in
-    // active use because process ID is unique), increment N, and try again.  Give up if N gets too large.
-    for (DWORD n = 0; ; n++)
-    {
-        m_outputPath.Printf(W("%s\\%x-%x"), (LPCWSTR)tempPath, GetCurrentProcessId(), n);
-        if (WszCreateDirectory(m_outputPath, NULL))
-            break;
-
-        if (GetLastError() != ERROR_ALREADY_EXISTS)
-            ThrowLastError();
-
-        TryCleanDirectory(m_outputPath);
-
-        if (n >= 255)
-        {
-            Error(W("Unable to create working directory"));
-            ThrowHR(E_FAIL);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void Zapper::CopyAndInstallFromRepository(LPCWSTR lpszNativeImageDir,
-                                          LPCWSTR lpszNativeImageName, 
-                                          CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig,
-                                          BOOL useHardLink)
-{
-    GetOutputFolder();
-
-    // Note that we do not want to fail if we cannot clean up the TEMP files.
-    // We have seen many issues where the Indexing service or AntiVirus software
-    // open the temporary files, and seem to hold onto them. We have been
-    // told that if ngen completes too fast, these other softwares may
-    // not be able to process the file fast enough, and may close the file
-    // sometime after we have tried to delete it.
-    TryCleanDirectoryHolder outputPathHolder(this);
-
-    StackSString strTempNativeImage;
-    
-    //local variable fixes gcc overload resolution.
-    SString literalPathSep(SString::Literal, "\\");
-    strTempNativeImage.Set(m_outputPath, literalPathSep, lpszNativeImageName);
-
-    if (useHardLink)
-    {
-        // Don't support multi-module assemblies. The useHardLink flag is used in
-        // scenarios where the source directory has multiple native images, and we
-        // want to avoid the need to figure out which files are needed.
-        StackSString strSource(lpszNativeImageDir, literalPathSep, lpszNativeImageName);
-
-        // Try to create hard link first. If that fails, try again with copy.
-        if (!WszCreateHardLink(strTempNativeImage.GetUnicode(), strSource.GetUnicode(), NULL) &&
-            !WszCopyFile(strSource.GetUnicode(), strTempNativeImage.GetUnicode(), TRUE))
-        {
-            ThrowLastError();
-        }
-    }
-    else
-    {
-        // Copy everything in the directory over. Blindly copying everything over
-        // saves us from dealing with external modules.
-        CopyDirectory(lpszNativeImageDir, m_outputPath);
-    }
-
-    InstallFromRepository(strTempNativeImage.GetUnicode(), pNativeImageSig);
-}
-
-//------------------------------------------------------------------------------
-
-void Zapper::CopyDirectory(LPCWSTR srcPath, LPCWSTR dstPath)
-{
-    ClrDirectoryEnumerator de(srcPath);
-
-    while (de.Next())
-    {
-        StackSString srcFile;
-        SString literalPathSep(SString::Literal, "\\");
-        srcFile.Set(srcPath, literalPathSep, de.GetFileName());
-        
-        StackSString dstFile;
-        dstFile.Set(dstPath, literalPathSep, de.GetFileName());
-        
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NGenCopyFromRepository_SetCachedSigningLevel) != 0)
-        {
-            // The user wants the destination file to be vouched for. It would be a security hole to copy the file
-            // and then actually vouch for it. So we create a hard link instead. If the original file has the EA,
-            // the new link will also see the EA as it points to the same physical file. Note that the argument
-            // order is different between CreateHardLink and CopyFile.
-            if (WszCreateHardLink(dstFile.GetUnicode(), srcFile.GetUnicode(), NULL))
-            {
-                continue;
-            }
-
-            // If creation of hard link failed, issue an warning and fall back to copying.
-            HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-            _ASSERTE(FAILED(hr));
-            if (IsExeOrDllOrWinMD(srcFile.GetUnicode()))
-            {   // Print the warning for executables for easier troubleshooting
-                Warning(W("CreateHardLink failed with HRESULT 0x%08x for file %s\n"), hr, srcFile.GetUnicode());
-            }
-        }
-
-        if (!WszCopyFile(srcFile.GetUnicode(), dstFile.GetUnicode(), TRUE))
-            ThrowLastError();
-    }
-}
-#endif // FEATURE_FUSION
 
 //------------------------------------------------------------------------------
 
@@ -3241,13 +1455,6 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
     // GenerateFile() will fail later on.
     // VerifyBindingString is a Runtime requirement, but StringHasLegalFileNameChars
     // is a ngen restriction.
-#ifdef FEATURE_FUSION
-    if (!FusionBind::VerifyBindingStringW(wszAssemblyName))
-    {
-        Error(W("Error: Assembly name \"%s\" contains path separator and/or extension.\n"), wszAssemblyName); // VLDTR_E_AS_BADNAME
-        ThrowHR(HRESULT_FROM_WIN32(ERROR_INVALID_NAME));
-    }
-#endif //FEATURE_FUSION
 
     if (!StringHasLegalFileNameChars(wszAssemblyName))
     {
@@ -3296,17 +1503,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
     // Set up the output path.
     //
 
-#ifdef FEATURE_FUSION
-    GetOutputFolder();
-
-    // Note that we do not want to fail if we cannot clean up the TEMP files.
-    // We have seen many issues where the Indexing service or AntiVirus software
-    // open the temporary files, and seem to hold onto them. We have been
-    // told that if ngen completes too fast, these other softwares may
-    // not be able to process the file fast enough, and may close the file
-    // sometime after we have tried to delete it.
-    TryCleanDirectoryHolder outputPathHolder(this);
-#else // FEATURE_FUSION
     //
     // If we don't have fusion, we just create the file right at the target.  No need to do an install.
     //
@@ -3329,7 +1525,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
             m_outputPath.Set(W(".") DIRECTORY_SEPARATOR_STR_W);
         }
     }
-#endif // FEATURE_FUSION
 
     //
     // Get the manifest metadata.
@@ -3387,10 +1582,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
         }
 
         // Write the main assembly module
-#ifdef FEATURE_FUSION
-        strNativeImagePath.Set(m_outputPath, SL(DIRECTORY_SEPARATOR_STR_W), strAssemblyName, 
-            pAssemblyModule->m_ModuleDecoder.IsDll() ? SL(W(".dll")) : SL(W(".exe")));
-#else // FEATURE_FUSION
         strNativeImagePath = GetOutputFileName();
 
         if (strNativeImagePath.IsEmpty())
@@ -3398,7 +1589,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
             strNativeImagePath.Set(m_outputPath, SL(DIRECTORY_SEPARATOR_STR_W), strAssemblyName, 
                 pAssemblyModule->m_ModuleDecoder.IsDll() ? SL(W(".ni.dll")) : SL(W(".ni.exe")));
         }
-#endif // FEATURE_FUSION
 
         pAssemblyModule->SetPdbFileName(SString(strAssemblyName, SL(W(".ni.pdb"))));
 
@@ -3409,21 +1599,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
     if (FAILED(g_hrFatalError))
         ThrowHR(g_hrFatalError);
 
-#ifdef FEATURE_FUSION
-    InstallCompiledAssembly(strAssemblyName.GetUnicode(), strNativeImagePath.GetUnicode(), hFile, hFiles);
-    
-    // 
-    // Once we return from InstallCompiledAssembly, we're in a window where the native image file
-    // has been placed into the NIC, but none of the Ngen rootstore data structures have been set
-    // to indicate there is a native image for this assembly.  Therefore, we MUST return to the
-    // Ngen process now without throwing an exception.
-    // If you need to add code below here before returning it cannot throw an exception or return 
-    // failure.  If it does, you must make sure the native image get uninstalled from disk before 
-    // returning so we do not leak the NI file.
-    // 
-    return;
-
-#else // FEATURE_FUSION
 
     // Close the file
     CloseHandle(hFile);
@@ -3436,7 +1611,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
     {
         GetSvcLogger()->Printf(W("Native image %s generated successfully.\n"), strNativeImagePath.GetUnicode());
     }
-#endif // FEATURE_FUSION
 
 }
 
@@ -3639,107 +1813,6 @@ ZapImage * Zapper::CompileModule(CORINFO_MODULE_HANDLE hModule,
     return module.Extract();
 }
 
-#ifdef FEATURE_FUSION
-void Zapper::InstallCompiledAssembly(LPCWSTR szAssemblyName, LPCWSTR szNativeImagePath, HANDLE hFile, SArray<HANDLE> &hFiles)
-{
-    HRESULT hr = S_OK;
-
-    if ((m_pOpt->m_repositoryFlags & CopyToRepository) && m_pOpt->m_repositoryDir)
-    {
-        //
-        // Copy the native images back to repository. We require RepositoryDir itself to exists.
-        //
-
-        StackSString strSimpleName(szAssemblyName);
-        StackSString strSubDirName;
-
-        // Get subdirectory name from the assembly name
-        if (strSimpleName.GetCount() > MAX_ZAP_NAME_LENGTH)
-        {
-            strSubDirName.Set(strSimpleName.GetUnicode(), MAX_ZAP_NAME_LENGTH-1);
-            strSubDirName.Append(ZAP_ABBR_END_CHAR);           
-        }
-        else
-            strSubDirName.Set(strSimpleName);
-
-        StackSString destPath;
-        destPath.Set(m_pOpt->m_repositoryDir, SL(W("\\")), strSubDirName);
-
-        if (!WszCreateDirectory(destPath, NULL))
-        {
-            if (GetLastError() != ERROR_ALREADY_EXISTS)
-                ThrowLastError();
-        }
-
-        // Get unique subdirectory name from native image sig
-        GUID unique;
-        IfFailThrow(CoCreateGuid(&unique));
-        static_assert_no_msg(sizeof(unique) == 16);
-        destPath.AppendPrintf(W("\\%08x%08x%08x%08x"), 
-            ((LONG*)&unique)[0], ((LONG*)&unique)[1],
-            ((LONG*)&unique)[2], ((LONG*)&unique)[3]);
-
-        if (!WszCreateDirectory(destPath, NULL))
-            ThrowLastError();
-
-        CopyDirectory(m_outputPath, destPath);
-    }
-
-    NonVMComHolder<IAssemblyName> pName;
-    NonVMComHolder<IAssemblyLocation> pAssemblyLocation;
-
-    // If the NGenCompileWorkerHang key is set, we want to loop forever.  This helps testing
-    // of termination of compilation workers on fast machines (where the compilation can finish
-    // before the worker has been terminated).
-    HangWorker(W("NGenCompileWorkerHang"), W("NGenCompileWorkerInsideHang"));
-
-    ReleaseHolder<IBindContext> pBindCtx;
-    if (FAILED(hr = m_pDomain->GetIBindContext(&pBindCtx)))
-    {
-        Error(W("Failed to get binding context.\n"));
-        ThrowHR(hr);
-    }
-    if (FAILED(hr = InstallNativeAssembly(szNativeImagePath, hFile, m_pOpt->m_zapSet, pBindCtx, &pName, &pAssemblyLocation)))
-    {
-        Warning(W("Failed to install image to native image cache.\n"));
-        ThrowHR(hr);
-    }
-    
-    //
-    // The native image is now installed in the NIC.  Any exception thrown before the end of this method
-    // will result in the native image being leaked but the rootstore being cleaned up, orphaning the NI.
-    //
-    EX_TRY
-    {
-        // Ignore errors if they happen
-        (void)m_pEECompileInfo->SetCachedSigningLevel(hFile, hFiles.GetElements(), hFiles.GetCount());
-    
-        CloseHandle(hFile);
-        for (SArray<HANDLE>::Iterator i = hFiles.Begin(); i != hFiles.End(); ++i)
-        {
-            CloseHandle(*i);
-        }
-
-        //
-        // Print a success message
-        //
-
-        if (!m_pOpt->m_silent)
-        {
-            PrintFusionCacheEntry(LogLevel_Info, pName);
-        }
-    }
-    EX_CATCH
-    {
-        // Uninstall the native image and rethrow. Ignore all errors from UninstallNativeAssembly; we 
-        // tried our best not to leak a native image and want to surface to original reason for 
-        // failing anyway.
-        (void)UninstallNativeAssembly(pName, GetSvcLogger()->GetSvcLogger());
-        EX_RETHROW;
-    }
-    EX_END_CATCH_UNREACHABLE;
-} // Zapper::InstallCompiledAssembly
-#endif // FEATURE_FUSION
 
 void Zapper::Success(LPCWSTR format, ...)
 {
@@ -3873,14 +1946,14 @@ void Zapper::SetDontLoadJit()
 {
     m_fDontLoadJit = true;
 }
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_MERGE_JIT_AND_ENGINE)
+#endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
 #if !defined(NO_NGENPDB)
 void Zapper::SetDiasymreaderPath(LPCWSTR pwzDiasymreaderPath)
 {
     m_DiasymreaderPath.Set(pwzDiasymreaderPath);
 }
-#endif // defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#endif // !defined(NO_NGENPDB)
 
 
 void Zapper::SetPlatformAssembliesPaths(LPCWSTR pwzPlatformAssembliesPaths)

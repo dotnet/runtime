@@ -242,8 +242,6 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
     // Because it's not, CoreCLR will allow WaitAll on STA threads.
     // But fixing this would be a breaking change at this point, since we already shipped
     // SL 2 and 3 this way.
-    // We we'll also check for FEATURE_CORECLR here, so that if we enable FEATURE_COMINTEROP
-    // on CoreCLR we won't break anyone.
     // Perhaps in a future release we can fix this, if we aren't quite so concerned about
     // compatibility....
 

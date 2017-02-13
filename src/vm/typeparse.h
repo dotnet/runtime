@@ -44,9 +44,6 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
     }
 }
 
-#ifdef FEATURE_FUSION
-DomainAssembly* LoadAssemblyFromPartialNameHack(SString* psszAssemblySpec, BOOL fCropPublicKey = FALSE);
-#endif // FEATURE_FUSION
 
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec, 

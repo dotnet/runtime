@@ -1850,11 +1850,7 @@ HMODULE ShimProcess::GetDacModule()
     //   mscordaccore.dll  <-- coreclr
     //   mscordacwks.dll   <-- desktop
     PCWSTR eeFlavor = 
-#if defined(FEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
         W("mscordaccore.dll");
-#else
-        W("mscordacwks.dll");
-#endif
     
 #endif // FEATURE_PAL
     wszAccessDllPath.Append(eeFlavor);
