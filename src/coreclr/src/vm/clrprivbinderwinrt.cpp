@@ -179,8 +179,6 @@ CLRPrivBinderWinRT::GetOrCreateBinder(
     STANDARD_VM_CONTRACT;
     HRESULT hr = S_OK;
 
-    // This should be allocated directly by CLRPrivBinderAppX in the AppX scenario.
-
     if (s_pSingleton == nullptr)
     {
         ReleaseHolder<CLRPrivBinderWinRT> pBinder;
