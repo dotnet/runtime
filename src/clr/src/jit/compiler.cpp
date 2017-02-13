@@ -7824,6 +7824,8 @@ void JitTimer::PrintCsvHeader()
 
             InlineStrategy::DumpCsvHeader(fp);
 
+            fprintf(fp, "\"Executable Code Bytes\",");
+            fprintf(fp, "\"GC Info Bytes\",");
             fprintf(fp, "\"Total Bytes Allocated\",");
             fprintf(fp, "\"Total Cycles\",");
             fprintf(fp, "\"CPS\"\n");
@@ -7875,6 +7877,8 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     comp->m_inlineStrategy->DumpCsvData(fp);
 
+    fprintf(fp, "%Iu,", comp->info.compNativeCodeSize);
+    fprintf(fp, "%Iu,", comp->compInfoBlkSize);
     fprintf(fp, "%Iu,", comp->compGetAllocator()->getTotalBytesAllocated());
     fprintf(fp, "%I64u,", m_info.m_totalCycles);
     fprintf(fp, "%f\n", CycleTimer::CyclesPerSecond());
