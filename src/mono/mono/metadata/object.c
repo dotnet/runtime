@@ -1646,11 +1646,10 @@ get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot)
 }
 
 /**
- * mono_method_add_generic_virtual_invocation:
- * @domain: a domain
- * @vtable_slot: pointer to the vtable slot
- * @method: the inflated generic virtual method
- * @code: the method's code
+ * \param domain a domain
+ * \param vtable_slot pointer to the vtable slot
+ * \param method the inflated generic virtual method
+ * \param code the method's code
  *
  * Registers a call via unmanaged code to a generic virtual method
  * instantiation or variant interface method.  If the number of calls reaches a threshold

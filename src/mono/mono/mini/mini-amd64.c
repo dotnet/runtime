@@ -3502,16 +3502,14 @@ mono_amd64_get_tls_gs_offset (void)
 }
 
 /*
- * mono_amd64_emit_tls_get:
- * @code: buffer to store code to
- * @dreg: hard register where to place the result
- * @tls_offset: offset info
+ * \param code buffer to store code to
+ * \param dreg hard register where to place the result
+ * \param tls_offset offset info
+ * \return a pointer to the end of the stored code
  *
- * mono_amd64_emit_tls_get emits in @code the native code that puts in
+ * mono_amd64_emit_tls_get emits in \p code the native code that puts in
  * the dreg register the item in the thread local storage identified
  * by tls_offset.
- *
- * Returns: a pointer to the end of the stored code
  */
 static guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
@@ -7597,12 +7595,10 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 /**
- * mono_breakpoint_clean_code:
+ * \return TRUE if no sw breakpoint was present.
  *
- * Copy @size bytes from @code - @offset to the buffer @buf. If the debugger inserted software
+ * Copy \p size bytes from \p code - \p offset to the buffer \p buf. If the debugger inserted software
  * breakpoints in the original code, they are removed in the copy.
- *
- * Returns TRUE if no sw breakpoint was present.
  */
 gboolean
 mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size)
