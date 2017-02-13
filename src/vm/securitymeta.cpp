@@ -21,7 +21,6 @@
 #include "security.h"
 
 #include "perfcounters.h"
-#include "nlstable.h"
 #include "frames.h"
 #include "dllimport.h"
 #include "strongname.h"
