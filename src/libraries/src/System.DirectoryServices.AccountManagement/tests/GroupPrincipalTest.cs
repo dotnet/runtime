@@ -48,6 +48,7 @@ namespace AccountManagementUnitTests
         /// <summary>
         ///A test for GroupPrincipal Constructor
         ///</summary>
+        [Fact]
         public void GroupPrincipalConstructorTest()
         {
             GroupPrincipal group = new GroupPrincipal(domainContext);
@@ -66,6 +67,7 @@ namespace AccountManagementUnitTests
         /// Also assuming that the group and members were created - this should be done dynamically (but have to think about test performance, we don't want it to delay all tests)
         /// Maybe it's better to test ADStoreCtx.IsMemberOfInStore directly? (and also SAMStoreCTX - I still don't know what are the behavioural differences)
         ///</summary>
+        [Fact]
         public void IsMemberOfTest()
         {
             using (GroupPrincipal group = GroupPrincipal.FindByIdentity(domainContext, "TestLargeGroup"))

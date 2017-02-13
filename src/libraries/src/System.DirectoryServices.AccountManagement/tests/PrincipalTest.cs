@@ -12,7 +12,7 @@ namespace AccountManagementUnitTests
     ///This is a test class for PrincipalTest and is intended
     ///to contain all PrincipalTest Unit Tests
     ///</summary>
-    abstract public class PrincipalTest
+    abstract public class PrincipalTest : IDisposable
     {
         protected PrincipalContext domainContext;
 
@@ -42,32 +42,21 @@ namespace AccountManagementUnitTests
             domainContext = new PrincipalContext(ContextType.Domain, domain, container, username, password);
         }
 
-        //Use ClassCleanup to run code after all tests in a class have run
-        public void PrincipalTestCleanup()
+        public void Dispose()
         {
             if (domainContext != null)
             {
                 domainContext.Dispose();
+                domainContext = null;
             }
         }
 
-        //Use TestInitialize to run code before running each test
-        //[TestInitialize()]
-        //public void MyTestInitialize()
-        //{
-        //}
-        //
-        //Use TestCleanup to run code after each test has run
-        //[TestCleanup()]
-        //public void MyTestCleanup()
-        //{
-        //}
-        //
-        #endregion      
+        #endregion
 
         /// <summary>
         ///  testing user creation
         ///  right now we just test that if trying to add an existing user it causes it to be deleted
+        [Fact]
         public void AddExistingPrincipal()
         {
             // use new GUID for the user name so we be sure this user does not exist yet
@@ -77,9 +66,10 @@ namespace AccountManagementUnitTests
                 principal.Save();
             }
 
-            //Assert.IsNotNull(Principal.FindByIdentity(domainContext, name), "Could not create principal");
+            Assert.NotNull(Principal.FindByIdentity(domainContext, name));
 
             // this previously caused the user to be deleted. it is still expected to throw an exception, but not delete the user
+            bool exceptionThrown = false;
             try
             {
                 using (Principal principal = CreatePrincipal(domainContext, name))
@@ -89,15 +79,16 @@ namespace AccountManagementUnitTests
             }
             catch (PrincipalExistsException)
             {
+                exceptionThrown = true;
             }
 
             // validate that we correctly throw an exception when trying to add an existing principal
-            //Assert.IsTrue(exceptionThrown);
+            Assert.True(exceptionThrown);
 
             // validate that we did not delete incorrectly delete the first principal
             using (Principal principal2 = Principal.FindByIdentity(domainContext, name))
             {
-                //Assert.IsNotNull(principal2, "Existing principal was deleted");
+                Assert.NotNull(principal2);
 
                 // explicitly delete the user and check it was really deleted
                 principal2.Delete();
@@ -111,6 +102,7 @@ namespace AccountManagementUnitTests
         /// <summary>
         /// 
         /// </summary>
+        [Fact]
         public void TestExtendedPrincipal()
         {
             // to improve this, we might want to generate random sequences

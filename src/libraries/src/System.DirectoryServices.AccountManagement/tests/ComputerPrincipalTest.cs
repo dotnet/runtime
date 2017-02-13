@@ -46,10 +46,13 @@ namespace AccountManagementUnitTests
         /// <summary>
         ///A test for ComputerPrincipal Constructor
         ///</summary>
+        [Fact]
         public void ComputerPrincipalConstructorTest()
         {
             ComputerPrincipal computer = new ComputerPrincipal(domainContext);
             computer.Dispose();
+            // jsimmons - I currently do not see a straightforward 
+            //   XUnit replacement for Assert.Inconclusive.
             //Assert.Inconclusive("TODO: Implement code to verify target");
         }
 

@@ -102,9 +102,8 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                // jsimmons - I presumeno COM apartments in .NET Core 
-                //if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
-                //    Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
+                if (Thread.CurrentThread.GetApartmentState() == ApartmentState.Unknown)
+                    Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
                 // We need the credentials to be in the form <machine>\\<user>
                 // if they just passed user then append the machine name here.
                 if (null != userName)
