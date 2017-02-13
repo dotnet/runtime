@@ -1058,7 +1058,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W(
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO_EX(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(UNSUPPORTED_BuildFlavor, W("BuildFlavor"), "Choice of build flavor (wks or svr) of CLR")
-CONFIG_DWORD_INFO(INTERNAL_CerLogging, W("CerLogging"), 0, "In vm\\ConstrainedExecutionRegion.cpp.  Debug-only logging when we prepare methods, find reliability contract problems, restore stuff from ngen images, etc.")
 CONFIG_DWORD_INFO_EX(INTERNAL_clearNativeImageStress, W("clearNativeImageStress"), 0, "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_CLRLoadLogDir, W("CLRLoadLogDir"), "Enable logging of CLR selection")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CONFIG, W("CONFIG"), "Used to specify an XML config file for EEConfig", CLRConfig::REGUTIL_default)
