@@ -7218,29 +7218,34 @@ double JitTimer::s_cyclesPerSec = CycleTimer::CyclesPerSecond();
 
 #if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
 const char* PhaseNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) string_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"
 };
 
 const char* PhaseEnums[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) #enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) #enum_nm,
 #include "compphases.h"
 };
 
 const LPCWSTR PhaseShortNames[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) W(short_nm),
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) W(short_nm),
 #include "compphases.h"
 };
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
 bool PhaseHasChildren[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) hasChildren,
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) hasChildren,
 #include "compphases.h"
 };
 
 int PhaseParent[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent) parent,
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) parent,
+#include "compphases.h"
+};
+
+bool PhaseReportsIRSize[] = {
+#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) measureIR,
 #include "compphases.h"
 };
 
@@ -7648,7 +7653,7 @@ JitTimer::JitTimer(unsigned byteCodeSize) : m_info(byteCodeSize)
     }
 }
 
-void JitTimer::EndPhase(Phases phase)
+void JitTimer::EndPhase(Compiler* compiler, Phases phase)
 {
     // Otherwise...
     // We re-run some phases currently, so this following assert doesn't work.
@@ -7698,6 +7703,15 @@ void JitTimer::EndPhase(Phases phase)
             {
                 m_curPhaseStart = threadCurCycles;
             }
+        }
+
+        if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[phase])
+        {
+            m_info.m_nodeCountAfterPhase[phase] = compiler->fgMeasureIR();
+        }
+        else
+        {
+            m_info.m_nodeCountAfterPhase[phase] = 0;
         }
     }
 
@@ -7820,6 +7834,10 @@ void JitTimer::PrintCsvHeader()
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(fp, "\"%s\",", PhaseNames[i]);
+                if (PhaseReportsIRSize[i])
+                {
+                    fprintf(fp, "\"Node Count After %s\",", PhaseNames[i]);
+                }
             }
 
             InlineStrategy::DumpCsvHeader(fp);
@@ -7871,6 +7889,11 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
             totCycles += m_info.m_cyclesByPhase[i];
         }
         fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
+
+        if (PhaseReportsIRSize[i])
+        {
+            fprintf(fp, "%u,", m_info.m_nodeCountAfterPhase[i]);
+        }
     }
 
     comp->m_inlineStrategy->DumpCsvData(fp);
