@@ -1,5 +1,6 @@
-/*
- * mach-support-x86.c: mach support for x86
+/**
+ * \file
+ * mach support for x86
  *
  * Authors:
  *   Geoff Norton (gnorton@novell.com)

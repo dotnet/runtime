@@ -1,5 +1,6 @@
-/*
- * mono-mmap.c: Support for mapping code into the process address space
+/**
+ * \file
+ * Support for mapping code into the process address space
  *
  * Author:
  *   Mono Team (mono-list@lists.ximian.com)

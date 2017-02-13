@@ -1,5 +1,6 @@
-/*
- * mono-membar.h: Memory barrier inline functions
+/**
+ * \file
+ * Memory barrier inline functions
  *
  * Author:
  *	Mark Probst (mark.probst@gmail.com)

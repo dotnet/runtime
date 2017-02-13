@@ -1,5 +1,6 @@
-/*
- * networking-fallbacks.c: Fallback networking code that rely on old BSD apis or whatever else is available.
+/**
+ * \file
+ * Fallback networking code that rely on old BSD apis or whatever else is available.
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

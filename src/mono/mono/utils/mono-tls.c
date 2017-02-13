@@ -1,5 +1,6 @@
-/*
- * mono-tls.c: Low-level TLS support
+/**
+ * \file
+ * Low-level TLS support
  *
  * Thread local variables that are accessed both from native and managed code
  * are defined here and should be accessed only through this APIs

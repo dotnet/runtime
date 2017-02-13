@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __UTILS_MONO_STRING_H__
 #define __UTILS_MONO_STRING_H__
 #include <glib.h>

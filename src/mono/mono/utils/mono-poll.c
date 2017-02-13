@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #include <config.h>
 
 #ifdef HOST_WIN32

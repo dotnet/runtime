@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_COUNTERS_H__
 #define __MONO_COUNTERS_H__
 

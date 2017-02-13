@@ -1,5 +1,5 @@
-/*
- * mono-rand.c: 
+/**
+ * \file
  *
  * Authors:
  *      Mark Crichton (crichton@gimp.org)

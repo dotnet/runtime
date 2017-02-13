@@ -1,5 +1,6 @@
-/*
- * mono-log-android.c: Android-specific interface to the logger
+/**
+ * \file
+ * Android-specific interface to the logger
  *
  * This module contains the Android logcat logger interface
  *

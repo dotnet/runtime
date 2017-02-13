@@ -1,5 +1,6 @@
-/*
- * mono-tls.h: Low-level TLS support
+/**
+ * \file
+ * Low-level TLS support
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

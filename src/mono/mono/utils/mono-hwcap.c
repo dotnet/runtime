@@ -1,5 +1,6 @@
-/*
- * mono-hwcap.c: Hardware feature detection
+/**
+ * \file
+ * Hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

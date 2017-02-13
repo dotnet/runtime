@@ -1,5 +1,6 @@
-/*
- * mono-threads.c: Low-level threading
+/**
+ * \file
+ * Low-level threading
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

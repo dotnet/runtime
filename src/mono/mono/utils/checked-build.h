@@ -1,5 +1,6 @@
-/*
- * checked-build.h: Expensive asserts used when mono is built with --with-checked-build=yes
+/**
+ * \file
+ * Expensive asserts used when mono is built with --with-checked-build=yes
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

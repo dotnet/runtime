@@ -1,5 +1,6 @@
-/*
- * mono-mmap-windows.c: Windows support for mapping code into the process address space
+/**
+ * \file
+ * Windows support for mapping code into the process address space
  *
  * Author:
  *   Mono Team (mono-list@lists.ximian.com)

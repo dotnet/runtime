@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-ppc.c: PowerPC hardware feature detection
+/**
+ * \file
+ * PowerPC hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

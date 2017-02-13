@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-arm64.c: ARM64 hardware feature detection
+/**
+ * \file
+ * ARM64 hardware feature detection
  *
  * Copyright 2013 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

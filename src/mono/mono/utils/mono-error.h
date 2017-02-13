@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_ERROR_H__
 #define __MONO_ERROR_H__
 

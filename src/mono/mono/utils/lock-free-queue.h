@@ -1,5 +1,6 @@
-/*
- * lock-free-queue.h: Lock free queue.
+/**
+ * \file
+ * Lock free queue.
  *
  * (C) Copyright 2011 Novell, Inc
  *

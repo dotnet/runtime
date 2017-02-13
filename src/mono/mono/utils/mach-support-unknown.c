@@ -1,5 +1,6 @@
-/*
- * mach-support-unknown.c: mach support for cross compilers (IOW, none)
+/**
+ * \file
+ * mach support for cross compilers (IOW, none)
  *
  * Authors:
  *   Rodrigo Kumpera (kumpera@gmail.com)

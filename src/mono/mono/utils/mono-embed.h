@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_EMBED_H__
 #define __MONO_EMBED_H__
 

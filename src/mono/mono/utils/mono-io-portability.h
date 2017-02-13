@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_IO_PORTABILITY_H
 #define __MONO_IO_PORTABILITY_H
 

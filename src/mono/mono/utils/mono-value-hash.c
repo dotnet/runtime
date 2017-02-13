@@ -1,5 +1,6 @@
-/*
- * mono-value-hash.c: A hash table which only stores values in the hash nodes.
+/**
+ * \file
+ * A hash table which only stores values in the hash nodes.
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)

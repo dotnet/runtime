@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_UTILS_PROCLIB_WINDOWS_H__
 #define __MONO_UTILS_PROCLIB_WINDOWS_H__
 

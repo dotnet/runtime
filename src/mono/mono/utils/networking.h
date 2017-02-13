@@ -1,5 +1,6 @@
-/*
- * networking.h: Portable networking functions
+/**
+ * \file
+ * Portable networking functions
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

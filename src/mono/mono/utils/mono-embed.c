@@ -1,5 +1,6 @@
-/*
- * mono-embed.c: Example code APIs to register a libraries using
+/**
+ * \file
+ * Example code APIs to register a libraries using
  * mono_dl_fallback_register.  Real implementations should instead
  * use a binary search for implementing the dl_mapping_open and
  * dl_mapping_symbol methods here.

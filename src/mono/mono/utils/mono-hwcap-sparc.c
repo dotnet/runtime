@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-sparc.c: SPARC hardware feature detection
+/**
+ * \file
+ * SPARC hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

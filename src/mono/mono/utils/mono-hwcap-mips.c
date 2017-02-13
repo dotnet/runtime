@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-mips.c: MIPS hardware feature detection
+/**
+ * \file
+ * MIPS hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

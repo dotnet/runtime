@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef _MONO_UTILS_RAND_H_
 #define _MONO_UTILS_RAND_H_
 

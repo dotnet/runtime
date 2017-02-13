@@ -1,5 +1,6 @@
-/*
- * mono-threads-coop.h: Cooperative suspend thread helpers
+/**
+ * \file
+ * Cooperative suspend thread helpers
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

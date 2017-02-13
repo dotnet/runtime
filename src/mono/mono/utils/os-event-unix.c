@@ -1,5 +1,6 @@
-/*
- * os-event-unix.c: MonoOSEvent on Unix
+/**
+ * \file
+ * MonoOSEvent on Unix
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

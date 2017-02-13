@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-cross.c: No-op hardware feature detection
+/**
+ * \file
+ * No-op hardware feature detection
  *
  * Author:
  *  Alex Rønne Petersen (alexrp@xamarin.com)

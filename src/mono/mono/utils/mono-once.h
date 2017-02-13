@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_ONCE_H__
 #define __MONO_ONCE_H__

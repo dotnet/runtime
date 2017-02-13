@@ -1,5 +1,6 @@
-/*
- * parse.c: Parsing for GC options.
+/**
+ * \file
+ * Parsing for GC options.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

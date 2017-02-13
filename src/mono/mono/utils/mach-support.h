@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_MACH_SUPPORT_H__
 #define __MONO_MACH_SUPPORT_H__
 

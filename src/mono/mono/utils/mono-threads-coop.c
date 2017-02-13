@@ -1,5 +1,6 @@
- /*
- * mono-threads.c: Coop threading
+/**
+ * \file
+ * Coop threading
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

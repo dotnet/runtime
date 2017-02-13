@@ -1,5 +1,6 @@
-/*
- * lock-free-alloc.h: Lock free allocator.
+/**
+ * \file
+ * Lock free allocator.
  *
  * (C) Copyright 2011 Novell, Inc
  *

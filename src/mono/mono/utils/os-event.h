@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef _MONO_UTILS_OS_EVENT_H_
 #define _MONO_UTILS_OS_EVENT_H_

@@ -1,5 +1,6 @@
-/*
- * networking-missing.c: Implements missing standard socket functions.
+/**
+ * \file
+ * Implements missing standard socket functions.
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

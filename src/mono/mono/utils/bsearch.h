@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_BSEARCH_H__
 #define __MONO_BSEARCH_H__
 

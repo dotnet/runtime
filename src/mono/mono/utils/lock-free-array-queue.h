@@ -1,5 +1,6 @@
-/*
- * lock-free-array-queue.h: A lock-free somewhat-queue that doesn't
+/**
+ * \file
+ * A lock-free somewhat-queue that doesn't
  * require hazard pointers.
  *
  * (C) Copyright 2011 Xamarin Inc.

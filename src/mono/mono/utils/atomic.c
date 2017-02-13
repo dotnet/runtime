@@ -1,6 +1,7 @@
-/*
- * atomic.c:  Workarounds for atomic operations for platforms that dont have
- *	      really atomic asm functions in atomic.h
+/**
+ * \file
+ * Workarounds for atomic operations for platforms that dont have
+ * really atomic asm functions in atomic.h
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_NETWORK_INTERFACES_H__
 #define __MONO_NETWORK_INTERFACES_H__
 /*

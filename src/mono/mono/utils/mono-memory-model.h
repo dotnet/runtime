@@ -1,5 +1,6 @@
-/*
- * mono-memory-model.h: Mapping of the arch memory model.
+/**
+ * \file
+ * Mapping of the arch memory model.
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

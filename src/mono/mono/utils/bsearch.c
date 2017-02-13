@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * bsearch () implementation. Needed because some broken platforms
  * have implementations that have unreasonable, non-standard
  * requirements (e.g. "key must not be null"). Taken from NetBSD

@@ -1,5 +1,6 @@
-/*
- * mono-path.c: Routines for handling path names.
+/**
+ * \file
+ * Routines for handling path names.
  * 
  * Authors:
  * 	Gonzalo Paniagua Javier (gonzalo@novell.com)

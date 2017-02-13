@@ -1,5 +1,6 @@
-/*
- * mono-threads-posix-signals.c: Shared facility for Posix signals support
+/**
+ * \file
+ * Shared facility for Posix signals support
  *
  * Author:
  *	Ludovic Henry (ludovic@gmail.com)

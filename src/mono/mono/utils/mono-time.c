@@ -1,4 +1,5 @@
-/*
+/**
+ * \file
  * Time utility functions.
  * Author: Paolo Molaro (<lupus@ximian.com>)
  * Copyright (C) 2008 Novell, Inc.

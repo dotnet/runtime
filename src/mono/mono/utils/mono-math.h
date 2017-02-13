@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_SIGNBIT_H__
 #define __MONO_SIGNBIT_H__

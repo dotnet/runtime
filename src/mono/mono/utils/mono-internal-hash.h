@@ -1,5 +1,6 @@
-/*
- * mono-internal-hash.h: A hash table which uses the values themselves as nodes.
+/**
+ * \file
+ * A hash table which uses the values themselves as nodes.
  *
  * Author:
  *   Mark Probst (mark.probst@gmail.com)

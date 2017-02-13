@@ -1,5 +1,6 @@
-/*
- * mono-filemap.c: Unix/Windows implementation for filemap.
+/**
+ * \file
+ * Unix/Windows implementation for filemap.
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * mono-linked-list-set.h: A lock-free split ordered list.
+/**
+ * \file
+ * A lock-free split ordered list.
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

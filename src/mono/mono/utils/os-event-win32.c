@@ -1,5 +1,6 @@
-/*
- * os-event-win32.c: MonoOSEvent on Win32
+/**
+ * \file
+ * MonoOSEvent on Win32
  *
  * Author:
  *	Ludovic Henry (luhenry@microsoft.com)

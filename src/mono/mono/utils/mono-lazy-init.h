@@ -1,5 +1,6 @@
-/*
- * mono-lazy-init.h: Lazy initialization and cleanup utilities
+/**
+ * \file
+ * Lazy initialization and cleanup utilities
  *
  * Authors: Ludovic Henry <ludovic@xamarin.com>
  *

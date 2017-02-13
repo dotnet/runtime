@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_COOP_SEMAPHORE_H__
 #define __MONO_COOP_SEMAPHORE_H__

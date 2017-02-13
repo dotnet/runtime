@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_UTILS_W32API_H__
 #define __MONO_UTILS_W32API_H__

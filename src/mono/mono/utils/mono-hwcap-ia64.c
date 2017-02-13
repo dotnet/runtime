@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-ia64.c: Itanium hardware feature detection
+/**
+ * \file
+ * Itanium hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

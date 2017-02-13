@@ -1,5 +1,6 @@
-/*
- * mono-error.c: Error handling code
+/**
+ * \file
+ * Error handling code
  *
  * Authors:
  *	Rodrigo Kumpera    (rkumpera@novell.com)

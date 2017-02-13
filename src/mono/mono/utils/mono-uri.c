@@ -1,5 +1,6 @@
-/*
- * mono-uri.c: Simple routine used to escape uris.
+/**
+ * \file
+ * Simple routine used to escape uris.
  *
  * Author:
  *   Miguel de Icaza (miguel@novell.com)

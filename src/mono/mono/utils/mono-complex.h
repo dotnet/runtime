@@ -1,5 +1,6 @@
-/*
-* mono-complex.h: C99 Complex math cross-platform support code
+/**
+ * \file
+* C99 Complex math cross-platform support code
 *
 * Author:
 *	Joao Matos (joao.matos@xamarin.com)

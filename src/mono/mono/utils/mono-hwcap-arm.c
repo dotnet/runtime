@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-arm.c: ARM hardware feature detection
+/**
+ * \file
+ * ARM hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

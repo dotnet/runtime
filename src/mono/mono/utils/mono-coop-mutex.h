@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_COOP_MUTEX_H__
 #define __MONO_COOP_MUTEX_H__

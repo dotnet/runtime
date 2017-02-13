@@ -1,5 +1,6 @@
-/*
- * hazard-pointer.h: Hazard pointer related code.
+/**
+ * \file
+ * Hazard pointer related code.
  *
  * (C) Copyright 2011 Novell, Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

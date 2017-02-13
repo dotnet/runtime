@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_PUBLIB_H__
 #define __MONO_PUBLIB_H__
 

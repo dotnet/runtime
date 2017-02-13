@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_URI_H
 #define __MONO_URI_H
 #include <glib.h>

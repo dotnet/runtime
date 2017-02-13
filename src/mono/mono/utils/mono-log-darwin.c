@@ -1,5 +1,6 @@
-/*
- * mono-log-darwin.c: Darwin-specific interface to the logger
+/**
+ * \file
+ * Darwin-specific interface to the logger
  *
  */
 #include <config.h>

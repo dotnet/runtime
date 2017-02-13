@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __LINUX_MAGIC_H
 #define __LINUX_MAGIC_H
 

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_LOGGER_INTERNAL_H__
 #define __MONO_LOGGER_INTERNAL_H__
 

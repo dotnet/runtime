@@ -1,5 +1,6 @@
-/*
- * json.h: JSON writer
+/**
+ * \file
+ * JSON writer
  *
  * Author:
  *   Joao Matos (joao.matos@xamarin.com)

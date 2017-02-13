@@ -1,5 +1,6 @@
-/*
- * networking-windows.c: Windows-specific networking implementations
+/**
+ * \file
+ * Windows-specific networking implementations
  *
  * Author:
  *	Alexander Köplinger (alex.koeplinger@outlook.com)

@@ -1,5 +1,6 @@
-/*
- * mono-log-windows.c: Simplistic simulation of a syslog logger for Windows
+/**
+ * \file
+ * Simplistic simulation of a syslog logger for Windows
  *
  * This module contains the Windows syslog logger interface
  *

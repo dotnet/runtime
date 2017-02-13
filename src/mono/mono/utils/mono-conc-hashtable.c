@@ -1,5 +1,6 @@
-/*
- * mono-conc-hashtable.h: A mostly concurrent hashtable
+/**
+ * \file
+ * A mostly concurrent hashtable
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

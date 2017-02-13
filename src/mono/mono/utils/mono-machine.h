@@ -1,5 +1,6 @@
-/*
- * mono-machine.h: machine definitions
+/**
+ * \file
+ * machine definitions
  *
  * Authors:
  *	Rodrigo Kumpera (kumpera@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * mono-log-common.c: Platform-independent interface to the logger
+/**
+ * \file
+ * Platform-independent interface to the logger
  *
  * This module contains the POSIX syslog logger interface
  *

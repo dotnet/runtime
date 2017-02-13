@@ -1,5 +1,6 @@
-/*
- * mono-threads-mach.c: Low-level threading, mach version
+/**
+ * \file
+ * Low-level threading, mach version
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

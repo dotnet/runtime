@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
-/*
- * mono-os-mutex.h: Portability wrappers around POSIX Mutexes
+/**
+ * \file
+ * Portability wrappers around POSIX Mutexes
  *
  * Authors: Jeffrey Stedfast <fejj@ximian.com>
  *

@@ -1,3 +1,6 @@
+/**
+ * \file
+ */
 
 #ifndef __MONO_UTILS_MONO_THREADS_DEBUG_H__
 #define __MONO_UTILS_MONO_THREADS_DEBUG_H__

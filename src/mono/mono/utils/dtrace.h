@@ -1,5 +1,6 @@
-/* 
- * dtrace.h: DTrace probes
+/* *
+ * \file
+ * DTrace probes
  * 
  * Authors:
  *   Andreas Faerber <andreas.faerber@web.de>

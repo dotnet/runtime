@@ -1,5 +1,6 @@
-/*
- * mono-threads-api.h: Low level access to thread state.
+/**
+ * \file
+ * Low level access to thread state.
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * mono-hwcap-s390x.c: S/390x hardware feature detection
+/**
+ * \file
+ * S/390x hardware feature detection
  *
  * Authors:
  *    Alex Rønne Petersen (alexrp@xamarin.com)

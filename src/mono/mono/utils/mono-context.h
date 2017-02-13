@@ -1,5 +1,6 @@
-/*
- * mono-context.h: plat independent machine state definitions
+/**
+ * \file
+ * plat independent machine state definitions
  *
  *
  * Copyright (c) 2011 Novell, Inc (http://www.novell.com)

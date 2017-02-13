@@ -1,5 +1,6 @@
-/*
- * strenc.h: string encoding conversions
+/**
+ * \file
+ * string encoding conversions
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

@@ -1,5 +1,6 @@
-/*
- * memfuncs.h: Our own bzero/memmove.
+/**
+ * \file
+ * Our own bzero/memmove.
  *
  * Copyright (C) 2015 Xamarin Inc
  *

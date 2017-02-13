@@ -1,5 +1,6 @@
-/*
- * mono-os-semaphore.h:  Definitions for generic semaphore usage
+/**
+ * \file
+ * Definitions for generic semaphore usage
  *
  * Author:
  *	Geoff Norton  <gnorton@novell.com>

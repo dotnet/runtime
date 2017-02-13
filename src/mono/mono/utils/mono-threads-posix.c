@@ -1,5 +1,6 @@
-/*
- * mono-threads-posix.c: Low-level threading, posix version
+/**
+ * \file
+ * Low-level threading, posix version
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

@@ -1,5 +1,6 @@
-/*
- * mono-property-hash.c: Hash table for (object, property) pairs
+/**
+ * \file
+ * Hash table for (object, property) pairs
  *
  * Author:
  *	Zoltan Varga (vargaz@gmail.com)

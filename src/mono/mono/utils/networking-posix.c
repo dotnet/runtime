@@ -1,5 +1,6 @@
-/*
- * networking-posix.c: Modern posix networking code
+/**
+ * \file
+ * Modern posix networking code
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

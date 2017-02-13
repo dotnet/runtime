@@ -1,5 +1,6 @@
-/*
- * atomic.h:  Atomic operations
+/**
+ * \file
+ * Atomic operations
  *
  * Author:
  *	Dick Porter (dick@ximian.com)

@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_MONO_SIGCONTEXT_H__
 #define __MONO_MONO_SIGCONTEXT_H__
 

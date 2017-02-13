@@ -1,5 +1,6 @@
-/*
- * mono-threads-windows.c: Low-level threading, windows version
+/**
+ * \file
+ * Low-level threading, windows version
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

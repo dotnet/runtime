@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_BITSET_H__
 #define __MONO_BITSET_H__
 

@@ -1,5 +1,6 @@
-/*
- * mono-dl-windows-uwp.c: UWP dl support for Mono.
+/**
+ * \file
+ * UWP dl support for Mono.
  *
  * Copyright 2016 Microsoft
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.

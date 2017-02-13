@@ -1,5 +1,6 @@
-/*
- * parse.h: Parsing for GC options.
+/**
+ * \file
+ * Parsing for GC options.
  *
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */

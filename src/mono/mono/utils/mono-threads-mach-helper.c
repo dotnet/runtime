@@ -1,5 +1,6 @@
-/*
- * mono-threads-mach-helper.c: ObjectiveC hacks to improve our changes with thread shutdown
+/**
+ * \file
+ * ObjectiveC hacks to improve our changes with thread shutdown
  *
  * Author:
  *	Rodrigo Kumpera (kumpera@gmail.com)

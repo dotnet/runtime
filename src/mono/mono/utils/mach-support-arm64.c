@@ -1,5 +1,6 @@
-/*
- * mach-support-arm.c: mach support for ARM
+/**
+ * \file
+ * mach support for ARM
  *
  * Authors:
  *   Geoff Norton (gnorton@novell.com)
