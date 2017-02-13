@@ -28,7 +28,6 @@
 #include "dllimportcallback.h"
 #include "threads.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 #include "eeconfig.h"
 #include "vars.hpp"
