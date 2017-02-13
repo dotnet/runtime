@@ -73,7 +73,7 @@ namespace System.Diagnostics
                     {
                         FileName = entry.FileName,
                         ModuleName = Path.GetFileName(entry.FileName),
-                        BaseAddress = new IntPtr((void*)entry.AddressRange.Key),
+                        BaseAddress = new IntPtr(unchecked((void*)entry.AddressRange.Key)),
                         ModuleMemorySize = sizeOfImage,
                         EntryPointAddress = IntPtr.Zero // unknown
                     });

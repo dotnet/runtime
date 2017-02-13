@@ -34,7 +34,7 @@ namespace System.Tests
                 }
                 else
                 {
-                    Assert.Equal((sbyte)expectedExitCode, (sbyte)p.ExitCode);
+                    Assert.Equal(unchecked((sbyte)expectedExitCode), unchecked((sbyte)p.ExitCode));
                 }
             }
         }

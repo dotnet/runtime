@@ -1883,10 +1883,13 @@ namespace System.Runtime.Serialization
                     }
                     if (i == blocks - 1)
                     {
-                        block[56] = (byte)(namespaces.Length << 3);
-                        block[57] = (byte)(namespaces.Length >> 5);
-                        block[58] = (byte)(namespaces.Length >> 13);
-                        block[59] = (byte)(namespaces.Length >> 21);
+                        unchecked
+                        {
+                            block[56] = (byte)(namespaces.Length << 3);
+                            block[57] = (byte)(namespaces.Length >> 5);
+                            block[58] = (byte)(namespaces.Length >> 13);
+                            block[59] = (byte)(namespaces.Length >> 21);
+                        }
                     }
 
                     offset = 0;
@@ -1929,24 +1932,30 @@ namespace System.Runtime.Serialization
                     d = c;
                     c = b;
 
-                    b = a + f + sines[j] + (uint)(block[g] + (block[g + 1] << 8) + (block[g + 2] << 16) + (block[g + 3] << 24));
+                    b = unchecked(a + f + sines[j] + (uint)(block[g] + (block[g + 1] << 8) + (block[g + 2] << 16) + (block[g + 3] << 24)));
                     b = b << shifts[j & 3 | j >> 2 & ~3] | b >> 32 - shifts[j & 3 | j >> 2 & ~3];
-                    b += c;
+                    b = unchecked(b + c);
 
                     a = hold;
                 }
 
-                aa += a;
-                bb += b;
-
-                if (i < blocks - 1)
+                unchecked
                 {
-                    cc += c;
-                    dd += d;
+                    aa += a;
+                    bb += b;
+
+                    if (i < blocks - 1)
+                    {
+                        cc += c;
+                        dd += d;
+                    }
                 }
             }
 
-            return new byte[] { (byte)aa, (byte)(aa >> 8), (byte)(aa >> 16), (byte)(aa >> 24), (byte)bb, (byte)(bb >> 8) };
+            unchecked
+            {
+                return new byte[] { (byte)aa, (byte)(aa >> 8), (byte)(aa >> 16), (byte)(aa >> 24), (byte)bb, (byte)(bb >> 8) };
+            }
         }
 
         private static string ExpandGenericParameters(string format, Type type)
