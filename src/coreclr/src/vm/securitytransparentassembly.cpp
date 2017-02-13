@@ -1238,12 +1238,12 @@ public:
 
         ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
         if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
         {
             moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
         }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
         if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
         {

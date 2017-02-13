@@ -3470,12 +3470,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             currentFrame.vmDomainFile.SetHostPtr(pDomainFile);
             currentFrame.ip = currentElement.ip;
             currentFrame.methodDef = currentElement.pFunc->GetMemberDef();
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
             currentFrame.isLastForeignExceptionFrame = currentElement.fIsLastFrameFromForeignStackTrace;
-#else
-            // for CLRs lacking exception dispatch info just set it to 0
-            currentFrame.isLastForeignExceptionFrame = 0;
-#endif
         }
     }
 }

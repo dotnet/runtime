@@ -12,7 +12,6 @@
 #include "fcall.h"
 #include "field.h"
 #include "typectxt.h"
-#include "constrainedexecutionregion.h"
 
 typedef void* EnregisteredTypeHandle;
 class SignatureNative;

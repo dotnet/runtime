@@ -642,7 +642,7 @@ LinktimeCheckReason SecurityDeclarative::GetLinktimeCheckReason(MethodDesc *pMD,
 
     LinktimeCheckReason reason = LinktimeCheckReason_None;
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
     ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
 
     // If the method does not allow partially trusted callers, then the check is because we need to ensure all
@@ -651,7 +651,7 @@ LinktimeCheckReason SecurityDeclarative::GetLinktimeCheckReason(MethodDesc *pMD,
     {
         reason |= LinktimeCheckReason_AptcaCheck;
     }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
     //
     // If the method has a LinkDemand on it for either CAS or non-CAS permissions, get those and set the

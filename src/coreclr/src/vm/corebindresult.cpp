@@ -15,7 +15,6 @@
 
 #include "../binder/inc/assembly.hpp"
 
-#ifndef FEATURE_FUSION
 #ifndef DACCESS_COMPILE
 
 STDMETHODIMP CoreBindResult::QueryInterface(REFIID   riid,
@@ -63,4 +62,3 @@ STDMETHODIMP_(ULONG) CoreBindResult::Release()
 
 
 #endif  // DACCES_COMPILE
-#endif // FEATURE_FUSION

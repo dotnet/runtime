@@ -22,9 +22,6 @@
 #include "assemblyname.hpp"
 #include "security.h"
 #include "field.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "strongname.h"
 #include "eeconfig.h"
 
@@ -106,14 +103,10 @@ FCIMPL1(Object*, AssemblyNameNative::ToString, Object* refThisUNSAFE)
     spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &pThis, FALSE, FALSE); 
 
     StackSString name;
-#ifndef FEATURE_FUSION
     spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
                               ASM_DISPLAYF_CULTURE |
                               ASM_DISPLAYF_PUBLIC_KEY_TOKEN,
                               name);
-#else
-    spec.GetFileOrDisplayName(0, name);
-#endif // FEATURE_FUSION
 
     pObj = (OBJECTREF) StringObject::NewString(name);
 
@@ -242,18 +235,7 @@ FCIMPL3(FC_BOOL_RET, AssemblyNameNative::ReferenceMatchesDefinition, AssemblyNam
     AssemblySpec defSpec;
     defSpec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &gc.pDef, fParse, FALSE);
 
-#ifdef FEATURE_FUSION
-    SafeComHolder<IAssemblyName> pRefName (NULL);
-    IfFailThrow(refSpec.CreateFusionName(&pRefName, FALSE));
-
-    SafeComHolder <IAssemblyName> pDefName (NULL);
-    IfFailThrow(defSpec.CreateFusionName(&pDefName, FALSE));
-
-    // Order matters: Ref->IsEqual(Def)
-    result = (S_OK == pRefName->IsEqual(pDefName, ASM_CMPF_IL_ALL));
-#else
     result=AssemblySpec::RefMatchesDef(&refSpec,&defSpec);
-#endif
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(result);
 }

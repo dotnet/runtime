@@ -25,9 +25,6 @@ NGenWorkerEmbedding() -- called when COM invoked the COM server with
 
 #include "common.h"
 
-#ifdef FEATURE_FUSION
-#include "binderngen.h"
-#endif
 
 #ifdef FEATURE_APPX
 #include "AppXUtil.h"

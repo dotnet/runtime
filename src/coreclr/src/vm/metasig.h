@@ -339,15 +339,10 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
 #endif
 
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
 DEFINE_METASIG_T(SM(SecurityContext_ContextCallback_Object_RetVoid, \
                  C(SECURITYCONTEXT) C(CONTEXTCALLBACK) j, v))
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)                 
-#ifdef FEATURE_COMPRESSEDSTACK
-DEFINE_METASIG_T(SM(CompressedStack_ContextCallback_Object_RetVoid, \
-                 C(COMPRESSED_STACK) C(CONTEXTCALLBACK) j, v))
-DEFINE_METASIG_T(SM(IntPtr_RetDCS, I, C(DOMAIN_COMPRESSED_STACK)))                 
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
+#endif // #if defined(FEATURE_IMPERSONATION) 
 DEFINE_METASIG(SM(Str_RetInt, s, i))
 DEFINE_METASIG_T(SM(Str_RetICustomMarshaler, s, C(ICUSTOM_MARSHALER)))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))
@@ -441,9 +436,6 @@ DEFINE_METASIG_T(IM(Obj_UnhandledExceptionEventArgs_RetVoid, j C(UNHANDLED_EVENT
 DEFINE_METASIG_T(IM(Assembly_RetVoid, C(ASSEMBLY), v))
 DEFINE_METASIG_T(IM(Assembly_RetBool, C(ASSEMBLY), F))
 DEFINE_METASIG_T(IM(AssemblyBase_RetBool, C(ASSEMBLYBASE), F))
-#ifdef FEATURE_COMINTEROP_REGISTRATION
-DEFINE_METASIG_T(IM(AssemblyBase_AssemblyRegistrationFlags_RetBool, C(ASSEMBLYBASE) g(ASSEMBLY_REGISTRATION_FLAGS), F))
-#endif
 DEFINE_METASIG_T(IM(Exception_RetVoid, C(EXCEPTION), v))
 
 DEFINE_METASIG(IM(IntPtr_RetObj, I, j))
@@ -569,19 +561,15 @@ DEFINE_METASIG_T(SM(Obj_ArrStr_ArrObj_OutStreamingContext_RetSerializationInfo, 
 #endif // FEATURE_SERIALIZATION
 DEFINE_METASIG(SM(Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj, j r(s) r(s) r(a(s)) r(a(j)), j))
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 // Execution Context
 DEFINE_METASIG_T(SM(SyncCtx_ArrIntPtr_Bool_Int_RetInt, C(SYNCHRONIZATION_CONTEXT) a(I) F i, i))
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 DEFINE_METASIG_T(IM(RefGuid_OutIntPtr_RetCustomQueryInterfaceResult, r(g(GUID)) r(I), g(CUSTOMQUERYINTERFACERESULT)))
 #endif //FEATURE_COMINTEROP
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssemblyBase, I C(ASSEMBLY_NAME), C(ASSEMBLYBASE)))
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 // ThreadPool
 DEFINE_METASIG(SM(Obj_Bool_RetVoid, j F, v))

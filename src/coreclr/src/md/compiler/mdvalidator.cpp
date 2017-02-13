@@ -19,9 +19,6 @@
 #include "pedecoder.h"
 #include "stgio.h"
 #include "corhost.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "sstring.h"
 #include "nsutilpriv.h"
 #include "holder.h"
@@ -7185,123 +7182,7 @@ MDSigComparer::_CompareMethodSignatureHeader(
 //*****************************************************************************
 //*****************************************************************************
 
-#ifdef FEATURE_FUSION
-HRESULT
-UnifiedAssemblySigComparer::_CreateIAssemblyNameFromAssemblyRef(
-    mdToken         tkAsmRef,
-    IAssemblyName **ppAsmName)
-{
-    HRESULT hr;
 
-    void const *        pvPublicKey;
-    ULONG               cbPublicKey;
-    ULONG               cchName;
-    ASSEMBLYMETADATA    amd;
-    void const *        pvHashValue;
-    ULONG               cbHashValue;
-    DWORD               dwFlags;
-
-    ZeroMemory(&amd, sizeof(amd));
-    
-    IfFailRet(m_pRegMeta->GetAssemblyRefProps(tkAsmRef,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  0,
-                                  &cchName,
-                                  &amd,
-                                  NULL,
-                                  NULL,
-                                  NULL));
-
-    StackSString ssName;
-    StackSString ssLocale;
-    amd.szLocale = ssLocale.OpenUnicodeBuffer(amd.cbLocale);
-
-    IfFailRet(m_pRegMeta->GetAssemblyRefProps(tkAsmRef,
-                                  &pvPublicKey,
-                                  &cbPublicKey,
-                                  ssName.OpenUnicodeBuffer(cchName),
-                                  cchName,
-                                  &cchName,
-                                  &amd,
-                                  &pvHashValue,
-                                  &cbHashValue,
-                                  &dwFlags));
-
-    ssName.CloseBuffer();
-    ssLocale.CloseBuffer();
-
-    IAssemblyName *pAsmName = NULL;
-
-    IfFailRet(CreateAssemblyNameObject(&pAsmName,
-                                       ssName.GetUnicode(),
-                                       CANOF_SET_DEFAULT_VALUES,
-                                       NULL));
-
-    // Set the public key token
-    IfFailRet(pAsmName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                    (LPVOID)pvPublicKey,
-                                    cbPublicKey));
-
-    // Set the culture
-    if (amd.cbLocale == 0 || amd.szLocale == NULL)
-    {
-        IfFailRet(pAsmName->SetProperty(ASM_NAME_CULTURE,
-                                        W("Neutral"),
-                                        sizeof(W("Neutral"))));
-    }
-    else
-    {
-        IfFailRet(pAsmName->SetProperty(ASM_NAME_CULTURE,
-                                        amd.szLocale,
-                                        amd.cbLocale));
-    }
-
-    // Set the major version
-    IfFailRet(pAsmName->SetProperty(ASM_NAME_MAJOR_VERSION,
-                                    &amd.usMajorVersion,
-                                    sizeof(amd.usMajorVersion)));
-
-    // Set the minor version
-    IfFailRet(pAsmName->SetProperty(ASM_NAME_MINOR_VERSION,
-                                    &amd.usMinorVersion,
-                                    sizeof(amd.usMinorVersion)));
-
-    // Set the build number
-    IfFailRet(pAsmName->SetProperty(ASM_NAME_BUILD_NUMBER,
-                                    &amd.usBuildNumber,
-                                    sizeof(amd.usBuildNumber)));
-
-    // Set the revision number
-    IfFailRet(pAsmName->SetProperty(ASM_NAME_REVISION_NUMBER,
-                                    &amd.usRevisionNumber,
-                                    sizeof(amd.usRevisionNumber)));
-
-    *ppAsmName = pAsmName;
-
-    return S_OK;
-}
-
-//*****************************************************************************
-// Define holder to release IAssemblyName on exception.
-//*****************************************************************************
-void UnifiedAssemblySigComparer_IAssemblyNameRelease(IAssemblyName *value)
-{
-    if (value != NULL)
-    {
-        value->Release();
-    }
-}
-
-typedef Holder<IAssemblyName*,
-               DoNothing<IAssemblyName*>,
-               &UnifiedAssemblySigComparer_IAssemblyNameRelease,
-               NULL> UnifiedAssemblySigComparer_IAssemblyNameHolder;
-
-#endif // FEATURE_FUSION
-
-#ifndef FEATURE_FUSION
 HRESULT UnifiedAssemblySigComparer::_CompareAssemblies(mdToken tkAsmRef1,mdToken tkAsmRef2, BOOL* pfEquivalent)
 {
 
@@ -7417,7 +7298,6 @@ HRESULT UnifiedAssemblySigComparer::_CompareAssemblies(mdToken tkAsmRef1,mdToken
     return S_OK;
 
 };
-#endif // FEATURE_FUSION
 
 //*****************************************************************************
 //*****************************************************************************
@@ -7523,38 +7403,8 @@ UnifiedAssemblySigComparer::CompareToken(
     }
     BOOL fEquivalent;
 
-#ifdef FEATURE_FUSION //move into _CompareAssemblies
-    IAssemblyName *pAsmName1 = NULL;
-    IfFailRet(_CreateIAssemblyNameFromAssemblyRef(tkParent1, &pAsmName1));
-    UnifiedAssemblySigComparer_IAssemblyNameHolder anh1(pAsmName1);
-
-    IAssemblyName *pAsmName2 = NULL;
-    IfFailRet(_CreateIAssemblyNameFromAssemblyRef(tkParent2, &pAsmName2));
-    UnifiedAssemblySigComparer_IAssemblyNameHolder anh2(pAsmName2);
-
-    DWORD cchDisplayName = 0;
-
-    StackSString ssDisplayName1;
-    pAsmName1->GetDisplayName(NULL, &cchDisplayName, NULL);
-    IfFailRet(pAsmName1->GetDisplayName(ssDisplayName1.OpenUnicodeBuffer(cchDisplayName), &cchDisplayName, NULL));
-    ssDisplayName1.CloseBuffer();
-
-    StackSString ssDisplayName2;
-    pAsmName2->GetDisplayName(NULL, &cchDisplayName, NULL);
-    IfFailRet(pAsmName2->GetDisplayName(ssDisplayName2.OpenUnicodeBuffer(cchDisplayName), &cchDisplayName, NULL));
-    ssDisplayName2.CloseBuffer();
-
-    AssemblyComparisonResult res;
-    IfFailRet(CompareAssemblyIdentity(ssDisplayName1.GetUnicode(),
-                                      TRUE,
-                                      ssDisplayName2.GetUnicode(),
-                                      TRUE,
-                                      &fEquivalent,
-                                      &res));
-#else
     // no redirects supported
     IfFailRet(_CompareAssemblies(tkParent1,tkParent2,&fEquivalent));
-#endif
 
     if (!fEquivalent)
     {

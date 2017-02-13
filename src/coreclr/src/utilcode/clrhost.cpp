@@ -430,7 +430,7 @@ void OnUninitializedCoreClrCallbacks()
     // (other than coreclr.dll) that links to utilcode.lib, or that you're using a nohost
     // variant of utilcode.lib but hitting code that assumes there is a CLR in the process.
     //
-    // Under FEATURE_CORECLR (and not SELF_NO_HOST), it is expected that coreclr.dll 
+    // It is expected that coreclr.dll 
     // is the ONLY dll that links to utilcode libraries.
     //
     // If you must introduce a new dll that links to utilcode.lib, it is your responsibility

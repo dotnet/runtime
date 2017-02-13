@@ -21,7 +21,6 @@
 #include "security.h"
 
 #include "perfcounters.h"
-#include "nlstable.h"
 #include "frames.h"
 #include "dllimport.h"
 #include "strongname.h"
@@ -1468,7 +1467,7 @@ VOID ModuleSecurityDescriptor::Fixup(DataImage *image)
 }
 #endif
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 
 //---------------------------------------------------------------------------------------
 //
@@ -1511,7 +1510,7 @@ TokenSecurityDescriptorFlags ParseAptcaAttribute(const BYTE *pbAptcaBlob, DWORD 
     return aptcaFlags;
 }
 
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 //---------------------------------------------------------------------------------------
 //
@@ -1617,7 +1616,7 @@ TokenSecurityDescriptorFlags TokenSecurityDescriptor::ReadSecurityAttributes(IMD
             szAttributeNamespace != NULL &&
             strcmp(g_SecurityNS, szAttributeNamespace) == 0)
         {
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
             if (strcmp(g_SecurityAPTCA + sizeof(g_SecurityNS), szAttributeName) == 0)
             {
                 // Check the visibility parameter
@@ -1633,7 +1632,7 @@ TokenSecurityDescriptorFlags TokenSecurityDescriptor::ReadSecurityAttributes(IMD
                 flags |= aptcaFlags;
             }
             else
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
             if (strcmp(g_SecurityCriticalAttribute + sizeof(g_SecurityNS), szAttributeName) == 0)
             {
                 flags |= TokenSecurityDescriptorFlags_Critical;

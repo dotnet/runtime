@@ -177,12 +177,9 @@ class OBJECTREF {
         class TransparentProxyObject* m_asTP;
 
         class ReflectClassBaseObject* m_asReflectClass;
-#ifdef FEATURE_COMPRESSEDSTACK        
-        class CompressedStackObject* m_asCompressedStack;
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
-#if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#if defined(FEATURE_IMPERSONATION)
         class SecurityContextObject* m_asSecurityContext;
-#endif // #if defined(FEATURE_IMPERSONATION) || defined(FEATURE_COMPRESSEDSTACK)
+#endif // #if defined(FEATURE_IMPERSONATION)
         class ExecutionContextObject* m_asExecutionContext;
         class AppDomainBaseObject* m_asAppDomainBase;
         class PermissionSetObject* m_asPermissionSetObject;
@@ -395,9 +392,7 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
-#ifdef FEATURE_SPAN_OF_T
 GPTR_DECL(MethodTable,      g_pByReferenceClass);
-#endif
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
@@ -410,9 +405,6 @@ GPTR_DECL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_DECL(MethodTable,      g_pValueTypeClass);
 GPTR_DECL(MethodTable,      g_pEnumClass);
 GPTR_DECL(MethodTable,      g_pThreadClass);
-#ifdef FEATURE_CER
-GPTR_DECL(MethodTable,      g_pCriticalFinalizerObjectClass);
-#endif
 GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
@@ -428,9 +420,6 @@ GPTR_DECL(MethodTable,      g_pBaseRuntimeClass);
 GPTR_DECL(MethodTable,      g_pICastableInterface);
 #endif // FEATURE_ICASTABLE
 
-#ifdef FEATURE_CER
-GPTR_DECL(MethodDesc,       g_pPrepareConstrainedRegionsMethod);
-#endif
 GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
 GPTR_DECL(MethodDesc,       g_pObjectCtorMD);

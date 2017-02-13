@@ -86,7 +86,6 @@ bool StrongNameIsTheKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey)
     return (memcmp(pbKey, g_rbTheKey, sizeof(g_rbTheKey)) == 0);
 }
 
-#ifdef FEATURE_CORECLR
 //---------------------------------------------------------------------------------------
 //
 // Check to see if a public key blob is the Silverlight Platform public key blob
@@ -135,7 +134,6 @@ bool StrongNameIsSilverlightPlatformKey(const PublicKeyBlob &keyPublicKey)
     return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbTheSilverlightPlatformKey) &&
            memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbTheSilverlightPlatformKey, sizeof(g_rbTheSilverlightPlatformKey)) == 0;
 }
-#endif //FEATURE_CORECLR
 
 //---------------------------------------------------------------------------------------
 //
@@ -223,7 +221,7 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey, bool fImportK
         return false;
     }
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
     // Make sure the public key blob imports properly
     if (fImportKeys)
     {
@@ -239,9 +237,9 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey, bool fImportK
             return false;
         }
     }
-#else // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#else // (CROSSGEN_COMPILE && !PLATFORM_UNIX)
     _ASSERTE(!fImportKeys);
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 
     return true;
 }
@@ -268,7 +266,7 @@ DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
            GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
 }
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
 
 //---------------------------------------------------------------------------------------
 //
@@ -362,10 +360,10 @@ bool StrongNameCryptAcquireContext(HCRYPTPROV *phProv, LPCWSTR pwszContainer, LP
     {
         dwFlags &= ~CRYPT_MACHINE_KEYSET;
     }
-#endif // FEATURE_CRYPTO
+#endif // defined(CRYPT_VERIFYCONTEXT) && defined(CRYPT_MACHINE_KEYSET)
 
     return !!WszCryptAcquireContext(phProv, pwszContainer, pwszProvider, dwProvType, dwFlags);
 }
 
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 

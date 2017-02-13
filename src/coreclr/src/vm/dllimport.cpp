@@ -6261,7 +6261,6 @@ HMODULE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath)
     return systemModuleHandle;
 }
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 /* static */
 HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName)
 {
@@ -6363,7 +6362,6 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
 
     return (HMODULE)hmod;
 }
-#endif //defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 // Try to load the module alongside the assembly where the PInvoke was declared.
 HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
@@ -6433,7 +6431,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
 
     AppDomain* pDomain = GetAppDomain();
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     // AssemblyLoadContext is not supported in AppX mode and thus,
     // we should not perform PInvoke resolution via it when operating in
     // AppX mode.
@@ -6441,7 +6438,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     {
         hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
     }
-#endif  //FEATURE_HOST_ASSEMBLY_RESOLVER
     
     
     if(hmod == NULL)
