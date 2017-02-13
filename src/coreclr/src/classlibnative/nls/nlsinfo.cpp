@@ -33,7 +33,6 @@
 #include "metasig.h"
 #include "nls.h"
 #include "nlsinfo.h"
-#include "nlstable.h"
 
 //#include <mlang.h>
 #include "sortversioning.h"
