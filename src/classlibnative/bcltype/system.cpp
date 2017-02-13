@@ -295,24 +295,7 @@ FCIMPLEND
 
 FCIMPL0(StringObject*, SystemNative::GetDeveloperPath)
 {
-#ifdef FEATURE_FUSION
-    FCALL_CONTRACT;
-
-    STRINGREF   refDevPath  = NULL;
-    LPWSTR pPath = NULL;
-    DWORD lgth = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refDevPath);
-
-    SystemDomain::System()->GetDevpathW(&pPath, &lgth);
-    if(lgth) 
-        refDevPath = StringObject::NewString(pPath, lgth);
-    
-    HELPER_METHOD_FRAME_END();
-    return (StringObject*)OBJECTREFToObject(refDevPath);
-#else
     return NULL;
-#endif
 }
 FCIMPLEND
 

@@ -4,4 +4,3 @@
 
 #include "mscorrc.rc"
 #include "fuslog.rc"
-#include "nativelog.rc"

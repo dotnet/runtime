@@ -37,9 +37,6 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "wrappers.h"
 
 #include "nativeoverlapped.h"

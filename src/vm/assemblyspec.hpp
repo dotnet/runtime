@@ -17,9 +17,6 @@
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
 #include "memorypool.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "assemblyspecbase.h"
 #include "domainfile.h"
 #include "genericstackprobe.h"
@@ -90,11 +87,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     }
 
-#ifdef FEATURE_FUSION
-    virtual IAssembly* GetParentIAssembly();
-
-    virtual LPCVOID GetParentAssemblyPtr();
-#endif
 
     DomainAssembly* GetParentAssembly();
     
@@ -121,11 +113,6 @@ class AssemblySpec  : public BaseAssemblySpec
             EEFileLoadException::Throw(this,hr);
     };
 
-#ifdef FEATURE_FUSION
-    void InitializeSpec(IAssemblyName *pName,
-                        DomainAssembly *pStaticParent = NULL,
-                        BOOL fIntrospectionOnly = FALSE);
-#endif // FEATURE_FUSION
 
     void InitializeSpec(PEAssembly *pFile);
     HRESULT InitializeSpec(StackingAllocator* alloc,
@@ -158,15 +145,6 @@ class AssemblySpec  : public BaseAssemblySpec
         CONTRACTL_END;
 
         m_pParentAssembly = pAssembly;
-#ifdef FEATURE_FUSION
-        if (pAssembly)
-        {
-            _ASSERTE(GetHostBinder() == nullptr);
-            m_fParentLoadContext=pAssembly->GetFile()->GetLoadContext();
-        }
-        else
-            m_fParentLoadContext = LOADCTX_TYPE_DEFAULT;
-#endif
     }
 
     void SetFallbackLoadContextBinderForRequestingAssembly(ICLRPrivBinder *pFallbackLoadContextBinder)
@@ -222,9 +200,7 @@ class AssemblySpec  : public BaseAssemblySpec
     }
 
 
-#ifndef FEATURE_FUSION     
     HRESULT CheckFriendAssemblyName();
-#endif // FEATURE_FUSION
 
 
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit, 
@@ -240,15 +216,8 @@ class AssemblySpec  : public BaseAssemblySpec
         FILE_WEBPERM         = 0x3
     };
 
-#ifdef FEATURE_FUSION    
-    static void DemandFileIOPermission(LPCWSTR wszCodeBase,
-                                       BOOL fHavePath,
-                                       DWORD dwDemandFlag);
-    void DemandFileIOPermission(PEAssembly *pFile);
-#endif
 
 
-#ifndef FEATURE_FUSION
     VOID Bind(
         AppDomain* pAppDomain, 
         BOOL fThrowOnFileNotFound,
@@ -256,7 +225,6 @@ class AssemblySpec  : public BaseAssemblySpec
         BOOL fNgenExplicitBind = FALSE, 
         BOOL fExplicitBindToNativeImage = FALSE,
         StackCrawlMark *pCallerStackMark  = NULL );
-#endif
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel, 
                            AssemblyLoadSecurity *pLoadSecurity = NULL,
@@ -278,27 +246,10 @@ class AssemblySpec  : public BaseAssemblySpec
                                   DWORD cbPublicKeyOrToken,
                                   DWORD dwFlags);
 
-#ifdef FEATURE_FUSION
-    //****************************************************************************************
-    //
-    HRESULT LoadAssembly(IApplicationContext *pFusionContext, 
-                         FusionSink *pSink,
-                         IAssembly** ppIAssembly,
-                         IHostAssembly** ppIHostAssembly,
-                         IBindResult **ppNativeFusionAssembly,
-                         BOOL fForIntrospectionOnly,
-                         BOOL fSuppressSecurityChecks);
-#endif
 
     // Load an assembly based on an explicit path
     static Assembly *LoadAssembly(LPCWSTR pFilePath);
 
-#ifdef FEATURE_FUSION
-    BOOL FindAssemblyFile(AppDomain *pAppDomain, BOOL fThrowOnFileNotFound,
-                          IAssembly** ppIAssembly, IHostAssembly **ppIHostAssembly, IBindResult** pNativeFusionAssembly,
-                          IFusionBindLog **ppFusionLog, HRESULT *pHRBindResult, StackCrawlMark *pCallerStackMark = NULL,
-                          AssemblyLoadSecurity *pLoadSecurity = NULL);
-#endif // FEATURE_FUSION
 
   private:
     void MatchRetargetedPublicKeys(Assembly *pAssembly);

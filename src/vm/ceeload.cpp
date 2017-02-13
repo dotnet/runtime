@@ -3842,103 +3842,6 @@ void Module::ReleaseILData(void)
 }
 
 
-#ifdef FEATURE_FUSION
-
-//
-// Module::FusionCopyPDBs asks Fusion to copy PDBs for a given
-// assembly if they need to be copied. This is for the case where a PE
-// file is shadow copied to the Fusion cache. Fusion needs to be told
-// to take the time to copy the PDB, too.
-//
-STDAPI CopyPDBs(IAssembly *pAsm); // private fusion API
-void Module::FusionCopyPDBs(LPCWSTR moduleName)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Assembly *pAssembly = GetAssembly();
-
-    // Just return if we've already done this for this Module's
-    // Assembly.
-    if ((pAssembly->GetDebuggerInfoBits() & DACF_PDBS_COPIED) ||
-        (pAssembly->GetFusionAssembly() == NULL))
-    {
-        LOG((LF_CORDB, LL_INFO10,
-             "Don't need to copy PDB's for module %S\n",
-             moduleName));
-
-        return;
-    }
-
-    LOG((LF_CORDB, LL_INFO10,
-         "Attempting to copy PDB's for module %S\n", moduleName));
-
-    HRESULT hr;
-    hr = CopyPDBs(pAssembly->GetFusionAssembly());
-    LOG((LF_CORDB, LL_INFO10,
-            "Fusion.dll!CopyPDBs returned hr=0x%08x for module 0x%08x\n",
-            hr, this));
-
-    // Remember that we've copied the PDBs for this assembly.
-    pAssembly->SetCopiedPDBs();
-}
-
-// This function will return PDB stream if exist.
-// It is the caller responsibility to call release on *ppStream after a successful
-// result.
-// We will first check to see if we have a cached pdb stream available. If not,
-// we will ask fusion which in terms to ask host vis HostProvideAssembly. Host may
-// decide to provide one or not.
-//
-HRESULT Module::GetHostPdbStream(IStream **ppStream)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        if(GetThread()) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
-    }
-    CONTRACTL_END
-
-    HRESULT hr = NOERROR;
-
-    _ASSERTE(ppStream);
-
-    *ppStream = NULL;
-
-    if (m_file->IsIStream() == false)
-    {
-        // not a host stream
-        return E_FAIL;
-    }
-
-    // Maybe fusion can ask our host. This will give us back a PDB stream if
-    // host decides to provide one.
-    //
-    if (m_file->IsAssembly())
-    {
-        GCX_PREEMP();
-        hr = ((PEAssembly*)m_file)->GetIHostAssembly()->GetAssemblyDebugStream(ppStream);
-    }
-    else
-    {
-        _ASSERTE(m_file->IsModule());
-        IHostAssemblyModuleImport *pIHAMI;
-        MAKE_WIDEPTR_FROMUTF8_NOTHROW(pName, m_file->GetSimpleName());
-        if (pName == NULL)
-            return E_OUTOFMEMORY;
-        IfFailRet(m_file->GetAssembly()->GetIHostAssembly()->GetModuleByName(pName, &pIHAMI));
-        hr = pIHAMI->GetModuleDebugStream(ppStream);
-    }
-    return hr;
-}
-
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -4273,18 +4176,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                     pIStream->AddRef();
                 }
             }
-#ifdef FEATURE_FUSION
-            else
-            {
-                // Verified this above.
-                _ASSERTE(m_file->IsIStream());
-
-                // Case 2: get assembly from host.
-                // This commonly would be cached already as GetInMemorySymbolStream() in code:Module.FetchPdbsFromHost,
-                // but may not be cached if the host didn't provide the PDBs at the time. 
-                hr = GetHostPdbStream(&pIStream);
-            }
-#endif
             if (SUCCEEDED(hr))
             {
                 hr = pBinder->GetReaderFromStream(GetRWImporter(), pIStream, &pReader);
@@ -4298,9 +4189,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
             // Assembly.
-#ifdef FEATURE_FUSION
-            FusionCopyPDBs(path);
-#endif
             // for this to work with winmds we cannot simply call GetRWImporter() as winmds are RO
             // and thus don't implement the RW interface. so we call this wrapper function which knows 
             // how to get a IMetaDataImport interface regardless of the underlying module type.
@@ -5813,10 +5701,6 @@ Module::GetAssemblyIfLoaded(
         BOOL eligibleForAdditionalChecks = TRUE;
         if (szWinRtNamespace != NULL)
             eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
-#ifdef FEATURE_FUSION
-        else if ((this->GetAssembly()->GetManifestFile()->GetLoadContext() != LOADCTX_TYPE_DEFAULT) && (this->GetAssembly()->GetManifestFile()->GetLoadContext() != LOADCTX_TYPE_HOSTED))
-            eligibleForAdditionalChecks = FALSE; // Only load and hosted context binds support this kind of discovery.
-#endif // FEATURE_FUSION
         else if (this->GetAssembly()->GetManifestFile()->IsDesignerBindingContext())
         {
             eligibleForAdditionalChecks = FALSE; 
@@ -7354,84 +7238,6 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #ifdef DEBUGGING_SUPPORTED 
 
-#ifdef FEATURE_FUSION
-
-// Fetch Pdbs from the host
-// 
-// Returns:
-//    No explicit return value. 
-//    Caches the pdb stream on the module instance if available.
-//    Does nothing if not hosted or if the host does not provide a stream.
-//    Throws on exception if the host does provide a stream, but we can't copy it out. 
-//    
-// Notes:
-//    This fetches PDBs from the host and caches them so that they are available for when the debugger attaches.
-//    This lets Arrowhead tools run against Whidbey hosts in a compatibility mode.
-//    We expect to add a hosting knob that will allow a host to disable this eager fetching and not run in
-//    compat mode.
-void Module::FetchPdbsFromHost()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-    
-    ReleaseHolder<IStream> pHostStream;
-
-    hr = GetHostPdbStream(&pHostStream); // addrefs, holder will release
-    if (pHostStream == NULL)
-    {
-        // Common failure case, we're either not hosted, or the host doesn't have a stream.
-        return;
-    }
-    // pHostStream is a stream implemented by the host, so be extra cautious about methods failing,
-    // especially with E_NOTIMPL.
-
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream()); // throws
-
-    //
-    // Copy from pHostStream (owned by host) to CGrowableStream (owned by CLR, and visible to debugger from OOP).
-    // 
-    
-    // Get number of bytes to copy.
-    STATSTG     SizeData = {0};
-    hr = pHostStream->Stat(&SizeData, STATFLAG_NONAME);
-    IfFailThrow(hr);
-    ULARGE_INTEGER streamSize = SizeData.cbSize;
-
-    if (streamSize.u.HighPart > 0)
-    {
-        // Too big. We shouldn't have a PDB larger than 4gb. 
-        ThrowHR(E_OUTOFMEMORY);
-    }
-    ULONG cbRequest = streamSize.u.LowPart;
-
-
-    // Allocate 
-    hr = pStream->SetSize(streamSize);
-    IfFailThrow(hr);
-
-    _ASSERTE(pStream->GetRawBuffer().Size() == cbRequest);
-
-    // Do the actual copy
-    ULONG cbActualRead = 0;
-    hr = pHostStream->Read(pStream->GetRawBuffer().StartAddress(), cbRequest, &cbActualRead);
-    IfFailThrow(hr);
-    if (cbRequest != cbActualRead)
-    {
-        ThrowWin32(ERROR_READ_FAULT);
-    }
-
-    // We now have a full copy of the PDB provided from the host. 
-    // This addrefs pStream, which lets it survive past the holder's scope.
-    SetInMemorySymbolStream(pStream, eSymbolFormatPDB);
-}
-#endif // FEATURE_FUSION
 
 #endif // DEBUGGING_SUPPORTED
 
@@ -7450,16 +7256,6 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainFile * pDomainFile, in
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
-#ifdef FEATURE_FUSION
-    // Eagerly fetch pdbs for hosted modules.
-    // This is only needed for debugging, so errors are not fatal in normal cases.
-    HRESULT hrFetchPdbs = S_OK;
-    EX_TRY
-    {
-        FetchPdbsFromHost();
-    }
-    EX_CATCH_HRESULT(hrFetchPdbs);
-#endif // FEATURE_FUSION
 
     //
     // Remaining work is only needed if a debugger is attached

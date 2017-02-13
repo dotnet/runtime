@@ -234,10 +234,6 @@ private:
     NewArrayHolder< WCHAR* >                m_rgAltPaths;
     UINT                                    m_cAltPaths;
 
-#ifdef FEATURE_FUSION
-    BOOL                                    m_fCanUseNativeImages;
-    ReleaseHolder<IILFingerprintFactory>    m_pFingerprintFactory;
-#endif
 
     //---------------------------------------------------------------------------------------------
     // ParentBinder is set only in designer binding context (forms a chain of binders)

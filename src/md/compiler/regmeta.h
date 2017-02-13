@@ -27,9 +27,6 @@
 #include <ivehandler.h>
 
 #include "sigparser.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 
 #include "winmdinterfaces.h"
 

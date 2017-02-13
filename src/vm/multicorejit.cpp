@@ -284,14 +284,6 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
         }
 
         // If the load context is LOADFROM, store it in the flags.
-#ifdef FEATURE_FUSION
-        Assembly * pAssembly = pModule->GetAssembly();
-        LOADCTX_TYPE loadCtx = pAssembly->GetManifestFile()->GetLoadContext();
-        if(LOADCTX_TYPE_LOADFROM == loadCtx)
-        {
-            versionFlags |= VERSIONFLAG_LOADCTX_LOADFROM;
-        }
-#endif
     }
     EX_CATCH
     {

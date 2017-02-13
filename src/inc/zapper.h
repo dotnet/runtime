@@ -18,9 +18,6 @@
 #include "shash.h"
 #include "utilcode.h"
 #include "corjit.h"
-#ifdef FEATURE_FUSION
-#include "binderngen.h"
-#endif
 #include "corcompile.h"
 #include "corhlprpriv.h"
 #include "ngen.h"
@@ -294,30 +291,6 @@ class Zapper
     void InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument);
     void LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler);
 
-#ifdef FEATURE_FUSION
-    HRESULT TryEnumerateFusionCache(LPCWSTR assemblyName, bool fPrint, bool fDelete);
-    int EnumerateFusionCache(LPCWSTR assemblyName, bool fPrint, bool fDelete,
-            CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig = NULL);
-    void PrintFusionCacheEntry(CorSvcLogLevel logLevel, IAssemblyName *pZapAssemblyName);
-    void DeleteFusionCacheEntry(IAssemblyName *pZapAssemblyName);
-    void DeleteFusionCacheEntry(LPCWSTR assemblyName, CORCOMPILE_NGEN_SIGNATURE *pNativeImageSig);
-
-    void PrintDependencies(
-            IMetaDataAssemblyImport * pAssemblyImport,
-            CORCOMPILE_DEPENDENCY * pDependencies,
-            COUNT_T cDependencies,
-            SString &s);
-    BOOL VerifyDependencies(
-            IMDInternalImport * pAssemblyImport,
-            CORCOMPILE_DEPENDENCY * pDependencies,
-            COUNT_T cDependencies);
-
-    void PrintAssemblyVersionInfo(IAssemblyName *pZapAssemblyName, SString &s);
-
-    IAssemblyName *GetAssemblyFusionName(IMetaDataAssemblyImport *pImport);
-    IAssemblyName *GetAssemblyRefFusionName(IMetaDataAssemblyImport *pImport,
-                                            mdAssemblyRef ar);
-#endif //FEATURE_FUSION
 
     BOOL IsAssembly(LPCWSTR path);
 

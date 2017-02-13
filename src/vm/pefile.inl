@@ -12,9 +12,6 @@
 
 #include "strongname.h"
 #include "strongnameholders.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "check.h"
 #include "simplerwlock.hpp"
 #include "eventtrace.h"
@@ -1632,9 +1629,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
  
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-    FusionBind::GetAssemblyNameDisplayName(GetFusionAssemblyName(), result, flags);
-#else
     if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
         !m_sTextualIdentity.IsEmpty())
     {
@@ -1646,7 +1640,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
         spec.InitializeSpec(this);
         spec.GetFileOrDisplayName(flags, result);
     }
-#endif // FEATURE_FUSION
 
 #else
     IMDInternalImport *pImport = GetMDImport();

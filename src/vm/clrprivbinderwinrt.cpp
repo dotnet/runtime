@@ -19,12 +19,6 @@
 
 //=====================================================================================================================
 #include "sstring.h"
-#ifdef FEATURE_FUSION
-#include "fusionlogging.h"
-#include "policy.h"
-#include "imprthelpers.h" // in fusion/inc
-#include "asmimprt.h"
-#endif
 #ifdef FEATURE_APPX
 #include "appxutil.h"
 #endif
@@ -129,9 +123,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     BOOL                    fCanUseNativeImages)
     : m_pTypeCache(clr::SafeAddRef(pWinRtTypeCache))
     , m_pParentBinder(pParentBinder)                        // Do not addref, lifetime directly tied to parent.
-#ifdef FEATURE_FUSION
-    , m_fCanUseNativeImages(fCanUseNativeImages)
-#endif
     , m_fNamespaceResolutionKind(fNamespaceResolutionKind)
     , m_pApplicationContext(nullptr)
     , m_appLocalWinMDPath(nullptr)
@@ -166,9 +157,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     }
 #endif //CROSSGEN_COMPILE
 
-#ifdef FEATURE_FUSION
-    IfFailThrow(RuntimeCreateCachingILFingerprintFactory(&m_pFingerprintFactory));
-#endif
 }
 
 //=====================================================================================================================
@@ -347,10 +335,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 // 
                 IfFailGo(pAssemblyDefName->SetProperty(ASM_NAME_NAME, wszFileNameStripped, (lstrlenW(wszFileNameStripped) + 1) * sizeof(WCHAR)));
 
-#ifdef FEATURE_FUSION
-                NewHolder<CLRPrivAssemblyBindResultWrapper> pBindResult(
-                    new CLRPrivAssemblyBindResultWrapper(pAssemblyDefName, wszFileName, m_pFingerprintFactory));
-#else                
                 NewHolder<CoreBindResult> pBindResult(new CoreBindResult());
                 StackSString sAssemblyPath(pResource->GetPath());
                 ReleaseHolder<BINDER_SPACE::Assembly> pBinderAssembly;
@@ -360,7 +344,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
                 // We have set bInGac to TRUE here because the plan is full trust for WinRT.  If this changes, we may need to check with
                 // AppDomain to verify trust based on the WinMD's path
                 pBindResult->Init(pBinderAssembly, TRUE);
-#endif
                 NewHolder<CLRPrivAssemblyWinRT> pNewAssembly(
                     new CLRPrivAssemblyWinRT(this, pResource, pBindResult, fIsWindowsNamespace));
                 
@@ -407,63 +390,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     return hr;
 } // CLRPrivBinderWinRT::BindWinRTAssemblyByName
 
-#ifdef FEATURE_FUSION
-//=====================================================================================================================
-HRESULT CLRPrivBinderWinRT::BindAssemblyToNativeAssembly(CLRPrivAssemblyWinRT *pAssembly)
-{
-    HRESULT hr = S_OK;
-
-    if (!m_fCanUseNativeImages)
-        return hr;
-
-    ReleaseHolder<IBindResult> pIBindResultIL;
-    IfFailRet(pAssembly->GetIBindResult(&pIBindResultIL));
-    _ASSERTE(pIBindResultIL != nullptr);
-
-    NewArrayHolder<WCHAR> wzZapSet = DuplicateStringThrowing(g_pConfig->ZapSet());
-    NativeConfigData cfgData = {
-        wzZapSet,
-        PEFile::GetNativeImageConfigFlags()
-    };
-
-    ReleaseHolder<IBindContext> pIBindContext;
-    IfFailRet(GetParentIBindContext(&pIBindContext));
-                    
-    // Fire BindingNgenPhaseStart ETW event if enabled.
-    {
-        InlineSString<_MAX_PATH> ssAssemblyName;
-        FireEtwBindingNgenPhaseStart(
-            (AppDomain::GetCurrentDomain()->GetId().m_dwId),
-            LOADCTX_TYPE_HOSTED,
-            ETWFieldUnused,
-            ETWLoaderLoadTypeNotAvailable,
-            NULL,
-            pAssembly->m_pResourceIL->GetPath(),
-            GetClrInstanceId());
-    }
-                    
-    IfFailRet(BindToNativeAssembly(pIBindResultIL, &cfgData, pIBindContext, fusion::logging::GetCurrentFusionBindLog()));
-
-    // Fire BindingNgenPhaseEnd ETW event if enabled.
-    {
-        InlineSString<_MAX_PATH> ssAssemblyName;
-        FireEtwBindingNgenPhaseEnd(
-            (AppDomain::GetCurrentDomain()->GetId().m_dwId),
-            LOADCTX_TYPE_HOSTED,
-            ETWFieldUnused,
-            ETWLoaderLoadTypeNotAvailable,
-            NULL,
-            pAssembly->m_pResourceIL->GetPath(),
-            GetClrInstanceId());
-    }
-                    
-    // BindToNativeAssembly can return S_FALSE, but this could be misleading.
-    if (hr == S_FALSE)
-        hr = S_OK;
-
-    return hr;
-}
-#endif
 
 
 //=====================================================================================================================
@@ -501,7 +427,6 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
     return hr;
 }
 
-#ifndef FEATURE_FUSION
 //
 // This method opens the assembly using the CoreCLR Binder, which has logic supporting opening either the IL or 
 // even just the native image without IL present.
@@ -587,7 +512,6 @@ HRESULT CLRPrivBinderWinRT::GetAssemblyAndTryFindNativeImage(SString &sWinmdFile
 
     return hr;
 }
-#endif // !FEATURE_FUSION
 
 //=====================================================================================================================
 HRESULT CLRPrivBinderWinRT::SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, SString &appLocalWinMD)
@@ -1056,60 +980,6 @@ CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded(
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-//=====================================================================================================================
-// Implements interface method code:IBindContext::PreBind.
-// 
-// Prebinding to WinMD files follows a special contract. We want to avoid loading the actual target assembly
-// and we need to validate that all dependencies of the file remain equivalent to that which was available at ngen time
-// We do this by comparing the filename to the assembly simple name.  This is legal to do with WinRT because at NGen time
-// we embed a WinRT dependency as assembly def name component plus a namespace and type from it.
-// At bind time, this type should still exist in the same assembly.  If it doesn't, and has been moved,
-// the native image validation will fail anyway and we'll fall back to IL.  This is because if the type has 
-// been moved to another WinMD, it must have been removed from the first one because WinRT allows no duplicates.
-// This no duplicate rule is obviously not actually gauranteed by the WinRT runtime for 3rd party assemblies,
-// but violating the rule is known to cause a number of binding behavior errors that we do not attempt to protect against.
-HRESULT 
-CLRPrivBinderWinRT::PreBind(
-    IAssemblyName * pAssemblyName, 
-    DWORD           dwPreBindFlags, 
-    IBindResult **  ppIBindResult)
-{
-    STANDARD_VM_CONTRACT;
-    HRESULT hr  = S_OK;
-    
-    // Assert that we are only working with a binder that supports native images
-    _ASSERTE(m_fCanUseNativeImages);
-    
-    ReleaseHolder<IBindContext> pIBindContext;
-    IfFailRet(GetParentIBindContext(&pIBindContext));
-    
-    DWORD dwContentType = AssemblyContentType_Default;
-    DWORD cbContentTypeSize = sizeof(dwContentType);
-    IfFailRet(pAssemblyName->GetProperty(ASM_NAME_CONTENT_TYPE, &dwContentType, &cbContentTypeSize));
-
-    if (dwContentType == AssemblyContentType_Default)
-    {
-        hr = pIBindContext->PreBind(pAssemblyName, dwPreBindFlags, ppIBindResult);
-    }
-    else
-    {
-        hr = BindWinRTAssemblyByName(pAssemblyName, ppIBindResult, TRUE);
-    }
-    
-    return hr;
-}
-
-//=====================================================================================================================
-// Implements interface method code:IBindContext::IsDefaultContext.
-// 
-HRESULT 
-CLRPrivBinderWinRT::IsDefaultContext()
-{
-    LIMITED_METHOD_CONTRACT;
-    return S_OK;
-}
-#endif
 
 //=====================================================================================================================
 CLRPrivAssemblyWinRT::CLRPrivAssemblyWinRT(
@@ -1217,21 +1087,6 @@ HRESULT CLRPrivAssemblyWinRT::GetAvailableImageTypes(
     return hr;
 }
 
-#ifdef FEATURE_FUSION
-static ICLRPrivResource * GetResourceForBindResult(
-    IBindResult * pIBindResult)
-{
-    STANDARD_VM_CONTRACT;
-    VALIDATE_ARG_THROW(pIBindResult != nullptr);
-
-    WCHAR wzPath[_MAX_PATH];
-    DWORD cchPath = NumItems(wzPath);
-    ReleaseHolder<IAssemblyLocation> pIAssemLoc;
-    IfFailThrow(pIBindResult->GetAssemblyLocation(&pIAssemLoc));
-    IfFailThrow(pIAssemLoc->GetPath(wzPath, &cchPath));
-    return ToInterface<ICLRPrivResource>(new CLRPrivResourcePathImpl(wzPath));
-}
-#endif
 
 //=====================================================================================================================
 // Implements interface method code:ICLRPrivAssembly::GetImageResource.
@@ -1331,66 +1186,6 @@ HRESULT CLRPrivBinderWinRT::FindWinRTAssemblyBySpec(
     return E_FAIL; 
 }
 
-#ifdef FEATURE_FUSION
-//=====================================================================================================================
-HRESULT CLRPrivBinderWinRT::FindWinRTAssemblyBySpec(
-    LPVOID pvAppDomain,
-    LPVOID pvAssemblySpec,
-    HRESULT * pResult,
-    ICLRPrivAssembly ** ppAssembly)
-{
-    LIMITED_METHOD_CONTRACT;;
-    HRESULT hr = S_OK;
-
-    AppDomain* pAppDomain = reinterpret_cast<AppDomain*>(pvAppDomain);
-    AssemblySpec* pAssemblySpec = reinterpret_cast<AssemblySpec*>(pvAssemblySpec);
-    VALIDATE_PTR_RET(pAppDomain);
-    VALIDATE_PTR_RET(pAssemblySpec);
-    VALIDATE_PTR_RET(pResult);
-    VALIDATE_PTR_RET(ppAssembly);
-
-    if (pAssemblySpec->IsContentType_WindowsRuntime())
-    {
-        // FindAssemblyBySpec is not supported by this binder.
-        *pResult = CLR_E_BIND_TYPE_NOT_FOUND;
-        *ppAssembly = nullptr;
-        return S_OK;
-    }
-    else
-    {
-        return CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT;
-    }
-}
-
-//=====================================================================================================================
-HRESULT CLRPrivBinderWinRT::GetParentIBindContext(
-    IBindContext **ppIBindContext)
-{
-    STANDARD_BIND_CONTRACT;
-    VALIDATE_ARG_RET(ppIBindContext != nullptr);
-
-    HRESULT hr = S_OK;
-
-    if (m_pParentBinder != nullptr)
-    {
-        _ASSERTE(AppX::IsAppXProcess());
-        IfFailRet(m_pParentBinder->QueryInterface(__uuidof(IBindContext), (void**)ppIBindContext));
-    }
-    else
-    {
-        _ASSERTE(!AppX::IsAppXProcess());
-        EX_TRY
-        {
-            AppDomain* pDomain = AppDomain::GetCurrentDomain();
-            hr = GetBindContextFromApplicationContext(pDomain->CreateFusionContext(), ppIBindContext);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
-    _ASSERTE(FAILED(hr) || *ppIBindContext != nullptr);
-    return hr;
-}
-#endif
 
 //=====================================================================================================================
 HRESULT CLRPrivAssemblyWinRT::GetIBindResult(
@@ -1417,29 +1212,14 @@ HRESULT CLRPrivAssemblyWinRT::EnsureAvailableImageTypes()
     // If image types has not yet been set, attempt to bind to native assembly
     if (dwImageTypesLocal == 0)
     {
-#ifdef FEATURE_FUSION
-        CLRPrivBinderWinRT *pBinder = m_pBinder;
-        IfFailGo(pBinder->BindAssemblyToNativeAssembly(this));
-#endif
         if (m_pIResourceNI == nullptr)
         {
-#ifdef FEATURE_FUSION
-            ReleaseHolder<IBindResult> pIBindResultNI;
-
-            if (SUCCEEDED(hr = m_pIBindResult->GetNativeImage(&pIBindResultNI, nullptr)) && pIBindResultNI != nullptr)
-            {
-                ReleaseHolder<ICLRPrivResource> pResourceNI = GetResourceForBindResult(pIBindResultNI);
-                if (InterlockedCompareExchangeT<ICLRPrivResource *>(&m_pIResourceNI, pResourceNI, nullptr) == nullptr)
-                    pResourceNI.SuppressRelease();
-            }
-#else
             if (m_pIBindResult->HasNativeImage())
             {
                 SString sPath = m_pIBindResult->GetNativeImage()->GetPath();
                 m_pIResourceNI = new CLRPrivResourcePathImpl(sPath.GetUnicode());
                 m_pIResourceNI->AddRef();
             }
-#endif
             IfFailGo(hr);
         }
 

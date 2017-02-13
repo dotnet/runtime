@@ -24,7 +24,6 @@
 #include "compile.h"
 #endif
 
-#ifndef FEATURE_FUSION
 
 #include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
@@ -594,4 +593,3 @@ VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
 }
 
 
-#endif // FEATURE_FUSION

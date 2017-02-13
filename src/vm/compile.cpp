@@ -204,28 +204,9 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
 
                 // We load assemblies as domain-bound (However, they're compiled as domain neutral)
 #ifdef FEATURE_LOADER_OPTIMIZATION
-#ifdef FEATURE_FUSION
-                if (NingenEnabled())
-                {
-                    pCompilationDomain->SetSharePolicy(AppDomain::SHARE_POLICY_NEVER);
-                }
-                else
-                {
-                    pCompilationDomain->SetupLoaderOptimization(AppDomain::SHARE_POLICY_NEVER);
-                }
-#else //FEATURE_FUSION
                 pCompilationDomain->SetSharePolicy(AppDomain::SHARE_POLICY_NEVER);
-#endif //FEATURE_FUSION
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-#ifdef FEATURE_FUSION
-                CorCompileConfigFlags flags = PEFile::GetNativeImageConfigFlags(pCompilationDomain->m_fForceDebug,
-                                                                                pCompilationDomain->m_fForceProfiling,
-                                                                                pCompilationDomain->m_fForceInstrument);
-
-                FusionBind::SetApplicationContextDWORDProperty(GetAppDomain()->GetFusionContext(),
-                                                               ACTAG_ZAP_CONFIG_FLAGS, flags);
-#endif //FEATURE_FUSION
             }
 
             pCompilationDomain->SetFriendlyName(W("Compilation Domain"));
@@ -442,16 +423,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             }
             else
             {
-#ifdef FEATURE_FUSION
-                SafeComHolder<IBindResult> pNativeFusionAssembly;        
-                SafeComHolder<IFusionBindLog> pFusionLog;
-                SafeComHolder<IAssembly> pFusionAssembly;
-
-                IfFailThrow(ExplicitBind(wzPath, pDomain->GetFusionContext(), EXPLICITBIND_FLAGS_EXE,
-                                         NULL, &pFusionAssembly, &pNativeFusionAssembly, &pFusionLog));
-
-                pAssemblyHolder = PEAssembly::Open(pFusionAssembly, pNativeFusionAssembly, pFusionLog, FALSE, FALSE);
-#else //FEATURE_FUSION
                 //ExplicitBind
                 CoreBindResult bindResult;
                 spec.SetCodeBase(pImage->GetPath());
@@ -475,7 +446,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
                     fExplicitBindToNativeImage
                     );
                 pAssemblyHolder = PEAssembly::Open(&bindResult,FALSE,FALSE);
-#endif //FEATURE_FUSION
             }
 
             // Now load assembly into domain.
@@ -515,156 +485,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
     return hr;
 }
 
-#ifdef FEATURE_FUSION
-
-// Simple helper that factors out code common to LoadAssemblyByIAssemblyName and
-// LoadAssemblyByName
-static HRESULT LoadAssemblyByIAssemblyNameWorker(
-    IAssemblyName *pAssemblyName,
-    CORINFO_ASSEMBLY_HANDLE *pHandle)
-{
-    CONTRACTL                   
-    {                           
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SO_INTOLERANT;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;              
-
-    Assembly *pAssembly;
-
-    AssemblySpec spec;
-    spec.InitializeSpec(pAssemblyName, NULL, FALSE);
-
-    if (spec.IsMscorlib())
-    {
-        pAssembly = SystemDomain::System()->SystemAssembly();
-    }
-    else
-    {
-
-        DomainAssembly * pDomainAssembly = spec.LoadDomainAssembly(FILE_LOAD_BEGIN);
-
-        // Mark the assembly before it gets fully loaded and NGen image dependencies are verified. This is necessary
-        // to allow skipping compilation if there is NGen image already.
-        pDomainAssembly->GetFile()->SetSafeToHardBindTo();
-
-        pAssembly = spec.LoadAssembly(FILE_LOADED);
-    }
-
-    //
-    // Return the module handle
-    //
-
-    *pHandle = CORINFO_ASSEMBLY_HANDLE(pAssembly);
-
-    return S_OK;
-}
-
-HRESULT CEECompileInfo::LoadAssemblyByName(
-    LPCWSTR                  wzName,
-    CORINFO_ASSEMBLY_HANDLE *pHandle)
-{
-    STANDARD_VM_CONTRACT;
-
-    HRESULT hr = S_OK;
-
-    COOPERATIVE_TRANSITION_BEGIN();
-
-    EX_TRY
-    {
-        ReleaseHolder<IAssemblyName> pAssemblyName;
-        IfFailThrow(CreateAssemblyNameObject(&pAssemblyName, wzName, CANOF_PARSE_DISPLAY_NAME, NULL));
-        IfFailThrow(LoadAssemblyByIAssemblyNameWorker(pAssemblyName, pHandle));
-    }
-    EX_CATCH_HRESULT(hr);
-
-    COOPERATIVE_TRANSITION_END();
-
-    return hr;
-}
-
-HRESULT CEECompileInfo::LoadAssemblyRef(
-    IMDInternalImport       *pAssemblyImport,
-    mdAssemblyRef           ref,
-    CORINFO_ASSEMBLY_HANDLE *pHandle,
-    IAssemblyName           **refAssemblyName /*=NULL*/)
-{
-    STANDARD_VM_CONTRACT;
-
-    HRESULT hr = S_OK;
-
-    ReleaseHolder<IAssemblyName> pAssemblyName;
-
-    COOPERATIVE_TRANSITION_BEGIN();
-    
-    EX_TRY
-    {
-        Assembly *pAssembly;
-
-        if (refAssemblyName)
-            *refAssemblyName = NULL;
-
-        AssemblySpec spec;
-        spec.InitializeSpec(ref, pAssemblyImport, NULL, FALSE);
-        
-        if (spec.HasBindableIdentity())
-        {
-            if (refAssemblyName)
-            {
-                IfFailThrow(spec.CreateFusionName(&pAssemblyName));
-            }
-
-            pAssembly = spec.LoadAssembly(FILE_LOADED);
-
-            //
-            // Return the module handle
-            //
-
-            *pHandle = CORINFO_ASSEMBLY_HANDLE(pAssembly);
-        }
-        else
-        {   // Cannot load assembly refs with non-unique id.
-            hr = S_FALSE;
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    COOPERATIVE_TRANSITION_END();
-
-    if (refAssemblyName != NULL && pAssemblyName != NULL)
-    {
-        *refAssemblyName = pAssemblyName.Extract();
-    }
-
-    return hr;
-}
-
-HRESULT CEECompileInfo::LoadAssemblyByIAssemblyName(
-        IAssemblyName           *pAssemblyName,
-        CORINFO_ASSEMBLY_HANDLE *pHandle
-        )
-{
-    STANDARD_VM_CONTRACT;
-
-    HRESULT hr = S_OK;
-
-    COOPERATIVE_TRANSITION_BEGIN();
-
-    EX_TRY
-    {
-        IfFailThrow(LoadAssemblyByIAssemblyNameWorker(pAssemblyName, pHandle));
-    }
-    EX_CATCH_HRESULT(hr);
-
-    COOPERATIVE_TRANSITION_END();
-
-    return hr;
-}
-
-#endif //FEATURE_FUSION
 
 #ifdef FEATURE_COMINTEROP
 HRESULT CEECompileInfo::LoadTypeRefWinRT(
@@ -944,42 +764,6 @@ CORINFO_ASSEMBLY_HANDLE
     return (CORINFO_ASSEMBLY_HANDLE) GetModule(module)->GetAssembly();
 }
 
-#ifdef FEATURE_FUSION
-HRESULT CEECompileInfo::GetAssemblyName(
-    CORINFO_ASSEMBLY_HANDLE hAssembly,
-    DWORD                   dwFlags,
-    __out_z LPWSTR          wzAssemblyName, 
-    LPDWORD                 pcchAssemblyName)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(hAssembly != NULL);
-    if (hAssembly == NULL)
-    {
-        return E_INVALIDARG;
-    }
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        Assembly *pAssembly = (Assembly *) hAssembly;
-        IAssemblyName * pAssemblyName = pAssembly->GetFusionAssemblyName();
-        if (dwFlags == GANF_Default)
-        {
-            hr = pAssemblyName->GetDisplayName(wzAssemblyName, pcchAssemblyName, 0);
-        }
-        else if (dwFlags == GANF_Simple)
-        {
-            DWORD cbAssemblyName = *pcchAssemblyName * sizeof(WCHAR);
-            hr = pAssemblyName->GetProperty(ASM_NAME_NAME, (LPVOID)wzAssemblyName, &cbAssemblyName);
-            *pcchAssemblyName = cbAssemblyName / sizeof(WCHAR);
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-#endif //FEATURE_FUSION
 
 #ifdef CROSSGEN_COMPILE
 //
@@ -7566,56 +7350,6 @@ HRESULT
 
     COOPERATIVE_TRANSITION_BEGIN();
 
-#ifdef FEATURE_FUSION
-    if (isExe)
-    {
-        if (NingenEnabled())
-        {
-            WCHAR buf[MAX_LONGPATH + sizeof(CONFIGURATION_EXTENSION)/sizeof(WCHAR) + 1];
-            if (0 != wcscpy_s(buf, sizeof(buf)/sizeof(*buf), path))
-            {
-                COMPlusThrowHR(COR_E_PATHTOOLONG);
-            }
-            WCHAR *pSlash = wcsrchr(buf, W('\\'));
-            if (!pSlash)
-            {
-                COMPlusThrowHR(COR_E_BAD_PATHNAME);
-            }
-
-            *(pSlash + 1) = W('\0');
-            hr = m_pFusionContext->Set(ACTAG_APP_BASE_URL, buf, (DWORD)((wcslen(buf) + 1) * sizeof(WCHAR)), 0);
-            if (FAILED(hr))
-            {
-                COMPlusThrowHR(hr);
-            }
-
-            if (0 != wcscpy_s(buf, sizeof(buf)/sizeof(*buf), path + (pSlash - buf) + 1))
-            {
-                COMPlusThrowHR(COR_E_PATHTOOLONG);
-            }
-
-            if (0 != wcscat_s(buf, sizeof(buf)/sizeof(*buf), CONFIGURATION_EXTENSION))
-            {
-                COMPlusThrowHR(COR_E_PATHTOOLONG);
-            }
-            hr = m_pFusionContext->Set(ACTAG_APP_CONFIG_FILE, buf, (DWORD)((wcslen(buf) + 1) * sizeof(WCHAR)), 0);
-            if (FAILED(hr))
-            {
-                COMPlusThrowHR(hr);
-            }
-        }
-        else
-        {
-            SetupExecutableFusionContext(path);
-        }
-    }
-    else
-    {
-        hr = m_pFusionContext->Set(ACTAG_APP_BASE_URL,
-                                   (void*) path, (DWORD) ((wcslen(path)+1) * sizeof(WCHAR)),
-                                   0);
-    }
-#endif //FEATURE_FUSION
 
     COOPERATIVE_TRANSITION_END();
 
@@ -7653,27 +7387,6 @@ HRESULT
     return S_OK;
 }
 
-#ifdef FEATURE_FUSION
-HRESULT
-    CompilationDomain::GetIBindContext(IBindContext **ppBindCtx)
-{
-    LIMITED_METHOD_CONTRACT;
-    HRESULT hr = S_OK;
-
-    ReleaseHolder<IBindContext> pBindCtx;
-    if (HasLoadContextHostBinder())
-    {
-        IfFailRet(GetCurrentLoadContextHostBinder()->QueryInterface(__uuidof(IBindContext), &pBindCtx));
-    }
-    else
-    {
-        GetBindContextFromApplicationContext(BaseDomain::GetFusionContext(), &pBindCtx); // Can't fail
-    }
-
-    *ppBindCtx = pBindCtx.Extract();
-    return S_OK;
-}
-#endif
 
 #ifdef CROSSGEN_COMPILE
 HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
