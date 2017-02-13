@@ -3604,6 +3604,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->disable_ssa = TRUE;
 	}
 
+	if (cfg->num_varinfo > 10000 && !cfg->llvm_only)
+		/* Disable llvm for overly complex methods */
+		cfg->disable_ssa = TRUE;
+
 	if (cfg->opt & MONO_OPT_LOOP) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_compile_dominator_info, mono_compile_dominator_info (cfg, MONO_COMP_DOM | MONO_COMP_IDOM));
 		MONO_TIME_TRACK (mono_jit_stats.jit_compute_natural_loops, mono_compute_natural_loops (cfg));
