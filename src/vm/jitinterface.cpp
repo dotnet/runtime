@@ -6992,33 +6992,6 @@ bool getILIntrinsicImplementation(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__JIT_HELPERS__CONTAINSREFERENCES)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        TypeHandle typeHandle = inst[0];
-        MethodTable * methodTable = typeHandle.GetMethodTable();
-
-        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
-        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
-
-        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
-        }
-        else
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
-        }
-
-        methInfo->ILCodeSize = sizeof(returnTrue);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
 #endif // FEATURE_SPAN_OF_T
 
     return false;
@@ -7272,6 +7245,47 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
+    CORINFO_METHOD_INFO * methInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Precondition: ftn is a method in mscorlib 
+    _ASSERTE(ftn->GetModule()->IsSystem());
+
+    mdMethodDef tk = ftn->GetMemberDef();
+
+    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_REFERENCE_OR_CONTAINS_REFERENCES)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        TypeHandle typeHandle = inst[0];
+        MethodTable * methodTable = typeHandle.GetMethodTable();
+
+        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
+        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
+
+        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
+        }
+        else
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
+        }
+
+        methInfo->ILCodeSize = sizeof(returnTrue);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
+    return false;
+}
+
 //---------------------------------------------------------------------------------------
 // 
 //static
@@ -7322,6 +7336,10 @@ getMethodInfoHelper(
         else if (MscorlibBinder::IsClass(pMT, CLASS__VOLATILE))
         {
             fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
+        }
+        else if (MscorlibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
+        {
+            fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
         }
 
         if (!fILIntrinsic)
