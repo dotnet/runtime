@@ -15,6 +15,8 @@
 #define USE_BSD_BACKEND
 #elif defined(__HAIKU__)
 #define USE_HAIKU_BACKEND
+/* Define header for team_info */
+#include <os/kernel/OS.h>
 #else
 #define USE_DEFAULT_BACKEND
 #endif

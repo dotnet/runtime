@@ -20,7 +20,9 @@
 #endif
 
 #if defined(_POSIX_VERSION)
+#if !defined(__HAIKU__)
 #include <sys/errno.h>
+#endif
 #include <sys/param.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H

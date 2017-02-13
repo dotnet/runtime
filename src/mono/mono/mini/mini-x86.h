@@ -34,12 +34,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #endif /* HOST_WIN32 */
 
-#ifdef __HAIKU__
-struct sigcontext {
-	vregs regs;
-};
-#endif /* __HAIKU__ */
-
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
        defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)
 #define MONO_ARCH_USE_SIGACTION

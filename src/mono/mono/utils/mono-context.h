@@ -47,6 +47,13 @@ typedef struct __darwin_xmm_reg MonoContextSimdReg;
 #undef MONO_SIGNAL_USE_UCONTEXT_T
 #endif
 
+#ifdef __HAIKU__
+/* sigcontext surrogate */
+struct sigcontext {
+	vregs regs;
+};
+#endif
+
 #ifdef HOST_WIN32
 /* sigcontext surrogate */
 struct sigcontext {
@@ -74,14 +81,14 @@ struct sigcontext {
 # define SC_ESI sc_esi
 #elif defined(__HAIKU__)
 # define SC_EAX regs.eax
-# define SC_EBX regs._reserved_2[2]
+# define SC_EBX regs.ebx
 # define SC_ECX regs.ecx
 # define SC_EDX regs.edx
 # define SC_EBP regs.ebp
 # define SC_EIP regs.eip
 # define SC_ESP regs.esp
-# define SC_EDI regs._reserved_2[0]
-# define SC_ESI regs._reserved_2[1]
+# define SC_EDI regs.edi
+# define SC_ESI regs.esi
 #else
 # define SC_EAX eax
 # define SC_EBX ebx

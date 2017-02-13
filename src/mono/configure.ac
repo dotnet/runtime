@@ -1910,6 +1910,10 @@ if test x$host_win32 = xno; then
 # and libpthread does not exist
 #
 	case "${host}" in
+		*-*-*haiku*)
+			# Haiku has pthread in libroot (libc equiv)
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS")
+		;;
 		*-*-*freebsd*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;

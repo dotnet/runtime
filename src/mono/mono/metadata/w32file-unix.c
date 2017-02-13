@@ -4928,7 +4928,7 @@ mono_w32file_get_drive_type(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__) || defined(__FreeBSD_kernel__)
+#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__) || defined(__FreeBSD_kernel__) || defined(__HAIKU__)
 static gchar*
 get_fstypename (gchar *utfpath)
 {
