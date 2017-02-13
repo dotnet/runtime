@@ -3622,8 +3622,13 @@ void ZapInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                                 CorInfoInline inlineResult,
                                                 const char * reason)
 {
-
-
+    if (!dontInline(inlineResult) && inlineeHnd != NULL)
+    {
+        // We deliberately report  m_currentMethodHandle (not inlinerHnd) as inliner, because
+        // if m_currentMethodHandle != inlinerHnd, it simply means that inlinerHnd is intermediate link 
+        // in inlining into m_currentMethodHandle, and we have no interest to track those intermediate links now.
+        m_pImage->m_pPreloader->ReportInlining(m_currentMethodHandle, inlineeHnd);
+    }
     return m_pEEJitInfo->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
 }
 

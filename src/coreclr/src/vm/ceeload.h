@@ -81,7 +81,8 @@ class TypeHandleList;
 class ProfileEmitter;
 class ReJitManager;
 class TrackingMap;
-class PersistentInlineTrackingMap;
+struct MethodInModule;
+class PersistentInlineTrackingMapNGen;
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -104,7 +105,7 @@ class PersistentInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
 #endif
 
-typedef DPTR(PersistentInlineTrackingMap) PTR_PersistentInlineTrackingMap;
+typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
 
 extern VerboseLevel g_CorCompileVerboseLevel;
 #endif  // FEATURE_PREJIT
@@ -2667,7 +2668,8 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
-    PTR_PersistentInlineTrackingMap GetNgenInlineTrackingMap();
+    BOOL HasInlineTrackingMap();
+    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
@@ -3436,7 +3438,7 @@ private:
     DebuggerSpecificData  m_debuggerSpecificData;
 
     // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
-    PTR_PersistentInlineTrackingMap m_persistentInlineTrackingMap;
+    PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
 
 
     LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
