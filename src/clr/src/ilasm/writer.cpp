@@ -982,6 +982,62 @@ BOOL Assembler::EmitEventsProps(Class* pClass)
     return ret;
 }
 
+HRESULT Assembler::AllocateStrongNameSignature()
+{
+    HRESULT             hr = S_OK;
+    HCEESECTION         hSection;
+    DWORD               dwDataLength;
+    DWORD               dwDataOffset;
+    DWORD               dwDataRVA;
+    VOID               *pvBuffer;
+    AsmManStrongName   *pSN = &m_pManifest->m_sStrongName;
+
+    // pSN->m_cbPublicKey is the length of the m_pbPublicKey
+    dwDataLength = ((int)pSN->m_cbPublicKey < 128 + 32) ? 128 : (int)pSN->m_cbPublicKey - 32;
+
+    // Grab memory in the section for our stuff.
+    if (FAILED(hr = m_pCeeFileGen->GetIlSection(m_pCeeFile,
+                                                &hSection)))
+    {
+        return hr;
+    }
+
+    if (FAILED(hr = m_pCeeFileGen->GetSectionBlock(hSection,
+                                                   dwDataLength,
+                                                   4,
+                                                   &pvBuffer)))
+    {
+        return hr;
+    }
+
+    // Where did we get that memory?
+    if (FAILED(hr = m_pCeeFileGen->GetSectionDataLen(hSection,
+                                                     &dwDataOffset)))
+    {
+        return hr;
+    }
+
+    dwDataOffset -= dwDataLength;
+
+    // Convert to an RVA.
+    if (FAILED(hr = m_pCeeFileGen->GetMethodRVA(m_pCeeFile,
+                                                dwDataOffset,
+                                                &dwDataRVA)))
+    {
+        return hr;
+    }
+
+    // Emit the directory entry.
+    if (FAILED(hr = m_pCeeFileGen->SetStrongNameEntry(m_pCeeFile,
+                                                      dwDataLength,
+                                                      dwDataRVA)))
+    {
+        return hr;
+    }
+
+    return S_OK;
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
@@ -1008,6 +1064,15 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
 
     if(bClock) bClock->cMDEmit1 = GetTickCount();
 
+    // Allocate space for a strong name signature if we're delay or full
+    // signing the assembly.
+    if (m_pManifest->m_sStrongName.m_pbPublicKey)
+    {
+        if (FAILED(hr = AllocateStrongNameSignature()))
+        {
+            goto exit;
+        }
+    }
 
     if(bClock) bClock->cMDEmit2 = GetTickCount();
 
