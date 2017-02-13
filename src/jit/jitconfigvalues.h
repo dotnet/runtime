@@ -258,6 +258,9 @@ CONFIG_STRING(AltJitExcludeAssemblies,
               W("AltJitExcludeAssemblies")) // Do not use AltJit on this semicolon-delimited list of assemblies.
 #endif                                      // defined(ALT_JIT)
 
+CONFIG_INTEGER(JitMeasureIR, W("JitMeasureIR"), 0) // If set, measure the IR size after some phases and report it in
+                                                   // the time log.
+
 CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT function info and write to this file.
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This
                                                  // mode must be used in internal retail builds.
