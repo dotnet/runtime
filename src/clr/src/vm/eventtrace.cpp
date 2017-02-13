@@ -5789,9 +5789,6 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
     ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
     ULONGLONG ullBindingID = 0;
-#if (defined FEATURE_PREJIT) && (defined FEATURE_FUSION)  
-    ullBindingID = pAssembly->GetManifestFile()->GetBindingID();
-#endif
     ULONG ulAssemblyFlags = ((bIsDomainNeutral ? ETW::LoaderLog::LoaderStructs::DomainNeutralAssembly : 0) |
                              (bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
                              (bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeAssembly : 0) |

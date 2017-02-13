@@ -786,110 +786,12 @@ HRESULT GetFullyQualifiedTypeName(SString* pString, mdAssemblyRef tkAssemblyRef,
     (*pString) += W(", ");
 
     DWORD dwDisplayFlags = ASM_DISPLAYF_VERSION | ASM_DISPLAYF_PUBLIC_KEY_TOKEN | ASM_DISPLAYF_CULTURE;
-#ifdef FEATURE_FUSION // why is Security  accessing Fusion interfaces bypassing Loader?
-    // Retrieve size of assembly name
-    ASSEMBLYMETADATA sContext;
-    ZeroMemory(&sContext, sizeof(ASSEMBLYMETADATA));
-    HRESULT hr = S_OK;
-    LPWSTR wszAssemblyName = NULL;
-    BYTE *pbPublicKeyOrToken = NULL;
-    DWORD cbPublicKeyOrToken = 0;
-    DWORD dwFlags = 0;
-    if(TypeFromToken(tkAssemblyRef) == mdtAssembly)
-    {
-        DWORD cchName;
-        hr = pImport->GetAssemblyProps(tkAssemblyRef,    // [IN] The Assembly for which to get the properties.
-                                            NULL,        // [OUT] Pointer to the public key or token.
-                                            NULL,        // [OUT] Count of bytes in the public key or token.
-                                            NULL,        // [OUT] Hash Algorithm
-                                            NULL,        // [OUT] Buffer to fill with name.
-                                            NULL,        // [IN] Size of buffer in wide chars.
-                                            &cchName,    // [OUT] Actual # of wide chars in name.
-                                            &sContext,   // [OUT] Assembly MetaData.
-                                            NULL);       // [OUT] Flags.
-        if(FAILED(hr))
-            return hr;
-
-        // Get the assembly name other naming properties
-        wszAssemblyName = (LPWSTR)_alloca(cchName * sizeof(WCHAR));
-        hr = pImport->GetAssemblyProps(tkAssemblyRef,
-                                            (const void **)&pbPublicKeyOrToken,
-                                            &cbPublicKeyOrToken,
-                                            NULL,
-                                            wszAssemblyName,
-                                            cchName,
-                                            &cchName,
-                                            &sContext,
-                                            &dwFlags);
-        if(FAILED(hr))
-            return hr;
-    }
-    else if(TypeFromToken(tkAssemblyRef) == mdtAssemblyRef)
-    {
-        DWORD cchName;
-        hr = pImport->GetAssemblyRefProps(tkAssemblyRef, // [IN] The AssemblyRef for which to get the properties.
-                                            NULL,        // [OUT] Pointer to the public key or token.
-                                            NULL,        // [OUT] Count of bytes in the public key or token.
-                                            NULL,        // [OUT] Buffer to fill with name.
-                                            NULL,        // [IN] Size of buffer in wide chars.
-                                            &cchName,    // [OUT] Actual # of wide chars in name.
-                                            &sContext,   // [OUT] Assembly MetaData.
-                                            NULL,        // [OUT] Hash blob.
-                                            NULL,        // [OUT] Count of bytes in the hash blob.
-                                            NULL);       // [OUT] Flags.
-        if(FAILED(hr))
-            return hr;
-
-        // Get the assembly name other naming properties
-        wszAssemblyName = (LPWSTR)_alloca(cchName * sizeof(WCHAR));
-        hr = pImport->GetAssemblyRefProps(tkAssemblyRef,
-                                            (const void **)&pbPublicKeyOrToken,
-                                            &cbPublicKeyOrToken,
-                                            wszAssemblyName,
-                                            cchName,
-                                            &cchName,
-                                            &sContext,
-                                            NULL,
-                                            NULL,
-                                            &dwFlags);
-        if(FAILED(hr))
-            return hr;
-    }
-    else
-    {
-        _ASSERTE(false && "unexpected token");
-    }
-
-    // Convert to an AssemblyNameObject
-    ReleaseHolder<IAssemblyName> pAssemblyNameObj;
-    hr = CreateAssemblyNameObject(&pAssemblyNameObj, wszAssemblyName, CANOF_PARSE_DISPLAY_NAME, NULL);
-    if(FAILED(hr))
-        return hr;
-    _ASSERTE(pAssemblyNameObj && "assembly name object shouldn't be NULL");
-    pAssemblyNameObj->SetProperty(ASM_NAME_MAJOR_VERSION, &sContext.usMajorVersion, sizeof(WORD));
-    pAssemblyNameObj->SetProperty(ASM_NAME_MINOR_VERSION, &sContext.usMinorVersion, sizeof(WORD));
-    pAssemblyNameObj->SetProperty(ASM_NAME_BUILD_NUMBER, &sContext.usBuildNumber, sizeof(WORD));
-    pAssemblyNameObj->SetProperty(ASM_NAME_REVISION_NUMBER, &sContext.usRevisionNumber, sizeof(WORD));
-    pAssemblyNameObj->SetProperty(ASM_NAME_CULTURE, W(""), sizeof(WCHAR));
-    if(pbPublicKeyOrToken && cbPublicKeyOrToken > 0)
-    {
-        if(dwFlags & afPublicKey)
-            pAssemblyNameObj->SetProperty(ASM_NAME_PUBLIC_KEY, pbPublicKeyOrToken, cbPublicKeyOrToken);
-        else
-            pAssemblyNameObj->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN, pbPublicKeyOrToken, cbPublicKeyOrToken);
-    }
-
-    // Convert assembly name to an ole string
-    StackSString name;
-    FusionBind::GetAssemblyNameDisplayName(pAssemblyNameObj, name, dwDisplayFlags);
-#else // FEATURE_FUSION
     HRESULT hr;
     AssemblySpec spec;
     StackSString name;
 
     IfFailRet(spec.Init((mdToken)tkAssemblyRef,pImport));
     spec.GetFileOrDisplayName(dwDisplayFlags,name);
-#endif // FEATURE_FUSION
     _ASSERTE(!name.IsEmpty() && "the assembly name should not be empty here");
 
     (*pString) += name;

@@ -28,9 +28,6 @@
 
 #include "ivehandler.h"
 #include "ivalidator.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "holder.h"
 
 #include "clrprivhosting.h"

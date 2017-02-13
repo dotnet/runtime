@@ -13,9 +13,6 @@
 #define CEELOAD_H_
 
 #include "common.h"
-#ifdef FEATURE_FUSION
-#include <fusion.h>
-#endif
 #include "vars.hpp" // for LPCUTF8
 #include "hash.h"
 #include "clsload.hpp"
@@ -2181,11 +2178,6 @@ protected:
 
     virtual void ReleaseILData();
 
-#ifdef FEATURE_FUSION
-    void FusionCopyPDBs(LPCWSTR moduleName);
-    // This function will return PDB stream if exist.
-    HRESULT GetHostPdbStream(IStream **ppStream);
-#endif // FEATURE_FUSION
 
 #endif // DACCESS_COMPILE
 

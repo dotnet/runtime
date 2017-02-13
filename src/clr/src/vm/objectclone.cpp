@@ -1740,10 +1740,6 @@ TypeHandle ObjectClone::GetType(const SString &ssTypeName, const SString &ssAsse
         }
 
         DomainAssembly *pDomainAssembly = NULL;
-#ifdef FEATURE_FUSION
-        // If the normal load fails then try loading from a partial assembly name (relaxed serializer rules).
-        pDomainAssembly = LoadAssemblyFromPartialNameHack((SString*)&ssAssemName, TRUE);
-#endif // FEATURE_FUSION
         if (pDomainAssembly == NULL)
             COMPlusThrow(kSerializationException, IDS_SERIALIZATION_UNRESOLVED_TYPE,
                          ssTypeName.GetUnicode(), ssAssemName.GetUnicode());

@@ -2295,10 +2295,6 @@ ClrDataAccess::GetFailedAssemblyData(CLRDATA_ADDRESS assembly, unsigned int *pCo
     }
     else
     {
-#ifdef FEATURE_FUSION
-        if (pContext)
-            *pContext = pAssembly->context;
-#endif
         if (pResult)
             *pResult = pAssembly->error;
     }
@@ -2679,10 +2675,6 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
 
     if (pAssembly->GetManifestFile())
     {
-#ifdef FEATURE_FUSION    
-        assemblyData->LoadContext = pAssembly->GetManifestFile()->GetLoadContext();
-        assemblyData->dwLocationFlags = pAssembly->GetManifestFile()->GetLocationFlags();
-#endif
         
     }
 
