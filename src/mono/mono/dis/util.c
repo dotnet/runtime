@@ -1,5 +1,5 @@
 /**
- * \file util.c
+ * \file
  * Assorted utilities for the disassembler
  *
  * Author:
