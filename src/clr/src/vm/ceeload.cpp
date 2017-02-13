@@ -183,10 +183,32 @@ ARRAY_PTR_COR_IL_MAP InstrumentedILOffsetMapping::GetOffsets() const
     return m_rgMap;
 }
 
-PTR_PersistentInlineTrackingMap Module::GetNgenInlineTrackingMap()
+BOOL Module::HasInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_persistentInlineTrackingMap;
+#ifdef FEATURE_READYTORUN
+	if (IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
+	{
+		return TRUE;
+	}
+#endif
+    return (m_pPersistentInlineTrackingMapNGen != NULL);
+}
+
+COUNT_T Module::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
+{
+    WRAPPER_NO_CONTRACT;
+#ifdef FEATURE_READYTORUN
+    if(IsReadyToRun() && GetReadyToRunInfo()->GetInlineTrackingMap() != NULL)
+    {
+        return GetReadyToRunInfo()->GetInlineTrackingMap()->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
+    }
+#endif
+    if(m_pPersistentInlineTrackingMapNGen != NULL)
+    {
+        return m_pPersistentInlineTrackingMapNGen->GetInliners(inlineeOwnerMod, inlineeTkn, inlinersSize, inliners, incompleteData);
+    }
+    return 0;
 }
 
 
@@ -10064,8 +10086,8 @@ void Module::Save(DataImage *image)
     InlineTrackingMap *inlineTrackingMap = image->GetInlineTrackingMap();
     if (inlineTrackingMap) 
     {
-        m_persistentInlineTrackingMap = new (image->GetHeap()) PersistentInlineTrackingMap(this);
-        m_persistentInlineTrackingMap->Save(image, inlineTrackingMap);
+        m_pPersistentInlineTrackingMapNGen = new (image->GetHeap()) PersistentInlineTrackingMapNGen(this);
+        m_pPersistentInlineTrackingMapNGen->Save(image, inlineTrackingMap);
     }
 
     if (m_pNgenStats && g_CorCompileVerboseLevel >= CORCOMPILE_STATS)
@@ -11064,14 +11086,14 @@ void Module::Fixup(DataImage *image)
     }
 
     // Fix up inlining data
-    if(m_persistentInlineTrackingMap)
+    if(m_pPersistentInlineTrackingMapNGen)
     {
-        image->FixupPointerField(this, offsetof(Module, m_persistentInlineTrackingMap));
-        m_persistentInlineTrackingMap->Fixup(image);
+        image->FixupPointerField(this, offsetof(Module, m_pPersistentInlineTrackingMapNGen));
+        m_pPersistentInlineTrackingMapNGen->Fixup(image);
     } 
     else
     {
-        image->ZeroPointerField(this, offsetof(Module, m_persistentInlineTrackingMap));
+        image->ZeroPointerField(this, offsetof(Module, m_pPersistentInlineTrackingMapNGen));
     }
 
     SetIsModuleSaved();
