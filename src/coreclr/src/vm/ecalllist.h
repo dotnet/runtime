@@ -601,20 +601,12 @@ FCFuncStart(gAppDomainManagerFuncs)
     QCFuncElement("GetEntryAssembly", AssemblyNative::GetEntryAssembly)
 FCFuncEnd()
 
-#ifdef FEATURE_FUSION
-FCFuncStart(gAppDomainSetupFuncs)
-    FCFuncElement("UpdateContextProperty", AppDomainNative::UpdateContextProperty)
-FCFuncEnd()
-#endif // FEATURE_FUSION
 
 
 FCFuncStart(gAppDomainFuncs)
 #ifdef FEATURE_REMOTING 
     FCFuncElement("GetDefaultDomain", AppDomainNative::GetDefaultDomain)
 #endif    
-#ifdef FEATURE_FUSION
-    FCFuncElement("GetFusionContext", AppDomainNative::GetFusionContext)
-#endif // FEATURE_FUSION
     FCFuncElement("IsStringInterned", AppDomainNative::IsStringInterned)
     FCFuncElement("IsUnloadingForcedFinalize", AppDomainNative::IsUnloadingForcedFinalize)
 #ifdef FEATURE_REMOTING    
@@ -1524,9 +1516,6 @@ FCFuncEnd()
 
 FCClassElement("AppDomain", "System", gAppDomainFuncs)
 FCClassElement("AppDomainManager", "System", gAppDomainManagerFuncs)
-#ifdef FEATURE_FUSION
-FCClassElement("AppDomainSetup", "System", gAppDomainSetupFuncs)
-#endif // FEATURE_FUSION
 FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("ArrayWithOffset", "System.Runtime.InteropServices", gArrayWithOffsetFuncs)

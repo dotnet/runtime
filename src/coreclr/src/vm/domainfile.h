@@ -521,11 +521,6 @@ public:
         return PTR_PEAssembly(m_pFile);
     }
 
-#ifdef FEATURE_FUSION
-   IAssemblyBindingClosure* GetAssemblyBindingClosure(WALK_LEVEL level);
-   BOOL IsClosedInGAC();
-   BOOL MayHaveUnknownDependencies();
-#endif
 
     // Returns security information for the assembly based on the codebase
     void GetSecurityIdentity(SString &codebase, SecZone *pdwZone, DWORD dwFlags, BYTE *pbUniqueID, DWORD *pcbUniqueID);
@@ -537,19 +532,6 @@ public:
     }
 #ifdef FEATURE_LOADER_OPTIMIZATION
     
-#ifdef FEATURE_FUSION
-private:
-    enum CMDI_Result
-    {
-        CMDI_End,
-        CMDI_AssemblyResolveSucceeded,
-        CMDI_AssemblyResolveFailed
-    };
-
-    CMDI_Result CheckMissingDependencyInner(IAssemblyBindingClosure* pClosure, DWORD idx);
-
-
-#endif
 public:
     CMD_State CheckMissingDependencies();
     BOOL MissingDependenciesCheckDone();
@@ -824,9 +806,6 @@ private:
     PTR_IAssemblySecurityDescriptor         m_pSecurityDescriptor;
     PTR_Assembly                            m_pAssembly;
     DebuggerAssemblyControlFlags            m_debuggerFlags;
-#ifdef FEATURE_FUSION	
-    ReleaseHolder<IAssemblyBindingClosure>  m_pAssemblyBindingClosure;
-#endif
     CMD_State                               m_MissingDependenciesCheckStatus;
     ArrayList                               m_Modules;
     BOOL                                    m_fSkipPolicyResolution;

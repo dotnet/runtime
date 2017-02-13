@@ -32,9 +32,6 @@
 #include "jithost.h"
 #include "corcompile.h"
 #include "iceefilegen.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "corpriv.h"
 
 #include "holder.h"

@@ -21,9 +21,7 @@
 #include "corpriv.h"
 #include "clrprivbinding.h"
 
-#if !defined(FEATURE_FUSION)
 #include "clrprivbindercoreclr.h"
-#endif // !defined(FEATURE_FUSION)
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 #include "clrprivbinderassemblyloadcontext.h"
@@ -203,9 +201,7 @@ public:
             return m_pBinder;
         }
         
-#if !defined(FEATURE_FUSION)
         friend class ::CLRPrivBinderCoreCLR;
-#endif // !defined(FEATURE_FUSION)
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         friend class ::CLRPrivBinderAssemblyLoadContext;

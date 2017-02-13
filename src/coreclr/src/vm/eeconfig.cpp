@@ -16,9 +16,6 @@
 #endif
 #include "eeconfig.h"
 #include "method.hpp"
-#ifdef FEATURE_FUSION
-#include "fusionsetup.h"
-#endif
 #include "eventtrace.h"
 #include "eehash.h"
 #include "eemessagebox.h"
@@ -1068,26 +1065,6 @@ HRESULT EEConfig::sync()
         g_IBCLogger.DisableAllInstr();
 #endif
 
-#ifdef FEATURE_FUSION
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapSet, (LPWSTR*)&pZapSet));
-
-    m_fFreepZapSet = true;
-    
-    if (pZapSet == NULL)
-    {
-        m_fFreepZapSet = false;
-        pZapSet = W("");
-    }
-    if (wcslen(pZapSet) > 3)
-    {
-        _ASSERTE(!"Zap Set String must be less than 3 chars");
-        delete[] pZapSet;
-        m_fFreepZapSet = false;
-        pZapSet = W("");
-    }
-
-    fNgenBindOptimizeNonGac = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NgenBind_OptimizeNonGac) != 0;
-#endif
 
     dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
@@ -1202,17 +1179,6 @@ HRESULT EEConfig::sync()
     fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);
 #endif //_DEBUG
 
-#ifdef FEATURE_FUSION
-    if(g_pConfig) {
-        LPCWSTR result = NULL;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(CLRConfig::EXTERNAL_developerInstallation, CONFIG_SYSTEM, &result)) && result)
-        {
-            // <TODO> CTS, add addtional checks to ensure this is an SDK installation </TODO>
-            if(SString::_wcsicmp(result, W("true")) == 0)
-                m_fDeveloperInstallation = true;
-        }
-    }
-#endif
 
 #ifdef AD_NO_UNLOAD
     fAppDomainUnload = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AppDomainNoUnload) == 0);

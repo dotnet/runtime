@@ -240,9 +240,7 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
-#ifndef FEATURE_FUSION
 #include "../binder/inc/coreclrbindercommon.h"
-#endif // !FEATURE_FUSION
 
 #ifdef FEATURE_UEF_CHAINMANAGER
 // This is required to register our UEF callback with the UEF chain manager
@@ -271,9 +269,6 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 #endif // !CROSSGEN_COMPILE
 
 HRESULT EEStartup(COINITIEE fFlags);
-#ifdef FEATURE_FUSION
-extern "C" HRESULT STDMETHODCALLTYPE InitializeFusion();
-#endif
 
 #ifdef FEATURE_MIXEDMODE
 HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
@@ -782,15 +777,8 @@ void EEStartupHelper(COINITIEE fFlags)
 #endif
 
         // Fusion
-#ifdef FEATURE_FUSION 
-        {
-            ETWOnStartup (FusionInit_V1, FusionInitEnd_V1);
-            IfFailGoLog(InitializeFusion());
-        }
-#else // FEATURE_FUSION
         // Initialize the general Assembly Binder infrastructure
         IfFailGoLog(CCoreCLRBinderHelper::Init());
-#endif // FEATURE_FUSION
 
         if (g_pConfig != NULL)
         {

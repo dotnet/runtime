@@ -65,13 +65,11 @@ void PEImage::Startup()
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 #endif
     PEImageLayout::Startup();
-#ifndef FEATURE_FUSION
 #ifdef FEATURE_USE_LCID
     g_lcid = MAKELCID(LOCALE_INVARIANT, SORT_DEFAULT);
 #else // FEATURE_USE_LCID
     g_lcid = NULL; // invariant
 #endif //FEATURE_USE_LCID
-#endif
     END_SO_INTOLERANT_CODE;
 
     RETURN;
@@ -226,9 +224,6 @@ PEImage::~PEImage()
         m_pMDTracker->Deactivate();
 #endif // METADATATRACKER_ENABLED
 
-#ifdef FEATURE_FUSION
-    delete m_pILFingerprint;
-#endif // FEATURE_FUSION
 }
 
 #ifdef FEATURE_MIXEDMODE
@@ -444,12 +439,6 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     // This is the value stored in the table
     PEImage *pImage = (PEImage *) u2;
 
-#ifdef FEATURE_FUSION
-    if (pLocator->m_fIsIStream)
-    {
-        return pImage->m_fIsIStream && (pLocator->m_StreamAsmId == pImage->m_StreamAsmId) && (pLocator->m_dwStreamModuleId == pImage->m_dwStreamModuleId);
-    }
-#endif
 
     BOOL ret = FALSE;
     HRESULT hr;
@@ -743,297 +732,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#ifdef FEATURE_FUSION
-// --------------------------------------------------------------------------------
-// Exports for the metadata APIs for fusion.
-// --------------------------------------------------------------------------------
-
-HRESULT STDMETHODCALLTYPE RuntimeOpenImage(LPCWSTR pszFileName, HCORMODULE* hHandle)
-{
-    WRAPPER_NO_CONTRACT;
-    return RuntimeOpenImageInternal(pszFileName, hHandle, NULL, MDInternalImport_Default);
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeOpenImageInternal(LPCWSTR pszFileName, HCORMODULE* hHandle, DWORD *pdwLength, MDInternalImportFlags flags, HANDLE hFile)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_INTOLERANT;
-    HRESULT hr = S_OK;
-    ETWOnStartup (LoaderCatchCall_V1,LoaderCatchCallEnd_V1);
-    EX_TRY
-    {
-        PEImage::Startup();
-        PEImageHolder pFile(PEImage::OpenImage(pszFileName, flags));
-        if (hFile != INVALID_HANDLE_VALUE)
-        {
-            pFile->SetFileHandle(hFile);
-        }
-        if (pdwLength)
-        {
-            PEImageLayoutHolder pLayout(pFile->GetLayout(PEImageLayout::LAYOUT_MAPPED,PEImage::LAYOUT_CREATEIFNEEDED));
-            pFile->CachePEKindAndMachine();
-            *pdwLength = pLayout->GetSize();
-        }
-        *hHandle = (HCORMODULE)pFile.Extract();        
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeOpenImageByStream(IStream* pIStream, UINT64 AssemblyId,
-                                                   DWORD dwModuleId,
-                                                   HCORMODULE* hHandle, DWORD *pdwLength, MDInternalImportFlags flags)
-{
-    STATIC_CONTRACT_NOTHROW;
-    HRESULT hr = S_OK;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    EX_TRY
-    {
-        PEImage::Startup();
-
-        PEImageHolder pFile(PEImage::OpenImage(pIStream, AssemblyId, dwModuleId, FALSE, flags));
-        *hHandle = (HCORMODULE) pFile.Extract();
-        if (pdwLength)
-        {
-            PEImageLayoutHolder pImage(pFile->GetLayout(PEImageLayout::LAYOUT_ANY,0));
-            pFile->CachePEKindAndMachine();
-            *pdwLength = pImage->GetSize();
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeReleaseHandle(HCORMODULE hHandle)
-{
-    STATIC_CONTRACT_NOTHROW;
-    HRESULT hr = S_OK;
-
-    PEImage *pImage = (PEImage*)hHandle;
-
-    if (pImage != NULL)
-        pImage->Release();
-
-    return hr;     
-}
-
-void RuntimeAddRefHandle(HCORMODULE hHandle)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    PEImage *pImage = (PEImage*)hHandle;
-
-    if (pImage != NULL)
-        pImage->AddRef();
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeGetMDInternalImport(HCORMODULE hHandle, MDInternalImportFlags flags, IMDInternalImport** ppMDImport)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-    PEImage* pImage=(PEImage*)hHandle;
-    HRESULT hr=S_OK;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    EX_TRY
-    {
-        if (!pImage->HasNTHeaders() || !pImage->HasCorHeader())
-            hr=HRESULT_FROM_WIN32(ERROR_FILE_INVALID);
-        else
-        {
-#ifdef FEATURE_PREJIT
-            if (pImage->HasNativeHeader())
-            {
-                if (!pImage->CheckNativeFormat())
-                    hr=COR_E_BADIMAGEFORMAT;
-                else
-                {
-                    if (flags & MDInternalImport_ILMetaData)
-                        goto OPEN_IL_METADATA;
-
-                    *ppMDImport=pImage->GetNativeMDImport();
-                    if (*ppMDImport)
-                        (*ppMDImport)->AddRef();
-                    else
-                        hr=COR_E_BADIMAGEFORMAT;
-                }
-            }
-            else
-#endif  //FEATURE_PREJIT
-            {
-                if (!pImage->CheckILFormat())
-                    hr=COR_E_BADIMAGEFORMAT;
-                else
-                {
-#ifdef FEATURE_PREJIT                    
-                OPEN_IL_METADATA:
-#endif                    
-                    *ppMDImport=pImage->GetMDImport();
-                    if (*ppMDImport)
-                        (*ppMDImport)->AddRef();
-                    else
-                        hr=COR_E_BADIMAGEFORMAT;
-                }
-            }
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeGetImageBase(HCORMODULE hHandle,LPVOID* base, BOOL bMapped, COUNT_T* dwSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-    HRESULT hr=S_FALSE;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    EX_TRY
-    {
-        PEImage* pImage=(PEImage*)hHandle;
-        *base=NULL;
-        if (!pImage->HasLoadedLayout())
-        {
-            PEImageLayoutHolder pLayout(pImage->GetLayout(bMapped
-                                                            ?PEImageLayout::LAYOUT_MAPPED
-                                                            :PEImageLayout::LAYOUT_FLAT,0));
-            if (pLayout!=NULL)
-            {
-                if(dwSize)
-                    *dwSize=pLayout->GetSize();
-                *base=pLayout->GetBase();
-                hr=S_OK;
-            }
-        }
-
-        if (hr==S_FALSE && pImage->HasLoadedLayout())
-        {
-            BOOL bIsMapped=pImage->GetLoadedLayout()->IsMapped();
-            if ((bIsMapped && bMapped) || (!bIsMapped && !bMapped))
-            {
-                //the one we want
-                *base=pImage->GetLoadedLayout()->GetBase();
-                if (dwSize)
-                    *dwSize=pImage->GetLoadedLayout()->GetSize();
-                hr=S_OK;
-            }
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeGetImageKind(HCORMODULE hHandle,DWORD* pdwKind, DWORD* pdwMachine)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-    HRESULT hr=S_FALSE;
-
-    PEImage* pImage=(PEImage*)hHandle;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    EX_TRY
-    {
-        pImage->GetPEKindAndMachine(pdwKind, pdwMachine);
-        hr = S_OK;
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE;
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE RuntimeOSHandle(HCORMODULE hHandle, HMODULE* hModule)
-{
-    LIMITED_METHOD_CONTRACT;
-    if(hHandle==NULL || hModule == NULL)
-        return E_POINTER;
-    PEImage* pImage= (PEImage*) hHandle;
-    if (!pImage->HasLoadedLayout())
-        return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
-    *hModule=(HMODULE)pImage->GetLoadedLayout()->GetBase();
-    return S_OK;
-}
-
-HRESULT RuntimeGetAssemblyStrongNameHashForModule(HCORMODULE   hModule,
-                                                  IMetaDataImport * pMDImport,
-                                                  BYTE        *pbSNHash,
-                                                  DWORD       *pcbSNHash)
-{
-    STATIC_CONTRACT_NOTHROW;
-    HRESULT hr = S_OK;
-
-    PEImage* pImage = (PEImage*)hModule;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(return COR_E_STACKOVERFLOW);
-    EX_TRY
-    {
-
-        if (pImage->HasStrongNameSignature())
-        {
-            if (pImage->IsStrongNameSigned())
-            {
-                SBuffer signature;
-                pImage->GetHashedStrongNameSignature(signature);
-                *pcbSNHash = min(signature.GetSize(), *pcbSNHash);
-                signature.Copy(pbSNHash, signature.Begin(), *pcbSNHash);
-            }
-            else
-            {
-                // This assembly is delay signed (in this limited scenario).
-                // We'll use the assembly MVID as the hash and leave assembly verification
-                // up to the loader to determine if delay signed assemblies are allowed.
-                // This allows us to fix the perf degrade observed with the hashing code and
-                // detailed in BUG 126760.
-
-                // <TODO>@TODO:workaround: This is a workaround because Fusion is expecting at least 20 bytes of data.</TODO>
-                if (max(sizeof(GUID), 20) <= *pcbSNHash)
-                {
-                    memset(pbSNHash, 0, *pcbSNHash);
-                    hr = pMDImport->GetScopeProps(NULL, 0, NULL, (GUID *) pbSNHash);
-                }
-                else
-                    hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-
-                *pcbSNHash = max(sizeof(GUID), 20);
-            }
-        }
-        else
-        {
-            hr = CORSEC_E_MISSING_STRONGNAME;
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE;
-
-    return hr;
-}
-
-#endif // FEATURE_FUSION
 
 
 #if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
@@ -1179,45 +877,6 @@ void PEImage::UnloadIJWModule(void *pBase)
 
 #endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE
 
-#ifdef FEATURE_FUSION
-void PEImage::Init(IStream* pIStream, UINT64 uAsmStreamId,
-                   DWORD dwModuleId, BOOL resourceFile)
-{
-    CONTRACT_VOID
-    {
-        CONSTRUCTOR_CHECK;
-        PRECONDITION(CheckStartup());
-        STANDARD_VM_CHECK;
-    }
-    CONTRACT_END;
-
-    m_StreamAsmId = uAsmStreamId;
-    m_dwStreamModuleId = dwModuleId;
-    m_fIsIStream = TRUE;
-
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat stream\n"));
-
-    if (!pIStream)
-        ThrowHR(COR_E_FILELOAD);
-
-    // Just copy bytes.
-
-    PEImageLayoutHolder pFlatLayout(PEImageLayout::CreateFromStream(pIStream, this));
-
-    if (!resourceFile) {
-        if (!pFlatLayout->CheckCORFormat())
-            ThrowFormat(COR_E_BADIMAGEFORMAT);
-
-        if (!CheckLayoutFormat(pFlatLayout))
-            ThrowHR(COR_E_NOTSUPPORTED);
-    }
-
-    pFlatLayout.SuppressRelease();
-    SetLayout(IMAGE_FLAT, pFlatLayout);
-
-    RETURN;
-}
-#endif // FEATURE_FUSION
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1335,19 +994,11 @@ PEImage::PEImage():
 #endif // METADATATRACKER_DATA
     m_pMDImport(NULL),
     m_pNativeMDImport(NULL),
-#ifdef FEATURE_FUSION
-    m_StreamAsmId(0),
-    m_dwStreamModuleId(0),
-    m_fIsIStream(FALSE),
-#endif
     m_hFile(INVALID_HANDLE_VALUE),
     m_bOwnHandle(true),
     m_bSignatureInfoCached(FALSE),
     m_hrSignatureInfoStatus(E_UNEXPECTED),
     m_dwSignatureInfo(0),
-#ifdef FEATURE_FUSION
-    m_pILFingerprint(NULL),
-#endif //FEATURE_FUSION
     m_dwPEKind(0),
     m_dwMachine(0),
     m_fCachedKindAndMachine(FALSE)
@@ -1481,9 +1132,6 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         else
         if (imageLayoutMask&PEImageLayout::LAYOUT_FLAT)
         {
-#ifdef FEATURE_FUSION
-            _ASSERTE(!m_fIsIStream); //images created from streams should always have this one
-#endif
             pRetVal=PEImageLayout::LoadFlat(GetFileHandle(),this);
             m_pLayouts[IMAGE_FLAT]=pRetVal;
         }
@@ -1684,38 +1332,6 @@ LPCWSTR PEImage::GetPathForErrorMessages()
     return m_path;
 }
 
-#ifdef FEATURE_FUSION
-PEKIND PEImage::GetFusionProcessorArchitecture()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD dwPEKind, dwMachine;
-    GetPEKindAndMachine(&dwPEKind, &dwMachine);
-
-    DWORD dwAssemblyFlags = 0;
-
-    IfFailThrow(m_pMDImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly),
-                                              NULL, NULL, NULL,
-                                              NULL, NULL, &dwAssemblyFlags));
-
-    PEKIND retval;
-    if (FAILED(TranslatePEToArchitectureType(
-            (CorPEKind)dwPEKind,
-            dwMachine,
-            dwAssemblyFlags,
-            &retval)))
-    {
-        return peInvalid;
-    }
-    return retval;
-}
-#endif //FEATURE_FUSION
 
 HANDLE PEImage::GetFileHandle()
 {
@@ -1857,67 +1473,6 @@ BOOL PEImage::IsPtrInImage(PTR_CVOID data)
     return FALSE;
 }
 
-#ifdef FEATURE_FUSION
-#ifndef DACCESS_COMPILE
-HRESULT PEImage::GetILFingerprint(IILFingerprint **ppFingerprint)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-    *ppFingerprint = NULL;
-    if (m_pILFingerprint == NULL)
-    {
-        HRESULT hr = S_OK;
-        NewHolder<PEFingerprint> pNewFingerprint;
-        EX_TRY
-        {
-            pNewFingerprint = PEFingerprint::CreatePEFingerprint(this);
-            hr = S_OK;
-        }
-        EX_CATCH_HRESULT(hr);
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        if (InterlockedCompareExchangeT(&m_pILFingerprint, (PEFingerprint*)(pNewFingerprint.GetValue()), NULL) == NULL)
-        {
-            pNewFingerprint.SuppressRelease(); // Won the race
-        }
-    }
-
-    *ppFingerprint = m_pILFingerprint;
-    (*ppFingerprint)->AddRef();
-    return S_OK;
-}
-
-// NOTE: Performance critical codepaths should cache the result of this function.
-HRESULT RuntimeGetILFingerprintForPath(LPCWSTR path, IILFingerprint **ppFingerprint)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-    HCORMODULE hCorModule;
-    IfFailGo(RuntimeOpenImageInternal(path, &hCorModule, NULL, MDInternalImport_NoCache));
-    {
-        ReleaseHolder<PEImage> peImage((PEImage*)hCorModule);
-        IfFailGo(peImage->GetILFingerprint(ppFingerprint));
-    }
-    hr = S_OK;
- ErrExit:
-    return hr;
-}
-
-#endif //!DACCESS_COMPILE
-#endif //FEATURE_FUSION
 
 #if !defined(DACCESS_COMPILE)
 PEImage * PEImage::OpenImage(
@@ -1953,18 +1508,6 @@ PEImage * PEImage::OpenImage(
         pPEImage = PEImage::LoadImage(hMod);
     }
 #endif // !FEATURE_PAL    
-#ifdef FEATURE_FUSION
-    else if (iidResource == __uuidof(ICLRPrivResourceStream))
-    {
-        ReleaseHolder<ICLRPrivResourceStream> pIResourceStream;
-        IfFailThrow(pIResource->QueryInterface(__uuidof(ICLRPrivResourceStream), (LPVOID*)&pIResourceStream));
-        ReleaseHolder<IStream> pStream;
-        IfFailThrow(pIResourceStream->GetStream(__uuidof(IStream), (LPVOID*)&pStream));
-        UINT64 i64AssemblyId = static_cast<UINT64>(reinterpret_cast<UINT_PTR>(reinterpret_cast<ICLRPrivAssembly*>(pIResource)));
-        DWORD dwModuleId = static_cast<DWORD>(i64AssemblyId);
-        pPEImage = PEImage::OpenImage(pStream, i64AssemblyId, FALSE, dwModuleId, flags);
-    }
-#endif
     else
     {
         ThrowHR(COR_E_BADIMAGEFORMAT);

@@ -68,9 +68,6 @@ CLRPrivBinderAppX::CLRPrivBinderAppX(LPCWSTR * rgwzAltPath, UINT cAltPaths)
         }
     }
 
-#ifdef FEATURE_FUSION
-    IfFailThrow(RuntimeCreateCachingILFingerprintFactory(&m_pFingerprintFactory));
-#endif
 }
 
 //=====================================================================================================================

@@ -13728,24 +13728,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowSO()
 // Throw an InvalidCastException
 //==========================================================================
 
-#ifdef FEATURE_FUSION
-static const WCHAR *GetContextName(LOADCTX_TYPE kLoadContext,
-                                   BOOL         fIntrospectionOnly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Context names are treated as symbols and therefore not localized
-    switch (kLoadContext)
-    {
-    case LOADCTX_TYPE_DEFAULT:
-        return W("Default");
-    case LOADCTX_TYPE_LOADFROM:
-        return W("LoadFrom");
-    default:
-        return (fIntrospectionOnly ? W("InspectionContext") : W("LoadNeither"));
-    }
-}
-#endif
 
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
@@ -13755,12 +13737,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     WRAPPER_NO_CONTRACT;
 
     InlineSString<MAX_LONGPATH> sFormat;
-#ifdef FEATURE_FUSION
-    const WCHAR *pwzLoadContext = GetContextName(pPEAssembly->GetLoadContext(),
-                                                 pPEAssembly->IsIntrospectionOnly());
-#else
     const WCHAR *pwzLoadContext = W("Default");
-#endif
 
     if (pPEAssembly->GetPath().IsEmpty())
     {

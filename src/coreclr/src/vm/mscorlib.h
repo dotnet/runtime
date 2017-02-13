@@ -114,10 +114,6 @@ DEFINE_METHOD(APP_DOMAIN,           ENABLE_RESOLVE_ASSEMBLIES_FOR_INTROSPECTION,
 DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolveEvent, IM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           SETUP_DOMAIN,           SetupDomain,                IM_Bool_Str_Str_ArrStr_ArrStr_RetVoid)
-#ifdef FEATURE_FUSION
-DEFINE_METHOD(APP_DOMAIN,           SETUP_LOADER_OPTIMIZATION,SetupLoaderOptimization,  IM_LoaderOptimization_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           SET_DOMAIN_CONTEXT,     InternalSetDomainContext,       IM_Str_RetVoid)
-#endif // FEATURE_FUSION
 #ifdef FEATURE_REMOTING
 DEFINE_METHOD(APP_DOMAIN,           CREATE_DOMAIN,          CreateDomain,               SM_Str_Evidence_AppDomainSetup_RetAppDomain)
 DEFINE_METHOD(APP_DOMAIN,           VAL_CREATE_DOMAIN,      InternalCreateDomain,       SM_Str_RetAppDomain)
@@ -128,9 +124,6 @@ DEFINE_METHOD(APP_DOMAIN,           MARSHAL_OBJECTS,        MarshalObjects,     
 DEFINE_METHOD(APP_DOMAIN,           UNMARSHAL_OBJECT,       UnmarshalObject,            SM_ArrByte_RetObj)
 DEFINE_METHOD(APP_DOMAIN,           UNMARSHAL_OBJECTS,      UnmarshalObjects,           SM_ArrByte_ArrByte_RefObj_RetObj)
 #endif
-#ifdef FEATURE_FUSION
-DEFINE_METHOD(APP_DOMAIN,           TURN_ON_BINDING_REDIRECTS, TurnOnBindingRedirects,     IM_RetVoid)
-#endif // FEATURE_FUSION
 DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
@@ -239,13 +232,7 @@ DEFINE_FIELD_U(m_assembly,                 AssemblyBaseObject,     m_pAssembly)
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
 DEFINE_FIELD(ASSEMBLY,              HANDLE,                 m_assembly)
 DEFINE_METHOD(ASSEMBLY,             GET_NAME,               GetName,                    IM_RetAssemblyName)
-#ifdef FEATURE_FUSION
-DEFINE_METHOD(ASSEMBLY,             LOAD_WITH_PARTIAL_NAME_HACK,  LoadWithPartialNameHack, SM_Str_Bool_RetAssembly)
-#endif // FEATURE_FUSION
 DEFINE_METHOD(ASSEMBLY,             ON_MODULE_RESOLVE,      OnModuleResolveEvent,       IM_Str_RetModule)
-#ifdef FEATURE_FUSION
-DEFINE_METHOD(ASSEMBLY,             DEMAND_PERMISSION,      DemandPermission,           SM_Str_Bool_Int_RetV)
-#endif
 
 #ifdef FEATURE_REMOTING
 DEFINE_CLASS(ACTIVATION_SERVICES,   Activation,             ActivationServices)

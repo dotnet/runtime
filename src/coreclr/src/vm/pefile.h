@@ -26,11 +26,6 @@
 #include "loaderheap.h"
 #include "sstring.h"
 #include "ex.h"
-#ifdef FEATURE_FUSION
-#include <fusion.h>
-#include <fusionbind.h>
-#include "binderngen.h"
-#endif
 #include "assemblyspecbase.h"
 #include "eecontract.h"
 #include "metadatatracker.h"
@@ -710,66 +705,15 @@ class PEAssembly : public PEFile
         BOOL               fIsIntrospectionOnly = FALSE);
 
     // This opens the canonical mscorlib.dll
-#ifdef FEATURE_FUSION
-    static PEAssembly *OpenSystem(IApplicationContext *pAppCtx);
-#else
     static PEAssembly *OpenSystem(IUnknown *pAppCtx);
-#endif
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifdef FEATURE_FUSION
-    static PEAssembly *Open(
-        IAssembly *pIAssembly,
-        IBindResult *pNativeFusionAssembly,
-        IFusionBindLog *pFusionLog = NULL,
-        BOOL isSystemAssembly = FALSE,
-        BOOL isIntrospectionOnly = FALSE);
-
-    static PEAssembly *Open(
-        IHostAssembly *pIHostAssembly,
-        BOOL isSystemAssembly = FALSE,
-        BOOL isIntrospectionOnly = FALSE);
-
-#ifdef FEATURE_MIXEDMODE
-    // Use for main exe loading
-    // NOTE: This may also be used for "spontaneous" (IJW) dll loading where
-    //      we need to deliver DllMain callbacks, but we should eliminate this case
-
-    static PEAssembly *OpenHMODULE(
-        HMODULE hMod,
-        IAssembly *pFusionAssembly,
-        IBindResult *pNativeFusionAssembly,
-        IFusionBindLog *pFusionLog = NULL,
-        BOOL isIntrospectionOnly = FALSE);
-#endif // FEATURE_MIXEDMODE
-
-    static PEAssembly *DoOpen(
-        IAssembly *pIAssembly,
-        IBindResult *pNativeFusionAssembly,
-        IFusionBindLog *pFusionLog,
-        BOOL isSystemAssembly,
-        BOOL isIntrospectionOnly = FALSE);
-
-    static PEAssembly *DoOpen(
-        IHostAssembly *pIHostAssembly,
-        BOOL isSystemAssembly,
-        BOOL isIntrospectionOnly = FALSE);
-#ifdef FEATURE_MIXEDMODE
-    static PEAssembly *DoOpenHMODULE(
-        HMODULE hMod,
-        IAssembly *pFusionAssembly,
-        IBindResult *pNativeFusionAssembly,
-        IFusionBindLog *pFusionLog,
-        BOOL isIntrospectionOnly = FALSE);
-#endif // FEATURE_MIXEDMODE
-#else
     static PEAssembly *Open(
         CoreBindResult* pBindResult,
         BOOL isSystem,
         BOOL isIntrospectionOnly);
-#endif // FEATURE_FUSION
 
     static PEAssembly *Create(
         PEAssembly *pParentAssembly,
@@ -792,11 +736,7 @@ class PEAssembly : public PEFile
 
   private:
     // Private helpers for crufty exception handling reasons
-#ifdef FEATURE_FUSION
-    static PEAssembly *DoOpenSystem(IApplicationContext *pAppCtx);
-#else
     static PEAssembly *DoOpenSystem(IUnknown *pAppCtx);
-#endif
 
   public:
 
@@ -808,45 +748,6 @@ class PEAssembly : public PEFile
     BOOL IsProfileAssembly();
 
     ULONG HashIdentity();
-#ifdef FEATURE_FUSION
-
-    BOOL FusionLoggingEnabled() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bFusionLogEnabled && (m_pFusionLog != NULL);
-    };
-    void DisableFusionLogging()
-    {
-        m_bFusionLogEnabled = FALSE;
-    };
-
-    IFusionBindLog *GetFusionBindLog()
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_FUSION
-        return (m_bFusionLogEnabled && (m_pFusionLog != NULL)) ? m_pFusionLog : NULL;
-#else
-        return NULL;
-#endif 
-    }
-
-
-    BOOL IsBindingCodeBase();
-
-    BOOL IsSourceDownloadCache();
-
-    LOADCTX_TYPE GetLoadContext();
-    BOOL IsContextLoad();
-
-    // Can we avoid exposing these?
-    IAssembly *GetFusionAssembly(); 
-    IHostAssembly *GetIHostAssembly(); 
-    IAssemblyName *GetFusionAssemblyName();
-    IAssemblyName *GetFusionAssemblyNameNoCreate();
-    IAssemblyLocation* GetNativeAssemblyLocation();
-    DWORD GetLocationFlags();
-    PEKIND GetFusionProcessorArchitecture();
-#endif
 
 #ifndef  DACCESS_COMPILE
     virtual void ReleaseIL();
@@ -904,45 +805,12 @@ class PEAssembly : public PEFile
 #ifdef FEATURE_PREJIT
     void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
     void FlushExternalLog() DAC_EMPTY();
-#ifdef FEATURE_FUSION
-    void ETWTraceLogMessage(DWORD dwETWLogCategory, PEAssembly *pAsm)
-    {
-        LIMITED_METHOD_CONTRACT
-        if (FusionLoggingEnabled() && 
-            (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEFUSION_KEYWORD)))
-        { 
-            m_pFusionLog->ETWTraceLogMessage(dwETWLogCategory, (pAsm?pAsm->m_pFusionAssemblyName:NULL));
-        }
-    }
-    ULONGLONG GetBindingID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ULONGLONG ullBindingID = 0;
-        if (FusionLoggingEnabled())
-            m_pFusionLog->GetBindingID(&ullBindingID);
-        return ullBindingID;
-    }
-#endif
 #endif
 
 
   protected:
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_FUSION
-    PEAssembly(
-        PEImage *image,
-        IMetaDataEmit *pEmit,
-        IAssembly *pIAssembly,
-        IBindResult *pNativeFusionAssembly,
-        PEImage *pNIImage,
-        IFusionBindLog *pFusionLog,
-        IHostAssembly *pIHostAssembly,
-        PEFile *creator,
-        BOOL system,
-        BOOL introspectionOnly = FALSE,
-        ICLRPrivAssembly * pHostAssembly = NULL);
-#else
     PEAssembly(
         CoreBindResult* pBindResultInfo, 
         IMetaDataEmit *pEmit,
@@ -953,7 +821,6 @@ class PEAssembly : public PEFile
         PEImage * pPEImageNI = NULL,
         ICLRPrivAssembly * pHostAssembly = NULL
         );
-#endif
     virtual ~PEAssembly();
 #endif
 
@@ -964,28 +831,11 @@ class PEAssembly : public PEFile
     friend class DomainAssembly;
 #ifdef FEATURE_PREJIT
 
-#ifdef FEATURE_FUSION
-    void SetNativeImage(IBindResult *pNativeFusionAssembly);
-#else
     void SetNativeImage(PEImage *image);
-#endif
 
     BOOL CheckNativeImageVersion(PEImage *image);
 
 
-#ifdef FEATURE_FUSION
-    void ClearNativeImage();    
-    void SetNativeImageClosure(IAssemblyBindingClosure *pClosure)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (m_pNativeImageClosure!=NULL)
-            m_pNativeImageClosure->Release();
-        if (pClosure)
-            pClosure->AddRef();
-        m_pNativeImageClosure=pClosure;
-    };
-    BOOL HasEqualNativeClosure(DomainAssembly* pDomainAssembly);
-#endif //FEATURE_FUSION
 
 #endif  // FEATURE_PREJIT
 
@@ -1002,24 +852,12 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-#ifdef FEATURE_FUSION
-    IAssemblyName           *m_pFusionAssemblyName;
-    IAssembly               *m_pFusionAssembly;
-    IFusionBindLog          *m_pFusionLog;
-    BOOL                     m_bFusionLogEnabled;
-    IHostAssembly           *m_pIHostAssembly;
-    IAssemblyLocation       *m_pNativeAssemblyLocation;
-    IAssemblyBindingClosure *m_pNativeImageClosure; //present only for shared 
-    LOADCTX_TYPE             m_loadContext;
-    DWORD                    m_dwLocationFlags;
-#else
     BOOL m_bIsFromGAC;
     BOOL m_bIsOnTpaList;
     // Using a separate entry and not m_pHostAssembly because otherwise
     // HasHostAssembly becomes true that trips various other code paths resulting in bad
     // things
     SString                  m_sTextualIdentity;
-#endif
     int                      m_fProfileAssembly; // Tri-state cache
 
   public:
@@ -1144,21 +982,6 @@ class LoggablePEAssembly : public LoggableAssembly
         return m_peAssembly->GetPath();
     }
 
-#ifdef FEATURE_FUSION
-    virtual IAssemblyName* FusionAssemblyName()
-    {
-        STANDARD_VM_CONTRACT;
-
-        return m_peAssembly->GetFusionAssemblyName();
-    }
-
-    virtual IFusionBindLog* FusionBindLog()
-    {
-        STANDARD_VM_CONTRACT;
-
-        return m_peAssembly->GetFusionBindLog();
-    }
-#endif // FEATURE_FUSION
 
     LoggablePEAssembly(PEAssembly *peAssembly)
     {

@@ -278,28 +278,6 @@ void QCALLTYPE AppDomainNative::SetupDomainSecurity(QCall::AppDomainHandle pDoma
     // We need to downgrade sharing level if the AppDomain is homogeneous and not fully trusted, or the
     // AppDomain is in legacy mode.  Effectively, we need to be sure that all assemblies loaded into the
     // domain must be fully trusted in order to allow non-GAC sharing.
-#ifdef FEATURE_FUSION
-    if (pDomain->GetSharePolicy() == AppDomain::SHARE_POLICY_ALWAYS)
-    {
-        bool fSandboxedHomogenousDomain = false;
-        if (pSecDesc->IsHomogeneous())
-        {
-            pSecDesc->Resolve();
-            fSandboxedHomogenousDomain = !pSecDesc->IsFullyTrusted();
-        }
-
-        if (fSandboxedHomogenousDomain || pSecDesc->IsLegacyCasPolicyEnabled())
-        {
-            // We may not be able to reduce sharing policy at this point, if we have already loaded
-            // some non-GAC assemblies as domain neutral.  For this case we must regrettably fail
-            // the whole operation.
-            if (!pDomain->ReduceSharePolicyFromAlways())
-            {
-                ThrowHR(COR_E_CANNOT_SET_POLICY);
-            }
-        }
-    }
-#endif
 
     // Now finish the initialization.
     pSecDesc->FinishInitialization();
@@ -400,25 +378,6 @@ FCIMPLEND
 
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_FUSION
-FCIMPL1(LPVOID, AppDomainNative::GetFusionContext, AppDomainBaseObject* refThis)
-{
-    FCALL_CONTRACT;
-
-    LPVOID rv = NULL;
-    
-    HELPER_METHOD_FRAME_BEGIN_RET_1(rv);
-
-    AppDomain* pApp = ValidateArg((APPDOMAINREF)refThis);
-
-    rv = pApp->CreateFusionContext();
-
-    HELPER_METHOD_FRAME_END();
-
-    return rv;
-}
-FCIMPLEND
-#endif
 
 FCIMPL1(void*, AppDomainNative::GetSecurityDescriptor, AppDomainBaseObject* refThisUNSAFE)
 {
@@ -453,49 +412,6 @@ FCIMPL2(void, AppDomainNative::UpdateLoaderOptimization, AppDomainBaseObject* re
 FCIMPLEND
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-#ifdef FEATURE_FUSION
-FCIMPL3(void, AppDomainNative::UpdateContextProperty, LPVOID fusionContext, StringObject* keyUNSAFE, Object* valueUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        STRINGREF key;
-        OBJECTREF value;
-    } gc;
-
-    gc.key   = ObjectToSTRINGREF(keyUNSAFE);
-    gc.value = ObjectToOBJECTREF(valueUNSAFE);
-    _ASSERTE(gc.key != NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    IApplicationContext* pContext = (IApplicationContext*) fusionContext;
-
-    BOOL fFXOnly;
-    DWORD size = sizeof(fFXOnly);
-    HRESULT hr = pContext->Get(ACTAG_FX_ONLY, &fFXOnly, &size, 0);
-    if (hr == HRESULT_FROM_WIN32(ERROR_NOT_FOUND))
-    {
-        fFXOnly = FALSE;
-        hr = S_FALSE;
-    }
-    IfFailThrow(hr);
-
-    if (!fFXOnly)
-    {
-        DWORD lgth = gc.key->GetStringLength();
-        CQuickBytes qb;
-        LPWSTR key = (LPWSTR) qb.AllocThrows((lgth+1)*sizeof(WCHAR));
-        memcpy(key, gc.key->GetBuffer(), lgth*sizeof(WCHAR));
-        key[lgth] = W('\0');
-            
-        AppDomain::SetContextProperty(pContext, key, &gc.value);
-    }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-#endif  // FEATURE_FUSION
 
 FCIMPL1(void,
         AppDomainNative::CreateContext,
@@ -989,18 +905,6 @@ FCIMPL1(void, AppDomainNative::ChangeSecurityPolicy, AppDomainBaseObject* refThi
     HELPER_METHOD_FRAME_BEGIN_1(refThis);
     AppDomain* pApp = ValidateArg(refThis);
 
-#ifdef FEATURE_FUSION
-
-    // We do not support sharing behavior of ALWAYS when using app-domain local security config
-    if (pApp->GetSharePolicy() == AppDomain::SHARE_POLICY_ALWAYS)
-    {
-        // We may not be able to reduce sharing policy at this point, if we have already loaded
-        // some non-GAC assemblies as domain neutral.  For this case we must regrettably fail
-        // the whole operation.
-        if (!pApp->ReduceSharePolicyFromAlways())
-            ThrowHR(COR_E_CANNOT_SET_POLICY);
-    }
-#endif
     pApp->GetSecurityDescriptor()->SetPolicyLevelFlag();
 
     HELPER_METHOD_FRAME_END();
@@ -1066,14 +970,6 @@ FCIMPL1(Object*, AppDomainNative::GetDynamicDir, AppDomainBaseObject* refThisUNS
     FCALL_CONTRACT;
 
     STRINGREF    str        = NULL;
-#ifdef FEATURE_FUSION    
-    APPDOMAINREF refThis    = (APPDOMAINREF) refThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-    
-    AppDomain *pDomain = ValidateArg(refThis);
-    str = StringObject::NewString(pDomain->GetDynamicDir());
-    HELPER_METHOD_FRAME_END();
-#endif    
     return OBJECTREFToObject(str);
 }
 FCIMPLEND
@@ -1170,29 +1066,7 @@ FCIMPL2(StringObject*, AppDomainNative::nApplyPolicy, AppDomainBaseObject* refTh
 
     StackSString sDisplayName;
 
-#ifdef FEATURE_FUSION
-    {
-        GCX_PREEMP();
-
-        SafeComHolderPreemp<IAssemblyName> pAssemblyName(NULL);
-        SafeComHolderPreemp<IAssemblyName> pBoundName(NULL);
-        IfFailThrow(spec.CreateFusionName(&pAssemblyName));
-        HRESULT hr = PreBindAssembly(pDomain->GetFusionContext(),
-                                    pAssemblyName,
-                                    NULL, // pAsmParent (only needed to see if parent is loadfrom - in this case, we always want it to load in the normal ctx)
-                                    &pBoundName,
-                                    NULL  // pvReserved
-                                    );
-        if (FAILED(hr) && hr != FUSION_E_REF_DEF_MISMATCH)
-        {
-            ThrowHR(hr);
-        }
-
-        FusionBind::GetAssemblyNameDisplayName(pBoundName, /*modifies*/sDisplayName, 0 /*flags*/);
-    }
-#else
     spec.GetFileOrDisplayName(0,sDisplayName);
-#endif
 
     gc.rv = StringObject::NewString(sDisplayName);
 

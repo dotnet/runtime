@@ -17,13 +17,6 @@ PEImageLayout* PEImageLayout::CreateFlat(const void *flat, COUNT_T size,PEImage*
     return new RawImageLayout(flat,size,pOwner);
 }
 
-#ifdef FEATURE_FUSION
-PEImageLayout* PEImageLayout::CreateFromStream(IStream* pIStream,PEImage* pOwner)
-{
-    STANDARD_VM_CONTRACT;
-    return new StreamImageLayout(pIStream,pOwner);
-}
-#endif
 
 PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule,PEImage* pOwner, BOOL bTakeOwnership)
 {
@@ -607,51 +600,6 @@ FlatImageLayout::FlatImageLayout(HANDLE hFile, PEImage* pOwner)
     Init(m_FileView, size);
 }
 
-#ifdef FEATURE_FUSION
-StreamImageLayout::StreamImageLayout(IStream* pIStream,PEImage* pOwner)
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-    
-    m_Layout=LAYOUT_FLAT;
-    m_pOwner=pOwner;
-
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
-    
-    STATSTG statStg;
-    IfFailThrow(pIStream->Stat(&statStg, STATFLAG_NONAME));
-    if (statStg.cbSize.u.HighPart > 0)
-        ThrowHR(COR_E_FILELOAD);
-
-    DWORD cbRead = 0;
-
-    // Resources files may have zero length (and would be mapped as FLAT)
-    if (statStg.cbSize.u.LowPart) {
-         m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 
-                                                   statStg.cbSize.u.LowPart, NULL));
-        if (m_FileMap == NULL)
-            ThrowWin32(GetLastError());
-
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0));
-        
-        if (m_FileView == NULL)
-            ThrowWin32(GetLastError());
-        
-        HRESULT hr = pIStream->Read(m_FileView, statStg.cbSize.u.LowPart, &cbRead);
-        if (hr == S_FALSE)
-            hr = COR_E_FILELOAD;
-
-        IfFailThrow(hr);
-    }
-    TESTHOOKCALL(ImageMapped(GetPath(),m_FileView,IM_FLAT));        
-    Init(m_FileView,(COUNT_T)cbRead);
-}
-#endif // FEATURE_FUSION
 
 #endif // !DACESS_COMPILE
 
