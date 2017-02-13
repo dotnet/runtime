@@ -19,7 +19,6 @@
 #include "security.h"
 #include "holder.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 
 class ApplicationSecurityDescriptor;
