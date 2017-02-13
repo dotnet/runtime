@@ -673,9 +673,7 @@ namespace System.Linq.Expressions.Compiler
                 Debug.Assert(!type.GetTypeInfo().IsValueType);
                 EmitExpression(node.Expression);
                 _ilg.Emit(OpCodes.Ldnull);
-                _ilg.Emit(OpCodes.Ceq);
-                _ilg.Emit(OpCodes.Ldc_I4_0);
-                _ilg.Emit(OpCodes.Ceq);
+                _ilg.Emit(OpCodes.Cgt_Un);
                 return;
             }
 
