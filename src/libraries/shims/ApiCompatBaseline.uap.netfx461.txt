@@ -5,20 +5,6 @@ DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.
 Compat issues with assembly mscorlib:
 MembersMustExist : Member 'Microsoft.Win32.RegistryKey Microsoft.Win32.Registry.DynData' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.Win32.RegistryHive Microsoft.Win32.RegistryHive.DynData' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.RegistryKey' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.Close()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.CreateSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.CreateSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck, Microsoft.Win32.RegistryOptions)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.CreateSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck, Microsoft.Win32.RegistryOptions, System.Security.AccessControl.RegistrySecurity)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.CreateSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck, System.Security.AccessControl.RegistrySecurity)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.GetAccessControl()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.GetAccessControl(System.Security.AccessControl.AccessControlSections)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.OpenRemoteBaseKey(Microsoft.Win32.RegistryHive, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.OpenRemoteBaseKey(Microsoft.Win32.RegistryHive, System.String, Microsoft.Win32.RegistryView)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.OpenSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.OpenSubKey(System.String, Microsoft.Win32.RegistryKeyPermissionCheck, System.Security.AccessControl.RegistryRights)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.Win32.RegistryKey.SetAccessControl(System.Security.AccessControl.RegistrySecurity)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.RegistryKeyPermissionCheck' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.AccessViolationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.ActivationContext' does not exist in the implementation but it does exist in the contract.
@@ -3336,4 +3322,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3325
+Total Issues: 3311
