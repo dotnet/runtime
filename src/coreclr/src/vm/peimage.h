@@ -111,14 +111,6 @@ public:
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default);
 
-#ifdef FEATURE_FUSION
-    static PTR_PEImage OpenImage(
-        IStream *pIStream,
-        UINT64 uStreamAsmId,
-        DWORD dwModuleId,
-        BOOL resourceFile,
-        MDInternalImportFlags flags = MDInternalImport_Default);
-#endif
 
     // clones the image with new flags (this is pretty much about cached / noncached difference)
     void Clone(MDInternalImportFlags flags, PTR_PEImage* ppImage)
@@ -286,33 +278,9 @@ private:
 
     struct PEImageLocator
     {
-#ifdef FEATURE_FUSION
-        BOOL m_fIsIStream;
-        DWORD m_dwStreamModuleId;
-        UINT64 m_StreamAsmId;
-#endif
 
         LPCWSTR m_pPath;
 
-#ifdef FEATURE_FUSION
-        PEImageLocator(LPCWSTR pPath)
-            : m_fIsIStream(FALSE), m_pPath(pPath)
-        {
-        }
-
-        PEImageLocator(UINT64 uStreamAsmId, DWORD dwModuleId)
-            : m_fIsIStream(TRUE), m_dwStreamModuleId(dwModuleId), m_StreamAsmId(uStreamAsmId)
-        {
-        }
-
-        PEImageLocator(PEImage * pImage)
-            : m_fIsIStream(pImage->m_fIsIStream),
-              m_dwStreamModuleId(pImage->m_dwStreamModuleId),
-              m_StreamAsmId(pImage->m_StreamAsmId),
-              m_pPath(pImage->m_path.GetUnicode())
-        {
-        }
-#else // FEATURE_FUSION
         PEImageLocator(LPCWSTR pPath)
             : m_pPath(pPath)
         {
@@ -322,7 +290,6 @@ private:
             : m_pPath(pImage->m_path.GetUnicode())
         {
         }
-#endif // FEATURE_FUSION
     };
 
     static BOOL CompareImage(UPTR image1, UPTR image2);
@@ -382,11 +349,6 @@ protected:
     IMDInternalImport* m_pMDImport;
     IMDInternalImport* m_pNativeMDImport;
 
-#ifdef FEATURE_FUSION
-    UINT64      m_StreamAsmId;
-    DWORD       m_dwStreamModuleId;
-    BOOL        m_fIsIStream;
-#endif
 
 private:
 
@@ -454,16 +416,10 @@ private:
     BOOL  m_fCachedKindAndMachine;
 
 
-#ifdef FEATURE_FUSION
-    PEFingerprint *m_pILFingerprint; // has to be the real type (as opposed to an interface) so we can delete it
-#endif // FEATURE_FUSION
 
 public:
     void CachePEKindAndMachine();
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-#ifdef FEATURE_FUSION	
-    PEKIND GetFusionProcessorArchitecture();
-#endif
 
 };
 

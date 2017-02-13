@@ -1717,11 +1717,7 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 // EEFileLoadException is an EE exception subclass representing a file loading
 // error
 // ---------------------------------------------------------------------------
-#ifdef FEATURE_FUSION
-EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, IFusionBindLog *pFusionLog, Exception *pInnerException/* = NULL*/)
-#else
 EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, void *pFusionLog, Exception *pInnerException/* = NULL*/)
-#endif
   : EEException(GetFileLoadKind(hr)),
     m_name(name),
     m_pFusionLog(pFusionLog),
@@ -1753,10 +1749,6 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, void *
 
         m_name.Set(wszTemplate);
     }
-#ifdef FEATURE_FUSION
-    if (m_pFusionLog != NULL)
-        m_pFusionLog->AddRef();
-#endif    
 }
 
 
@@ -1765,10 +1757,6 @@ EEFileLoadException::~EEFileLoadException()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_FUSION
-    if (m_pFusionLog)
-        m_pFusionLog->Release();
-#endif    
 }
 
 
@@ -1880,19 +1868,6 @@ OBJECTREF EEFileLoadException::CreateThrowable()
 
     // Fetch any log info from the fusion log
     SString logText;
-#ifdef FEATURE_FUSION    
-    if (m_pFusionLog != NULL)
-    {
-        DWORD dwSize = 0;
-        HRESULT hr = m_pFusionLog->GetBindLog(0,0,NULL,&dwSize);
-        if (hr==HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) 
-        {
-            WCHAR *buffer = logText.OpenUnicodeBuffer(dwSize);
-            hr=m_pFusionLog->GetBindLog(0,0,buffer, &dwSize);
-            logText.CloseBuffer();
-        }
-    }
-#endif
     struct _gc {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
@@ -1958,33 +1933,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-#ifdef FEATURE_FUSION
-void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec *pSpec, IFusionBindLog *pFusionLog, HRESULT hr, Exception *pInnerException/* = NULL*/)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    if (hr == COR_E_THREADABORTED)
-        COMPlusThrow(kThreadAbortException);
-    if (hr == E_OUTOFMEMORY)
-        COMPlusThrowOM();
-#ifdef FEATURE_COMINTEROP
-    if ((hr == RO_E_METADATA_NAME_NOT_FOUND) || (hr == CLR_E_BIND_TYPE_NOT_FOUND))
-    {   // These error codes behave like FileNotFound, but are exposed as TypeLoadException
-        EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_WINRT_LOADFAILURE), pInnerException);
-    }
-#endif //FEATURE_COMINTEROP
-    
-    StackSString name;
-    pSpec->GetFileOrDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr, pFusionLog), pInnerException);
-}
-#endif //FEATURE_FUSION
 
 /* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
@@ -2070,41 +2018,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(LPCWSTR path, HRESULT hr, Exce
 }
 
 /* static */
-#ifdef FEATURE_FUSION
-void DECLSPEC_NORETURN EEFileLoadException::Throw(IAssembly *pIAssembly, IHostAssembly *pIHostAssembly, HRESULT hr, Exception *pInnerException/* = NULL*/)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    if (hr == COR_E_THREADABORTED)
-        COMPlusThrow(kThreadAbortException);
-    if (hr == E_OUTOFMEMORY || hr == HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY))
-        COMPlusThrowOM();
-
-    StackSString name;
-
-    {
-        SafeComHolder<IAssemblyName> pName;
-    
-        HRESULT newHr;
-        
-        if (pIAssembly)
-            newHr = pIAssembly->GetAssemblyNameDef(&pName);
-        else
-            newHr = pIHostAssembly->GetAssemblyNameDef(&pName);
-
-        if (SUCCEEDED(newHr))
-            FusionBind::GetAssemblyNameDisplayName(pName, name, 0);
-    }
-        
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
-}
-#endif
 /* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent, 
                                                   const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException/* = NULL*/)

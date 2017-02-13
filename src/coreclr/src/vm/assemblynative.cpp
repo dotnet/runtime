@@ -18,11 +18,6 @@
 
 #include <shlwapi.h>
 #include <stdlib.h>
-#ifdef FEATURE_FUSION
-#include "actasm.h"
-#include "appctx.h"
-#include "asm.h"
-#endif
 #include "assemblynative.hpp"
 #include "dllimport.h"
 #include "field.h"
@@ -37,94 +32,11 @@
 #include "appdomainhelper.h"
 #endif
 #include "stackprobe.h"
-#ifdef FEATURE_FUSION
-#include "dbglog.h"
-#include "bindinglog.hpp"
-#include "policy.h"
-#endif
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-#ifdef FEATURE_FUSION
-//----------------------------------------------------------------------------------------------------
-// Allows managed code in mscorlib to find out whether an assembly name corresponds to mscorlib,
-// a .NET Framework assembly found in the unification list (see fxretarget.h), or a portable assembly (see portabilityPolicy.cpp)
-// See Fusion::Util::IsAnyFrameworkAssembly for more details.
-// The NGEN task uses this function (via System.Reflection.RuntimeAssembly.IsFrameworkAssembly)
-FCIMPL1(FC_BOOL_RET, AssemblyNative::IsFrameworkAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE)
-{
-    FCALL_CONTRACT;
 
-    struct _gc
-    {
-        ASSEMBLYNAMEREF assemblyName;
-    } gc;
-    gc.assemblyName = (ASSEMBLYNAMEREF) refAssemblyNameUNSAFE;
-
-    BOOL bIsFxAssembly = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    AssemblySpec spec;
-
-    Thread *pThread = GetThread();
-    CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
-
-    spec.InitializeSpec(&(pThread->m_MarshalAlloc), 
-                        &gc.assemblyName,
-                        FALSE, /*fIsStringized*/ 
-                        FALSE /*fForIntrospection*/
-                       );
-    ReleaseHolder<IAssemblyName> pIAssemblyName;
-    IfFailThrow(spec.CreateFusionName(&pIAssemblyName,FALSE));
-    
-    bIsFxAssembly = (IfFailThrow(Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName)) == S_OK);
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(bIsFxAssembly);
-}
-FCIMPLEND
-#endif // FEATURE_FUSION
-
-#ifdef FEATURE_FUSION
-//----------------------------------------------------------------------------------------------------
-FCIMPL1(FC_BOOL_RET, AssemblyNative::IsNewPortableAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        ASSEMBLYNAMEREF assemblyName;
-    } gc;
-    gc.assemblyName = (ASSEMBLYNAMEREF) refAssemblyNameUNSAFE;
-
-    BOOL fIsPortable = FALSE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    AssemblySpec spec;
-
-    Thread *pThread = GetThread();
-    CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
-
-    {
-        GCX_COOP();
-        spec.InitializeSpec(&(pThread->m_MarshalAlloc), 
-                            &gc.assemblyName,
-                            FALSE, /*fIsStringized*/ 
-                            FALSE /*fForIntrospection*/);
-    }
-
-    ReleaseHolder<IAssemblyName> pIAssemblyName;
-    IfFailThrow(spec.CreateFusionName(&pIAssemblyName,FALSE));
-    
-    fIsPortable = (IfFailThrow(Fusion::Util::IsNewPortableAssembly(pIAssemblyName)) == S_OK);
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(fIsPortable);
-}
-FCIMPLEND
-#endif // FEATURE_FUSION
 
 FCIMPL10(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE, 
         StringObject* codeBaseUNSAFE, 
@@ -501,12 +413,6 @@ FCIMPL6(Object*, AssemblyNative::LoadImage, U1Array* PEByteArrayUNSAFE,
         pAssembly = LoadFromBuffer(fForIntrospection, pbImage, cbImage, pbSyms, cbSyms, stackMark, OBJECTREFToObject(gc.security), securityContextSource);
     }
 
-#ifdef FEATURE_FUSION
-    if (!fForIntrospection && IsLoggingNeeded())
-    {
-        BinderLogging::BindingLog::LogLoadByteArray(GetAppDomain()->GetFusionContext(), pAssembly);
-    }
-#endif    
 
     if (pAssembly != NULL)
         gc.refRetVal = pAssembly->GetExposedObject();
@@ -542,67 +448,7 @@ FCIMPL2(Object*, AssemblyNative::LoadFile, StringObject* pathUNSAFE, Object* sec
     StackSString path;
     gc.strPath->GetSString(path);
 
-#ifdef FEATURE_FUSION // use BindResult for abstraction
-    // Event Tracing for Windows is used to log data for performance and functional testing purposes.
-    // The events in this function are used to help measure the performance of assembly loading as a whole when loading directly from a file,
-    // of binding to an assembly, as well as of lookup scenarios such as from a host store.
-    FireEtwLoaderPhaseStart(ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, path, NULL, GetClrInstanceId());
-    SafeComHolder<IAssembly> pFusionAssembly;
-    SafeComHolder<IBindResult> pNativeFusionAssembly;
-    SafeComHolder<IFusionBindLog> pFusionLog;
-
-    PEAssemblyHolder pFile;
-    FireEtwBindingPhaseStart(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, path, NULL, GetClrInstanceId());
-    
-    if(GetAppDomain()->HasLoadContextHostBinder())
-    {
-        GCX_PREEMP();
-        CLRPrivBinderLoadFile* pLFBinder =  CLRPrivBinderLoadFile::GetOrCreateBinder();
-        ReleaseHolder<PEImage> pImage(PEImage::OpenImage(path));
-        ReleaseHolder<ICLRPrivAssembly> pAsm;
-        ReleaseHolder<IAssemblyName> pAssemblyName;
-        IfFailThrow(pLFBinder->BindAssemblyExplicit(pImage, &pAssemblyName, &pAsm));
-        IfFailThrow(GetAppDomain()->BindHostedPrivAssembly(nullptr, pAsm, pAssemblyName, &pFile));
-        _ASSERTE(pFile);
-    }
-    else
-    {
-        GCX_PREEMP();
-        IfFailThrow(ExplicitBind(path, GetAppDomain()->GetFusionContext(), 
-                                 EXPLICITBIND_FLAGS_NON_BINDABLE,
-                                 NULL, &pFusionAssembly, &pNativeFusionAssembly, &pFusionLog));
-        pFile.Assign(PEAssembly::Open(pFusionAssembly, pNativeFusionAssembly, pFusionLog, FALSE, FALSE));
-    }
-
-    FireEtwBindingLookupAndProbingPhaseEnd(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, path, NULL, GetClrInstanceId());
-
-    FireEtwBindingPhaseEnd(GetAppDomain() ? GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderLoadTypeNotAvailable, path, NULL, GetClrInstanceId());
-
-    AssemblyLoadSecurity loadSecurity;
-    loadSecurity.m_pAdditionalEvidence = &gc.refSecurity;
-    loadSecurity.m_fCheckLoadFromRemoteSource = true;
-
-    // If we're in an APPX domain, then all loads from the application will find themselves within the APPX package
-    // graph or from a trusted location.   However, assemblies within the package may have been marked by Windows as
-    // not being from the MyComputer zone, which can trip the LoadFromRemoteSources check.  Since we do not need to
-    // defend against accidental loads from HTTP for APPX applications, we simply suppress the remote load check.
-    if (AppX::IsAppXProcess())
-    {
-        loadSecurity.m_fCheckLoadFromRemoteSource = false;
-    }
-
-    Assembly *pAssembly = GetPostPolicyAssembly(pFile, FALSE, &loadSecurity);
-
-    FireEtwLoaderPhaseEnd(ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderDynamicLoad, path, NULL, GetClrInstanceId());
-    
-    if (IsLoggingNeeded())
-    {
-        BinderLogging::BindingLog::LogLoadFile(GetAppDomain()->GetFusionContext(), path, pAssembly);
-    }
-
-#else // FEATURE_FUSION
     Assembly *pAssembly = AssemblySpec::LoadAssembly(path);
-#endif // FEATURE_FUSION
 
     LOG((LF_CLASSLOADER, 
          LL_INFO100, 
@@ -917,60 +763,6 @@ Assembly* AssemblyNative::GetPostPolicyAssembly(PEAssembly *pFile,
 
     GCX_PREEMP();
 
-#ifdef FEATURE_FUSION
-    if (!fForIntrospection && !GetAppDomain()->HasLoadContextHostBinder()) {
-        DWORD   dwSize = 0;
-        // if strongly named and not an exempt
-        BOOL bOptionallyRetargetable;
-
-        IfFailThrow(IsOptionallyRetargetableAssembly(pFile->GetFusionAssemblyName(), &bOptionallyRetargetable));
-        if ( !bOptionallyRetargetable && pFile->GetFusionAssemblyName()->GetProperty(ASM_NAME_PUBLIC_KEY_TOKEN, NULL, &dwSize) == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)) {
-
-            SafeComHolder<IAssemblyName> pPostPolicyName(NULL);
-            HRESULT hr = PreBindAssembly(GetAppDomain()->GetFusionContext(),
-                                         pFile->GetFusionAssemblyName(), 
-                                         NULL,  // pAsmParent
-                                         &pPostPolicyName,
-                                         NULL); // pvReserved
-            if (FAILED(hr)) {
-                if (hr == FUSION_E_REF_DEF_MISMATCH) {
-                    // Policy redirects to another version
-                    AssemblySpec spec;
-                    spec.InitializeSpec(pPostPolicyName, FALSE);
-                    RETURN spec.LoadAssembly(FILE_LOADED, pLoadSecurity);
-                }
-                else
-                    ThrowHR(hr);
-            }
-            else {
-                ReleaseHolder<IAssembly> pAsm;
-
-                SafeComHolder<IAssemblyCache> pIAsmCache (NULL);
-                IfFailThrow(CreateAssemblyCache(&pIAsmCache, 0));
-                
-                DWORD dwFlags = ASM_DISPLAYF_FULL;
-
-                if (pFile->IsMarkedAsNoPlatform()) { // No Platform implies that the assembly is not tied to a specific machine architecture, which means we need to do full GAC probing.
-                    hr = CreateAssemblyFromCacheLookup(GetAppDomain()->GetFusionContext(), pFile->GetFusionAssemblyName(), TRUE, &pAsm, NULL);
-                }
-                else {
-                    SString sourceDisplay;
-                    FusionBind::GetAssemblyNameDisplayName(pFile->GetFusionAssemblyName(), sourceDisplay, dwFlags);
-                    hr = pIAsmCache->QueryAssemblyInfo(0, sourceDisplay, NULL);
-                }
-
-                if (SUCCEEDED(hr)) {
-                    // It's in the GAC
-                    AssemblySpec spec;
-                    spec.InitializeSpec(pFile->GetFusionAssemblyName(), FALSE);
-                    RETURN spec.LoadAssembly(FILE_LOADED, pLoadSecurity);
-                }
-                else if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                    ThrowHR(hr);
-            }
-        }
-    }
-#else // FEATURE_FUSION
     if (fIsLoadByteArray)
     {
         PEImage *pPEImage = pFile->GetILimage();
@@ -995,7 +787,6 @@ Assembly* AssemblyNative::GetPostPolicyAssembly(PEAssembly *pFile,
             ThrowHR(hr);
         }
     }   
-#endif // FEATURE_FUSION
 
     RETURN GetAppDomain()->LoadAssembly(NULL, pFile, FILE_LOADED, pLoadSecurity);
 }
@@ -2062,26 +1853,6 @@ void QCALLTYPE AssemblyNative::GetImageRuntimeVersion(QCall::AssemblyHandle pAss
     END_QCALL;
 }
 
-#ifdef FEATURE_FUSION
-INT64 QCALLTYPE AssemblyNative::GetHostContext(QCall::AssemblyHandle pAssembly)
-{
-    QCALL_CONTRACT;
-
-    UINT64 Context = 0;
-
-    BEGIN_QCALL;
-
-    IHostAssembly *pIHostAssembly = pAssembly->GetFile()->GetIHostAssembly();
-    if (pIHostAssembly != NULL)
-    {
-        IfFailThrow(pIHostAssembly->GetAssemblyContext(&Context));
-    }
-
-    END_QCALL;
-
-    return Context;
-}
-#endif // FEATURE_FUSION
 
 
 #ifdef FEATURE_APPX

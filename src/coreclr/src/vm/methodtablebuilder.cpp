@@ -29,9 +29,6 @@
 #endif
 
 #ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_FUSION	
-#include "policy.h"
-#endif
 #endif
 
 //*******************************************************************************
@@ -204,13 +201,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
         // On CoreCLR, however, we do allow non-FX assemblies to have this attribute. This enables scenarios where we can
         // activate 3rd-party WinRT components outside AppContainer - 1st party WinRT components are already allowed
         // to be activated outside AppContainer (on both Desktop and CoreCLR).
-#ifdef FEATURE_FUSION
-        if (!pAssembly->IsWinMD() &&
-             Fusion::Util::IsAnyFrameworkAssembly(pAssembly->GetFusionAssemblyName()) != S_OK)
-        {
-            pAssembly->ThrowTypeLoadException(pModule->GetMDImport(), cl, IDS_EE_WINRT_TYPE_IN_ORDINARY_ASSEMBLY);
-        }
-#endif
 
         pEEClass->SetProjectedFromWinRT();
     }

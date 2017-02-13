@@ -32,11 +32,6 @@
 #include <corhdr.h>
 #include <corinfo.h>
 #include <corjit.h>
-#ifdef FEATURE_FUSION
-#include <fusion.h>
-#include <fusionpriv.h>
-#include <binderngen.h>
-#endif //FEATURE_FUSION
 #include <sstring.h>
 #include <shash.h>
 #include <daccess.h>
@@ -1408,13 +1403,6 @@ class ICorCompilationDomain
             DWORD                   *cDependencies
             ) = 0;
 
-#ifdef FEATURE_FUSION
-    // Use to retrieve the IBindContext to be used by the native binder.
-    // This is typically passed into InstallNativeAssembly.
-    virtual HRESULT GetIBindContext(
-            IBindContext **ppBindCtx
-            ) = 0;
-#endif
 
 #ifdef CROSSGEN_COMPILE
     virtual HRESULT SetPlatformWinmdPaths(
@@ -1493,34 +1481,6 @@ class ICorCompileInfo
             CORINFO_ASSEMBLY_HANDLE *pHandle
             ) = 0;
 
-#ifdef FEATURE_FUSION
-    // Loads an assembly via fusion into the EE
-    // and returns a handle to it.
-    virtual HRESULT LoadAssemblyByName(
-            LPCWSTR                  wzName,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-
-    // Loads an assembly via ref into the EE
-    // and returns a handle to it. The last parameter
-    // optionally allows an IAssemblyName for the ref
-    // (pre-policy) to be returned
-    virtual HRESULT LoadAssemblyRef(
-            IMDInternalImport       *pAssemblyImport,
-            mdAssemblyRef           ref,
-            CORINFO_ASSEMBLY_HANDLE *pHandle,
-            IAssemblyName           **refAssemblyName = NULL
-            ) = 0;
-
-    // Loads an assembly via its IAssemblyName.  This is 
-    // used by NGEN createpdb when generating PDBs for AutoNGENd images (it reads the
-    // IAssemblyName from the AUX file).
-    virtual HRESULT LoadAssemblyByIAssemblyName(
-            IAssemblyName           *pAssemblyName,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            ) = 0;
-
-#endif //FEATURE_FUSION
 
 #ifdef FEATURE_COMINTEROP
     // Loads a WinRT typeref into the EE and returns
@@ -1560,22 +1520,6 @@ class ICorCompileInfo
             CORINFO_MODULE_HANDLE       module
             ) = 0;
 
-#ifdef FEATURE_FUSION
-    enum GetAssemblyNameFlags
-    {
-        GANF_Default    = 0,
-        GANF_Simple     = 1,
-    };
-
-    // Returns the fusion name of an assembly
-    virtual HRESULT GetAssemblyName(
-            CORINFO_ASSEMBLY_HANDLE hAssembly,
-            DWORD                   dwFlags,
-            __out_ecount(*cchAssemblyName)
-            __out_z LPWSTR          wzAssemblyName, 
-            LPDWORD                 cchAssemblyName
-            ) = 0;
-#endif //FEATURE_FUSION
 
     // Returns the dependency load setting for an assembly ref
     virtual HRESULT GetLoadHint(

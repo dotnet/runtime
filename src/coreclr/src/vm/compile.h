@@ -207,21 +207,6 @@ class CEECompileInfo : public ICorCompileInfo
                                BOOL                     fExplicitBindToNativeImage,
                                CORINFO_ASSEMBLY_HANDLE *pHandle);
 
-#ifdef FEATURE_FUSION
-    HRESULT LoadAssemblyByName(LPCWSTR                  wzName,
-                               CORINFO_ASSEMBLY_HANDLE *pHandle);
-
-    HRESULT LoadAssemblyRef(IMDInternalImport     *pAssemblyImport,
-                            mdAssemblyRef           ref,
-                            CORINFO_ASSEMBLY_HANDLE *pHandle,
-                            IAssemblyName           **refAssemblyName = NULL);
-
-    HRESULT LoadAssemblyByIAssemblyName(
-            IAssemblyName           *pAssemblyName,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            );
-
-#endif //FEATURE_FUSION
 
 #ifdef FEATURE_COMINTEROP
     HRESULT LoadTypeRefWinRT(IMDInternalImport       *pAssemblyImport,
@@ -337,13 +322,6 @@ class CEECompileInfo : public ICorCompileInfo
                                     ICorCompileDataStore    *pData,
                                     CorProfileData          *profileData);
 
-#ifdef FEATURE_FUSION
-    HRESULT GetAssemblyName(
-            CORINFO_ASSEMBLY_HANDLE hAssembly,
-            DWORD                   dwFlags,
-            __out_z LPWSTR          wzAssemblyName, 
-            LPDWORD                 cchAssemblyName);
-#endif //FEATURE_FUSION
     
     HRESULT GetLoadHint(CORINFO_ASSEMBLY_HANDLE   hAssembly,
                         CORINFO_ASSEMBLY_HANDLE hAssemblyDependency,
@@ -860,9 +838,6 @@ class CompilationDomain : public AppDomain,
     HRESULT SetContextInfo(LPCWSTR exePath, BOOL isExe) DAC_EMPTY_RET(E_FAIL);
     HRESULT GetDependencies(CORCOMPILE_DEPENDENCY **ppDependencies,
                             DWORD *cDependencies) DAC_EMPTY_RET(E_FAIL);
-#ifdef FEATURE_FUSION
-    HRESULT GetIBindContext(IBindContext **ppBindCtx) DAC_EMPTY_RET(E_FAIL);
-#endif
 
 #ifdef CROSSGEN_COMPILE
     HRESULT SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths) DAC_EMPTY_RET(E_FAIL);
