@@ -474,7 +474,7 @@
   "path": "\\",
   "type": "build",
   "id": 5308,
-  "name": "DotNet-CoreFx-Trusted-Windows-UAP",
+  "name": "DotNet-CoreFx-Trusted-Windows-NoTest",
   "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/5308",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
