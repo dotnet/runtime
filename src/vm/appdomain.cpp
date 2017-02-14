@@ -9947,9 +9947,6 @@ void AppDomain::ClearGCRoots()
         // Delete the thread local static store
         pThread->DeleteThreadStaticData(this);
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-        pThread->ResetCultureForDomain(GetId());
-#endif // FEATURE_LEAK_CULTURE_INFO
 
         // <TODO>@TODO: A pre-allocated AppDomainUnloaded exception might be better.</TODO>
         if (m_hHandleTableBucket->Contains(pThread->m_LastThrownObjectHandle))

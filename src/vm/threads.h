@@ -3543,9 +3543,6 @@ public:
     OBJECTREF GetCulture(BOOL bUICulture);
 
     // Release user cultures that can't survive appdomain unload
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    void ResetCultureForDomain(ADID id);
-#endif // FEATURE_LEAK_CULTURE_INFO
 
     // Functions to set the culture on the thread.
     void SetCultureId(LCID lcid, BOOL bUICulture);
@@ -4487,11 +4484,9 @@ public:
  public:
 
      typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
-#ifndef FEATURE_LEAK_CULTURE_INFO
     void InitCultureAccessors();
     FieldDesc *managedThreadCurrentCulture;
     FieldDesc *managedThreadCurrentUICulture;
-#endif
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
