@@ -2023,9 +2023,6 @@ protected:
     bool        m_fIsTypeDefDirty;          // This flag is set when the TypeRef to TypeDef map is not valid
     bool        m_fIsMemberDefDirty;        // This flag is set when the MemberRef to MemberDef map is not valid
     bool        m_fStartedEE;               // Set when EE runtime has been started up.
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    ICorRuntimeHost *m_pCorHost;            // Hosting environment for EE runtime.
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     IUnknown    *m_pAppDomain;              // AppDomain in which managed security code will be run. 
 
 private:

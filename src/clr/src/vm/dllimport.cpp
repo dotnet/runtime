@@ -2266,29 +2266,9 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                     EmitLoadStubContext(pcsEmit, dwStubFlags);
                 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-                if (NDirect::IsHostHookEnabled())
-                {
-                    // we need to call to the host hook, real target is passed as the last argument
-                    Stub *pHostStub = NDirect::GenerateStubForHost(
-                        GetStubSigModule(),
-                        (CorUnmanagedCallingConvention)(GetStubTargetCallingConv() & IMAGE_CEE_CS_CALLCONV_MASK),
-                        pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize());
-
-                    pcsEmit->EmitLDC((DWORD_PTR)pHostStub->GetEntryPoint());
-                }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #else // _TARGET_X86_
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
-                if (NDirect::IsHostHookEnabled())
-                {
-                    // the stub for host will get the original target from the secret arg
-                    pcsEmit->EmitLDC((DWORD_PTR)GetEEFuncEntryPoint(PInvokeStubForHost));
-                }
-                else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES 
                 {
                     // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                     EmitLoadStubContext(pcsEmit, dwStubFlags);
@@ -5920,12 +5900,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
 #endif // MDA_SUPPORTED
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (fHook)
-    {
-        pInterceptStub = GenerateStubForHost(pTarget, pInterceptStub);
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #endif // _TARGET_X86_
 
@@ -5949,9 +5923,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
         }
 #else
         _ASSERTE(pInterceptStub == NULL); // we don't intercept for anything else than host on !_TARGET_X86_
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
-        pWriteableData->m_pNDirectTarget = (LPVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 #endif
     }
     else
@@ -5961,40 +5932,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
 }
 
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-BOOL NDirect::IsHostHookEnabled()
-{
-    WRAPPER_NO_CONTRACT;
-    //
-    // WARNING: The non-debug portion of this logic is inlined into UMThunkStubAMD64!
-    //
-    return CLRTaskHosted() INDEBUG(|| g_pConfig->ShouldGenerateStubForHost());
-}
-
-EXTERN_C BOOL CallNeedsHostHook(size_t target)
-{
-    BOOL fHook = FALSE;
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CallNeedsHostHook(target,&fHook);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE (hr == S_OK);
-    }
-#ifdef _DEBUG
-    else
-    {
-        if (g_pConfig->ShouldGenerateStubForHost())
-        {
-            fHook = TRUE;
-        }
-    }
-#endif
-    return fHook;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #if defined(_TARGET_X86_) && defined(MDA_SUPPORTED)
 EXTERN_C VOID __stdcall PInvokeStackImbalanceWorker(StackImbalanceCookie *pSICookie, DWORD dwPostESP)
