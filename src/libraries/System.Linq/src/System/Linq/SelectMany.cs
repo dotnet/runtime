@@ -231,18 +231,10 @@ namespace System.Linq
                 {
                     IEnumerable<TResult> enumerable = _selector(element);
 
-                    int count;
-                    if (EnumerableHelpers.TryGetCount(enumerable, out count))
+                    if (builder.ReserveOrAdd(enumerable))
                     {
-                        if (count > 0)
-                        {
-                            builder.Reserve(count);
-                            deferredCopies.Add(enumerable);
-                        }
-                        continue;
+                        deferredCopies.Add(enumerable);
                     }
-
-                    builder.AddRange(enumerable);
                 }
 
                 TResult[] array = builder.ToArray();
@@ -252,7 +244,6 @@ namespace System.Linq
                 {
                     Marker marker = markers[i];
                     IEnumerable<TResult> enumerable = deferredCopies[i];
-
                     EnumerableHelpers.Copy(enumerable, array, marker.Index, marker.Count);
                 }
 

@@ -189,10 +189,12 @@ namespace System.Collections.Generic.Tests
             {
                 count++;
                 builder.Add(item);
-                
+
                 Assert.Equal(count, builder.Count);
                 Assert.Equal(CalculateExpectedCapacity(count), builder.Capacity);
                 VerifyBuilderContents(sequence.Take(count), builder);
+                Assert.Equal(sequence.First(), builder.First());
+                Assert.Equal(item, builder.Last());
             }
 
             return builder;
