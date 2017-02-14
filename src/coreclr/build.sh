@@ -304,46 +304,43 @@ isMSBuildOnNETCoreSupported()
 
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
-            if [ "$__msbuildonunsupportedplatform" == "1" ]; then
-                __isMSBuildOnNETCoreSupported=1
-            else
-                case "$__HostDistroRid" in
-                    "centos.7-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "debian.8-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "fedora.23-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "fedora.24-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "opensuse.13.2-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "opensuse.42.1-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "rhel.7"*"-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "ubuntu.14.04-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "ubuntu.16.04-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "ubuntu.16.10-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    "alpine.3.4.3-x64")
-                        __isMSBuildOnNETCoreSupported=1
-                        ;;
-                    *)
-                esac
-            fi
+            case "$__HostDistroRid" in
+                "centos.7-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "debian.8-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "fedora.23-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "fedora.24-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "opensuse.13.2-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "opensuse.42.1-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "rhel.7"*"-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "ubuntu.14.04-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "ubuntu.16.04-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "ubuntu.16.10-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                "alpine.3.4.3-x64")
+                    __isMSBuildOnNETCoreSupported=1
+                    ;;
+                *)
+                __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
+            esac
         elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
