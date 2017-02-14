@@ -104,6 +104,14 @@ namespace Legacy.Support
                 portName2 = openablePortNames.FirstOrDefault(name => name != portName1);
             }
 
+            // See Github issue #15961 and #16033 - hardware tests are currently insufficiently stable on master CI
+            if (loopbackPortName == null && !nullModemPresent)
+            {
+                // We don't have any supporting hardware - disable all the tests which would use just an open port
+                Console.WriteLine("No support hardware - not using serial ports");
+                portName1 = portName2 = null;
+            }
+
             s_localMachineSerialInfo = new LocalMachineSerialInfo(portName1, portName2, loopbackPortName, nullModemPresent);
 
         }
