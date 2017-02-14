@@ -233,6 +233,23 @@ pal::string_t get_deps_file(
 }
 
 /**
+* Multilevel Lookup is enabled by default
+*  It can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to a value that is not 1
+*/
+bool multilevel_lookup_enabled()
+{
+    pal::string_t env_lookup;
+    bool multilevel_lookup = true;
+
+    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
+    {
+        auto env_val = pal::xtoi(env_lookup.c_str());
+        multilevel_lookup = (env_val == 1);
+    }
+    return multilevel_lookup;
+}
+
+/**
  * Given own location, FX location, app binary and specified --depsfile and probe paths
  *     return location that is expected to contain hostpolicy
  */
@@ -375,19 +392,10 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode, const pal::string_t& 
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
-    pal::string_t env_lookup;
-
-    // Multi-level SharedFX lookup can be disabled by setting DOTNET_MULTILEVEL_LOOKUP env var to zero
-    bool multilevel_lookup = true;
-    if (pal::getenv(_X("DOTNET_MULTILEVEL_LOOKUP"), &env_lookup))
-    {
-        auto env_val = pal::xtoi(env_lookup.c_str());
-        multilevel_lookup = (env_val != 0);
-    }
-
     pal::string_t cwd;
     pal::string_t local_dir;
     pal::string_t global_dir;
+    bool multilevel_lookup = multilevel_lookup_enabled();
 
     if (multilevel_lookup)
     {
@@ -582,36 +590,68 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
         trace::verbose(_X("Failed to obtain current working dir"));
     }
 
-    pal::string_t retval;
-    if (!global.empty())
-    {
-        pal::string_t cli_version = resolve_cli_version(global);
-        if (!cli_version.empty())
-        {
-            pal::string_t sdk_path = own_dir;
-            append_path(&sdk_path, _X("sdk"));
-            append_path(&sdk_path, cli_version.c_str());
+    std::vector<pal::string_t> hive_dir;
+    pal::string_t local_dir;
+    pal::string_t global_dir;
+    bool multilevel_lookup = multilevel_lookup_enabled();
 
-            if (pal::directory_exists(sdk_path))
-            {
-                trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
-                retval = sdk_path;
-            }
-            else
-            {
-                trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), sdk_path.c_str());
-            }
+    if (multilevel_lookup)
+    {
+        if (pal::getcwd(&cwd))
+        {
+            hive_dir.push_back(cwd);
+        }
+        if (pal::get_local_dotnet_dir(&local_dir))
+        {
+            hive_dir.push_back(local_dir);
         }
     }
-    if (retval.empty())
+    hive_dir.push_back(own_dir);
+    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
     {
-        pal::string_t sdk_path = own_dir;
-        append_path(&sdk_path, _X("sdk"));
-        retval = resolve_sdk_version(sdk_path);
+        hive_dir.push_back(global_dir);
     }
-    cli_sdk->assign(retval);
-    trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
-    return !retval.empty();
+
+    pal::string_t retval;
+    for (pal::string_t dir : hive_dir)
+    {
+        trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
+        if (!global.empty())
+        {
+            pal::string_t cli_version = resolve_cli_version(global);
+            if (!cli_version.empty())
+            {
+                pal::string_t sdk_path = dir;
+                append_path(&sdk_path, _X("sdk"));
+                append_path(&sdk_path, cli_version.c_str());
+
+                if (pal::directory_exists(sdk_path))
+                {
+                    trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
+                    retval = sdk_path;
+                }
+                else
+                {
+                    trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), sdk_path.c_str());
+                }
+            }
+        }
+        if (retval.empty())
+        {
+            pal::string_t sdk_path = dir;
+            append_path(&sdk_path, _X("sdk"));
+            retval = resolve_sdk_version(sdk_path);
+        }
+        if (!retval.empty())
+        {
+            cli_sdk->assign(retval);
+            trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
+            return true;
+        }
+    }
+    
+    trace::verbose(_X("It was not possible to find any SDK version"));
+    return false;
 }
 
 bool is_sdk_dir_present(const pal::string_t& own_dir)
