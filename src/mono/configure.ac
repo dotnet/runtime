@@ -335,7 +335,7 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
 		libdl=
 		dnl FIXME: Does eglib pick this up?
-		LIBS="$LIBS -lnetwork -;textencoding"
+		LIBS="$LIBS -lnetwork -ltextencoding"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		dnl Haiku does not support static TLS with __thread
@@ -2328,6 +2328,10 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 			
+	dnl **********************************
+	dnl *** Checks for proclib         ***
+	dnl **********************************
+	AC_CHECK_HEADER(sys/errno.h, [AC_DEFINE(HAVE_SYS_ERRNO_H, 1, Define to 1 if you have the <sys/errno.h> header file.)])
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************
