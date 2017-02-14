@@ -387,18 +387,6 @@ BOOL Thread::Alert ()
     CONTRACTL_END;
 
     BOOL fRetVal = FALSE;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostComHolder<IHostTask> pHostTask(GetHostTaskWithAddRef());
-    if (pHostTask && !HasThreadStateNC(TSNC_OSAlertableWait)) {
-        HRESULT hr;
-
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pHostTask->Alert();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        fRetVal = SUCCEEDED(hr);
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         HANDLE handle = GetThreadHandle();
         if (handle != INVALID_HANDLE_VALUE && handle != SWITCHOUT_HANDLE_VALUE)
@@ -412,9 +400,6 @@ BOOL Thread::Alert ()
 
 struct HostJoinOnThreadArgs
 {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTask *pHostTask;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     WaitMode mode;
 };
 
@@ -426,44 +411,6 @@ DWORD HostJoinOnThread (void *args, DWORD timeout, DWORD option)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostJoinOnThreadArgs *joinArgs = (HostJoinOnThreadArgs*) args;
-    IHostTask *pHostTask = joinArgs->pHostTask;
-    if ((joinArgs->mode & WaitMode_InDeadlock) == 0)
-    {
-        option |= WAIT_NOTINDEADLOCK;
-    }
-
-    HRESULT hr;
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = pHostTask->Join(timeout, option);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-    if (hr == S_OK) {
-        return WAIT_OBJECT_0;
-    }
-    else if (hr == HOST_E_TIMEOUT) {
-        return WAIT_TIMEOUT;
-    }
-    else if (hr == HOST_E_INTERRUPTED) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            Thread::UserInterruptAPC(APC_Code);
-        }
-        return WAIT_IO_COMPLETION;
-    }
-    else if (hr == HOST_E_ABANDONED)
-    {
-        // The task died.
-        return WAIT_OBJECT_0;
-    }
-    else if (hr == HOST_E_DEADLOCK)
-    {
-        _ASSERTE ((option & WAIT_NOTINDEADLOCK) == 0);
-        RaiseDeadLockException();
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     _ASSERTE (!"Unknown host join status\n");
     return E_FAIL;
 }
@@ -487,19 +434,6 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
     Thread *pCurThread = GetThread();
     _ASSERTE(pCurThread || dbgOnly_IsSpecialEEThread());
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
-    if (pHostTask != NULL) {
-        HostJoinOnThreadArgs args = {pHostTask, mode};
-        if (pCurThread) {
-            return GetThread()->DoAppropriateWait(HostJoinOnThread, &args, timeout, mode);
-        }
-        else {
-            return HostJoinOnThread (&args,timeout,alertable?WAIT_ALERTABLE:0);
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         // We're not hosted, so WaitMode_InDeadlock is irrelevant.  Clear it, so that this wait can be
         // forwarded to a SynchronizationContext if needed.
@@ -532,15 +466,6 @@ BOOL Thread::SetThreadPriority(
     CONTRACTL_END;
 
     BOOL fRet;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostComHolder<IHostTask> pHostTask (GetHostTaskWithAddRef());
-    if (pHostTask != NULL) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        fRet = (pHostTask->SetPriority(nPriority) == S_OK);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         if (GetThreadHandle() == INVALID_HANDLE_VALUE) {
             // When the thread starts running, we will set the thread priority.
@@ -572,19 +497,6 @@ int Thread::GetThreadPriority()
     CONTRACTL_END;
 
     int nRetVal = -1;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostComHolder<IHostTask> pHostTask(GetHostTaskWithAddRef());
-    if (pHostTask != NULL) {
-        int nPriority;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pHostTask->GetPriority(&nPriority);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-
-        nRetVal = (hr == S_OK)?nPriority:THREAD_PRIORITY_ERROR_RETURN;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     if (GetThreadHandle() == INVALID_HANDLE_VALUE) {
         nRetVal = FALSE;
     }
@@ -671,22 +583,6 @@ DWORD Thread::StartThread()
     _ASSERTE (m_Creater.IsCurrentThread());
     m_Creater.Clear();
 #endif
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HostComHolder<IHostTask> pHostTask(GetHostTaskWithAddRef());
-    if (pHostTask)
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pHostTask->Start();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr == S_OK) {
-            dwRetVal = 1;
-        }
-        else
-            dwRetVal = (DWORD) -1;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
                   GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
@@ -829,31 +725,6 @@ Thread* SetupThread(BOOL fInternal)
     // Verify that for fiber mode, we do not have a thread that matches the current StackBase.
     if (CLRTaskHosted()) {
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-            IHostTaskManager *provider = CorHost2::GetHostTaskManager();
-
-            IHostTask *pHostTask = NULL;
-
-            // Starting with SQL11 GetCurrentTask() may actually create a task if one does not 
-            // exist yet. To avoid an unbalanced BeginThreadAffinity/EndThreadAffinity assert 
-            // we must not call it inside a scope protected by ThreadStoreLockHolder (which calls
-            // BeginThreadAffinity/EndThreadAffinity in its constructor/destructor). Post SQL11, 
-            // SQL may  create the task in BeginThreadAffinity() but until then we have to be 
-            // able to run on CHK bits w/o tripping the ASSERT.
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            provider->GetCurrentTask(&pHostTask);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-
-            if (pHostTask)
-            {
-                ThreadStoreLockHolder TSLockHolder;
-                SafeComHolder<IHostTask> pHostTaskHolder(pHostTask);
-                while ((pThread = ThreadStore::s_pThreadStore->GetAllThreadList(pThread, 0, 0)) != NULL)
-                {
-                    _ASSERTE ((pThread->m_State&Thread::TS_Unstarted) || pThread->GetHostTask() != pHostTask);
-                }
-            }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         }
 #endif
 
@@ -874,32 +745,11 @@ Thread* SetupThread(BOOL fInternal)
     if (ThreadStore::s_pThreadStore->m_PendingThreadCount != 0)
     {
         DWORD  ourOSThreadId = ::GetCurrentThreadId();
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostTask *curHostTask = NULL;
-        IHostTaskManager *hostTaskManager = CorHost2::GetHostTaskManager();
-        if (hostTaskManager) {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            hostTaskManager->GetCurrentTask(&curHostTask);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-
-        SafeComHolder<IHostTask> pHostTaskHolder(curHostTask);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         {
             ThreadStoreLockHolder TSLockHolder;
             _ASSERTE(pThread == NULL);
             while ((pThread = ThreadStore::s_pThreadStore->GetAllThreadList(pThread, Thread::TS_Unstarted | Thread::TS_FailStarted, Thread::TS_Unstarted)) != NULL)
             {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-                if (curHostTask)
-                {
-                    if (curHostTask == pThread->GetHostTask())
-                    {
-                        break;
-                    }
-                }
-                else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
                 if (pThread->GetOSThreadId() == ourOSThreadId)
                 {
                     break;
@@ -1163,13 +1013,7 @@ void DestroyThread(Thread *th)
 #endif // _TARGET_X86_
 #endif // WIN64EXCEPTIONS
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // If CLR is hosted, don't call OnThreadTerminate here. Instead the host will call
-    // ExitTask which calls DetachThread.
-    if (th->GetHostTask() == NULL) 
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     if (g_fEEShutDown == 0) 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         th->SetThreadState(Thread::TS_ReportDead);
         th->OnThreadTerminate(FALSE);
@@ -2063,9 +1907,6 @@ Thread::Thread()
     m_stressThreadCount = -1;
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    m_pHostTask = NULL;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     m_pFiberData = NULL;
 
     m_TaskId = INVALID_TASK_ID;
@@ -2228,21 +2069,6 @@ BOOL Thread::InitThread(BOOL fInternal)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *provider = CorHost2::GetHostTaskManager();
-    if (provider) {
-        if (m_pHostTask == NULL)
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            provider->GetCurrentTask(&m_pHostTask);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-        // workaround wwl: finalizer thread is not created by SQL
-        if (m_pHostTask == NULL && !fInternal) {
-            ThrowHR(HOST_E_INVALIDOPERATION);
-        }
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     HANDLE  hDup = INVALID_HANDLE_VALUE;
     BOOL    ret = TRUE;
@@ -2519,15 +2345,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
 
         SetupThreadForHost();
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (m_pHostTask)
-        {
-            // If we have notify host of ICLRTask, host will call code:ExitTask to release
-            // its reference to ICLRTask.  Also host may call SwitchOut and SwitchIn.
-            // ExitTask needs Thread in TLS.
-            fKeepTLS = TRUE;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
         ThreadStore::TransferStartedThread(this, bRequiresTSL);
 
@@ -3017,45 +2834,7 @@ BOOL Thread::CreateNewHostTask(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, v
         return FALSE;
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTask *pHostTask = NULL;
-
-    if (CorHost2::GetHostTaskManager()) {
-        //If you change this value to pass a SIZE_T stackSize you must
-        //   remove this _ASSERTE(stackSize <= 0xFFFFFFFF); from
-        //   CreateNewThread
-        //
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = CorHost2::GetHostTaskManager()->CreateTask((DWORD)stackSize, start, args, &pHostTask);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK)
-        return FALSE;
-    }
-
-    _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
-
-    // Before we do the resume, we need to take note of the new ThreadId.  This
-    // is necessary because -- before the thread starts executing at KickofThread --
-    // it may perform some DllMain DLL_THREAD_ATTACH notifications.  These could
-    // call into managed code.  During the consequent SetupThread, we need to
-    // perform the Thread::HasStarted call instead of going through the normal
-    // 'new thread' pathway.
-    _ASSERTE(m_pHostTask == NULL);
-    _ASSERTE(pHostTask != NULL);
-
-    m_pHostTask = pHostTask;
-
-    FastInterlockIncrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
-
-#ifdef _DEBUG
-    m_Creater.SetToCurrentThread();
-#endif
-
-    return TRUE;
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     return FALSE;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 // 
@@ -3185,11 +2964,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
             ::CloseHandle(h);
             SetThreadHandle(INVALID_HANDLE_VALUE);
         }
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (m_pHostTask) {
-            ReleaseHostTask();
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         // Switch back to cooperative mode to manipulate the thread.
         if (pCurThread)
         {
@@ -3423,11 +3197,6 @@ Thread::~Thread()
     _ASSERTE(m_pTLBTable == NULL);
     _ASSERTE(m_TLBTableSize == 0);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (m_pHostTask) {
-        ReleaseHostTask();
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_PREJIT
     if (m_pIBCInfo) {
@@ -3808,14 +3577,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-            if (ThisThreadID == CurrentThreadID && pCurrentThread)
-            {
-                // Before we call UnlockThreadStore, we remove out Thread from TLS
-                // Therefore we will not dec the lock count on thread.
-                DECTHREADLOCKCOUNTTHREAD(pCurrentThread);
-            }
-#endif
         }
 
         if  (GCHeapUtilities::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
@@ -6195,13 +5956,6 @@ void ThreadStore::AddThread(Thread *newThread, BOOL bRequiresTSL)
 BOOL ThreadStore::CanAcquireLock()
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!s_pThreadStore->m_Crst.IsOSCritSec())
-    {
-        return true;
-    }
-    else
-#endif 
     {
         return (s_pThreadStore->m_Crst.m_criticalsection.LockCount == -1 || (size_t)s_pThreadStore->m_Crst.m_criticalsection.OwningThread == (size_t)GetCurrentThreadId());
     }
@@ -7272,26 +7026,6 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (CorHost2::GetHostTaskManager())
-        {
-            HRESULT hr;
-            ULONG uCurrentGuarantee = 0;
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-
-            // First, we'll see what the current guard size is.
-            hr = CorHost2::GetHostTaskManager()->GetStackGuarantee(&uCurrentGuarantee); 
-
-            // Call SetStackGuarantee only if the guard isn't big enough for us.
-            if (FAILED(hr) || uCurrentGuarantee < uGuardSize)
-                hr = CorHost2::GetHostTaskManager()->SetStackGuarantee(uGuardSize);
-                
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-
-            if (hr != E_NOTIMPL)
-                return hr;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         if (!::SetThreadStackGuarantee(&uGuardSize))
         {
             return HRESULT_FROM_GetLastErrorNA();
@@ -10872,30 +10606,6 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
     }
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-void Thread::SetupFiberData()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (this == GetThread());
-    _ASSERTE (m_pFiberData == NULL);
-
-    m_pFiberData = ClrTeb::GetFiberDataPtr();
-    if (m_pFiberData != NULL && (g_CORDebuggerControlFlags & DBCF_FIBERMODE) == 0)
-    {
-        // We are in fiber mode
-        g_CORDebuggerControlFlags |= DBCF_FIBERMODE;
-        if (g_pDebugInterface)
-        {
-            g_pDebugInterface->SetFiberMode(true);
-        }
-    }
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef _DEBUG
 
@@ -11026,14 +10736,6 @@ HRESULT Thread::SwitchIn(HANDLE threadHandle)
 
 #ifdef _DEBUG
     if (CLRTaskHosted()) {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostTask *pTask = NULL;
-        _ASSERTE (CorHost2::GetHostTaskManager()->GetCurrentTask(&pTask) == S_OK &&
-                  (pTask == GetHostTask() || GetHostTask() == NULL));
-
-        if (pTask)
-            pTask->Release();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     }
 #endif
 
@@ -11058,40 +10760,6 @@ HRESULT Thread::SwitchIn(HANDLE threadHandle)
         _ASSERTE (!PreemptiveGCDisabled());
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (CLRTaskHosted() && GetHostTask() == NULL)
-        {
-            // Reset has been called on this task.
-
-            if (! SetStackLimits(fAll))
-            {
-                return E_FAIL;
-            }
-
-            // We commit the thread's entire stack when it enters the runtime to allow us to be reliable in low memory
-            // situtations. See the comments in front of Thread::CommitThreadStack() for mor information.
-            if (!Thread::CommitThreadStack(this))
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            HRESULT hr = CorHost2::GetHostTaskManager()->GetCurrentTask(&m_pHostTask);
-            _ASSERTE (hr == S_OK && m_pHostTask);
-
-#ifdef _DEBUG
-            AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
-
-            m_pFiberData = ClrTeb::GetFiberDataPtr();
-
-            m_OSThreadId = ::GetCurrentThreadId();
-
-#ifdef ENABLE_CONTRACTS
-            m_pClrDebugState = ::GetClrDebugState();
-#endif
-            ResetThreadState(TS_TaskReset);
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
         // We have to be switched in on the same fiber
         _ASSERTE (GetCachedStackBase() == GetStackUpperBound());
@@ -11263,25 +10931,6 @@ void Thread::InternalSwitchOut()
               (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-HRESULT Thread::GetMemStats (COR_GC_THREAD_STATS *pStats)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    // Get the allocation context which contains this counter in it.
-    gc_alloc_context *p = &m_alloc_context;
-    pStats->PerThreadAllocation = p->alloc_bytes + p->alloc_bytes_loh;
-    if (GetHasPromotedBytes())
-        pStats->Flags = COR_GC_THREAD_HAS_PROMOTED_BYTES;
-
-    return S_OK;
-}
-#endif //FEATURE_INCLUDE_ALL_INTERFACES
 
 
 LONG Thread::GetTotalThreadPoolCompletionCount()
@@ -11480,11 +11129,6 @@ HRESULT Thread::Reset(BOOL fFull)
 
 #ifdef _DEBUG
     if (CLRTaskHosted()) {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        // Reset is a heavy operation.  We will call into SQL for lock and memory operations.
-        // The host better keeps IHostTask alive.
-        _ASSERTE (GetCurrentHostTask() == GetHostTask());
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     }
 
     _ASSERTE (GetThread() == this);
@@ -11540,15 +11184,6 @@ HRESULT Thread::Reset(BOOL fFull)
     }
 
     {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        // We need to scope this assert because of 
-        // the jumps to ErrExit from above.
-        GCX_ASSERT_PREEMP();
-
-    _ASSERTE (m_pHostTask);
-
-    ReleaseHostTask();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef WIN64EXCEPTIONS
     ExceptionTracker::PopTrackers((void*)-1);
@@ -11695,235 +11330,6 @@ HRESULT Thread::NeedsPriorityScheduling(BOOL *pbNeedsPriorityScheduling)
     return S_OK;
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-HRESULT Thread::YieldTask()
-{
-#undef Sleep
-    CONTRACTL {
-        NOTHROW;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    //can't do heap allocation in this method
-    CantAllocHolder caHolder;
-    _ASSERTE(CLRTaskHosted());
-
-    // The host must guarantee that we have enough stack before they call this API.
-    // We unfortunately do not have a good mechanism to indicate/enforce this and it's too 
-    // late in Whidbey to add one now. We should definitely consider adding such a 
-    // mechanism in Orcas however. For now we will work around this by marking the 
-    // method as SO_TOLERANT and disabling SO tolerance violations for any code it calls.
-    CONTRACT_VIOLATION(SOToleranceViolation);
-
-    //
-    // YieldTask should not be called from a managed thread, as it can lead to deadlocks.
-    // However, some tests do this, and it would be hard to change that.  Let's at least ensure
-    // that they are not shooting themselves in the foot.
-    //
-    Thread* pCurThread = GetThread();
-    if (this == pCurThread)
-    {
-        // We will suspend the target thread.  If YieldTask is called on the current thread,
-        // we will suspend the current thread forever.
-        return HOST_E_INVALIDOPERATION;
-    }
-
-    FAULT_FORBID();
-
-    // This function has been called by the host, and the host needs not
-    // be reentrant.  Therefore, no code running below this function can
-    // cause calls back into the host.
-    ForbidCallsIntoHostOnThisThreadHolder forbidCallsIntoHostOnThisThread(TRUE /*dummy*/);
-    while (!forbidCallsIntoHostOnThisThread.Acquired())
-    {
-        // We can not call __SwitchToThread since we can not go back to host.
-        ::Sleep(10);
-        forbidCallsIntoHostOnThisThread.Acquire();
-    }
-
-    // So that the thread can yield when it tries to switch to coop gc.
-    CounterHolder trtHolder(&g_TrapReturningThreads);
-
-    // One worker on a thread only.
-    while (TRUE)
-    {
-        LONG curValue = m_State;
-        if ((curValue & TS_YieldRequested) != 0)
-        {
-            // The host has previously called YieldTask for this thread,
-            // and the thread has not cleared the flag yet.
-            return S_FALSE;
-        }
-        else if ((curValue & TS_Unstarted) != 0)
-        {
-            // The task is still unstarted, so we can consider the host
-            // to be in control of this thread, which means we have
-            // succeeded in getting the host in control.
-            return S_OK;
-        }
-
-        CONSISTENCY_CHECK(sizeof(m_State) == sizeof(LONG));
-        if (FastInterlockCompareExchange((LONG*)&m_State, curValue | TS_YieldRequested, curValue) == curValue)
-        {
-            break;
-        }
-    }
-
-#ifdef PROFILING_SUPPORTED
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-        g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
-        END_PIN_PROFILER();
-    }
-#endif // PROFILING_SUPPORTED
-
-    while (m_State & TS_YieldRequested)
-    {
-        BOOL fDone = FALSE;
-
-        if (m_State & (TS_Dead | TS_Detached))
-        {
-            // The thread is dead, in other words, yielded forever.
-            // Don't bother clearing TS_YieldRequested, as nobody
-            // is going to look at it any more.
-            break;
-        }
-
-        CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
-        HANDLE hThread = GetThreadHandle();
-        if (hThread == INVALID_HANDLE_VALUE)
-        {
-            // The thread is dead, in other words, yielded forever.
-            // Don't bother clearing TS_YieldRequested, as nobody
-            // is going to look at it any more.
-            break;
-        }
-        else if (hThread == SWITCHOUT_HANDLE_VALUE)
-        {
-            // The thread is currently switched out.
-            // This means that the host has control of the thread,
-            // so we can stop our attempts to yield it.  Note that
-            // TS_YieldRequested is cleared in InternalSwitchOut.  (If we
-            // were to clear it here, we could race against another
-            // thread that is running YieldTask.)
-            break;
-        }
-
-        DWORD dwSuspendCount = ::SuspendThread(hThread);
-        if ((int)dwSuspendCount >= 0) 
-        {
-            if (!EnsureThreadIsSuspended(hThread, this))
-            {
-                goto Retry;
-            }
-
-            if (hThread == GetThreadHandle())
-            {
-                if (m_dwForbidSuspendThread != 0)
-                {
-                    goto Retry;
-                }
-            }
-            else
-            {
-                // A thread was switch out but in again.
-                // We suspended the wrong thread; resume it and give
-                // up our attempts to yield.  Note that TS_YieldRequested
-                // is cleared in InternalSwitchOut.
-                ::ResumeThread(hThread);
-                break;
-            }
-        }
-        else
-        {
-            // We can get here either SuspendThread fails
-            // Or the fiber thread dies after this fiber switched out.
-            
-            if ((int)dwSuspendCount != -1)
-            {
-                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::YieldTask ::SuspendThread returned %x \n", dwSuspendCount);
-            }
-            if (GetThreadHandle() == SWITCHOUT_HANDLE_VALUE)
-            {
-                // The thread was switched out while we tried to suspend it.
-                // This means that the host has control of the thread,
-                // so we can stop our attempts to yield it.  Note that
-                // TS_YieldRequested is cleared in InternalSwitchOut.  (If we
-                // were to clear it here, we could race against another
-                // thread that is running YieldTask.)
-                break;
-            }
-            else {
-                continue;
-            }
-        }
-
-        if (!m_fPreemptiveGCDisabled)
-        {
-            ::ResumeThread(hThread);
-            break;
-        }
-
-#ifdef FEATURE_HIJACK
-
-#ifdef _DEBUG
-        if (pCurThread != NULL)
-        {
-            pCurThread->dbg_m_cSuspendedThreads ++;
-            _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
-        }
-#endif
-
-        // Only check for HandledJITCase if we actually suspended the thread.
-        if ((int)dwSuspendCount >= 0)
-        {
-            WorkingOnThreadContextHolder workingOnThreadContext(this);
-            if (workingOnThreadContext.Acquired() && HandledJITCase())
-            {
-                // Redirect thread so we can capture a good thread context
-                // (GetThreadContext is not sufficient, due to an OS bug).
-                // If we don't succeed (should only happen on Win9X, due to
-                // a different OS bug), we must resume the thread and try
-                // again.
-                fDone = CheckForAndDoRedirectForYieldTask();
-            }
-        }
-
-#ifdef _DEBUG
-        if (pCurThread != NULL)
-        {
-            _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
-            pCurThread->dbg_m_cSuspendedThreads --;
-            _ASSERTE(pCurThread->dbg_m_cSuspendedThreadsWithoutOSLock <= pCurThread->dbg_m_cSuspendedThreads);
-        }
-#endif //_DEBUG
-
-#endif // FEATURE_HIJACK
-
-Retry:
-        ::ResumeThread(hThread);
-        if (fDone)
-        {
-            // We managed to redirect the thread, so we know that it will yield.
-            // We can let the actual yielding happen asynchronously.
-            break;
-        }
-        handleHolder.Release();
-        ::Sleep(1);
-    }
-#ifdef PROFILING_SUPPORTED
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-        g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
-        END_PIN_PROFILER();
-    }
-#endif
-    return S_OK;
-#define Sleep(a) Dont_Use_Sleep(a)
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
 {
@@ -11980,57 +11386,6 @@ HRESULT Thread::EndPreventAsyncAbort()
     return S_OK;
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// We release m_pHostTask during ICLRTask::Reset and ICLRTask::ExitTask call.
-// This function allows us to synchronize obtaining m_pHostTask with Thread reset or exit.
-IHostTask* Thread::GetHostTaskWithAddRef()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    CounterIncrease(&m_dwHostTaskRefCount);
-    IHostTask *pHostTask = m_pHostTask;
-    if (pHostTask != NULL)
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pHostTask->AddRef();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    CounterDecrease(&m_dwHostTaskRefCount);
-    return pHostTask;
-}
-
-void Thread::ReleaseHostTask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (m_pHostTask == NULL)
-    {
-        return;
-    }
-
-    IHostTask *pHostTask = m_pHostTask;
-    m_pHostTask = NULL;
-
-    YIELD_WHILE (m_dwHostTaskRefCount > 0);
-    
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    pHostTask->Release();
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    STRESS_LOG1 (LF_SYNC, LL_INFO100, "Release HostTask %p", pHostTask);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 ULONG Thread::AddRef()
 {
@@ -12065,19 +11420,8 @@ HRESULT Thread::QueryInterface(REFIID riid, void **ppUnk)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (IID_ICLRTask2 == riid)
-        *ppUnk = (ICLRTask2 *)this;
-    else if (IID_ICLRTask == riid)
-        *ppUnk = (ICLRTask *)this;
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         return E_NOINTERFACE;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    AddRef();
-    return S_OK;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 BOOL IsHostedThread()
@@ -12094,67 +11438,9 @@ BOOL IsHostedThread()
     {
         return FALSE;
     }
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    Thread *pThread = GetThread();
-    if (pThread && pThread->GetHostTask() != NULL)
-    {
-        return TRUE;
-    }
-
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    IHostTask *pHostTask = NULL;
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pManager->GetCurrentTask(&pHostTask);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    BOOL fRet = (pHostTask != NULL);
-    if (pHostTask)
-    {
-        if (pThread)
-        {
-            _ASSERTE (pThread->GetHostTask() == NULL);
-            pThread->m_pHostTask = pHostTask;
-        }
-        else
-        {
-            pHostTask->Release();
-        }
-    }
-
-    return fRet;
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     return FALSE;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-IHostTask *GetCurrentHostTask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    IHostTaskManager *provider = CorHost2::GetHostTaskManager();
-
-    IHostTask *pHostTask = NULL;
-
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    provider->GetCurrentTask(&pHostTask);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    if (pHostTask)
-    {
-    pHostTask->Release();
-    }
-
-    return pHostTask;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 void __stdcall Thread::LeaveRuntime(size_t target)
 {
@@ -12193,26 +11479,6 @@ HRESULT Thread::LeaveRuntimeNoThrow(size_t target)
 
     HRESULT hr = S_OK;
  
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // A SQL thread can enter the runtime w/o a managed thread.
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(hr = COR_E_STACKOVERFLOW);
-
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-#ifdef _DEBUG
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_UM_M);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->LeaveRuntime(target);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    END_SO_INTOLERANT_CODE;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     return hr;
 }
@@ -12228,9 +11494,6 @@ void __stdcall Thread::LeaveRuntimeThrowComplus(size_t target)
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = NULL;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (!CLRTaskHosted())
     {
@@ -12242,22 +11505,6 @@ void __stdcall Thread::LeaveRuntimeThrowComplus(size_t target)
         goto Exit;
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-#ifdef _DEBUG
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_UM_M);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->LeaveRuntime(target);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (FAILED(hr))
     {
@@ -12347,24 +11594,6 @@ HRESULT Thread::EnterRuntimeNoThrowWorker()
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-
-    if (pManager)
-    {
-#ifdef _DEBUG
-        // A SQL thread can enter the runtime w/o a managed thread.
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_UM_M);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->EnterRuntime();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     return hr;
 }
@@ -12443,25 +11672,6 @@ HRESULT Thread::ReverseEnterRuntimeNoThrow()
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-#ifdef _DEBUG
-        // A SQL thread can enter the runtime w/o a managed thread.
-        BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(hr = COR_E_STACKOVERFLOW);
-
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_UM_M);
-        }
-        END_SO_INTOLERANT_CODE;
-
-#endif
-        hr = pManager->ReverseEnterRuntime();
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     return hr;
 }
@@ -12494,24 +11704,6 @@ void Thread::ReverseLeaveRuntime()
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-
-    if (pManager)
-    {
-#ifdef _DEBUG
-        // A SQL thread can enter the runtime w/o a managed thread.
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-        pThread->AddFiberInfo(Thread::ThreadTrackInfo_UM_M);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->ReverseLeaveRuntime();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (hr != S_OK)
         ThrowHR(hr);
@@ -12546,35 +11738,6 @@ void Thread::SetupThreadForHost()
     _ASSERTE (GetThread() == this);
     CONTRACT_VIOLATION(SOToleranceViolation);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTask *pHostTask = GetHostTask();
-    if (pHostTask) {
-        SetupFiberData();
-
-        // @todo - need to block for Interop debugging before leaving the runtime here.
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pHostTask->SetCLRTask(this);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            ThrowHR(hr);
-        }
-        if (m_WeOwnThreadHandle)
-        {
-            // If host provides a thread handle, we do not need to own a handle.
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            CorHost2::GetHostTaskManager()->SwitchToTask(0);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-            if (m_ThreadHandleForClose != INVALID_HANDLE_VALUE)
-            {
-                m_WeOwnThreadHandle = FALSE;
-                CloseHandle(m_ThreadHandleForClose);
-                m_ThreadHandleForClose = INVALID_HANDLE_VALUE;
-            }
-        }
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 

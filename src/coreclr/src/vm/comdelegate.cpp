@@ -1592,16 +1592,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         }
 #endif // MDA_SUPPORTED
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (NDirect::IsHostHookEnabled() && CallNeedsHostHook((size_t)pCallback))
-        {
-            pInterceptStub = GenerateStubForHost(
-                pMD,
-                pStubMD,
-                pCallback,
-                pInterceptStub);
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     }
 

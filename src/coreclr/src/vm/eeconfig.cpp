@@ -1300,17 +1300,6 @@ HRESULT EEConfig::sync()
         MethodTable::AllowParentMethodDataCopy();
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // Get the symbol reading policy setting which is maintained by the hosting API (since it can be overridden there)
-    const DWORD notSetToken = 0xFFFFFFFF;
-    DWORD iSymbolReadingConfig = GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_SymbolReadingPolicy, notSetToken );
-    if( iSymbolReadingConfig != notSetToken &&
-        iSymbolReadingConfig <= eSymbolReadingFullTrustOnly )
-    {
-        ESymbolReadingPolicy policy = ESymbolReadingPolicy(iSymbolReadingConfig);
-        CCLRDebugManager::SetSymbolReadingPolicy( policy, eSymbolReadingSetByConfig );
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #if defined(_DEBUG) && defined(_TARGET_AMD64_)
     m_cGenerateLongJumpDispatchStubRatio = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,

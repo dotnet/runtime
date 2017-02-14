@@ -4289,21 +4289,6 @@ BOOL Module::IsSymbolReadingEnabled()
     }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // See if there is an explicit policy configuration overriding our default.
-    // This can be set by the SymbolReadingPolicy config switch or by a host via
-    // ICLRDebugManager.AllowFileLineInfo.
-    ESymbolReadingPolicy policy = CCLRDebugManager::GetSymbolReadingPolicy();
-    if( policy == eSymbolReadingAlways )
-    {
-        return TRUE;
-    }
-    else if( policy == eSymbolReadingNever )
-    {
-        return FALSE;
-    }
-    _ASSERTE( policy == eSymbolReadingFullTrustOnly );
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     // Default policy - only read symbols corresponding to full-trust assemblies.
     // Note that there is no strong (cryptographic) connection between a symbol file and its assembly.

@@ -678,16 +678,6 @@ public:
     }
 };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-#define CLRMEMORYHOSTED                             0x1
-#define CLRTASKHOSTED                               0x2
-#define CLRSYNCHOSTED                               0x4
-#define CLRTHREADPOOLHOSTED                         0x8
-#define CLRIOCOMPLETIONHOSTED                       0x10
-#define CLRASSEMBLYHOSTED                           0x20
-#define CLRGCHOSTED                                 0x40
-#define CLRSECURITYHOSTED                           0x80
-#endif
 #define CLRHOSTED           0x80000000
 
 GVAL_DECL(DWORD, g_fHostConfig);
@@ -700,61 +690,6 @@ inline BOOL CLRHosted()
     return g_fHostConfig;
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-inline BOOL CLRMemoryHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRMEMORYHOSTED;
-}
-
-inline BOOL CLRTaskHosted()
-{
-    // !!! Can not use contract here.
-    // !!! This function is called by Thread::DetachThread after we free TLS memory.
-    // !!! Contract will recreate TLS memory.
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return g_fHostConfig&CLRTASKHOSTED;
-}
-
-inline BOOL CLRSyncHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRSYNCHOSTED;
-}
-inline BOOL CLRThreadpoolHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRTHREADPOOLHOSTED;
-}
-inline BOOL CLRIoCompletionHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRIOCOMPLETIONHOSTED;
-}
-inline BOOL CLRAssemblyHosted()
-{
-    return g_fHostConfig&CLRASSEMBLYHOSTED;
-}
-
-inline BOOL CLRGCHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRGCHOSTED;
-}
-
-inline BOOL CLRSecurityHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig&CLRSECURITYHOSTED;
-}
-#else // FEATURE_INCLUDE_ALL_INTERFACES
 inline BOOL CLRMemoryHosted()
 {
     LIMITED_METHOD_CONTRACT;
@@ -802,7 +737,6 @@ inline BOOL CLRSecurityHosted()
     LIMITED_METHOD_CONTRACT;
     return FALSE;
 }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifndef FEATURE_PAL
 HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName);

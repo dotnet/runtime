@@ -94,10 +94,6 @@ VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 VPTR_CLASS(HijackFrame)
 #endif
 VPTR_CLASS(InlinedCallFrame)
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
-VPTR_CLASS(LeaveRuntimeFrame)
-VPTR_CLASS(ReverseEnterRuntimeFrame)
-#endif
 VPTR_CLASS(SecureDelegateFrame)
 VPTR_CLASS(SecurityContextFrame)
 VPTR_CLASS(MulticastFrame)

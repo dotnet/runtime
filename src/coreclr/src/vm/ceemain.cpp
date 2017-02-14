@@ -382,15 +382,6 @@ HRESULT EnsureEEStarted(COINITIEE flags)
         REGUTIL::InitOptionalConfigCache();
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostTaskManager *pHostTaskManager = CorHost2::GetHostTaskManager();
-        if (pHostTaskManager)
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pHostTaskManager->BeginThreadAffinity();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
         BOOL bStarted=FALSE;
 
@@ -421,14 +412,6 @@ HRESULT EnsureEEStarted(COINITIEE flags)
             }
         }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (pHostTaskManager)
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pHostTaskManager->EndThreadAffinity();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 #ifdef FEATURE_TESTHOOKS        
         if(bStarted)
             TESTHOOKCALL(RuntimeStarted(RTS_INITIALIZED));
@@ -910,10 +893,6 @@ void EEStartupHelper(COINITIEE fFlags)
         CRWLock::ProcessInit();
 #endif // FEATURE_RWLOCK
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        // Initialize debugger manager
-        CCLRDebugManager::ProcessInit();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_IPCMAN
         // Initialize CCLRSecurityAttributeManager

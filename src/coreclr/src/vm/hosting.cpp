@@ -220,44 +220,6 @@ LPVOID EEVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, D
         _ASSERTE (lpAddress || (dwSize % g_SystemInfo.dwAllocationGranularity) == 0);
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *pMM = CorHost2::GetHostMemoryManager();
-    if (pMM) {
-        LPVOID pMem;
-        EMemoryCriticalLevel eLevel = eTaskCritical;
-        if (!g_fEEStarted)
-        {
-            eLevel = eProcessCritical;
-        }
-        else
-        {
-            Thread *pThread = GetThread();
-            if (pThread && pThread->HasLockInCurrentDomain())
-            {
-                if (GetAppDomain()->IsDefaultDomain())
-                {
-                    eLevel = eProcessCritical;
-                }
-                else
-                {
-                    eLevel = eAppDomainCritical;
-                }
-            }
-        }
-        HRESULT hr = S_OK;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pMM->VirtualAlloc (lpAddress, dwSize, flAllocationType, flProtect, eLevel, &pMem);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-
-        if(hr != S_OK)
-        {
-            STRESS_LOG_OOM_STACK(dwSize);
-        }
-
-        return (hr == S_OK) ? pMem : NULL;
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
 
         LPVOID p = NULL;
@@ -321,19 +283,6 @@ BOOL EEVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
 
     BOOL retVal = FALSE;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *pMM = CorHost2::GetHostMemoryManager();
-    if (pMM) {
-#ifdef _DEBUG
-        GlobalAllocStore::ValidateFree(lpAddress);
-#endif
-
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        retVal = pMM->VirtualFree (lpAddress, dwSize, dwFreeType) == S_OK;
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
 #ifdef _DEBUG
         GlobalAllocStore::RemoveAlloc (lpAddress);
@@ -357,20 +306,6 @@ SIZE_T EEVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZ
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *pMM = CorHost2::GetHostMemoryManager();
-    if (pMM) {
-        SIZE_T result;
-        HRESULT hr = S_OK;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pMM->VirtualQuery((void*)lpAddress, lpBuffer, dwLength, &result);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-            return 0;
-        return result;
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
     }
@@ -388,17 +323,6 @@ BOOL EEVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWOR
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *pMM = CorHost2::GetHostMemoryManager();
-    if (pMM) {
-        BOOL result = FALSE;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        result = pMM->VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) == S_OK;
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        return result;
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
     }
@@ -413,13 +337,6 @@ HANDLE EEGetProcessHeap()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SO_TOLERANT;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *pMM = CorHost2::GetHostMemoryManager();
-    if (pMM) {
-        return (HANDLE)1; // pretending we return an handle is ok because handles are ignored by the hosting api
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return GetProcessHeap();
     }
@@ -439,14 +356,6 @@ HANDLE EEHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)
 
 #ifndef FEATURE_PAL
     
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMalloc *pHM = CorHost2::GetHostMalloc();
-    if (pHM)
-    {
-        return NULL;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
     }
@@ -469,14 +378,6 @@ BOOL EEHeapDestroy(HANDLE hHeap)
 
 #ifndef FEATURE_PAL
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMalloc *pHM = CorHost2::GetHostMalloc();
-    if (pHM)
-    {
-        return TRUE;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::HeapDestroy(hHeap);
     }
@@ -494,54 +395,6 @@ BOOL EEHeapDestroy(HANDLE hHeap)
 #endif
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-LPVOID EEHeapAllocHosted(IHostMalloc * pHM, SIZE_T dwBytes)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_SO_INTOLERANT;
-
-    Thread * pThread = GetThreadNULLOk();
-    EMemoryCriticalLevel eLevel = eTaskCritical;
-    if (!g_fEEStarted)
-    {
-        eLevel = eProcessCritical;
-    }
-    else
-    {
-        if (pThread && pThread->HasLockInCurrentDomain())
-        {
-            if (GetAppDomain()->IsDefaultDomain())
-            {
-                eLevel = eProcessCritical;
-            }
-            else
-            {
-                eLevel = eAppDomainCritical;
-            }
-        }
-    }
-    LPVOID pMem = NULL;
-    HRESULT hr = S_OK;
-    {
-        CantAllocHolder caHolder;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(pThread);
-        hr = pHM->Alloc(dwBytes, eLevel, &pMem);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-
-    if(hr != S_OK 
-        //under OOM, we might not be able to get Execution Engine and can't access stress log
-        && GetExecutionEngine ()
-        // If we have not created StressLog ring buffer, we should not try to use it.
-        // StressLog is going to do a memory allocation.  We may enter an endless loop.
-        && ClrFlsGetValue(TlsIdx_StressLog) != NULL )
-    {
-        STRESS_LOG_OOM_STACK(dwBytes);
-    }
-
-    return (hr == S_OK) ? pMem : NULL;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #undef HeapAlloc
 LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) 
@@ -555,16 +408,6 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 #endif
 
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMalloc *pHM = CorHost2::GetHostMalloc();
-
-    // TODO: implement hosted executable heap
-    if (pHM && hHeap != g_ExecutableHeapHandle)
-    {
-        return EEHeapAllocHosted(pHM, dwBytes);
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES    
     {
 
         LPVOID p = NULL;
@@ -628,24 +471,6 @@ BOOL EEHeapFree(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 
     BOOL retVal = FALSE;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMalloc *pHM = CorHost2::GetHostMalloc();
-
-    // TODO: implement hosted executable heap
-    if (pHM && hHeap != g_ExecutableHeapHandle)
-    {
-        if (lpMem == NULL) {
-            retVal = TRUE;
-        }
-#ifdef _DEBUG
-        GlobalAllocStore::ValidateFree(lpMem);
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        retVal = pHM->Free(lpMem) == S_OK;
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
 #ifdef _DEBUG
         GlobalAllocStore::RemoveAlloc (lpMem);
@@ -701,14 +526,6 @@ BOOL EEHeapValidate(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem) {
 
 #ifndef FEATURE_PAL
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMalloc *pHM = CorHost2::GetHostMalloc();
-    if (pHM)
-    {
-        return TRUE;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::HeapValidate(hHeap, dwFlags, lpMem);
     }
@@ -778,42 +595,6 @@ DWORD EESleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 
     DWORD res;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *provider = CorHost2::GetHostTaskManager();
-    if ((provider != NULL)){
-        DWORD option = 0;
-        if (bAlertable)
-        {
-            option = WAIT_ALERTABLE;
-        }
-
-
-        HRESULT hr;
-
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = provider->Sleep(dwMilliseconds, option);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-
-        if (hr == S_OK) {
-            res = WAIT_OBJECT_0;
-        }
-        else if (hr == HOST_E_INTERRUPTED) {
-            _ASSERTE(bAlertable);
-            Thread *pThread = GetThread();
-            if (pThread)
-            {
-                pThread->UserInterruptAPC(APC_Code);
-            }
-            res = WAIT_IO_COMPLETION;
-        }
-        else
-        {
-            _ASSERTE (!"Unknown return from host Sleep\n");
-            res = WAIT_OBJECT_0;
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         res = ::SleepEx(dwMilliseconds, bAlertable);
     }
@@ -905,22 +686,6 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
             ClrSleepEx(1, FALSE);
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *provider = CorHost2::GetHostTaskManager();
-    if ((provider != NULL) && (goThroughOS == FALSE))
-    {
-        DWORD option = 0;
-
-        HRESULT hr;
-
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = provider->SwitchToTask(option);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-
-        return hr == S_OK;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return SwitchToThread();
     }

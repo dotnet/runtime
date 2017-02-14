@@ -59,9 +59,6 @@ RegMeta::RegMeta() :
     m_fIsTypeDefDirty(false), 
     m_fIsMemberDefDirty(false), 
     m_fStartedEE(false), 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    m_pCorHost(NULL), 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     m_pAppDomain(NULL),
     m_OpenFlags(0),
     m_cRef(0),
@@ -167,10 +164,6 @@ RegMeta::~RegMeta()
     if (m_fStartedEE) 
     {
         m_pAppDomain->Release();
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        m_pCorHost->Stop();
-        m_pCorHost->Release();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     }
 
     if (m_pFilterManager != NULL)
