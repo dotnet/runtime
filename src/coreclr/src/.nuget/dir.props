@@ -4,12 +4,14 @@
 
   <PropertyGroup>
     <!-- Distro rid is passed as runtimeos-arch-->
-    <_distroRidIndex>$(__DistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.10<_parseDistroRid>
+    <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
-    <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(__DistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
+    <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
     <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
 
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(__DistroRid.SubString($(_archRidIndex)))</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(_parseDistroRid.SubString($(_archRidIndex)))</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(Platform)' != ''">$(Platform)</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">$(BuildArch)</ArchGroup>
 
