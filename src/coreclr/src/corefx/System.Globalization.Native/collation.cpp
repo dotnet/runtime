@@ -440,7 +440,8 @@ extern "C" int32_t GlobalizationNative_IndexOf(
                         int32_t cwTargetLength, 
                         const UChar* lpSource, 
                         int32_t cwSourceLength, 
-                        int32_t options)
+                        int32_t options,
+                        int32_t* pMatchedLength)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -455,6 +456,13 @@ extern "C" int32_t GlobalizationNative_IndexOf(
         if (U_SUCCESS(err))
         {
             result = usearch_first(pSearch, &err);
+
+            // if the search was successful,
+            // we'll try to get the matched string length.
+            if(result != USEARCH_DONE && pMatchedLength != NULL)
+            { 
+                *pMatchedLength = usearch_getMatchedLength(pSearch);	
+            }
             usearch_close(pSearch);
         }
     }

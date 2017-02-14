@@ -564,11 +564,11 @@ namespace System.Globalization {
 
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
-
             return (InternalFindNLSStringEx(
                         m_dataHandle, m_handleOrigin, m_sortName, 
                         GetNativeCompareFlags(options) | Win32Native.FIND_STARTSWITH | ((source.IsAscii() && prefix.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, source.Length, 0, prefix, prefix.Length) > -1);
+                        source, source.Length, 0, prefix, prefix.Length,
+                        null) > -1);
         }
 
         public virtual bool IsPrefix(String source, String prefix)
@@ -618,7 +618,7 @@ namespace System.Globalization {
             return InternalFindNLSStringEx(
                         m_dataHandle, m_handleOrigin, m_sortName, 
                         GetNativeCompareFlags(options) | Win32Native.FIND_ENDSWITH | ((source.IsAscii() && suffix.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, source.Length, source.Length - 1, suffix, suffix.Length) >= 0;
+                        source, source.Length, source.Length - 1, suffix, suffix.Length, null) >= 0;
         }
 
 
@@ -760,11 +760,15 @@ namespace System.Globalization {
             return InternalFindNLSStringEx(
                         m_dataHandle, m_handleOrigin, m_sortName, 
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMSTART | ((source.IsAscii() && (value <= '\x007f')) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, count, startIndex, new String(value, 1), 1);
+                        source, count, startIndex, new String(value, 1), 1, null);
         }
 
-
         public unsafe virtual int IndexOf(String source, String value, int startIndex, int count, CompareOptions options)
+        {
+            return IndexOfCore(source, value, startIndex, count, options, null);
+        }
+
+        internal unsafe int IndexOfCore(String source, String value, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             // Validate inputs
             if (source == null)
@@ -784,6 +788,8 @@ namespace System.Globalization {
             {
                 if (value.Length == 0)
                 {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = 0;
                     return 0;
                 }
                 return -1;
@@ -795,11 +801,17 @@ namespace System.Globalization {
             }
 
             if (count < 0 || startIndex > source.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(count),Environment.GetResourceString("ArgumentOutOfRange_Count"));
+                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Count"));
 
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
-                return source.IndexOf(value, startIndex, count, StringComparison.OrdinalIgnoreCase);
+                int index = source.IndexOf(value, startIndex, count, StringComparison.OrdinalIgnoreCase);
+                if (index != -1)
+                {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = value.Length;
+                }
+                return index;
             }
 
             // Validate CompareOptions
@@ -810,9 +822,9 @@ namespace System.Globalization {
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMSTART | ((source.IsAscii() && value.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, count, startIndex, value, value.Length);
+                        source, count, startIndex, value, value.Length, matchLengthPtr);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -956,7 +968,7 @@ namespace System.Globalization {
             return InternalFindNLSStringEx(
                         m_dataHandle, m_handleOrigin, m_sortName, 
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMEND | ((source.IsAscii() && (value <= '\x007f')) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, count, startIndex, new String(value, 1), 1);
+                        source, count, startIndex, new String(value, 1), 1, null);
         }
 
 
@@ -1010,7 +1022,7 @@ namespace System.Globalization {
             return InternalFindNLSStringEx(
                         m_dataHandle, m_handleOrigin, m_sortName, 
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMEND | ((source.IsAscii() && value.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
-                        source, count, startIndex, value, value.Length);
+                        source, count, startIndex, value, value.Length, null);
         }
 
 
@@ -1292,7 +1304,8 @@ namespace System.Globalization {
         // Call through to NewApis::FindNLSStringEx so we can get the right behavior
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private static extern int InternalFindNLSStringEx(IntPtr handle, IntPtr handleOrigin, String localeName, int flags, String source, int sourceCount, int startIndex, string target, int targetCount);
+        private unsafe static extern int InternalFindNLSStringEx(IntPtr handle, IntPtr handleOrigin, String localeName, int flags, String source, int sourceCount, int startIndex, string target, int targetCount, int* matchLengthPtr);
+
 
         // Call through to NewAPis::LCMapStringEx so we can get appropriate behavior for all platforms
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

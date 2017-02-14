@@ -288,15 +288,17 @@ namespace NewApis
                       __in_ecount(cchCount2) LPCWSTR pString2,   // String we're looking for
                       __in int cchCount2,                        // length of pString2
                       __in DWORD dwFlags,                        // search flags
-                      __in BOOL startWith);
+                      __in BOOL startWith,
+                      __out_opt LPINT pcchFound);
 
     int LastIndexOfString(__in LPCWSTR lpLocaleName,
-                            __in_ecount(cchCount1) LPCWSTR pString1,   // String to search in
-                            __in int  cchCount1,                       // length of pString1
-                            __in_ecount(cchCount2) LPCWSTR pString2,    // String we're looking for
-                            __in int cchCount2,                        // length of pString2
-                            __in DWORD dwFlags,
-                            __in BOOL endWith);
+                          __in_ecount(cchCount1) LPCWSTR pString1,   // String to search in
+                          __in int  cchCount1,                       // length of pString1
+                          __in_ecount(cchCount2) LPCWSTR pString2,    // String we're looking for
+                          __in int cchCount2,                        // length of pString2
+                          __in DWORD dwFlags,
+                          __in BOOL endWith,
+                          __out_opt LPINT pcchFound);
 
     int FindNLSStringEx(__in LPCWSTR lpLocaleName,
                         __in DWORD dwFindNLSStringFlags,

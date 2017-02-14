@@ -165,7 +165,8 @@ public:
         __in                   int         cchSource,            // number of characters lpStringSource after sourceIndex
         __in                   int         sourceIndex,          // index from where the search will start in lpStringSource
         __in_ecount(cchValue)  LPCWSTR     lpStringValue,        // the string we search for
-        __in                   int         cchValue);            // length of the string we search for
+        __in                   int         cchValue,			 // length of the string we search for
+        __out_opt              LPINT       pcchFound);           // length of the string we found in source
 
     static int QCALLTYPE InternalGetSortKey(
         __in_opt               INT_PTR handle,        // PSORTHANDLE

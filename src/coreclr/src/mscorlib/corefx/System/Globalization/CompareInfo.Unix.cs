@@ -159,30 +159,46 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            int index;
+
             if (target.Length == 0)
             {
+                if(matchLengthPtr != null)
+                    *matchLengthPtr = 0;
                 return startIndex;
             }
 
             if (options == CompareOptions.Ordinal)
             {
-                return IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+                index = IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
+                if(index != -1)
+                {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                }
+                return index;
             }
 
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
-                return IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+                index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+                if(index != -1)
+                {
+                    if(matchLengthPtr != null)
+                        *matchLengthPtr = target.Length;
+                }
+                return index;
             }
-
+            
             fixed (char* pSource = source)
             {
-                int index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options);
+                index = Interop.GlobalizationInterop.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
 
                 return index != -1 ? index + startIndex : -1;
             }

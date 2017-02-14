@@ -1924,11 +1924,11 @@ namespace DownLevel
 
         if (dwFindNLSStringFlags & (FIND_ENDSWITH | FIND_FROMEND))
         {
-            retValue = NewApis::LastIndexOfString(lpLocaleName, lpStringSource, cchSource, lpStringValue, cchValue, (int) dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION, dwFindNLSStringFlags & FIND_ENDSWITH);
+            retValue = NewApis::LastIndexOfString(lpLocaleName, lpStringSource, cchSource, lpStringValue, cchValue, (int) dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION, dwFindNLSStringFlags & FIND_ENDSWITH, pcchFound);
         }
         else
         {
-            retValue = NewApis::IndexOfString(lpLocaleName, lpStringSource, cchSource, lpStringValue, cchValue, (int) dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION, dwFindNLSStringFlags & FIND_STARTSWITH);
+            retValue = NewApis::IndexOfString(lpLocaleName, lpStringSource, cchSource, lpStringValue, cchValue, (int) dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION, dwFindNLSStringFlags & FIND_STARTSWITH, pcchFound);
         }
         return retValue;
     }
