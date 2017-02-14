@@ -25,13 +25,6 @@
 #include "gcscan.h"
 #include "argdestination.h"
 
-#ifdef FEATURE_COMPRESSEDSTACK
-void* CompressedStackObject::GetUnmanagedCompressedStack()
-{
-    LIMITED_METHOD_CONTRACT;  
-    return ((m_compressedStackHandle != NULL)?m_compressedStackHandle->GetHandle():NULL);
-}
-#endif // FEATURE_COMPRESSEDSTACK
 
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
@@ -1393,9 +1386,6 @@ void Object::ValidateHeap(Object *from, BOOL bDeep)
 #ifdef FEATURE_REMOTING                      
                       this == OBJECTREFToObject(((ThreadBaseObject *)from)->m_ExposedContext) ||
 #endif                      
-#ifndef FEATURE_CORECLR
-                        this == OBJECTREFToObject(((ThreadBaseObject *)from)->m_ExecutionContext) ||
-#endif
                         false))
             {  
                 if (((ThreadBaseObject *)from)->m_InternalThread)
@@ -1737,9 +1727,10 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         AVInRuntimeImplOkayHolder avOk;
 
         MethodTable *pMT = GetGCSafeMethodTable();
+
         lastTest = 1;
 
-        CHECK_AND_TEAR_DOWN(pMT->Validate());
+        CHECK_AND_TEAR_DOWN(pMT && pMT->Validate());
         lastTest = 2;
 
         bool noRangeChecks =

@@ -47,36 +47,28 @@ namespace System.Resources {
             ResourceSet rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
-            try
-            {
-                new System.Security.Permissions.FileIOPermission(System.Security.Permissions.PermissionState.Unrestricted).Assert();
 
-                // Create new ResourceSet, if a file exists on disk for it.
-                String tempFileName = _mediator.GetResourceFileName(culture);
-                fileName = FindResourceFile(culture, tempFileName);
-                if (fileName == null)
+            // Create new ResourceSet, if a file exists on disk for it.
+            String tempFileName = _mediator.GetResourceFileName(culture);
+            fileName = FindResourceFile(culture, tempFileName);
+            if (fileName == null)
+            {
+                if (tryParents)
                 {
-                    if (tryParents)
+                    // If we've hit top of the Culture tree, return.
+                    if (culture.HasInvariantCultureName)
                     {
-                        // If we've hit top of the Culture tree, return.
-                        if (culture.HasInvariantCultureName)
-                        {
-                            // We really don't think this should happen - we always
-                            // expect the neutral locale's resources to be present.
-                            throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoNeutralDisk") + Environment.NewLine + "baseName: " + _mediator.BaseNameField + "  locationInfo: " + (_mediator.LocationInfo == null ? "<null>" : _mediator.LocationInfo.FullName) + "  fileName: " + _mediator.GetResourceFileName(culture));
-                        }
+                        // We really don't think this should happen - we always
+                        // expect the neutral locale's resources to be present.
+                        throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoNeutralDisk") + Environment.NewLine + "baseName: " + _mediator.BaseNameField + "  locationInfo: " + (_mediator.LocationInfo == null ? "<null>" : _mediator.LocationInfo.FullName) + "  fileName: " + _mediator.GetResourceFileName(culture));
                     }
                 }
-                else
-                {
-                    rs = CreateResourceSet(fileName);
-                }
-                return rs;
             }
-            finally
+            else
             {
-                System.Security.CodeAccessPermission.RevertAssert();
+                rs = CreateResourceSet(fileName);
             }
+            return rs;
         }
 
         // Given a CultureInfo, it generates the path &; file name for 

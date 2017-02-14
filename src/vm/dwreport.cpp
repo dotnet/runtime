@@ -1496,19 +1496,6 @@ BOOL RunWatson(
         
 
         {
-    #if !defined(FEATURE_CORECLR)
-            // Use the version of DW20.exe that lives in the system directory.
-            DWORD ret;
-
-            if (FAILED(GetCORSystemDirectoryInternaL(watsonAppName)))
-            {
-                hr = E_FAIL;
-                break;
-            }
-            watsonCommandLine.Set(watsonAppName);
-            watsonCommandLine.Append(kWatsonImageNameOnVista);
-
-    #else // FEATURE_CORECLR
             HKEYHolder hKey;
             // Look for key \\HKLM\Software\Microsoft\PCHealth\ErrorReporting\DW\Installed"
             DWORD ret = WszRegOpenKeyEx(HKEY_LOCAL_MACHINE,
@@ -1529,7 +1516,6 @@ BOOL RunWatson(
 
             ClrRegReadString(hKey, kWatsonValue, watsonAppName);
 
-    #endif // ! FEATURE_CORECLR
 
             COUNT_T len = watsonCommandLine.GetCount();
             WCHAR* buffer = watsonCommandLine.OpenUnicodeBuffer(len);
@@ -1907,14 +1893,6 @@ HRESULT GetManagedBucketParametersForIp(
     }
 
     WatsonBucketType bucketType = GetWatsonBucketType();
-#ifndef FEATURE_CORECLR
-    if (bucketType == MoCrash)
-    {
-        MoCrashBucketParamsManager moCrashManager(pGenericModeBlock, tore, currentPC, pThread, pThrowable);
-        moCrashManager.PopulateBucketParameters();
-    }
-    else
-#endif // !FEATURE_CORECLR
     {
 #ifdef FEATURE_WINDOWSPHONE
         _ASSERTE(bucketType == WinPhoneCrash);
@@ -2053,11 +2031,9 @@ HRESULT RetrieveManagedBucketParameters(
 #if defined(PRESERVE_WATSON_ACROSS_CONTEXTS)
     GenericModeBlock *pBuckets = NULL;
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (IsWatsonEnabled())
-#endif // FEATURE_CORECLR
     {
         if (pThread != NULL)
         {
@@ -3094,7 +3070,6 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
 
     Thread *pThread = GetThread();
 
-#ifdef FEATURE_CORECLR    
     // If watson isn't available (eg. in Silverlight), then use a simple dialog box instead
     if (!IsWatsonEnabled())
     {
@@ -3133,7 +3108,6 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
 
         return fri.m_faultReportResult;
     } 
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_UEF_CHAINMANAGER
     if (g_pUEFManager && !tore.IsUserBreakpoint())

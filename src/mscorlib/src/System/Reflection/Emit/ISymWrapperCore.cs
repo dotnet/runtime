@@ -166,23 +166,6 @@ namespace System.Reflection.Emit
             private SymWriter()
             {
             }
-
-            //=========================================================================================
-            // Public interface methods start here.
-            //=========================================================================================
-
-
-            //------------------------------------------------------------------------------
-            // Initialize() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.Initialize(IntPtr emitter, String filename, bool fFullBuild)
-            {
-                int hr = m_vtable.Initialize(m_pWriter, emitter, filename, (IntPtr)0, fFullBuild);
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
-            }
             
             //------------------------------------------------------------------------------
             // DefineDocument() wrapper
@@ -204,18 +187,6 @@ namespace System.Reflection.Emit
                     return null;
                 }
                 return new SymDocumentWriter(psymUnmanagedDocumentWriter);
-            }
-        
-            //------------------------------------------------------------------------------
-            // SetUserEntryPoint() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.SetUserEntryPoint(SymbolToken entryMethod)
-            {
-                int hr = m_vtable.SetUserEntryPoint(m_pWriter, entryMethod.GetToken());
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
             }
         
             //------------------------------------------------------------------------------
@@ -326,18 +297,6 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-        
-            //------------------------------------------------------------------------------
-            // SetScopeRange() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.SetScopeRange(int scopeID, int startOffset, int endOffset)
-            {
-                int hr = m_vtable.SetScopeRange(m_pWriter, scopeID, startOffset, endOffset);
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
-            }
     
             //------------------------------------------------------------------------------
             // DefineLocalVariable() wrapper
@@ -368,92 +327,13 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-        
-            //------------------------------------------------------------------------------
-            // DefineParameter() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.DefineParameter(String name,
-                                               ParameterAttributes attributes,
-                                               int sequence,
-                                               SymAddressKind addrKind,
-                                               int addr1,
-                                               int addr2,
-                                               int addr3)
-            {
-                throw new NotSupportedException();  // Intentionally not supported to match desktop CLR
-            }
-        
-            //------------------------------------------------------------------------------
-            // DefineField() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.DefineField(SymbolToken parent,
-                                           String name,
-                                           FieldAttributes attributes,
-                                           byte[] signature,
-                                           SymAddressKind addrKind,
-                                           int addr1,
-                                           int addr2,
-                                           int addr3)
-            {
-                throw new NotSupportedException();  // Intentionally not supported to match desktop CLR
-            }
-        
-            //------------------------------------------------------------------------------
-            // DefineGlobalVariable() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.DefineGlobalVariable(String name,
-                                                    FieldAttributes attributes,
-                                                    byte[] signature,
-                                                    SymAddressKind addrKind,
-                                                    int addr1,
-                                                    int addr2,
-                                                    int addr3)
-            {
-                throw new NotSupportedException();  // Intentionally not supported to match desktop CLR
-            }
-        
-            //------------------------------------------------------------------------------
-            // Close() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.Close()
-            {
-                int hr = m_vtable.Close(m_pWriter);
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
-            }
-        
+
             //------------------------------------------------------------------------------
             // SetSymAttribute() wrapper
             //------------------------------------------------------------------------------
             void ISymbolWriter.SetSymAttribute(SymbolToken parent, String name, byte[] data)
             {
                 int hr = m_vtable.SetSymAttribute(m_pWriter, parent.GetToken(), name, data.Length, data);
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
-            }
-        
-            //------------------------------------------------------------------------------
-            // OpenNamespace() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.OpenNamespace(String name)
-            {
-                int hr = m_vtable.OpenNamespace(m_pWriter, name);
-                if (hr < 0)
-                {
-                    throw Marshal.GetExceptionForHR(hr);
-                }
-            }
-        
-            //------------------------------------------------------------------------------
-            // CloseNamespace() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.CloseNamespace()
-            {
-                int hr = m_vtable.CloseNamespace(m_pWriter);
                 if (hr < 0)
                 {
                     throw Marshal.GetExceptionForHR(hr);
@@ -470,27 +350,6 @@ namespace System.Reflection.Emit
                 {
                     throw Marshal.GetExceptionForHR(hr);
                 }
-            }
-            
-            //------------------------------------------------------------------------------
-            // SetMethodSourceRange() wrapper
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.SetMethodSourceRange(ISymbolDocumentWriter startDoc,
-                                                    int startLine,
-                                                    int startColumn,
-                                                    ISymbolDocumentWriter endDoc,
-                                                    int endLine,
-                                                    int endColumn)
-            {
-                throw new NotSupportedException();   // Intentionally not supported to match desktop CLR
-            }
-    
-            //------------------------------------------------------------------------------
-            // SetUnderlyingWriter() wrapper.
-            //------------------------------------------------------------------------------
-            void ISymbolWriter.SetUnderlyingWriter(IntPtr ppUnderlyingWriter)
-            {
-                throw new NotSupportedException();   // Intentionally not supported on Telesto as it's a very unsafe api
             }
 
             //------------------------------------------------------------------------------

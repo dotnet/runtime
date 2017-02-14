@@ -26,9 +26,7 @@ namespace System
     using System.Collections.Generic;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AppDomainSetup
+    internal sealed class AppDomainSetup
     {
         [Serializable]
         internal enum LoaderInformation
@@ -54,31 +52,12 @@ namespace System
             ConfigurationBytesValue       = 15, // LOADER_CONFIGURATION_BYTES
             LoaderMaximum                 = 18  // LOADER_MAXIMUM
         }
-
+        
         // Constants from fusionsetup.h.
         private const string LOADER_OPTIMIZATION = "LOADER_OPTIMIZATION";
         private const string CONFIGURATION_EXTENSION = ".config";
-        private const string APPENV_RELATIVEPATH = "RELPATH";
-        private const string MACHINE_CONFIGURATION_FILE = "config\\machine.config";
-        private const string ACTAG_HOST_CONFIG_FILE = "HOST_CONFIG";
 
-        // Constants from fusionpriv.h
-        private const string ACTAG_APP_CONFIG_FILE = "APP_CONFIG_FILE";
-        private const string ACTAG_MACHINE_CONFIG = "MACHINE_CONFIG";
         private const string ACTAG_APP_BASE_URL = "APPBASE";
-        private const string ACTAG_APP_NAME = "APP_NAME";
-        private const string ACTAG_BINPATH_PROBE_ONLY = "BINPATH_PROBE_ONLY";
-        private const string ACTAG_APP_CACHE_BASE = "CACHE_BASE";
-        private const string ACTAG_DEV_PATH = "DEV_PATH";
-        private const string ACTAG_APP_DYNAMIC_BASE = "DYNAMIC_BASE";
-        private const string ACTAG_FORCE_CACHE_INSTALL = "FORCE_CACHE_INSTALL";
-        private const string ACTAG_APP_PRIVATE_BINPATH = "PRIVATE_BINPATH";
-        private const string ACTAG_APP_SHADOW_COPY_DIRS = "SHADOW_COPY_DIRS";
-        private const string ACTAG_DISALLOW_APPLYPUBLISHERPOLICY = "DISALLOW_APP";
-        private const string ACTAG_CODE_DOWNLOAD_DISABLED = "CODE_DOWNLOAD_DISABLED";
-        private const string ACTAG_DISALLOW_APP_BINDING_REDIRECTS = "DISALLOW_APP_REDIRECTS";
-        private const string ACTAG_DISALLOW_APP_BASE_PROBING = "DISALLOW_APP_BASE_PROBING";
-        private const string ACTAG_APP_CONFIG_BLOB = "APP_CONFIG_BLOB";
 
         // This class has an unmanaged representation so be aware you will need to make edits in vm\object.h if you change the order
         // of these fields or add new ones.
@@ -548,7 +527,7 @@ namespace System
         internal ApplicationTrust InternalGetApplicationTrust()
         {
             if (_ApplicationTrust == null) return null;
-            ApplicationTrust grantSet = new ApplicationTrust(NamedPermissionSet.GetBuiltInSet(_ApplicationTrust));
+            ApplicationTrust grantSet = new ApplicationTrust();
             return grantSet;
         }
 

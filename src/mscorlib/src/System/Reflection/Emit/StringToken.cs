@@ -16,10 +16,8 @@ namespace System.Reflection.Emit {
     
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct StringToken {
     
         internal int m_string;

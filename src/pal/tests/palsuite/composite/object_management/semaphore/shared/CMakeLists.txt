@@ -14,8 +14,6 @@ add_executable(paltest_semaphore_shared
 add_dependencies(paltest_semaphore_shared coreclrpal)
 
 target_link_libraries(paltest_semaphore_shared
-  pthread
+  ${COMMON_TEST_LIBRARIES}
   rt
-  m
-  coreclrpal
 )

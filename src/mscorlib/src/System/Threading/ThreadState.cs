@@ -16,7 +16,6 @@ namespace System.Threading {
 
 [Serializable]
 [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum ThreadState
     {   
         /*=========================================================================

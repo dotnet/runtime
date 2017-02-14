@@ -44,7 +44,6 @@ using System.Diagnostics.Contracts;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Permissions;
 using System.Diagnostics.Tracing;
 
 // NOTE: For performance reasons, initialization is not verified.  If a developer
@@ -198,21 +197,19 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable         
         internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
         {
             if (continuation == null) throw new ArgumentNullException(nameof(continuation));
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
-            if ( TplEtwProvider.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
+            if (TplEtwProvider.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
             {
                 continuation = OutputWaitEtwEvents(task, continuation);
             }
 
             // Set the continuation onto the awaited task.
-            task.SetContinuationForAwait(continuation, continueOnCapturedContext, flowExecutionContext, ref stackMark);
+            task.SetContinuationForAwait(continuation, continueOnCapturedContext, flowExecutionContext);
         }
 
         /// <summary>

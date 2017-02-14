@@ -1323,6 +1323,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
         pvControlPc = GetIP(&ctx);
 
+        _ASSERTE(pvControlPc != 0);
+
         if (funCallDepth > 0)
         {
             --funCallDepth;

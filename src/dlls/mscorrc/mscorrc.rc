@@ -994,11 +994,7 @@ BEGIN
     IDS_EE_LOAD_BAD_MAIN_SIG                "Main method for type '%1' has invalid signature."
     IDS_EE_LOAD_CIRCULAR_DEPENDENCY         "A circular dependency was detected when loading file or assembly '%1'."
 
-#ifdef FEATURE_CORECLR
     IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1' was not found."
-#else
-    IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1', or one of its dependencies, was not found."
-#endif
 
     IDS_EE_TOO_MANY_OPEN_FILES              "The system cannot open file '%1'.  There may be too many open files."
     IDS_EE_SHARING_VIOLATION                "Cannot access file '%1' because it is being used by another process."
@@ -1376,11 +1372,7 @@ BEGIN
     IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
-#ifdef FEATURE_CORECLR
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
-#else
-    IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1' or one of its dependencies. %2"
-#endif
 
     IDS_EE_CRYPTO_UNKNOWN_OPERATION         "Unknown import key operation specified."
 
@@ -1509,11 +1501,7 @@ BEGIN
 
     IDS_CLASSLOAD_OVERLAPPING_INTERFACES "The type '%1' in assembly '%2' has a contracting interface set for some instantiations"
     
-#ifdef FEATURE_CORECLR
     IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY "Attempted to load a 64-bit assembly on a 32-bit platform."
-#else // !FEATURE_CORECLR
-    IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY "Attempted to load a 64-bit assembly on a 32-bit platform. Use ReflectionOnlyLoad() instead if trying to load for reflection purposes."
-#endif // FEATURE_CORECLR    
 
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_IMPLICIT_OVERRIDE  "Method '%3' on type '%1' from assembly '%2' tried to implicitly override a method with weaker type parameter constraints."
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_IMPLICIT_IMPLEMENTATION "Method '%3' on type '%1' from assembly '%2' tried to implicitly implement an interface method with weaker type parameter constraints."
@@ -1545,17 +1533,9 @@ BEGIN
     IDS_UNMARSHALABLE_DEMAND_OBJECT         "The security object (Permission or PermissionSet) used for performing a Demand caused an error relating to serialization/deserialization."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
-#ifdef FEATURE_CORECLR
     IDS_TYPE_INHERITANCE_RULES_VIOLATED     "Inheritance security rules violated by type: '%1'. Derived types must either match the security accessibility of the base type or be less accessible.  If the base class has a non-transparent default constructor, the derived class must also have a default constructor, and the method inheritance rules apply across those two methods."
-#else // !FEATURE_CORECLR
-    IDS_TYPE_INHERITANCE_RULES_VIOLATED     "Inheritance security rules violated by type: '%1'. Derived types must either match the security accessibility of the base type or be less accessible."
-#endif // FEATURE_CORECLR
     IDS_METHOD_INHERITANCE_RULES_VIOLATED   "Inheritance security rules violated while overriding member: '%1'. Security accessibility of the overriding method must match the security accessibility of the method being overriden."
     IDS_CRITICAL_METHOD_ACCESS_DENIED       "Attempt to access method %1 in violation of security transparency rules failed."
-#ifdef FEATURE_CAS_POLICY
-    IDS_E_LOADFROM_REMOTE_SOURCE            "An attempt was made to load an assembly from a network location which would have caused the assembly to be sandboxed in previous versions of the .NET Framework. This release of the .NET Framework does not enable CAS policy by default, so this load may be dangerous. If this load is not intended to sandbox the assembly, please enable the loadFromRemoteSources switch. See http://go.microsoft.com/fwlink/?LinkId=155569 for more information."
-    IDS_E_LOADFROM_REMOTE_SOURCE_MOTW       "An attempt was made to load an assembly that was downloaded from a network location, which would have caused the assembly to be sandboxed in previous versions of the .NET Framework. This release of the .NET Framework does not enable CAS policy by default, so this load may be dangerous. If this assembly is trusted, either remove the Zone marker from it or enable the loadFromRemoteSources switch. See http://go.microsoft.com/fwlink/?LinkId=155569 for more information."
-#endif // FEATURE_CAS_POLICY
     IDS_CRITICAL_TYPE_ACCESS_DENIED         "Attempt to access type %1 in violation of security transparency rules failed."
     IDS_APPLICATION_ASSEMBLY_EXEC_DENIED    "Application assemblies cannot be directly executed: %1"
     IDS_REFLECTION_METHOD_ACCESS_DENIED     "Application code cannot access %1 using Reflection."
@@ -1574,11 +1554,9 @@ BEGIN
     IDS_E_CRITICAL_FIELD_ACCESS_DENIED      "Attempt by security transparent method '%1' to access security critical field '%2' failed.%3"
     IDS_E_CRITICAL_METHOD_ACCESS_DENIED     "Attempt by security transparent method '%1' to access security critical method '%2' failed.%3"
     IDS_E_CRITICAL_TYPE_ACCESS_DENIED       "Attempt by security transparent method '%1' to access security critical type '%2' failed.%3"
-#ifdef FEATURE_CORECLR
     IDS_E_DELEGATE_BINDING_TRANSPARENCY     "A delegate of type '%1' cannot be bound to the method '%2' due to security transparency rules. Ensure the delegate type and the method being bound have compatible security transparency."
     IDS_E_DELEGATE_FULLTRUST_ARPIC_1        "Delegate '%1' must be bound to a method in a fully-trusted assembly and the method must have the AllowReversePinvokeCallsAttribute."
     IDS_E_DELEGATE_FULLTRUST_ARPIC_2        "Cannot create a Delegate for marshalling out unless it is bound to a method in a fully-trusted assembly and the method has the AllowReversePinvokeCallsAttribute."
-#endif
     IDS_E_ACCESSING_PRIVATE_FRAMEWORK_CODE  "Reflection invocation to internal or private types or members in the framework is not allowed."
 
     IDS_EE_TORNSTATE                        "Unexpected change made to file '%1'."
@@ -1591,10 +1569,6 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_ACCESS_EXCEPTION_CONTEXT_LEVEL2_APTCA           "Assembly '%1' is marked with the AllowPartiallyTrustedCallersAttribute, and uses the level 2 security transparency model.  Level 2 transparency causes all methods in AllowPartiallyTrustedCallers assemblies to become security transparent by default, which may be the cause of this exception."
     IDS_ACCESS_EXCEPTION_CONTEXT_PT_TRANSPARENT         "Assembly '%1' is partially trusted, which causes the CLR to make it entirely security transparent regardless of any transparency annotations in the assembly itself.  In order to access security critical code, this assembly must be fully trusted."
-#ifdef FEATURE_APTCA
-    IDS_ACCESS_EXCEPTION_CONTEXT_APTCA_KILLBIT          "Assembly '%1' has had an APTCA killbit set for it, which prevents it from being used by partial trust or security transparent code."
-    IDS_ACCESS_EXCEPTION_CONTEXT_CONDITIONAL_APTCA      "Assembly '%1' is a conditionally APTCA assembly which is not enabled in the current AppDomain.  To enable this assembly to be used by partial trust or security transparent code, please add assembly name '%2' to the the PartialTrustVisibleAssemblies list when creating the AppDomain."
-#endif // FEATURE_APTCA
 END
 
 // These strings are generated from within the EE for streams
@@ -1612,11 +1586,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_ER_APPLICATION                       "Application: "
     IDS_ER_UNKNOWN                           "unknown"
-#ifndef FEATURE_CORECLR
-    IDS_ER_FRAMEWORK_VERSION                 "Framework Version: "
-#else // FEATURE_CORECLR
     IDS_ER_FRAMEWORK_VERSION                 "CoreCLR Version: "
-#endif // !FEATURE_CORECLR
     IDS_ER_UNHANDLEDEXCEPTION                "Description: The process was terminated due to an unhandled exception."
     IDS_ER_UNHANDLEDEXCEPTIONMSG             "Exception Info: "
     IDS_ER_MANAGEDFAILFAST                   "Description: The application requested process termination through System.Environment.FailFast(string message)."
@@ -2121,15 +2091,7 @@ BEGIN
     IDS_DIALOG_BOX_IGNORE_BUTTON        "&Ignore"
 END
 
-#ifndef FEATURE_CORECLR
-// OOB servicing
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_EE_ASSEMBLY_ON_DENY_LIST        "The assembly %1 that the application tried to load has a known vulnerability. Please go to %2 to find a fix for this issue."
-END
-#endif
 
-#ifdef FEATURE_CORECLR
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_EE_BADMARSHAL_TYPE_ANSIBSTR                   "Marshalling as AnsiBStr is not supported"
@@ -2140,9 +2102,7 @@ BEGIN
     IDS_EE_BADMARSHAL_TYPE_IDISPATCH                  "Marshalling as IDispatch is not supported"
     IDS_EE_ERROR_IDISPATCH                            "IDispatch and IDispatchEx are not supported"
 END
-#endif // FEATURE_CORECLR
 
-#ifdef FEATURE_HOST_ASSEMBLY_RESOLVER
 STRINGTABLE DISCARDABLE 
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
@@ -2150,7 +2110,6 @@ BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT "Assembly is already bound to an incompatible binding context."
     IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_TPA_BINDING_CONTEXT "Default binding context is already attached to managed load context."
 END
-#endif // FEATURE_HOST_ASSEMBLY_RESOLVER
 
 STRINGTABLE DISCARDABLE 
 BEGIN

@@ -41,7 +41,6 @@ namespace System.Text {
     // Console.WriteLine(sb1);
     // Console.WriteLine(sb2);
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public sealed class StringBuilder : ISerializable
     {
@@ -715,20 +714,17 @@ namespace System.Text {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public StringBuilder AppendLine() {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(Environment.NewLine);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public StringBuilder AppendLine(string value) {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Append(value);
             return Append(Environment.NewLine);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
             if (destination == null) {
                 throw new ArgumentNullException(nameof(destination));

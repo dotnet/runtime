@@ -19,7 +19,6 @@ using System.Runtime.Serialization;
 namespace System.IO {
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class IOException : SystemException
     {
         // For debugging purposes, store the complete path in the IOException

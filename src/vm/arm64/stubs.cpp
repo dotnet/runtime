@@ -786,8 +786,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     SyncRegDisplayToCurrentContext(pRD);
     
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-    
-
 }
 
 #endif
@@ -796,6 +794,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 { 
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
     _ASSERTE(!"ARM64:NYI");
 }
 
@@ -835,6 +834,8 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
@@ -873,6 +874,8 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // Update the frame pointer in the current context.
     pRD->pCurrentContext->Fp = m_pCalleeSavedFP;
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -919,6 +922,8 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+
     RETURN;
 }
 
@@ -965,6 +970,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
      pRD->pCurrentContextPointers->Lr = NULL;
 
      SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
 

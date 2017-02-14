@@ -2158,7 +2158,6 @@ namespace System {
             return ToBase64String(inArray, 0, inArray.Length, Base64FormattingOptions.None);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static String ToBase64String(byte[] inArray, Base64FormattingOptions options) {
             if (inArray==null) {
                 throw new ArgumentNullException(nameof(inArray));
@@ -2172,7 +2171,6 @@ namespace System {
             return ToBase64String(inArray, offset, length, Base64FormattingOptions.None);
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static unsafe String ToBase64String(byte[] inArray, int offset, int length, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
@@ -2202,7 +2200,7 @@ namespace System {
 
             string returnString = string.FastAllocateString(stringLength);
             fixed (char* outChars = returnString){
-                fixed (byte* inData = inArray) {
+                fixed (byte* inData = &inArray[0]) {
                     int j = ConvertToBase64Array(outChars,inData,offset,length, insertLineBreaks);
                     BCLDebug.Assert(returnString.Length == j, "returnString.Length == j");
                     return returnString;
@@ -2218,7 +2216,6 @@ namespace System {
             return ToBase64CharArray(inArray, offsetIn, length, outArray, offsetOut, Base64FormattingOptions.None);
         }
         
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static unsafe int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, Base64FormattingOptions options) {
             //Do data verfication
             if (inArray==null) 
@@ -2265,7 +2262,7 @@ namespace System {
                 throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
 
             fixed (char* outChars = &outArray[offsetOut]) {
-                fixed (byte* inData = inArray) { 
+                fixed (byte* inData = &inArray[0]) { 
                    retVal = ConvertToBase64Array(outChars,inData,offsetIn,length, insertLineBreaks);
                 }
             }
@@ -2282,7 +2279,7 @@ namespace System {
             int i;
 
             // get a pointer to the base64Table to avoid unnecessary range checking
-            fixed(char* base64 = base64Table) {
+            fixed(char* base64 = &base64Table[0]) {
                 for (i=offset; i<calcLength; i+=3)
                 {
                     if (insertLineBreaks) {

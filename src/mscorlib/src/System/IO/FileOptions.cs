@@ -24,7 +24,6 @@ namespace System.IO {
     // a number of them made sense in managed code, at least not yet.
     [Serializable]
     [Flags]
-    [ComVisible(true)]
     public enum FileOptions
     {
         // NOTE: any change to FileOptions enum needs to be 

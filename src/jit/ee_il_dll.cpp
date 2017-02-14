@@ -409,13 +409,25 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
     {
         if (JitConfig.EnableAVX() != 0)
         {
+            if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+            {
+                JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
+            }
             return 32;
         }
     }
 #endif // FEATURE_AVX_SUPPORT
+    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+    {
+        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
+    }
     return 16;
 #endif // _TARGET_XARCH_
 #else  // !FEATURE_SIMD
+    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+    {
+        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 0\n");
+    }
     return 0;
 #endif // !FEATURE_SIMD
 }

@@ -373,25 +373,17 @@ inline BOOL MethodTable::HasFieldsWhichMustBeInited()
 inline BOOL MethodTable::SupportsAutoNGen()
 {
     LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_CORECLR
-    return GetAssembly()->SupportsAutoNGen();
-#else
     return FALSE;
-#endif
 }
 
 //==========================================================================================
 inline BOOL MethodTable::RunCCTorAsIfNGenImageExists()
 {
     LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_CORECLR
-    return this->SupportsAutoNGen();
-#else
 #ifdef FEATURE_CORESYSTEM
     return TRUE; // On our coresystem builds we will always be using triton in the customer scenario.
 #else
     return FALSE;
-#endif
 #endif
 }
 

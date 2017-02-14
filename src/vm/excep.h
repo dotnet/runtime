@@ -174,7 +174,7 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 BOOL InstallUnhandledExceptionFilter();
 void UninstallUnhandledExceptionFilter();
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
 // ".text$zzz" (lowercase after $ is important). What the linker does is look for the sections
 // that has the same name before '$' sign. It combines them together but sorted in an alphabetical
@@ -193,7 +193,7 @@ void UninstallUnhandledExceptionFilter();
 // section that comes after UEF section, it can affect the UEF section and we will
 // assert about it in "CExecutionEngine::ClrVirtualProtect".
 #define CLR_UEF_SECTION_NAME ".CLR_UEF"
-#endif // defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#endif //!defined(FEATURE_PAL)
 LONG __stdcall COMUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo);
 
 
@@ -888,10 +888,8 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 enum ExceptionNotificationHandlerType
 {
     UnhandledExceptionHandler   = 0x1
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     ,
     FirstChanceExceptionHandler = 0x2
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 };
 
 // Defined in Frames.h
@@ -900,7 +898,6 @@ enum ExceptionNotificationHandlerType
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 private:
     void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
@@ -932,7 +929,6 @@ public:
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     BOOL static CanDelegateBeInvokedForException(OBJECTREF *pDelegate, CorruptionSeverity severity);
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 public:
     void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, 

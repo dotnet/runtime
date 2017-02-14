@@ -23,7 +23,6 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Permissions;
 
 namespace System.IO {
     // A MemoryStream represents a Stream in memory (ie, it has no backing store).
@@ -35,7 +34,6 @@ namespace System.IO {
     // memory streams are resizable, while ones created with a byte array provide
     // a stream "view" of the data.
     [Serializable]
-    [ComVisible(true)]
     public class MemoryStream : Stream
     {
         private byte[] _buffer;    // Either allocated internally or externally.
@@ -181,7 +179,6 @@ namespace System.IO {
         public override void Flush() {
         }
 
-        [ComVisible(false)]
         public override Task FlushAsync(CancellationToken cancellationToken) {
 
             if (cancellationToken.IsCancellationRequested)
@@ -357,7 +354,6 @@ namespace System.IO {
             return n;
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer==null)
@@ -589,7 +585,6 @@ namespace System.IO {
 
         }
 
-        [ComVisible(false)]
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)

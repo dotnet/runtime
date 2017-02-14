@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System;
@@ -211,10 +211,7 @@ namespace System.Runtime.Serialization
         private StreamingContext m_streamingContext;
         private List<object> m_serializedStates = new List<object>();
 
-        internal SafeSerializationEventArgs(StreamingContext streamingContext)
-        {
-            m_streamingContext = streamingContext;
-        }
+        internal SafeSerializationEventArgs() {}
 
         public void AddSerializedState(ISafeSerializationData serializedState)
         {
@@ -224,11 +221,6 @@ namespace System.Runtime.Serialization
                 throw new ArgumentException(Environment.GetResourceString("Serialization_NonSerType", serializedState.GetType(), serializedState.GetType().Assembly.FullName));
 
             m_serializedStates.Add(serializedState);
-        }
-
-        internal IList<object> SerializedStates
-        {
-            get { return m_serializedStates; }
         }
 
         public StreamingContext StreamingContext

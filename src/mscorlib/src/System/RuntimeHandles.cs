@@ -19,13 +19,11 @@ namespace System
     using System.Text;
     using System.Globalization;
     using System.Security;
-    using System.Security.Permissions;
     using Microsoft.Win32.SafeHandles;
     using System.Diagnostics.Contracts;
     using StackCrawlMark = System.Threading.StackCrawlMark;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeTypeHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -89,14 +87,6 @@ namespace System
         public static bool operator !=(RuntimeTypeHandle left, object right) { return !left.Equals(right); }
 
         public static bool operator !=(object left, RuntimeTypeHandle right) { return !right.Equals(left); }
-
-        internal static RuntimeTypeHandle EmptyHandle
-        {
-            get
-            {
-                return new RuntimeTypeHandle(null);
-            }
-        }
         
 
         // This is the RuntimeType for the type
@@ -107,7 +97,6 @@ namespace System
             return m_type != null ? m_type.GetHashCode() : 0;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public override bool Equals(object obj)
         {
             if(!(obj is RuntimeTypeHandle))
@@ -117,7 +106,6 @@ namespace System
             return handle.m_type == m_type;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public bool Equals(RuntimeTypeHandle handle)
         {
             return handle.m_type == m_type;
@@ -137,11 +125,6 @@ namespace System
         internal RuntimeTypeHandle(RuntimeType type)
         {
             m_type = type;
-        }
-
-        internal bool IsNullHandle() 
-        {
-            return m_type == null; 
         }
 
         internal static bool IsPrimitive(RuntimeType type)
@@ -243,11 +226,9 @@ namespace System
         internal extern static RuntimeAssembly GetAssembly(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal extern static RuntimeModule GetModule(RuntimeType type);
 
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public ModuleHandle GetModuleHandle()
         {
             return new ModuleHandle(RuntimeTypeHandle.GetModule(m_type));
@@ -376,9 +357,6 @@ namespace System
         internal extern static bool IsComObject(RuntimeType type, bool isGenericCOM); 
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static bool IsContextful(RuntimeType type); 
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool IsInterface(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -421,9 +399,6 @@ namespace System
         {
             return IsSecurityTransparent(GetNativeHandle());
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static bool HasProxyAttribute(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool IsValueType(RuntimeType type);
@@ -501,11 +476,6 @@ namespace System
             GC.KeepAlive(keepAlive);
 
             return type;
-        }
-
-        internal static Type GetTypeByName(string name, ref StackCrawlMark stackMark)
-        {
-            return GetTypeByName(name, false, false, false, ref stackMark, false);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -612,11 +582,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool HasInstantiation(RuntimeType type);
 
-        internal bool HasInstantiation()
-        {
-            return HasInstantiation(GetTypeChecked());
-        }
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetGenericTypeDefinition(RuntimeTypeHandle type, ObjectHandleOnStack retType);
@@ -636,11 +601,6 @@ namespace System
        
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool IsGenericVariable(RuntimeType type);
-
-        internal bool IsGenericVariable()
-        {
-            return IsGenericVariable(GetTypeChecked());
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern static int GetGenericVariableIndex(RuntimeType type);
@@ -806,7 +766,6 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeMethodHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -815,11 +774,6 @@ namespace System
             if (method == null)
                 throw new ArgumentNullException(null, Environment.GetResourceString("Arg_InvalidHandle"));
             return method;
-        }
-
-        internal static RuntimeMethodHandle EmptyHandle
-        {
-            get { return new RuntimeMethodHandle(); }
         }
 
         private IRuntimeMethodInfo m_value;
@@ -883,7 +837,6 @@ namespace System
             return ValueType.GetHashCodeOfPtr(Value);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public override bool Equals(object obj)
         {
             if (!(obj is RuntimeMethodHandle))
@@ -904,7 +857,6 @@ namespace System
             return !left.Equals(right);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public bool Equals(RuntimeMethodHandle handle)
         {
             return handle.Value == Value;
@@ -1032,52 +984,6 @@ namespace System
 
 #endregion
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]        
-        internal extern static void SerializationInvoke(IRuntimeMethodInfo method,
-            Object target, SerializationInfo info, ref StreamingContext context);
-
-        // This returns true if the token is SecurityTransparent: 
-        // just the token - does not consider including module/type etc.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool _IsTokenSecurityTransparent(RuntimeModule module, int metaDataToken);
-        
-        internal static bool IsTokenSecurityTransparent(Module module, int metaDataToken)
-        {
-            return _IsTokenSecurityTransparent(module.ModuleHandle.GetRuntimeModule(), metaDataToken);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool _IsSecurityCritical(IRuntimeMethodInfo method);
-
-        internal static bool IsSecurityCritical(IRuntimeMethodInfo method)
-        {
-            return _IsSecurityCritical(method);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool _IsSecuritySafeCritical(IRuntimeMethodInfo method);
-
-        internal static bool IsSecuritySafeCritical(IRuntimeMethodInfo method)
-        {
-            return _IsSecuritySafeCritical(method);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool _IsSecurityTransparent(IRuntimeMethodInfo method);
-
-        internal static bool IsSecurityTransparent(IRuntimeMethodInfo method)
-        {
-            return _IsSecurityTransparent(method);
-        }
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 		[SuppressUnmanagedCodeSecurity]
         private extern static void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, bool fAsRuntimeTypeArray);
@@ -1170,17 +1076,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static Resolver GetResolver(RuntimeMethodHandleInternal method);
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void GetCallerType(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retType);
-    
-        internal static RuntimeType GetCallerType(ref StackCrawlMark stackMark)
-        {
-            RuntimeType type = null;
-            GetCallerType(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref type));
-            return type;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern static MethodBody GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
 
@@ -1202,13 +1097,6 @@ namespace System
     // When in doubt, do not use. 
     internal struct RuntimeFieldHandleInternal
     {
-        internal static RuntimeFieldHandleInternal EmptyHandle
-        {
-            get
-            {
-                return new RuntimeFieldHandleInternal();
-            }
-        }
 
         internal bool IsNullHandle()
         {
@@ -1242,11 +1130,6 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     internal class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
-        public RuntimeFieldInfoStub(IntPtr methodHandleValue, object keepalive)
-        {
-            m_keepalive = keepalive;
-            m_fieldHandle = new RuntimeFieldHandleInternal(methodHandleValue);
-        }
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 169
@@ -1268,7 +1151,6 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct RuntimeFieldHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1311,7 +1193,6 @@ namespace System
             return ValueType.GetHashCodeOfPtr(Value);
         }
         
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public override bool Equals(object obj)
         {
             if (!(obj is RuntimeFieldHandle))
@@ -1322,7 +1203,6 @@ namespace System
             return handle.Value == Value;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public unsafe bool Equals(RuntimeFieldHandle handle)
         {
             return handle.Value == Value;
@@ -1367,7 +1247,7 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]        
         internal static extern Object GetValue(RtFieldInfo field, Object instance, RuntimeType fieldType, RuntimeType declaringType, ref bool domainInitialized);
-
+        
         [MethodImplAttribute(MethodImplOptions.InternalCall)]        
         internal static extern Object GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void *pTypedRef, RuntimeType contextType);
         
@@ -1450,7 +1330,6 @@ namespace System
         }
     }
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public unsafe struct ModuleHandle
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1480,18 +1359,12 @@ namespace System
         {
             return m_ptr;
         }
-
-        internal bool IsNullHandle() 
-        { 
-            return m_ptr == null; 
-        }
         
         public override int GetHashCode()
         {           
             return m_ptr != null ? m_ptr.GetHashCode() : 0;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public override bool Equals(object obj)
         {
             if (!(obj is ModuleHandle))
@@ -1502,7 +1375,6 @@ namespace System
             return handle.m_ptr == m_ptr;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public unsafe bool Equals(ModuleHandle handle)
         {
             return handle.m_ptr == m_ptr;
@@ -1663,17 +1535,6 @@ namespace System
         internal static bool ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash)
         {
             return _ContainsPropertyMatchingHash(module.GetNativeHandle(), propertyToken, hash);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void GetAssembly(RuntimeModule handle, ObjectHandleOnStack retAssembly);
-
-        internal static RuntimeAssembly GetAssembly(RuntimeModule module)
-        {
-            RuntimeAssembly retAssembly = null;
-            GetAssembly(module.GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
-            return retAssembly;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

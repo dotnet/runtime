@@ -207,21 +207,6 @@ class CEECompileInfo : public ICorCompileInfo
                                BOOL                     fExplicitBindToNativeImage,
                                CORINFO_ASSEMBLY_HANDLE *pHandle);
 
-#ifdef FEATURE_FUSION
-    HRESULT LoadAssemblyByName(LPCWSTR                  wzName,
-                               CORINFO_ASSEMBLY_HANDLE *pHandle);
-
-    HRESULT LoadAssemblyRef(IMDInternalImport     *pAssemblyImport,
-                            mdAssemblyRef           ref,
-                            CORINFO_ASSEMBLY_HANDLE *pHandle,
-                            IAssemblyName           **refAssemblyName = NULL);
-
-    HRESULT LoadAssemblyByIAssemblyName(
-            IAssemblyName           *pAssemblyName,
-            CORINFO_ASSEMBLY_HANDLE *pHandle
-            );
-
-#endif //FEATURE_FUSION
 
 #ifdef FEATURE_COMINTEROP
     HRESULT LoadTypeRefWinRT(IMDInternalImport       *pAssemblyImport,
@@ -235,12 +220,6 @@ class CEECompileInfo : public ICorCompileInfo
                                mdFile                  file,
                                CORINFO_MODULE_HANDLE   *pHandle);
 
-#ifndef FEATURE_CORECLR
-    // Check if the assembly supports automatic NGen
-    BOOL SupportsAutoNGen(CORINFO_ASSEMBLY_HANDLE assembly);
-
-    HRESULT SetCachedSigningLevel(HANDLE hNI, HANDLE *pModules, COUNT_T nModules);
-#endif
 
     BOOL CheckAssemblyZap(
         CORINFO_ASSEMBLY_HANDLE assembly, 
@@ -343,13 +322,6 @@ class CEECompileInfo : public ICorCompileInfo
                                     ICorCompileDataStore    *pData,
                                     CorProfileData          *profileData);
 
-#ifdef FEATURE_FUSION
-    HRESULT GetAssemblyName(
-            CORINFO_ASSEMBLY_HANDLE hAssembly,
-            DWORD                   dwFlags,
-            __out_z LPWSTR          wzAssemblyName, 
-            LPDWORD                 cchAssemblyName);
-#endif //FEATURE_FUSION
     
     HRESULT GetLoadHint(CORINFO_ASSEMBLY_HANDLE   hAssembly,
                         CORINFO_ASSEMBLY_HANDLE hAssemblyDependency,
@@ -757,9 +729,6 @@ typedef SHash<AssemblySpecDefRefMapTraits> AssemblySpecMapDefRefMapTable;
 class CompilationDomain : public AppDomain, 
                           public ICorCompilationDomain
 {
-#ifndef FEATURE_CORECLR
-    VPTR_MULTI_VTABLE_CLASS(CompilationDomain, AppDomain);
-#endif
 
  public:
     BOOL                    m_fForceDebug; 
@@ -796,14 +765,6 @@ class CompilationDomain : public AppDomain,
     HRESULT AddDependencyEntry(PEAssembly *pFile, mdAssemblyRef ref,mdAssemblyRef def);
     void ReleaseDependencyEmitter();
 
-#ifndef FEATURE_CORECLR // hardbinding
-    PtrHashMap              m_hardBoundModules;     // Hard dependency on native image of these dependency modules
-    PtrHashMap              m_cantHardBindModules;
-    void UpdateDependencyEntryForHardBind(PEAssembly * pDependencyAssembly);
-    void IncludeHardBindClosure(PEAssembly * pDependencyAssembly);
-    void CheckHardBindToZapFile(SString dependencyNameFromCustomAttribute);
-    void CheckLoadHints();
-#endif
 
   public:
 
@@ -831,28 +792,7 @@ class CompilationDomain : public AppDomain,
 
     BOOL CanEagerBindToZapFile(Module *targetModule, BOOL limitToHardBindList = TRUE);
 
-#ifndef FEATURE_CORECLR // hardbinding
-    PtrHashMap::PtrIterator IterateHardBoundModules();
 
-    // List of full display names of assemblies to hard-bind to
-    SArray<SString,FALSE> m_assemblyHardBindList;
-    BOOL                  m_useHardBindList;
-    BOOL IsInHardBindRequestList(Assembly * pAssembly);
-    BOOL IsInHardBindRequestList(PEAssembly * pAssembly);
-    BOOL IsSafeToHardBindTo(PEAssembly * pAssembly);
-
-    void SetAssemblyHardBindList(
-                        __in_ecount( cHardBindList )
-                            LPWSTR *pHardBindList,
-                        DWORD  cHardBindList);
-#endif
-
-#if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-    void ComputeAssemblyHardBindList(IMDInternalImport * pImport);
-    BOOL IsInHardBindList(SString& simpleName);
-
-    static BOOL FindImage(const SString& fileName, MDInternalImportFlags flags, PEImage ** ppImage);
-#endif
 
     // Returns NULL on out-of-memory
     RefCache *GetRefCache(Module *pModule)
@@ -898,9 +838,6 @@ class CompilationDomain : public AppDomain,
     HRESULT SetContextInfo(LPCWSTR exePath, BOOL isExe) DAC_EMPTY_RET(E_FAIL);
     HRESULT GetDependencies(CORCOMPILE_DEPENDENCY **ppDependencies,
                             DWORD *cDependencies) DAC_EMPTY_RET(E_FAIL);
-#ifdef FEATURE_FUSION
-    HRESULT GetIBindContext(IBindContext **ppBindCtx) DAC_EMPTY_RET(E_FAIL);
-#endif
 
 #ifdef CROSSGEN_COMPILE
     HRESULT SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths) DAC_EMPTY_RET(E_FAIL);

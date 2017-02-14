@@ -19,9 +19,6 @@
 #include "assembly.hpp"
 #include "clsload.hpp"
 #include "eehash.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
@@ -31,9 +28,7 @@
 #include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
-#ifdef FEATURE_VERSIONING
 #include "../binder/inc/applicationcontext.hpp"
-#endif // FEATURE_VERSIONING
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
@@ -42,10 +37,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "clrprivbinderwinrt.h"
-#ifndef FEATURE_CORECLR
-#include "clrprivbinderreflectiononlywinrt.h"
-#include "clrprivtypecachereflectiononlywinrt.h"
-#endif
 #include "..\md\winmd\inc\adapter.h"
 #include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
@@ -1338,16 +1329,10 @@ public:
 
     BOOL ContainsOBJECTHANDLE(OBJECTHANDLE handle);
 
-#ifdef FEATURE_FUSION
-    IApplicationContext *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
-#else
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
     
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *GetTPABinderContext() {LIMITED_METHOD_CONTRACT;  return m_pTPABinderContext; }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
-#endif
 
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
@@ -1392,16 +1377,10 @@ protected:
     // Fusion context, used for adding assemblies to the is domain. It defines
     // fusion properties for finding assemblyies such as SharedBinPath,
     // PrivateBinPath, Application Directory, etc.
-#ifdef FEATURE_FUSION    
-    IApplicationContext* m_pFusionContext; // Binding context for the domain
-#else
     IUnknown *m_pFusionContext; // Current binding context for the domain
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
-#endif    
 
     HandleTableBucket *m_hHandleTableBucket;
 
@@ -1417,7 +1396,7 @@ protected:
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
     
-    // WinRT binder (only in classic = non-AppX; AppX has the WinRT binder inside code:CLRPrivBinderAppX)
+    // WinRT binder
     PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
 
@@ -1793,9 +1772,7 @@ public:
 protected:
     DWORD m_type;
     LPVOID m_value;
-#if FEATURE_VERSIONING    
     ULONG   m_uIdentityHash;
-#endif
 };
 #endif // FEATURE_LOADER_OPTIMIZATION
 
@@ -1805,9 +1782,6 @@ protected:
 struct FailedAssembly {
     SString displayName;
     SString location;
-#ifdef FEATURE_FUSION    
-    LOADCTX_TYPE context;
-#endif
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1830,9 +1804,6 @@ struct FailedAssembly {
         // If the parent hasn't been set but the code base has, use LoadFrom.
         // Otherwise, use the default.
         //
-#ifdef FEATURE_FUSION        
-        context = pSpec->GetParentIAssembly() ? pSpec->GetParentIAssembly()->GetFusionLoadContext() : LOADCTX_TYPE_LOADFROM;
-#endif // FEATURE_FUSION
     }
 };
 
@@ -1988,15 +1959,10 @@ public:
     inline LPCWSTR GetAppDomainManagerType();
     inline EInitializeNewDomainFlags GetAppDomainManagerInitializeNewDomainFlags();
 
-#ifndef FEATURE_CORECLR
-    inline BOOL AppDomainManagerSetFromConfig();
-    Assembly *GetAppDomainManagerEntryAssembly();
-    void ComputeTargetFrameworkName();
-#endif // FEATURE_CORECLR
 
-#if defined(FEATURE_CORECLR) && defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMINTEROP)
     HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
-#endif // FEATURE_CORECLR && FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
     BOOL CanReversePInvokeEnter();
     void SetReversePInvokeCannotEnter();
@@ -2032,10 +1998,6 @@ public:
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
-#ifndef FEATURE_CORECLR
-    void InitializeSorting(OBJECTREF* ppAppdomainSetup);
-    void InitializeHashing(OBJECTREF* ppAppdomainSetup);
-#endif
 
     OBJECTREF DoSetup(OBJECTREF* setupInfo);
 
@@ -2290,7 +2252,6 @@ public:
         return AssemblyIterator::Create(this, assemblyIterationFlags);
     }
 
-#ifdef FEATURE_CORECLR
 private:
     struct NativeImageDependenciesEntry
     {
@@ -2346,7 +2307,6 @@ public:
     void SetNativeDllSearchDirectories(LPCWSTR paths);
     BOOL HasNativeDllSearchDirectories();
     void ShutdownNativeDllSearchDirectories();
-#endif // FEATURE_CORECLR
 
 public:
     SIZE_T GetAssemblyCount()
@@ -2413,12 +2373,6 @@ public:
     DomainFile *LoadDomainNeutralModuleDependency(Module *pModule, FileLoadLevel targetLevel);
 #endif
 
-#ifdef FEATURE_FUSION
-    PEAssembly *BindExplicitAssembly(HMODULE hMod, BOOL bindable);
-    Assembly *LoadExplicitAssembly(HMODULE hMod, BOOL bindable);
-    void GetFileFromFusion(IAssembly *pIAssembly, LPCWSTR wszModuleName,
-                           SString &path);
-#endif
     // private:
     void LoadSystemAssemblies();
 
@@ -2485,10 +2439,6 @@ public:
     //****************************************************************************************
     // Determines if the image is to be loaded into the shared assembly or an individual
     // appdomains.
-#ifndef FEATURE_CORECLR    
-    BOOL ApplySharePolicy(DomainAssembly *pFile);
-    BOOL ApplySharePolicyFlag(DomainAssembly *pFile);
-#endif    
 #endif // FEATURE_LOADER_OPTIMIZATION
 
     BOOL HasSetSecurityPolicy();
@@ -2577,19 +2527,11 @@ public:
 
     //****************************************************************************************
     //
-#ifdef FEATURE_FUSION    
-    static BOOL SetContextProperty(IApplicationContext* pFusionContext,
-                                   LPCWSTR pProperty,
-                                   OBJECTREF* obj);
-#endif
     //****************************************************************************************
     //
     // Uses the first assembly to add an application base to the Context. This is done
     // in a lazy fashion so executables do not take the perf hit unless the load other
     // assemblies
-#ifdef FEATURE_FUSION    
-    LPWSTR GetDynamicDir();
-#endif
 #ifndef DACCESS_COMPILE
     void OnAssemblyLoad(Assembly *assem);
     void OnAssemblyLoadUnlocked(Assembly *assem);
@@ -2784,15 +2726,8 @@ public:
 
     void InitializeDomainContext(BOOL allowRedirects, LPCWSTR pwszPath, LPCWSTR pwszConfig);
 
-#ifdef FEATURE_FUSION
-    IApplicationContext *CreateFusionContext();
-    void SetupLoaderOptimization(DWORD optimization);
-#endif
-#ifdef FEATURE_VERSIONING
     IUnknown *CreateFusionContext();
-#endif // FEATURE_VERSIONING
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     void OverrideDefaultContextBinder(IUnknown *pOverrideBinder)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2803,7 +2738,6 @@ public:
         m_pFusionContext = pOverrideBinder;
     }
     
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 #ifdef FEATURE_PREJIT
     CorCompileConfigFlags GetNativeConfigFlags();
@@ -2822,9 +2756,6 @@ public:
     //****************************************************************************************
     // Manage a pool of asyncrhonous objects used to fetch assemblies.  When a sink is released
     // it places itself back on the pool list.  Only one object is kept in the pool.
-#ifdef FEATURE_FUSION
-    AssemblySink* AllocateAssemblySink(AssemblySpec* pSpec);
-#endif
     void SetIsUserCreatedDomain()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3421,15 +3352,9 @@ private:
 
     void InitializeDefaultDomainManager ();
 
-#ifdef FEATURE_CLICKONCE
-    void InitializeDefaultClickOnceDomain();
-#endif // FEATURE_CLICKONCE
 
     void InitializeDefaultDomainSecurity();
 public:
-#ifdef FEATURE_CLICKONCE
-    BOOL IsClickOnceAppDomain();
-#endif // FEATURE_CLICKONCE
 
 protected:
     BOOL PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
@@ -3480,9 +3405,6 @@ private:
         BOOL isTerminating;
         BOOL *pResult;
     };
-    #ifndef FEATURE_CORECLR 
-    static void RaiseUnhandledExceptionEvent_Wrapper(LPVOID /* RaiseUnhandled_Args * */);
-    #endif
 
 
     static void AllowThreadEntrance(AppDomain *pApp);
@@ -3802,19 +3724,14 @@ private:
     // Stub caches for Method stubs
     //---------------------------------------------------------
 
-#ifdef FEATURE_FUSION
-    void TurnOnBindingRedirects();
-#endif
 public:
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 private:
     Volatile<BOOL> m_fIsBindingModelLocked;
 public:
     BOOL IsHostAssemblyResolverInUse();
     BOOL IsBindingModelLocked();
     BOOL LockBindingModel();
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 
@@ -3843,11 +3760,9 @@ public:
         ILLEGAL_VERIFICATION_DOMAIN =       0x8000, // This can't be a verification domain
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
         ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
-#ifdef FEATURE_CORECLR
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
         ENABLE_ASSEMBLY_LOADFILE        = 0x400000, // Allow Assembly.LoadFile in CoreCLR
         DISABLE_TRANSPARENCY_ENFORCEMENT= 0x800000, // Disable enforcement of security transparency rules
-#endif        
     };
 
     SecurityContext *m_pSecContext;
@@ -3861,9 +3776,7 @@ public:
     BOOL    m_fAppDomainManagerSetInConfig;
     EInitializeNewDomainFlags m_dwAppDomainManagerInitializeDomainFlags;
 
-#ifdef FEATURE_CORECLR 
     ArrayList m_NativeDllSearchDirectories;
-#endif
     BOOL m_ReversePInvokeCanEnter;
     bool m_ForceTrivialWaitOperations;
     // Section to support AD unload due to escalation
@@ -3891,10 +3804,8 @@ public:
         return (m_Stage == STAGE_UNLOAD_REQUESTED);
     }
 
-#ifdef FEATURE_CORECLR
     BOOL IsImageFromTrustedPath(PEImage* pImage);
     BOOL IsImageFullyTrusted(PEImage* pImage);
-#endif
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
@@ -3941,15 +3852,6 @@ private:
 #endif //FEATURE_COMINTEROP
 
 public:
-#ifndef FEATURE_CORECLR
-    BOOL m_bUseOsSorting;
-    DWORD m_sortVersion;
-    COMNlsCustomSortLibrary *m_pCustomSortLibrary;
-#if _DEBUG
-    BOOL m_bSortingInitialized;
-#endif // _DEBUG
-    COMNlsHashProvider *m_pNlsHashProvider;
-#endif // !FEATURE_CORECLR
 
 private:
     // This is the root-level default load context root binder. If null, then
@@ -4367,9 +4269,6 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-#ifndef FEATURE_CORECLR    
-	static void ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path = NULL);
-#endif
     static void ActivateApplication(int *pReturnValue);
 
     static void InitializeDefaultDomain(BOOL allowRedirects, ICLRPrivBinder * pBinder = NULL);
@@ -4446,9 +4345,6 @@ public:
 
     //****************************************************************************************
     // return the dev path
-#ifdef FEATURE_FUSION    
-    void GetDevpathW(__out_ecount_opt(1) LPWSTR* pPath, DWORD* pSize);
-#endif
 
 #ifndef DACCESS_COMPILE
     void IncrementNumAppDomains ()
@@ -4751,15 +4647,8 @@ private:
 
     InlineSString<100>  m_BaseLibrary;
 
-#ifdef FEATURE_VERSIONING
-
     InlineSString<100>  m_SystemDirectory;
 
-#else
-
-    LPCWSTR             m_SystemDirectory;
-
-#endif
 
     LPWSTR      m_pwDevpath;
     DWORD       m_dwDevpath;

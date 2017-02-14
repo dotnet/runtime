@@ -16,7 +16,6 @@
 namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
 
     // The Label class is an opaque representation of a label used by the 
@@ -26,7 +25,6 @@ namespace System.Reflection.Emit {
     // Labels are created by using ILGenerator.CreateLabel and their position is set
     // by using ILGenerator.MarkLabel.
     [Serializable]
-    [ComVisible(true)]
     public struct Label {
     
         internal int m_label;

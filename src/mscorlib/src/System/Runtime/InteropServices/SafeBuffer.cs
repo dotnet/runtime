@@ -69,7 +69,6 @@
 namespace System.Runtime.InteropServices
 {
 using System;
-using System.Security.Permissions;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -175,7 +174,6 @@ using System.Diagnostics.Contracts;
         /// the pointer from within the SafeBuffer.  You must set
         /// pointer to null before calling this method.</param>
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public void AcquirePointer(ref byte* pointer)
         {
             if (_numBytes == Uninitialized)
@@ -194,7 +192,6 @@ using System.Diagnostics.Contracts;
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public void ReleasePointer()
         {
             if (_numBytes == Uninitialized)
@@ -212,7 +209,6 @@ using System.Diagnostics.Contracts;
         /// may have to consider alignment.</param>
         /// <returns>An instance of T read from memory.</returns>
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public T Read<T>(ulong byteOffset) where T : struct {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
@@ -240,7 +236,6 @@ using System.Diagnostics.Contracts;
         }
 
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
@@ -287,7 +282,6 @@ using System.Diagnostics.Contracts;
         /// may have to consider alignment.</param>
         /// <param name="value">The value type to write to memory.</param>
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public void Write<T>(ulong byteOffset, T value) where T : struct {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
@@ -312,7 +306,6 @@ using System.Diagnostics.Contracts;
         }
 
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
@@ -355,7 +348,6 @@ using System.Diagnostics.Contracts;
         /// </summary>
         [CLSCompliant(false)]
         public ulong ByteLength {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get {
                 if (_numBytes == Uninitialized)
                     throw NotInitialized();
@@ -367,7 +359,6 @@ using System.Diagnostics.Contracts;
         /* No indexer.  The perf would be misleadingly bad.  People should use 
          * AcquirePointer and ReleasePointer instead.  */
         
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private void SpaceCheck(byte* ptr, ulong sizeInBytes)
         {
             if ((ulong)_numBytes < sizeInBytes)
@@ -376,13 +367,11 @@ using System.Diagnostics.Contracts;
                 NotEnoughRoom();
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static void NotEnoughRoom()
         {
             throw new ArgumentException(Environment.GetResourceString("Arg_BufferTooSmall"));
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static InvalidOperationException NotInitialized()
         {
             Debug.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
@@ -391,7 +380,6 @@ using System.Diagnostics.Contracts;
 
         // FCALL limitations mean we can't have generic FCALL methods.  However, we can pass 
         // TypedReferences to FCALL methods.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static void GenericPtrToStructure<T>(byte* ptr, out T structure, uint sizeofT) where T : struct
         {
             structure = default(T);  // Dummy assignment to silence the compiler
@@ -399,17 +387,14 @@ using System.Diagnostics.Contracts;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void PtrToStructureNative(byte* ptr, /*out T*/ TypedReference structure, uint sizeofT);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static void GenericStructureToPtr<T>(ref T structure, byte* ptr, uint sizeofT) where T : struct
         {
             StructureToPtrNative(__makeref(structure), ptr, sizeofT);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern void StructureToPtrNative(/*ref T*/ TypedReference structure, byte* ptr, uint sizeofT);
     }
 }

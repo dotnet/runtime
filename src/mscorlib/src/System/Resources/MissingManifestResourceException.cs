@@ -18,7 +18,6 @@ using System.Runtime.Serialization;
 
 namespace System.Resources {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class MissingManifestResourceException : SystemException
     {
         public MissingManifestResourceException() 

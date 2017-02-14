@@ -330,8 +330,8 @@ Arg_MemberInfoNullModule = The Module object containing the member cannot be nul
 Arg_ParameterInfoNullMember = The MemberInfo object defining the parameter cannot be null.
 Arg_ParameterInfoNullModule = The Module object containing the parameter cannot be null.
 Arg_AssemblyNullModule = The manifest module of the assembly cannot be null.
-Arg_LongerThanSrcArray = Source array was not long enough. Check srcIndex and length, and the array's lower bounds.
-Arg_LongerThanDestArray = Destination array was not long enough. Check destIndex and length, and the array's lower bounds.
+Arg_LongerThanSrcArray = Source array was not long enough. Check the source index, length, and the array's lower bounds.
+Arg_LongerThanDestArray = Destination array was not long enough. Check the destination index, length, and the array's lower bounds.
 Arg_LowerBoundsMustMatch = The arrays' lower bounds must be identical.
 Arg_MustBeBoolean = Object must be of type Boolean.
 Arg_MustBeByte = Object must be of type Byte.
@@ -1052,7 +1052,6 @@ InvalidOperation_CantCancelCtrlBreak = Applications may not prevent control-brea
 InvalidOperation_CalledTwice = The method cannot be called twice on the same instance.
 InvalidOperation_CollectionCorrupted = A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.
 InvalidOperation_CriticalTransparentAreMutuallyExclusive = SecurityTransparent and SecurityCritical attributes cannot be applied to the assembly scope at the same time.
-InvalidOperation_SubclassedObject = Cannot set sub-classed {0} object to {1} object.
 InvalidOperation_ExceptionStateCrossAppDomain = Thread.ExceptionState cannot access an ExceptionState from a different AppDomain.
 InvalidOperation_DebuggerLaunchFailed = Debugger unable to launch.
 InvalidOperation_ApartmentStateSwitchFailed = Failed to set the specified COM apartment state.
@@ -1389,6 +1388,8 @@ NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not support
 NotSupported_AssemblyLoadFromHash = Assembly.LoadFrom with hashValue is not supported.
 NotSupported_CannotCallEqualsOnSpan = Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.
 NotSupported_CannotCallGetHashCodeOnSpan = GetHashCode() on Span and ReadOnlySpan is not supported.
+NotSupported_ReflectionOnlyLoad = Assembly.ReflectionOnlyLoad is not supported.
+NotSupported_ReflectionOnlyGetType = Type.ReflectionOnlyGetType is not supported.
 
 ; TypeLoadException
 TypeLoad_ResolveType = Could not resolve type '{0}'.

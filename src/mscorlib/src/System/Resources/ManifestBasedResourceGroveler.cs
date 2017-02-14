@@ -52,7 +52,6 @@ namespace System.Resources {
             _mediator = mediator;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
@@ -362,7 +361,7 @@ namespace System.Resources {
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.        
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private Stream CaseInsensitiveManifestResourceStreamLookup(RuntimeAssembly satellite, String name)
         {
             Contract.Requires(satellite != null, "satellite shouldn't be null; check caller");
@@ -412,7 +411,6 @@ namespace System.Resources {
             return satellite.GetManifestResourceStream(canonicalName, ref stackMark, canSkipSecurityCheck);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
         private RuntimeAssembly GetSatelliteAssembly(CultureInfo lookForCulture, ref StackCrawlMark stackMark)
         {
             if (!_mediator.LookedForSatelliteContractVersion)

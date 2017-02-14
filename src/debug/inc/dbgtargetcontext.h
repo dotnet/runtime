@@ -371,6 +371,14 @@ typedef DECLSPEC_ALIGN(8) struct {
 #define DT_CONTEXT_FULL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT)
 #define DT_CONTEXT_ALL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_DEBUG_REGISTERS)
 
+#define DT_ARM64_MAX_BREAKPOINTS     8
+#define DT_ARM64_MAX_WATCHPOINTS     2
+
+typedef struct {
+    ULONGLONG Low;
+    LONGLONG High;
+} DT_NEON128;
+
 typedef DECLSPEC_ALIGN(16) struct {
     //
     // Control flags.
@@ -426,7 +434,7 @@ typedef DECLSPEC_ALIGN(16) struct {
     // Floating Point/NEON Registers
     //
 
-    /* +0x110 */ NEON128 V[32];
+    /* +0x110 */ DT_NEON128 V[32];
     /* +0x310 */ DWORD Fpcr;
     /* +0x314 */ DWORD Fpsr;
 
@@ -434,10 +442,10 @@ typedef DECLSPEC_ALIGN(16) struct {
     // Debug registers
     //
 
-    /* +0x318 */ DWORD Bcr[ARM64_MAX_BREAKPOINTS];
-    /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
-    /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
-    /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
+    /* +0x318 */ DWORD Bcr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x338 */ DWORD64 Bvr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x378 */ DWORD Wcr[DT_ARM64_MAX_WATCHPOINTS];
+    /* +0x380 */ DWORD64 Wvr[DT_ARM64_MAX_WATCHPOINTS];
     /* +0x390 */
 
 } DT_CONTEXT;

@@ -51,23 +51,7 @@ namespace System.Reflection.Emit
         public override Object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); } 
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
-        internal int MetadataTokenInternal
-        {
-            get
-            {
-                MethodBuilder mb = m_method as MethodBuilder;
-
-                if (mb != null)
-                    return mb.MetadataTokenInternal;
-                else
-                {
-                    Debug.Assert(m_method is RuntimeMethodInfo);
-                    return m_method.MetadataToken;
-                }
-            }
-        }
         public override Module Module { get { return m_method.Module; } }              
-        public new Type GetType() { return base.GetType(); }
         #endregion
 
         #region MethodBase Members
@@ -164,7 +148,6 @@ namespace System.Reflection.Emit
             }
         }
         public override Module Module { get { return m_ctor.Module; } }              
-        public new Type GetType() { return base.GetType(); }
         #endregion
 
         #region MethodBase Members
@@ -265,7 +248,6 @@ namespace System.Reflection.Emit
             }
         }
         public override Module Module { get { return m_field.Module; } }              
-        public new Type GetType() { return base.GetType(); }
         #endregion
 
         #region Public Abstract\Virtual Members

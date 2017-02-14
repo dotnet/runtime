@@ -14,7 +14,6 @@
 
 using System;
 using System.Security;
-using System.Security.Permissions;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -31,7 +30,6 @@ namespace Microsoft.Win32.SafeHandles {
         {
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public SafeWaitHandle(IntPtr existingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(existingHandle);

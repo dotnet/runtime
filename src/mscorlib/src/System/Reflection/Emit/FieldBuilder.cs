@@ -10,13 +10,9 @@ namespace System.Reflection.Emit
     using System;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_FieldBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class FieldBuilder : FieldInfo, _FieldBuilder
+    public sealed class FieldBuilder : FieldInfo
     {
         #region Private Data Members
         private int m_fieldTok;
@@ -71,8 +67,6 @@ namespace System.Reflection.Emit
         {
             ModuleBuilder.SetFieldRVAContent(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), m_tkField.Token, data, size);
         }
-
-        internal TypeBuilder GetTypeBuilder() { return m_typeBuilder; }
         #endregion
 
         #region MemberInfo Overrides
@@ -185,20 +179,6 @@ namespace System.Reflection.Emit
             TypeBuilder.SetFieldLayoutOffset(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, iOffset);
         }
 
-        [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public void SetMarshal(UnmanagedMarshal unmanagedMarshal)
-        {
-            if (unmanagedMarshal == null)
-                throw new ArgumentNullException(nameof(unmanagedMarshal));
-            Contract.EndContractBlock();
-
-            m_typeBuilder.ThrowIfCreated();
-
-            byte[] ubMarshal = unmanagedMarshal.InternalGetBytes();
-
-            TypeBuilder.SetFieldMarshal(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, ubMarshal, ubMarshal.Length);
-        }
-
         public void SetConstant(Object defaultValue) 
         {
             m_typeBuilder.ThrowIfCreated();  
@@ -207,7 +187,6 @@ namespace System.Reflection.Emit
         }
         
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

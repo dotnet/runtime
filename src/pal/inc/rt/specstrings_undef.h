@@ -445,7 +445,7 @@
 #undef __readableTo
 #undef __readonly
 #undef __refparam
-#undef __reserved
+#undef __clr_reserved
 #undef __rpc_entry
 #undef __source_code_content
 #undef __struct_bcount

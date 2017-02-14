@@ -127,8 +127,12 @@ DataTargetAdapter::GetPlatform(
         platform = CORDB_PLATFORM_POSIX_ARM;
         break;
 
-    case IMAGE_FILE_MACHINE_IA64:
     case IMAGE_FILE_MACHINE_ARM64:
+        ulExpectedPointerSize = 8;
+        platform = CORDB_PLATFORM_POSIX_ARM64;
+	break;
+
+    case IMAGE_FILE_MACHINE_IA64:
         _ASSERTE_MSG(false, "Not supported platform.");
         return E_NOTIMPL;
         

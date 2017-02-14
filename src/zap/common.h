@@ -32,9 +32,6 @@
 #include "jithost.h"
 #include "corcompile.h"
 #include "iceefilegen.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "corpriv.h"
 
 #include "holder.h"
@@ -50,9 +47,6 @@
 #include "guidfromname.h"
 #include "../dlls/mscorrc/resource.h"
 #include "zaplog.h"
-#ifndef FEATURE_CORECLR
-#include "eventmsg.h"
-#endif // FEATURE_CORECLR
 #include "ndpversion.h"
 
 #include "loaderheap.h"

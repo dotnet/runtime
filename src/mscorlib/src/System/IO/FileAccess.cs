@@ -23,7 +23,6 @@ namespace System.IO {
     // 
 [Serializable]
 [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAccess
     {
         // Specifies read access to the file. Data can be read from the file and

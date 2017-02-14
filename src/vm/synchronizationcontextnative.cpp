@@ -20,7 +20,6 @@
 #endif
 #include "synchronizationcontextnative.h"
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 FCIMPL3(DWORD, SynchronizationContextNative::WaitHelper, PTRArray *handleArrayUNSAFE, CLR_BOOL waitAll, DWORD millis)
 {
     FCALL_CONTRACT;
@@ -46,7 +45,6 @@ FCIMPL3(DWORD, SynchronizationContextNative::WaitHelper, PTRArray *handleArrayUN
     return ret;
 }
 FCIMPLEND
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     
 #ifdef FEATURE_APPX
 

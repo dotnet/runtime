@@ -277,6 +277,8 @@ build_cross_arch_component()
     
     export __CMakeBinDir="$__CrossComponentBinDir"
     export CROSSCOMPONENT=1
+    __IncludeTests=
+
     if [ $CROSSCOMPILE == 1 ]; then
         TARGET_ROOTFS="$ROOTFS_DIR"
         if [ -n "$CAC_ROOTFS_DIR" ]; then
@@ -476,7 +478,6 @@ case $CPUName in
         ;;
 
     aarch64)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm64
         __HostArch=arm64
         ;;

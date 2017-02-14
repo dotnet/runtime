@@ -26,18 +26,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal static TypeForwardedToAttribute[] GetCustomAttribute(RuntimeAssembly assembly)
-        {
-            Type[] types = null;
-            RuntimeAssembly.GetForwardedTypes(assembly.GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref types));
-
-            TypeForwardedToAttribute[] attributes = new TypeForwardedToAttribute[types.Length];
-            for (int i = 0; i < types.Length; ++i)
-                attributes[i] = new TypeForwardedToAttribute(types[i]);
-
-            return attributes;
-        }
-
     }
 }
 

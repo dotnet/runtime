@@ -5,10 +5,8 @@
 namespace System.Reflection.Emit {
 using System;
 using System.Threading;
-using System.Security.Permissions;
 using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
 public struct OpCode
 {
     //

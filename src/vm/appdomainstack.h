@@ -45,9 +45,6 @@ struct AppDomainStackEntry
     BOOL IsFullyTrustedWithNoStackModifiers(void);
     BOOL IsHomogeneousWithNoStackModifiers(void);
     BOOL HasFlagsOrFullyTrustedWithNoStackModifiers(DWORD flags);
-#ifndef DACCESS_COMPILE    
-    void UpdateHomogeneousPLS(OBJECTREF* homogeneousPLS);
-#endif
 };
 
 class AppDomainStack

@@ -9,7 +9,6 @@ namespace System.Runtime.InteropServices {
     using System.Runtime.Versioning;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct ArrayWithOffset
     {
         //private ArrayWithOffset()

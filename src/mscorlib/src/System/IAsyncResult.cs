@@ -10,11 +10,12 @@
 **          operation
 **
 ===========================================================*/
-namespace System {
-    
-    using System;
-    using System.Threading;
-[System.Runtime.InteropServices.ComVisible(true)]
+
+using System;
+using System.Threading;
+
+namespace System
+{
     public interface IAsyncResult
     {
         bool IsCompleted { get; }
@@ -22,11 +23,8 @@ namespace System {
         WaitHandle AsyncWaitHandle { get; }
 
 
-        Object     AsyncState      { get; }
+        Object AsyncState { get; }
 
-        bool       CompletedSynchronously { get; }
-   
-    
+        bool CompletedSynchronously { get; }
     }
-
 }

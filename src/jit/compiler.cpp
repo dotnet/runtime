@@ -1639,12 +1639,12 @@ void Compiler::compDisplayStaticSizes(FILE* fout)
             sizeof(bbDummy->bbLiveIn));
     fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
             sizeof(bbDummy->bbLiveOut));
-    fprintf(fout, "Offset / size of bbHeapSsaPhiFunc      = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaPhiFunc),
-            sizeof(bbDummy->bbHeapSsaPhiFunc));
-    fprintf(fout, "Offset / size of bbHeapSsaNumIn        = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaNumIn),
-            sizeof(bbDummy->bbHeapSsaNumIn));
-    fprintf(fout, "Offset / size of bbHeapSsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbHeapSsaNumOut),
-            sizeof(bbDummy->bbHeapSsaNumOut));
+    fprintf(fout, "Offset / size of bbMemorySsaPhiFunc      = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaPhiFunc),
+            sizeof(bbDummy->bbMemorySsaPhiFunc));
+    fprintf(fout, "Offset / size of bbMemorySsaNumIn        = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumIn),
+            sizeof(bbDummy->bbMemorySsaNumIn));
+    fprintf(fout, "Offset / size of bbMemorySsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumOut),
+            sizeof(bbDummy->bbMemorySsaNumOut));
     fprintf(fout, "Offset / size of bbScope               = %3u / %3u\n", offsetof(BasicBlock, bbScope),
             sizeof(bbDummy->bbScope));
     fprintf(fout, "Offset / size of bbCseGen              = %3u / %3u\n", offsetof(BasicBlock, bbCseGen),
@@ -1786,9 +1786,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
         impSpillCliquePredMembers = ExpandArray<BYTE>(getAllocator());
         impSpillCliqueSuccMembers = ExpandArray<BYTE>(getAllocator());
 
-        memset(&lvHeapPerSsaData, 0, sizeof(PerSsaArray));
-        lvHeapPerSsaData.Init(getAllocator());
-        lvHeapNumSsaNames = 0;
+        memset(&lvMemoryPerSsaData, 0, sizeof(PerSsaArray));
+        lvMemoryPerSsaData.Init(getAllocator());
+        lvMemoryNumSsaNames = 0;
 
         //
         // Initialize all the per-method statistics gathering data structures.
@@ -1869,8 +1869,11 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
     m_arrayInfoMap       = nullptr;
-    m_heapSsaMap         = nullptr;
     m_refAnyClass        = nullptr;
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        m_memorySsaMap[memoryKind] = nullptr;
+    }
 
 #ifdef DEBUG
     if (!compIsForInlining())
@@ -3028,25 +3031,37 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
-    if (compIsForInlining() || compIsForImportOnly())
+    if (compIsForImportOnly())
     {
         return;
     }
+
+#if FEATURE_TAILCALL_OPT
+    // By default opportunistic tail call optimization is enabled.
+    // Recognition is done in the importer so this must be set for
+    // inlinees as well.
+    opts.compTailCallOpt = true;
+#endif // FEATURE_TAILCALL_OPT
+
+    if (compIsForInlining())
+    {
+        return;
+    }
+
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if FEATURE_TAILCALL_OPT
+    opts.compTailCallLoopOpt = true;
+#endif // FEATURE_TAILCALL_OPT
 
     opts.genFPorder = true;
     opts.genFPopt   = true;
 
     opts.instrCount = 0;
     opts.lvRefCount = 0;
-
-#if FEATURE_TAILCALL_OPT
-    // By default opportunistic tail call optimization is enabled
-    opts.compTailCallOpt     = true;
-    opts.compTailCallLoopOpt = true;
-#endif
 
 #ifdef PROFILING_SUPPORTED
     opts.compJitELTHookEnabled = false;
@@ -4194,9 +4209,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     assert(!fgComputePredsDone);
     if (fgCheapPredsValid)
     {
-        // Remove cheap predecessors before inlining; allowing the cheap predecessor lists to be inserted
-        // with inlined blocks causes problems.
+        // Remove cheap predecessors before inlining and fat call transformation;
+        // allowing the cheap predecessor lists to be inserted causes problems
+        // with splitting existing blocks.
         fgRemovePreds();
+    }
+
+    if (IsTargetAbi(CORINFO_CORERT_ABI) && doesMethodHaveFatPointer())
+    {
+        fgTransformFatCalli();
     }
 
     EndPhase(PHASE_IMPORTATION);
@@ -4435,7 +4456,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         bool doRangeAnalysis = true;
         int  iterations      = 1;
 
-#ifdef DEBUG
+#if defined(OPT_CONFIG)
         doSsa           = (JitConfig.JitDoSsa() != 0);
         doEarlyProp     = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
@@ -4448,7 +4469,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         {
             iterations = JitConfig.JitOptRepeatCount();
         }
-#endif
+#endif // defined(OPT_CONFIG)
 
         while (iterations > 0)
         {
@@ -6697,16 +6718,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                         if (arg->gtFlags & GTF_LATE_ARG)
                         {
                             // Find the corresponding late arg.
-                            GenTreePtr lateArg = nullptr;
-                            for (unsigned j = 0; j < call->fgArgInfo->ArgCount(); j++)
-                            {
-                                if (call->fgArgInfo->ArgTable()[j]->argNum == i)
-                                {
-                                    lateArg = call->fgArgInfo->ArgTable()[j]->node;
-                                    break;
-                                }
-                            }
-                            assert(lateArg != nullptr);
+                            GenTreePtr lateArg = call->fgArgInfo->GetLateArg(i);
                             if (GetNodeTestData()->Lookup(lateArg, &tlAndN))
                             {
                                 reachable->Set(lateArg, 0);
@@ -6794,14 +6806,14 @@ void Compiler::CopyTestDataToCloneTree(GenTreePtr from, GenTreePtr to)
             assert(to->gtOp.gtOp1 == nullptr);
         }
 
-        if (from->gtGetOp2() != nullptr)
+        if (from->gtGetOp2IfPresent() != nullptr)
         {
-            assert(to->gtGetOp2() != nullptr);
+            assert(to->gtGetOp2IfPresent() != nullptr);
             CopyTestDataToCloneTree(from->gtGetOp2(), to->gtGetOp2());
         }
         else
         {
-            assert(to->gtGetOp2() == nullptr);
+            assert(to->gtGetOp2IfPresent() == nullptr);
         }
 
         return;
@@ -7795,6 +7807,9 @@ void JitTimer::PrintCsvHeader()
     FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
     if (fp != nullptr)
     {
+        // Seek to the end of the file s.t. `ftell` doesn't lie to us on Windows
+        fseek(fp, 0, SEEK_END);
+
         // Write the header if the file is empty
         if (ftell(fp) == 0)
         {
@@ -7812,6 +7827,9 @@ void JitTimer::PrintCsvHeader()
 
             InlineStrategy::DumpCsvHeader(fp);
 
+            fprintf(fp, "\"Executable Code Bytes\",");
+            fprintf(fp, "\"GC Info Bytes\",");
+            fprintf(fp, "\"Total Bytes Allocated\",");
             fprintf(fp, "\"Total Cycles\",");
             fprintf(fp, "\"CPS\"\n");
         }
@@ -7862,6 +7880,9 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     comp->m_inlineStrategy->DumpCsvData(fp);
 
+    fprintf(fp, "%Iu,", comp->info.compNativeCodeSize);
+    fprintf(fp, "%Iu,", comp->compInfoBlkSize);
+    fprintf(fp, "%Iu,", comp->compGetAllocator()->getTotalBytesAllocated());
     fprintf(fp, "%I64u,", m_info.m_totalCycles);
     fprintf(fp, "%f\n", CycleTimer::CyclesPerSecond());
     fclose(fp);

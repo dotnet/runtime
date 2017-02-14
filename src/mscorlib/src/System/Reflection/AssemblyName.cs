@@ -20,17 +20,13 @@ namespace System.Reflection {
     using System.Runtime.CompilerServices;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     using System.Text;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_AssemblyName))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AssemblyName : _AssemblyName, ICloneable, ISerializable, IDeserializationCallback
+    public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
     {
         //
         // READ ME
@@ -136,7 +132,6 @@ namespace System.Reflection {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public AssemblyContentType ContentType
         {
             get
@@ -192,7 +187,6 @@ namespace System.Reflection {
             // Assembly.GetNameInternal() will not demand path discovery 
             //  permission, so do that first.
             string fullPath = Path.GetFullPath(assemblyFile);
-            new FileIOPermission( FileIOPermissionAccess.PathDiscovery, fullPath ).Demand();
             return nGetFileInformation(fullPath);
         }
     

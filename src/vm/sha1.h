@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 // 
 
-#if defined(FEATURE_CORECLR)
 #ifndef SHA1_H_
 #define SHA1_H_
 
@@ -49,6 +48,3 @@ public:
 };
 
 #endif  // SHA1_H_
-#else // !defined(FEATURE_CORECLR)
-#include "crypto/sha1.h"
-#endif // defined(FEATURE_CORECLR)

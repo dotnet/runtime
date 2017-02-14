@@ -60,54 +60,6 @@ private:
 };
 
 
-#if (0)
-template <class T>
-class FIFO
-{
-public:
-    inline FIFO() { m_pHead = m_pTail = NULL; m_ulCount = 0;};
-    inline ~FIFO() {T *val; while(val = POP()) delete val; };
-    void PUSH(T *item) 
-    {
-        m_pTemp = new LIST_EL <T>(item); 
-        if(m_pTail) m_pTail->m_Next = m_pTemp;
-        m_pTail = m_pTemp;
-        if(m_pHead == NULL) m_pHead = m_pTemp;
-        m_ulCount++;
-    };
-    T* POP() 
-    {
-        T* ret = NULL;
-        if(m_pTemp = m_pHead)
-        {
-            m_pHead = m_pHead->m_Next;
-            ret = m_pTemp->m_Ptr;
-            delete m_pTemp;
-            if(m_pHead == NULL) m_pTail = NULL;
-            m_ulCount--;
-        }
-        return ret;
-    };
-    ULONG COUNT() { return m_ulCount; };
-    T* PEEK(ULONG idx)
-    {
-        T* ret = NULL;
-        ULONG   i;
-        if(idx < m_ulCount)
-        {
-            if(idx == m_ulCount-1) m_pTemp = m_pTail;
-            else for(m_pTemp = m_pHead, i = 0; i < idx; m_pTemp = m_pTemp->m_Next, i++);
-            ret = m_pTemp->m_Ptr;
-        }
-        return ret;
-    };
-private:
-    LIST_EL <T> *m_pHead;
-    LIST_EL <T> *m_pTail;
-    LIST_EL <T> *m_pTemp;
-    ULONG       m_ulCount;
-};
-#else
 template <class T>
 class FIFO
 {
@@ -180,7 +132,6 @@ private:
     ULONG       m_ulOffset;
     ULONG       m_ulArrLen;
 };
-#endif
 
 
 template <class T> struct Indx256

@@ -33,9 +33,6 @@ public:
     static FCDECL3(Object*, FormatUInt32,  UINT32     value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE);
     static FCDECL3_VII(Object*, FormatInt64,   INT64  value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE);
     static FCDECL3_VII(Object*, FormatUInt64,  UINT64 value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE);
-#if !defined(FEATURE_CORECLR)
-    static FCDECL4(Object*, FormatNumberBuffer, BYTE* number, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE, __in_z wchar_t* allDigits);
-#endif // !FEATURE_CORECLR
     static FCDECL2(FC_BOOL_RET, NumberBufferToDecimal, BYTE* number, DECIMAL* value);
     static FCDECL2(FC_BOOL_RET, NumberBufferToDouble, BYTE* number, double* value);
     

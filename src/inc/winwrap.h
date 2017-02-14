@@ -633,16 +633,6 @@
 #define WszRegQueryValueExTrue RegQueryValueExW
 #define WszRegQueryStringValueEx RegQueryValueExW
 
-#ifndef FEATURE_CORECLR
-#define WszRegDeleteKey RegDeleteKeyW
-#define WszRegCreateKeyEx ClrRegCreateKeyEx
-#define WszRegSetValueEx RegSetValueExW
-#define WszRegDeleteValue RegDeleteValueW
-#define WszRegLoadKey RegLoadKeyW
-#define WszRegUnLoadKey RegUnLoadKeyW
-#define WszRegRestoreKey RegRestoreKeyW
-#define WszRegReplaceKey RegReplaceKeyW
-#endif //#ifndef FEATURE_CORECLR
 
 #define WszRegQueryInfoKey RegQueryInfoKeyW
 #define WszRegEnumValue RegEnumValueW

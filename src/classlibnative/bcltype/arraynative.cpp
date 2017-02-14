@@ -1021,7 +1021,7 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
 
     // cannot pass null for source or destination
     if (gc.pSrc == NULL || gc.pDst == NULL) {
-        FCThrowArgumentNullVoid(gc.pSrc==NULL ? W("source") : W("dest"));
+        FCThrowArgumentNullVoid(gc.pSrc==NULL ? W("sourceArray") : W("destinationArray"));
     }
 
     // source and destination must be arrays
@@ -1048,16 +1048,16 @@ FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, Arra
         FCThrowArgumentOutOfRangeVoid(W("length"), W("ArgumentOutOfRange_NeedNonNegNum"));
 
     if (m_iSrcIndex < srcLB || (m_iSrcIndex - srcLB < 0))
-        FCThrowArgumentOutOfRangeVoid(W("srcIndex"), W("ArgumentOutOfRange_ArrayLB"));
+        FCThrowArgumentOutOfRangeVoid(W("sourceIndex"), W("ArgumentOutOfRange_ArrayLB"));
         
     if (m_iDstIndex < destLB || (m_iDstIndex - destLB < 0))
-        FCThrowArgumentOutOfRangeVoid(W("dstIndex"), W("ArgumentOutOfRange_ArrayLB"));
+        FCThrowArgumentOutOfRangeVoid(W("destinationIndex"), W("ArgumentOutOfRange_ArrayLB"));
 
     if ((DWORD)(m_iSrcIndex - srcLB + m_iLength) > srcLen)
-        FCThrowResVoid(kArgumentException, W("Arg_LongerThanSrcArray"));
+        FCThrowArgumentVoid(W("sourceArray"), W("Arg_LongerThanSrcArray"));
         
     if ((DWORD)(m_iDstIndex - destLB + m_iLength) > destLen)
-        FCThrowResVoid(kArgumentException, W("Arg_LongerThanDestArray"));
+        FCThrowArgumentVoid(W("destinationArray"), W("Arg_LongerThanDestArray"));
 
     int r = 0;
 
@@ -1186,18 +1186,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
         // TODO: We also should check for type/member visibility here. To do that we can replace
         // the following chunk of code with a simple InvokeUtil::CanAccessClass call.
         // But it's too late to make this change in Dev10 and we want SL4 to be compatible with Dev10.
-#ifndef FEATURE_CORECLR
-        // Make sure security allows us access to the array type - if it is critical, convert that to a
-        // demand for full trust
-        if (!SecurityStackWalk::HasFlagsOrFullyTrusted(0))
-        {
-            if (Security::TypeRequiresTransparencyCheck(pMT, true))
-            {
-                // If we're creating a critical type, convert the critical check into a demand for full trust
-                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_FULL_TRUST);
-            }
-        }
-#else
         if (Security::TypeRequiresTransparencyCheck(pMT))
         {
             // The AccessCheckOptions flag doesn't matter because we just need to get the caller.
@@ -1210,7 +1198,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             
             accessCheckOptions.DemandMemberAccessOrFail(&sCtx, pMT, FALSE /*visibilityCheck*/);
         }        
-#endif // !FEATURE_CORECLR
 
         // Check for byref-like types.
         if (pMT->IsByRefLike())

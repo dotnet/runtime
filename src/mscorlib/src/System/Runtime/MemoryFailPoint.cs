@@ -20,7 +20,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Security.Permissions;
 using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -394,7 +393,6 @@ namespace System.Runtime
             GC.SuppressFinalize(this);
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private void Dispose(bool disposing)
         {
             // This is just bookkeeping to ensure multiple threads can really
@@ -471,10 +469,6 @@ namespace System.Runtime
                     _needAddressSpace, _needContiguousVASpace, 
                     _availPageFile >> 20, _totalFreeAddressSpace >> 20, 
                     _lastKnownFreeAddressSpace >> 20, _reservedMem);
-            }
-
-            public String StackTrace {
-                get { return _stackTrace; }
             }
         }
 #endif

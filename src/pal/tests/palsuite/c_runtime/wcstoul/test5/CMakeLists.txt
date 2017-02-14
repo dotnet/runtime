@@ -13,7 +13,5 @@ add_executable(paltest_wcstoul_test5
 add_dependencies(paltest_wcstoul_test5 coreclrpal)
 
 target_link_libraries(paltest_wcstoul_test5
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

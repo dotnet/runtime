@@ -20,9 +20,7 @@ namespace System
     using System.Runtime;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.Security.Policy;
-    using System.Security.Util;
     using System.Collections;
     using System.Collections.Generic;
     using System.Threading;
@@ -39,7 +37,6 @@ namespace System
     using System.Diagnostics.Contracts;
     using System.Runtime.ExceptionServices;
 
-    [ComVisible(true)]
     public class ResolveEventArgs : EventArgs
     {
         private String _Name;
@@ -71,7 +68,6 @@ namespace System
         }
     }
 
-    [ComVisible(true)]
     public class AssemblyLoadEventArgs : EventArgs
     {
         private Assembly _LoadedAssembly;
@@ -89,16 +85,13 @@ namespace System
     }
 
     [Serializable]
-    [ComVisible(true)]
     public delegate Assembly ResolveEventHandler(Object sender, ResolveEventArgs args);
 
     [Serializable]
-    [ComVisible(true)]
     public delegate void AssemblyLoadEventHandler(Object sender, AssemblyLoadEventArgs args);
 
     [Serializable]
-    [ComVisible(true)]
-    public delegate void AppDomainInitializer(string[] args);
+    internal delegate void AppDomainInitializer(string[] args);
 
     internal class AppDomainInitializerInfo
     {
@@ -159,7 +152,6 @@ namespace System
             if (Info==null)
                 return null;
             AppDomainInitializer retVal=null;
-            new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Assert();
             for (int i=0;i<Info.Length;i++)
             {
                 Assembly assembly=Assembly.Load(Info[i].TargetTypeAssembly);
@@ -175,12 +167,7 @@ namespace System
         }
     }
 
-
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(System._AppDomain))]
-    [ComVisible(true)]
-    public sealed class AppDomain :
-        _AppDomain, IEvidenceFactory
+    internal sealed class AppDomain
     {
         // Domain security information
         // These fields initialized from the other side only. (NOTE: order 
@@ -188,13 +175,12 @@ namespace System
         // the EE- AppDomainBaseObject in this case)
 
         private AppDomainManager _domainManager;
-        private Dictionary<String, Object[]> _LocalStore;
+        private Dictionary<String, Object> _LocalStore;
         private AppDomainSetup   _FusionStore;
         private Evidence         _SecurityIdentity;
 #pragma warning disable 169
         private Object[]         _Policies; // Called from the VM.
 #pragma warning restore 169
-        [method: System.Security.SecurityCritical]
         public event AssemblyLoadEventHandler AssemblyLoad;
 
         private ResolveEventHandler _TypeResolve;
@@ -261,7 +247,6 @@ namespace System
         }
 
 #if FEATURE_REFLECTION_ONLY_LOAD
-        [method: System.Security.SecurityCritical]
         public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
 #endif // FEATURE_REFLECTION_ONLY
 
@@ -428,9 +413,7 @@ namespace System
             {
                 try
                 {
-                    new PermissionSet(PermissionState.Unrestricted).Assert();
                     _domainManager = CreateInstanceAndUnwrap(domainManagerAssembly, domainManagerType) as AppDomainManager;
-                    CodeAccessPermission.RevertAssert();
                 }
                 catch (FileNotFoundException e)
                 {
@@ -737,121 +720,6 @@ namespace System
                                             typeName);
         }
 
-        internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, string typeName) {
-            PermissionSet.s_fullTrust.Assert();
-            return CreateInstance(assemblyName, typeName);
-        }
-
-        public ObjectHandle CreateInstanceFrom(String assemblyFile,
-                                               String typeName)
-                                         
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            Contract.EndContractBlock();
-
-            return Activator.CreateInstanceFrom(assemblyFile,
-                                                typeName);
-        }
-
-        internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, string typeName) {
-            PermissionSet.s_fullTrust.Assert();
-            return CreateInstanceFrom(assemblyName, typeName);
-        }
-
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstance which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public ObjectHandle CreateInstance(String assemblyName, 
-                                           String typeName, 
-                                           bool ignoreCase,
-                                           BindingFlags bindingAttr, 
-                                           Binder binder,
-                                           Object[] args,
-                                           CultureInfo culture,
-                                           Object[] activationAttributes,
-                                           Evidence securityAttributes)
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            Contract.EndContractBlock();
-
-#pragma warning disable 618
-            return Activator.CreateInstance(assemblyName,
-                                            typeName,
-                                            ignoreCase,
-                                            bindingAttr,
-                                            binder,
-                                            args,
-                                            culture,
-                                            activationAttributes,
-                                            securityAttributes);
-#pragma warning restore 618
-        }
-
-        internal ObjectHandle InternalCreateInstanceWithNoSecurity (string assemblyName, 
-                                                                    string typeName,
-                                                                    bool ignoreCase,
-                                                                    BindingFlags bindingAttr,
-                                                                    Binder binder,
-                                                                    Object[] args,
-                                                                    CultureInfo culture,
-                                                                    Object[] activationAttributes,
-                                                                    Evidence securityAttributes)
-        {
-            PermissionSet.s_fullTrust.Assert();
-#pragma warning disable 618
-            return CreateInstance(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-#pragma warning restore 618
-        }
-
-        [Obsolete("Methods which use evidence to sandbox are obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateInstanceFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public ObjectHandle CreateInstanceFrom(String assemblyFile,
-                                               String typeName, 
-                                               bool ignoreCase,
-                                               BindingFlags bindingAttr, 
-                                               Binder binder,
-                                               Object[] args,
-                                               CultureInfo culture,
-                                               Object[] activationAttributes,
-                                               Evidence securityAttributes)
-
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-            Contract.EndContractBlock();
-
-            return Activator.CreateInstanceFrom(assemblyFile,
-                                                typeName,
-                                                ignoreCase,
-                                                bindingAttr,
-                                                binder,
-                                                args,
-                                                culture,
-                                                activationAttributes,
-                                                securityAttributes);
-        }
-
-        internal ObjectHandle InternalCreateInstanceFromWithNoSecurity (string assemblyName, 
-                                                                        string typeName,
-                                                                        bool ignoreCase,
-                                                                        BindingFlags bindingAttr,
-                                                                        Binder binder,
-                                                                        Object[] args,
-                                                                        CultureInfo culture,
-                                                                        Object[] activationAttributes,
-                                                                        Evidence securityAttributes)
-        {
-            PermissionSet.s_fullTrust.Assert();
-#pragma warning disable 618
-            return CreateInstanceFrom(assemblyName, typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes, securityAttributes);
-#pragma warning restore 618
-        }
-
         public static AppDomain CurrentDomain
         {
             get {
@@ -905,27 +773,22 @@ namespace System
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
 
         public void SetData (string name, object data) {
-            SetDataHelper(name, data, null);
-        }
-
-        private void SetDataHelper (string name, object data, IPermission permission)
-        {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
             // SetData should only be used to set values that don't already exist.
-            object[] currentVal;
+            object currentVal;
             lock (((ICollection)LocalStore).SyncRoot) {
                 LocalStore.TryGetValue(name, out currentVal);
             }
-            if (currentVal != null && currentVal[0] != null)
+            if (currentVal != null)
             {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_SetData_OnlyOnce"));
             }
 
             lock (((ICollection)LocalStore).SyncRoot) {
-                LocalStore[name] = new object[] {data, permission};
+                LocalStore[name] = data;
             }
         }
 
@@ -943,17 +806,13 @@ namespace System
                     return FusionStore.LoaderOptimization;
                 else 
                 {
-                    object[] data;
+                    object data;
                     lock (((ICollection)LocalStore).SyncRoot) {
                         LocalStore.TryGetValue(name, out data);
                     }
                     if (data == null)
                         return null;
-                    if (data[1] != null) {
-                        IPermission permission = (IPermission) data[1];
-                        permission.Demand();
-                    }
-                    return data[0];
+                    return data;
                 }
             }
            else {
@@ -1180,13 +1039,13 @@ namespace System
             return null;
         }
 
-        private Dictionary<String, Object[]> LocalStore
+        private Dictionary<String, Object> LocalStore
         {
             get { 
                 if (_LocalStore != null)
                     return _LocalStore;
                 else {
-                    _LocalStore = new Dictionary<String, Object[]>();
+                    _LocalStore = new Dictionary<String, Object>();
                     return _LocalStore;
                 }
             }
@@ -1289,7 +1148,6 @@ namespace System
             };  
         } // PrepareDataForSetup
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static Object Setup(Object arg)
         {
             Contract.Requires(arg != null && arg is Object[]);
@@ -1366,11 +1224,11 @@ namespace System
                         if(values == null)
                             throw new ArgumentNullException(propertyNames[i]);
 
-                        ad.SetDataHelper(propertyNames[i], NormalizeAppPaths(values), null);
+                        ad.SetData(propertyNames[i], NormalizeAppPaths(values));
                     }
                     else if(propertyNames[i]!= null)
                     {
-                        ad.SetDataHelper(propertyNames[i],propertyValues[i],null);     // just propagate
+                        ad.SetData(propertyNames[i],propertyValues[i]);     // just propagate
                     }
                 }
             }
@@ -1532,10 +1390,7 @@ namespace System
         {
             get
             {
-                PermissionSet grantSet = null;
-                GetGrantSet(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref grantSet));
-
-                return grantSet == null || grantSet.IsUnrestricted();
+                return true;
             }
         }
 
@@ -1551,14 +1406,12 @@ namespace System
 
         public Int32 Id
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]  
             get {
                 return GetId();
             }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]              
         internal extern Int32 GetId();
 
     }

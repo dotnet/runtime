@@ -16,7 +16,6 @@ namespace System.Reflection.Emit {
     
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
     
@@ -24,10 +23,7 @@ namespace System.Reflection.Emit {
     // A EventBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineEvent
     // method will return a new EventBuilder to a client.
     // 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_EventBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class EventBuilder : _EventBuilder
+    public sealed class EventBuilder
     { 
     
         // Make a private constructor so these cannot be constructed externally.
@@ -95,7 +91,6 @@ namespace System.Reflection.Emit {
     
         // Use this function if client decides to form the custom attribute blob themselves
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

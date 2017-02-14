@@ -19,7 +19,6 @@ namespace System {
     // Wrapper for unsigned 64 bit integers.
 [Serializable]
 [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct UInt64 : IComparable, IFormattable, IConvertible
         , IComparable<UInt64>, IEquatable<UInt64>
     {

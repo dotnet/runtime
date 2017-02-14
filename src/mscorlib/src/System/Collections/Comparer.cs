@@ -17,12 +17,10 @@ namespace System.Collections {
     using System;
     using System.Globalization;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Comparer : IComparer , ISerializable
+    internal sealed class Comparer : IComparer , ISerializable
     {
         private CompareInfo m_compareInfo;   
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);

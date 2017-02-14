@@ -4,7 +4,6 @@
 
 namespace Microsoft.Win32 {
     using Microsoft.Win32.SafeHandles;
-    using System.Security.Permissions;
 
     sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid {
         internal SafeLibraryHandle() : base(true) {}

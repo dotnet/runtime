@@ -1724,7 +1724,7 @@ regMaskTP Compiler::rpPredictBlkAsgRegUse(GenTreePtr   tree,
     bool        useBarriers   = false;
     GenTreeBlk* dst           = tree->gtGetOp1()->AsBlk();
     GenTreePtr  dstAddr       = dst->Addr();
-    GenTreePtr  srcAddrOrFill = tree->gtGetOp2();
+    GenTreePtr  srcAddrOrFill = tree->gtGetOp2IfPresent();
 
     size_t blkSize = dst->gtBlkSize;
 
@@ -2478,7 +2478,7 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
     if (kind & GTK_SMPOP)
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2();
+        GenTreePtr op2 = tree->gtGetOp2IfPresent();
 
         GenTreePtr opsPtr[3];
         regMaskTP  regsPtr[3];

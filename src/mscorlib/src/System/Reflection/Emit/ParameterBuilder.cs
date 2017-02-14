@@ -16,31 +16,10 @@ namespace System.Reflection.Emit {
     using System.Runtime.InteropServices;
     using System;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ParameterBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    public class ParameterBuilder : _ParameterBuilder
+    public class ParameterBuilder
     {
-        // set ParamMarshal
-        [Obsolete("An alternate API is available: Emit the MarshalAs custom attribute instead. http://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual void SetMarshal(UnmanagedMarshal unmanagedMarshal)
-        {
-            if (unmanagedMarshal == null)
-            {
-                throw new ArgumentNullException(nameof(unmanagedMarshal));
-            }
-            Contract.EndContractBlock();
-            
-            byte []        ubMarshal = unmanagedMarshal.InternalGetBytes();
-            TypeBuilder.SetFieldMarshal(
-                m_methodBuilder.GetModuleBuilder().GetNativeHandle(),
-                m_pdToken.Token, 
-                ubMarshal, 
-                ubMarshal.Length);
-        }
     
         // Set the default value of the parameter
         public virtual void SetConstant(Object defaultValue) 
@@ -54,7 +33,6 @@ namespace System.Reflection.Emit {
         
         // Use this function if client decides to form the custom attribute blob themselves
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
@@ -111,8 +89,6 @@ namespace System.Reflection.Emit {
         {
             return m_pdToken;
         } 
-
-        internal int MetadataTokenInternal { get { return m_pdToken.Token; } }
         
         public virtual String Name {
             get {return m_strParamName;}

@@ -223,14 +223,6 @@ namespace System.Runtime.CompilerServices {
             throw new InvalidOperationException();
         }
 
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        static internal bool ContainsReferences<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            throw new InvalidOperationException();
-        }
-
         static internal ref T GetArrayData<T>(T[] array)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!

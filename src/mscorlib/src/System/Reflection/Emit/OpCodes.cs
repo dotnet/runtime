@@ -13,7 +13,6 @@
 namespace System.Reflection.Emit {
 
 using System;
-using System.Security.Permissions;
 
 //
 // Internal enums for opcode values. Note that the value names are used to construct
@@ -250,7 +249,6 @@ internal enum OpCodeValues {
     // If you add more opcodes here, modify OpCode.Name to handle them correctly
 };
 
-[System.Runtime.InteropServices.ComVisible(true)]
 public class OpCodes {
 
 /// <summary>
@@ -1419,7 +1417,6 @@ public class OpCodes {
         (1 << OpCode.StackChangeShift)
     );
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public static readonly OpCode Castclass = new OpCode(OpCodeValues.Castclass,
         ((int)OperandType.InlineType) |
         ((int)FlowControl.Next << OpCode.FlowControlShift) |

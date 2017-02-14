@@ -41,7 +41,7 @@ namespace System.Globalization
 
         private static DateMapping[] InitDateMapping()
         {
-            short[] rawData = new short[] 
+            short[] rawData = new short[]
             {
                 //These data is taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
                 /*  DaysPerM     GY      GM     GD     D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12    

@@ -17,7 +17,6 @@ namespace System.Runtime.Serialization
     using System.Reflection;
 
     [AttributeUsage(AttributeTargets.Field, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OptionalFieldAttribute : Attribute 
     {
         int versionAdded = 1;
@@ -38,25 +37,21 @@ namespace System.Runtime.Serialization
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OnSerializingAttribute : Attribute 
     {
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OnSerializedAttribute : Attribute 
     {
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OnDeserializingAttribute : Attribute 
     {
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OnDeserializedAttribute : Attribute 
     {
     }

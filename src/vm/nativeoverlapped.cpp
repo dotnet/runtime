@@ -61,13 +61,6 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
         // no user delegate to callback
         _ASSERTE((overlapped->m_iocbHelper == NULL) || !"This is benign, but should be optimized");
 
-#ifndef FEATURE_CORECLR
-        if (g_pAsyncFileStream_AsyncResultClass)
-        {
-            SetAsyncResultProperties(overlapped, *errorCode, *numBytes);
-        }
-        else
-#endif // !FEATURE_CORECLR
         {
             //We're not initialized yet, go back to the Vm, and process the packet there.
             ThreadpoolMgr::StoreOverlappedInfoInThread(pThread, *errorCode, *numBytes, key, *lpOverlapped);
