@@ -488,6 +488,67 @@ sgen_card_table_dump_obj_card (GCObject *object, size_t size, void *dummy)
 }
 #endif
 
+/*
+ * Cardtable scanning
+ */
+
+#define MWORD_MASK (sizeof (mword) - 1)
+
+static inline int
+find_card_offset (mword card)
+{
+/*XXX Use assembly as this generates some pretty bad code */
+#if defined(__i386__) && defined(__GNUC__)
+	return  (__builtin_ffs (card) - 1) / 8;
+#elif defined(__x86_64__) && defined(__GNUC__)
+	return (__builtin_ffsll (card) - 1) / 8;
+#elif defined(__s390x__)
+	return (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;
+#else
+	int i;
+	guint8 *ptr = (guint8 *) &card;
+	for (i = 0; i < sizeof (mword); ++i) {
+		if (ptr[i])
+			return i;
+	}
+	return 0;
+#endif
+}
+
+guint8*
+sgen_find_next_card (guint8 *card_data, guint8 *end)
+{
+	mword *cards, *cards_end;
+	mword card;
+
+	while ((((mword)card_data) & MWORD_MASK) && card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	if (card_data == end)
+		return end;
+
+	cards = (mword*)card_data;
+	cards_end = (mword*)((mword)end & ~MWORD_MASK);
+	while (cards < cards_end) {
+		card = *cards;
+		if (card)
+			return (guint8*)cards + find_card_offset (card);
+		++cards;
+	}
+
+	card_data = (guint8*)cards_end;
+	while (card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	return end;
+}
+
 void
 sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx)
 {

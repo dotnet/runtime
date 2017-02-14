@@ -9,6 +9,7 @@
 
 /*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
 mword sgen_card_table_number_of_cards_in_range (mword address, mword size);
+guint8* sgen_find_next_card (guint8 *card_data, guint8 *end);
 
 void sgen_card_table_reset_region (mword start, mword end);
 void* sgen_card_table_align_pointer (void *ptr);
