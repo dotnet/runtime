@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <AuthenticodeSig Condition="'$(AuthenticodeSig)' == ''">Microsoft</AuthenticodeSig>
+    <StrongNameSig Condition="'$(StrongNameSig)' == '' and '$(SignType)' == 'real' and '$(UseOpenKey)' != 'true'">StrongName</StrongNameSig>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="OpenSourceSign" />
+  <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="WriteSigningRequired" />
+  
+  <PropertyGroup Condition="'$(SkipSigning)'!='true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyOriginatorKeyFile)' == ''">$(ToolsDir)MSFT.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(UseECMAKey)' == 'true'">$(ToolsDir)ECMA.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile Condition="'$(UseOpenKey)' == 'true'">$(ToolsDir)Open.snk</AssemblyOriginatorKeyFile>
+
+    <!-- Don't sign test assemblies with the Microsoft Key, as this affects APIs checking if the test assembly is an MS Key -->
+    <AssemblyOriginatorKeyFile Condition="'$(IsTestProject)' == 'true'">$(ToolsDir)Test.snk</AssemblyOriginatorKeyFile>
+
+    <DelaySign>true</DelaySign>
+    <DelaySign Condition="'$(UseOpenKey)' == 'true'">false</DelaySign>
+    <!--
+      We enable the signing for the test projects only on Windows because Roslyn not supporting full signing on non-Windows platforms.
+      Issue: https://github.com/dotnet/roslyn/issues/8210
+    -->
+    <DelaySign Condition="'$(OSEnvironment)' == 'Windows_NT' And '$(IsTestProject)' == 'true'">false</DelaySign>
+
+    <SignType Condition="'$(SignType)'=='' And '$(UseOpenKey)' == 'true'">real</SignType>
+    <SignType Condition="'$(SignType)'=='' And '$(IsTestProject)' == 'true'">real</SignType>
+
+    <DefineConstants>$(DefineConstants);SIGNED</DefineConstants>
+    <!-- applicable values for SignType are oss, test or real -->
+    <SignType Condition="'$(SignType)' == ''">oss</SignType>
+  </PropertyGroup>
+
+  <!-- stub for signing.  for official builds this is replaced with the real one -->
+  <Target Name="SignFiles" AfterTargets="AfterBuild" />
+
+  <!-- writes a signing marker file containing the required signatures -->
+  <Target Name="WriteSigningRequired"
+          AfterTargets="AfterBuild"
+          Condition="'$(SkipSigning)' != 'true' and '$(IsTestProject)' != 'true' and '$(SignType)' != 'oss'"
+          Inputs="$(TargetPath)"
+          Outputs="$(TargetPath).requires_signing">
+    <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
+                          StrongNameSig="$(StrongNameSig)"
+                          MarkerFile="$(TargetPath).requires_signing" />
+    <ItemGroup>
+      <FileWrites Include="%(IntermediateAssembly.Identity).requires_signing" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    NOTE: This mechanism for wiring in the OpenSourceSign target can't be changed to any of the following:
+
+        * AfterTargets=Compile -> hit by intellisense builds while @(IntermediateAssembly) doesn't exist yet.
+        * AfterTargets=PrepareForRun -> hit after @(IntermediateAssembly) has already been copied to output.
+        * BeforeTargets=CopyFilesToOutputDirectory -> does not work on Mono.
+  -->
+  <PropertyGroup>
+    <PrepareForRunDependsOn>OpenSourceSign;$(PrepareForRunDependsOn)</PrepareForRunDependsOn>
+  </PropertyGroup>
+
+  <Target Name="OpenSourceSign"
+          Condition="'$(DelaySign)' == 'true' and '@(IntermediateAssembly)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' == 'oss'"
+          Inputs="@(IntermediateAssembly)"
+          Outputs="%(IntermediateAssembly.Identity).oss_signed"
+          >
+    <OpenSourceSign AssemblyPath="%(IntermediateAssembly.Identity)" />
+    <Touch Files="%(IntermediateAssembly.Identity).oss_signed" AlwaysCreate="true" />
+    <ItemGroup>
+      <FileWrites Include="%(IntermediateAssembly.Identity).oss_signed" />
+    </ItemGroup>
+  </Target>
+
+</Project>
