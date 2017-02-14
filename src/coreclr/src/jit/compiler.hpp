@@ -4450,7 +4450,7 @@ inline void Compiler::EndPhase(Phases phase)
 #if defined(FEATURE_JIT_METHOD_PERF)
     if (pCompJitTimer != nullptr)
     {
-        pCompJitTimer->EndPhase(phase);
+        pCompJitTimer->EndPhase(this, phase);
     }
 #endif
 #if DUMP_FLOWGRAPHS
