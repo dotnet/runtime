@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // =============================================================================================
-// Code for tracking method inlinings in NGen images.
+// Code for tracking method inlinings in NGen and R2R images.
 // The only information stored is "who" got inlined "where", no offsets or inlining depth tracking. 
 // (No good for debugger yet.)
 // This information is later exposed to profilers and can be useful for ReJIT.
@@ -11,6 +11,8 @@
 #include "common.h"
 #include "inlinetracking.h"
 #include "ceeload.h"
+
+#ifndef DACCESS_COMPILE
 
 bool MethodInModule::operator <(const MethodInModule& other) const
 {
@@ -123,9 +125,86 @@ InlineTrackingEntry & InlineTrackingEntry::operator = (const InlineTrackingEntry
     return *this;
 }
 
+void InlineTrackingEntry::Add(PTR_MethodDesc inliner)
+{
+    STANDARD_VM_CONTRACT;
 
-#ifndef DACCESS_COMPILE
-COUNT_T PersistentInlineTrackingMap::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
+    MethodInModule method(inliner->GetModule(), inliner->GetMemberDef());
+
+    // Going through last 10 inliners to check if a given inliner has recently been registered.
+    // It allows to filter out most duplicates without having to scan through hundreds of inliners 
+    // for methods like Object.ctor or Monitor.Enter. 
+    // We are OK to keep occasional duplicates in m_inliners, we'll get rid of them 
+    // in SortAndDeduplicate() anyway.
+    int count = static_cast<int>(m_inliners.GetCount());
+    int start = max(0, count - 10);
+    for (int i = count - 1; i >= start; i--)
+    {
+        if (m_inliners[i] == method)
+            return;
+    }
+
+    //look like we see this inliner for the first time, add it to the collection
+    m_inliners.Append(method);
+}
+
+InlineTrackingMap::InlineTrackingMap()
+    : m_mapCrst(CrstInlineTrackingMap)
+{
+    STANDARD_VM_CONTRACT;
+}
+
+void InlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(inliner != NULL);
+    _ASSERTE(inlinee != NULL);
+
+    MethodInModule inlineeMnM(inlinee->GetModule(), inlinee->GetMemberDef());
+
+    if (RidFromToken(inlineeMnM.m_methodDef) == 0 || RidFromToken(inliner->GetMemberDef()) == 0)
+    {
+        // Sometimes we do see methods that don't have valid tokens (stubs etc)
+        // we just ignore them.
+        return;
+    }
+
+    CrstHolder lock(&m_mapCrst);
+    InlineTrackingEntry *existingEntry = const_cast<InlineTrackingEntry *>(LookupPtr(inlineeMnM));
+    if (existingEntry)
+    {
+        // We saw this inlinee before, just add one more inliner
+        existingEntry->Add(inliner);
+    }
+    else
+    {
+        // We haven't seen this inlinee before, create a new record in the hashtable
+        // and add a first inliner to it.
+        InlineTrackingEntry newEntry;
+        newEntry.m_inlinee = inlineeMnM;
+        newEntry.Add(inliner);
+        Add(newEntry);
+    }
+}
+
+#endif //!DACCESS_COMPILE
+
+void ZapInlineeRecord::InitForNGen(RID rid, LPCUTF8 simpleName)
+{
+    LIMITED_METHOD_CONTRACT;
+    //XOR of up to first 24 bytes in module name
+    DWORD hash = 0;
+    for (int i = 0; simpleName[i] && i < 24; i++)
+        hash ^= (BYTE)simpleName[i];
+
+    // This key contains 24 bits of RID and 8 bits from module name.
+    // Since RID can't be longer than 24 bits, we can't have method RID collistions,
+    // that's why PersistentInlineTrackingMap::GetInliners only deals with module collisions.
+    m_key = (hash << 24) | rid;
+}
+
+
+COUNT_T PersistentInlineTrackingMapNGen::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
 {
     CONTRACTL
     {
@@ -149,10 +228,11 @@ COUNT_T PersistentInlineTrackingMap::GetInliners(PTR_Module inlineeOwnerMod, mdM
     }
 
     // Binary search to find all records matching (inlineeTkn/inlineeOwnerMod)
-    InlineeRecord probeRecord(RidFromToken(inlineeTkn), inlineeOwnerMod->GetSimpleName());
-    InlineeRecord *begin = m_inlineeIndex;
-    InlineeRecord *end = m_inlineeIndex + m_inlineeIndexSize;
-    InlineeRecord *foundRecord = util::lower_bound(begin, end, probeRecord);
+    ZapInlineeRecord probeRecord;
+    probeRecord.InitForNGen(RidFromToken(inlineeTkn), inlineeOwnerMod->GetSimpleName());
+    ZapInlineeRecord *begin = m_inlineeIndex;
+    ZapInlineeRecord *end = m_inlineeIndex + m_inlineeIndexSize;
+    ZapInlineeRecord *foundRecord = util::lower_bound(begin, end, probeRecord);
     DWORD result = 0;
     DWORD outputIndex = 0;
 
@@ -204,7 +284,9 @@ COUNT_T PersistentInlineTrackingMap::GetInliners(PTR_Module inlineeOwnerMod, mdM
     return result;
 }
 
-Module *PersistentInlineTrackingMap::GetModuleByIndex(DWORD index)
+
+
+Module *PersistentInlineTrackingMapNGen::GetModuleByIndex(DWORD index)
 {
     CONTRACTL
     {
@@ -222,106 +304,42 @@ Module *PersistentInlineTrackingMap::GetModuleByIndex(DWORD index)
     return m_module->GetModuleFromIndexIfLoaded(index);
 }
 
-PersistentInlineTrackingMap::InlineeRecord::InlineeRecord(RID rid, LPCUTF8 simpleName)
-{
-    LIMITED_METHOD_CONTRACT;
-    //XOR of up to first 24 bytes in module name
-    DWORD hash = 0;
-    for (int i = 0; simpleName[i] && i < 24; i++)
-        hash ^= (BYTE)simpleName[i];
 
-    // This key contains 24 bits of RID and 8 bits from module name.
-    // Since RID can't be longer than 24 bits, we can't have method RID collistions,
-    // that's why PersistentInlineTrackingMap::GetInliners only deals with module collisions.
-    m_key = (hash << 24) | rid;
-}
 
-InlineTrackingMap::InlineTrackingMap()
-    : m_mapCrst(CrstInlineTrackingMap)
-{
-    STANDARD_VM_CONTRACT;
-}
-
-void InlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(inliner != NULL);
-    _ASSERTE(inlinee != NULL);
-
-    MethodInModule inlineeMnM(inlinee->GetModule(), inlinee->GetMemberDef());
-
-    if (RidFromToken(inlineeMnM.m_methodDef) == 0 || RidFromToken(inliner->GetMemberDef()) == 0)
-    {
-        // Sometimes we do see methods that don't have valid tokens (stubs etc)
-        // we just ignore them.
-        return;
-    }
-
-    CrstHolder lock(&m_mapCrst);
-    InlineTrackingEntry *existingEntry = const_cast<InlineTrackingEntry *>(LookupPtr(inlineeMnM));
-    if (existingEntry)
-    {
-        // We saw this inlinee before, just add one more inliner
-        existingEntry->Add(inliner);
-    }
-    else
-    {
-        // We haven't seen this inlinee before, create a new record in the hashtable
-        // and add a first inliner to it.
-        InlineTrackingEntry newEntry;
-        newEntry.m_inlinee = inlineeMnM;
-        newEntry.Add(inliner);
-        Add(newEntry);
-    }
-}
-
-void InlineTrackingEntry::Add(PTR_MethodDesc inliner)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodInModule method(inliner->GetModule(), inliner->GetMemberDef());
-
-    // Going through last 10 inliners to check if a given inliner has recently been registered.
-    // It allows to filter out most duplicates without having to scan through hundreds of inliners 
-    // for methods like Object.ctor or Monitor.Enter. 
-    // We are OK to keep occasional duplicates in m_inliners, we'll get rid of them 
-    // in SortAndDeduplicate() anyway.
-    int count = static_cast<int>(m_inliners.GetCount());
-    int start = max(0, count - 10);
-    for (int i = count - 1; i >= start; i--)
-    {
-        if (m_inliners[i] == method)
-            return;
-    }
-
-    //look like we see this inliner for the first time, add it to the collection
-    m_inliners.Append(method);
-}
-
+#ifndef DACCESS_COMPILE
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
 
-void PersistentInlineTrackingMap::ProcessInlineTrackingEntry(DataImage *image, SBuffer *inlinersBuffer, SArray<InlineeRecord> *inlineeIndex, InlineTrackingEntry *entry)
+// This is a shared serialization routine used for both NGEN and R2R formats. If image != NULL the NGEN format is generated, otherwise the R2R format
+void SerializeInlineTrackingEntry(DataImage* image, SBuffer *inlinersBuffer, SArray<ZapInlineeRecord> *inlineeIndex, InlineTrackingEntry *entry)
 {
     STANDARD_VM_CONTRACT;
     // This call removes duplicates from inliners and makes sure they are sorted by module
     entry->SortAndDeduplicate();
     MethodInModule inlinee = entry->m_inlinee;
-    DWORD inlineeModuleZapIndex = image->GetModuleImportIndex(inlinee.m_module);
+    DWORD inlineeModuleZapIndex = 0;
+    if (image != NULL)
+    {
+        inlineeModuleZapIndex = image->GetModuleImportIndex(inlinee.m_module);
+    }
     InlineSArray<MethodInModule, 3> &inliners = entry->m_inliners;
-    COUNT_T tatalInlinersCount = inliners.GetCount();
-    _ASSERTE(tatalInlinersCount > 0);
+    COUNT_T totalInlinersCount = inliners.GetCount();
+    _ASSERTE(totalInlinersCount > 0);
 
     COUNT_T sameModuleCount;
     // Going through all inliners and grouping them by their module, for each module we'll create
-    // InlineeRecord and encode inliners as bytes in inlinersBuffer.
-    for (COUNT_T thisModuleBegin = 0; thisModuleBegin < tatalInlinersCount; thisModuleBegin += sameModuleCount)
+    // an ZapInlineeRecord and encode inliners as bytes in inlinersBuffer.
+    for (COUNT_T thisModuleBegin = 0; thisModuleBegin < totalInlinersCount; thisModuleBegin += sameModuleCount)
     {
         Module *lastInlinerModule = inliners[thisModuleBegin].m_module;
-        DWORD lastInlinerModuleZapIndex = image->GetModuleImportIndex(lastInlinerModule);
-        
+        DWORD lastInlinerModuleZapIndex = 0;
+        if (image != NULL)
+        {
+            lastInlinerModuleZapIndex = image->GetModuleImportIndex(lastInlinerModule);
+        }
+
         // Counting how many inliners belong to this module
         sameModuleCount = 1;
-        while (thisModuleBegin + sameModuleCount < tatalInlinersCount &&
+        while (thisModuleBegin + sameModuleCount < totalInlinersCount &&
             inliners[thisModuleBegin + sameModuleCount].m_module == lastInlinerModule)
         {
             sameModuleCount++;
@@ -329,8 +347,11 @@ void PersistentInlineTrackingMap::ProcessInlineTrackingEntry(DataImage *image, S
 
         // Saving module indexes and number of inliners
         NibbleWriter inlinersStream;
-        inlinersStream.WriteEncodedU32(inlineeModuleZapIndex);
-        inlinersStream.WriteEncodedU32(lastInlinerModuleZapIndex);
+        if (image != NULL)
+        {
+            inlinersStream.WriteEncodedU32(inlineeModuleZapIndex);
+            inlinersStream.WriteEncodedU32(lastInlinerModuleZapIndex);
+        }
         inlinersStream.WriteEncodedU32(sameModuleCount);
 
         // Saving inliners RIDs, each new RID is represented as an adjustment (diff) to the previous one
@@ -343,15 +364,22 @@ void PersistentInlineTrackingMap::ProcessInlineTrackingEntry(DataImage *image, S
             prevMethodRid = methodRid;
         }
         inlinersStream.Flush();
-
+        
         // Copy output of NibbleWriter into a big buffer (inlinersBuffer) for inliners from the same module
         // and create an InlineeRecord with correct offset
-        InlineeRecord record(RidFromToken(inlinee.m_methodDef), inlinee.m_module->GetSimpleName());
         DWORD inlinersStreamSize;
         const BYTE *inlinersStreamPtr = (const BYTE *)inlinersStream.GetBlob(&inlinersStreamSize);
+        ZapInlineeRecord record;
+        if (image != NULL)
+        {
+            record.InitForNGen(RidFromToken(inlinee.m_methodDef), inlinee.m_module->GetSimpleName());
+        }
+        else
+        {
+            record.InitForR2R(RidFromToken(inlinee.m_methodDef));
+        }
         record.m_offset = inlinersBuffer->GetSize();
         inlinersBuffer->Insert(inlinersBuffer->End(), SBuffer(SBuffer::Immutable, inlinersStreamPtr, inlinersStreamSize));
-
         inlineeIndex->Append(record);
     }
 }
@@ -361,20 +389,16 @@ bool compare_entry(const InlineTrackingEntry* first, const InlineTrackingEntry* 
     return first->m_inlinee < second->m_inlinee;
 }
 
-void PersistentInlineTrackingMap::Save(DataImage *image, InlineTrackingMap* runtimeMap)
+// This is a shared serialization routine used for both NGEN and R2R formats. If image != NULL the NGEN format is generated, otherwise the R2R format
+void SerializeTrackingMapBuffers(ZapHeap* heap, DataImage *image, SBuffer *inlinersBuffer, SArray<ZapInlineeRecord> *inlineeIndex, InlineTrackingMap* runtimeMap)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(image != NULL);
     _ASSERTE(runtimeMap != NULL);
-
-    SArray<InlineeRecord> inlineeIndex;
-    SBuffer inlinersBuffer;
 
     // Sort records from runtimeMap, because we need to make sure 
     // we save everything in deterministic order. Hashtable iteration is not deterministic.
     COUNT_T runtimeMapCount = runtimeMap->GetCount();
-    InlineTrackingEntry **inlinees = new InlineTrackingEntry *[runtimeMapCount];
-    NewArrayHolder<InlineTrackingEntry *>inlineesHolder(inlinees);
+    InlineTrackingEntry **inlinees = new (heap) InlineTrackingEntry *[runtimeMapCount];
     int index = 0;
     for (auto iter = runtimeMap->Begin(), end = runtimeMap->End(); iter != end; ++iter)
     {
@@ -387,8 +411,22 @@ void PersistentInlineTrackingMap::Save(DataImage *image, InlineTrackingMap* runt
     // and write corresponding records into inlineeIndex and inlinersBuffer
     for (COUNT_T i = 0; i < runtimeMapCount; i++)
     {
-        ProcessInlineTrackingEntry(image, &inlinersBuffer, &inlineeIndex, inlinees[i]);
+        SerializeInlineTrackingEntry(image, inlinersBuffer, inlineeIndex, inlinees[i]);
     }
+}
+
+
+
+void PersistentInlineTrackingMapNGen::Save(DataImage *image, InlineTrackingMap* runtimeMap)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(image != NULL);
+    _ASSERTE(runtimeMap != NULL);
+
+    SArray<ZapInlineeRecord> inlineeIndex;
+    SBuffer inlinersBuffer;
+
+    SerializeTrackingMapBuffers(image->GetHeap(), image, &inlinersBuffer, &inlineeIndex, runtimeMap);
 
     m_inlineeIndexSize = inlineeIndex.GetCount();
     m_inlinersBufferSize = inlinersBuffer.GetSize();
@@ -398,7 +436,7 @@ void PersistentInlineTrackingMap::Save(DataImage *image, InlineTrackingMap* runt
     {
         // Copy everything to the class fields, we didn't use the class fields for addition
         // because we want to make sure we don't waste memory for buffer's amortized growth
-        m_inlineeIndex = new (image->GetHeap()) InlineeRecord[m_inlineeIndexSize];
+        m_inlineeIndex = new (image->GetHeap()) ZapInlineeRecord[m_inlineeIndexSize];
         inlineeIndex.Copy(m_inlineeIndex, inlineeIndex.Begin(), m_inlineeIndexSize);
 
         m_inlinersBuffer = new (image->GetHeap()) BYTE[m_inlinersBufferSize];
@@ -418,12 +456,146 @@ void PersistentInlineTrackingMap::Save(DataImage *image, InlineTrackingMap* runt
         m_inlineeIndexSize * sizeof(m_inlineeIndex[0]), m_inlinersBufferSize));
 }
 
-void PersistentInlineTrackingMap::Fixup(DataImage *image)
+void PersistentInlineTrackingMapNGen::Fixup(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
-    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMap, m_module));
-    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMap, m_inlineeIndex));
-    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMap, m_inlinersBuffer));
+    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMapNGen, m_module));
+    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMapNGen, m_inlineeIndex));
+    image->FixupPointerField(this, offsetof(PersistentInlineTrackingMapNGen, m_inlinersBuffer));
 }
+
 #endif //FEATURE_NATIVE_IMAGE_GENERATION
 #endif //!DACCESS_COMPILE
+
+#ifdef FEATURE_READYTORUN
+
+struct InliningHeader
+{
+    int SizeOfInlineeIndex;
+};
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
+
+
+
+void PersistentInlineTrackingMapR2R::Save(ZapHeap* pHeap, SBuffer* pSaveTarget, InlineTrackingMap* runtimeMap)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pSaveTarget != NULL);
+    _ASSERTE(runtimeMap != NULL);
+
+    SArray<ZapInlineeRecord> inlineeIndex;
+    SBuffer inlinersBuffer;
+
+    SerializeTrackingMapBuffers(pHeap, NULL, &inlinersBuffer, &inlineeIndex, runtimeMap);
+
+    InliningHeader header;
+    header.SizeOfInlineeIndex = inlineeIndex.GetCount() * sizeof(ZapInlineeRecord);
+    
+    pSaveTarget->Insert(pSaveTarget->End(), SBuffer(SBuffer::Immutable, (const BYTE*) &header, sizeof(header)));
+    DWORD unused = 0;
+    pSaveTarget->Insert(pSaveTarget->End(), SBuffer(SBuffer::Immutable, (const BYTE*) inlineeIndex.GetElements(), header.SizeOfInlineeIndex));
+    pSaveTarget->Insert(pSaveTarget->End(), SBuffer(SBuffer::Immutable, (const BYTE*) inlinersBuffer, inlinersBuffer.GetSize()));
+
+    LOG((LF_ZAP, LL_INFO100000,
+        "PersistentInlineTrackingMap saved. InlineeIndexSize: %d bytes, InlinersBufferSize: %d bytes\n",
+        header.SizeOfInlineeIndex, inlinersBuffer.GetSize()));
+}
+
+#endif //FEATURE_NATIVE_IMAGE_GENERATION
+
+BOOL PersistentInlineTrackingMapR2R::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, 
+	                                         AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap)
+{
+    InliningHeader* pHeader = (InliningHeader*)pBuffer;
+    if (pHeader->SizeOfInlineeIndex > (int)(cbBuffer - sizeof(InliningHeader)))
+    {
+		//invalid serialized data, the index can't be larger the entire block
+		_ASSERTE(!"R2R image is invalid or there is a bug in the R2R parser");
+        return FALSE;
+    }
+
+	//NOTE: Error checking on the format is very limited at this point.
+	//We trust the image format is valid and this initial check is a cheap
+	//verification that may help catch simple bugs. It does not secure against
+	//a deliberately maliciously formed binary.
+
+	LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
+	void * pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(PersistentInlineTrackingMapR2R)));
+	PersistentInlineTrackingMapR2R* pMap = new (pMemory) PersistentInlineTrackingMapR2R();
+
+    pMap->m_module = pModule;
+	pMap->m_inlineeIndex = (PTR_ZapInlineeRecord)(pHeader + 1);
+	pMap->m_inlineeIndexSize = pHeader->SizeOfInlineeIndex / sizeof(ZapInlineeRecord);
+	pMap->m_inlinersBuffer = ((PTR_BYTE)(pHeader+1)) + pHeader->SizeOfInlineeIndex;
+	pMap->m_inlinersBufferSize = cbBuffer - sizeof(InliningHeader) - pMap->m_inlineeIndexSize;
+	*ppLoadedMap = pMap;
+    return TRUE;
+}
+
+#endif //!DACCESS_COMPILE
+
+COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(inlineeOwnerMod);
+    _ASSERTE(inliners);
+
+    if (incompleteData)
+    {
+        *incompleteData = FALSE;
+    }
+    if (m_inlineeIndex == NULL || m_inlinersBuffer == NULL)
+    {
+        //No inlines saved in this image.
+        return 0;
+    }
+    if(inlineeOwnerMod != m_module) 
+    {
+        // no cross module inlining (yet?)
+        return 0;
+    }
+
+    // Binary search to find all records matching (inlineeTkn)
+    ZapInlineeRecord probeRecord;
+    probeRecord.InitForR2R(RidFromToken(inlineeTkn));
+    ZapInlineeRecord *begin = m_inlineeIndex;
+    ZapInlineeRecord *end = m_inlineeIndex + m_inlineeIndexSize;
+    ZapInlineeRecord *foundRecord = util::lower_bound(begin, end, probeRecord);
+    DWORD result = 0;
+    DWORD outputIndex = 0;
+
+    // Go through all matching records
+    for (; foundRecord < end && *foundRecord == probeRecord; foundRecord++)
+    {
+        DWORD offset = foundRecord->m_offset;
+        NibbleReader stream(m_inlinersBuffer + offset, m_inlinersBufferSize - offset);
+        Module *inlinerModule = m_module;
+
+        DWORD inlinersCount = stream.ReadEncodedU32();
+        _ASSERTE(inlinersCount > 0);
+
+        RID inlinerRid = 0;
+        // Reading inliner RIDs one by one, each RID is represented as an adjustment (diff) to the previous one.
+        // Adding inliners module and coping to the output buffer 
+        for (DWORD i = 0; i < inlinersCount && outputIndex < inlinersSize; i++)
+        {
+            inlinerRid += stream.ReadEncodedU32();
+            mdMethodDef inlinerTkn = TokenFromRid(inlinerRid, mdtMethodDef);
+            inliners[outputIndex++] = MethodInModule(inlinerModule, inlinerTkn);
+        }
+        result += inlinersCount;
+    }
+
+    return result;
+}
+
+#endif //FEATURE_READYTORUN

@@ -16,7 +16,8 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 #define READYTORUN_MAJOR_VERSION 0x0002
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
+// R2R Version 2.1 adds the READYTORUN_SECTION_INLINING_INFO section
 
 struct READYTORUN_HEADER
 {
@@ -57,6 +58,13 @@ enum ReadyToRunSectionType
     // 107 used by an older format of READYTORUN_SECTION_AVAILABLE_TYPES
     READYTORUN_SECTION_AVAILABLE_TYPES              = 108,
     READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS  = 109,
+    READYTORUN_SECTION_INLINING_INFO                = 110  // Added in V2.1
+
+	// If you add a new section consider whether it is a breaking or non-breaking change.
+	// Usually it is non-breaking, but if it is preferable to have older runtimes fail
+	// to load the image vs. ignoring the new section it could be marked breaking.
+	// Increment the READYTORUN_MINOR_VERSION (non-breaking) or READYTORUN_MAJOR_VERSION
+	// (breaking) as appropriate.
 };
 
 //

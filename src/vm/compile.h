@@ -654,6 +654,8 @@ public:
 
     ULONG Release();
 
+    void GetSerializedInlineTrackingMap(SBuffer* pBuffer);
+
     void Error(mdToken token, Exception * pException);
 };
 
