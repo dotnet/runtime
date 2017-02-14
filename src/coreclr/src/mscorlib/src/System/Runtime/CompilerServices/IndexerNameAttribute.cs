@@ -8,7 +8,6 @@ namespace System.Runtime.CompilerServices
 
 [Serializable]
 [AttributeUsage(AttributeTargets.Property, Inherited = true)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class IndexerNameAttribute: Attribute
     {
         public IndexerNameAttribute(String indexerName)

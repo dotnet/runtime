@@ -181,7 +181,7 @@ public:
         return phdrMDesc;
     }
 #if defined(FEATURE_GDBJIT)
-    PTR_BYTE                GetCalledMethods()
+    VOID*                GetCalledMethods()
     {
         SUPPORTS_DAC;
         return pCalledMethods;
@@ -1479,6 +1479,16 @@ private:
         static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == (PCODE)-1; }
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
+
+    static unsigned m_normal_JumpStubLookup;
+    static unsigned m_normal_JumpStubUnique;
+    static unsigned m_normal_JumpStubBlockAllocCount;
+    static unsigned m_normal_JumpStubBlockFullCount;
+
+    static unsigned m_LCG_JumpStubLookup;
+    static unsigned m_LCG_JumpStubUnique;
+    static unsigned m_LCG_JumpStubBlockAllocCount;
+    static unsigned m_LCG_JumpStubBlockFullCount;
 
     struct JumpStubCache
     {

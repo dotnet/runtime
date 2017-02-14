@@ -194,7 +194,7 @@ namespace System.Globalization
             // Get the level 2 WORD offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
             // Note that & has the lower precedence than addition, so don't forget the parathesis.
             index = s_pNumericLevel1Index[index + ((ch >> 4) & 0x000f)];
-            
+
             fixed (ushort* pUshortPtr = &(s_pNumericLevel1Index[index]))
             {
                 byte* pBytePtr = (byte*)pUshortPtr;
@@ -238,46 +238,46 @@ namespace System.Globalization
             return (InternalGetNumericValue(InternalConvertToUtf32(s, index)));
         }
 
-        public static int GetDecimalDigitValue(char ch) 
+        public static int GetDecimalDigitValue(char ch)
         {
-            return (sbyte) (InternalGetDigitValues(ch) >> 8);
+            return (sbyte)(InternalGetDigitValues(ch) >> 8);
         }
 
-        public static int GetDecimalDigitValue(String s, int index) 
+        public static int GetDecimalDigitValue(String s, int index)
         {
-            if (s == null) 
+            if (s == null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            
-            if (index < 0 || index >= s.Length) 
+
+            if (index < 0 || index >= s.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
-            return (sbyte) (InternalGetDigitValues(InternalConvertToUtf32(s, index)) >> 8);
+            return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) >> 8);
         }
-        
+
         public static int GetDigitValue(char ch)
         {
-            return (sbyte) (InternalGetDigitValues(ch) & 0x00FF);
+            return (sbyte)(InternalGetDigitValues(ch) & 0x00FF);
         }
 
-        public static int GetDigitValue(String s, int index) 
+        public static int GetDigitValue(String s, int index)
         {
-            if (s == null) 
+            if (s == null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
-            
-            if (index < 0 || index >= s.Length) 
+
+            if (index < 0 || index >= s.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
-            
+
             Contract.EndContractBlock();
-            return (sbyte) (InternalGetDigitValues(InternalConvertToUtf32(s, index)) & 0x00FF);
+            return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) & 0x00FF);
         }
 
         public static UnicodeCategory GetUnicodeCategory(char ch)

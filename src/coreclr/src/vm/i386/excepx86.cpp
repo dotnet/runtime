@@ -28,12 +28,10 @@
 #include "dllimportcallback.h"
 #include "threads.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
-#include "securityprincipal.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -1096,7 +1094,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_CORECLR
         // Check if we are dealing with AV or not and if we are,
         // ensure that this is a real AV and not managed AV exception
         BOOL fIsThrownExceptionAV = FALSE;
@@ -1125,7 +1122,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_SECURITY);
             }
         }
-#endif // FEATURE_CORECLR
 
         // If we're out of memory, then we figure there's probably not memory to maintain a stack trace, so we skip it.
         // If we've got a stack overflow, then we figure the stack will be so huge as to make tracking the stack trace
@@ -2434,13 +2430,11 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
                     currentSP = (SIZE_T) ((void*) pFrameStub);
                     currentIP = 0; // no IP.
                     EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, (SIZE_T)currentIP, (SIZE_T)currentSP);
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Deliver the FirstChanceNotification after the debugger, if not already delivered.
                     if (!pExInfo->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
             }
         }
@@ -2489,14 +2483,12 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
         // Attempt to deliver the first chance notification to the AD only *AFTER* the debugger
         // has done that, provided we have not already done that.
         if (!pExInfo->DeliveredFirstChanceNotification())
         {
             ExceptionNotifications::DeliverFirstChanceNotification();
         }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
     }
     IJitManager* pJitManager = pCf->GetJitManager();
     _ASSERTE(pJitManager);

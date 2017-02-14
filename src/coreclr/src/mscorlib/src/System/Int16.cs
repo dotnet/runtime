@@ -19,7 +19,6 @@ namespace System {
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
 
-[System.Runtime.InteropServices.ComVisible(true)]
 [Serializable]
 [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     public struct Int16 : IComparable, IFormattable, IConvertible

@@ -103,7 +103,7 @@ else (WIN32)
       # Ensure that objcopy is present
       if (DEFINED ENV{CROSSCOMPILE} AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-          find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
+          find_program(OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
           find_program(OBJCOPY objcopy)
         else()
@@ -544,9 +544,9 @@ include(pgosupport.cmake)
 #     - project which require platform header not clr's
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_PLATFORM_UNIX AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(src/corefx)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/ToolBox/SOS/lldbplugin)

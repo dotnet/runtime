@@ -15,8 +15,7 @@ namespace System
     using System.Security;
     using System.Runtime.InteropServices;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class AppDomainManager : MarshalByRefObject
+    internal class AppDomainManager : MarshalByRefObject
     {
         public AppDomainManager () {}
 

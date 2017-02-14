@@ -164,26 +164,6 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Append the given string.
-        /// </summary>
-        /// <param name="value">The string to append.</param>
-        /// <param name="startIndex">The index in the input string to start appending from.</param>
-        /// <param name="count">The count of characters to copy from the input string, or -1 for all remaining.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown if <paramref name="startIndex"/> or <paramref name="count"/> are outside the range
-        /// of <paramref name="value"/> characters.
-        /// </exception>
-        public void Append(string value, int startIndex = 0, int count = -1)
-        {
-            CopyFrom(
-                bufferIndex: _length,
-                source: value,
-                sourceIndex: startIndex,
-                count: count);
-        }
-
-        /// <summary>
         /// Append the given buffer.
         /// </summary>
         /// <param name="value">The buffer to append.</param>

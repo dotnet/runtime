@@ -13,14 +13,12 @@
 namespace System {
     using System.Runtime.Serialization;
     using System.Globalization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
 
 
-    [ComVisible(true)]
     [Serializable]
-    public sealed class OperatingSystem : ICloneable , ISerializable
+    internal sealed class OperatingSystem : ICloneable , ISerializable
     {
         private Version _version;
         private PlatformID _platform;
@@ -29,9 +27,6 @@ namespace System {
 
         private OperatingSystem()
         {
-        }
-
-        public OperatingSystem(PlatformID platform, Version version) : this(platform, version, null) {
         }
     
         internal OperatingSystem(PlatformID platform, Version version, string servicePack) {
@@ -81,20 +76,6 @@ namespace System {
             info.AddValue("_platform", _platform);
             info.AddValue("_servicePack", _servicePack);
         }        
-
-        public PlatformID Platform {
-            get { return _platform; }
-        }
-        
-        public string ServicePack { 
-            get { 
-                if( _servicePack == null) {
-                    return string.Empty;
-                }
-
-                return _servicePack;
-            }
-        }    
 
         public Version Version {
             get { return _version; }

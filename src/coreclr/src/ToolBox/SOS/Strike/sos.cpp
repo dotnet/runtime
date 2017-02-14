@@ -17,9 +17,7 @@
 #include "gcdesc.h"
 
 
-#ifdef _ASSERTE
 #undef _ASSERTE
-#endif
 
 namespace sos
 {

@@ -8,12 +8,10 @@ namespace System.Diagnostics {
     using System;
     using System.IO;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     // There is no good reason for the methods of this class to be virtual.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StackFrame
     {
         private MethodBase    method;
@@ -181,17 +179,6 @@ namespace System.Diagnostics {
         //
         public virtual String GetFileName()
         {
-            if (strFileName != null)
-            {
-                // This isn't really correct, but we don't have
-                // a permission that protects discovery of potentially
-                // local urls so we'll use this.
-
-                FileIOPermission perm = new FileIOPermission( PermissionState.None );
-                perm.AllFiles = FileIOPermissionAccess.PathDiscovery;
-                perm.Demand();
-            }
-
             return strFileName;
         }
     
@@ -255,24 +242,6 @@ namespace System.Diagnostics {
                 sb.Append(" in file:line:column ");
 
                 bool useFileName = (strFileName != null);
-
-                if (useFileName)
-                {
-                    try
-                    {
-                        // This isn't really correct, but we don't have
-                        // a permission that protects discovery of potentially
-                        // local urls so we'll use this.
-
-                        FileIOPermission perm = new FileIOPermission(PermissionState.None);
-                        perm.AllFiles = FileIOPermissionAccess.PathDiscovery;
-                        perm.Demand();
-                    }
-                    catch (System.Security.SecurityException)
-                    {
-                        useFileName = false;
-                    }
-                }
 
                 if (!useFileName)
                     sb.Append("<filename unknown>");

@@ -36,8 +36,6 @@ namespace System.Collections.Generic
         // Large value types may benefit from a smaller number.
         internal const int IntrosortSizeThreshold = 16;
 
-        internal const int QuickSortDepthThreshold = 32;
-
         internal static int FloorLog2(int n)
         {
             int result = 0;

@@ -21,7 +21,6 @@ namespace System.Resources {
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Security.Permissions;
     using System.Security;
     using System.Globalization;
     using System.Configuration.Assemblies;
@@ -68,7 +67,6 @@ namespace System.Resources {
     }
 
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ResourceReader : IResourceReader
     {
         // A reasonable default buffer size for reading from files, especially
@@ -112,7 +110,7 @@ namespace System.Resources {
         public ResourceReader(String fileName)
         {
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
-            _store = new BinaryReader(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.RandomAccess, Path.GetFileName(fileName), false), Encoding.UTF8);
+            _store = new BinaryReader(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.RandomAccess), Encoding.UTF8);
             BCLDebug.Log("RESMGRFILEFORMAT", "ResourceReader .ctor(String).  UnmanagedMemoryStream: "+(_ums!=null));
 
             try {
@@ -197,10 +195,6 @@ namespace System.Resources {
             byte* buffer = (byte*)p;
             // Unaligned, little endian format
             return buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24);
-        }
-
-        private void SkipInt32() {
-            _store.BaseStream.Seek(4, SeekOrigin.Current);
         }
             
 
@@ -711,7 +705,7 @@ namespace System.Resources {
                     // For the case that we've memory mapped in the .resources
                     // file, just return a Stream pointing to that block of memory.
                     unsafe {
-                        return new UnmanagedMemoryStream(_ums.PositionPointer, len, len, FileAccess.Read, true);
+                        return new UnmanagedMemoryStream(_ums.PositionPointer, len, len, FileAccess.Read);
                     }
                 }
                 
@@ -817,7 +811,7 @@ namespace System.Resources {
                 throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
             }
             BCLDebug.Log("RESMGRFILEFORMAT", "ReadResources: Expecting " + _numResources + " resources.");
-#if _DEBUG      
+#if RESOURCE_FILE_FORMAT_DEBUG
             if (ResourceManager.DEBUG >= 4)
                 Console.WriteLine("ResourceReader::ReadResources - Reading in "+_numResources+" resources");
 #endif
@@ -837,7 +831,7 @@ namespace System.Resources {
                 SkipString();
             }
 
-#if _DEBUG
+#if RESOURCE_FILE_FORMAT_DEBUG
                 if (ResourceManager.DEBUG >= 5)
                     Console.WriteLine("ResourceReader::ReadResources - Reading in "+numTypes+" type table entries");
 #endif

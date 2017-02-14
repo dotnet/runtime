@@ -34,12 +34,7 @@
 #endif
 
 //***************************************************************************
-#if defined(_DEBUG) && defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
- #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 1
- #define TRACK_CXX_EXCEPTION_CODE_HACK
-#else
  #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 0
-#endif
 
 #define INITIAL_SUCCESS_COUNT               0x100
 
@@ -97,6 +92,7 @@ ASMCONSTANTS_C_ASSERT(SpinConstants_dwMaximumDuration == offsetof(SpinConstants,
 #define SpinConstants_dwBackoffFactor 8
 ASMCONSTANTS_C_ASSERT(SpinConstants_dwBackoffFactor == offsetof(SpinConstants,dwBackoffFactor))
 
+#ifndef WIN64EXCEPTIONS
 // EHContext from clr/src/vm/i386/cgencpu.h
 #define EHContext_Eax 0x00
 ASMCONSTANTS_C_ASSERT(EHContext_Eax == offsetof(EHContext,Eax))
@@ -124,6 +120,7 @@ ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
 
 #define EHContext_Eip 0x20
 ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
+#endif // WIN64EXCEPTIONS
 
 
 // from clr/src/fjit/helperframe.h

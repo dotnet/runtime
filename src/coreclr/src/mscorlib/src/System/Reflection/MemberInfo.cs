@@ -11,13 +11,9 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
     using System.Runtime;
     using System.Runtime.InteropServices;
-    using System.Security.Permissions;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MemberInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MemberInfo : ICustomAttributeProvider, _MemberInfo
+    public abstract class MemberInfo : ICustomAttributeProvider
     {
         #region Constructor
         protected MemberInfo() { }

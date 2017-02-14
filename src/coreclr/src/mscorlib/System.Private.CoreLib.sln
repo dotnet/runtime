@@ -5,11 +5,6 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E16B1C86-C275-495B-80D6-7CE8196A18B4}"
-	ProjectSection(SolutionItems) = preProject
-		model.xml = model.xml
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|amd64 = Checked|amd64

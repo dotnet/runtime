@@ -5028,20 +5028,18 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 {
     WRAPPER_NO_CONTRACT;
 
-    if(pMT->ContainsPointers())
-    {
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)    
-        if (pSrc->IsStructPassedInRegs())
-        {
-            pSrc->ReportPointersFromStructInRegisters(fn, sc, pMT->GetNumInstanceFieldBytes());
-            return;
-        }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
-    }
-    else if (!pMT->IsByRefLike())
+    if (!pMT->ContainsPointers() && !pMT->IsByRefLike())
     {
         return;
     }
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)    
+    if (pSrc->IsStructPassedInRegs())
+    {
+        pSrc->ReportPointersFromStructInRegisters(fn, sc, pMT->GetNumInstanceFieldBytes());
+        return;
+    }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
 }

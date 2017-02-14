@@ -73,7 +73,6 @@ namespace System
         // Search/Query methods
         //
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private unsafe static bool EqualsHelper(String strA, String strB)
         {
             Contract.Requires(strA != null);
@@ -134,7 +133,6 @@ namespace System
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
         {
             Contract.Requires(str != null);
@@ -716,7 +714,6 @@ namespace System
         }
 
         [Pure]
-        [ComVisible(false)]
         public Boolean EndsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
                 throw new ArgumentNullException(nameof(value));                                
@@ -793,7 +790,6 @@ namespace System
         }
 
         // Determines whether two strings match.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public override bool Equals(Object obj)
         {
             if (this == null)                        // this is necessary to guard against reverse-pinvokes and
@@ -814,7 +810,6 @@ namespace System
 
         // Determines whether two strings match.
         [Pure]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public bool Equals(String value)
         {
             if (this == null)                        // this is necessary to guard against reverse-pinvokes and
@@ -984,7 +979,6 @@ namespace System
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public override int GetHashCode()
         {
 #if FEATURE_RANDOMIZED_STRING_HASHING
@@ -999,12 +993,10 @@ namespace System
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such
         // that String.Equals(A, B, C), then they will return the same hash code with this comparison C.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public int GetHashCode(StringComparison comparisonType) => StringComparer.FromComparison(comparisonType).GetHashCode(this);
 
         // Use this if and only if you need the hashcode to not change across app domains (e.g. you have an app domain agile
         // hash table).
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal int GetLegacyNonRandomizedHashCode() {
             unsafe {
                 fixed (char* src = &m_firstChar) {
@@ -1069,7 +1061,6 @@ namespace System
         }
 
         [Pure]
-        [ComVisible(false)]
         public Boolean StartsWith(String value, StringComparison comparisonType) {
             if( (Object)value == null) {
                 throw new ArgumentNullException(nameof(value));                                

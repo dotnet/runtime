@@ -11,32 +11,32 @@
 **
 =============================================================================*/
 
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
-    [System.Runtime.InteropServices.ComVisible(true)]
+using System;
+using System.Runtime.Serialization;
+
+namespace System
+{
     [Serializable]
-    public class EntryPointNotFoundException : TypeLoadException {
-        public EntryPointNotFoundException() 
-            : base(Environment.GetResourceString("Arg_EntryPointNotFoundException")) {
-            SetErrorCode(__HResults.COR_E_ENTRYPOINTNOTFOUND);
-        }
-    
-        public EntryPointNotFoundException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_ENTRYPOINTNOTFOUND);
-        }
-    
-        public EntryPointNotFoundException(String message, Exception inner) 
-            : base(message, inner) {
-            SetErrorCode(__HResults.COR_E_ENTRYPOINTNOTFOUND);
+    public class EntryPointNotFoundException : TypeLoadException
+    {
+        public EntryPointNotFoundException()
+            : base(SR.Arg_EntryPointNotFoundException)
+        {
+            HResult = __HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
 
-        protected EntryPointNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public EntryPointNotFoundException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
-    
-    
+
+        public EntryPointNotFoundException(String message, Exception inner)
+            : base(message, inner)
+        {
+            HResult = __HResults.COR_E_ENTRYPOINTNOTFOUND;
+        }
+
+        protected EntryPointNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

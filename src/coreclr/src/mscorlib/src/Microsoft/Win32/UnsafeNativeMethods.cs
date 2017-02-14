@@ -12,7 +12,6 @@ namespace Microsoft.Win32 {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Security;
-    using System.Security.Permissions;
     using System.Text;
     using System.Diagnostics.Tracing;
 
@@ -59,7 +58,6 @@ namespace Microsoft.Win32 {
                 
         [DllImport(Win32Native.KERNEL32, CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool FreeLibrary(IntPtr hModule);
 
 
@@ -119,19 +117,6 @@ namespace Microsoft.Win32 {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventUnregister", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
             internal static extern uint EventUnregister([In] long registrationHandle);
-
-            //
-            // Writing (Publishing/Logging) APIs
-            //
-            // 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
-            [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWrite", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-            internal static extern unsafe int EventWrite(
-                    [In] long registrationHandle,
-                    [In] ref EventDescriptor eventDescriptor,
-                    [In] int userDataCount,
-                    [In] EventProvider.EventData* userData
-                    );
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2118:ReviewSuppressUnmanagedCodeSecurityUsage")]
             [DllImport(Win32Native.ADVAPI32, ExactSpelling = true, EntryPoint = "EventWriteString", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]

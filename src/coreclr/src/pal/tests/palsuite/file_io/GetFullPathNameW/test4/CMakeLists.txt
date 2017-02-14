@@ -13,7 +13,5 @@ add_executable(paltest_getfullpathnamew_test4
 add_dependencies(paltest_getfullpathnamew_test4 coreclrpal)
 
 target_link_libraries(paltest_getfullpathnamew_test4
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

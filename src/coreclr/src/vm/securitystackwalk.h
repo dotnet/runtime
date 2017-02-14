@@ -19,13 +19,8 @@
 #include "security.h"
 #include "holder.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 
-#ifdef FEATURE_COMPRESSEDSTACK
-class NewCompressedStack;
-class DomainCompressedStack;
-#endif // FEATURE_COMPRESSEDSTACK
 class ApplicationSecurityDescriptor;
 class DemandStackWalk;
 class CountOverridesStackWalk;
@@ -169,9 +164,6 @@ public:
     //   Callers:
     //     CanAccess (ReflectionInvocation)
     //     ReflectionSerialization::GetSafeUninitializedObject
-#ifdef FEATURE_APTCA
-    //     SecurityDeclarative::DoUntrustedCallerChecks
-#endif // FEATURE_APTCA
     static void DemandSet(SecurityStackWalkType eType, OBJECTREF demand);
 
     // Native version of PermissionSet.Demand() that delays instantiating the PermissionSet object
@@ -211,25 +203,6 @@ public:
     // Compressed Stack
     // ----------------------------------------------------
 public:
-#ifdef FEATURE_COMPRESSEDSTACK
-    static FCDECL2(Object*, EcallGetDelayedCompressedStack, StackCrawlMark* stackMark, CLR_BOOL fWalkStack);
-    static FCDECL1(VOID, FcallDestroyDelayedCompressedStack, void *compressedStack);
-    static COMPRESSEDSTACKREF GetCSFromContextTransitionFrame(Frame *pFrame);
-    static BOOL IsContextTransitionFrameWithCS(Frame *pFrame)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        return (GetCSFromContextTransitionFrame(pFrame) != NULL);
-    }
-    static BOOL MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(MethodDesc* pMeth);
-
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
 #ifndef DACCESS_COMPILE
     FORCEINLINE static BOOL HasFlagsOrFullyTrustedIgnoreMode (DWORD flags);   

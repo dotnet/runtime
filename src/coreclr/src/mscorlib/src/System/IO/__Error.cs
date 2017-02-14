@@ -21,7 +21,6 @@ using Win32Native = Microsoft.Win32.Win32Native;
 using System.Text;
 using System.Globalization;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics.Contracts;
 
 namespace System.IO {
@@ -50,10 +49,6 @@ namespace System.IO {
 
         internal static void ReadNotSupported() {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
-        }
-    
-        internal static void SeekNotSupported() {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnseekableStream"));
         }
 
         internal static void WrongAsyncResult() {
@@ -187,32 +182,9 @@ namespace System.IO {
                 throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
             }
         }
-
-        // An alternative to WinIOError with friendlier messages for drives
-        internal static void WinIODriveError(String driveName) {
-            int errorCode = Marshal.GetLastWin32Error();
-            WinIODriveError(driveName, errorCode);
-        }
-
-        internal static void WinIODriveError(String driveName, int errorCode)
-        {
-            switch (errorCode) {
-            case Win32Native.ERROR_PATH_NOT_FOUND:
-            case Win32Native.ERROR_INVALID_DRIVE:
-                throw new DriveNotFoundException(Environment.GetResourceString("IO.DriveNotFound_Drive", driveName));
-
-            default: 
-                WinIOError(errorCode, driveName);                
-                break;
-            }
-        }
     
         internal static void WriteNotSupported() {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
-        }
-
-        internal static void WriterClosed() {
-            throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_WriterClosed"));
         }
 
         // From WinError.h

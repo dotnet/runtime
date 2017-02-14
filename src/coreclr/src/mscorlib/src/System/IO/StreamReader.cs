@@ -8,7 +8,6 @@ using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -18,8 +17,7 @@ namespace System.IO
     // whereas the Stream class is designed for byte input and output.  
     // 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class StreamReader : TextReader
+    internal class StreamReader : TextReader
     {
         // StreamReader.Null is threadsafe.
         public new static readonly StreamReader Null = new NullStreamReader();
@@ -188,7 +186,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
-            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan, Path.GetFileName(path), false, false);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false);
         }
         
@@ -757,7 +755,6 @@ namespace System.IO
         }
         
         #region Task based Async APIs
-        [ComVisible(false)]
         public override Task<String> ReadLineAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -837,7 +834,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [ComVisible(false)]
         public override Task<String> ReadToEndAsync()
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -873,7 +869,6 @@ namespace System.IO
             return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
@@ -1060,7 +1055,6 @@ namespace System.IO
             return charsRead;
         }
 
-        [ComVisible(false)]
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)

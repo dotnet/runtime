@@ -83,9 +83,8 @@
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
-    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
-    <FinalOutputPath Condition="'$(FinalOutputPath)' == ''">$(BinDir)</FinalOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(BuildOS).$(BuildArch).$(BuildType)\$(MSBuildProjectName)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
   </PropertyGroup>
 
   <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
@@ -153,7 +152,7 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">1.2.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">2.0.0</PackageVersion>
     
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>

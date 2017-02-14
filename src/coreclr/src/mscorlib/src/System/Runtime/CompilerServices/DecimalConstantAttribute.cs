@@ -14,7 +14,6 @@ namespace System.Runtime.CompilerServices
 {
     [Serializable]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited=false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DecimalConstantAttribute : Attribute
     {
         [CLSCompliant(false)]

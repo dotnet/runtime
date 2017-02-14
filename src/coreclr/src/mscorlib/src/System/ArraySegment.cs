@@ -15,8 +15,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -46,14 +44,10 @@ namespace System
 
         public ArraySegment(T[] array, int offset, int count)
         {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (offset < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < count)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+            // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
+            // Failure should be rare and location determination and message is delegated to failure functions
+            if (array == null || (offset | count) < 0 || (array.Length - offset < count))
+                ThrowHelper.ThrowArraySegmentCtorValidationFailedExceptions(array, offset, count);
             Contract.EndContractBlock();
 
             _array = array;

@@ -22,16 +22,7 @@
 #include "perfcounters.h"
 #include "assemblyname.hpp"
 
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#include "assemblysink.h"
-#include "ngenoptout.h"
-#endif
 
-#if !defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-#include "assemblyusagelogmanager.h"
-#include "policy.h"
-#endif
 
 #include "eeprofinterfaces.h"
 #include "reflectclasswriter.h"
@@ -55,22 +46,16 @@
 #include "appdomainnative.hpp"
 #ifdef FEATURE_REMOTING
 #include "remoting.h"
-#include "appdomainhelper.h"
 #endif
 #include "customattribute.h"
 #include "winnls.h"
 
-#include "constrainedexecutionregion.h"
 #include "caparser.h"
 #include "../md/compiler/custattr.h"
 #include "mdaassistants.h"
 
 #include "peimagelayout.inl"
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-#include <shlobj.h>
-#include "eventmsg.h"
-#endif
 
 #ifdef FEATURE_TRACELOGGING
 #include "clrtracelogging.h"
@@ -161,18 +146,12 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_fIsDomainNeutral(pDomain == SharedDomain::GetDomain()),
 #ifdef FEATURE_LOADER_OPTIMIZATION
     m_bMissingDependenciesCheckDone(FALSE),
-#ifdef FEATURE_FUSION
-    m_pBindingClosure(NULL),
-#endif
 #endif // FEATURE_LOADER_OPTIMIZATION
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE),
     m_HostAssemblyId(0)
 #ifdef FEATURE_COMINTEROP
     , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
-#endif
-#ifndef FEATURE_CORECLR
-    , m_fSupportsAutoNGen(FALSE)
 #endif
 {
     STANDARD_VM_CONTRACT;
@@ -285,13 +264,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     if (!m_pManifest->IsReadyToRun())
         CacheManifestExportedTypes(pamTracker);
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    GenerateBreadcrumbForServicing();
-
-    m_fSupportsAutoNGen = SupportsAutoNGenWorker();
-
-    ReportAssemblyUse();
-#endif
 
 #ifdef FEATURE_TRACELOGGING
 
@@ -384,12 +356,6 @@ Assembly::~Assembly()
     if (m_pAllowedFiles)
         delete(m_pAllowedFiles);
 #endif 
-#ifdef FEATURE_FUSION
-    if (m_pBindingClosure) 
-    {
-        m_pBindingClosure->Release();
-    }
-#endif
     if (IsDynamic()) {
         if (m_pOnDiskManifest)
             // clear the on disk manifest if it is not cleared yet.
@@ -757,7 +723,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit, args->access & ASSEMBLY_ACCESS_REFLECTION_ONLY);
 
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
         // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
         // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
         // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
@@ -803,90 +768,21 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         // Set it as the fallback load context binder for the dynamic assembly being created
         pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     }            
     
     AssemblyLoadSecurity loadSecurity;
-#ifndef FEATURE_CORECLR
-    DWORD dwSpecialFlags = 0xFFFFFFFF;
-    
-    // Don't bother with setting up permissions if this isn't allowed to run
-    // This doesn't apply in CoreCLR because you cannot specify evidence when creating a dynamic assembly
-    if ((args->identity != NULL) &&
-        (args->access & ASSEMBLY_ACCESS_RUN))
-    {
-        loadSecurity.m_pAdditionalEvidence = &args->identity;
-    }
-    else
-    {
-        if (pCallerAssembly != NULL) // can be null if caller is interop
-        {
-            if (args->securityContextSource == kCurrentAssembly)
-            {
-                IAssemblySecurityDescriptor *pCallerSecDesc = pCallerAssembly->GetSecurityDescriptor(pCallersDomain);
-                gc.granted = pCallerSecDesc->GetGrantedPermissionSet(&(gc.denied));
-                dwSpecialFlags = pCallerSecDesc->GetSpecialFlags();
-            }
-            else
-            {
-                IApplicationSecurityDescriptor *pCallersDomainSecDesc = pCallersDomain->GetSecurityDescriptor();
-
-#ifdef FEATURE_CAS_POLICY
-                // We only want to propigate the identity of homogenous domains, since heterogenous domains tend
-                // to be fully trusted even if they are housing partially trusted code - which could lead to an
-                // elevation of privilege if we allow the grant set to be pushed to assemblies partially trusted
-                // code is loading.
-                if (!pCallersDomainSecDesc->IsHomogeneous())
-                {
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_SecurityContextSourceAppDomainInHeterogenous"));
-                }
-#endif // FEATURE_CAS_POLICY
-
-                gc.granted = pCallersDomainSecDesc->GetGrantedPermissionSet();
-                dwSpecialFlags = pCallersDomainSecDesc->GetSpecialFlags();
-            }
-
-            // Caller may be in another appdomain context, in which case we'll
-            // need to marshal/unmarshal the grant and deny sets across.
-#ifdef FEATURE_REMOTING  // should not happen without remoting              
-            if (pCallersDomain != ::GetAppDomain())
-            {
-                gc.granted = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.granted));
-                if (gc.denied != NULL)
-                {
-                    gc.denied = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.denied));
-                }
-            }
-#else // !FEATURE_REMOTING
-            _ASSERTE(pCallersDomain == ::GetAppDomain());
-#endif // FEATURE_REMOTING
-        }
-    }
-#else // FEATURE_CORECLR
     // In SilverLight all dynamic assemblies should be transparent and partially trusted, even if they are
     // created by platform assemblies. Thus they should inherit the grant sets from the appdomain not the 
     // parent assembly.
     IApplicationSecurityDescriptor *pCurrentDomainSecDesc = ::GetAppDomain()->GetSecurityDescriptor();
     gc.granted = pCurrentDomainSecDesc->GetGrantedPermissionSet();
     DWORD dwSpecialFlags = pCurrentDomainSecDesc->GetSpecialFlags();
-#endif // !FEATURE_CORECLR
 
     // If the dynamic assembly creator did not specify evidence for the newly created assembly, then it
     // should inherit the grant set of the creation assembly.
     if (loadSecurity.m_pAdditionalEvidence == NULL)
     {   
-#ifdef FEATURE_CAS_POLICY
-        // If we're going to inherit the grant set of an anonymously hosted dynamic method, it will be
-        // full trust/transparent. In that case, we should demand full trust.
-        if(args->securityContextSource == kCurrentAssembly &&
-            pCallerAssembly != NULL &&
-            pCallersDomain != NULL &&
-            pCallerAssembly->GetDomainAssembly(pCallersDomain) == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-        {
-            loadSecurity.m_fPropagatingAnonymouslyHostedDynamicMethodGrant = true;
-        }
-#endif // FEATURE_CAS_POLICY
 
         loadSecurity.m_pGrantSet = &gc.granted;
         loadSecurity.m_pRefusedSet = &gc.denied;
@@ -924,23 +820,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     }
 
     // Start loading process
-
-#ifdef FEATURE_CAS_POLICY
-    // Get the security descriptor for the assembly.
-    IAssemblySecurityDescriptor *pSecDesc = pDomainAssembly->GetSecurityDescriptor();
-
-    // Propagate identity and permission request information into the assembly's
-    // security descriptor. Then when policy is resolved we'll end up with the
-    // correct grant set.
-    // If identity has not been provided then the caller's assembly will be
-    // calculated instead and we'll just copy the granted permissions from the
-    // caller to the new assembly and mark policy as resolved (done
-    // automatically by SetGrantedPermissionSet).
-    pSecDesc->SetRequestedPermissionSet(args->requiredPset,
-                                        args->optionalPset,
-                                        args->refusedPset);
-#endif // FEATURE_CAS_POLICY
-
     {
         // Create a concrete assembly
         // (!Do not remove scoping brace: order is important here: the Assembly holder must destruct before the AllocMemTracker!)
@@ -967,33 +846,11 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         pAssem->m_dwDynamicAssemblyAccess = args->access;
 
-#ifdef FEATURE_CAS_POLICY
-        // If a legacy assembly is emitting an assembly, then we implicitly add the legacy attribute. If the legacy
-        // assembly is also in partial trust, we implicitly make the emitted assembly transparent.
-        ModuleSecurityDescriptor *pEmittingMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pCallerAssembly);
-        if (pEmittingMSD->GetSecurityRuleSet() == SecurityRuleSet_Level1)
-        {
-            IAssemblySecurityDescriptor *pCallerSecDesc = pCallerAssembly->GetSecurityDescriptor(pCallersDomain);
-            if (!pCallerSecDesc->IsFullyTrusted())
-            {
-                args->flags = kTransparentAssembly;
-            }
-        }
-
-        // If the code emitting the dynamic assembly is transparent and it is attempting to emit a non-transparent
-        // assembly, then we need to do a demand for the grant set of the emitting assembly (which should also be
-        // is the grant set of the dynamic assembly).
-        if (Security::IsMethodTransparent(pmdEmitter) && !(args->flags & kTransparentAssembly))
-        {
-            Security::DemandGrantSet(pCallerAssembly->GetSecurityDescriptor(pCallersDomain));
-        }
-#else // FEATURE_CORECLR
         // Making the dynamic assembly opportunistically critical in full trust CoreCLR and transparent otherwise.
         if (!GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
         {
             args->flags = kTransparentAssembly;
         }
-#endif //!FEATURE_CORECLR
 
         // Fake up a module security descriptor for the assembly.
         TokenSecurityDescriptorFlags tokenFlags = TokenSecurityDescriptorFlags_None;
@@ -1008,42 +865,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         if (args->flags & kTreatAsSafeAssembly)
             tokenFlags |= TokenSecurityDescriptorFlags_TreatAsSafe;
 
-#ifdef FEATURE_APTCA
-        if (args->aptcaBlob != NULL)
-        {
-            tokenFlags |= ParseAptcaAttribute(args->aptcaBlob->GetDirectPointerToNonObjectElements(),
-                                              args->aptcaBlob->GetNumComponents());
-        }
 
-#endif // FEATURE_APTCA
-
-#ifndef FEATURE_CORECLR
-        // Use the security rules given to us if the emitting code has selected a specific one. Otherwise,
-        // inherit the security rules of the emitting assembly.
-        if (args->securityRulesBlob != NULL)
-        {
-            tokenFlags |= ParseSecurityRulesAttribute(args->securityRulesBlob->GetDirectPointerToNonObjectElements(),
-                                                      args->securityRulesBlob->GetNumComponents());
-        }
-        else
-        {
-            // Ensure that dynamic assemblies created by mscorlib always specify a rule set, since we want to
-            // make sure that creating a level 2 assembly was an explicit decision by the emitting code,
-            // rather than an implicit decision because mscorlib is level 2 itself.
-            //
-            // If you're seeing this assert, it means that you've created a dynamic assembly from mscorlib,
-            // but did not pass a CustomAttributeBuilder for the SecurityRulesAttribute to the 
-            // DefineDynamicAssembly call.
-           _ASSERTE(!pCallerAssembly->IsSystem());
-
-            // Use the creating assembly's security rule set for the emitted assembly
-            SecurityRuleSet callerRuleSet = 
-                ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pCallerAssembly)->GetSecurityRuleSet();
-            tokenFlags |= EncodeSecurityRuleSet(callerRuleSet);
-
-            tokenFlags |= TokenSecurityDescriptorFlags_SecurityRules;
-        }
-#endif // !FEATURE_CORECLR
 
         _ASSERTE(pAssem->GetManifestModule()->m_pModuleSecurityDescriptor != NULL);
         pAssem->GetManifestModule()->m_pModuleSecurityDescriptor->OverrideTokenFlags(tokenFlags); 
@@ -1055,47 +877,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         if (publicKey.GetSize() > 0)
         {
             pAssem->SetStrongNameLevel(Assembly::SN_PUBLIC_KEY);
-#ifndef FEATURE_CORECLR
-            gc.strongNameKeyPair = args->assemblyName->GetStrongNameKeyPair();
-            // If there's a public key, there might be a strong name key pair.
-            if (gc.strongNameKeyPair != NULL) 
-            {
-                MethodDescCallSite getKeyPair(METHOD__STRONG_NAME_KEY_PAIR__GET_KEY_PAIR, &gc.strongNameKeyPair);
-
-                ARG_SLOT arglist[] = 
-                {
-                    ObjToArgSlot(gc.strongNameKeyPair),
-                    PtrToArgSlot(&gc.orArrayOrContainer)
-                };
-
-                BOOL bKeyInArray;
-                bKeyInArray = (BOOL)getKeyPair.Call_RetBool(arglist);
-
-                if (bKeyInArray)
-                {
-                    U1ARRAYREF orArray = (U1ARRAYREF)gc.orArrayOrContainer;
-                    pAssem->m_cbStrongNameKeyPair = orArray->GetNumComponents();
-                    pAssem->m_pbStrongNameKeyPair = new BYTE[pAssem->m_cbStrongNameKeyPair];
-
-                    pAssem->m_FreeFlag |= pAssem->FREE_KEY_PAIR;
-                    memcpy(pAssem->m_pbStrongNameKeyPair, orArray->GetDataPtr(), pAssem->m_cbStrongNameKeyPair);
-                    pAssem->SetStrongNameLevel(Assembly::SN_FULL_KEYPAIR_IN_ARRAY);
-                }
-                else
-                {
-                    STRINGREF orContainer = (STRINGREF)gc.orArrayOrContainer;
-                    DWORD cchContainer = orContainer->GetStringLength();
-                    pAssem->m_pwStrongNameKeyContainer = new WCHAR[cchContainer + 1];
-
-                    pAssem->m_FreeFlag |= pAssem->FREE_KEY_CONTAINER;
-                    memcpy(pAssem->m_pwStrongNameKeyContainer, orContainer->GetBuffer(), cchContainer * sizeof(WCHAR));
-                    pAssem->m_pwStrongNameKeyContainer[cchContainer] = W('\0');
-
-                    pAssem->SetStrongNameLevel(Assembly::SN_FULL_KEYPAIR_IN_CONTAINER);
-                }
-            }
-            else
-#endif // FEATURE_CORECLR
             {
                 // Since we have no way to validate the public key of a dynamic assembly we don't allow 
                 // partial trust code to emit a dynamic assembly with an arbitrary public key.
@@ -1789,11 +1570,6 @@ Module * Assembly::FindModuleByTypeRef(
                 RETURN NULL;
             }
 
-#ifndef FEATURE_CORECLR
-            // Event Tracing for Windows is used to log data for performance and functional testing purposes.
-            // The events below are used to help measure the performance of assembly loading of a static reference.
-            FireEtwLoaderPhaseStart((::GetAppDomain() ? ::GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable), ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderStaticLoad, NULL, NULL, GetClrInstanceId());
-#endif //!FEATURE_CORECLR
             
             DomainAssembly * pDomainAssembly = pModule->LoadAssembly(
                     ::GetAppDomain(), 
@@ -1801,27 +1577,6 @@ Module * Assembly::FindModuleByTypeRef(
                     szNamespace, 
                     szClassName);
 
-#ifndef FEATURE_CORECLR
-            if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATEBINDING_KEYWORD))
-            {
-                StackSString assemblySimpleName;
-                EX_TRY
-                {
-                    if ((pDomainAssembly != NULL) && (pDomainAssembly->GetCurrentAssembly() != NULL))
-                    {
-                        assemblySimpleName.AppendUTF8(pDomainAssembly->GetCurrentAssembly()->GetSimpleName());
-                        assemblySimpleName.Normalize(); // Ensures that the later cast to LPCWSTR does not throw.
-                    }
-                }
-                EX_CATCH
-                {
-                    assemblySimpleName.Clear();
-                }
-                EX_END_CATCH(RethrowTransientExceptions)
-                
-                FireEtwLoaderPhaseEnd(::GetAppDomain() ? ::GetAppDomain()->GetId().m_dwId : ETWAppDomainIdNotAvailable, ETWLoadContextNotAvailable, ETWFieldUnused, ETWLoaderStaticLoad, NULL, assemblySimpleName.IsEmpty() ? NULL : (LPCWSTR)assemblySimpleName, GetClrInstanceId());
-            }
-#endif //!FEATURE_CORECLR
 
             if (pDomainAssembly == NULL)
                 RETURN NULL;
@@ -2564,20 +2319,7 @@ HRESULT RunMain(MethodDesc *pFD ,
 
     if ((EntryType == EntryManagedMain) &&
         (stringArgs == NULL)) {
- #ifndef FEATURE_CORECLR
-       // If you look at the DIFF on this code then you will see a major change which is that we
-        // no longer accept all the different types of data arguments to main.  We now only accept
-        // an array of strings.
-
-        wzArgs = CorCommandLine::GetArgvW(&cCommandArgs);
-        // In the WindowsCE case where the app has additional args the count will come back zero.
-        if (cCommandArgs > 0) {
-            if (!wzArgs)
-                return E_INVALIDARG;
-        }
-#else // !FEATURE_CORECLR
         return E_INVALIDARG;
-#endif // !FEATURE_CORECLR
     }
 
     ETWFireEvent(Main_V1);
@@ -2728,37 +2470,12 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
         if (pMeth) {
             RunMainPre();
 
-#if defined(FEATURE_APPX_BINDER) && defined(FEATURE_MULTICOREJIT)
-            if (AppX::IsAppXProcess())
-            {
-                GCX_PREEMP();
-                
-                // we call this to obtain and cache the PRAID value which is used
-                // by multicore JIT manager and watson bucket params generation.
-
-                // NOTE: this makes a COM call into WinRT so we must do this after we've
-                //       set the thread's apartment state which will do CoInitializeEx().
-                LPCWSTR praid;
-                hr = AppX::GetApplicationId(praid);
-                _ASSERTE(SUCCEEDED(hr));
-
-                if (!pMeth->GetModule()->HasNativeImage())
-                {
-                    // For Appx, multicore JIT is only needed when root assembly does not have NI image
-                    // When it has NI image, we can't generate profile, and do not need to playback profile
-                    AppDomain * pDomain = pThread->GetDomain();
-                    pDomain->GetMulticoreJitManager().AutoStartProfileAppx(pDomain);
-                }
-            }
-#endif // FEATURE_APPX_BINDER && FEATURE_MULTICOREJIT
             
-#ifdef FEATURE_CORECLR
             // Set the root assembly as the assembly that is containing the main method
             // The root assembly is used in the GetEntryAssembly method that on CoreCLR is used
             // to get the TargetFrameworkMoniker for the app
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
-#endif
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
         }
     }
@@ -2942,20 +2659,6 @@ PEModule * Assembly::LoadModule_AddRef(mdFile kFile, BOOL fLoadResource)
         {
             GCX_PREEMP();
 
-#ifdef FEATURE_FUSION    // specific to remote modules
-            if (GetFusionAssembly()) {
-                StackSString path;
-                ::GetAppDomain()->GetFileFromFusion(GetFusionAssembly(),
-                                                  (LPCWSTR)name, path);
-                pModule = PEModule::Open(m_pManifestFile, kFile, path);
-                goto lDone;
-            }
-            
-            if (GetIHostAssembly()) {
-                pModule = PEModule::Open(m_pManifestFile, kFile, name);
-                goto lDone;
-            }
-#endif
             if (!m_pManifestFile->GetPath().IsEmpty()) {
                 StackSString path = m_pManifestFile->GetPath();
                 
@@ -2967,9 +2670,6 @@ PEModule * Assembly::LoadModule_AddRef(mdFile kFile, BOOL fLoadResource)
                 }
                 pModule = PEModule::Open(m_pManifestFile, kFile, path);
             }
-#ifdef FEATURE_FUSION        
-        lDone: ;
-#endif
         }
         EX_CATCH
         {
@@ -3190,24 +2890,13 @@ mdAssemblyRef Assembly::AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssembl
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(refedAssembly));
-#ifdef FEATURE_CORECLR
         PRECONDITION(CheckPointer(pAssemEmitter, NULL_NOT_OK));
-#else
-        PRECONDITION(CheckPointer(pAssemEmitter, NULL_OK));
-#endif //FEATURE_CORECLR
         POSTCONDITION(!IsNilToken(RETVAL));
         POSTCONDITION(TypeFromToken(RETVAL) == mdtAssemblyRef);
     }
     CONTRACT_END;
 
     SafeComHolder<IMetaDataAssemblyEmit> emitHolder;
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    if (pAssemEmitter == NULL)
-    {
-        pAssemEmitter = GetOnDiskMDAssemblyEmitter();
-        emitHolder.Assign(pAssemEmitter);
-    }
-#endif // FEATURE_CORECLR && !CROSSGEN_COMPILE
 
     AssemblySpec spec;
     spec.InitializeSpec(refedAssembly->GetManifestFile());
@@ -3275,476 +2964,6 @@ void Assembly::AddExportedType(mdExportedType cl)
 }
 
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-
-//***********************************************************
-//
-// get the IMetaDataAssemblyEmit for the on disk manifest.
-// Note that the pointer returned is AddRefed. It is the caller's
-// responsibility to release the reference.
-//
-//***********************************************************
-IMetaDataAssemblyEmit *Assembly::GetOnDiskMDAssemblyEmitter()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    IMetaDataAssemblyEmit *pAssemEmitter = NULL;
-    IMetaDataEmit   *pEmitter;
-    RefClassWriter  *pRCW;
-
-    _ASSERTE(m_pOnDiskManifest);
-
-    pRCW = m_pOnDiskManifest->GetClassWriter();
-    _ASSERTE(pRCW);
-
-    // If the RefClassWriter has a on disk emitter, then use it rather than the in-memory emitter.
-    pEmitter = pRCW->GetOnDiskEmitter();
-
-    if (pEmitter == NULL)
-        pEmitter = m_pOnDiskManifest->GetEmitter();
-    
-    _ASSERTE(pEmitter != NULL);
-    
-    IfFailThrow(pEmitter->QueryInterface(IID_IMetaDataAssemblyEmit, (void**) &pAssemEmitter));
-    
-    if (pAssemEmitter == NULL)
-    {
-        // the manifest is not writable
-        _ASSERTE(!"Bad usage!");
-    }
-    return pAssemEmitter;
-}
-
-//***********************************************************
-//
-// prepare saving manifest to disk.
-//
-//***********************************************************
-void Assembly::PrepareSavingManifest(ReflectionModule *pAssemblyModule)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (pAssemblyModule)
-    {
-        // embedded assembly
-        m_pOnDiskManifest = pAssemblyModule;
-        m_fEmbeddedManifest = true;
-    }
-    else
-    {
-        m_fEmbeddedManifest = false;
-
-        StackSString name(SString::Utf8, GetSimpleName());
-
-        // Create the module
-        m_pOnDiskManifest = CreateDynamicModule(name, name, FALSE /*fIsTransient*/);
-        // store the fact this on disk manifest is temporary and can be hidden from the user
-        m_needsToHideManifestForEmit = TRUE;
-    }
-
-    NonVMComHolder<IMetaDataAssemblyEmit> pAssemblyEmit(GetOnDiskMDAssemblyEmitter());
-
-    // Copy assembly metadata to emit scope
-    //<TODO>@todo: add Title, Description, Alias as CA</TODO>
-    // <TODO>@todo: propagate all of the information</TODO>
-    // <TODO>@todo: introduce a helper in metadata to take the ansi version of string.</TODO>
-
-    IMetaDataAssemblyImport *pAssemblyImport = GetManifestFile()->GetAssemblyImporter();
-
-    const void          *pbPublicKey;
-    ULONG               cbPublicKey;
-    ULONG               ulHashAlgId;
-    LPWSTR              szName;
-    ULONG               chName;
-    ASSEMBLYMETADATA    MetaData;
-    DWORD               dwAssemblyFlags;
-
-    MetaData.cbLocale = 0;
-    MetaData.ulProcessor = 0;
-    MetaData.ulOS = 0;
-    IfFailThrow(pAssemblyImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly),
-                                                  NULL, NULL, NULL,
-                                                  NULL, 0, &chName,
-                                                  &MetaData, NULL));
-    StackSString name;
-    szName = name.OpenUnicodeBuffer(chName);
-
-    SString locale;
-    MetaData.szLocale = locale.OpenUnicodeBuffer(MetaData.cbLocale);
-
-    SBuffer proc;
-    MetaData.rProcessor = (DWORD *) proc.OpenRawBuffer(MetaData.ulProcessor*sizeof(*MetaData.rProcessor));
-
-    SBuffer os;
-    MetaData.rOS = (OSINFO *) os.OpenRawBuffer(MetaData.ulOS*sizeof(*MetaData.rOS));
-
-    IfFailThrow(pAssemblyImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly),
-                                                  &pbPublicKey, &cbPublicKey, &ulHashAlgId,
-                                                  szName, chName, &chName,
-                                                  &MetaData, &dwAssemblyFlags));
-
-    mdAssembly ad;
-    IfFailThrow(pAssemblyEmit->DefineAssembly(pbPublicKey, cbPublicKey, ulHashAlgId,
-                                              szName, &MetaData, dwAssemblyFlags, &ad));
-
-    SafeComHolder<IMetaDataImport> pImport;
-    IfFailThrow(pAssemblyEmit->QueryInterface(IID_IMetaDataImport, (void**)&pImport));
-    ULONG cExistingName = 0;
-    if (FAILED(pImport->GetScopeProps(NULL, 0, &cExistingName, NULL)) || cExistingName == 0)
-    {
-        SafeComHolder<IMetaDataEmit> pEmit;
-        IfFailThrow(pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void**)&pEmit));
-        IfFailThrow(pEmit->SetModuleProps(szName));
-    }
-
-    name.CloseBuffer();
-    locale.CloseBuffer();
-    proc.CloseRawBuffer();
-    os.CloseRawBuffer();
-}   // Assembly::PrepareSavingManifest
-
-
-//***********************************************************
-//
-// add a file name to the file list of this assembly. On disk only.
-//
-//***********************************************************
-mdFile Assembly::AddFile(LPCWSTR wszFileName)
-{
-    STANDARD_VM_CONTRACT;
-
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemEmitter(GetOnDiskMDAssemblyEmitter());
-    mdFile          fl;
-
-    // Define File.
-    IfFailThrow( pAssemEmitter->DefineFile(
-        wszFileName,                // [IN] Name of the file.
-        0,                          // [IN] Hash Blob.
-        0,                          // [IN] Count of bytes in the Hash Blob.
-        0,                          // [IN] Flags.
-        &fl) );                     // [OUT] Returned File token.
-
-    return fl;
-}   // Assembly::AddFile
-
-
-//***********************************************************
-//
-// Set the hash value on a file table entry.
-//
-//***********************************************************
-void Assembly::SetFileHashValue(mdFile tkFile, LPCWSTR wszFullFileName)
-{
-    STANDARD_VM_CONTRACT;
-
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemEmitter(GetOnDiskMDAssemblyEmitter());
-
-    // Get the hash value.
-    SBuffer buffer;
-    PEImageHolder map(PEImage::OpenImage(StackSString(wszFullFileName)));
-    map->ComputeHash(GetHashAlgId(), buffer);
-
-    // Set the hash blob.
-    IfFailThrow( pAssemEmitter->SetFileProps(
-        tkFile,                 // [IN] File Token.
-        buffer,                 // [IN] Hash Blob.
-        buffer.GetSize(),       // [IN] Count of bytes in the Hash Blob.
-        (DWORD) -1));           // [IN] Flags.
-
-}   // Assembly::SetHashValue
-
-//*****************************************************************************
-// Add a Type name to the ExportedType table in the on-disk assembly manifest.
-//*****************************************************************************
-mdExportedType Assembly::AddExportedTypeOnDisk(LPCWSTR wszExportedType, mdToken tkImpl, mdToken tkTypeDef, CorTypeAttr flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(TypeFromToken(tkTypeDef) == mdtTypeDef);
-
-    // The on-disk assembly manifest
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemEmitter(GetOnDiskMDAssemblyEmitter());
-
-    mdExportedType ct;
-
-    IfFailThrow( pAssemEmitter->DefineExportedType(
-        wszExportedType,            // [IN] Name of the COMType.
-        tkImpl,                     // [IN] mdFile or mdAssemblyRef that provides the ExportedType.
-        tkTypeDef,                  // [IN] TypeDef token within the file.
-        flags,                      // [IN] Flags.
-        &ct) );                     // [OUT] Returned ExportedType token.
-
-    return ct;
-} // Assembly::AddExportedTypeOnDisk
-
-//*******************************************************************************
-// Add a Type name to the ExportedType table in the in-memory assembly manifest.
-//*******************************************************************************
-mdExportedType Assembly::AddExportedTypeInMemory(LPCWSTR wszExportedType, mdToken tkImpl, mdToken tkTypeDef, CorTypeAttr flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(TypeFromToken(tkTypeDef) == mdtTypeDef);
-
-    // The in-memory assembly manifest
-    IMetaDataAssemblyEmit* pAssemEmitter = GetManifestFile()->GetAssemblyEmitter();
-
-    mdExportedType ct;
-
-    IfFailThrow( pAssemEmitter->DefineExportedType(
-        wszExportedType,            // [IN] Name of the COMType.
-        tkImpl,                     // [IN] mdFile or mdAssemblyRef that provides the ExportedType.
-        tkTypeDef,                  // [IN] TypeDef token within the file.
-        flags,                      // [IN] Flags.
-        &ct) );                     // [OUT] Returned ExportedType token.
-
-    return ct;
-} // Assembly::AddExportedTypeInMemory
-
-
-//***********************************************************
-// add an entry to ManifestResource table for a stand alone managed resource. On disk only.
-//***********************************************************
-void Assembly::AddStandAloneResource(LPCWSTR wszName, LPCWSTR wszDescription, LPCWSTR wszMimeType, LPCWSTR wszFileName, LPCWSTR wszFullFileName, int iAttribute)
-{
-    STANDARD_VM_CONTRACT;
-
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemEmitter(GetOnDiskMDAssemblyEmitter());
-    mdFile          tkFile;
-    mdManifestResource mr;
-    SBuffer         hash;
-
-    // Get the hash value;
-    if (GetHashAlgId())
-    {
-        PEImageHolder pImage(PEImage::OpenImage(StackSString(wszFullFileName)));
-        pImage->ComputeHash(GetHashAlgId(), hash);
-    }
-
-    IfFailThrow( pAssemEmitter->DefineFile(
-        wszFileName,            // [IN] Name of the file.
-        hash,                   // [IN] Hash Blob.
-        hash.GetSize(),         // [IN] Count of bytes in the Hash Blob.
-        ffContainsNoMetaData,   // [IN] Flags.
-        &tkFile) );             // [OUT] Returned File token.
-
-
-    IfFailThrow( pAssemEmitter->DefineManifestResource(
-        wszName,                // [IN] Name of the resource.
-        tkFile,                 // [IN] mdFile or mdAssemblyRef that provides the resource.
-        0,                      // [IN] Offset to the beginning of the resource within the file.
-        iAttribute,             // [IN] Flags.
-        &mr) );                 // [OUT] Returned ManifestResource token.
-
-}   // Assembly::AddStandAloneResource
-
-
-//***********************************************************
-// Save security permission requests.
-//***********************************************************
-void Assembly::AddDeclarativeSecurity(DWORD dwAction, void const *pValue, DWORD cbValue)
-{
-    STANDARD_VM_CONTRACT;
-
-    mdAssembly tkAssembly = 0x20000001;
-
-    SafeComHolder<IMetaDataAssemblyEmit> pAssemEmitter(GetOnDiskMDAssemblyEmitter());
-    _ASSERTE( pAssemEmitter );
-
-    SafeComHolder<IMetaDataEmitHelper> pEmitHelper;
-    IfFailThrow( pAssemEmitter->QueryInterface(IID_IMetaDataEmitHelper, (void**)&pEmitHelper) );
-
-    IfFailThrow(pEmitHelper->AddDeclarativeSecurityHelper(tkAssembly,
-                                                          dwAction,
-                                                          pValue,
-                                                          cbValue,
-                                                          NULL));
-}
-
-
-//***********************************************************
-// Allocate space for a strong name signature in the manifest
-//***********************************************************
-HRESULT Assembly::AllocateStrongNameSignature(ICeeFileGen  *pCeeFileGen,
-                                              HCEEFILE      ceeFile)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END
-    
-    HRESULT     hr;
-    HCEESECTION TData;
-    DWORD       dwDataOffset;
-    DWORD       dwDataLength;
-    DWORD       dwDataRVA;
-    VOID       *pvBuffer;
-    const void *pbPublicKey;
-    ULONG       cbPublicKey;
-    
-    // Determine size of signature blob.
-    
-    IfFailRet(GetManifestImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly),
-                                          &pbPublicKey, &cbPublicKey, NULL,
-                                          NULL, NULL, NULL));
-    
-    if (!StrongNameSignatureSize((BYTE *) pbPublicKey, cbPublicKey, &dwDataLength)) {
-        hr = StrongNameErrorInfo();
-        return hr;
-    }
-    
-    // Allocate space for the signature in the text section and update the COM+
-    // header to point to the space.
-    IfFailRet(pCeeFileGen->GetIlSection(ceeFile, &TData));
-    IfFailRet(pCeeFileGen->GetSectionDataLen(TData, &dwDataOffset));
-    IfFailRet(pCeeFileGen->GetSectionBlock(TData, dwDataLength, 4, &pvBuffer));
-    IfFailRet(pCeeFileGen->GetMethodRVA(ceeFile, dwDataOffset, &dwDataRVA));
-    IfFailRet(pCeeFileGen->SetStrongNameEntry(ceeFile, dwDataLength, dwDataRVA));
-    
-    return S_OK;
-}
-
-
-//***********************************************************
-// Strong name sign a manifest already persisted to disk
-//***********************************************************
-HRESULT Assembly::SignWithStrongName(LPCWSTR wszFileName)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END
-
-    HRESULT hr = S_OK;
-
-    // If we're going to do a full signing we have a key pair either
-    // in a key container or provided directly in a byte array.
-
-    switch (m_eStrongNameLevel) {
-    case SN_FULL_KEYPAIR_IN_ARRAY:
-        if (!StrongNameSignatureGeneration(wszFileName, NULL, m_pbStrongNameKeyPair, m_cbStrongNameKeyPair, NULL, NULL))
-            hr = StrongNameErrorInfo();
-        break;
-
-    case SN_FULL_KEYPAIR_IN_CONTAINER:
-        if (!StrongNameSignatureGeneration(wszFileName, m_pwStrongNameKeyContainer, NULL, 0, NULL, NULL))
-            hr = StrongNameErrorInfo();
-        break;
-
-    default:
-        break;
-    }
-
-    return hr;
-}
-
-
-//***********************************************************
-// save the manifest to disk!
-//***********************************************************
-void Assembly::SaveManifestToDisk(LPCWSTR wszFileName, int entrypoint, int fileKind, DWORD corhFlags, DWORD peFlags)
-{
-    STANDARD_VM_CONTRACT;
-
-    HRESULT         hr = NOERROR;
-    HCEEFILE        ceeFile = NULL;
-    ICeeFileGen     *pCeeFileGen = NULL;
-    RefClassWriter  *pRCW;
-    IMetaDataEmit   *pEmitter;
-
-    _ASSERTE( m_fEmbeddedManifest == false );
-
-    pRCW = m_pOnDiskManifest->GetClassWriter();
-    _ASSERTE(pRCW);
-
-    IfFailGo( pRCW->EnsureCeeFileGenCreated(corhFlags, peFlags) );
-
-    pCeeFileGen = pRCW->GetCeeFileGen();
-    ceeFile = pRCW->GetHCEEFILE();
-    _ASSERTE(ceeFile && pCeeFileGen);
-
-    //Emit the MetaData
-    pEmitter = m_pOnDiskManifest->GetClassWriter()->GetEmitter();
-    IfFailGo( pCeeFileGen->EmitMetaDataEx(ceeFile, pEmitter) );
-
-    // Allocate space for a strong name signature if a public key was supplied
-    // (this doesn't strong name the assembly, but it makes it possible to do so
-    // as a post processing step).
-    if (IsStrongNamed())
-        IfFailGo(AllocateStrongNameSignature(pCeeFileGen, ceeFile));
-
-    IfFailGo( pCeeFileGen->SetOutputFileName(ceeFile, (LPWSTR)wszFileName) );
-
-    // the entryPoint for an assembly is a tkFile token if exist.
-    if (RidFromToken(entrypoint) != mdTokenNil)
-        IfFailGo( pCeeFileGen->SetEntryPoint(ceeFile, entrypoint) );
-    if (fileKind == Dll)
-    {
-        pCeeFileGen->SetDllSwitch(ceeFile, true);
-    }
-    else
-    {
-        // should have a valid entry point for applications
-        if (fileKind == WindowApplication)
-        {
-            IfFailGo( pCeeFileGen->SetSubsystem(ceeFile, IMAGE_SUBSYSTEM_WINDOWS_GUI, CEE_IMAGE_SUBSYSTEM_MAJOR_VERSION, CEE_IMAGE_SUBSYSTEM_MINOR_VERSION) );
-        }
-        else
-        {
-            _ASSERTE(fileKind == ConsoleApplication);
-            IfFailGo( pCeeFileGen->SetSubsystem(ceeFile, IMAGE_SUBSYSTEM_WINDOWS_CUI, CEE_IMAGE_SUBSYSTEM_MAJOR_VERSION, CEE_IMAGE_SUBSYSTEM_MINOR_VERSION) );
-        }
-
-    }
-
-    //Generate the CeeFile
-    IfFailGo(pCeeFileGen->GenerateCeeFile(ceeFile) );
-
-    // Strong name sign the resulting assembly if required.
-    if (IsStrongNamed())
-        IfFailGo(SignWithStrongName(wszFileName));
-
-    // now release the m_pOnDiskManifest
-ErrExit:
-    pRCW->DestroyCeeFileGen();
-
-    // we keep the on disk manifest so that the GetModules code can skip over this ad-hoc module when modules are enumerated.
-    // Need to see if we can remove the creation of this module alltogether
-    //m_pOnDiskManifest = NULL;
-
-    if (FAILED(hr))
-    {
-        if (HRESULT_FACILITY(hr) == FACILITY_WIN32)
-        {
-            if (IsWin32IOError(HRESULT_CODE(hr)))
-            {
-                COMPlusThrowHR(COR_E_IO);
-            }
-            else
-            {
-                COMPlusThrowHR(hr);
-            }
-        }
-        if (hr == CEE_E_CVTRES_NOT_FOUND)
-            COMPlusThrow(kIOException, W("Argument_cvtres_NotFound"));
-        COMPlusThrowHR(hr);
-    }
-}   // Assembly::SaveManifestToDisk
-
-#endif // FEATURE_CORECLR && !CROSSGEN_COMPILE
 
 
 HRESULT STDMETHODCALLTYPE
@@ -3774,78 +2993,7 @@ GetAssembliesByName(LPCWSTR  szAppBase,
     if (!(szAssemblyName && ppIUnk && pcAssemblies))
         return E_POINTER;
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
     hr = COR_E_NOTSUPPORTED;
-#else
-    AppDomain *pDomain = NULL;
-
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-    if(szAppBase || szPrivateBin)
-    {
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        MethodDescCallSite createDomainEx(METHOD__APP_DOMAIN__CREATE_DOMAINEX);
-        struct _gc {
-            STRINGREF pFriendlyName;
-            STRINGREF pAppBase;
-            STRINGREF pPrivateBin;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-        gc.pFriendlyName = StringObject::NewString(W("GetAssembliesByName"));
-
-        if(szAppBase)
-        {
-            gc.pAppBase = StringObject::NewString(szAppBase);
-        }
-            
-        if(szPrivateBin)
-        {
-            gc.pPrivateBin = StringObject::NewString(szPrivateBin);
-        }
-
-        ARG_SLOT args[5] = 
-        {
-            ObjToArgSlot(gc.pFriendlyName),
-            NULL,
-            ObjToArgSlot(gc.pAppBase),
-            ObjToArgSlot(gc.pPrivateBin),
-            BoolToArgSlot(false)
-        };
-        APPDOMAINREF pDom = (APPDOMAINREF) createDomainEx.Call_RetOBJECTREF(args);
-        if (pDom == NULL)
-        {
-            hr = E_FAIL;
-        }
-        else 
-        {
-            Context *pContext = CRemotingServices::GetServerContextForProxy((OBJECTREF) pDom);
-            _ASSERTE(pContext);
-            pDomain = pContext->GetDomain();
-        }
-
-        GCPROTECT_END();
-    }
-    else
-        pDomain = SystemDomain::System()->DefaultDomain();
-
-    Assembly *pFoundAssembly;
-    if (SUCCEEDED(hr)) {
-        pFoundAssembly = pDomain->LoadAssemblyHelper(szAssemblyName,
-                                                     NULL);
-        if (SUCCEEDED(hr)) {
-            if (cMax < 1)
-                hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-            else {
-                ppIUnk[0] = (IUnknown *)pFoundAssembly->GetManifestAssemblyImporter();
-                ppIUnk[0]->AddRef();
-            }
-            *pcAssemblies = 1;
-        }
-    }
-
-    END_EXTERNAL_ENTRYPOINT;
-#endif // FEATURE_CORECLR
 
     return hr;
 }// Used by the IMetadata API's to access an assemblies metadata.
@@ -3865,188 +3013,7 @@ BOOL Assembly::MissingDependenciesCheckDone()
 };
 
 
-#ifdef FEATURE_FUSION
-void Assembly::SetBindingClosure(IAssemblyBindingClosure* pClosure) // Addrefs. It is assumed the caller did not addref pClosure for us.
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
 
-    _ASSERTE(m_pBindingClosure == NULL);
-    _ASSERTE(pClosure != NULL);
-
-    m_pBindingClosure = pClosure;
-    pClosure->AddRef(); // It is assumed the caller did not addref pBindingClosure for us.
-}
-
-IAssemblyBindingClosure * Assembly::GetBindingClosure()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pBindingClosure;
-}
-
-
-// The shared module list is effectively an extension of the shared domain assembly hash table.
-// It is the canonical list and aribiter of modules loaded from this assembly by any app domain.
-// Modules are stored here immediately on creating (to prevent duplicate creation), as opposed to
-// in the rid map, where they are only placed upon load completion.
-
-BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CODESHARING,
-         LL_INFO100,
-         "Checking if we can share: \"%S\" in domain 0x%x.\n",
-         GetDebugName(), pDomainAssembly->GetAppDomain()));
-
-    STRESS_LOG2(LF_CODESHARING, LL_INFO1000,"Checking whether DomainAssembly %p is compatible with Assembly %p",
-        pDomainAssembly,this);
-
-    // We must always share the same system assemblies
-    if (IsSystem())
-    {
-        STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"System assembly - sharing");
-        return TRUE;
-    }
-
-    if ((pDomainAssembly->GetDebuggerInfoBits()&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))
-        != (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO)))
-    {
-        LOG((LF_CODESHARING,
-             LL_INFO100,
-             "We can't share it, desired debugging flags %x are different than %x\n",
-             pDomainAssembly->GetDebuggerInfoBits(), (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))));
-        STRESS_LOG2(LF_CODESHARING, LL_INFO100,"Flags diff= %08x [%08x/%08x]",pDomainAssembly->GetDebuggerInfoBits(),
-                    m_debuggerFlags);
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_DebuggerFlagMismatch;
-        return FALSE;
-    }
-
-    PEAssembly * pDomainAssemblyFile = pDomainAssembly->GetFile();
-    if (pDomainAssemblyFile == NULL)
-    {
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_NullPeassembly;
-        return FALSE;
-    }
-    
-    IAssemblyBindingClosure * pContext = GetBindingClosure();
-    if (pContext == NULL)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"No context 1 - status=%d",pDomainAssemblyFile->IsSystem());
-        if (pDomainAssemblyFile->IsSystem())
-            return TRUE;
-        else
-        {
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingAssemblyClosure1;
-            return FALSE;
-        }
-    }
-
-    IAssemblyBindingClosure * pCurrentContext = pDomainAssembly->GetAssemblyBindingClosure(LEVEL_STARTING);
-    if (pCurrentContext == NULL)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"No context 2 - status=%d",pDomainAssemblyFile->IsSystem());
-        if (pDomainAssemblyFile->IsSystem())
-            return TRUE;
-        else
-        {
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingAssemblyClosure2;
-            return FALSE;
-        }
-    }
-
-    // ensure the closures are walked
-    {
-        ReleaseHolder<IBindResult> pWinRTBindResult;
-        
-        IUnknown * pUnk;
-        if (pDomainAssembly->GetFile()->IsWindowsRuntime())
-        {   // It is .winmd file (WinRT assembly)
-            IfFailThrow(CLRPrivAssemblyWinRT::GetIBindResult(pDomainAssembly->GetFile()->GetHostAssembly(), &pWinRTBindResult));
-            pUnk = pWinRTBindResult;
-        }
-        else
-        {
-            pUnk = pDomainAssembly->GetFile()->GetFusionAssembly();
-        }
-        
-        GCX_PREEMP();
-        IfFailThrow(pCurrentContext->EnsureWalked(pUnk, ::GetAppDomain()->GetFusionContext(), LEVEL_COMPLETE));
-    }
-
-    if ((pContext->HasBeenWalked(LEVEL_COMPLETE) != S_OK) || !MissingDependenciesCheckDone())
-    {
-        GCX_COOP();
-
-        BOOL fMissingDependenciesResolved = FALSE;
-
-        ENTER_DOMAIN_PTR(SystemDomain::System()->DefaultDomain(), ADV_DEFAULTAD);
-        {
-            {
-                ReleaseHolder<IBindResult> pWinRTBindResult;
-        
-                IUnknown * pUnk;
-                if (GetManifestFile()->IsWindowsRuntime())
-                {   // It is .winmd file (WinRT assembly)
-                    IfFailThrow(CLRPrivAssemblyWinRT::GetIBindResult(GetManifestFile()->GetHostAssembly(), &pWinRTBindResult));
-                    pUnk = pWinRTBindResult;
-                }
-                else
-                {
-                    pUnk = GetManifestFile()->GetFusionAssembly();
-                }
-                
-                GCX_PREEMP();
-                IfFailThrow(pContext->EnsureWalked(pUnk, ::GetAppDomain()->GetFusionContext(), LEVEL_COMPLETE));
-            }
-            DomainAssembly * domainAssembly = ::GetAppDomain()->FindDomainAssembly(this);
-            if (domainAssembly != NULL)
-            {
-                if (domainAssembly->CheckMissingDependencies() == CMD_Resolved)
-                {
-                    //cannot share
-                    fMissingDependenciesResolved = TRUE;
-                }
-            }
-        }
-        END_DOMAIN_TRANSITION;
-
-        if (fMissingDependenciesResolved)
-        {
-            STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"Missing dependencies resolved - not sharing");
-            g_dwLoaderReasonForNotSharing = ReasonForNotSharing_MissingDependenciesResolved;
-            return FALSE;
-        }
-    }
-
-    HRESULT hr = pContext->IsEqual(pCurrentContext);
-    IfFailThrow(hr);
-    if (hr != S_OK)
-    {
-        STRESS_LOG1(LF_CODESHARING, LL_INFO1000,"Closure comparison returned %08x - not sharing",hr);        
-        g_dwLoaderReasonForNotSharing = ReasonForNotSharing_ClosureComparisonFailed;
-        return FALSE;
-    }
-
-    LOG((LF_CODESHARING, LL_INFO100, "We can share it : \"%S\"\n", GetDebugName()));
-    STRESS_LOG0(LF_CODESHARING, LL_INFO1000,"Everything is fine - sharing");                
-    return TRUE;
-}
-#endif
-
-#ifdef FEATURE_VERSIONING
 
 BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 {
@@ -4076,11 +3043,10 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
     return TRUE;
 }
 
-#endif // FEATURE_VERSIONING
 
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 BOOL Assembly::AllowUntrustedCaller()
 {
     CONTRACTL
@@ -4093,7 +3059,7 @@ BOOL Assembly::AllowUntrustedCaller()
 
     return ModuleSecurityDescriptor::GetModuleSecurityDescriptor(this)->IsAPTCA();
 }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {
@@ -4323,365 +3289,6 @@ IWinMDImport *Assembly::GetManifestWinMDImport()
 
 #endif // FEATURE_COMINTEROP
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-void Assembly::GenerateBreadcrumbForServicing()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (AppX::IsAppXProcess() || IsIntrospectionOnly() || GetManifestFile()->IsDynamic())
-    {
-        return;
-    }
-
-    if (HasServiceableAttribute() || IsExistingOobAssembly())
-    {
-        StackSString ssDisplayName;
-        GetDisplayName(ssDisplayName);
-
-        WriteBreadcrumb(ssDisplayName);
-        CheckDenyList(ssDisplayName);
-    }
-}
-
-void Assembly::WriteBreadcrumb(const SString &ssDisplayName)
-{
-    STANDARD_VM_CONTRACT;
-
-    WCHAR path[MAX_LONGPATH];
-    HRESULT hr = WszSHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, SHGFP_TYPE_CURRENT, ARRAYSIZE(path), path);
-    if (hr != S_OK)
-    {
-        return;
-    }
-
-    if (wcscat_s(path, W("\\Microsoft\\NetFramework\\BreadcrumbStore\\")) != 0)
-    {
-        return;
-    }
-
-    size_t dirPathLen = wcslen(path);
-
-    // Validate the display name.  E.g., we don't want the display name to start with "..\\".
-    bool inSimpleName = true;
-    for (SString::CIterator it = ssDisplayName.Begin(); it != ssDisplayName.End(); ++it)
-    {
-        WCHAR c = *it;
-
-        // The following characters are always allowed: a-zA-Z0-9_
-        if (c >= W('a') && c <= W('z') || c >= W('A') && c <= W('Z') || c >= W('0') && c <= W('9') || c == W('_')) continue;
-
-        // The period is allowed except as the first char.
-        if (c == W('.') && it != ssDisplayName.Begin()) continue;
-
-        // A comma terminates the assembly simple name, and we are in key=value portion of the display name.
-        if (c == W(','))
-        {
-            inSimpleName = false;
-            continue;
-        }
-
-        // In key=value portion, space and equal sign are also allowed.
-        if (!inSimpleName && (c == W(' ') || c == W('='))) continue;
-
-        // If we reach here, we have an invalid assembly display name. Return without writing breadcrumb.
-        return;
-    }
-
-    // Log a breadcrumb using full display name.
-    if (wcscat_s(path, ssDisplayName.GetUnicode()) == 0)
-    {
-        HandleHolder hFile = WszCreateFile(path, 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-    }
-
-    // Log another breadcrumb using display name without version.
-    // First make a copy of the display name, and look for its version part.
-    StackSString ssNoVersion(ssDisplayName);
-    SString::Iterator itVersion = ssNoVersion.Begin();
-    if (!ssNoVersion.Find(itVersion, W(", Version=")))
-    {
-        return;
-    }
-
-    // Start from the comma before Version=, advance past the comma, then look for the next comma.
-    SString::Iterator itVersionEnd = itVersion;
-    ++itVersionEnd;
-    if (!ssNoVersion.Find(itVersionEnd, W(',')))
-    {
-        // Version is the last key=value pair.
-        itVersionEnd = ssNoVersion.End();
-    }
-
-    // Erase the version.
-    ssNoVersion.Delete(itVersion, itVersionEnd - itVersion);
-
-    // Generate the full path string and create the file.
-    path[dirPathLen] = W('\0');
-    if (wcscat_s(path, ssNoVersion.GetUnicode()) == 0)
-    {
-        HandleHolder hFile = WszCreateFile(path, 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-    }
-
-}
-
-bool Assembly::HasServiceableAttribute()
-{
-    STANDARD_VM_CONTRACT;
-
-    IMDInternalImport *pImport = GetManifestImport();
-    MDEnumHolder hEnum(pImport);
-    HRESULT hr = pImport->EnumCustomAttributeByNameInit(GetManifestToken(), ASSEMBLY_METADATA_TYPE, &hEnum);
-    if (hr != S_OK)
-    {
-        return false;
-    }
-
-    mdCustomAttribute tkAttribute;
-    while (pImport->EnumNext(&hEnum, &tkAttribute))
-    {
-        // Get raw custom attribute.
-        const BYTE  *pbAttr = NULL;         // Custom attribute data as a BYTE*.
-        ULONG cbAttr = 0;                   // Size of custom attribute data.
-        if (FAILED(pImport->GetCustomAttributeAsBlob(tkAttribute, reinterpret_cast<const void **>(&pbAttr), &cbAttr)))
-        {
-            THROW_BAD_FORMAT(BFA_INVALID_TOKEN, GetManifestModule());
-        }
-
-        CustomAttributeParser cap(pbAttr, cbAttr);
-        if (FAILED(cap.ValidateProlog()))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, GetManifestModule());
-        }
-
-        // Get the metadata key. It is not null terminated.
-        LPCUTF8 key;
-        ULONG   cbKey;
-        if (FAILED(cap.GetString(&key, &cbKey)))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, GetManifestModule());
-        }
-
-        const LPCUTF8 szServiceable = "Serviceable";
-        const ULONG cbServiceable = 11;
-        if (cbKey != cbServiceable || strncmp(key, szServiceable, cbKey) != 0)
-        {
-            continue;
-        }
-
-        // Get the metadata value. It is not null terminated.
-        if (FAILED(cap.GetString(&key, &cbKey)))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, GetManifestModule());
-        }
-
-        const LPCUTF8 szTrue = "True";
-        const ULONG cbTrue = 4;
-        if (cbKey == cbTrue && strncmp(key, szTrue, cbKey) == 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool Assembly::IsExistingOobAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return ExistingOobAssemblyList::Instance()->IsOnlist(this);
-}
-
-void Assembly::CheckDenyList(const SString &ssDisplayName)
-{
-    STANDARD_VM_CONTRACT;
-
-    StackSString ssKeyName(W("SOFTWARE\\Microsoft\\.NETFramework\\Policy\\DenyList\\"));
-
-    ssKeyName.Append(ssDisplayName);
-
-    RegKeyHolder hKey;
-    LONG status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, ssKeyName.GetUnicode(), 0, KEY_WOW64_64KEY | GENERIC_READ, &hKey);
-
-    if (status != ERROR_SUCCESS)
-    {
-        return;
-    }
-
-    StackSString ssFwlink;
-    HRESULT hr = Clr::Util::Reg::ReadStringValue(hKey, NULL, NULL, ssFwlink);
-    if (FAILED(hr) || ssFwlink.GetCount() == 0)
-    {
-        ssFwlink.Set(W("http://go.microsoft.com/fwlink/?LinkID=286319"));
-    }
-
-    StackSString ssMessageTemplate;
-    if(!ssMessageTemplate.LoadResource(CCompRC::Optional, IDS_EE_ASSEMBLY_ON_DENY_LIST))
-    {
-        ssMessageTemplate.Set(W("The assembly %1 that the application tried to load has a known vulnerability. Please go to %2 to find a fix for this issue."));
-    }
-
-    StackSString ssMessage;
-    ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, ssMessageTemplate.GetUnicode(), 0, 0, ssDisplayName, ssFwlink);
-
-    ClrReportEvent(
-        W(".NET Runtime"),            // Event source
-        EVENTLOG_ERROR_TYPE,        // Type
-        0,                          // Category
-        SecurityConfig,             // Event ID
-        NULL,                       // User SID
-        ssMessage.GetUnicode());    // Message
-
-    NewHolder<EEMessageException> pEx(new EEMessageException(kSecurityException, IDS_EE_ASSEMBLY_ON_DENY_LIST, ssDisplayName.GetUnicode(), ssFwlink.GetUnicode()));
-    EEFileLoadException::Throw(m_pManifestFile, pEx->GetHR(), pEx);
-}
-
-BOOL IsReportableAssembly(PEAssembly *pPEAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    // If the assembly could have used a native image, but did not, report the IL image
-    BOOL fCanUseNativeImage = (pPEAssembly->HasHostAssembly() || pPEAssembly->IsContextLoad()) && 
-                               pPEAssembly->CanUseNativeImage() && 
-                               !IsNativeImageOptedOut(pPEAssembly->GetFusionAssemblyName());
-
-    return fCanUseNativeImage;
-}
-
-BOOL Assembly::SupportsAutoNGenWorker()
-{
-    STANDARD_VM_CONTRACT;
-
-    PEAssembly *pPEAssembly = GetManifestFile();
-
-    if (pPEAssembly->IsSourceGAC() && Fusion::Util::IsUnifiedAssembly(pPEAssembly->GetFusionAssemblyName()) == S_OK)
-    {
-        // Assemblies in the .NET Framework supports Auto NGen.
-        return TRUE;
-    }
-
-    if (IsAfContentType_WindowsRuntime(GetFlags()))
-    {
-        // WinMD files support Auto NGen.
-        return TRUE;
-    }
-    
-    if (pPEAssembly->HasHostAssembly())
-    {
-        // Auto NGen is enabled on all Metro app assemblies.
-        return TRUE;
-    }
-
-    if (pPEAssembly->IsSourceGAC())
-    {
-        // For non-framework assemblies in GAC, look for TargetFrameworkAttriute.
-        const BYTE  *pbAttr;                // Custom attribute data as a BYTE*.
-        ULONG       cbAttr;                 // Size of custom attribute data.
-        HRESULT hr = GetManifestImport()->GetCustomAttributeByName(GetManifestToken(), TARGET_FRAMEWORK_TYPE, (const void**)&pbAttr, &cbAttr);
-        if (hr != S_OK)
-        {
-            return FALSE;
-        }
-
-        CustomAttributeParser cap(pbAttr, cbAttr);
-        if (FAILED(cap.ValidateProlog()))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, GetManifestModule());
-        }
-        LPCUTF8 lpTargetFramework;
-        ULONG cbTargetFramework;
-        if (FAILED(cap.GetString(&lpTargetFramework, &cbTargetFramework)))
-        {
-            THROW_BAD_FORMAT(BFA_BAD_CA_HEADER, GetManifestModule());
-        }
-
-        if (lpTargetFramework == NULL || cbTargetFramework == 0)
-        {
-            return FALSE;
-        }
-
-        SString ssTargetFramework(SString::Utf8, lpTargetFramework, cbTargetFramework);
-
-        // Look for two special TargetFramework values that disables AutoNGen.  To guard against future
-        // variations of the string values, we do prefix matches.
-        SString ssFramework40(SString::Literal, W(".NETFramework,Version=v4.0"));
-        SString ssPortableLib(SString::Literal, W(".NETPortable,"));
-        if (ssTargetFramework.BeginsWithCaseInsensitive(ssFramework40) || ssTargetFramework.BeginsWithCaseInsensitive(ssPortableLib))
-        {
-            return FALSE;
-        }
-
-        // If TargetFramework doesn't match one of the two special values, we enable Auto NGen.
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-void Assembly::ReportAssemblyUse()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Do not log if we don't have a global gac logger object
-    if (g_pIAssemblyUsageLogGac != NULL)
-    {
-        // Only consider reporting for loads that could possibly use native images.
-        PEAssembly *pPEAssembly = this->GetManifestFile();
-        if (IsReportableAssembly(pPEAssembly) && !pPEAssembly->IsReportedToUsageLog())
-        {
-            // Do not log repeatedly
-            pPEAssembly->SetReportedToUsageLog();
-
-            ReleaseHolder<IAssemblyUsageLog> pRefCountedUsageLog;
-            IAssemblyUsageLog *pUsageLog = NULL;
-            if (SupportsAutoNGen())
-            {
-                if (pPEAssembly->IsSourceGAC())
-                {
-                    pUsageLog = g_pIAssemblyUsageLogGac;
-                }
-                else if (pPEAssembly->HasHostAssembly())
-                {
-                    UINT_PTR binderId;
-                    IfFailThrow(pPEAssembly->GetHostAssembly()->GetBinderID(&binderId));
-                    pRefCountedUsageLog = AssemblyUsageLogManager::GetUsageLogForBinder(binderId);
-                    pUsageLog = pRefCountedUsageLog;
-                }
-            }
-
-            if (pUsageLog)
-            {
-                PEAssembly *pPEAssembly = GetManifestFile();
-                StackSString name;
-                // GAC Assemblies are reported by assembly name
-                if (pUsageLog == g_pIAssemblyUsageLogGac)
-                {
-                    this->GetDisplayName(name);
-                }
-                // Other assemblies (AppX...) are reported by file path
-                else
-                {
-                    name.Set(pPEAssembly->GetILimage()->GetPath().GetUnicode());
-                }
-
-                if (pPEAssembly->HasNativeImage())
-                {
-                    if(!IsSystem())
-                    {
-                        // If the assembly used a native image, report it
-                        ReleaseHolder<PEImage> pNativeImage = pPEAssembly->GetNativeImageWithRef();
-                        pUsageLog->LogFile(name.GetUnicode(), pNativeImage->GetPath().GetUnicode(), ASSEMBLY_USAGE_LOG_FLAGS_NI);
-                    }
-                }
-                else
-                {
-                    // If the assembly could have used a native image, but did not, report the IL image
-                    pUsageLog->LogFile(name.GetUnicode(), NULL, ASSEMBLY_USAGE_LOG_FLAGS_IL);
-                }
-            }
-        }
-    }
-}
-#endif // FEATURE_CORECLR && !CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -4767,11 +3374,7 @@ FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
     while (itFullAccessAssemblies.Next())
     {
         FriendAssemblyName_t *pFriendAssemblyName = static_cast<FriendAssemblyName_t *>(itFullAccessAssemblies.GetElement());
-#ifdef FEATURE_FUSION
-        pFriendAssemblyName->Release();
-#else // FEATURE_FUSION
         delete pFriendAssemblyName;
-#endif // FEATURE_FUSION
     }
 }
 
@@ -4856,9 +3459,6 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
 
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
-#ifdef FEATURE_FUSION
-            hr = CreateAssemblyNameObject(&pFriendAssemblyName, displayName.GetUnicode(), CANOF_PARSE_FRIEND_DISPLAY_NAME, NULL);
-#else // FEATURE_FUSION
             StackScratchBuffer buffer;
             pFriendAssemblyName = new FriendAssemblyName_t;
             hr = pFriendAssemblyName->Init(displayName.GetUTF8(buffer));
@@ -4867,7 +3467,6 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
             {
                 hr = pFriendAssemblyName->CheckFriendAssemblyName();
             }
-#endif // FEATURE_FUSION
 
             if (FAILED(hr))
             {
@@ -4884,31 +3483,6 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
 
             // CoreCLR does not have a valid scenario for strong-named assemblies requiring their dependencies
             // to be strong-named as well.
-#if !defined(FEATURE_CORECLR)        
-            // If this assembly has a strong name, then its friends declarations need to have strong names too
-            if (pAssembly->IsStrongNamed())
-            {
-#ifdef FEATURE_FUSION        
-                DWORD dwSize = 0;
-                if (SUCCEEDED(hr = pFriendAssemblyName->GetProperty(ASM_NAME_PUBLIC_KEY, NULL, &dwSize)))
-                {
-                    // If this call succeeds with an empty buffer, then the supplied name doesn't have a public key.
-                    THROW_HR_ERROR_WITH_INFO(META_E_CA_FRIENDS_SN_REQUIRED, pAssembly);
-                }
-                else if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
-                {
-                    IfFailThrow(hr);
-                }
-#else // FEATURE_FUSION
-                // Desktop crossgen comes here
-                if (!pFriendAssemblyName->IsStrongNamed())
-                {
-                    // If this call succeeds with an empty buffer, then the supplied name doesn't have a public key.
-                    THROW_HR_ERROR_WITH_INFO(META_E_CA_FRIENDS_SN_REQUIRED, pAssembly);
-                }
-#endif // FEATURE_FUSION            
-            }
-#endif // !defined(FEATURE_CORECLR)
 
             pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName);
 
@@ -4971,23 +3545,14 @@ bool FriendAssemblyDescriptor::IsAssemblyOnList(PEAssembly *pAssembly, const Arr
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_FUSION
     AssemblySpec asmDef;
     asmDef.InitializeSpec(pAssembly);
-#endif        
 
     ArrayList::ConstIterator itAssemblyNames = alAssemblyNames.Iterate();
     while (itAssemblyNames.Next())
     {
         const FriendAssemblyName_t *pFriendAssemblyName = static_cast<const FriendAssemblyName_t *>(itAssemblyNames.GetElement());
-#ifdef FEATURE_FUSION
-        // This is a const operation on the pointer, but Fusion is not const-correct.
-        //  @TODO - propigate const correctness through Fusion and remove this cast
-        HRESULT hr = const_cast<FriendAssemblyName_t *>(pFriendAssemblyName)->IsEqual(pAssembly->GetFusionAssemblyName(), ASM_CMPF_DEFAULT);
-        IfFailThrow(hr);
-#else       
         HRESULT hr = AssemblySpec::RefMatchesDef(pFriendAssemblyName, &asmDef) ? S_OK : S_FALSE;
-#endif
 
         if (hr == S_OK)
         {
@@ -5001,70 +3566,3 @@ bool FriendAssemblyDescriptor::IsAssemblyOnList(PEAssembly *pAssembly, const Arr
 #endif // !DACCESS_COMPILE
 
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
-
-ExistingOobAssemblyList::ExistingOobAssemblyList()
-{
-    STANDARD_VM_CONTRACT;
-
-    RegKeyHolder hKey;
-    LONG status = RegOpenKeyExW(HKEY_LOCAL_MACHINE, W("SOFTWARE\\Microsoft\\.NETFramework\\Policy\\Servicing"), 0, KEY_WOW64_64KEY | GENERIC_READ, &hKey);
-    if (status != ERROR_SUCCESS)
-    {
-        return;
-    }
-
-    for (DWORD i = 0; ; i++)
-    {
-        WCHAR name[MAX_PATH_FNAME + 1];
-        DWORD cchName = ARRAYSIZE(name);
-        status = RegEnumKeyExW(hKey, i, name, &cchName, NULL, NULL, NULL, NULL);
-
-        if (status == ERROR_NO_MORE_ITEMS)
-        {
-            break;
-        }
-
-        if (status == ERROR_SUCCESS)
-        {
-            NonVMComHolder<IAssemblyName> pAssemblyName;
-            HRESULT hr = CreateAssemblyNameObject(&pAssemblyName, name, CANOF_PARSE_DISPLAY_NAME, NULL);
-            if (SUCCEEDED(hr))
-            {
-                hr = m_alExistingOobAssemblies.Append(pAssemblyName.GetValue());
-                if (SUCCEEDED(hr))
-                {
-                    pAssemblyName.SuppressRelease();
-                }
-            }
-        }
-    }
-}
-
-bool ExistingOobAssemblyList::IsOnlist(Assembly *pAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    ArrayList::Iterator itAssemblyNames = m_alExistingOobAssemblies.Iterate();
-    while (itAssemblyNames.Next())
-    {
-        IAssemblyName *pAssemblyName = static_cast<IAssemblyName *>(itAssemblyNames.GetElement());
-        HRESULT hr = pAssemblyName->IsEqual(pAssembly->GetFusionAssemblyName(), ASM_CMPF_DEFAULT);
-        if (hr == S_OK)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void ExistingOobAssemblyList::Init()
-{
-    STANDARD_VM_CONTRACT;
-
-    s_pInstance = new ExistingOobAssemblyList();
-}
-
-ExistingOobAssemblyList *ExistingOobAssemblyList::s_pInstance;
-#endif // !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)

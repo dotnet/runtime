@@ -11,7 +11,9 @@
 **
 ** 
 ===========================================================*/
-namespace System {
+
+namespace System
+{
     // IDisposable is an attempt at helping to solve problems with deterministic
     // finalization.  The GC of course doesn't leave any way to deterministically
     // know when a finalizer will run.  This forces classes that hold onto OS
@@ -51,8 +53,8 @@ namespace System {
     // data buffered by the StreamWriter cannot be written to the Stream.  In this
     // case, it doesn't make much sense to provide a finalizer on the StreamWriter
     // since you cannot solve this problem correctly.  
-[System.Runtime.InteropServices.ComVisible(true)]
-    public interface IDisposable {
+    public interface IDisposable
+    {
         void Dispose();
     }
 }

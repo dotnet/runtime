@@ -133,9 +133,8 @@ void CodeGen::genCodeForBBlist()
      */
 
     BasicBlock* block;
-    BasicBlock* lblk; /* previous block */
 
-    for (lblk = nullptr, block = compiler->fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+    for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
 #ifdef DEBUG
         if (compiler->verbose)
@@ -247,6 +246,10 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+        genInsertNopForUnwinder(block);
+#endif
+
         /* Start a new code output block */
 
         genUpdateCurrentFunclet(block);
@@ -284,7 +287,7 @@ void CodeGen::genCodeForBBlist()
             }
 #endif
             // We should never have a block that falls through into the Cold section
-            noway_assert(!lblk->bbFallsThrough());
+            noway_assert(!block->bbPrev->bbFallsThrough());
 
             // We require the block that starts the Cold section to have a label
             noway_assert(block->bbEmitCookie);
@@ -602,7 +605,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_CALLFINALLY:
-                block = genCallFinally(block, lblk);
+                block = genCallFinally(block);
                 break;
 
 #if FEATURE_EH_FUNCLETS

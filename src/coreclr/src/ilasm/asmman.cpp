@@ -10,9 +10,6 @@
 
 #include "assembler.h"
 #include "strongname.h"
-#ifndef FEATURE_CORECLR
-#include "LegacyActivationShim.h"
-#endif
 #include <limits.h>
 #include <fusion.h>
 
@@ -153,78 +150,6 @@ void    AsmMan::SetModuleName(__inout_opt __nullterminated char* szName)
     }
 }
 //==============================================================================================================
-// Borrowed from VM\assembly.cpp
-#ifndef FEATURE_CORECLR
-HRESULT GetHash(__in LPWSTR moduleName,
-                          ALG_ID iHashAlg,
-                          BYTE** pbCurrentValue,  // should be NULL
-                          DWORD *cbCurrentValue)
-{
-    HRESULT     hr = E_FAIL;
-    HCRYPTPROV  hProv = 0;
-    HCRYPTHASH  hHash = 0;
-    DWORD       dwCount = sizeof(DWORD);
-    PBYTE       pbBuffer = NULL;
-    DWORD       dwBufferLen;
-    HANDLE      hFile = INVALID_HANDLE_VALUE;
-    HANDLE      hMapFile = NULL;
-    
-    hFile = WszCreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ,
-                         0, OPEN_EXISTING, 0, 0);
-    if (hFile == INVALID_HANDLE_VALUE) return E_FAIL;
-
-    dwBufferLen = SafeGetFileSize(hFile,NULL);
-    if (dwBufferLen == 0xffffffff)
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto exit;
-    }
-    hMapFile = WszCreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (hMapFile == NULL) goto exit;
-
-    pbBuffer = (PBYTE) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-    if (pbBuffer == NULL) goto exit;
-
-    // No need to late bind this stuff, all these crypto API entry points happen
-    // to live in ADVAPI32.
-
-    if ((!WszCryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) ||
-        (!CryptCreateHash(hProv, iHashAlg, 0, 0, &hHash)) ||
-        (!CryptHashData(hHash, pbBuffer, dwBufferLen, 0)) ||
-        (!CryptGetHashParam(hHash, HP_HASHSIZE, (BYTE *) cbCurrentValue, 
-                            &dwCount, 0))) {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto exit;
-    }
-
-    *pbCurrentValue = new BYTE[*cbCurrentValue];
-    if (!(*pbCurrentValue)) {
-        hr = E_OUTOFMEMORY;
-        goto exit;
-    }
-
-    if(!CryptGetHashParam(hHash, HP_HASHVAL, *pbCurrentValue, cbCurrentValue, 0)) {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        delete[] *pbCurrentValue;
-        *pbCurrentValue = 0;
-        goto exit;
-    }
-
-    hr = S_OK;
-
- exit:
-    if (pbBuffer) UnmapViewOfFile(pbBuffer);
-    if (hMapFile) CloseHandle(hMapFile); 
-    CloseHandle(hFile);
-    if (hHash)
-        CryptDestroyHash(hHash);
-    if (hProv)
-        CryptReleaseContext(hProv, 0);
-
-    return hr;
-}
-#endif // !FEATURE_CORECLR
-//==============================================================================================================
 
 void    AsmMan::AddFile(__in __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob)
 {
@@ -277,13 +202,6 @@ void    AsmMan::EmitFiles()
             if(m_pAssembly      // and assembly is defined
                 && m_pAssembly->ulHashAlgorithm) // and hash algorithm is defined...
             { // then try to compute it
-#ifndef FEATURE_CORECLR
-                if(SUCCEEDED(GetHash(wzUniBuf,(ALG_ID)(m_pAssembly->ulHashAlgorithm),&pHash,&cbHash)))
-                {
-                    tmp->pHash = new BinStr(pHash,cbHash);
-                }
-                else
-#endif // !FEATURE_CORECLR
                 {
                     pHash = NULL;
                     cbHash = 0;
@@ -449,145 +367,6 @@ void    AsmMan::EndAssembly()
                 m_pCurAsmRef = NULL;
                 return;
             }
-#ifndef FEATURE_CORECLR
-            if(m_pCurAsmRef->isAutodetect)
-            {
-                IAssemblyName* pIAsmName;
-                HRESULT hr;
-                // Convert name to Unicode
-                WszMultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
-                hr = CreateAssemblyNameObject(&pIAsmName,wzUniBuf,CANOF_PARSE_DISPLAY_NAME,NULL);
-                if(SUCCEEDED(hr))
-                {
-                    // set enumeration criteria: what is known about AsmRef (besides name)
-                    if(m_pCurAsmRef->usVerMajor != (USHORT)0xFFFF)
-                        pIAsmName->SetProperty(ASM_NAME_MAJOR_VERSION,&(m_pCurAsmRef->usVerMajor),2);
-                    if(m_pCurAsmRef->usVerMinor != (USHORT)0xFFFF)
-                        pIAsmName->SetProperty(ASM_NAME_MINOR_VERSION,&(m_pCurAsmRef->usVerMinor),2);
-                    if(m_pCurAsmRef->usBuild != (USHORT)0xFFFF)
-                        pIAsmName->SetProperty(ASM_NAME_BUILD_NUMBER,&(m_pCurAsmRef->usBuild),2);
-                    if(m_pCurAsmRef->usRevision != (USHORT)0xFFFF)
-                        pIAsmName->SetProperty(ASM_NAME_REVISION_NUMBER,&(m_pCurAsmRef->usRevision),2);
-                    if(m_pCurAsmRef->pPublicKeyToken)
-                        pIAsmName->SetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                               m_pCurAsmRef->pPublicKeyToken->ptr(),
-                                               m_pCurAsmRef->pPublicKeyToken->length());
-                    if(m_pCurAsmRef->pLocale)
-                        pIAsmName->SetProperty(ASM_NAME_CULTURE,
-                                               m_pCurAsmRef->pLocale->ptr(),
-                                               m_pCurAsmRef->pLocale->length());
-
-                    // enumerate assemblies
-                    IAssemblyEnum* pIAsmEnum = NULL;
-                    hr = CreateAssemblyEnum(&pIAsmEnum, NULL, pIAsmName, ASM_CACHE_GAC, NULL);
-                    if(SUCCEEDED(hr))
-                    {
-                        IAssemblyName* pIAsmNameFound;
-                        IAssemblyName* pIAsmNameLatestVer = NULL;
-                        ULONGLONG   ullVer=0, ullVerLatest=0;
-                        DWORD  dwVerHi, dwVerLo;
-    
-                        // find the latest and greatest, if any
-                        for(;;)
-                        {
-                            pIAsmNameFound = NULL;
-                            hr = pIAsmEnum->GetNextAssembly(NULL,&pIAsmNameFound,0); 
-                            if(SUCCEEDED(hr) && pIAsmNameFound)
-                            {
-    
-                                pIAsmNameFound->GetVersion(&dwVerHi,&dwVerLo);
-                                ullVer = (ULONGLONG)dwVerHi;
-                                ullVer <<= sizeof(DWORD);
-                                ullVer |= dwVerLo;
-                                if(ullVer > ullVerLatest)
-                                {
-                                    if(pIAsmNameLatestVer)
-                                       pIAsmNameLatestVer->Release(); 
-                                    ullVerLatest = ullVer;
-                                    pIAsmNameLatestVer = pIAsmNameFound;
-                                }
-                                else
-                                    pIAsmNameFound->Release();
-                            }
-                            else break;
-                        }
-                        // if found, fill the gaps
-                        if(pIAsmNameLatestVer)
-                        {
-                            DWORD cbSize=0;
-                            USHORT usDummy=0;
-
-                            if(m_pCurAsmRef->pPublicKeyToken == NULL)
-                            {
-                                cbSize = 1024;
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_PUBLIC_KEY_TOKEN,
-                                                wzUniBuf, &cbSize);
-                                if(cbSize)
-                                {
-                                    if((m_pCurAsmRef->pPublicKeyToken = new BinStr()))
-                                        memcpy(m_pCurAsmRef->pPublicKeyToken->getBuff(cbSize),
-                                            wzUniBuf, cbSize);
-                                }
-                            }
-    
-                            if(m_pCurAsmRef->usVerMajor == (USHORT)0xFFFF)
-                            {
-                                cbSize = (DWORD)sizeof(WORD);
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_MAJOR_VERSION,
-                                                &usDummy, &cbSize);
-                                m_pCurAsmRef->usVerMajor = usDummy;
-                            }
-                            if(m_pCurAsmRef->usVerMinor == (USHORT)0xFFFF)
-                            {
-                                cbSize = (DWORD)sizeof(WORD);
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_MINOR_VERSION,
-                                                &usDummy, &cbSize);
-                                m_pCurAsmRef->usVerMinor = usDummy;
-                            }
-                            if(m_pCurAsmRef->usBuild == (USHORT)0xFFFF)
-                            {
-                                cbSize = (DWORD)sizeof(WORD);
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_BUILD_NUMBER,
-                                                &usDummy, &cbSize);
-                                m_pCurAsmRef->usBuild = usDummy;
-                            }
-                            if(m_pCurAsmRef->usRevision == (USHORT)0xFFFF)
-                            {
-                                cbSize = (DWORD)sizeof(WORD);
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_REVISION_NUMBER,
-                                                &usDummy, &cbSize);
-                                m_pCurAsmRef->usRevision = usDummy;
-                            }
-                            
-                            if(m_pCurAsmRef->pLocale == NULL)
-                            {
-                                cbSize = 1024;
-                                pIAsmNameLatestVer->GetProperty(ASM_NAME_CULTURE,
-                                                wzUniBuf, &cbSize);
-
-                                if(cbSize > (DWORD)sizeof(WCHAR))
-                                {
-                                    if((m_pCurAsmRef->pLocale = new BinStr()))
-                                        memcpy(m_pCurAsmRef->pLocale->getBuff(cbSize),
-                                            wzUniBuf, cbSize);
-                                }
-                            }
-                            pIAsmNameLatestVer->Release(); 
-                        }
-                        else
-                            report->warn("Failed to autodetect assembly '%s'\n",m_pCurAsmRef->szName);
-                        // if no assembly found, leave it as is, it might be not a GAC assembly
-    
-                        pIAsmEnum->Release();
-                    }
-                    else
-                        report->error("Failed to enum assemblies %S, hr=0x%08X\n",wzUniBuf,hr);
-                    pIAsmName->Release();
-                }
-                else
-                    report->error("Failed to create assembly name object for %S, hr=0x%08X\n",wzUniBuf,hr);
-            } // end if isAutodetect
-#endif // !FEATURE_CORECLR
             m_AsmRefLst.PUSH(m_pCurAsmRef);
             m_pCurAsmRef->tkTok = TokenFromRid(m_AsmRefLst.COUNT(),mdtAssemblyRef);
         }
@@ -608,29 +387,9 @@ void    AsmMan::EndAssembly()
                 // character of the source ('@' for container).
                 if (*(((Assembler*)m_pAssembler)->m_wzKeySourceName) == L'@')
                 {
-#ifdef FEATURE_CORECLR
                     report->error("Error: ilasm on CoreCLR does not support getting public key from container.\n");
                     m_pCurAsmRef = NULL;
                     return;
-#else
-                    // Extract public key from container (works whether
-                    // container has just a public key or an entire key
-                    // pair).
-                    m_sStrongName.m_wzKeyContainer = &((Assembler*)m_pAssembler)->m_wzKeySourceName[1];
-                    if (FAILED(hr = LegacyActivationShim::StrongNameGetPublicKey_HRESULT(
-                        m_sStrongName.m_wzKeyContainer, 
-                        NULL, 
-                        0, 
-                        &m_sStrongName.m_pbPublicKey, 
-                        &m_sStrongName.m_cbPublicKey)))
-                    {
-                        report->error("Failed to extract public key from '%S': 0x%08X\n",m_sStrongName.m_wzKeyContainer,hr);
-                        m_pCurAsmRef = NULL;
-                        return;
-                    }
-                    m_sStrongName.m_fFullSign = TRUE;
-                    m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedBySNApi;
-#endif // FEATURE_CORECLR
                 }
                 else
                 {
@@ -696,33 +455,9 @@ void    AsmMan::EndAssembly()
                     // from a consistent place.
                     if (m_sStrongName.m_fFullSign)
                     {
-#ifdef FEATURE_CORECLR
                         report->error("Error: ilasm on CoreCLR does not support full sign.\n");
                         m_pCurAsmRef = NULL;
                         return;
-#else
-                        m_sStrongName.m_pbPrivateKey = m_sStrongName.m_pbPublicKey;
-                        m_sStrongName.m_cbPrivateKey = m_sStrongName.m_cbPublicKey;
-
-                        m_sStrongName.m_pbPublicKey = NULL;
-                        m_sStrongName.m_cbPublicKey = NULL;
-                        m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::NotAllocated;
-
-                        // Retrieve the public key portion as a byte blob.
-                        if (FAILED(hr = LegacyActivationShim::StrongNameGetPublicKey_HRESULT(
-                            NULL, 
-                            m_sStrongName.m_pbPrivateKey, 
-                            m_sStrongName.m_cbPrivateKey, 
-                            &m_sStrongName.m_pbPublicKey, 
-                            &m_sStrongName.m_cbPublicKey)))
-                        {
-                            report->error("Failed to extract public key: 0x%08X\n",hr);
-                            m_pCurAsmRef = NULL;
-                            return;
-                        }
-    
-                        m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedBySNApi;
-#endif // FEATURE_CORECLR
                     }
                 }
             }

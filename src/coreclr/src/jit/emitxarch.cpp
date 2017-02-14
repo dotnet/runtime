@@ -57,10 +57,6 @@ bool emitter::IsAVXInstruction(instruction ins)
 #endif
 }
 
-#ifdef _TARGET_AMD64_
-#define REX_PREFIX_MASK 0xFF00000000LL
-#endif // _TARGET_AMD64_
-
 #ifdef FEATURE_AVX_SUPPORT
 // Returns true if the AVX instruction is a binary operator that requires 3 operands.
 // When we emit an instruction with only two operands, we will duplicate the destination
@@ -717,12 +713,10 @@ unsigned emitter::emitGetPrefixSize(code_t code)
         return 3;
     }
 
-#ifdef _TARGET_AMD64_
-    if (code & REX_PREFIX_MASK)
+    if (hasRexPrefix(code))
     {
         return 1;
     }
-#endif // _TARGET_AMD64_
 
     return 0;
 }
@@ -1882,10 +1876,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
     }
 
-#ifdef _TARGET_AMD64_
     size += emitGetVexPrefixAdjustedSize(ins, attrSize, code);
 
-    if (code & REX_PREFIX_MASK)
+    if (hasRexPrefix(code))
     {
         // REX prefix
         size += emitGetRexPrefixSize(ins);
@@ -1900,7 +1893,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // Should have a REX byte
         size += emitGetRexPrefixSize(ins);
     }
-#endif // _TARGET_AMD64_
 
     if (rgx == REG_NA)
     {
@@ -2303,9 +2295,7 @@ void emitter::emitIns(instruction ins)
     }
 #endif // DEBUG
 
-#ifdef _TARGET_AMD64_
-    assert((code & REX_PREFIX_MASK) == 0); // Can't have a REX bit with no operands, right?
-#endif                                     // _TARGET_AMD64_
+    assert(!hasRexPrefix(code)); // Can't have a REX bit with no operands, right?
 
     if (code & 0xFF000000)
     {
@@ -3997,16 +3987,14 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     code_t         code = insCodeMI(ins);
     UNATIVE_OFFSET sz   = emitInsSizeCV(id, code, val);
 
-#ifdef _TARGET_AMD64_
     // Vex prefix
     sz += emitGetVexPrefixAdjustedSize(ins, attr, insCodeMI(ins));
 
     // REX prefix, if not already included in "code"
-    if (TakesRexWPrefix(ins, attr) && (code & REX_PREFIX_MASK) == 0)
+    if (TakesRexWPrefix(ins, attr) && !hasRexPrefix(code))
     {
         sz += emitGetRexPrefixSize(ins);
     }
-#endif // _TARGET_AMD64_
 
     id->idAddr()->iiaFieldHnd = fldHnd;
     id->idCodeSize(sz);

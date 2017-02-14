@@ -16,7 +16,6 @@
 namespace System.Reflection {
     using System;
     
-[System.Runtime.InteropServices.ComVisible(true)]
     public class ManifestResourceInfo {
         private Assembly _containingAssembly;
         private String _containingFileName;
@@ -57,7 +56,6 @@ namespace System.Reflection {
     // Linked means not Embedded.
 [Serializable]
     [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum ResourceLocation
     {
         Embedded = 0x1,

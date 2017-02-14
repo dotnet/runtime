@@ -20,11 +20,9 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Security;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class TypeLoadException : SystemException, ISerializable {
 
         public TypeLoadException() 

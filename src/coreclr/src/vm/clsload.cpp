@@ -52,9 +52,6 @@
 #include "virtualcallstub.h"
 #include "stringarraylist.h"
 
-#if defined(FEATURE_FUSION) && !defined(DACCESS_COMPILE)
-#include "policy.h" // For Fusion::Util::IsAnyFrameworkAssembly
-#endif
 
 // This method determines the "loader module" for an instantiated type
 // or method. The rule must ensure that any types involved in the
@@ -4620,24 +4617,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
                 // However, this used to be allowed in 1.0/1.1, and some third-party DLLs have
                 // been obfuscated so that they have duplicate private typedefs.
                 // We must allow this for old assemblies for app compat reasons
-#ifdef FEATURE_CORECLR
                 pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-#else
-                LPCSTR pszVersion = NULL;
-                if (FAILED(pModule->GetMDImport()->GetVersionString(&pszVersion)))
-                {
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-                }
-                
-                SString ssVersion(SString::Utf8, pszVersion);
-                SString ssV1(SString::Literal, "v1.");
-
-                AdjustImageRuntimeVersion(&ssVersion);
-
-                // If not "v1.*", throw an exception
-                if (!ssVersion.BeginsWith(ssV1))
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-#endif
             }
         }
         else {
@@ -4914,41 +4894,6 @@ bool StaticAccessCheckContext::IsCallerCritical()
 }
 
 
-#ifndef FEATURE_CORECLR
-
-//******************************************************************************
-// This function determines whether a Type is accessible from
-//  outside of the assembly it lives in.
-
-static BOOL IsTypeVisibleOutsideAssembly(MethodTable* pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    DWORD dwProtection;
-        // check all types in nesting chain, while inner types are public
-    while (IsTdPublic(dwProtection = pMT->GetClass()->GetProtection()) ||
-           IsTdNestedPublic(dwProtection))
-    {
-        // if type is nested, check outer type, too
-        if (IsTdNested(dwProtection))
-        {
-            pMT = GetEnclosingMethodTable(pMT);
-        }
-        // otherwise, type is visible outside of the assembly
-        else
-        {
-            return TRUE;
-        }
-    }
-    return FALSE;
-} // static BOOL IsTypeVisibleOutsideAssembly(MethodTable* pMT)
-
-#endif //!FEATURE_CORECLR
 
 //******************************************************************************
 
@@ -5031,7 +4976,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
     BOOL canAccessTarget = FALSE;
 
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_CORECLR
 
     BOOL fAccessingFrameworkCode = FALSE;
 
@@ -5079,102 +5023,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         ThrowAccessException(pContext, pTargetMT, NULL, fAccessingFrameworkCode);
     }
 
-#else // FEATURE_CORECLR
-
-    GCX_COOP();
-
-    // Overriding the rules of visibility checks in Win8 immersive: no access is allowed to internal
-    // code in the framework even in full trust, unless the caller is also framework code.
-    if ( (m_accessCheckType == kUserCodeOnlyRestrictedMemberAccess ||
-          m_accessCheckType == kUserCodeOnlyRestrictedMemberAccessNoTransparency) &&
-        visibilityCheck )
-    {
-        IAssemblyName *pIAssemblyName = pTargetMT->GetAssembly()->GetFusionAssemblyName();
-
-        HRESULT hr = Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName);
-
-        // S_OK: pIAssemblyName is a framework assembly.
-        // S_FALSE: pIAssemblyName is not a framework assembly.
-        // Other values: pIAssemblyName is an invalid name. 
-        if (hr == S_OK)
-        {
-            if (pContext->IsCalledFromInterop())
-                return TRUE;
-
-            // If the caller method is NULL and we are not called from interop
-            // this is not a normal method access check (e.g. a CA accessibility check)
-            // The access check should fail in this case.
-            hr = S_FALSE;
-
-            MethodDesc* pCallerMD = pContext->GetCallerMethod();
-            if (pCallerMD != NULL)
-            {
-                pIAssemblyName = pCallerMD->GetAssembly()->GetFusionAssemblyName();
-                hr = Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName);
-            }
-
-            // The caller is not framework code.
-            if (hr != S_OK)
-            {
-                if (m_fThrowIfTargetIsInaccessible)
-                    ThrowAccessException(pContext, pTargetMT, NULL, TRUE);
-                else
-                    return FALSE;
-            }
-        }
-    }
-
-    EX_TRY
-    {
-        if (m_accessCheckType == kMemberAccess)
-        {
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, REFLECTION_MEMBER_ACCESS);
-        }
-        else
-        {
-            _ASSERTE(m_accessCheckType == kRestrictedMemberAccess || 
-                     m_accessCheckType == kUserCodeOnlyRestrictedMemberAccess ||
-                     (m_accessCheckType == kUserCodeOnlyRestrictedMemberAccessNoTransparency && visibilityCheck));
-
-            // JIT guarantees that pTargetMT has been fully loaded and ready to execute by this point, but reflection doesn't. 
-            // So GetSecurityDescriptor could AV because the DomainAssembly cannot be found. 
-            // For now we avoid this by calling EnsureActive aggressively. We might want to move this to the reflection code in the future:
-            // ReflectionInvocation::PerformVisibilityCheck, PerformSecurityCheckHelper, COMDelegate::BindToMethodName/Info, etc.
-            // We don't need to call EnsureInstanceActive because we will be doing access check on all the generic arguments any way so
-            // EnsureActive will be called on everyone of them if needed.
-            pTargetMT->EnsureActive();
-
-            IAssemblySecurityDescriptor * pTargetSecurityDescriptor = pTargetMT->GetModule()->GetSecurityDescriptor();
-            _ASSERTE(pTargetSecurityDescriptor != NULL);
-
-            if (m_pAccessContext != NULL)
-            {
-                // If we have a context, use it to do the demand
-                Security::ReflectionTargetDemand(REFLECTION_MEMBER_ACCESS,
-                    pTargetSecurityDescriptor,
-                    m_pAccessContext);
-            }
-            else
-            {
-                // Just do a normal Demand
-                Security::ReflectionTargetDemand(REFLECTION_MEMBER_ACCESS, pTargetSecurityDescriptor);
-            }
-        }
-
-        canAccessTarget = TRUE;
-    }
-    EX_CATCH 
-    {
-        canAccessTarget = FALSE;
-
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, GET_EXCEPTION());
-        } 
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-#endif // FEATURE_CORECLR
 #endif // CROSSGEN_COMPILE
 
     return canAccessTarget;
@@ -5335,55 +5183,7 @@ void GetAccessExceptionAdditionalContextForSecurity(Assembly *pAccessingAssembly
         pContextInformation->Append(accessingFrameworkCodeError);
     }
 
-#ifndef FEATURE_CORECLR
-    if (isTransparencyError)
-    {
-        ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pAccessingAssembly);
 
-        // If the accessing assembly is APTCA and using level 2 transparency, then transparency errors may be
-        // because APTCA newly opts assemblies into being all transparent.
-        if (pMSD->IsMixedTransparency() && !pAccessingAssembly->GetSecurityTransparencyBehavior()->DoesUnsignedImplyAPTCA())
-        {
-            SString callerDisplayName;
-            pAccessingAssembly->GetDisplayName(callerDisplayName);
-
-            SString level2AptcaTransparencyError;
-            EEException::GetResourceMessage(IDS_ACCESS_EXCEPTION_CONTEXT_LEVEL2_APTCA, level2AptcaTransparencyError, callerDisplayName);
-
-            pContextInformation->Append(level2AptcaTransparencyError);
-        }
-
-        // If the assessing assembly is fully transparent and it is partially trusted, then transparency
-        // errors may be because the CLR forced the assembly to be transparent due to its trust level.
-        if (pMSD->IsAllTransparentDueToPartialTrust())
-        {
-            _ASSERTE(pMSD->IsAllTransparent());
-            SString callerDisplayName;
-            pAccessingAssembly->GetDisplayName(callerDisplayName);
-
-            SString partialTrustTransparencyError;
-            EEException::GetResourceMessage(IDS_ACCESS_EXCEPTION_CONTEXT_PT_TRANSPARENT, partialTrustTransparencyError, callerDisplayName);
-
-            pContextInformation->Append(partialTrustTransparencyError);
-        }
-    }
-#endif // FEATURE_CORECLR
-
-#if defined(FEATURE_APTCA) && !defined(CROSSGEN_COMPILE)
-    // If the target assembly is conditionally APTCA, then it may needed to have been enabled in the domain
-    SString conditionalAptcaContext = Security::GetConditionalAptcaAccessExceptionContext(pTargetAssembly);
-    if (!conditionalAptcaContext.IsEmpty())
-    {
-        pContextInformation->Append(conditionalAptcaContext);
-    }
-
-    // If the target assembly is APTCA killbitted, then indicate that as well
-    SString aptcaKillBitContext = Security::GetAptcaKillBitAccessExceptionContext(pTargetAssembly);
-    if (!aptcaKillBitContext.IsEmpty())
-    {
-        pContextInformation->Append(aptcaKillBitContext);
-    }
-#endif // FEATURE_APTCA && !CROSSGEN_COMPILE
 }
 
 // Generate additional context about the root cause of an access exception which may help in debugging it (for
@@ -5690,18 +5490,6 @@ static BOOL CheckTransparentAccessToCriticalCode(
                    (pOptionalTargetField ? 1 : 0) +
                    (pOptionalTargetType ? 1 : 0)));
 
-#ifndef FEATURE_CORECLR
-    if (pTargetMT->GetAssembly()->GetSecurityTransparencyBehavior()->DoesPublicImplyTreatAsSafe())
-    {
-        // @ telesto: public => TAS in non-coreclr only. The intent is to remove this ifdef and remove
-        // public => TAS in all flavors/branches.
-        // check if the Target member accessible outside the assembly
-        if (IsMdPublic(dwMemberAccess) && IsTypeVisibleOutsideAssembly(pTargetMT))
-        {
-            return TRUE;
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     // if the caller [Method] is transparent, do special security checks
     // check if security disallows access to target member

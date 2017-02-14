@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices{
     using System.Diagnostics.Contracts;
 
     [AttributeUsage(AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class UnmanagedFunctionPointerAttribute : Attribute
     {
         CallingConvention m_callingConvention;
@@ -33,7 +32,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public sealed class TypeIdentifierAttribute : Attribute
     {
         public TypeIdentifierAttribute() { }
@@ -57,7 +55,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Event, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DispIdAttribute : Attribute
     {
         internal int _val;
@@ -69,19 +66,16 @@ namespace System.Runtime.InteropServices{
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ComInterfaceType
     {
         InterfaceIsDual = 0,
         InterfaceIsIUnknown = 1,
         InterfaceIsIDispatch = 2,
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         InterfaceIsIInspectable = 3,
     }
 
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class InterfaceTypeAttribute : Attribute
     {
         internal ComInterfaceType _val;
@@ -97,7 +91,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ComDefaultInterfaceAttribute : Attribute
     {
         internal Type _val;
@@ -111,7 +104,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum ClassInterfaceType
     {
         None = 0,
@@ -120,7 +112,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ClassInterfaceAttribute : Attribute
     {
         internal ClassInterfaceType _val;
@@ -137,7 +128,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Delegate | AttributeTargets.Enum | AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.Property, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ComVisibleAttribute : Attribute
     {
         internal bool _val;
@@ -148,20 +138,7 @@ namespace System.Runtime.InteropServices{
         public bool Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeLibImportClassAttribute : Attribute
-    {
-        internal String _importClassName;
-        public TypeLibImportClassAttribute(Type importClass)
-        {
-            _importClassName = importClass.ToString();
-        }
-        public String Value { get { return _importClassName; } }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class LCIDConversionAttribute : Attribute
     {
         internal int _val;
@@ -169,29 +146,10 @@ namespace System.Runtime.InteropServices{
         {
             _val = lcid;
         }
-        public int Value { get {return _val;} } 
+        public int Value { get {return _val;} }
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComRegisterFunctionAttribute : Attribute
-    {
-        public ComRegisterFunctionAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComUnregisterFunctionAttribute : Attribute
-    {
-        public ComUnregisterFunctionAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Class, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ProgIdAttribute : Attribute
     {
         internal String _val;
@@ -199,50 +157,10 @@ namespace System.Runtime.InteropServices{
         {
             _val = progId;
         }
-        public String Value { get {return _val;} }  
-    }
-    
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ImportedFromTypeLibAttribute : Attribute
-    {
-        internal String _val;
-        public ImportedFromTypeLibAttribute(String tlbFile)
-        {
-            _val = tlbFile;
-        }
         public String Value { get {return _val;} }
     }
 
-    [Obsolete("The IDispatchImplAttribute is deprecated.", false)]
-    [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public enum IDispatchImplType
-    {
-        SystemDefinedImpl   = 0,
-        InternalImpl        = 1,
-        CompatibleImpl      = 2,
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, Inherited = false)] 
-    [Obsolete("This attribute is deprecated and will be removed in a future version.", false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class IDispatchImplAttribute : Attribute
-    {
-        internal IDispatchImplType _val;
-        public IDispatchImplAttribute(IDispatchImplType implType)
-        {
-            _val = implType;
-        }
-        public IDispatchImplAttribute(short implType)
-        {
-            _val = (IDispatchImplType)implType;
-        }
-        public IDispatchImplType Value { get {return _val;} }   
-    }
-
     [AttributeUsage(AttributeTargets.Class, Inherited = true)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ComSourceInterfacesAttribute : Attribute
     {
         internal String _val;
@@ -269,17 +187,7 @@ namespace System.Runtime.InteropServices{
         public String Value { get {return _val;} }  
     }    
 
-    [AttributeUsage(AttributeTargets.All, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComConversionLossAttribute : Attribute
-    {
-        public ComConversionLossAttribute()
-        {
-        }
-    }
-    
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum VarEnum
     {
         VT_EMPTY = 0,
@@ -329,7 +237,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     // Note that this enum should remain in-sync with the CorNativeType enum in corhdr.h
     public enum UnmanagedType
     {
@@ -403,18 +310,14 @@ namespace System.Runtime.InteropServices{
 
         Error = 0x2d,
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         IInspectable     = 0x2e,
         
-        [System.Runtime.InteropServices.ComVisible(false)]
         HString          = 0x2f,        // Windows Runtime HSTRING
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         LPUTF8Str        = 0x30,        // UTF8 string
     }
 
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class MarshalAsAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeParameterInfo parameter)
@@ -513,15 +416,12 @@ namespace System.Runtime.InteropServices{
         public int SizeConst;                // constant C
 
         // Fields used with SubType = CustomMarshaler
-        [System.Runtime.InteropServices.ComVisible(true)]
         public String MarshalType;              // Name of marshaler class
-        [System.Runtime.InteropServices.ComVisible(true)]
         public Type MarshalTypeRef;           // Type of marshaler class
         public String MarshalCookie;            // cookie to pass to marshaler
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ComImportAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeType type)
@@ -543,7 +443,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class GuidAttribute : Attribute
     {
         internal String _val;
@@ -555,7 +454,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class PreserveSigAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeMethodInfo method)
@@ -577,7 +475,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class InAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeParameterInfo parameter)
@@ -595,7 +492,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OutAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeParameterInfo parameter)
@@ -613,7 +509,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class OptionalAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeParameterInfo parameter)
@@ -643,7 +538,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Method, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public sealed class DefaultDllImportSearchPathsAttribute : Attribute
     {
         internal DllImportSearchPath _paths;
@@ -656,7 +550,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class DllImportAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeMethodInfo method)
@@ -750,7 +643,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class StructLayoutAttribute : Attribute
     {
         private const int DEFAULT_PACKING_SIZE = 8;
@@ -822,7 +714,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public unsafe sealed class FieldOffsetAttribute : Attribute
     {
         internal static Attribute GetCustomAttribute(RuntimeFieldInfo field)
@@ -849,49 +740,7 @@ namespace System.Runtime.InteropServices{
         public int Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.ReturnValue, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComAliasNameAttribute : Attribute
-    {
-        internal String _val;
-        public ComAliasNameAttribute(String alias)
-        {
-            _val = alias;
-        }
-        public String Value { get {return _val;} }  
-    }    
-
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class AutomationProxyAttribute : Attribute
-    {
-        internal bool _val;
-        public AutomationProxyAttribute(bool val)
-        {
-            _val = val;
-        }
-        public bool Value { get {return _val;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class PrimaryInteropAssemblyAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        
-        public PrimaryInteropAssemblyAttribute(int major, int minor)
-        {
-            _major = major;
-            _minor = minor;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-    }
-
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class CoClassAttribute : Attribute
     {
         internal Type _CoClass;
@@ -904,65 +753,7 @@ namespace System.Runtime.InteropServices{
         public Type CoClass { get { return _CoClass; } }
     }
 
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComEventInterfaceAttribute : Attribute
-    {
-        internal Type _SourceInterface;
-        internal Type _EventProvider;
-        
-        public ComEventInterfaceAttribute(Type SourceInterface, Type EventProvider)
-        {
-            _SourceInterface = SourceInterface;
-            _EventProvider = EventProvider;
-        }
-
-        public Type SourceInterface { get {return _SourceInterface;} }       
-        public Type EventProvider { get {return _EventProvider;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeLibVersionAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        
-        public TypeLibVersionAttribute(int major, int minor)
-        {
-            _major = major;
-            _minor = minor;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class ComCompatibleVersionAttribute : Attribute
-    {
-        internal int _major;
-        internal int _minor;
-        internal int _build;
-        internal int _revision;
-        
-        public ComCompatibleVersionAttribute(int major, int minor, int build, int revision)
-        {
-            _major = major;
-            _minor = minor;
-            _build = build;
-            _revision = revision;
-        }
-        
-        public int MajorVersion { get {return _major;} }
-        public int MinorVersion { get {return _minor;} }
-        public int BuildNumber { get {return _build;} }
-        public int RevisionNumber { get {return _revision;} }
-    }
-
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class BestFitMappingAttribute : Attribute
     {
         internal bool _bestFitMapping;
@@ -977,7 +768,6 @@ namespace System.Runtime.InteropServices{
     }
 
     [AttributeUsage(AttributeTargets.Module, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DefaultCharSetAttribute : Attribute
     {
         internal CharSet _CharSet;
@@ -989,33 +779,5 @@ namespace System.Runtime.InteropServices{
 
         public CharSet CharSet { get { return _CharSet; } }
     }
-
-    [Obsolete("This attribute has been deprecated.  Application Domains no longer respect Activation Context boundaries in IDispatch calls.", false)]
-    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class SetWin32ContextInIDispatchAttribute : Attribute
-    {
-        public SetWin32ContextInIDispatchAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    [System.Runtime.InteropServices.ComVisible(false)]
-    public sealed class ManagedToNativeComInteropStubAttribute : Attribute
-    {
-        internal Type _classType;
-        internal String _methodName;
-
-        public ManagedToNativeComInteropStubAttribute(Type classType, String methodName)
-        {
-            _classType = classType;
-            _methodName = methodName;
-        }
-
-        public Type ClassType { get { return _classType; } }
-        public String MethodName { get { return _methodName; } }
-    }    
-
 }
 

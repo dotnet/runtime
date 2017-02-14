@@ -22,7 +22,6 @@ namespace System {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-[System.Runtime.InteropServices.ComVisible(true)]
     public struct Double : IComparable, IFormattable, IConvertible
         , IComparable<Double>, IEquatable<Double>
     {
@@ -83,7 +82,6 @@ namespace System {
         }
 
         [Pure]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool IsNaN(double d)
         {

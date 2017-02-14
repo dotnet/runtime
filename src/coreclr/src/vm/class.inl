@@ -13,7 +13,6 @@
 
 #ifndef _CLASS_INL_
 #define _CLASS_INL_
-#include "constrainedexecutionregion.h"
 //***************************************************************************************
 inline PTR_MethodDescChunk EEClass::GetChunks()
 {
@@ -50,9 +49,6 @@ inline void EEClassOptionalFields::Init()
     m_WinRTRedirectedTypeIndex = WinMDAdapter::RedirectedTypeIndex_Invalid;
 #endif // FEATURE_COMINTEROP
     m_cbModuleDynamicID = MODULE_NON_DYNAMIC_STATICS;
-#ifdef FEATURE_CER
-    m_dwReliabilityContract = RC_NULL;
-#endif
     m_SecProps = 0;
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     m_numberEightBytes = 0;

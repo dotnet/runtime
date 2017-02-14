@@ -15,7 +15,6 @@ namespace System.Text
     
     // This class overrides Encoding with the things we need for our NLS Encodings
     
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     internal abstract class EncodingNLS : Encoding
     {    

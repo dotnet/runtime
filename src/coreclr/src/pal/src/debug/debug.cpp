@@ -543,31 +543,6 @@ SetThreadContext(
     return ret;
 }
 
-__attribute__((noinline))
-__attribute__((optnone))
-void 
-ProbeMemory(volatile PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
-{
-    // Need an throw in this function to fool the C++ runtime into handling the 
-    // possible h/w exception below.
-    if (pbBuffer == NULL)
-    {
-        throw PAL_SEHException();
-    }
-
-    // Simple one byte at a time probing
-    while (cbBuffer > 0)
-    {
-        volatile BYTE read = *pbBuffer;
-        if (fWriteAccess)
-        {
-            *pbBuffer = read;
-        }
-        ++pbBuffer;
-        --cbBuffer;
-    }
-}
-
 /*++
 Function:
   PAL_ProbeMemory
@@ -589,18 +564,58 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
-    try
-    {
-        // Need to explicit h/w exception holder so to catch them in ProbeMemory
-        CatchHardwareExceptionHolder __catchHardwareException;
+    int fds[2];
 
-        ProbeMemory((PBYTE)pBuffer, cbBuffer, fWriteAccess);
-    }
-    catch(...)
+    if (pipe(fds) != 0)
     {
+        ASSERT("pipe failed: errno is %d (%s)\n", errno, strerror(errno));
         return FALSE;
     }
-    return TRUE;
+
+    fcntl(fds[0], O_NONBLOCK);
+    fcntl(fds[1], O_NONBLOCK);
+
+    PVOID pEnd = (PBYTE)pBuffer + cbBuffer;
+    BOOL result = TRUE;
+
+    // Validate the first byte in the buffer, then validate the first byte on each page after that.
+    while (pBuffer < pEnd)
+    {
+        int written = write(fds[1], pBuffer, 1);
+        if (written == -1)
+        {
+            if (errno != EFAULT)
+            {
+                ASSERT("write failed: errno is %d (%s)\n", errno, strerror(errno));
+            }
+            result = FALSE;
+            break;
+        }
+        else
+        {
+            if (fWriteAccess)
+            {
+                int rd = read(fds[0], pBuffer, 1);
+                if (rd == -1)
+                {
+                    if (errno != EFAULT)
+                    {
+                        ASSERT("read failed: errno is %d (%s)\n", errno, strerror(errno));
+                    }
+                    result = FALSE;
+                    break;
+                }
+            }
+        }
+
+        // Round to the beginning of the next page
+        pBuffer = (PVOID)(((SIZE_T)pBuffer & ~VIRTUAL_PAGE_MASK) + VIRTUAL_PAGE_SIZE);
+    }
+
+    close(fds[0]);
+    close(fds[1]);
+
+    return result;
 }
 
 } // extern "C"

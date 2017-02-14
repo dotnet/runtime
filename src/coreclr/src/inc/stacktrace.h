@@ -74,7 +74,7 @@ void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxA
 ******************************************************************** robch */
 void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString);
 
-#if defined(_TARGET_X86_) && defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 /****************************************************************************
 * ClrCaptureContext *
 *-------------------*
@@ -83,9 +83,9 @@ void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStri
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
 extern "C" void __stdcall ClrCaptureContext(__out PCONTEXT ctx);
-#else // _TARGET_X86_ && FEATURE_CORECLR && !FEATURE_PAL
+#else // _TARGET_X86_ && !FEATURE_PAL
 #define ClrCaptureContext RtlCaptureContext
-#endif // _TARGET_X86_ && FEATURE_CORECLR && !FEATURE_PAL
+#endif // _TARGET_X86_ && !FEATURE_PAL
 
 
 #endif

@@ -48,7 +48,6 @@
 using System;
 using System.Reflection;
 using System.Threading;
-using System.Security.Permissions;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Runtime.ConstrainedExecution;
@@ -150,7 +149,6 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
     // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     protected CriticalHandle(IntPtr invalidHandleValue)
     {
         handle = invalidHandleValue;
@@ -167,13 +165,11 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     // Adding an empty default constructor for annotation purposes
     private CriticalHandle(){} 
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     ~CriticalHandle()
     {
         Dispose(false);
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     private void Cleanup()
     {
         if (IsClosed)
@@ -197,10 +193,8 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     }
 
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     private extern void FireCustomerDebugProbe();
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected void SetHandle(IntPtr handle) {
         this.handle = handle;
     }
@@ -208,7 +202,6 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     // Returns whether the handle has been explicitly marked as closed
     // (Close/Dispose) or invalid (SetHandleAsInvalid).
     public bool IsClosed {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get { return _isClosed; }
     }
 
@@ -217,22 +210,18 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     // know what an invalid handle looks like, so this method is abstract and
     // must be provided by a derived type.
     public abstract bool IsInvalid {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get;
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Close() {
         Dispose(true);
     }
     
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Dispose()
     {
         Dispose(true);
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected virtual void Dispose(bool disposing)
     {
         Cleanup();
@@ -242,7 +231,6 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     // your handle is invalid and you want to record that information.
     // An example is calling a syscall and getting back ERROR_INVALID_HANDLE.
     // This method will normally leak handles!
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void SetHandleAsInvalid()
     {
         _isClosed = true;
@@ -257,7 +245,6 @@ public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
     // The boolean returned should be true for success and false if a
     // catastrophic error occurred and you wish to trigger a diagnostic for
     // debugging purposes (the SafeHandleCriticalFailure MDA).
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected abstract bool ReleaseHandle();
 }
 

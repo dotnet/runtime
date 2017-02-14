@@ -84,13 +84,13 @@ def main(argv):
 
     print("Downloading .Net CLI")
     if platform == 'Linux':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?LinkID=809129"
+        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839628"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'OSX':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?LinkID=809128"
+        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839641"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'Windows_NT':
-        dotnetcliUrl = "https://go.microsoft.com/fwlink/?LinkID=809126"
+        dotnetcliUrl = "https://go.microsoft.com/fwlink/?linkid=839634"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.zip')
     else:
         print('Unknown os ', os)
@@ -160,7 +160,7 @@ def main(argv):
 
     # Run bootstrap
 
-    my_env["PATH"] += os.pathsep + dotnetcliPath
+    my_env["PATH"] = dotnetcliPath + os.pathsep + my_env["PATH"]
     if platform == 'Linux' or platform == 'OSX':
         print("Running bootstrap")
         proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
@@ -173,7 +173,7 @@ def main(argv):
 
     returncode = 0
     jitutilsBin = os.path.join(coreclr, "jitutils", "bin")
-    my_env["PATH"] += os.pathsep + jitutilsBin
+    my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
     current_dir = os.getcwd()
 
     if not os.path.isdir(jitutilsBin):

@@ -13,9 +13,7 @@ add_executable(paltest_waitforsingleobject_wfsoprocesstest
 add_dependencies(paltest_waitforsingleobject_wfsoprocesstest coreclrpal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoprocesstest
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_waitforsingleobject_wfsoprocesstest_child
 add_dependencies(paltest_waitforsingleobject_wfsoprocesstest_child coreclrpal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoprocesstest_child
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

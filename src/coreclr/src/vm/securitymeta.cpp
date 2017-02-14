@@ -21,7 +21,6 @@
 #include "security.h"
 
 #include "perfcounters.h"
-#include "nlstable.h"
 #include "frames.h"
 #include "dllimport.h"
 #include "strongname.h"
@@ -30,11 +29,9 @@
 #include "threads.h"
 #include "eventtrace.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #include "objectclone.h"
 #endif //FEATURE_REMOTING
 #include "typestring.h"
-#include "stackcompressor.h"
 #include "securitydeclarative.h"
 #include "customattribute.h"
 #include "../md/compiler/custattr.h"
@@ -57,9 +54,6 @@ void FieldSecurityDescriptor::VerifyDataComputed()
         return;
     }
 
-#ifndef FEATURE_CORECLR
-    FieldSecurityDescriptorTransparencyEtwEvents etw(this);
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     // If we've setup a breakpoint when we compute the transparency of this field, then stop in the debugger
@@ -284,9 +278,6 @@ void MethodSecurityDescriptor::ComputeCriticalTransparentInfo()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    MethodSecurityDescriptorTransparencyEtwEvents etw(this);
-#endif // !FEATURE_CORECLR
 
     MethodTable* pMT = m_pMD->GetMethodTable();
 
@@ -740,72 +731,6 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
         }
     }
 
-#ifndef FEATURE_CORECLR
-    // Check CAS Inheritance
-
-    // Early out if we're fully trusted
-    if (SecurityDeclarative::FullTrustCheckForLinkOrInheritanceDemand(pChildMD->GetAssembly()))
-    {
-        return;
-    }
-
-    if (HasInheritanceDeclarativeSecurity())
-    {
-#ifdef CROSSGEN_COMPILE
-        // NGen is always full trust. This path should be unreachable.
-        CrossGenNotSupported("HasInheritanceDeclarativeSecurity()");
-#else // CROSSGEN_COMPILE
-        GCX_COOP();
-
-        OBJECTREF refCasDemands = NULL;
-        PsetCacheEntry* pCasDemands = NULL;
-
-        HRESULT hr = GetDeclaredPermissionsWithCache(dclInheritanceCheck, &refCasDemands, &pCasDemands);
-        if (refCasDemands != NULL)
-        {
-            _ASSERTE(pCasDemands != NULL);
-
-            // See if inheritor's assembly has passed this demand before
-            AssemblySecurityDescriptor *pInheritorAssem = static_cast<AssemblySecurityDescriptor*>(pChildMD->GetAssembly()->GetSecurityDescriptor());
-            BOOL fSkipCheck = pInheritorAssem->AlreadyPassedDemand(pCasDemands);
-
-            if (!fSkipCheck)
-            {
-                GCPROTECT_BEGIN(refCasDemands);
-
-                // Perform the check (it's really just a LinkDemand)
-                SecurityStackWalk::LinkOrInheritanceCheck(pChildMD->GetAssembly()->GetSecurityDescriptor(), refCasDemands, pChildMD->GetAssembly(), dclInheritanceCheck);
-
-                // Demand passed. Add it to the Inheritor's assembly's list of passed demands
-                pInheritorAssem->TryCachePassedDemand(pCasDemands);
-
-                GCPROTECT_END();
-            }
-        }
-
-        // @todo -- non cas shouldn't be used for inheritance demands... 
-
-        // Check non-CAS Inheritance
-        OBJECTREF refNonCasDemands = NULL;
-        hr = GetDeclaredPermissionsWithCache( dclNonCasInheritance, &refNonCasDemands, NULL);
-        if (refNonCasDemands != NULL)
-        {
-            _ASSERTE(((PERMISSIONSETREF)refNonCasDemands)->CheckedForNonCas() && "Declarative permissions should have been checked for nonCAS in PermissionSet.CreateSerialized");
-            if (((PERMISSIONSETREF)refNonCasDemands)->ContainsNonCas())
-            {
-                GCPROTECT_BEGIN(refNonCasDemands);
-
-                // Perform the check
-                MethodDescCallSite demand(METHOD__PERMISSION_SET__DEMAND_NON_CAS, &refNonCasDemands);
-                ARG_SLOT arg = ObjToArgSlot(refNonCasDemands);
-                demand.Call(&arg);
-
-                GCPROTECT_END();
-            }
-        }
-#endif // CROSSGEN_COMPILE
-    }
-#endif // FEATURE_CORECLR
 }
 
 MethodSecurityDescriptor::MethodImplementationIterator::MethodImplementationIterator(MethodDesc *pMD)
@@ -978,117 +903,6 @@ TypeSecurityDescriptor* TypeSecurityDescriptor::GetTypeSecurityDescriptor(Method
     return pTypeSecurityDesc;
 }
 
-#if !defined(CROSSGEN_COMPILE) && defined(FEATURE_CAS_POLICY)
-HRESULT TokenDeclActionInfo::GetDeclaredPermissionsWithCache(
-    IN CorDeclSecurity action,
-    OUT OBJECTREF *pDeclaredPermissions,
-                                OUT PsetCacheEntry **pPCE)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    HRESULT         hr = S_OK;
-    DWORD dwActionFlag = DclToFlag((CorDeclSecurity)action);
-
-    PsetCacheEntry *ptempPCE=NULL;
-    TokenDeclActionInfo* pCurrentAction = this;
-    for (;
-        pCurrentAction;
-        pCurrentAction = pCurrentAction->pNext)
-    {
-        if (pCurrentAction->dwDeclAction == dwActionFlag)
-        {
-                ptempPCE = pCurrentAction->pPCE;
-            break;
-        }
-    }
-    if (pDeclaredPermissions && pCurrentAction)
-    {
-        *pDeclaredPermissions = ptempPCE->CreateManagedPsetObject (action);
-    }
-    if (pPCE && pCurrentAction)
-    {
-        *pPCE = ptempPCE;
-    }
-
-    return hr;
-}
-
-OBJECTREF TokenDeclActionInfo::GetLinktimePermissions(OBJECTREF *prefNonCasDemands)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF refCasDemands = NULL;
-    GCPROTECT_BEGIN(refCasDemands);
-
-    GetDeclaredPermissionsWithCache(
-        dclLinktimeCheck,
-        &refCasDemands, NULL);
-
-    TokenDeclActionInfo::GetDeclaredPermissionsWithCache(
-        dclNonCasLinkDemand,
-        prefNonCasDemands, NULL);
-
-    GCPROTECT_END();
-    return refCasDemands;    
-}
-
-void TokenDeclActionInfo::InvokeLinktimeChecks(Assembly* pCaller)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pCaller));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_MULTICOREJIT
-    
-    // Reset the flag to allow managed code to be called in multicore JIT background thread from this routine
-    ThreadStateNCStackHolder holder(-1, Thread::TSNC_CallingManagedCodeDisabled);
-
-#endif
-
-    struct gc
-    {
-        OBJECTREF refNonCasDemands;
-        OBJECTREF refCasDemands;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
-    // CAS LinkDemands
-    GetDeclaredPermissionsWithCache(dclLinktimeCheck,
-                                    &gc.refCasDemands,
-                                    NULL);
-
-    if (gc.refCasDemands != NULL)
-    {
-        SecurityStackWalk::LinkOrInheritanceCheck(pCaller->GetSecurityDescriptor(), gc.refCasDemands, pCaller, dclLinktimeCheck);
-    }
-
-    // NON CAS LinkDEMANDS (we shouldn't support this).
-    GetDeclaredPermissionsWithCache(dclNonCasLinkDemand,
-                                    &gc.refNonCasDemands,
-                                    NULL);
-
-    GCPROTECT_END();
-}
-#endif // !CROSSGEN_COMPILE && FEATURE_CAS_POLICY
 
 void TypeSecurityDescriptor::ComputeCriticalTransparentInfo()
 {
@@ -1100,9 +914,6 @@ void TypeSecurityDescriptor::ComputeCriticalTransparentInfo()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    TypeSecurityDescriptorTransparencyEtwEvents etw(this);
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     // If we've setup a breakpoint when we compute the transparency of this type, then stop in the debugger now
@@ -1241,9 +1052,6 @@ void TypeSecurityDescriptor::ComputeCriticalTransparentInfo()
     // Update the cached values in the EE Class.
     g_IBCLogger.LogEEClassCOWTableAccess(m_pMT);
     pClass->SetCriticalTransparentInfo(
-#ifndef FEATURE_CORECLR
-                                        typeFlags & (TypeSecurityDescriptorFlags_IsCritical | TypeSecurityDescriptorFlags_IsAllCritical),
-#endif // FEATURE_CORECLR
                                         typeFlags & TypeSecurityDescriptorFlags_IsTreatAsSafe,
                                         typeFlags & TypeSecurityDescriptorFlags_IsAllTransparent,
                                         typeFlags & TypeSecurityDescriptorFlags_IsAllCritical);
@@ -1485,73 +1293,6 @@ void TypeSecurityDescriptor::InvokeInheritanceChecks(MethodTable* pChildMT)
         }
     }
 
-#ifndef FEATURE_CORECLR
-    // Fast path check
-    if (SecurityDeclarative::FullTrustCheckForLinkOrInheritanceDemand(pChildMT->GetAssembly()))
-    {
-        return;
-    }
-
-    if (HasInheritanceDeclarativeSecurity())
-    {
-#ifdef CROSSGEN_COMPILE
-        // NGen is always full trust. This path should be unreachable.
-        CrossGenNotSupported("HasInheritanceDeclarativeSecurity()");
-#else // CROSSGEN_COMPILE
-        GCX_COOP();
-
-        // If we have a class that requires inheritance checks,
-        // then we require a thread to perform the checks.
-        // We won't have a thread when some of the system classes
-        // are preloaded, so make sure that none of them have
-        // inheritance checks.
-        _ASSERTE(GetThread() != NULL);
-
-        struct
-        {
-            OBJECTREF refCasDemands;
-            OBJECTREF refNonCasDemands;
-        }
-        gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);        
-
-        EEClass *pClass = m_pMT->GetClass();
-        if (pClass->RequiresCasInheritanceCheck())
-        {
-            GetDeclaredPermissionsWithCache(dclInheritanceCheck, &gc.refCasDemands, NULL);
-        }
-
-        if (pClass->RequiresNonCasInheritanceCheck())
-        {
-            GetDeclaredPermissionsWithCache(dclNonCasInheritance, &gc.refNonCasDemands, NULL);
-        }
-
-        if (gc.refCasDemands != NULL)
-        {
-            SecurityStackWalk::LinkOrInheritanceCheck(pChildMT->GetAssembly()->GetSecurityDescriptor(),
-                                                      gc.refCasDemands,
-                                                      pChildMT->GetAssembly(),
-                                                      dclInheritanceCheck);
-        }
-
-        if (gc.refNonCasDemands != NULL)
-        {
-            _ASSERTE(((PERMISSIONSETREF)gc.refNonCasDemands)->CheckedForNonCas() && "Declarative permissions should have been checked for nonCAS in PermissionSet.CreateSerialized");
-            if(((PERMISSIONSETREF)gc.refNonCasDemands)->ContainsNonCas())
-            {
-                MethodDescCallSite demand(METHOD__PERMISSION_SET__DEMAND_NON_CAS, &gc.refNonCasDemands);
-
-                ARG_SLOT arg = ObjToArgSlot(gc.refNonCasDemands);
-                demand.Call(&arg);
-            }
-        }
-
-        GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
-    }
-#endif // FEATURE_CORECLR        
 }
 
 // Module security descriptor contains static security information about the module
@@ -1572,9 +1313,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
         return;    
     }
 
-#ifndef FEATURE_CORECLR
-    ModuleSecurityDescriptorTransparencyEtwEvents etw(this);
-#endif // !FEATURE_CORECLR
 
     // Read the security attributes from the assembly
     Assembly *pAssembly = m_pModule->GetAssembly();
@@ -1584,24 +1322,7 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
     // choosing.
     TokenSecurityDescriptorFlags tokenFlags = GetTokenFlags();
 
-#ifdef FEATURE_APTCA
-    // We need to post-process the APTCA bits on the token security descriptor to handle:
-    //  1. Conditional APTCA assemblies, which should appear as either APTCA-enabled or APTCA-disabled
-    //  2. APTCA killbitted assemblies, which should appear as APTCA-disabled
-    tokenFlags = ProcessAssemblyAptcaFlags(pAssembly->GetDomainAssembly(), tokenFlags);
-#endif // FEATURE_APTCA
 
-#ifndef FEATURE_CORECLR
-    // Make sure we understand the security rule set being asked for
-    if (GetSecurityRuleSet() < SecurityRuleSet_Min || GetSecurityRuleSet() > SecurityRuleSet_Max)
-    {
-        // Unknown rule set - fail to load this module
-        SString strAssemblyName;
-        pAssembly->GetDisplayName(strAssemblyName);
-        COMPlusThrow(kFileLoadException, IDS_E_UNKNOWN_SECURITY_RULESET, strAssemblyName.GetUnicode());
-    }
-
-#endif // !FEATURE_CORECLR
 
     // Get a transparency behavior object for the assembly.
     const SecurityTransparencyBehavior *pTransparencyBehavior =
@@ -1692,14 +1413,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
         }
     }
 
-#ifdef FEATURE_APTCA
-    // If the security model implies that unsigned assemblies are APTCA, then check to see if we're unsigned
-    // and set the APTCA bit.
-    if (pTransparencyBehavior->DoesUnsignedImplyAPTCA() && !pAssembly->IsStrongNamed())
-    {
-        moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
-    }
-#endif // FEATURE_APTCA
 
 #ifdef _DEBUG
     // If we're being forced to generate native code for this assembly which can be used in a partial trust
@@ -1722,40 +1435,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
     _ASSERTE(m_flags == moduleFlags);
 }
 
-#ifndef FEATURE_CORECLR
-
-// Determine if this assembly was build against a version of the runtime that only supported legacy transparency
-BOOL ModuleSecurityDescriptor::AssemblyVersionRequiresLegacyTransparency()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        SO_INTOLERANT;
-    }
-    CONTRACTL_END;
-
-    BOOL fIsLegacyAssembly = FALSE;
-
-    // Check the manifest version number to see if we're a v1 or v2 assembly.  We specifically check for the
-    // manifest version to come back as a string that starts with either v1 or v2; if we get anything
-    // unexpected, we'll just use the default transparency implementation
-    LPCSTR szVersion = NULL;
-    IMDInternalImport *pmdImport = m_pModule->GetAssembly()->GetManifestImport();
-    if (SUCCEEDED(pmdImport->GetVersionString(&szVersion)))
-    {
-        if (szVersion != NULL && strlen(szVersion) > 2)
-        {
-            fIsLegacyAssembly = szVersion[0] == 'v' &&
-                                (szVersion[1] == '1' || szVersion[1] == '2');
-        }
-    }
-
-    return fIsLegacyAssembly;
-}
-
-#endif // !FEATURE_CORECLR
 
 ModuleSecurityDescriptor* ModuleSecurityDescriptor::GetModuleSecurityDescriptor(Assembly *pAssembly)
 {
@@ -1787,7 +1466,7 @@ VOID ModuleSecurityDescriptor::Fixup(DataImage *image)
 }
 #endif
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 
 //---------------------------------------------------------------------------------------
 //
@@ -1830,7 +1509,7 @@ TokenSecurityDescriptorFlags ParseAptcaAttribute(const BYTE *pbAptcaBlob, DWORD 
     return aptcaFlags;
 }
 
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 //---------------------------------------------------------------------------------------
 //
@@ -1936,7 +1615,7 @@ TokenSecurityDescriptorFlags TokenSecurityDescriptor::ReadSecurityAttributes(IMD
             szAttributeNamespace != NULL &&
             strcmp(g_SecurityNS, szAttributeNamespace) == 0)
         {
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
             if (strcmp(g_SecurityAPTCA + sizeof(g_SecurityNS), szAttributeName) == 0)
             {
                 // Check the visibility parameter
@@ -1952,36 +1631,11 @@ TokenSecurityDescriptorFlags TokenSecurityDescriptor::ReadSecurityAttributes(IMD
                 flags |= aptcaFlags;
             }
             else
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
             if (strcmp(g_SecurityCriticalAttribute + sizeof(g_SecurityNS), szAttributeName) == 0)
             {
                 flags |= TokenSecurityDescriptorFlags_Critical;
 
-#ifndef FEATURE_CORECLR
-                // Check the SecurityCriticalScope parameter
-                const BYTE *pbAttributeBlob;
-                ULONG cbAttributeBlob;
-                
-                if (FAILED(pmdImport->GetCustomAttributeAsBlob(
-                    currentAttribute, 
-                    reinterpret_cast<const void **>(&pbAttributeBlob), 
-                    &cbAttributeBlob)))
-                {
-                    continue;
-                }
-                CustomAttributeParser cap(pbAttributeBlob, cbAttributeBlob);
-                if (SUCCEEDED(cap.SkipProlog()))
-                {
-                    UINT32 dwCriticalFlags;
-                    if (SUCCEEDED(cap.GetU4(&dwCriticalFlags)))
-                    {
-                        if (dwCriticalFlags == SecurityCriticalFlags_All)
-                        {
-                            flags |= TokenSecurityDescriptorFlags_AllCritical;
-                        }
-                    }
-                }
-#endif // !FEATURE_CORECLR
             }
             else if (strcmp(g_SecuritySafeCriticalAttribute + sizeof(g_SecurityNS), szAttributeName) == 0)
             {
@@ -1991,30 +1645,6 @@ TokenSecurityDescriptorFlags TokenSecurityDescriptor::ReadSecurityAttributes(IMD
             {
                 flags |= TokenSecurityDescriptorFlags_Transparent;
             }
-#ifndef FEATURE_CORECLR
-            else if (strcmp(g_SecurityRulesAttribute + sizeof(g_SecurityNS), szAttributeName) == 0)
-            {
-                const BYTE *pbAttributeBlob;
-                ULONG cbAttributeBlob;
-                
-                if (FAILED(pmdImport->GetCustomAttributeAsBlob(
-                    currentAttribute, 
-                    reinterpret_cast<const void **>(&pbAttributeBlob), 
-                    &cbAttributeBlob)))
-                {
-                    continue;
-                }
-                
-                TokenSecurityDescriptorFlags securityRulesFlags = 
-                    ParseSecurityRulesAttribute(pbAttributeBlob, cbAttributeBlob);
-                
-                flags |= securityRulesFlags;
-            }
-            else if (strcmp(g_SecurityTreatAsSafeAttribute + sizeof(g_SecurityNS), szAttributeName) == 0)
-            {
-                flags |= TokenSecurityDescriptorFlags_TreatAsSafe;
-            }
-#endif // !FEATURE_CORECLR
         }
     }
 
@@ -2042,9 +1672,6 @@ void TokenSecurityDescriptor::VerifySemanticDataComputed()
         return;
     }
 
-#ifndef FEATURE_CORECLR
-    TokenSecurityDescriptorTransparencyEtwEvents etw(this);
-#endif // !FEATURE_CORECLR
 
     bool fIsSemanticallyCritical = false;
     bool fIsSemanticallyTreatAsSafe = false;

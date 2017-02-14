@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices {
 using System;
 using System.Reflection;
 using System.Threading;
-using System.Security.Permissions;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.IO;
@@ -154,7 +153,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // Creates a SafeHandle class.  Users must then set the Handle property.
     // To prevent the SafeHandle from being freed, write a subclass that
     // doesn't define a finalizer.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     protected SafeHandle(IntPtr invalidHandleValue, bool ownsHandle)
     {
         handle = invalidHandleValue;
@@ -190,11 +188,9 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
         Dispose(false);
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     extern void InternalFinalize();
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected void SetHandle(IntPtr handle) {
         this.handle = handle;
     }
@@ -213,33 +209,27 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     //     any way, this can lead to a handle recycling security attack (i.e. an
     //     untrusted caller can query data on the handle you've just returned
     //     and get back information for an entirely unrelated resource).
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public IntPtr DangerousGetHandle()
     {
         return handle;
     }
 
     public bool IsClosed {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get { return (_state & 1) == 1; }
     }
 
     public abstract bool IsInvalid {
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         get;
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Close() {
         Dispose(true);
     }
     
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     public void Dispose() {
         Dispose(true);
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
@@ -248,7 +238,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
             InternalFinalize();
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     private extern void InternalDispose();
 
@@ -256,7 +245,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // your handle is invalid and you want to record that information.
     // An example is calling a syscall and getting back ERROR_INVALID_HANDLE.
     // This method will normally leak handles!
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void SetHandleAsInvalid();
 
@@ -268,7 +256,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // The boolean returned should be true for success and false if the runtime
     // should fire a SafeHandleCriticalFailure MDA (CustomerDebugProbe) if that
     // MDA is enabled.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     protected abstract bool ReleaseHandle();
 
     // Add a reason why this handle should not be relinquished (i.e. have
@@ -284,7 +271,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // when the method is interrupted prior to processing by a thread abort or
     // when the handle has already been (or is in the process of being)
     // released.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousAddRef(ref bool success);
 
@@ -297,7 +283,6 @@ public abstract class SafeHandle : CriticalFinalizerObject, IDisposable
     // constitutes a potential security hole (via handle recycling) as well as a
     // correctness problem -- so don't ever expose Dangerous* calls out to
     // untrusted code.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [MethodImplAttribute(MethodImplOptions.InternalCall)]
     public extern void DangerousRelease();
 }

@@ -23,7 +23,6 @@ namespace System.Resources {
     using System.Reflection;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
@@ -149,7 +148,6 @@ namespace System.Resources {
     //
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ResourceManager
     {
 
@@ -162,7 +160,7 @@ namespace System.Resources {
         // Sets is a many-to-one table of CultureInfos mapped to ResourceSets.
         // Don't synchronize ResourceSets - too fine-grained a lock to be effective
         [Obsolete("call InternalGetResourceSet instead")]
-        protected Hashtable ResourceSets;
+        internal Hashtable ResourceSets;
         
 
         // don't serialize the cache of ResourceSets
@@ -251,7 +249,7 @@ namespace System.Resources {
         
         private static volatile bool s_IsAppXModel;
         
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private void Init()
         {
             m_callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
@@ -298,7 +296,7 @@ namespace System.Resources {
             resourceGroveler = new FileBasedResourceGroveler(mediator);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(String baseName, Assembly assembly)
         {
             if (null==baseName)
@@ -329,7 +327,7 @@ namespace System.Resources {
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(String baseName, Assembly assembly, Type usingResourceSet)
         {
             if (null==baseName)
@@ -358,7 +356,7 @@ namespace System.Resources {
                 m_callingAssembly = null;
         }
         
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(Type resourceSource)
         {
             if (null==resourceSource)
@@ -576,7 +574,7 @@ namespace System.Resources {
 
             return null;
         }
-        
+
         // Looks up a set of resources for a particular CultureInfo.  This is
         // not useful for most users of the ResourceManager - call 
         // GetString() or GetObject() instead.  
@@ -585,7 +583,7 @@ namespace System.Resources {
         // if it hasn't yet been loaded and if parent CultureInfos should be 
         // loaded as well for resource inheritance.
         //         
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var have to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) {
             if (null==culture)
                 throw new ArgumentNullException(nameof(culture));
@@ -628,7 +626,7 @@ namespace System.Resources {
         // for getting a resource set lives.  Access to it is controlled by
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) 
         {
             Debug.Assert(culture != null, "culture != null");
@@ -1246,12 +1244,10 @@ namespace System.Resources {
             return null;
         }
 
-        [ComVisible(false)]
         public UnmanagedMemoryStream GetStream(String name) {
             return GetStream(name, (CultureInfo)null);
         }
         
-        [ComVisible(false)]
         public UnmanagedMemoryStream GetStream(String name, CultureInfo culture) {
             Object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;

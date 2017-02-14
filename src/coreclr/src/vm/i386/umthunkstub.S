@@ -28,7 +28,7 @@ NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 #define UMThunkStub_UMENTRYTHUNK_OFFSET     (UMThunkStub_SAVEDREG+4)
 #define UMThunkStub_THREAD_OFFSET           (UMThunkStub_UMENTRYTHUNK_OFFSET+4)
 #define UMThunkStub_INT_ARG_OFFSET          (UMThunkStub_THREAD_OFFSET+4)
-#define UMThunkStub_FIXEDALLOCSIZE          (UMThunkStub_LOCALVARS)
+#define UMThunkStub_FIXEDALLOCSIZE          (UMThunkStub_LOCALVARS+4) // extra 4 is for stack alignment
 
 // return address                           <-- entry ESP
 // saved ebp                                <-- EBP
@@ -37,6 +37,7 @@ NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 // saved edi
 // UMEntryThunk*
 // Thread*
+// dummy 4 byte for 16 byte stack alignment
 // {optional stack args passed to callee}   <-- new esp
 
     PROLOG_BEG
@@ -122,11 +123,13 @@ LOCAL_LABEL(InvalidTransition):
 LOCAL_LABEL(DoTrapReturningThreadsTHROW):
 
     // extern "C" VOID STDCALL UMThunkStubRareDisableWorker(Thread *pThread, UMEntryThunk *pUMEntryThunk)
+    sub     esp, (2*4) // add padding to ensure 16 byte stack alignment
     mov     eax, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
     push    eax
     mov     eax, dword ptr [ebp - UMThunkStub_THREAD_OFFSET]
     push    eax
     call    C_FUNC(UMThunkStubRareDisableWorker)
+    add     esp, (2*4) // restore to before stack alignment
 
     jmp     LOCAL_LABEL(InCooperativeMode)
 

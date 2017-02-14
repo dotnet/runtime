@@ -1187,7 +1187,6 @@ FindFirstFileExWrapper(
 }
 #endif //!FEATURE_PAL
 
-#if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
 #ifndef FEATURE_PAL
 
@@ -1247,7 +1246,6 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 
 #endif // FEATURE_PAL
 
-#endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');

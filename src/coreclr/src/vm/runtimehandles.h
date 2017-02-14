@@ -12,7 +12,6 @@
 #include "fcall.h"
 #include "field.h"
 #include "typectxt.h"
-#include "constrainedexecutionregion.h"
 
 typedef void* EnregisteredTypeHandle;
 class SignatureNative;
@@ -158,10 +157,6 @@ public:
     static FCDECL2(FC_BOOL_RET, TypeEQ, Object* left, Object* right);
     static FCDECL2(FC_BOOL_RET, TypeNEQ, Object* left, Object* right);
 
-#ifndef FEATURE_CORECLR
-    static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
-    static FCDECL1(FC_BOOL_RET, IsEquivalentType, ReflectClassBaseObject *rtTypeUNSAFE);
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET, IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE);
@@ -462,9 +457,6 @@ public:
     static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
 
     static FCDECL1(INT32, GetToken, AssemblyBaseObject *pAssemblyUNSAFE);   
-#ifdef FEATURE_APTCA
-    static FCDECL2(FC_BOOL_RET, AptcaCheck, AssemblyBaseObject *pTargetAssemblyUNSAFE, AssemblyBaseObject *pSourceAssemblyUNSAFE);
-#endif // FEATURE_APTCA
 };
 
 class SignatureNative;

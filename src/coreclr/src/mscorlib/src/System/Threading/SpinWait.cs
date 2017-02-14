@@ -12,7 +12,6 @@
 
 using System;
 using System.Runtime.ConstrainedExecution;
-using System.Security.Permissions;
 using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;

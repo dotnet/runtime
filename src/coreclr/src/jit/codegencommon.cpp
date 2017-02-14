@@ -2814,6 +2814,37 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
         }
     }
 }
+
+#if defined(_TARGET_ARM_)
+void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
+{
+    // If this block is the target of a finally return, we need to add a preceding NOP, in the same EH region,
+    // so the unwinder doesn't get confused by our "movw lr, xxx; movt lr, xxx; b Lyyy" calling convention that
+    // calls the funclet during non-exceptional control flow.
+    if (block->bbFlags & BBF_FINALLY_TARGET)
+    {
+        assert(block->bbFlags & BBF_JMP_TARGET);
+
+#ifdef DEBUG
+        if (compiler->verbose)
+        {
+            printf("\nEmitting finally target NOP predecessor for BB%02u\n", block->bbNum);
+        }
+#endif
+        // Create a label that we'll use for computing the start of an EH region, if this block is
+        // at the beginning of such a region. If we used the existing bbEmitCookie as is for
+        // determining the EH regions, then this NOP would end up outside of the region, if this
+        // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
+        // would be executed, which we would prefer not to do.
+
+        block->bbUnwindNopEmitCookie =
+            getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+
+        instGen(INS_nop);
+    }
+}
+#endif
+
 #endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
@@ -3165,12 +3196,17 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     /* Check our max stack level. Needed for fgAddCodeRef().
        We need to relax the assert as our estimation won't include code-gen
        stack changes (which we know don't affect fgAddCodeRef()) */
-    noway_assert(getEmitter()->emitMaxStackDepth <=
-                 (compiler->fgPtrArgCntMax +              // Max number of pointer-sized stack arguments.
-                  compiler->compHndBBtabCount +           // Return address for locally-called finallys
-                  genTypeStSz(TYP_LONG) +                 // longs/doubles may be transferred via stack, etc
-                  (compiler->compTailCallUsed ? 4 : 0))); // CORINFO_HELP_TAILCALL args
+    {
+        unsigned maxAllowedStackDepth = compiler->fgPtrArgCntMax +    // Max number of pointer-sized stack arguments.
+                                        compiler->compHndBBtabCount + // Return address for locally-called finallys
+                                        genTypeStSz(TYP_LONG) +       // longs/doubles may be transferred via stack, etc
+                                        (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
+#if defined(UNIX_X86_ABI)
+        maxAllowedStackDepth += genTypeStSz(TYP_INT) * 3; // stack align for x86 - allow up to 3 INT's for padding
 #endif
+        noway_assert(getEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
+    }
+#endif // EMIT_TRACK_STACK_DEPTH
 
     *nativeSizeOfCode                 = codeSize;
     compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;

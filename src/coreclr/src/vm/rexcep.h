@@ -109,12 +109,8 @@
 //
 
 DEFINE_EXCEPTION(g_ReflectionNS,       AmbiguousMatchException,        false,  COR_E_AMBIGUOUSMATCH)
-#ifdef FEATURE_CORECLR
 // ApplicationException is removed in CoreCLR
 #define kApplicationException kException 
-#else
-DEFINE_EXCEPTION(g_SystemNS,           ApplicationException,           false,  COR_E_APPLICATION)
-#endif // FEATURE_CORECLR
 DEFINE_EXCEPTION(g_SystemNS,           AppDomainUnloadedException,     false,  COR_E_APPDOMAINUNLOADED)
 DEFINE_EXCEPTION(g_SystemNS,           ArithmeticException,            false,  COR_E_ARITHMETIC)
 
@@ -142,12 +138,8 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
                  META_E_BAD_SIGNATURE,
                  COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY)
 
-#ifdef FEATURE_CORECLR
 // CannotUnloadAppDomainException is removed in CoreCLR
 #define kCannotUnloadAppDomainException kException 
-#else
-DEFINE_EXCEPTION(g_SystemNS,           CannotUnloadAppDomainException, false,  COR_E_CANNOTUNLOADAPPDOMAIN)
-#endif // FEATURE_CORECLR
 
 DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  COR_E_CODECONTRACTFAILED)
 
@@ -157,12 +149,9 @@ DEFINE_EXCEPTION(g_SystemNS,           ContextMarshalException,        false,  C
 
 DEFINE_EXCEPTION(g_ReflectionNS,       CustomAttributeFormatException, false,  COR_E_CUSTOMATTRIBUTEFORMAT)
 
-#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO)
+#if defined(FEATURE_X509)
 DEFINE_EXCEPTION(g_CryptographyNS,     CryptographicException,         false,  CORSEC_E_CRYPTO)
-#endif // FEATURE_X509 || FEATURE_CRYPTO
-#ifndef FEATURE_CORECLR
-DEFINE_EXCEPTION(g_CryptographyNS,     CryptographicUnexpectedOperationException, false,  CORSEC_E_CRYPTO_UNEX_OPER)
-#endif // FEATURE_CORECLR
+#endif // FEATURE_X509
 
 DEFINE_EXCEPTION(g_SystemNS,           DataMisalignedException,        false,  COR_E_DATAMISALIGNED)
 
@@ -315,10 +304,6 @@ DEFINE_EXCEPTION(g_SystemNS,           UnauthorizedAccessException,    true,   C
 
 DEFINE_EXCEPTION(g_SecurityNS,         VerificationException,          false,  COR_E_VERIFICATION)
 
-#ifdef FEATURE_CAS_POLICY
-DEFINE_EXCEPTION(g_PolicyNS,           PolicyException,                true,   CORSEC_E_POLICY_EXCEPTION, CORSEC_E_NO_EXEC_PERM, CORSEC_E_MIN_GRANT_FAIL)
-DEFINE_EXCEPTION(g_SecurityNS,         XmlSyntaxException,             false,  CORSEC_E_XMLSYNTAX)
-#endif // FEATURE_CAS_POLICY
 
 DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
 DEFINE_EXCEPTION(g_InteropNS,          ExternalException,              false,  E_FAIL)
@@ -327,9 +312,7 @@ DEFINE_EXCEPTION(g_SystemNS,           NotImplementedException,        false,  E
 
 DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E_OUTOFMEMORY, CTL_E_OUTOFMEMORY, STD_CTL_SCODE(31001))
 
-#ifdef FEATURE_CORECLR
 DEFINE_EXCEPTION(g_SystemNS,           CrossAppDomainMarshaledException, false, E_FAIL)
-#endif //FEATURE_CORECLR
 
 #ifdef FEATURE_ISOSTORE
 DEFINE_EXCEPTION(g_IsolatedStorageNS,  IsolatedStorageException,       true,

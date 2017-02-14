@@ -17,7 +17,6 @@ namespace System.Reflection {
     // This Enum matchs the CorTypeAttr defined in CorHdr.h
     [Serializable]
     [Flags()]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum MemberTypes
     {
         // The following are the known classes which extend MemberInfo

@@ -7,7 +7,6 @@ namespace System.Runtime {
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
 
     // These settings are the same format as in clr\src\vm\gcpriv.h
@@ -37,17 +36,15 @@ namespace System.Runtime {
             Succeeded = 0,
             NoGCInProgress = 1 // NoGCRegion is in progress, can't change pause mode.
         };
-
+        
         public static GCLatencyMode LatencyMode
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get 
             {
                 return (GCLatencyMode)(GC.GetGCLatencyMode());
             }
 
             // We don't want to allow this API when hosted.
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {
                 if ((value < GCLatencyMode.Batch) || (value > GCLatencyMode.SustainedLowLatency))
@@ -63,14 +60,12 @@ namespace System.Runtime {
 
         public static GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode
         {
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             get 
             {
                 return (GCLargeObjectHeapCompactionMode)(GC.GetLOHCompactionMode());
             }
 
             // We don't want to allow this API when hosted.
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             set 
             {
                 if ((value < GCLargeObjectHeapCompactionMode.Default) || 

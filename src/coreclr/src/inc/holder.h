@@ -65,12 +65,6 @@
 
 #ifdef _DEBUG
 
-#ifdef FEATURE_FUSION
-namespace NATIVE_BINDER_SPACE
-{
-    class NativeAssembly;
-}
-#endif //FEATURE_FUSION
 
 //------------------------------------------------------------------------------------------------
 // This is used to make Visual Studio autoexp.dat work sensibly with holders again.
@@ -95,26 +89,11 @@ struct AutoExpVisibleValue
     union
     {
         // Only include a class name here if it is customarily referred to through an abstract interface.
-#ifdef FEATURE_FUSION
-        const class CAssemblyName                           *_asCAssemblyName;
-        const class CAssembly                               *_asCAssembly;
-        const class CAssemblyManifestImport                 *_asCAssemblyManifestImport;
-        const class CAssemblyModuleImport                   *_asCAssemblyModuleImport;
-        const class CHostAssembly                           *_asCHostAssembly;
-        const class CHostAssemblyModuleImport               *_asCHostAssemblyModuleImport;
-        const class BindResult                              *_asBindResult;
-        const class BindContext                             *_asBindContext;
-        const class NATIVE_BINDER_SPACE::NativeAssembly     *_asNativeAssembly;
-        const class AssemblyLocation                        *_asAssemblyLocation;
-#endif //FEATURE_FUSION
 
 #if defined(FEATURE_APPX)
         const class AppXBindResultImpl                      *_asAppXBindResultImpl;
 #endif
 
-#ifndef FEATURE_CORECLR
-        const class PEFingerprint                           *_asPEFingerprint;
-#endif //!FEATURE_CORECLR
         const void                                          *_pPreventEmptyUnion;
     };
 };
@@ -1214,16 +1193,6 @@ FORCEINLINE void VoidDeleteFile(LPCWSTR wszFilePath) { WszDeleteFile(wszFilePath
 typedef Wrapper<LPCWSTR, DoNothing<LPCWSTR>, VoidDeleteFile, NULL> DeleteFileHolder;
 #endif // WszDeleteFile
 
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_CRYPTO)
-// Crypto holders
-FORCEINLINE void VoidCryptReleaseContext(HCRYPTPROV h) { CryptReleaseContext(h, 0); }
-FORCEINLINE void VoidCryptDestroyHash(HCRYPTHASH h) { CryptDestroyHash(h); }
-FORCEINLINE void VoidCryptDestroyKey(HCRYPTKEY h) { CryptDestroyKey(h); }
-
-typedef Wrapper<HCRYPTPROV, DoNothing, VoidCryptReleaseContext, 0> HandleCSPHolder;
-typedef Wrapper<HCRYPTHASH, DoNothing, VoidCryptDestroyHash, 0> HandleHashHolder;
-typedef Wrapper<HCRYPTKEY, DoNothing, VoidCryptDestroyKey, 0> HandleKeyHolder;
-#endif // !FEATURE_CORECLR || FEATURE_CRYPTO
 
 //-----------------------------------------------------------------------------
 // Misc holders

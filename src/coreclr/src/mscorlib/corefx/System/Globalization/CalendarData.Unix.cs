@@ -64,7 +64,6 @@ namespace System.Globalization
         }
 
         // Call native side to figure out which calendars are allowed
-        [SecuritySafeCritical]
         internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             // NOTE: there are no 'user overrides' on Linux
@@ -87,7 +86,6 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        [SecuritySafeCritical]
         private static bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string calendarString)
         {
             return Interop.CallStringMethod(
@@ -239,7 +237,6 @@ namespace System.Globalization
             return index - startIndex;
         }
 
-        [SecuritySafeCritical]
         private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] monthNames)
         {
             monthNames = null;
@@ -261,7 +258,6 @@ namespace System.Globalization
             return result;
         }
 
-        [SecuritySafeCritical]
         private static bool EnumEraNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] eraNames)
         {
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, out eraNames);
@@ -277,7 +273,6 @@ namespace System.Globalization
             return result;
         }
 
-        [SecuritySafeCritical]
         internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] calendarData)
         {
             calendarData = null;
@@ -292,7 +287,6 @@ namespace System.Globalization
             return result;
         }
 
-        [SecuritySafeCritical]
         private static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, CallbackContext callbackContext)
         {
             GCHandle context = GCHandle.Alloc(callbackContext);
@@ -306,7 +300,6 @@ namespace System.Globalization
             }
         }
 
-        [SecuritySafeCritical]
         private static void EnumCalendarInfoCallback(string calendarString, IntPtr context)
         {
             CallbackContext callbackContext = (CallbackContext)((GCHandle)context).Target;

@@ -18,7 +18,6 @@ namespace System.Reflection {
     using System;
     using System.Runtime.Serialization;
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class TargetInvocationException : ApplicationException {
         // This exception is not creatable without specifying the
         //    inner exception.

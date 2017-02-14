@@ -9,7 +9,6 @@ namespace System.Security {
     using System;
     using System.Runtime.Serialization;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class VerificationException : SystemException {
         public VerificationException() 

@@ -1326,7 +1326,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     genDefineTempLabel(gsCheckBlk);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
+BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     // Generate a call to the finally, like this:
     //      mov         x0,qword ptr [fp + 10H] / sp    // Load x0 with PSPSym, or sp if PSPSym is not used
@@ -1387,8 +1387,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block, BasicBlock* lblk)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-
-        lblk  = block;
         block = block->bbNext;
     }
     return block;
@@ -3380,7 +3378,14 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     assert(!dstAddr->isContained());
     assert(!initVal->isContained());
-    assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
+    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
+    {
+        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
+    }
+    else
+    {
+        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
+    }
 
 // TODO-ARM64-CQ: When initblk loop unrolling is implemented
 //                put this assert back on.

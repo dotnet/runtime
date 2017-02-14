@@ -1570,15 +1570,6 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
         _ASSERTE(!"You must pass either a asm-qualified typename or an actual Assembly.");
     }
 
-#ifdef FEATURE_FUSION
-    if (th.IsNull() && bLoadTypeFromPartialNameHack && GetAssembly() && !GetAssembly()->IsEmpty())
-    {
-        DomainAssembly* pPartialBindAssemblyHack = LoadAssemblyFromPartialNameHack(GetAssembly());
-
-        if (pPartialBindAssemblyHack)
-            th = GetTypeHaveAssembly(pPartialBindAssemblyHack->GetAssembly(), bThrowIfNotFound, bIgnoreCase, NULL);
-    }
-#endif // FEATURE_FUSION
 
     if (!th.IsNull() && (!m_genericArguments.IsEmpty() || !m_signature.IsEmpty()))
     {
@@ -1819,46 +1810,6 @@ TypeName::GetTypeHaveAssemblyHelper(
     return th;
 } // TypeName::GetTypeHaveAssemblyHelper
 
-#ifdef FEATURE_FUSION
-DomainAssembly* LoadAssemblyFromPartialNameHack(SString* psszAssemblySpec, BOOL fCropPublicKey)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-    
-    MethodDescCallSite loadWithPartialNameHack(METHOD__ASSEMBLY__LOAD_WITH_PARTIAL_NAME_HACK);   
-    ARG_SLOT args[2];
-    STRINGREF mszAssembly = NULL;
-    DomainAssembly* pPartialBindAssemblyHack = NULL;
-    GCPROTECT_BEGIN(mszAssembly);
-    {
-        mszAssembly = StringObject::NewString(psszAssemblySpec->GetUnicode());
-        args[0] = ObjToArgSlot(mszAssembly);
-        args[1] = BoolToArgSlot(fCropPublicKey);
-
-        ASSEMBLYREF assembly = (ASSEMBLYREF)loadWithPartialNameHack.Call_RetOBJECTREF(args);
-        
-        if (assembly != NULL)
-        {
-            pPartialBindAssemblyHack = (DomainAssembly*) assembly->GetDomainAssembly();
-
-            if (pPartialBindAssemblyHack->GetAssembly()->IsCollectible())
-            {
-                // Should not be possible to reach
-                COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
-            }
-        }
-    }
-    GCPROTECT_END();
-
-    return pPartialBindAssemblyHack;
-}
-#endif // FEATURE_FUSION
 
 DomainAssembly * LoadDomainAssembly(
     SString *  psszAssemblySpec, 
@@ -1902,7 +1853,6 @@ DomainAssembly * LoadDomainAssembly(
         spec.SetParentAssembly(pRequestingAssembly->GetDomainAssembly());
     }
     
-#if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)    
     // If the requesting assembly has Fallback LoadContext binder available,
     // then set it up in the AssemblySpec.
     if (pRequestingAssembly != NULL)
@@ -1910,7 +1860,6 @@ DomainAssembly * LoadDomainAssembly(
         PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
         spec.SetFallbackLoadContextBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackLoadContextBinder());
     }
-#endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
     if (bThrowIfNotFound)
     {

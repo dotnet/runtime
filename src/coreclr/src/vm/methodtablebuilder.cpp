@@ -15,7 +15,6 @@
 
 #include "methodtablebuilder.h"
 
-#include "constrainedexecutionregion.h"
 #include "sigbuilder.h"
 #include "dllimport.h"
 #include "fieldmarshaler.h"
@@ -30,9 +29,6 @@
 #endif
 
 #ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_FUSION	
-#include "policy.h"
-#endif
 #endif
 
 //*******************************************************************************
@@ -191,18 +187,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
         pEEClass->GetSecurityProperties()->SetFlags(dwSecFlags, dwNullDeclFlags);
     }
 
-#ifdef FEATURE_CER
-    // Cache class level reliability contract info.
-    DWORD dwReliabilityContract = ::GetReliabilityContract(pInternalImport, cl);
-    if (dwReliabilityContract != RC_NULL)
-    {
-        // Reliability contract is an optional field. If we have a non-default value we need to ensure the
-        // optional field descriptor has been allocated.
-        EnsureOptionalFieldsAreAllocated(pEEClass, pamTracker, pAllocator->GetLowFrequencyHeap());
-        
-        pEEClass->SetReliabilityContract(dwReliabilityContract);
-    }
-#endif // FEATURE_CER
 
     if (fHasLayout)
         pEEClass->SetHasLayout();
@@ -217,13 +201,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
         // On CoreCLR, however, we do allow non-FX assemblies to have this attribute. This enables scenarios where we can
         // activate 3rd-party WinRT components outside AppContainer - 1st party WinRT components are already allowed
         // to be activated outside AppContainer (on both Desktop and CoreCLR).
-#ifdef FEATURE_FUSION
-        if (!pAssembly->IsWinMD() &&
-             Fusion::Util::IsAnyFrameworkAssembly(pAssembly->GetFusionAssemblyName()) != S_OK)
-        {
-            pAssembly->ThrowTypeLoadException(pModule->GetMDImport(), cl, IDS_EE_WINRT_TYPE_IN_ORDINARY_ASSEMBLY);
-        }
-#endif
 
         pEEClass->SetProjectedFromWinRT();
     }
@@ -5154,25 +5131,13 @@ void MethodTableBuilder::SetSecurityFlagsOnMethod(bmtRTMethod* pParentMethod,
     // for linktime checks on these.
     // Also place linktime checks on all P/Invoke calls.
     if (
-#ifndef FEATURE_CORECLR 
-        (IsInterface() &&
-        (GetMDImport()->GetCustomAttributeByName(GetCl(),
-                                                                COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                                NULL,
-                                                                NULL) == S_OK ||
-         GetMDImport()->GetCustomAttributeByName(pNewMD->GetMemberDef(),
-                                                                COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                                NULL,
-                                                                NULL) == S_OK) ) ||
-
-#endif  // !FEATURE_CORECLR
         pNewMD->IsNDirect() ||
         (pNewMD->IsComPlusCall() && !IsInterface()))
     {
         pNewMD->SetRequiresLinktimeCheck();
     }
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM) 
+#if defined(FEATURE_CORESYSTEM)
     // All public methods on public types will do a link demand of
     // full trust, unless AllowUntrustedCaller attribute is set
     if (
@@ -5200,7 +5165,7 @@ void MethodTableBuilder::SetSecurityFlagsOnMethod(bmtRTMethod* pParentMethod,
                 pNewMD->SetRequiresLinktimeCheck();
         }
     }
-#endif //  defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif //  defined(FEATURE_CORESYSTEM)
 
     // If it's a delegate BeginInvoke, we need to do a HostProtection check for synchronization
     if(!pNewMD->RequiresLinktimeCheck() && IsDelegate())
@@ -10220,16 +10185,22 @@ void MethodTableBuilder::CheckForSystemTypes()
     // We can exit early for generic types - there are just a few cases to check for.
     if (bmtGenerics->HasInstantiation() && g_pNullableClass != NULL)
     {
-#ifdef FEATURE_SPAN_OF_T
         _ASSERTE(g_pByReferenceClass != NULL);
         _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
         if (GetCl() == g_pByReferenceClass->GetCl())
         {
             pMT->SetIsByRefLike();
+#ifdef _TARGET_X86_
+            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
+            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
+            // treated as a value type so that its field can be considered as a by-ref pointer.
+            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
+            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
+            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
+#endif
             return;
         }
-#endif
 
         _ASSERTE(g_pNullableClass->IsNullable());
 
@@ -10285,12 +10256,18 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-#ifdef FEATURE_SPAN_OF_T
         else if (strcmp(name, g_ByReferenceName) == 0)
         {
             pMT->SetIsByRefLike();
-        }
+#ifdef _TARGET_X86_
+            // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
+            // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
+            // treated as a value type so that its field can be considered as a by-ref pointer.
+            _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
+            pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
+            pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
 #endif
+        }
         else if (strcmp(name, g_ArgIteratorName) == 0)
         {
             // Mark the special types that have embeded stack poitners in them
@@ -12178,19 +12155,6 @@ VOID MethodTableBuilder::VerifyClassInheritanceSecurityHelper(
     // This method throws on failure.
     Security::ClassInheritanceCheck(pChildMT, pParentMT);
 
-#ifndef FEATURE_CORECLR
-    // Check the entire parent chain for inheritance permission demands.
-    while (pParentMT != NULL)
-    {
-        if (pParentMT->GetClass()->RequiresInheritanceCheck())
-        {
-            // This method throws on failure.
-            Security::ClassInheritanceCheck(pChildMT, pParentMT);
-        }
-
-        pParentMT = pParentMT->GetParentMethodTable();
-    }
-#endif // !FEATURE_CORECLR
 }
 
 //*******************************************************************************
@@ -12209,74 +12173,6 @@ VOID MethodTableBuilder::VerifyMethodInheritanceSecurityHelper(
 
     Security::MethodInheritanceCheck(pChildMD, pParentMD);
 
-#ifndef FEATURE_CORECLR
-
-    // If no inheritance checks are required, just return.
-    if (!pParentMD->RequiresInheritanceCheck() &&
-        !pParentMD->ParentRequiresInheritanceCheck())
-    {
-        return;
-    }
-
-    DWORD dwSlot = pParentMD->GetSlot();
-
-#ifdef _DEBUG 
-    // Get the name and signature for the method so we can find the new parent method desc.
-    // We use the parent MethodDesc for this because the child could actually have a very
-    // different name in the case that the child is MethodImpling the parent.
-
-    // Get the name.
-    LPCUTF8            szName;
-    szName = pParentMD->GetName();
-
-    // Get the signature.
-    PCCOR_SIGNATURE    pSignature;
-    DWORD              cSignature;
-    pParentMD->GetSig(&pSignature, &cSignature);
-    Module            *pModule = pParentMD->GetModule();
-#endif // _DEBUG
-
-    do
-    {
-        if (pParentMD->RequiresInheritanceCheck())
-        {
-            Security::MethodInheritanceCheck(pChildMD, pParentMD);
-        }
-
-        if (pParentMD->ParentRequiresInheritanceCheck())
-        {
-            MethodTable *pGrandParentMT = pParentMD->GetMethodTable()->GetParentMethodTable();
-            CONSISTENCY_CHECK(CheckPointer(pGrandParentMT));
-
-            // Find this method in the parent.
-            // If it does exist in the parent, it would be at the same vtable slot.
-            if (dwSlot >= pGrandParentMT->GetNumVirtuals())
-            {
-                // Parent does not have this many vtable slots, so it doesn't exist there
-                pParentMD = NULL;
-            }
-            else
-            {
-                // It is in the vtable of the parent
-                pParentMD = pGrandParentMT->GetMethodDescForSlot(dwSlot);
-                _ASSERTE(pParentMD != NULL);
-
-#ifdef _DEBUG 
-                _ASSERTE(pParentMD == MemberLoader::FindMethod(pGrandParentMT,
-                    szName,
-                    pSignature,
-                    cSignature,
-                    pModule));
-#endif // _DEBUG
-            }
-        }
-        else
-        {
-            pParentMD = NULL;
-        }
-    } while (pParentMD != NULL);
-
-#endif // !FEATURE_CORECLR
 }
 
 //*******************************************************************************
@@ -12521,7 +12417,6 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
     // permission demands on the current class. If these first checks
     // succeeded, then the cached declared method list is scanned for
     // methods that have inheritance permission demands.
-#ifdef FEATURE_CORECLR
     //
     // If we are transparent, and every class up the inheritence chain is also entirely transparent,
     // that means that no inheritence rules could be broken.  If that's the case, we don't need to check
@@ -12552,12 +12447,9 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
 
         }
     }
-#endif // FEATURE_CORECLR
 
     if (GetParentMethodTable() != NULL
-#if FEATURE_CORECLR
         && !fInheritenceChainTransparent
-#endif // FEATURE_CORECLR
         )
     {
         // Check the parent for inheritance permission demands.
@@ -12642,18 +12534,10 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
             MethodTable *pCurItfMT = itfIt.GetInterface();
             CONSISTENCY_CHECK(CheckPointer(pCurItfMT));
 
-#ifdef FEATURE_CORECLR
             if (fNeedTransparencyInheritanceCheck && 
                 !(Security::IsTypeAllTransparent(itfIt.GetInterface()) &&
                     fCurrentTypeAllTransparent) 
                 )
-#else // FEATURE_CORECLR
-            EEClass * pCurItfCls = pCurItfMT->GetClass();
-            if (fNeedTransparencyInheritanceCheck ||
-                fNeedPartialTrustInterfaceMappingCheck ||
-                pCurItfCls->RequiresInheritanceCheck() ||
-                pCurItfCls->SomeMethodsRequireInheritanceCheck())
-#endif // !FEATURE_CORECLR
             {
                 // An interface is introduced by this type either if it is explicitly declared on the
                 // type's interface list or if one of the type's explicit interfaces requires the

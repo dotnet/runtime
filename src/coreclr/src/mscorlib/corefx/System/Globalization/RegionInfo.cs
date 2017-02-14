@@ -87,7 +87,6 @@ namespace System.Globalization
             SetName(name);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
@@ -132,7 +131,6 @@ namespace System.Globalization
         [OnSerializing]
         private void OnSerializing(StreamingContext ctx) { }
 
-        [System.Security.SecurityCritical]  // auto-generated
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {

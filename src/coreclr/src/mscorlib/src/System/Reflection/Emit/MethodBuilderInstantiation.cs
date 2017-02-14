@@ -53,7 +53,6 @@ namespace System.Reflection.Emit
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
         public override Module Module { get { return m_method.Module; } }
-        public new Type GetType() { return base.GetType(); }
         #endregion
 
         #region MethodBase Members

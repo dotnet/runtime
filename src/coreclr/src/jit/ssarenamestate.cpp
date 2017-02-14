@@ -28,14 +28,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  * @params alloc The allocator class used to allocate jitstd data.
  */
-SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lvaCount)
+SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc,
+                               unsigned                      lvaCount,
+                               bool                          byrefStatesMatchGcHeapStates)
     : counts(nullptr)
     , stacks(nullptr)
     , definedLocs(alloc)
-    , heapStack(alloc)
-    , heapCount(0)
+    , memoryStack(alloc)
+    , memoryCount(0)
     , lvaCount(lvaCount)
     , m_alloc(alloc)
+    , byrefStatesMatchGcHeapStates(byrefStatesMatchGcHeapStates)
 {
 }
 
@@ -200,11 +203,12 @@ void SsaRenameState::PopBlockStacks(BasicBlock* block)
 #endif // DEBUG
 }
 
-void SsaRenameState::PopBlockHeapStack(BasicBlock* block)
+void SsaRenameState::PopBlockMemoryStack(MemoryKind memoryKind, BasicBlock* block)
 {
-    while (heapStack.size() > 0 && heapStack.back().m_bb == block)
+    auto& stack = memoryStack[memoryKind];
+    while (stack.size() > 0 && stack.back().m_bb == block)
     {
-        heapStack.pop_back();
+        stack.pop_back();
     }
 }
 

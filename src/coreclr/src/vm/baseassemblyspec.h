@@ -27,18 +27,12 @@ protected:
     DWORD                       m_cbPublicKeyOrToken;
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     LPCWSTR                     m_wszCodeBase;         // URL to the code
-#ifdef FEATURE_FUSION
-    LOADCTX_TYPE                m_fParentLoadContext;  // m_pParentAssembly->GetFusionLoadContext()
-    ReleaseHolder<IAssemblyName> m_pNameAfterPolicy;
-#endif
     LPCSTR                      m_szWinRtTypeNamespace;
     LPCSTR                      m_szWinRtTypeClassName;
     ICLRPrivBinder             *m_pHostBinder;
     int                         m_ownedFlags;
     BOOL                        m_fIntrospectionOnly;
-#if defined(FEATURE_CORECLR)
     ICLRPrivBinder             *m_pBindingContext;
-#endif // defined(FEATURE_CORECLR)
 
 public:
     enum 
@@ -76,7 +70,6 @@ public:
     VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
-#if defined(FEATURE_CORECLR)
     inline void SetBindingContext(ICLRPrivBinder *pBindingContext)
     {
         LIMITED_METHOD_CONTRACT;
@@ -92,7 +85,6 @@ public:
     }
     
     BOOL IsAssemblySpecForMscorlib();
-#endif // defined(FEATURE_CORECLR)
     
     HRESULT ParseName();
     DWORD Hash();
@@ -150,19 +142,6 @@ public:
         BOOL fIncludeCodeBase = TRUE, /* Used by fusion only */
         BOOL fMustBeBindable = FALSE) const;
 
-#ifdef FEATURE_FUSION
-    // for fusion binding
-    virtual IAssembly* GetParentIAssembly() =0;
-
-    // for identity comparison
-    virtual LPCVOID GetParentAssemblyPtr() =0;
-
-    inline LOADCTX_TYPE GetParentLoadContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_fParentLoadContext;
-    }
-#endif
 
     BOOL IsIntrospectionOnly()
     {
@@ -253,48 +232,6 @@ public:
         return IsAfRetargetable(m_dwFlags);
     }
 
-#ifdef FEATURE_FUSION
-    inline IAssemblyName* GetNameAfterPolicy() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pNameAfterPolicy;
-    }
-
-    inline void ReleaseNameAfterPolicy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pNameAfterPolicy=NULL;
-    }
-
-    inline void SetNameAfterPolicy(IAssemblyName* pName)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pNameAfterPolicy=pName;
-    }
-
-
-    void SetPEKIND(PEKIND peKind)
-    {
-        LIMITED_METHOD_CONTRACT;
-        C_ASSERT(afPA_None == PAFlag(peNone));
-        C_ASSERT(afPA_MSIL == PAFlag(peMSIL));
-        C_ASSERT(afPA_x86 == PAFlag(peI386));
-        C_ASSERT(afPA_IA64 == PAFlag(peIA64));
-        C_ASSERT(afPA_AMD64 == PAFlag(peAMD64));
-        C_ASSERT(afPA_ARM == PAFlag(peARM));
-        
-        _ASSERTE((peKind <= peARM) || (peKind == peInvalid));
-        
-        m_dwFlags &= ~afPA_FullMask;
-        m_dwFlags |= PAFlag(peKind);
-    }
-
-    PEKIND GetPEKIND() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return static_cast<PEKIND>(PAIndex(m_dwFlags));
-    }
-#endif //FEATURE_FUSION
 
 protected:
     static BOOL CompareRefToDef(const BaseAssemblySpec *pRef, const BaseAssemblySpec *pDef);

@@ -14,10 +14,8 @@
 namespace System.Runtime.InteropServices {
    
     using System;
-    using System.Security.Permissions;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ErrorWrapper
     {
         public ErrorWrapper(int errorCode)

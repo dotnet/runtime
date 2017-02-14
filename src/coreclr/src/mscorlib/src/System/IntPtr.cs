@@ -23,7 +23,6 @@ namespace System {
     using System.Diagnostics.Contracts;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct IntPtr : IEquatable<IntPtr>, ISerializable
     {
         unsafe private void* m_value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
@@ -32,13 +31,11 @@ namespace System {
 
         // fast way to compare IntPtr to (IntPtr)0 while IntPtr.Zero doesn't work due to slow statics access
         [Pure]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe bool IsNull()
         {
             return (this.m_value == null);
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(int value)
         {
@@ -49,7 +46,6 @@ namespace System {
 #endif
         }
     
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(long value)
         {
@@ -61,7 +57,6 @@ namespace System {
         }
 
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe IntPtr(void* value)
         {
@@ -111,7 +106,6 @@ namespace System {
 #endif
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe int ToInt32() {
 #if BIT64
@@ -122,7 +116,6 @@ namespace System {
 #endif
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe long ToInt64() {
 #if BIT64
@@ -152,14 +145,12 @@ namespace System {
         }
 
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static explicit operator IntPtr (int value) 
         {
             return new IntPtr(value);
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static explicit operator IntPtr (long value) 
         {
@@ -201,28 +192,24 @@ namespace System {
 #endif
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator == (IntPtr value1, IntPtr value2) 
         {
             return value1.m_value == value2.m_value;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe static bool operator != (IntPtr value1, IntPtr value2) 
         {
             return value1.m_value != value2.m_value;
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static IntPtr Add(IntPtr pointer, int offset)
         {
             return pointer + offset;
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static IntPtr operator +(IntPtr pointer, int offset) 
         {
@@ -233,13 +220,11 @@ namespace System {
 #endif
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static IntPtr Subtract(IntPtr pointer, int offset) {
             return pointer - offset;
         }
 
-        [ReliabilityContract(Consistency.MayCorruptInstance, Cer.MayFail)]
         [System.Runtime.Versioning.NonVersionable]
         public static IntPtr operator -(IntPtr pointer, int offset) {
 #if BIT64
@@ -252,7 +237,6 @@ namespace System {
         public static int Size
         {
             [Pure]
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             [System.Runtime.Versioning.NonVersionable]
             get
             {
@@ -266,7 +250,6 @@ namespace System {
     
 
         [CLSCompliant(false)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [System.Runtime.Versioning.NonVersionable]
         public unsafe void* ToPointer()
         {

@@ -148,15 +148,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return CoerceScalarValue<String>(PropertyType.String);
         }
 
-        [Pure]
-        public Object GetInspectable()
-        {
-            if (this.Type != PropertyType.Inspectable)
-                throw new InvalidCastException(Environment.GetResourceString("InvalidCast_WinRTIPropertyValueElement", this.Type, "Inspectable"), __HResults.TYPE_E_TYPEMISMATCH);
-            Contract.EndContractBlock();
-            return _data;
-        }
-
 
         [Pure]
         public Guid GetGuid()

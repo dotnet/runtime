@@ -2414,12 +2414,6 @@ namespace System
         public override string ToString() { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class LocalDataStoreSlot
-    {
-        internal LocalDataStoreSlot() { }
-        ~LocalDataStoreSlot() { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
@@ -6829,43 +6823,6 @@ namespace System.IO
         public virtual void WriteByte(byte value) { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class StreamReader : System.IO.TextReader
-    {
-        public static readonly new System.IO.StreamReader Null;
-        public StreamReader(System.IO.Stream stream) { }
-        public StreamReader(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen) { }
-        public StreamReader(string path) { }
-        public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public virtual System.IO.Stream BaseStream { get { throw null; } }
-        public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
-        public bool EndOfStream { get { throw null; } }
-        public override void Close() { }
-        public void DiscardBufferedData() { }
-        protected override void Dispose(bool disposing) { }
-        public override int Peek() { throw null; }
-        public override int Read() { throw null; }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        public override int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public override string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public override string ReadToEnd() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StreamWriter : System.IO.TextWriter
     {
         public static readonly new System.IO.StreamWriter Null;
@@ -6906,26 +6863,6 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class StringReader : System.IO.TextReader
-    {
-        public StringReader(string s) { }
-        public override void Close() { }
-        protected override void Dispose(bool disposing) { }
-        public override int Peek() { throw null; }
-        public override int Read() { throw null; }
-        public override int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public override string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public override string ReadToEnd() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class StringWriter : System.IO.TextWriter
     {
         public StringWriter() { }
@@ -6954,31 +6891,6 @@ namespace System.IO
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public override System.Threading.Tasks.Task WriteLineAsync(string value) { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class TextReader : System.IDisposable
-    {
-        public static readonly System.IO.TextReader Null;
-        protected TextReader() { }
-        public virtual void Close() { }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        public virtual int Peek() { throw null; }
-        public virtual int Read() { throw null; }
-        public virtual int Read(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<int> ReadAsync(char[] buffer, int index, int count) { throw null; }
-        public virtual int ReadBlock(char[] buffer, int index, int count) { buffer = default(char[]); throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<int> ReadBlockAsync(char[] buffer, int index, int count) { throw null; }
-        public virtual string ReadLine() { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<string> ReadLineAsync() { throw null; }
-        public virtual string ReadToEnd() { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
-        public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public abstract partial class TextWriter : System.IDisposable
@@ -10345,13 +10257,6 @@ namespace System.Runtime.InteropServices
     {
         public AllowReversePInvokeCallsAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1029), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class AutomationProxyAttribute : System.Attribute
-    {
-        public AutomationProxyAttribute(bool val) { }
-        public bool Value { get { throw null; } }
-    }    
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ArrayWithOffset
@@ -10422,43 +10327,12 @@ namespace System.Runtime.InteropServices
         public CoClassAttribute(System.Type coClass) { }
         public System.Type CoClass { get { throw null; } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComAliasNameAttribute : System.Attribute
-    {
-        public ComAliasNameAttribute(String val) { }
-        public String Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComCompatibleVersionAttribute : System.Attribute
-    {
-        public ComCompatibleVersionAttribute(System.Int32 major, System.Int32 minor, System.Int32 build, System.Int32 revision) { }
-        public System.Int32 MajorVersion { get { throw null; } }
-        public System.Int32 MinorVersion { get { throw null; } }
-        public System.Int32 BuildNumber { get { throw null;} }
-        public System.Int32 RevisionNumber { get { throw null; } }
-    }    
-    [System.AttributeUsageAttribute((System.AttributeTargets)(32767), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComConversionLossAttribute : Attribute
-    {
-        public ComConversionLossAttribute() { }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ComDefaultInterfaceAttribute : System.Attribute
     {
         public ComDefaultInterfaceAttribute(System.Type defaultInterface) { }
         public System.Type Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1024), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComEventInterfaceAttribute : System.Attribute
-    {
-        public ComEventInterfaceAttribute(System.Type SourceInterface, System.Type EventProvider) { }
-        public System.Type EventProvider { get { throw null; } }
-        public System.Type SourceInterface { get { throw null; } }
     }
     public static partial class ComEventsHelper
     {
@@ -10499,12 +10373,6 @@ namespace System.Runtime.InteropServices
         PropGet = 1,
         PropSet = 2,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComRegisterFunctionAttribute : Attribute
-    {
-        public ComRegisterFunctionAttribute() { }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=true)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ComSourceInterfacesAttribute : System.Attribute
@@ -10515,12 +10383,6 @@ namespace System.Runtime.InteropServices
         public ComSourceInterfacesAttribute(System.Type sourceInterface1, System.Type sourceInterface2, System.Type sourceInterface3) { }
         public ComSourceInterfacesAttribute(System.Type sourceInterface1, System.Type sourceInterface2, System.Type sourceInterface3, System.Type sourceInterface4) { }
         public string Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ComUnregisterFunctionAttribute : Attribute
-    {
-        public ComUnregisterFunctionAttribute() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(5597), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -10722,13 +10584,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         System.Runtime.InteropServices.CustomQueryInterfaceResult GetInterface(ref System.Guid iid, out System.IntPtr ppv);
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ImportedFromTypeLibAttribute : System.Attribute
-    {
-        public ImportedFromTypeLibAttribute(String val) { }
-        public String Value { get { throw null; } }
-    }   
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class InAttribute : System.Attribute
@@ -10772,7 +10627,7 @@ namespace System.Runtime.InteropServices
     {
         public LCIDConversionAttribute(System.Int32 val) { }
         public System.Int32 Value { get { throw null; } }
-    }    
+    }
     [System.Security.SecurityCriticalAttribute]
     public static partial class Marshal
     {
@@ -11068,14 +10923,6 @@ namespace System.Runtime.InteropServices
         [System.Security.SecurityCriticalAttribute]
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
-    {
-        public ManagedToNativeComInteropStubAttribute(System.Type classType, System.String methodName) { }
-        public System.Type ClassType { get { throw null; } }
-        public System.String MethodName { get { throw null; } }
-    }    
     [System.AttributeUsageAttribute((System.AttributeTargets)(10496), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class MarshalAsAttribute : System.Attribute
@@ -11128,21 +10975,13 @@ namespace System.Runtime.InteropServices
     {
         public PreserveSigAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false, AllowMultiple = true)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class PrimaryInteropAssemblyAttribute : System.Attribute
-    {
-        public PrimaryInteropAssemblyAttribute(System.Int32 major, System.Int32 minor) { }
-        public System.Int32 MajorVersion { get { throw null; } }
-        public System.Int32 MinorVersion { get { throw null; } }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited=false)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class ProgIdAttribute : System.Attribute
     {
         public ProgIdAttribute(String val) { }
         public String Value { get { throw null; } }
-    }  
+    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class SafeArrayRankMismatchException : System.SystemException
     {
@@ -11236,21 +11075,6 @@ namespace System.Runtime.InteropServices
         public TypeIdentifierAttribute(string scope, string identifier) { }
         public string Identifier { get { throw null; } }
         public string Scope { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1024), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class TypeLibImportClassAttribute : System.Attribute
-    {
-        public TypeLibImportClassAttribute(System.Type val) { }
-        public String Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class TypeLibVersionAttribute : System.Attribute
-    {
-        public TypeLibVersionAttribute(System.Int32 major, System.Int32 minor) { }
-        public System.Int32 MajorVersion { get { throw null; } }
-        public System.Int32 MinorVersion { get { throw null; } }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public sealed partial class UnknownWrapper

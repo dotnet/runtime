@@ -400,41 +400,6 @@ namespace System.Globalization
             return "en-US";
         }
 
-        internal void FixupWin7MonthDaySemicolonBug()
-        {
-            int unescapedCharacterIndex = FindUnescapedCharacter(sMonthDay, ';');
-            if (unescapedCharacterIndex > 0)
-            {
-                sMonthDay = sMonthDay.Substring(0, unescapedCharacterIndex);
-            }
-        }
-        private static int FindUnescapedCharacter(string s, char charToFind)
-        {
-            bool inComment = false;
-            int length = s.Length;
-            for (int i = 0; i < length; i++)
-            {
-                char c = s[i];
-
-                switch (c)
-                {
-                    case '\'':
-                        inComment = !inComment;
-                        break;
-                    case '\\':
-                        i++; // escape sequence -- skip next character
-                        break;
-                    default:
-                        if (!inComment && charToFind == c)
-                        {
-                            return i;
-                        }
-                        break;
-                }
-            }
-            return -1;
-        }
-
         
         // Get native two digit year max
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

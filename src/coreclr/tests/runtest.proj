@@ -44,12 +44,10 @@
 
   </Target>
 
-
-  <Import Project="$(__Exclude0)" Condition="'$(__Exclude0)' != '' AND '$(XunitTestBinBase)' != ''" /> 
   <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" /> 
   <PropertyGroup>
     <HaveExcludes>False</HaveExcludes>
-    <HaveExcludes Condition="('$(__Exclude0)' != '') Or ('$(__Exclude)' != '')">True</HaveExcludes>
+    <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
   </PropertyGroup>
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
@@ -77,8 +75,8 @@ $(_XunitEpilog)
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier Condition ="'$(BuildTestsAgainstPackages)' != 'true'">.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion Condition ="'$(BuildTestsAgainstPackages)' != 'true'">v4.5</TargetFrameworkVersion>
     <IsXunitWrapperProject>true</IsXunitWrapperProject>
     <SkipSigning>true</SkipSigning>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -88,8 +86,8 @@ $(_XunitEpilog)
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
-    <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
-    <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
+    <ProjectJson Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
+    <ProjectLockJson Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
@@ -103,7 +101,11 @@ $(_XunitEpilog)
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
    <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj">
+    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' != 'true'">
+      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
+      <Name>coreclr</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
@@ -114,10 +116,6 @@ $(_XunitEpilog)
     <Reference Include="System.Runtime" />
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <PropertyGroup>
-    <ProjectJson>%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
-    <ProjectLockJson>%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
-  </PropertyGroup>
   <Import Project="$(SourceDir)dir.targets" />
   <PropertyGroup>
      <OutDir>$(XunitTestBinBase)\$(Category)\</OutDir>
@@ -195,7 +193,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
                 }
 
-                runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
+                string operatingSystem = System.Environment.GetEnvironmentVariable("OS")%3B
+                runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
             }
         }
 
@@ -213,6 +212,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="$(HaveExcludes)"/>
     </ItemGroup>
+
+    <PropertyGroup>
+      <TestExecutableReplacement Condition="'$(RuntimeID)' != '' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
+    </PropertyGroup>
 
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
@@ -244,6 +247,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                   outputFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
                   errorFile = System.IO.Path.GetFullPath(_Global.reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
                   testExecutable = System.IO.Path.GetFullPath(_Global.testBinaryBase + @"$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  $(TestExecutableReplacement)
 
                   if (!_Global.runningInWindows) {
                       testExecutable = testExecutable.Replace(".cmd", ".sh")%3B

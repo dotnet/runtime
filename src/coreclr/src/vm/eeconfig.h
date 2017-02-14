@@ -261,8 +261,6 @@ enum ParseCtl {
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
 };
 
-extern CorHostProtectionManager s_CorHostProtectionManager;
-
 class EEConfig
 {
 public:
@@ -512,9 +510,7 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_CORECLR
     bool VerifyModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fVerifyAllOnLoad; }
-#endif
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
@@ -1010,9 +1006,7 @@ private: //----------------------------------------------------------------
     bool   m_fDeveloperInstallation;      // We are on a developers machine
     bool   fAppDomainUnload;            // Enable appdomain unloading
     
-#ifdef FEATURE_CORECLR
     bool fVerifyAllOnLoad;              // True if we want to verify all methods in an assembly at load time.
-#endif //FEATURE_CORECLR
 
     DWORD  dwADURetryCount;
 
@@ -1199,20 +1193,6 @@ private: //----------------------------------------------------------------
 #endif
 
 public:
-#ifndef FEATURE_CORECLR // unimpactful install --> no config files
-    HRESULT ImportConfigurationFile(
-        ConfigStringHashtable* pTable,
-        LPCWSTR pszFileName,
-        LPCWSTR version,
-        ParseCtl parseCtl = parseAll);
-
-    HRESULT AppendConfigurationFile(
-        LPCWSTR pszFileName,
-        LPCWSTR version,
-        ParseCtl parseCtl = parseAll); 
-
-    HRESULT SetupConfiguration();
-#endif // FEATURE_CORECLR
 
     HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);
     LPCWSTR  GetProcessBindingFile();  // All flavors must support this method
@@ -1331,24 +1311,6 @@ public:
 #define FILE_FORMAT_CHECK(_condition)
 
 #endif
-
-void InitHostProtectionManager();
-
-extern BYTE g_CorHostProtectionManagerInstance[];
-
-inline CorHostProtectionManager* GetHostProtectionManager()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-//        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    return (CorHostProtectionManager*)g_CorHostProtectionManagerInstance;
-}
 
 extern BOOL g_CLRPolicyRequested;
 

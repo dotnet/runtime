@@ -4,7 +4,6 @@
 
 namespace System.Diagnostics {
     using System;
-    using System.Security.Permissions;
     using System.IO;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -33,14 +32,6 @@ namespace System.Diagnostics {
             if (!condition)
             {
                 Fail (conditionString, message, null, COR_E_FAILFAST);
-            }
-        }
-
-        internal static void Check(bool condition, String conditionString, String message, int exitCode)
-        {
-            if (!condition)
-            {
-                Fail(conditionString, message, null, exitCode);
             }
         }
 

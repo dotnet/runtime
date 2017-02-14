@@ -27,7 +27,6 @@ namespace System.IO {
     // exist, use Create.
     // 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum FileMode
     {
         // Creates a new file. An exception is raised if the file already exists.

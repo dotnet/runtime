@@ -581,12 +581,6 @@ RegMeta::QueryInterface(
     }
 #endif //FEATURE_METADATA_EMIT
 
-#if defined(FEATURE_METADATA_IN_VM) && !defined(FEATURE_CORECLR)
-    else if (riid == IID_IMetaDataValidate)
-    {
-        *ppUnk = (IMetaDataValidate *)this;
-    }
-#endif //defined(FEATURE_METADATA_IN_VM) && !defined(FEATURE_CORECLR)
 
 #ifdef FEATURE_METADATA_EMIT_ALL
     else if (riid == IID_IMetaDataFilter)

@@ -107,12 +107,8 @@ HRESULT CCoreCLRBinderHelper::BindToSystem(ICLRPrivAssembly **ppSystemAssembly, 
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-#ifdef FEATURE_CORECLR
         StackSString systemPath(SystemDomain::System()->SystemDirectory());
         hr = AssemblyBinder::BindToSystem(systemPath, &pAsm, fBindToNativeImage);
-#else
-        AssemblySpec::BindToSystem(&pAsm);
-#endif
         if(SUCCEEDED(hr))
         {
             _ASSERTE(pAsm != NULL);

@@ -60,8 +60,6 @@
 #include "zapsig.h"
 #endif //FEATURE_PREJIT
 
-#include "hostexecutioncontext.h"
-
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -2404,6 +2402,12 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     FieldDesc *pField = GetApproxFieldDescListRaw();
     FieldDesc *pFieldEnd = pField + numIntroducedFields;
 
+    // System types are loaded before others, so ByReference<T> would be loaded before Span<T> or any other type that has a
+    // ByReference<T> field. ByReference<T> is the first by-ref-like system type to be loaded (see
+    // SystemDomain::LoadBaseSystemClasses), so if the current method table is marked as by-ref-like and g_pByReferenceClass is
+    // null, it must be the initial load of ByReference<T>.
+    bool isThisByReferenceOfT = IsByRefLike() && (g_pByReferenceClass == nullptr || HasSameTypeDefAs(g_pByReferenceClass));
+
     for (; pField < pFieldEnd; pField++)
     {
 #ifdef _DEBUG
@@ -2425,7 +2429,19 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         CorElementType fieldType = pField->GetFieldType();
 
-        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+        SystemVClassificationType fieldClassificationType;
+        if (isThisByReferenceOfT)
+        {
+            // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
+            // memory, so classify its field as such
+            _ASSERTE(numIntroducedFields == 1);
+            _ASSERTE(fieldType == CorElementType::ELEMENT_TYPE_I);
+            fieldClassificationType = SystemVClassificationTypeIntegerByRef;
+        }
+        else
+        {
+            fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+        }
 
 #ifdef _DEBUG
         LPCUTF8 fieldName;
@@ -3947,10 +3963,6 @@ void MethodTable::CallFinalizer(Object *obj)
         return;
     }
 
-#ifdef FEATURE_CAS_POLICY
-    // Notify the host to setup the restricted context before finalizing each object
-    HostExecutionContextManager::SetHostRestrictedContext();
-#endif // FEATURE_CAS_POLICY
 
     // Determine if the object has a critical or normal finalizer.
     BOOL fCriticalFinalizer = pMT->HasCriticalFinalizer();
@@ -9767,23 +9779,7 @@ bool MethodTable::ClassRequiresUnmanagedCodeCheck()
 {
     LIMITED_METHOD_CONTRACT;
     
-#ifdef FEATURE_CORECLR
     return false;
-#else
-    // all WinRT types have an imaginary [SuppressUnmanagedCodeSecurity] attribute on them
-    if (IsProjectedFromWinRT())
-        return false;
-        
-    // In AppX processes, there is only one full trust AppDomain, so there is never any need to do a security
-    // callout on interop stubs
-    if (AppX::IsAppXProcess())
-        return false;
-
-    return GetMDImport()->GetCustomAttributeByName(GetCl(),
-                                                 COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                 NULL,
-                                                 NULL) == S_FALSE;
-#endif // FEATURE_CORECLR
 }
 
 #endif // !DACCESS_COMPILE

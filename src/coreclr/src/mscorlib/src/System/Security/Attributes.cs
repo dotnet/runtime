@@ -7,10 +7,13 @@ using  System.Runtime.InteropServices;
 namespace System.Security
 {
     // DynamicSecurityMethodAttribute:
-    //  Indicates that calling the target method requires space for a security
-    //  object to be allocated on the callers stack. This attribute is only ever
-    //  set on certain security methods defined within mscorlib.
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false )] 
+    //  All methods that use StackCrawlMark should be marked with this attribute. This attribute
+    //  disables inlining of the calling method to allow stackwalking to find the exact caller.
+    //
+    //  This attribute used to indicate that the target method requires space for a security object 
+    //  to be allocated on the callers stack. It is not used for this purpose anymore because of security 
+    //  stackwalks are not ever done in CoreCLR.
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = true, Inherited = false )] 
     sealed internal class DynamicSecurityMethodAttribute : System.Attribute
     {
     }
@@ -19,7 +22,6 @@ namespace System.Security
     //  Indicates that the target P/Invoke method(s) should skip the per-call
     //  security checked for unmanaged code permission.
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false )] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
     {
     }
@@ -27,7 +29,6 @@ namespace System.Security
     // UnverifiableCodeAttribute:
     //  Indicates that the target module contains unverifiable code.
     [AttributeUsage(AttributeTargets.Module, AllowMultiple = true, Inherited = false )] 
-[System.Runtime.InteropServices.ComVisible(true)]
     sealed public class UnverifiableCodeAttribute : System.Attribute
     {
     }
@@ -38,7 +39,6 @@ namespace System.Security
     //  For v.1, this is valid only on Assemblies, but could be expanded to 
     //  include Module, Method, class
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false )] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     sealed public class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         private PartialTrustVisibilityLevel _visibilityLevel;

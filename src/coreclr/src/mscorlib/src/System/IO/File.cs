@@ -14,7 +14,6 @@
 **
 ===========================================================*/
 
-using System.Security.Permissions;
 using Win32Native = Microsoft.Win32.Win32Native;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -28,8 +27,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    [ComVisible(true)]
-    public static class File
+    internal static class File
     {
         private const int ERROR_INVALID_PARAMETER = 87;
         internal const int GENERIC_READ = unchecked((int)0x80000000);
@@ -88,7 +86,7 @@ namespace System.IO
         {
             byte[] bytes;
             using(FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 
-                FileStream.DefaultBufferSize, FileOptions.None, Path.GetFileName(path), false, false)) {
+                FileStream.DefaultBufferSize, FileOptions.None)) {
                 // Do a blocking read
                 int index = 0;
                 long fileLength = fs.Length;
@@ -107,6 +105,7 @@ namespace System.IO
             return bytes;
         }
 
+#if PLATFORM_UNIX
         public static String[] ReadAllLines(String path)
         {
             if (path == null)
@@ -133,6 +132,7 @@ namespace System.IO
 
             return lines.ToArray();
         }
+#endif // PLATFORM_UNIX
         
         // Returns 0 on success, otherwise a Win32 error code.  Note that
         // classes should use -1 as the uninitialized state for dataInitialized.

@@ -34,20 +34,14 @@ public:
     static FCDECL2(void, UpdateLoaderOptimization, AppDomainBaseObject* refThisUNSAFE, DWORD optimization);
 #endif // FEATURE_LOADER_OPTIMIZATION
 
-    static FCDECL12(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, Object* requiredPsetUNSAFE, Object* optionalPsetUNSAFE, Object* refusedPsetUNSAFE, U1Array* securityRulesBlobUNSAFE, U1Array* aptcaBlobUNSAFE, INT32 access, INT32 flags, SecurityContextSource securityContextSource);
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    static FCDECL0(FC_BOOL_RET, HasHost);
-#endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
+    static FCDECL9(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array* securityRulesBlobUNSAFE, U1Array* aptcaBlobUNSAFE, INT32 access, INT32 flags, SecurityContextSource securityContextSource);
     static FCDECL1(void, SetHostSecurityManagerFlags, DWORD dwFlags);
     static FCDECL1(Object*, GetFriendlyName, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsDefaultAppDomainForEvidence, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL2(Object*, GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL fForIntrospection); 
     static FCDECL2(Object*, GetOrInternString, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE);
-    static FCDECL3(INT32, ExecuteAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyBaseObject* assemblyNameUNSAFE, PTRArray* stringArgsUNSAFE);
-#ifdef FEATURE_VERSIONING
     static FCDECL1(void, CreateContext, AppDomainBaseObject *refThisUNSAFE);
     static void QCALLTYPE SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatformAssemblies, __in_z LPCWSTR wszPlatformResourceRoots, __in_z LPCWSTR wszAppPaths, __in_z LPCWSTR wszAppNiPaths, __in_z LPCWSTR appLocalWinMD);
-#endif // FEATURE_VERSIONING
     static FCDECL1(void, Unload, INT32 dwId);
     static FCDECL1(Object*, GetDynamicDir, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(INT32, GetId, AppDomainBaseObject* refThisUNSAFE);
@@ -67,9 +61,7 @@ public:
     static FCDECL2(FC_BOOL_RET, IsFrameworkAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
     static FCDECL1(UINT32,  GetAppDomainId, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void , PublishAnonymouslyHostedDynamicMethodsAssembly, AssemblyBaseObject * pAssemblyUNSAFE);
-#ifdef FEATURE_CORECLR    
     static void QCALLTYPE SetNativeDllSearchDirectories(__in_z LPCWSTR wszAssembly);
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     static FCDECL0(void,  EnableMonitoring);
@@ -122,32 +114,9 @@ public:
     void QCALLTYPE SetSecurityHomogeneousFlag(QCall::AppDomainHandle adhTarget,
                                               BOOL fRuntimeSuppliedHomgenousGrantSet);
 
-#ifdef FEATURE_CAS_POLICY
-    static
-    void QCALLTYPE SetLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
 
-    static
-    BOOL QCALLTYPE IsLegacyCasPolicyEnabled(QCall::AppDomainHandle adhTarget);
-#endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_APTCA
-    static
-    void QCALLTYPE SetCanonicalConditionalAptcaList(QCall::AppDomainHandle adhTarget,
-                                                    LPCWSTR wszCanonicalConditionalAptcaList);
-#endif // FEATURE_APTCA
 
-#ifdef FEATURE_APPDOMAINMANAGER_INITOPTIONS
-    static
-    void QCALLTYPE RegisterWithHost(IUnknown *punkAppDomainManager);
-#endif // FEATURE_APPDOMAINMANAGER_INITOPTIONS
-
-#if defined(FEATURE_APPX_BINDER)
-    static
-    ICLRPrivBinder * QCALLTYPE CreateDesignerContext(LPCWSTR *rgPaths, UINT cPaths, BOOL fShared);
-
-    static
-    void QCALLTYPE SetCurrentDesignerContext(BOOL fDesignerContext, ICLRPrivBinder *newContext);
-#endif
 };
 
 #endif

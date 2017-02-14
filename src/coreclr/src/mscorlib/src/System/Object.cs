@@ -37,7 +37,6 @@ namespace System
 public class Object
 {
     // Creates a new instance of an Object.
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
     [System.Runtime.Versioning.NonVersionable]
     public Object()
     {            
@@ -73,7 +72,6 @@ public class Object
         return objA.Equals(objB);
     }
 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [System.Runtime.Versioning.NonVersionable]
     public static bool ReferenceEquals (Object objA, Object objB) {
         return objA == objB;
@@ -101,7 +99,6 @@ public class Object
 
     // Allow an object to free resources before the object is reclaimed by the GC.
     // 
-    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     [System.Runtime.Versioning.NonVersionable]
     ~Object()
     {
