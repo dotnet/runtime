@@ -47,7 +47,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "fedora24_prereqs_v4",
-            "PB_TargetQueue": "Fedora.23.Amd64"
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
@@ -436,7 +436,7 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "fedora24_prereqs_v4",
-            "PB_TargetQueue": "Fedora.23.Amd64"
+            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"TestProduct=corefx /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux /p:\"BuildMoniker=none\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
