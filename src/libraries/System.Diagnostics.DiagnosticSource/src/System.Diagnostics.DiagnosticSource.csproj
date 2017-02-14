@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <UseOpenKey>true</UseOpenKey>
     <!-- duplicate in net46 folder so older nuget clients can consume -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
