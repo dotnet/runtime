@@ -20,7 +20,6 @@
 #include "interopconverter.h"
 #ifdef FEATURE_REMOTING
 #include "remoting.h"
-#include "appdomainhelper.h"
 #include "crossdomaincalls.h"
 #endif
 #include "notifyexternals.h"
