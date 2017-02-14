@@ -3,11 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
+using System.Security;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System
 {
@@ -231,13 +240,36 @@ namespace System
         /// <summary>
         /// Clears the contents of this span.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            // TODO: Optimize - https://github.com/dotnet/coreclr/issues/9161
-            for (int i = 0; i < _length; i++)
+            int length = _length;
+
+            if (length == 0)
+                return;
+
+            var byteLength = (nuint)((uint)length * Unsafe.SizeOf<T>());
+
+            if ((Unsafe.SizeOf<T>() & (sizeof(nuint) - 1)) != 0)
             {
-                this[i] = default(T);
+                ref byte b = ref Unsafe.As<T, byte>(ref _pointer.Value);
+                RuntimeImports.RhZeroMemory(ref b, byteLength);
+            }
+            else
+            {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    nuint pointerSizedLength = (nuint)((length * Unsafe.SizeOf<T>()) / sizeof(nuint));
+
+                    ref nuint ip = ref Unsafe.As<T, nuint>(ref DangerousGetPinnableReference());
+
+                    SpanHelper.ClearPointerSizedWithReferences(ref ip, pointerSizedLength);
+                }
+                else
+                {
+                    ref byte b = ref Unsafe.As<T, byte>(ref DangerousGetPinnableReference());
+
+                    SpanHelper.ClearPointerSizedWithoutReferences(ref b, byteLength);
+                }
             }
         }
 
@@ -438,6 +470,232 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
     }
 
+    public static class RuntimeImports
+    {
+        // Non-inlinable wrapper around the QCall that avoids poluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
+        {
+#if BIT64
+            fixed (byte* bytePointer = &b)
+            {
+                // Note: It's important that this switch handles lengths at least up to 22.
+                // See notes below near the main loop for why.
+
+                // The switch will be very fast since it can be implemented using a jump
+                // table in assembly. See http://stackoverflow.com/a/449297/4077294 for more info.
+
+                switch (byteLength)
+                {
+                    case 0:
+                        return;
+                    case 1:
+                        *bytePointer = (byte)0;
+                        return;
+                    case 2:
+                        *(short*)bytePointer = (short)0;
+                        return;
+                    case 3:
+                        *(short*)bytePointer = (short)0;
+                        *(bytePointer + 2) = (byte)0;
+                        return;
+                    case 4:
+                        *(int*)bytePointer = (int)0;
+                        return;
+                    case 5:
+                        *(int*)bytePointer = (int)0;
+                        *(bytePointer + 4) = (byte)0;
+                        return;
+                    case 6:
+                        *(int*)bytePointer = (int)0;
+                        *(short*)(bytePointer + 4) = (short)0;
+                        return;
+                    case 7:
+                        *(int*)bytePointer = (int)0;
+                        *(short*)(bytePointer + 4) = (short)0;
+                        *(bytePointer + 6) = (byte)0;
+                        return;
+                    case 8:
+                        *(long*)bytePointer = (long)0;
+                        return;
+                    case 9:
+                        *(long*)bytePointer = (long)0;
+                        *(bytePointer + 8) = (byte)0;
+                        return;
+                    case 10:
+                        *(long*)bytePointer = (long)0;
+                        *(short*)(bytePointer + 8) = (short)0;
+                        return;
+                    case 11:
+                        *(long*)bytePointer = (long)0;
+                        *(short*)(bytePointer + 8) = (short)0;
+                        *(bytePointer + 10) = (byte)0;
+                        return;
+                    case 12:
+                        *(long*)bytePointer = (long)0;
+                        *(int*)(bytePointer + 8) = (int)0;
+                        return;
+                    case 13:
+                        *(long*)bytePointer = (long)0;
+                        *(int*)(bytePointer + 8) = (int)0;
+                        *(bytePointer + 12) = (byte)0;
+                        return;
+                    case 14:
+                        *(long*)bytePointer = (long)0;
+                        *(int*)(bytePointer + 8) = (int)0;
+                        *(short*)(bytePointer + 12) = (short)0;
+                        return;
+                    case 15:
+                        *(long*)bytePointer = (long)0;
+                        *(int*)(bytePointer + 8) = (int)0;
+                        *(short*)(bytePointer + 12) = (short)0;
+                        *(bytePointer + 14) = (byte)0;
+                        return;
+                    case 16:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        return;
+                    case 17:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(bytePointer + 16) = (byte)0;
+                        return;
+                    case 18:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(short*)(bytePointer + 16) = (short)0;
+                        return;
+                    case 19:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(short*)(bytePointer + 16) = (short)0;
+                        *(bytePointer + 18) = (byte)0;
+                        return;
+                    case 20:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(int*)(bytePointer + 16) = (int)0;
+                        return;
+                    case 21:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(int*)(bytePointer + 16) = (int)0;
+                        *(bytePointer + 20) = (byte)0;
+                        return;
+                    case 22:
+                        *(long*)bytePointer = (long)0;
+                        *(long*)(bytePointer + 8) = (long)0;
+                        *(int*)(bytePointer + 16) = (int)0;
+                        *(short*)(bytePointer + 20) = (short)0;
+                        return;
+                }
+
+                // P/Invoke into the native version for large lengths
+                if (byteLength >= 512) goto PInvoke;
+
+                nuint i = 0; // byte offset at which we're copying
+
+                if (((int)bytePointer & 3) != 0)
+                {
+                    if (((int)bytePointer & 1) != 0)
+                    {
+                        *(bytePointer + i) = (byte)0;
+                        i += 1;
+                        if (((int)bytePointer & 2) != 0)
+                            goto IntAligned;
+                    }
+                    *(short*)(bytePointer + i) = (short)0;
+                    i += 2;
+                }
+
+                IntAligned:
+
+                // On 64-bit IntPtr.Size == 8, so we want to advance to the next 8-aligned address. If
+                // (int)bytePointer % 8 is 0, 5, 6, or 7, we will already have advanced by 0, 3, 2, or 1
+                // bytes to the next aligned address (respectively), so do nothing. On the other hand,
+                // if it is 1, 2, 3, or 4 we will want to copy-and-advance another 4 bytes until
+                // we're aligned.
+                // The thing 1, 2, 3, and 4 have in common that the others don't is that if you
+                // subtract one from them, their 3rd lsb will not be set. Hence, the below check.
+
+                if ((((int)bytePointer - 1) & 4) == 0)
+                {
+                    *(int*)(bytePointer + i) = (int)0;
+                    i += 4;
+                }
+
+                nuint end = byteLength - 16;
+                byteLength -= i; // lower 4 bits of byteLength represent how many bytes are left *after* the unrolled loop
+
+                // We know due to the above switch-case that this loop will always run 1 iteration; max
+                // bytes we clear before checking is 23 (7 to align the pointers, 16 for 1 iteration) so
+                // the switch handles lengths 0-22.
+                Debug.Assert(end >= 7 && i <= end);
+
+                // This is separated out into a different variable, so the i + 16 addition can be
+                // performed at the start of the pipeline and the loop condition does not have
+                // a dependency on the writes.
+                nuint counter;
+
+                do
+                {
+                    counter = i + 16;
+
+                    // This loop looks very costly since there appear to be a bunch of temporary values
+                    // being created with the adds, but the jit (for x86 anyways) will convert each of
+                    // these to use memory addressing operands.
+
+                    // So the only cost is a bit of code size, which is made up for by the fact that
+                    // we save on writes to bytePointer.
+
+                    *(long*)(bytePointer + i) = (long)0;
+                    *(long*)(bytePointer + i + 8) = (long)0;
+
+                    i = counter;
+
+                    // See notes above for why this wasn't used instead
+                    // i += 16;
+                }
+                while (counter <= end);
+
+                if ((byteLength & 8) != 0)
+                {
+                    *(long*)(bytePointer + i) = (long)0;
+                    i += 8;
+                }
+                if ((byteLength & 4) != 0)
+                {
+                    *(int*)(bytePointer + i) = (int)0;
+                    i += 4;
+                }
+                if ((byteLength & 2) != 0)
+                {
+                    *(short*)(bytePointer + i) = (short)0;
+                    i += 2;
+                }
+                if ((byteLength & 1) != 0)
+                {
+                    *(bytePointer + i) = (byte)0;
+                    // We're not using i after this, so not needed
+                    // i += 1;
+                }
+
+                return;
+
+                PInvoke:
+                RhZeroMemory(bytePointer, byteLength);
+            }
+#else
+            Unsafe.InitBlockUnaligned(ref b, 0, (nuint)byteLength);
+#endif
+        }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        extern internal unsafe static void RhZeroMemory(byte* b, nuint byteLength);
+    }
+
     public static class Span
     {
         /// <summary>
@@ -625,5 +883,86 @@ namespace System
                 }
             }
         }
+
+        internal static unsafe void ClearPointerSizedWithoutReferences(ref byte b, nuint byteLength)
+        {
+            // TODO: Perhaps do switch casing to improve small size perf
+            
+            var i = (nuint)0;
+            while (i <= (byteLength - (nuint)sizeof(Reg64)))
+            {
+                Unsafe.As<byte, Reg64>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg64);
+                i += (nuint)sizeof(Reg64);
+            }
+            if (i <= (byteLength - (nuint)sizeof(Reg32)))
+            {
+                Unsafe.As<byte, Reg32>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg32);
+                i += (nuint)sizeof(Reg32);
+            }
+            if (i <= (byteLength - (nuint)sizeof(Reg16)))
+            {
+                Unsafe.As<byte, Reg16>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg16);
+                i += (nuint)sizeof(Reg16);
+            }
+            if (i <= (byteLength - sizeof(long)))
+            {
+                Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                i += sizeof(long);
+            }
+            // JIT: Should elide this if 64-bit
+            if (sizeof(IntPtr) == sizeof(int))
+            {
+                if (i <= (byteLength - sizeof(int)))
+                {
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                    i += sizeof(int);
+                }
+            }
+        }
+
+        internal static unsafe void ClearPointerSizedWithReferences(ref nuint ip, nuint pointerSizeLength)
+        {
+            // TODO: Perhaps do switch casing to improve small size perf
+
+            var i = (nuint)0;
+            var n = (nuint)0;
+            while ((n = i + 8) <= (pointerSizeLength))
+            {
+                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 2) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 3) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 4) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 5) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 6) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 7) = default(nuint);
+                i = n;
+            }
+            if ((n = i + 4) <= (pointerSizeLength))
+            {
+                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 2) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 3) = default(nuint);
+                i = n;
+            }
+            if ((n = i + 2) <= (pointerSizeLength))
+            {
+                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
+                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
+                i = n;
+            }
+            if ((i + 1) <= (pointerSizeLength))
+            {
+                Unsafe.Add<nuint>(ref ip, (int)i) = default(nuint);
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct Reg64 { }
+        [StructLayout(LayoutKind.Sequential, Size = 32)]
+        private struct Reg32 { }
+        [StructLayout(LayoutKind.Sequential, Size = 16)]
+        private struct Reg16 { }
     }
 }
