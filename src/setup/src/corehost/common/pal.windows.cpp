@@ -327,11 +327,15 @@ bool pal::file_exists(const string_t& path)
         return false;
     }
 
-    WIN32_FIND_DATAW data;
-    auto find_handle = ::FindFirstFileW(path.c_str(), &data);
-    bool found = find_handle != INVALID_HANDLE_VALUE;
-    ::FindClose(find_handle);
-    return found;
+
+    // We will attempt to fetch attributes for the file or folder in question that are
+    // returned only if they exist.
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data) != 0) {
+        return true;
+    }
+    
+    return false;
 }
 
 void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list)
