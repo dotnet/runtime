@@ -18,7 +18,8 @@
 //     "hasChildren" is true if this phase is broken out into subphases.
 //         (We should never do EndPhase on a phase that has children, only on 'leaf phases.')
 //     "parent" is -1 for leaf phases, otherwise it is the "enumName" of the parent phase.
-//     "measureIR" is true for phases that generate a count of IR nodes during EndPhase when JitConfig.MeasureIR is true.
+//     "measureIR" is true for phases that generate a count of IR nodes during EndPhase when JitConfig.MeasureIR is
+//     true.
 
 // clang-format off
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1, false)
