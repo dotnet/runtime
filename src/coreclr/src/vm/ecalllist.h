@@ -867,11 +867,7 @@ FCFuncEnd()
 FCFuncStart(gThreadFuncs)
     FCDynamic("InternalGetCurrentThread", CORINFO_INTRINSIC_Illegal, ECall::InternalGetCurrentThread)
     FCFuncElement("StartInternal", ThreadNative::Start)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    FCFuncElement("nativeGetSafeCulture", ThreadNative::nativeGetSafeCulture)
-#else
     QCFuncElement("nativeInitCultureAccessors", ThreadNative::nativeInitCultureAccessors)
-#endif
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
 #define Sleep(a) Dont_Use_Sleep(a)
@@ -890,9 +886,6 @@ FCFuncStart(gThreadFuncs)
     FCIntrinsic("GetCurrentThreadNative", ThreadNative::GetCurrentThread, CORINFO_INTRINSIC_GetCurrentManagedThread)
     FCIntrinsic("get_ManagedThreadId", ThreadNative::GetManagedThreadId, CORINFO_INTRINSIC_GetManagedThreadId)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    FCFuncElement("nativeSetThreadUILocale", ThreadNative::SetThreadUILocale)
-#endif
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("StartupSetApartmentStateInternal", ThreadNative::StartupSetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT

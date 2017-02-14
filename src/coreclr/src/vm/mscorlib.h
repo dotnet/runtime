@@ -472,14 +472,8 @@ DEFINE_FIELD_U(m_name,             CultureInfoBaseObject,  m_name)
 DEFINE_FIELD_U(m_nonSortName,      CultureInfoBaseObject,  m_nonSortName)
 DEFINE_FIELD_U(m_sortName,         CultureInfoBaseObject,  m_sortName)
 DEFINE_FIELD_U(m_parent,           CultureInfoBaseObject,  m_parent)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-DEFINE_FIELD_U(m_createdDomainID,  CultureInfoBaseObject,  m_createdDomainID)
-#endif // FEATURE_LEAK_CULTURE_INFO
 DEFINE_FIELD_U(m_isReadOnly,       CultureInfoBaseObject,  m_isReadOnly)
 DEFINE_FIELD_U(m_isInherited,      CultureInfoBaseObject,  m_isInherited)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-DEFINE_FIELD_U(m_isSafeCrossDomain, CultureInfoBaseObject, m_isSafeCrossDomain)
-#endif // FEATURE_LEAK_CULTURE_INFO
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(m_useUserOverride,  CultureInfoBaseObject,  m_useUserOverride)
 #endif
@@ -1243,18 +1237,12 @@ DEFINE_FIELD_U(m_Context,                  ThreadBaseObject,   m_ExposedContext)
 #endif
 DEFINE_FIELD_U(m_Name,                     ThreadBaseObject,   m_Name)
 DEFINE_FIELD_U(m_Delegate,                 ThreadBaseObject,   m_Delegate)
-#ifdef FEATURE_LEAK_CULTURE_INFO 
-DEFINE_FIELD_U(m_CurrentCulture,           ThreadBaseObject,   m_CurrentUserCulture)
-DEFINE_FIELD_U(m_CurrentUICulture,         ThreadBaseObject,   m_CurrentUICulture)
-#endif
 DEFINE_FIELD_U(m_ThreadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
 DEFINE_FIELD_U(DONT_USE_InternalThread,    ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(m_Priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-#ifndef FEATURE_LEAK_CULTURE_INFO 
 DEFINE_FIELD(THREAD,                CULTURE,                m_CurrentCulture)
 DEFINE_FIELD(THREAD,                UI_CULTURE,             m_CurrentUICulture)
-#endif
 #ifdef FEATURE_REMOTING
 DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_CONTEXT,        CurrentContext,             Context)
 #endif
