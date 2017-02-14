@@ -213,7 +213,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(16098)]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
         {
