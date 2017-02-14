@@ -323,6 +323,14 @@ INST3( phaddd,       "phaddd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( pabsb,        "pabsb"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x1C))   // Packed absolute value of bytes
 INST3( pabsw,        "pabsw"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x1D))   // Packed absolute value of 16-bit integers
 INST3( pabsd,        "pabsd"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x1E))   // Packed absolute value of 32-bit integers
+INST3( pminsb,       "pminsb"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x38))   // packed minimum signed bytes
+INST3( pminsd,       "pminsd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x39))   // packed minimum 32-bit signed integers
+INST3( pminuw,       "pminuw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3A))   // packed minimum 16-bit unsigned integers
+INST3( pminud,       "pminud"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3B))   // packed minimum 32-bit unsigned integers
+INST3( pmaxsb,       "pmaxsb"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3C))   // packed maximum signed bytes
+INST3( pmaxsd,       "pmaxsd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3D))   // packed maximum 32-bit signed integers
+INST3( pmaxuw,       "pmaxuw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3E))   // packed maximum 16-bit unsigned integers
+INST3( pmaxud,       "pmaxud"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3F))   // packed maximum 32-bit unsigned integers
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 INST3(FIRST_AVX_INSTRUCTION, "FIRST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)

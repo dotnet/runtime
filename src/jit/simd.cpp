@@ -1374,20 +1374,22 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
 
 #ifdef _TARGET_XARCH_
     // SSE2 has direct support for float/double/signed word/unsigned byte.
+    // SSE4.1 has direct support for int32/uint32/signed byte/unsigned word.
     // For other integer types we compute min/max as follows
     //
-    // int32/uint32/int64/uint64:
+    // int32/uint32 (SSE2)
+    // int64/uint64 (SSE2&SSE3_4):
     //       compResult        = (op1 < op2) in case of Min
     //                           (op1 > op2) in case of Max
     //       Min/Max(op1, op2) = Select(compResult, op1, op2)
     //
-    // unsigned word:
+    // unsigned word (SSE2):
     //        op1 = op1 - 2^15  ; to make it fit within a signed word
     //        op2 = op2 - 2^15  ; to make it fit within a signed word
     //        result = SSE2 signed word Min/Max(op1, op2)
     //        result = result + 2^15  ; readjust it back
     //
-    // signed byte:
+    // signed byte (SSE2):
     //        op1 = op1 + 2^7  ; to make it unsigned
     //        op1 = op1 + 2^7  ; to make it unsigned
     //        result = SSE2 unsigned byte Min/Max(op1, op2)
@@ -1395,13 +1397,16 @@ GenTreePtr Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
 
     GenTree* simdTree = nullptr;
 
-    if (varTypeIsFloating(baseType) || baseType == TYP_SHORT || baseType == TYP_UBYTE)
+    if (varTypeIsFloating(baseType) || baseType == TYP_SHORT || baseType == TYP_UBYTE ||
+        (getSIMDInstructionSet() >= InstructionSet_SSE3_4 &&
+         (baseType == TYP_BYTE || baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_CHAR)))
     {
-        // SSE2 has direct support
+        // SSE2 or SSE4.1 has direct support
         simdTree = gtNewSIMDNode(simdType, op1, op2, intrinsicId, baseType, size);
     }
     else if (baseType == TYP_CHAR || baseType == TYP_BYTE)
     {
+        assert(getSIMDInstructionSet() == InstructionSet_SSE2);
         int             constVal;
         SIMDIntrinsicID operIntrinsic;
         SIMDIntrinsicID adjustIntrinsic;
