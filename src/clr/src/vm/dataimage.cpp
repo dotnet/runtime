@@ -126,8 +126,7 @@ DataImage::DataImage(Module *module, CEEPreloader *preloader)
     m_pZapImage->m_pDataImage = this;
 
     m_pInternedStructures = new InternedStructureHashTable();
-
-    m_inlineTrackingMap = NULL;
+    m_inlineTrackingMap = new InlineTrackingMap();
 }
 
 DataImage::~DataImage()

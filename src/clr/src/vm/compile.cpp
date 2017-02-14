@@ -68,6 +68,7 @@
 #include "argdestination.h"
 
 #include "versionresilienthashcode.h"
+#include "inlinetracking.h"
 
 #ifdef CROSSGEN_COMPILE
 CompilationDomain * theDomain;
@@ -6839,6 +6840,12 @@ ULONG CEEPreloader::Release()
 
     delete this;
     return 0;
+}
+
+void CEEPreloader::GetSerializedInlineTrackingMap(SBuffer* pBuffer)
+{
+    InlineTrackingMap * pInlineTrackingMap = m_image->GetInlineTrackingMap();
+    PersistentInlineTrackingMapR2R::Save(m_image->GetHeap(), pBuffer, pInlineTrackingMap);
 }
 
 void CEEPreloader::Error(mdToken token, Exception * pException)
