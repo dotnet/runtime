@@ -449,23 +449,6 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
     }
 
-    /*public static class RuntimeImports
-    {
-        // Non-inlinable wrapper around the QCall that avoids poluting the fast path
-        // with P/Invoke prolog/epilog.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
-        {
-            fixed (byte* bytePointer = &b)
-            {
-                RhZeroMemory(bytePointer, byteLength);
-            }
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        extern internal unsafe static void RhZeroMemory(byte* b, nuint byteLength);
-    }*/
-
     public static class Span
     {
         /// <summary>
