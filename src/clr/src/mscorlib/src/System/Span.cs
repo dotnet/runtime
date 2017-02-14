@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
-using System.Security;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -240,36 +239,16 @@ namespace System
         /// <summary>
         /// Clears the contents of this span.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            int length = _length;
-
-            if (length == 0)
-                return;
-
-            var byteLength = (nuint)((uint)length * Unsafe.SizeOf<T>());
-
-            if ((Unsafe.SizeOf<T>() & (sizeof(nuint) - 1)) != 0)
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ref byte b = ref Unsafe.As<T, byte>(ref _pointer.Value);
-                RuntimeImports.RhZeroMemory(ref b, byteLength);
+                SpanHelper.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _pointer.Value), (nuint)(_length * (Unsafe.SizeOf<T>() / sizeof(nuint))));
             }
             else
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                {
-                    nuint pointerSizedLength = (nuint)((length * Unsafe.SizeOf<T>()) / sizeof(nuint));
-
-                    ref nuint ip = ref Unsafe.As<T, nuint>(ref DangerousGetPinnableReference());
-
-                    SpanHelper.ClearPointerSizedWithReferences(ref ip, pointerSizedLength);
-                }
-                else
-                {
-                    ref byte b = ref Unsafe.As<T, byte>(ref DangerousGetPinnableReference());
-
-                    SpanHelper.ClearPointerSizedWithoutReferences(ref b, byteLength);
-                }
+                SpanHelper.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _pointer.Value), (nuint)(_length * Unsafe.SizeOf<T>()));
             }
         }
 
@@ -470,14 +449,216 @@ namespace System
         public static Span<T> Empty => default(Span<T>);
     }
 
-    public static class RuntimeImports
+    /*public static class RuntimeImports
     {
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
         {
+            fixed (byte* bytePointer = &b)
+            {
+                RhZeroMemory(bytePointer, byteLength);
+            }
+        }
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        extern internal unsafe static void RhZeroMemory(byte* b, nuint byteLength);
+    }*/
+
+    public static class Span
+    {
+        /// <summary>
+        /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
+        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        public static Span<byte> AsBytes<T>(this Span<T> source)
+            where T : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+            return new Span<byte>(
+                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
+                checked(source.Length * Unsafe.SizeOf<T>()));
+        }
+
+        /// <summary>
+        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
+        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
+            where T : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+            return new ReadOnlySpan<byte>(
+                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
+                checked(source.Length * Unsafe.SizeOf<T>()));
+        }
+
+        /// <summary>
+        /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
+        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access.
+        /// </remarks>
+        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
+        /// </exception>
+        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
+            where TFrom : struct
+            where TTo : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            return new Span<TTo>(
+                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
+                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
+        }
+
+        /// <summary>
+        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
+        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <remarks>
+        /// Supported only for platforms that support misaligned memory access.
+        /// </remarks>
+        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
+        /// </exception>
+        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
+            where TFrom : struct
+            where TTo : struct
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
+
+            return new ReadOnlySpan<TTo>(
+                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
+                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> Slice(this string text)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+
+            return new ReadOnlySpan<char>(ref text.GetFirstCharRef(), text.Length);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at 'start'.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> Slice(this string text, int start)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), text.Length - start);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the portion of the target string, beginning at <paramref name="start"/>, of given <paramref name="length"/>.
+        /// </summary>
+        /// <param name="text">The target string.</param>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="length">The number of items in the span.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
+        /// reference (Nothing in Visual Basic).</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> Slice(this string text, int start, int length)
+        {
+            if (text == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
+            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
+        }
+    }
+
+    internal static class SpanHelper
+    {
+        internal static unsafe void CopyTo<T>(ref T destination, ref T source, int elementsCount)
+        {
+            if (elementsCount == 0)
+                return;
+
+            if (Unsafe.AreSame(ref destination, ref source))
+                return;
+
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
+                {
+                    fixed (byte* pSource = &Unsafe.As<T, byte>(ref source))
+                    {
 #if BIT64
+                        Buffer.Memmove(pDestination, pSource, (ulong)elementsCount * (ulong)Unsafe.SizeOf<T>());
+#else
+                        Buffer.Memmove(pDestination, pSource, (uint)elementsCount * (uint)Unsafe.SizeOf<T>());
+#endif
+                    }
+                }
+            }
+            else
+            {
+                if (JitHelpers.ByRefLessThan(ref destination, ref source)) // copy forward
+                {
+                    for (int i = 0; i < elementsCount; i++)
+                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
+                }
+                else // copy backward to avoid overlapping issues
+                {
+                    for (int i = elementsCount - 1; i >= 0; i--)
+                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
+                }
+            }
+        }
+
+        internal static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
+        {
+            if (byteLength == 0)
+                return;
+
             fixed (byte* bytePointer = &b)
             {
                 // Note: It's important that this switch handles lengths at least up to 22.
@@ -488,8 +669,6 @@ namespace System
 
                 switch (byteLength)
                 {
-                    case 0:
-                        return;
                     case 1:
                         *bytePointer = (byte)0;
                         return;
@@ -684,277 +863,48 @@ namespace System
                 return;
 
                 PInvoke:
-                RhZeroMemory(bytePointer, byteLength);
+                RuntimeImports.RhZeroMemory(ref b, byteLength);
             }
-#else
-            Unsafe.InitBlockUnaligned(ref b, 0, (nuint)byteLength);
-#endif
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        extern internal unsafe static void RhZeroMemory(byte* b, nuint byteLength);
-    }
-
-    public static class Span
-    {
-        /// <summary>
-        /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
-        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="T"/> contains pointers.
-        /// </exception>
-        public static Span<byte> AsBytes<T>(this Span<T> source)
-            where T : struct
+        internal static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
-            return new Span<byte>(
-                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
-                checked(source.Length * Unsafe.SizeOf<T>()));
-        }
-
-        /// <summary>
-        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
-        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="T"/> contains pointers.
-        /// </exception>
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
-            where T : struct
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
-            return new ReadOnlySpan<byte>(
-                ref Unsafe.As<T, byte>(ref source.DangerousGetPinnableReference()),
-                checked(source.Length * Unsafe.SizeOf<T>()));
-        }
-
-        /// <summary>
-        /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
-        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
-        /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
-        /// </exception>
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
-            where TFrom : struct
-            where TTo : struct
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
-
-            return new Span<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
-                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
-        }
-
-        /// <summary>
-        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
-        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
-        /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
-        /// </exception>
-        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
-            where TFrom : struct
-            where TTo : struct
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
-
-            return new ReadOnlySpan<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
-                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> Slice(this string text)
-        {
-            if (text == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-
-            return new ReadOnlySpan<char>(ref text.GetFirstCharRef(), text.Length);
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string, beginning at 'start'.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> Slice(this string text, int start)
-        {
-            if (text == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-            if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), text.Length - start);
-        }
-
-        /// <summary>
-        /// Creates a new readonly span over the portion of the target string, beginning at <paramref name="start"/>, of given <paramref name="length"/>.
-        /// </summary>
-        /// <param name="text">The target string.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The number of items in the span.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;&eq;Length).
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> Slice(this string text, int start, int length)
-        {
-            if (text == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetFirstCharRef(), start), length);
-        }
-    }
-
-    internal static class SpanHelper
-    {
-        internal static unsafe void CopyTo<T>(ref T destination, ref T source, int elementsCount)
-        {
-            if (elementsCount == 0)
+            if (pointerSizeLength == 0)
                 return;
 
-            if (Unsafe.AreSame(ref destination, ref source))
-                return;
-
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
-                {
-                    fixed (byte* pSource = &Unsafe.As<T, byte>(ref source))
-                    {
-#if BIT64
-                        Buffer.Memmove(pDestination, pSource, (ulong)elementsCount * (ulong)Unsafe.SizeOf<T>());
-#else
-                        Buffer.Memmove(pDestination, pSource, (uint)elementsCount * (uint)Unsafe.SizeOf<T>());
-#endif
-                    }
-                }
-            }
-            else
-            {
-                if (JitHelpers.ByRefLessThan(ref destination, ref source)) // copy forward
-                {
-                    for (int i = 0; i < elementsCount; i++)
-                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
-                }
-                else // copy backward to avoid overlapping issues
-                {
-                    for (int i = elementsCount - 1; i >= 0; i--)
-                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
-                }
-            }
-        }
-
-        internal static unsafe void ClearPointerSizedWithoutReferences(ref byte b, nuint byteLength)
-        {
-            // TODO: Perhaps do switch casing to improve small size perf
-            
-            var i = (nuint)0;
-            while (i <= (byteLength - (nuint)sizeof(Reg64)))
-            {
-                Unsafe.As<byte, Reg64>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg64);
-                i += (nuint)sizeof(Reg64);
-            }
-            if (i <= (byteLength - (nuint)sizeof(Reg32)))
-            {
-                Unsafe.As<byte, Reg32>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg32);
-                i += (nuint)sizeof(Reg32);
-            }
-            if (i <= (byteLength - (nuint)sizeof(Reg16)))
-            {
-                Unsafe.As<byte, Reg16>(ref Unsafe.Add<byte>(ref b, (int)i)) = default(Reg16);
-                i += (nuint)sizeof(Reg16);
-            }
-            if (i <= (byteLength - sizeof(long)))
-            {
-                Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
-                i += sizeof(long);
-            }
-            // JIT: Should elide this if 64-bit
-            if (sizeof(IntPtr) == sizeof(int))
-            {
-                if (i <= (byteLength - sizeof(int)))
-                {
-                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
-                    i += sizeof(int);
-                }
-            }
-        }
-
-        internal static unsafe void ClearPointerSizedWithReferences(ref nuint ip, nuint pointerSizeLength)
-        {
             // TODO: Perhaps do switch casing to improve small size perf
 
             var i = (nuint)0;
             var n = (nuint)0;
             while ((n = i + 8) <= (pointerSizeLength))
             {
-                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 2) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 3) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 4) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 5) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 6) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 7) = default(nuint);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 2) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 3) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 4) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 5) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 6) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 7) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 4) <= (pointerSizeLength))
             {
-                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 2) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 3) = default(nuint);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 2) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 3) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 2) <= (pointerSizeLength))
             {
-                Unsafe.Add<nuint>(ref ip, (int)i + 0) = default(nuint);
-                Unsafe.Add<nuint>(ref ip, (int)i + 1) = default(nuint);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
+                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
                 i = n;
             }
             if ((i + 1) <= (pointerSizeLength))
             {
-                Unsafe.Add<nuint>(ref ip, (int)i) = default(nuint);
+                Unsafe.Add<IntPtr>(ref ip, (int)i) = default(IntPtr);
             }
         }
 
