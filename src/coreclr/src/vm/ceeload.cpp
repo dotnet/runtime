@@ -15368,9 +15368,6 @@ void Module::VerifyAllMethods()
     };
     //Verify all methods in a module eagerly, forcing them to get loaded.
 
-    /* XXX Thu 4/26/2007
-     * This code is lifted mostly from Validator.cpp
-     */
     IMDInternalImport * pMDI = GetMDImport();
     HENUMTypeDefInternalHolder hEnum(pMDI);
     mdTypeDef td;
