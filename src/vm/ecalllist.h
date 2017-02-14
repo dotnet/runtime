@@ -1659,7 +1659,7 @@ FCClassElement("RuntimeEnvironment", "System.Runtime.InteropServices", gRuntimeE
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gCompilerFuncs)
 #ifdef FEATURE_SPAN_OF_T
-FCClassElement("RuntimeImports", "System", gRuntimeImportsFuncs)
+FCClassElement("RuntimeImports", "System.Runtime", gRuntimeImportsFuncs)
 #endif// FEATURE_SPAN_OF_T
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
