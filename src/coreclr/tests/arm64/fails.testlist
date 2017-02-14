@@ -58,3 +58,13 @@ Exceptions/ForeignThread/ForeignThreadExceptions/ForeignThreadExceptions.sh
 
 // Expected: 0x43e08b2a2c280290
 JIT/Regression/JitBlue/GitHub_3449/GitHub_3449/GitHub_3449.sh
+
+// Crossgen fails
+// https://github.com/dotnet/coreclr/issues/9481
+JIT/Performance/CodeQuality/Linq/Linq/Linq.sh
+JIT/Performance/CodeQuality/Math/Functions/Functions/Functions.sh
+JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
+JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
+JIT/Regression/CLR-x86-JIT/v2.1/DDB/b188478/b188478/b188478.sh
+JIT/Regression/CLR-x86-JIT/v2.2/ddb/ddb188478/DDB188478/DDB188478.sh
+Loader/classloader/regressions/dev11_95728/dev11_95728/dev11_95728.sh
