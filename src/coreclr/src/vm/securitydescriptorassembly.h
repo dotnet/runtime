@@ -65,15 +65,6 @@ private:
     COR_TRUST                                *m_pSignature;            // Contains the publisher, requested permission
     SharedSecurityDescriptor                 *m_pSharedSecDesc;        // Shared state for assemblies loaded into multiple appdomains
 
-#ifdef FEATURE_CAS_POLICY
-    LOADERHANDLE m_hRequiredPermissionSet;  // Required Requested Permissions
-    LOADERHANDLE m_hOptionalPermissionSet;  // Optional Requested Permissions
-    LOADERHANDLE m_hDeniedPermissionSet;    // Denied Permissions
-
-    BOOL                m_fAdditionalEvidence;
-    BOOL                m_fIsSignatureLoaded;
-    BOOL                m_fAssemblyRequestsComputed;
-#endif // FEATURE_CAS_POLICY
 
     BOOL                m_fMicrosoftPlatform;
     BOOL                m_fAllowSkipVerificationInFullTrust;
@@ -108,28 +99,7 @@ public:
     virtual void PropagatePermissionSet(OBJECTREF GrantedPermissionSet, OBJECTREF DeniedPermissionSet, DWORD dwSpecialFlags);
 #endif	// !DACCESS_COMPILE
 
-#ifdef FEATURE_CAS_POLICY
-    virtual HRESULT LoadSignature(COR_TRUST **ppSignature = NULL);
-    virtual OBJECTREF GetEvidence();
-    DWORD GetZone();
-
-    OBJECTREF GetRequestedPermissionSet(OBJECTREF *pOptionalPermissionSet, OBJECTREF *pDeniedPermissionSet);
-
-    virtual void SetRequestedPermissionSet(OBJECTREF RequiredPermissionSet,
-                                          OBJECTREF OptionalPermissionSet,
-                                          OBJECTREF DeniedPermissionSet);
-
-#ifndef DACCESS_COMPILE
-    virtual void SetAdditionalEvidence(OBJECTREF evidence);
-    virtual BOOL HasAdditionalEvidence();
-    virtual OBJECTREF GetAdditionalEvidence();
-    virtual void SetEvidenceFromPEFile(IPEFileSecurityDescriptor *pPEFileSecDesc);
-#endif	// !DACCESS_COMPILE
-#endif // FEATURE_CAS_POLICY
 	
-#ifndef FEATURE_CORECLR 
-    virtual BOOL AllowApplicationSpecifiedAppDomainManager();
-#endif // !FEATURE_CORECLR
 
     virtual void CheckAllowAssemblyLoad();
 
@@ -139,18 +109,7 @@ private:
 
     void ResolveWorker();
 
-#ifdef FEATURE_CAS_POLICY
-    inline BOOL IsAssemblyRequestsComputed();
-    inline BOOL IsSignatureLoaded();
-    inline void SetSignatureLoaded();
-#endif
 
-#ifdef FEATURE_APTCA
-    // If you think you need to call this method, you're probably wrong.  We shouldn't be making any
-    // security enforcement decisions based upon this result -- it's strictly for ensuring that we load
-    // conditional APTCA assemblies correctly.
-    inline BOOL IsConditionalAptca();
-#endif // FEATURE_APTCA
 
 #endif // #ifndef DACCESS_COMPILE
 };

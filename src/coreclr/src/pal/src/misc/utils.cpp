@@ -18,20 +18,20 @@ Abstract:
 
 --*/
 
+#include "pal/dbgmsg.h"
+SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do this first
+
 #include "pal/palinternal.h"
 #if HAVE_VM_ALLOCATE
 #include <mach/message.h>
 #endif //HAVE_VM_ALLOCATE
 
 #include "pal/utils.h"
-#include "pal/dbgmsg.h"
 #include "pal/file.h"
 
 #include <errno.h>
 #include <string.h>
 
-
-SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 // In safemath.h, Template SafeInt uses macro _ASSERTE, which need to use variable
 // defdbgchan defined by SET_DEFAULT_DEBUG_CHANNEL. Therefore, the include statement

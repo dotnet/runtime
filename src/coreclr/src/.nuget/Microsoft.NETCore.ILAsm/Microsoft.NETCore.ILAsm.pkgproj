@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>  
+    <PackagePlatforms>x64;x86;arm64;arm;armel;</PackagePlatforms>  
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
 

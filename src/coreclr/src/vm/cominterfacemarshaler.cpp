@@ -20,7 +20,6 @@
 #include "interopconverter.h"
 #ifdef FEATURE_REMOTING
 #include "remoting.h"
-#include "appdomainhelper.h"
 #include "crossdomaincalls.h"
 #endif
 #include "notifyexternals.h"
@@ -389,20 +388,8 @@ OBJECTREF COMInterfaceMarshaler::HandleInProcManagedComponent()
     }
     else
     {
-#ifdef FEATURE_CORECLR
         _ASSERTE(!"NYI");
         COMPlusThrowHR(COR_E_NOTSUPPORTED);
-#else // FEATURE_CORECLR
-        // TODO: probably we can cache the object on a per App domain bases
-        // using CCW as the key
-        OBJECTREF pwrap = NULL;
-        GCPROTECT_BEGIN(pwrap);
-        {
-            pwrap = GetCCWObject();
-            oref = AppDomainHelper::CrossContextCopyFrom(m_dwServerDomainId, &pwrap);
-        }
-        GCPROTECT_END();
-#endif // FEATURE_CORECLR
     }
     
     return oref;

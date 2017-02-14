@@ -64,15 +64,11 @@ public:
     static LPVOID F_CALL_CONV FastGetCurrentThread();
     static LPVOID F_CALL_CONV FastGetDomain();
 
-    static void StartInner(ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark);
+    static void StartInner(ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark);
 
     static FCDECL1(void, Abort, ThreadBaseObject* pThis);
     static FCDECL1(void, ResetAbort, ThreadBaseObject* pThis);
-    static FCDECL3(void,    Start,             ThreadBaseObject* pThisUNSAFE, Object* pPrincipalUNSAFE, StackCrawlMark* pStackMark);
-#ifndef FEATURE_CORECLR
-    static FCDECL1(void,    Suspend,           ThreadBaseObject* pThisUNSAFE);
-    static FCDECL1(void,    Resume,            ThreadBaseObject* pThisUNSAFE);
-#endif // FEATURE_CORECLR
+    static FCDECL2(void,    Start,             ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark);
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
@@ -109,12 +105,6 @@ public:
     UINT64 QCALLTYPE GetProcessDefaultStackSize();
 
     static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
-#ifndef FEATURE_CORECLR
-    static FCDECL0(void,    BeginCriticalRegion);
-    static FCDECL0(void,    EndCriticalRegion);
-    static FCDECL0(void,    BeginThreadAffinity);
-    static FCDECL0(void,    EndThreadAffinity);
-#endif // !FEATURE_CORECLR
     static FCDECL1(void,    SpinWait,                       int iterations);
     static BOOL QCALLTYPE YieldThread();
     static FCDECL0(Object*, GetCurrentThread);
@@ -126,18 +116,11 @@ public:
     static FCDECL1(FC_BOOL_RET,SetThreadUILocale,              StringObject* localeNameUNSAFE);
 #endif // FEATURE_LEAK_CULTURE_INFO
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,             ThreadBaseObject* thread);
-#ifdef FEATURE_COMPRESSEDSTACK    
-    static FCDECL2(void*,    SetAppDomainStack, ThreadBaseObject* pThis, SafeHandle* hcsUNSAFE);
-    static FCDECL2(void,    RestoreAppDomainStack, ThreadBaseObject* pThis, void* appDomainStack);
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     static FCDECL0(void, FCMemoryBarrier);
     static FCDECL1(void, SetIsThreadStaticsArray, Object* pObject);
 
     static FCDECL2(void,    SetAbortReason, ThreadBaseObject* pThisUNSAFE, Object* pObject);
-#ifndef FEATURE_CORECLR	
-    static FCDECL1(Object*, GetAbortReason, ThreadBaseObject* pThisUNSAFE);
-#endif
     static FCDECL1(void,    ClearAbortReason, ThreadBaseObject* pThisUNSAFE);
 
 private:

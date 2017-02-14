@@ -172,7 +172,6 @@ namespace System
             return result;
         }
 
-        [ComVisible(false)]
         public static string Concat<T>(IEnumerable<T> values)
         {
             if (values == null)
@@ -223,7 +222,6 @@ namespace System
         }
 
 
-        [ComVisible(false)]
         public static string Concat(IEnumerable<string> values)
         {
             if (values == null)
@@ -571,7 +569,6 @@ namespace System
             return Join(separator, value, 0, value.Length);
         }
 
-        [ComVisible(false)]
         public unsafe static string Join(string separator, params object[] values)
         {
             separator = separator ?? string.Empty;
@@ -582,7 +579,6 @@ namespace System
             }
         }
 
-        [ComVisible(false)]
         public unsafe static string Join<T>(string separator, IEnumerable<T> values)
         {
             separator = separator ?? string.Empty;
@@ -593,7 +589,6 @@ namespace System
             }
         }
 
-        [ComVisible(false)]
         public static string Join(string separator, IEnumerable<string> values)
         {
             if (values == null)
@@ -1039,16 +1034,14 @@ namespace System
             return ReplaceInternal(oldValue, newValue);
         }
 
-        [ComVisible(false)]
-        public String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None) {
+        public unsafe String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
-            return SplitInternal(separator, Int32.MaxValue, options);
+            return SplitInternal(&separator, 1, int.MaxValue, options);
         }
 
-        [ComVisible(false)]
-        public String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None) {
+        public unsafe String[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
-            return SplitInternal(separator, count, options);
+            return SplitInternal(&separator, 1, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1081,22 +1074,15 @@ namespace System
             return SplitInternal(separator, count, StringSplitOptions.None);
         }
 
-        [ComVisible(false)]
         public String[] Split(char[] separator, StringSplitOptions options) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator, Int32.MaxValue, options);
         }
 
-        [ComVisible(false)]
         public String[] Split(char[] separator, int count, StringSplitOptions options)
         {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator, count, options);
-        }
-
-        private unsafe String[] SplitInternal(char separator, int count, StringSplitOptions options)
-        {
-            return SplitInternal(&separator, 1, count, options);
         }
 
         private unsafe String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
@@ -1149,25 +1135,21 @@ namespace System
             }
         }
 
-        [ComVisible(false)]
         public String[] Split(String separator, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator ?? String.Empty, null, Int32.MaxValue, options);
         }
 
-        [ComVisible(false)]
         public String[] Split(String separator, Int32 count, StringSplitOptions options = StringSplitOptions.None) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(separator ?? String.Empty, null, count, options);
         }
 
-        [ComVisible(false)]
         public String [] Split(String[] separator, StringSplitOptions options) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(null, separator, Int32.MaxValue, options);
         }
 
-        [ComVisible(false)]
         public String[] Split(String[] separator, Int32 count, StringSplitOptions options) {
             Contract.Ensures(Contract.Result<String[]>() != null);
             return SplitInternal(null, separator, count, options);
@@ -1556,7 +1538,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Both);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
             }
@@ -1575,7 +1557,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Head);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Head);
             }
@@ -1594,7 +1576,7 @@ namespace System
             {
                 return TrimWhiteSpaceHelper(TrimType.Tail);
             }
-            fixed (char* pTrimChars = trimChars)
+            fixed (char* pTrimChars = &trimChars[0])
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
             }

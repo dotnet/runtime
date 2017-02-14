@@ -12,7 +12,6 @@ namespace System.Text
     using System.Runtime.Serialization;
     using System.Globalization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Text;
     using System.Diagnostics;
@@ -83,7 +82,6 @@ namespace System.Text
     // generally executes faster.
     //
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public abstract class Encoding : ICloneable
     {
@@ -627,7 +625,6 @@ namespace System.Text
 
         // True if and only if the encoding only uses single byte code points.  (Ie, ASCII, 1252, etc)
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual bool IsSingleByte
         {
             get
@@ -637,7 +634,6 @@ namespace System.Text
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public EncoderFallback EncoderFallback
         {
             get
@@ -659,7 +655,6 @@ namespace System.Text
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public DecoderFallback DecoderFallback
         {
             get
@@ -681,7 +676,6 @@ namespace System.Text
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual Object Clone()
         {
             Encoding newEncoding = (Encoding)this.MemberwiseClone();
@@ -692,7 +686,6 @@ namespace System.Text
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsReadOnly
         {
             get
@@ -781,7 +774,6 @@ namespace System.Text
         // a 3rd party encoding.
         [Pure]
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetByteCount(char* chars, int count)
         {
             // Validate input parameters
@@ -943,7 +935,6 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow byteCount either.
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetBytes(char* chars, int charCount,
                                               byte* bytes, int byteCount)
         {
@@ -1012,7 +1003,6 @@ namespace System.Text
         // ones we need a working (if slow) default implimentation)
         [Pure]
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
         {
             // Validate input parameters
@@ -1099,7 +1089,6 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow charCount either.
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount)
         {
@@ -1154,7 +1143,6 @@ namespace System.Text
 
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public unsafe string GetString(byte* bytes, int byteCount)
         {
             if (bytes == null)
@@ -1183,14 +1171,12 @@ namespace System.Text
         // IsAlwaysNormalized
         // Returns true if the encoding is always normalized for the specified encoding form
         [Pure]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public bool IsAlwaysNormalized()
         {
             return this.IsAlwaysNormalized(NormalizationForm.FormC);
         }
 
         [Pure]
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual bool IsAlwaysNormalized(NormalizationForm form)
         {
             // Assume false unless the encoding knows otherwise
@@ -1728,20 +1714,6 @@ namespace System.Text
                 return AddChar(ch,1);
             }
 
-
-            internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
-            {
-                // Need room for 2 chars
-                if (chars >= charEnd - 1)
-                {
-                    // Throw maybe
-                    bytes-=numBytes;                                        // Didn't encode these bytes
-                    enc.ThrowCharsOverflow(decoder, bytes <= byteStart);    // Throw?
-                    return false;                                           // No throw, but no store either
-                }
-                return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
-            }
-
             internal unsafe void AdjustBytes(int count)
             {
                 bytes += count;
@@ -1753,12 +1725,6 @@ namespace System.Text
                 {
                     return bytes < byteEnd;
                 }
-            }
-
-            // Do we have count more bytes?
-            internal unsafe bool EvenMoreData(int count)
-            {
-                return (bytes <= byteEnd - count);
             }
 
             // GetNextByte shouldn't be called unless the caller's already checked more data or even more data,
@@ -1783,24 +1749,6 @@ namespace System.Text
             {
                 // Build our buffer
                 byte[] byteBuffer = new byte[] { fallbackByte };
-
-                // Do the fallback and add the data.
-                return Fallback(byteBuffer);
-            }
-
-            internal unsafe bool Fallback(byte byte1, byte byte2)
-            {
-                // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2 };
-
-                // Do the fallback and add the data.
-                return Fallback(byteBuffer);
-            }
-
-            internal unsafe bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
-            {
-                // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2, byte3, byte4 };
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);
@@ -1913,26 +1861,6 @@ namespace System.Text
                 return (AddByte(b1, 1 + moreBytesExpected) && AddByte(b2, moreBytesExpected));
             }
 
-            internal unsafe bool AddByte(byte b1, byte b2, byte b3)
-            {
-                return AddByte(b1, b2, b3, (int)0);
-            }
-
-            internal unsafe bool AddByte(byte b1, byte b2, byte b3, int moreBytesExpected)
-            {
-                return (AddByte(b1, 2 + moreBytesExpected) &&
-                        AddByte(b2, 1 + moreBytesExpected) &&
-                        AddByte(b3, moreBytesExpected));
-            }
-
-            internal unsafe bool AddByte(byte b1, byte b2, byte b3, byte b4)
-            {
-                return (AddByte(b1, 3) &&
-                        AddByte(b2, 2) &&
-                        AddByte(b3, 1) &&
-                        AddByte(b4, 0));
-            }
-
             internal unsafe void MovePrevious(bool bThrow)
             {
                 if (fallbackBuffer.bFallingBack)
@@ -1948,12 +1876,6 @@ namespace System.Text
 
                 if (bThrow)
                     enc.ThrowBytesOverflow(encoder, bytes == byteStart);    // Throw? (and reset fallback if not converting)
-            }
-
-            internal unsafe bool Fallback(char charFallback)
-            {
-                // Do the fallback
-                return fallbackBuffer.InternalFallback(charFallback, ref chars);
             }
 
             internal unsafe bool MoreData

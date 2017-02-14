@@ -10,8 +10,6 @@
 
 #include "common.h"
 
-#if defined(FEATURE_CORECLR) 
-
 CoreClrCallbacks *GetCoreClrCallbacks();
 
 //
@@ -95,4 +93,3 @@ void InitUtilcode()
     InitUtilcode(*GetCoreClrCallbacks());
 }
 
-#endif // FEATURE_CORECLR && !STRONGNAME_IN_VM

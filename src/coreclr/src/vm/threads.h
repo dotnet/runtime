@@ -585,12 +585,7 @@ inline Thread* GetThreadNULLOk()
 #endif
 
 //***************************************************************************
-#if defined(_DEBUG) && defined(_TARGET_X86_) && !defined(FEATURE_CORECLR)
- #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 1
- #define TRACK_CXX_EXCEPTION_CODE_HACK
-#else
  #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 0
-#endif
 
 // manifest constant for waiting in the exposed classlibs
 const INT32 INFINITE_TIMEOUT = -1;
@@ -1274,9 +1269,7 @@ public:
                                                       // effort.
                                                       // 
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         TSNC_InsideSyncContextWait      = 0x02000000, // Whether we are inside DoSyncContextWait
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -1641,13 +1634,6 @@ public:
     // in the object header to store it.
     DWORD                m_ThreadId;
 
-    #if HAS_TRACK_CXX_EXCEPTION_CODE_HACK // do we have C++ exception code tracking?
-        // It's very hard to deal with SEH properly using C++ catch handlers.  The
-        // following field is updated with the correct SEH exception whenever a C++
-        // __CxxFrameHandler3 call is made on this thread.  If you grab it at the
-        // top of a C++ catch(...), it's likely to be correct.
-        DWORD               m_LastCxxSEHExceptionCode;
-    #endif // HAS_TRACK_CXX_EXCEPTION_CODE_HACK
 
     // RWLock state
     LockEntry           *m_pHead;
@@ -1790,12 +1776,6 @@ public:
 
 private:
     DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
-#ifndef FEATURE_CORECLR
-    DWORD m_dwBeginCriticalRegionCount;  // lock count when the thread enters current domain
-    DWORD m_dwCriticalRegionCount;
-
-    DWORD m_dwThreadAffinityCount;
-#endif // !FEATURE_CORECLR
 
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
@@ -1888,68 +1868,19 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
-#ifndef FEATURE_CORECLR
-        _ASSERTE(m_dwCriticalRegionCount >= m_dwBeginCriticalRegionCount);
-#endif // !FEATURE_CORECLR
 
         // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
         //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
         // but without branching instructions
         BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
-#ifndef FEATURE_CORECLR
-        fHasLock |= (m_dwCriticalRegionCount ^ m_dwBeginCriticalRegionCount);
-#endif // !FEATURE_CORECLR
 
         return fHasLock; 
     }
-#ifndef FEATURE_CORECLR
-    inline void BeginCriticalRegion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        if (CLRHosted())
-        {
-            m_dwCriticalRegionCount ++;
-            _ASSERTE (m_dwCriticalRegionCount != 0);
-        }
-    }
-
-    inline void EndCriticalRegion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        if (CLRHosted())
-        {
-            _ASSERTE (m_dwCriticalRegionCount > 0);
-            m_dwCriticalRegionCount --;
-        }
-    }
-
-    inline void BeginCriticalRegion_NoCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        m_dwCriticalRegionCount ++;
-        _ASSERTE (m_dwCriticalRegionCount != 0);
-    }
-
-    inline void EndCriticalRegion_NoCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        _ASSERTE (m_dwCriticalRegionCount > 0);
-        m_dwCriticalRegionCount --;
-    }
-#endif // !FEATURE_CORECLR
 
     inline BOOL HasCriticalRegion()
     {
         LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_CORECLR
-        return m_dwCriticalRegionCount != 0;
-#else 
         return FALSE;        
-#endif
     }
 
     inline DWORD GetNewHashCode()
@@ -2000,45 +1931,11 @@ public:
     static void BeginThreadAffinity();
     static void EndThreadAffinity();
 
-#ifndef FEATURE_CORECLR
-    inline void IncThreadAffinityCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        m_dwThreadAffinityCount++;
-        _ASSERTE (m_dwThreadAffinityCount > 0);
-    }
-    inline void DecThreadAffinityCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (GetThread() == this);
-        _ASSERTE (m_dwThreadAffinityCount > 0);
-        m_dwThreadAffinityCount --;
-    }
-
-    static void BeginThreadAffinityAndCriticalRegion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        BeginThreadAffinity();
-        GetThread()->BeginCriticalRegion();
-    }
-
-    static void EndThreadAffinityAndCriticalRegion()
-    {
-        LIMITED_METHOD_CONTRACT;
-        GetThread()->EndCriticalRegion();
-        EndThreadAffinity();
-    }
-#endif // !FEATURE_CORECLR
 
     BOOL HasThreadAffinity()
     {
         LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_CORECLR
-        return m_dwThreadAffinityCount > 0;
-#else
         return FALSE;
-#endif
     }
 
  private:
@@ -2636,11 +2533,7 @@ private:
     //
     // In Telesto, we don't support true appdomain marshaling so the "orBlob" is in fact an
     // agile wrapper object whose ToString() echoes the original exception's ToString().
-#ifdef FEATURE_CORECLR
     typedef OBJECTREF  ORBLOBREF;
-#else
-    typedef U1ARRAYREF ORBLOBREF;
-#endif
 
     RaiseCrossContextResult TryRaiseCrossContextException(Exception **ppExOrig,
                                                           Exception *pException,
@@ -2797,7 +2690,6 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     void GetSynchronizationContext(OBJECTREF *pSyncContextObj)
     {
         CONTRACTL
@@ -2815,24 +2707,7 @@ public:
         if (ExposedThreadObj != NULL)
             *pSyncContextObj = ExposedThreadObj->GetSynchronizationContext();
     }
-#endif // FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 
-#ifdef FEATURE_COMPRESSEDSTACK    
-    OBJECTREF GetCompressedStack()
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-        THREADBASEREF ExposedThreadObj = (THREADBASEREF)GetExposedObjectRaw();
-        if (ExposedThreadObj != NULL)
-            return (OBJECTREF)(ExposedThreadObj->GetCompressedStack());
-        return NULL;
-    }
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
@@ -3007,10 +2882,6 @@ public:
     static bool    SysStartSuspendForDebug(AppDomain *pAppDomain);
     static bool    SysSweepThreadsForDebug(bool forceSync);
     static void    SysResumeFromDebug(AppDomain *pAppDomain);
-#ifndef FEATURE_CORECLR
-    void           UserSuspendThread();
-    BOOL           UserResumeThread();
-#endif // FEATURE_CORECLR
 
     void           UserSleep(INT32 time);
 
@@ -3515,9 +3386,7 @@ private:
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
 #endif // !FEATURE_PAL
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
-#ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
-#endif // #ifdef FEATURE_SYNCHRONIZATIONCONTEXT_WAIT
 public:
 
     //************************************************************************
@@ -3615,10 +3484,12 @@ public:
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
                                            EECodeInfo * pCodeInfo = NULL);
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
+#ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
     static PCODE VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
         PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = NULL);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
+#endif // DACCESS_COMPILE
 #endif // WIN64EXCEPTIONS
 
     // During a <clinit>, this thread must not be asynchronously
@@ -3981,9 +3852,6 @@ private:
 
     // For getting a thread to a safe point.  A client waits on the event, which is
     // set by the thread when it reaches a safe spot.
-#ifndef FEATURE_CORECLR
-    void    FinishSuspendingThread();
-#endif // FEATURE_CORECLR
     void    SetSafeEvent();
 
 public:
@@ -5603,10 +5471,6 @@ public:
 
 LCID GetThreadCultureIdNoThrow(Thread *pThread, BOOL bUICulture);
 
-#ifndef FEATURE_CORECLR
-// Request/Remove Thread Affinity for the current thread
-typedef StateHolder<Thread::BeginThreadAffinityAndCriticalRegion, Thread::EndThreadAffinityAndCriticalRegion> ThreadAffinityAndCriticalRegionHolder;
-#endif // !FEATURE_CORECLR
 typedef StateHolder<Thread::BeginThreadAffinity, Thread::EndThreadAffinity> ThreadAffinityHolder;
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;

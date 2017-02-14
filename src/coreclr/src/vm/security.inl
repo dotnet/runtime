@@ -25,59 +25,10 @@ inline  void Security::Stop()
     WRAPPER_NO_CONTRACT;
     SecurityPolicy::Stop();
 }
-#ifdef FEATURE_CAS_POLICY
-inline void Security::SaveCache() 
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityPolicy::SaveCache();
-}
-#endif
 // ----------------------------------------
 // SecurityPolicy
 // ----------------------------------------
 
-#ifdef FEATURE_CAS_POLICY
-
-//---------------------------------------------------------------------------------------
-//
-// Determine if the entire process is running with CAS policy enabled for legacy
-// compatibility.  If this value is false, the CLR does not apply any security policy.
-// Instead, it defers to a host if one is present or grants assemblies full trust.
-//
-
-inline bool Security::IsProcessWideLegacyCasPolicyEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // APPX precludes the use of legacy CAS policy
-    if (AppX::IsAppXProcess())
-    {
-        return false;
-    }
-
-    return CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Security_LegacyCasPolicy) ||
-           CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Security_NetFx40LegacySecurityPolicy);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// In pre-v4 versions of the CLR, doing a LoadFrom for a file in a remote location would
-// implicitly sandbox that assembly.  If CAS policy is disabled, then these applications
-// will suddenly be granting full trust to assemblies they expected to be sandboxed.  In
-// order to prevent this, these LoadFroms are disabled unless the application has explcitly
-// configured itself to allow them.
-// 
-// This method returns the a value that indicates if the application has indicated that it
-// is safe to LoadFrom remote locations and that the CLR should not block these loads.
-//
-
-inline bool Security::CanLoadFromRemoteSources()
-{
-    WRAPPER_NO_CONTRACT;
-    return !!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Security_LoadFromRemoteSources);
-}
-
-#endif // FEATURE_CAS_POLICY
 
 inline BOOL Security::CanCallUnmanagedCode(Module *pModule) 
 {
@@ -173,15 +124,11 @@ inline LinktimeCheckReason Security::GetLinktimeCheckReason(MethodDesc *pMD,
 inline void Security::CheckLinkDemandAgainstAppDomain(MethodDesc *pMD) 
 {
     WRAPPER_NO_CONTRACT; 
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::CheckLinkDemandAgainstAppDomain(pMD); 
-#endif
 }
 
 inline void Security::LinktimeCheckMethod(Assembly *pCaller, MethodDesc *pCallee) 
 {
     WRAPPER_NO_CONTRACT; 
-    SecurityDeclarative::LinktimeCheckMethod(pCaller, pCallee); 
 }
 
 inline void Security::ClassInheritanceCheck(MethodTable *pClass, MethodTable *pParent) 
@@ -196,27 +143,15 @@ inline void Security::MethodInheritanceCheck(MethodDesc *pMethod, MethodDesc *pP
     SecurityDeclarative::MethodInheritanceCheck(pMethod, pParent); 
 }
 
-inline void Security::GetPermissionInstance(OBJECTREF *perm, int index) 
-{
-    WRAPPER_NO_CONTRACT; 
-    SecurityDeclarative::GetPermissionInstance(perm, index); 
-}
-
 inline void Security::DoDeclarativeActions(MethodDesc *pMD, DeclActionInfo *pActions, LPVOID pSecObj, MethodSecurityDescriptor *pMSD) 
 {
     WRAPPER_NO_CONTRACT; 
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::DoDeclarativeActions(pMD, pActions, pSecObj, pMSD); 
-#endif
 }
 
 #ifndef DACCESS_COMPILE
 inline void Security::CheckNonCasDemand(OBJECTREF *prefDemand) 
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::CheckNonCasDemand(prefDemand); 
-#endif
 }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -232,14 +167,6 @@ inline BOOL Security::MethodIsVisibleOutsideItsAssembly(DWORD dwMethodAttr, DWOR
     return SecurityDeclarative::MethodIsVisibleOutsideItsAssembly(dwMethodAttr, dwClassAttr, fIsGlobalClass);
 }
 
-inline void Security::CheckBeforeAllocConsole(AppDomain* pDomain, Assembly* pAssembly) 
-{
-    WRAPPER_NO_CONTRACT; 
-#ifdef FEATURE_CAS_POLICY
-    SecurityRuntime::CheckBeforeAllocConsole(pDomain, pAssembly); 
-#endif
-}
-
 // ----------------------------------------
 // SecurityStackWalk
 // ----------------------------------------
@@ -248,18 +175,8 @@ inline void Security::CheckBeforeAllocConsole(AppDomain* pDomain, Assembly* pAss
 inline void Security::Demand(SecurityStackWalkType eType, OBJECTREF demand) 
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityStackWalk::Demand(eType, demand); 
-#endif
 }
 
-#ifdef FEATURE_CAS_POLICY
-inline void Security::DemandGrantSet(IAssemblySecurityDescriptor *psdAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityStackWalk::DemandGrantSet(static_cast<AssemblySecurityDescriptor*>(psdAssembly));
-}
-#endif // FEATURE_CAS_POLICY
 
 inline void Security::DemandSet(SecurityStackWalkType eType, OBJECTREF demand) 
 {
@@ -270,82 +187,34 @@ inline void Security::DemandSet(SecurityStackWalkType eType, OBJECTREF demand)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-#ifdef FEATURE_CAS_POLICY
-    SecurityStackWalk::DemandSet(eType, demand); 
-#endif
 }
 
 inline void Security::DemandSet(SecurityStackWalkType eType, PsetCacheEntry *pPCE, DWORD dwAction) 
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityStackWalk::DemandSet(eType, pPCE, dwAction); 
-#endif
 }
 
-#ifdef FEATURE_CAS_POLICY
-inline void Security::ReflectionTargetDemand(DWORD dwPermission, IAssemblySecurityDescriptor *psdTarget)
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityStackWalk::ReflectionTargetDemand(dwPermission, static_cast<AssemblySecurityDescriptor*>(psdTarget));
-}
-
-inline void Security::ReflectionTargetDemand(DWORD dwPermission,
-                                             IAssemblySecurityDescriptor *psdTarget,
-                                             DynamicResolver * pAccessContext)
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityStackWalk::ReflectionTargetDemand(dwPermission, static_cast<AssemblySecurityDescriptor*>(psdTarget), pAccessContext);
-}
-#endif // FEATURE_CAS_POLICY
 
 inline void Security::SpecialDemand(SecurityStackWalkType eType, DWORD whatPermission) 
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityStackWalk::SpecialDemand(eType, whatPermission);
-#endif
 }
 
 inline void Security::InheritanceLinkDemandCheck(Assembly *pTargetAssembly, MethodDesc * pMDLinkDemand)
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::InheritanceLinkDemandCheck(pTargetAssembly, pMDLinkDemand);
-#endif
 }
 
 inline void Security::FullTrustInheritanceDemand(Assembly *pTargetAssembly)
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::FullTrustInheritanceDemand(pTargetAssembly);
-#endif
 }
 
 inline void Security::FullTrustLinkDemand(Assembly *pTargetAssembly)
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_CAS_POLICY
-    SecurityDeclarative::FullTrustLinkDemand(pTargetAssembly);
-#endif
 }
 
-#ifdef FEATURE_COMPRESSEDSTACK
-// Compressed Stack
-
-inline COMPRESSEDSTACKREF Security::GetCSFromContextTransitionFrame(Frame *pFrame) 
-{
-    WRAPPER_NO_CONTRACT; 
-    return SecurityStackWalk::GetCSFromContextTransitionFrame(pFrame); 
-}
-
-inline BOOL Security::IsContextTransitionFrameWithCS(Frame *pFrame) 
-{
-    WRAPPER_NO_CONTRACT;
-    return SecurityStackWalk::IsContextTransitionFrameWithCS(pFrame); 
-}
-#endif // #ifdef FEATURE_COMPRESSEDSTACK
 // Misc - todo: put these in better categories
 
 FORCEINLINE  VOID Security::IncrementSecurityPerfCounter() 
@@ -550,43 +419,8 @@ inline BOOL Security::CanSkipVerification(MethodDesc * pMD)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     // Always skip verification on CoreCLR
     return TRUE;
-#else
-
-    // Special case the System.Object..ctor:
-    // System.Object..ctor is not verifiable according to current verifier rules (that require to call the base 
-    // class ctor). But since we want System.Object..ctor() to be marked transparent, it cannot be unverifiable
-    // (v4 security rules prohibit transparent code from being unverifiable)
-
-#ifndef DACCESS_COMPILE
-    if (g_pObjectCtorMD == pMD)
-        return TRUE;
-#endif
-
-    // In AppX, all dynamic code (dynamic assemblies and dynamic methods) should be verified..
-    if (AppX::IsAppXProcess() && !AppX::IsAppXDesignMode())
-    {
-        if (pMD->IsLCGMethod() || pMD->GetAssembly()->IsDynamic())
-            return FALSE;
-    }
-
-    BOOL fCanSkipVerification = Security::CanSkipVerification(pMD->GetAssembly()->GetDomainAssembly()); 
-    if (fCanSkipVerification)
-    {
-        // check for transparency
-        if (SecurityTransparent::IsMethodTransparent(pMD))
-        {
-            ModuleSecurityDescriptor *pModuleSecDesc = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
-            if (!pModuleSecDesc->CanTransparentCodeSkipVerification())
-            {
-                return FALSE;
-            }
-        }
-    }
-   return fCanSkipVerification;
-#endif // !FEATURE_CORECLR
 }
 #endif //!DACCESS_COMPILE
 
@@ -615,38 +449,6 @@ inline BOOL Security::ContainsBuiltinCASPermsOnly(CORSEC_ATTRSET* pAttrSet)
     return SecurityAttributes::ContainsBuiltinCASPermsOnly(pAttrSet); 
 }
 
-#ifdef FEATURE_APTCA
-inline BOOL Security::IsUntrustedCallerCheckNeeded(MethodDesc *pCalleeMD, Assembly *pCallerAssem)
-{ 
-    WRAPPER_NO_CONTRACT; 
-    return SecurityDeclarative::IsUntrustedCallerCheckNeeded(pCalleeMD, pCallerAssem); 
-}
- 
-inline void Security::DoUntrustedCallerChecks(Assembly *pCaller, MethodDesc *pCalee, BOOL fFullStackWalk) 
-{
-    WRAPPER_NO_CONTRACT;
-    SecurityDeclarative::DoUntrustedCallerChecks(pCaller, pCalee, fFullStackWalk); 
-}
-
-inline bool Security::NativeImageHasValidAptcaDependencies(PEImage *pNativeImage, DomainAssembly *pDomainAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::NativeImageHasValidAptcaDependencies(pNativeImage, pDomainAssembly);
-}
-
-inline SString Security::GetAptcaKillBitAccessExceptionContext(Assembly *pTargetAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::GetAptcaKillBitAccessExceptionContext(pTargetAssembly);
-}
-
-inline SString Security::GetConditionalAptcaAccessExceptionContext(Assembly *pTargetAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::GetConditionalAptcaAccessExceptionContext(pTargetAssembly);
-}
-
-#endif // FEATURE_APTCA
 
 inline bool Security::SecurityCalloutQuickCheck(MethodDesc *pCallerMD)
 {
@@ -658,12 +460,6 @@ inline bool Security::CanShareAssembly(DomainAssembly *pAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_APTCA
-    if (!DomainCanShareAptcaAssembly(pAssembly))
-    {
-        return false;
-    }
-#endif // FEATURE_APTCA
 
     return true;
 }
@@ -686,34 +482,7 @@ FORCEINLINE BOOL SecurityStackWalk::HasFlagsOrFullyTrustedIgnoreMode (DWORD flag
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CAS_POLICY
     return TRUE;
-#else
-    // either the desired flag (often 0) or fully trusted will do
-    flags |= (1<<SECURITY_FULL_TRUST);
-  
-    // in order for us to use the threadwide state it has to be the case that there have been no
-    // overrides since the evaluation (e.g. no denies)  We keep the state up-to-date by updating 
-    // it whenever a new AppDomainStackEntry is pushed on the AppDomainStack attached to the thread.
-    // When we evaluate the demand, we always intersect the current thread state with the AppDomain
-    // wide flags, which are updated anytime a new Assembly is loaded into that domain.
-    //
-    // note if the flag is clear we still might be able to satisfy the demand if we do the full 
-    // stackwalk.
-    //
-    // this code is very perf sensitive, do not make changes here without running 
-    // a lot of interop and declarative security benchmarks
-    //
-    // it's important that we be able to do these checks without having to touch objects
-    // other than the thread itself -- that's where a big part of the speed comes from
-    // L1 cache misses are at a premium on this code path -- never mind L2...
-    // main memory is right out :)
-  
-    Thread* pThread = GetThread();
-    return ((pThread->GetOverridesCount() == 0) &&
-            pThread->CheckThreadWideSpecialFlag(flags) &&
-            static_cast<ApplicationSecurityDescriptor*>(pThread->GetDomain()->GetSecurityDescriptor())->CheckDomainWideSpecialFlag(flags));
-#endif
 }
 
 // Returns true if everyone is fully trusted or has the indicated flags AND we're not in legacy CAS mode

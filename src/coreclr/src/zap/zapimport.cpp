@@ -351,7 +351,7 @@ ZapGenericSignature * ZapImportTable::GetGenericSignature(PVOID signature, BOOL 
 // At ngen time Zapper::CompileModule PlaceFixups called from
 //     code:ZapSig.GetSignatureForTypeHandle
 //
-/*static*/ DWORD __stdcall ZapImportTable::EncodeModuleHelper( LPVOID compileContext,
+/*static*/ DWORD ZapImportTable::EncodeModuleHelper( LPVOID compileContext,
                                                 CORINFO_MODULE_HANDLE referencedModule)
 {
     ZapImportTable * pTable = (ZapImportTable *)compileContext;

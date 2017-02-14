@@ -13,7 +13,6 @@ namespace System.Runtime.CompilerServices
     /// IMPORTANT: Keep this in sync with corhdr.h
 [Serializable]
 [Flags]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum CompilationRelaxations : int
     { 
         NoStringInterning       = 0x0008, // Start in 0x0008, we had other non public flags in this enum before,
@@ -23,7 +22,6 @@ namespace System.Runtime.CompilerServices
         
 [Serializable]
 [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Method)]  
-[System.Runtime.InteropServices.ComVisible(true)]
     public class CompilationRelaxationsAttribute : Attribute 
     {
         private int m_relaxations;      // The relaxations.

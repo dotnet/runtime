@@ -99,6 +99,11 @@ class Program
         {
              ((Object)s).ToString();
         }
+
+        // Enum.GetHashCode optimization requires special treatment
+        // in native signature encoding
+        MyEnum e = MyEnum.Apple;
+        e.GetHashCode();
     }
 
     static void TestConstrainedMethodCalls_Unsupported()

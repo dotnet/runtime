@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCritical]
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>A handle value of -1.</summary>
@@ -83,7 +82,6 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
-        [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
             // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add 
@@ -111,7 +109,6 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [System.Security.SecurityCritical]
             get
             {
                 long h = (long)handle;

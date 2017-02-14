@@ -16,7 +16,6 @@ namespace System.Reflection {
     // This Enum matchs the CorPropertyAttr defined in CorHdr.h
 [Serializable]
 [Flags]  
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum PropertyAttributes
     {
         None            =   0x0000,

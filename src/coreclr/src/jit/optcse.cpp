@@ -996,6 +996,17 @@ void Compiler::optValnumCSE_Availablity()
 
                         /* This is a CSE def */
 
+                        if (desc->csdDefCount == 0)
+                        {
+                            // This is the first def visited, so copy its conservative VN
+                            desc->defConservativeVN = tree->gtVNPair.GetConservative();
+                        }
+                        else if (tree->gtVNPair.GetConservative() != desc->defConservativeVN)
+                        {
+                            // This candidate has defs with differing conservative VNs
+                            desc->defConservativeVN = ValueNumStore::NoVN;
+                        }
+
                         desc->csdDefCount += 1;
                         desc->csdDefWtCnt += stmw;
 
@@ -1778,6 +1789,8 @@ public:
         m_addCSEcount++; // Record that we created a new LclVar for use as a CSE temp
         m_pCompiler->optCSEcount++;
 
+        ValueNum defConservativeVN = successfulCandidate->CseDsc()->defConservativeVN;
+
         /*  Walk all references to this CSE, adding an assignment
             to the CSE temp to all defs and changing all refs to
             a simple use of the CSE temp.
@@ -1890,6 +1903,13 @@ public:
                 //
                 cse           = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
                 cse->gtVNPair = exp->gtVNPair; // assign the proper Value Numbers
+                if (defConservativeVN != ValueNumStore::NoVN)
+                {
+                    // All defs of this CSE share the same conservative VN, and we are rewriting this
+                    // use to fetch the same value with no reload, so we can safely propagate that
+                    // conservative VN to this use.  This can help range check elimination later on.
+                    cse->gtVNPair.SetConservative(defConservativeVN);
+                }
 #ifdef DEBUG
                 cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF;
 #endif // DEBUG

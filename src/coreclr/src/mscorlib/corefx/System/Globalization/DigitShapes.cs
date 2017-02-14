@@ -5,6 +5,7 @@
 //
 // The enumeration constants used in NumberFormatInfo.DigitSubstitution.
 //
+
 namespace System.Globalization
 {
     [Serializable]

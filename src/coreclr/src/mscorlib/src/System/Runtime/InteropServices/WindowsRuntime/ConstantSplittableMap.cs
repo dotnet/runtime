@@ -53,25 +53,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             this.items = CreateKeyValueArray(data.Count, data.GetEnumerator());
         }
 
-        internal ConstantSplittableMap(IMapView<TKey, TValue> data)
-        {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
-            if (((UInt32)Int32.MaxValue) < data.Size)
-            {
-                Exception e = new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingDictionaryTooLarge"));
-                e.SetErrorCode(__HResults.E_BOUNDS);
-                throw e;
-            }
-
-            int size = (int)data.Size;
-
-            this.firstItemIndex = 0;
-            this.lastItemIndex = size - 1;
-            this.items = CreateKeyValueArray(size, data.GetEnumerator());
-        }
-
 
         private ConstantSplittableMap(KeyValuePair<TKey, TValue>[] items, Int32 firstItemIndex, Int32 lastItemIndex)
         {
@@ -88,22 +69,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Int32 i = 0;
             while (data.MoveNext())
                 kvArray[i++] = data.Current;
-
-            Array.Sort(kvArray, keyValuePairComparator);
-
-            return kvArray;
-        }
-
-        private KeyValuePair<TKey, TValue>[] CreateKeyValueArray(Int32 count, IEnumerator<IKeyValuePair<TKey, TValue>> data)
-        {
-            KeyValuePair<TKey, TValue>[] kvArray = new KeyValuePair<TKey, TValue>[count];
-
-            Int32 i = 0;
-            while (data.MoveNext())
-            {
-                IKeyValuePair<TKey, TValue> current = data.Current;
-                kvArray[i++] = new KeyValuePair<TKey, TValue>(current.Key, current.Value);
-            }
 
             Array.Sort(kvArray, keyValuePairComparator);
 
@@ -179,14 +144,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             secondPartition = new ConstantSplittableMap<TKey, TValue>(items, pivot + 1, lastItemIndex);
         }
 
-        #region IReadOnlyDictionary members
-
-        public bool ContainsKey(TKey key)
-        {
-            KeyValuePair<TKey, TValue> searchKey = new KeyValuePair<TKey, TValue>(key, default(TValue));
-            int index = Array.BinarySearch(items, firstItemIndex, Count, searchKey, keyValuePairComparator);
-            return index >= 0;
-        }
+#region IReadOnlyDictionary members
 
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -201,24 +159,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             value = items[index].Value;
             return true;
-        }
-
-        public TValue this[TKey key] {
-            get {
-                return Lookup(key);
-            }
-        }
-
-        public IEnumerable<TKey> Keys {
-            get {
-                throw new NotImplementedException("NYI");
-            }
-        }
-
-        public IEnumerable<TValue> Values {
-            get {
-                throw new NotImplementedException("NYI");
-            }
         }
 
         #endregion IReadOnlyDictionary members

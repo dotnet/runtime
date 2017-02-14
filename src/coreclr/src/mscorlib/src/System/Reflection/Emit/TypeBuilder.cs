@@ -9,7 +9,6 @@ namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Collections.Generic;
@@ -21,7 +20,6 @@ namespace System.Reflection.Emit {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum PackingSize
     {
         Unspecified                 = 0,
@@ -35,10 +33,7 @@ namespace System.Reflection.Emit {
         Size128                     = 128,
     }
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_TypeBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class TypeBuilder : TypeInfo, _TypeBuilder
+    public sealed class TypeBuilder : TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
             if(typeInfo==null) return false;            
@@ -227,10 +222,6 @@ namespace System.Reflection.Emit {
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 		[SuppressUnmanagedCodeSecurity]
-        internal static extern void SetPInvokeData(RuntimeModule module, String DllName, String name, int token, int linkFlags);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-		[SuppressUnmanagedCodeSecurity]
         internal static extern int DefineProperty(RuntimeModule module, int tkParent, String name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
@@ -270,42 +261,10 @@ namespace System.Reflection.Emit {
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 		[SuppressUnmanagedCodeSecurity]
-        internal static extern void SetFieldMarshal(RuntimeModule module, int tk, byte[] ubMarshal, int ubSize);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-		[SuppressUnmanagedCodeSecurity]
         private static extern unsafe void SetConstantValue(RuntimeModule module, int tk, int corType, void* pValue);
-        #endregion
 
-        #region Internal\Private Static Members
-        private static bool IsPublicComType(Type type)
-        {
-            // Internal Helper to determine if a type should be added to ComType table.
-            // A top level type should be added if it is Public.
-            // A nested type should be added if the top most enclosing type is Public 
-            //      and all the enclosing types are NestedPublic
-
-            Type enclosingType = type.DeclaringType;
-            if (enclosingType != null)
-            {
-                if (IsPublicComType(enclosingType))
-                {
-                    if ((type.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.NestedPublic)
-                    {
-                        return true;
-                    }
-                }
-            }
-            else
-            {
-                if ((type.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.Public)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+#endregion
+#region Internal\Private Static Members
 
         [Pure]
         internal static bool IsTypeEqual(Type t1, Type t2)
@@ -656,105 +615,8 @@ namespace System.Reflection.Emit {
             m_module.AddType(FullName, this);
         }
 
-        #endregion
-
-        #region Private Members
-        private MethodBuilder DefinePInvokeMethodHelperNoLock(
-            String name, String dllName, String importName, MethodAttributes attributes, CallingConventions callingConvention, 
-            Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
-
-            if (dllName == null)
-                throw new ArgumentNullException(nameof(dllName));
-
-            if (dllName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(dllName));
-
-            if (importName == null)
-                throw new ArgumentNullException(nameof(importName));
-
-            if (importName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(importName));
-
-            if ((attributes & MethodAttributes.Abstract) != 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_BadPInvokeMethod"));
-            Contract.EndContractBlock();
-
-            if ((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface)
-                throw new ArgumentException(Environment.GetResourceString("Argument_BadPInvokeOnInterface"));
-
-            ThrowIfCreated();
-
-            attributes = attributes | MethodAttributes.PinvokeImpl;
-            MethodBuilder method = new MethodBuilder(name, attributes, callingConvention, 
-                returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
-                m_module, this, false);
-
-            //The signature grabbing code has to be up here or the signature won't be finished
-            //and our equals check won't work.
-            int sigLength;
-            byte[] sigBytes = method.GetMethodSignature().InternalGetSignature(out sigLength);
-
-            if (m_listMethods.Contains(method))
-            {
-                throw new ArgumentException(Environment.GetResourceString("Argument_MethodRedefined"));
-            }
-            m_listMethods.Add(method);
-
-            MethodToken token = method.GetToken();
-            
-            int linkFlags = 0;
-            switch(nativeCallConv)
-            {
-                case CallingConvention.Winapi:
-                    linkFlags =(int)PInvokeMap.CallConvWinapi;
-                    break;
-                case CallingConvention.Cdecl:
-                    linkFlags =(int)PInvokeMap.CallConvCdecl;
-                    break;
-                case CallingConvention.StdCall:
-                    linkFlags =(int)PInvokeMap.CallConvStdcall;
-                    break;
-                case CallingConvention.ThisCall:
-                    linkFlags =(int)PInvokeMap.CallConvThiscall;
-                    break;
-                case CallingConvention.FastCall:
-                    linkFlags =(int)PInvokeMap.CallConvFastcall;
-                    break;
-            }
-            switch(nativeCharSet)
-            {
-                case CharSet.None:
-                    linkFlags |=(int)PInvokeMap.CharSetNotSpec;
-                    break;
-                case CharSet.Ansi:
-                    linkFlags |=(int)PInvokeMap.CharSetAnsi;
-                    break;
-                case CharSet.Unicode:
-                    linkFlags |=(int)PInvokeMap.CharSetUnicode;
-                    break;
-                case CharSet.Auto:
-                    linkFlags |=(int)PInvokeMap.CharSetAuto;
-                    break;
-            }
-            
-            SetPInvokeData(m_module.GetNativeHandle(),
-                dllName,
-                importName,
-                token.Token,
-                linkFlags);
-            method.SetToken(token);
-
-            return method;
-        }
+#endregion
+#region Private Members
 
         private FieldBuilder DefineDataHelper(String name, byte[] data, int size, FieldAttributes attributes)
         {
@@ -1028,7 +890,6 @@ namespace System.Reflection.Emit {
             return m_bakedRuntimeType.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             if (!IsCreated())
@@ -1166,7 +1027,6 @@ namespace System.Reflection.Emit {
             return m_bakedRuntimeType.GetMember(name, type, bindingAttr);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             if (!IsCreated())
@@ -1297,7 +1157,6 @@ namespace System.Reflection.Emit {
             get { return false; }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public override bool IsSubclassOf(Type c)
         {
@@ -1620,7 +1479,6 @@ namespace System.Reflection.Emit {
         #endregion
 
         #region Define Constructor
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineTypeInitializer()
         {
             lock(SyncRoot)
@@ -1642,7 +1500,6 @@ namespace System.Reflection.Emit {
             return constBuilder;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface)
@@ -1710,13 +1567,11 @@ namespace System.Reflection.Emit {
             return constBuilder;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes)
         {
             return DefineConstructor(attributes, callingConvention, parameterTypes, null, null);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, 
             Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers)
         {
@@ -1773,7 +1628,6 @@ namespace System.Reflection.Emit {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public TypeBuilder DefineNestedType(String name, TypeAttributes attr, Type parent, Type[] interfaces)
         {
             lock(SyncRoot)
@@ -2286,7 +2140,6 @@ namespace System.Reflection.Emit {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void AddInterfaceImplementation(Type interfaceType)
         {
             if (interfaceType == null)
@@ -2317,7 +2170,6 @@ public TypeToken TypeToken
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

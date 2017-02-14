@@ -7,12 +7,11 @@
 //    This class represents the void return type
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace System {
-   
-    using System;
+namespace System
+{
+    // This class represents the void return type
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public struct Void 
+    public struct Void
     {
     }
 }

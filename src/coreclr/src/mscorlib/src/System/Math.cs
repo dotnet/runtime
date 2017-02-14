@@ -149,7 +149,6 @@ namespace System {
         return InternalTruncate(d);
       }
             
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [MethodImplAttribute(MethodImplOptions.InternalCall)]
       public static extern double Sqrt(double d);
       [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -294,58 +293,49 @@ namespace System {
       **Returns the larger of val1 and val2
       ============================================================================*/
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static sbyte Max(sbyte val1, sbyte val2) {
         return (val1>=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static byte Max(byte val1, byte val2) {
         return (val1>=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static short Max(short val1, short val2) {
         return (val1>=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static ushort Max(ushort val1, ushort val2) {
         return (val1>=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static int Max(int val1, int val2) {
         return (val1>=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static uint Max(uint val1, uint val2) {
         return (val1>=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static long Max(long val1, long val2) {
         return (val1>=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static ulong Max(ulong val1, ulong val2) {
         return (val1>=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static float Max(float val1, float val2) {
         if (val1 > val2)
             return val1;
@@ -356,7 +346,6 @@ namespace System {
         return val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static double Max(double val1, double val2) {
         if (val1 > val2)
             return val1;
@@ -367,7 +356,6 @@ namespace System {
         return val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static Decimal Max(Decimal val1, Decimal val2) {
         return Decimal.Max(val1,val2);
       }
@@ -376,58 +364,49 @@ namespace System {
       **Returns the smaller of val1 and val2.
       ============================================================================*/
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static sbyte Min(sbyte val1, sbyte val2) {
         return (val1<=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static byte Min(byte val1, byte val2) {
         return (val1<=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static short Min(short val1, short val2) {
         return (val1<=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static ushort Min(ushort val1, ushort val2) {
         return (val1<=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static int Min(int val1, int val2) {
         return (val1<=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static uint Min(uint val1, uint val2) {
         return (val1<=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static long Min(long val1, long val2) {
         return (val1<=val2)?val1:val2;
       }
     
       [CLSCompliant(false)]
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       [System.Runtime.Versioning.NonVersionable]
       public static ulong Min(ulong val1, ulong val2) {
         return (val1<=val2)?val1:val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static float Min(float val1, float val2) {
         if (val1 < val2)
             return val1;
@@ -438,7 +417,6 @@ namespace System {
         return val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static double Min(double val1, double val2) {
         if (val1 < val2)
             return val1;
@@ -449,7 +427,6 @@ namespace System {
         return val2;
       }
     
-      [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       public static Decimal Min(Decimal val1, Decimal val2) {
         return Decimal.Min(val1,val2);
       }

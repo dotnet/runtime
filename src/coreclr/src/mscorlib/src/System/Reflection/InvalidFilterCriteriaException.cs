@@ -18,7 +18,6 @@ namespace System.Reflection {
     using System.Runtime.Serialization;
     using ApplicationException = System.ApplicationException;
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class InvalidFilterCriteriaException : ApplicationException {
         public InvalidFilterCriteriaException()
             : base(Environment.GetResourceString("Arg_InvalidFilterCriteriaException")) {

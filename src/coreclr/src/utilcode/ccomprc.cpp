@@ -261,12 +261,8 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 //*****************************************************************************
 // Initialize
 //*****************************************************************************
-#ifndef FEATURE_CORECLR
-LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
-#else // !FEATURE_CORECLR
 LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
 LPCWSTR CCompRC::m_pFallbackResource= W("mscorrc.dll");
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_PAL
 LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
@@ -482,7 +478,6 @@ CCompRC* CCompRC::GetDefaultResourceDll()
     return &m_DefaultResourceDll;
 }
 
-#ifdef FEATURE_CORECLR
 LONG    CCompRC::m_dwFallbackInitialized = 0;
 CCompRC CCompRC::m_FallbackResourceDll;
 
@@ -510,7 +505,6 @@ CCompRC* CCompRC::GetFallbackResourceDll()
     return &m_FallbackResourceDll;
 }
 
-#endif // FEATURE_CORECLR
 
 
 //*****************************************************************************
@@ -747,7 +741,6 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     // Failed to load string
     if ( hr != E_OUTOFMEMORY && ShouldUseFallback())
     {
-#ifdef FEATURE_CORECLR        
         CCompRC* pFallback=CCompRC::GetFallbackResourceDll();
         if (pFallback)
         {
@@ -761,13 +754,11 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
             if(SUCCEEDED(hr))
                 return hr;
         }
-#endif
         switch (eCategory)
         {
             case Optional:
                 hr = E_FAIL;
                 break;
-#ifdef FEATURE_CORECLR        
             case  DesktopCLR:
                 hr = E_FAIL;
                 break;
@@ -837,12 +828,6 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
                 // if we got here then we couldn't get the fallback message
                 // the fallback message is required so just falling through into "Required"
                 
-#else  // FEATURE_CORECLR
-            // everything that's not optional goes here for Desktop
-            case DesktopCLR:
-            case Debugging:
-            case Error:
-#endif        
             case Required:
 
                 if ( hr != E_OUTOFMEMORY)
@@ -1035,7 +1020,6 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
     PathString       rcPath;      // Path to resource DLL.
 
     // Try first in the same directory as this dll.
-#if defined(FEATURE_CORECLR)
 
     VALIDATECORECLRCALLBACKS();
 
@@ -1046,73 +1030,6 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
 
     hr = LoadLibraryHelper(pHInst, rcPath);
 
-#else // FEATURE_CORECLR
-
-    if (!WszGetModuleFileName(GetModuleInst(), rcPath))
-        return HRESULT_FROM_GetLastError();
-    
-    CopySystemDirectory(rcPath, rcPath);
-    
-    hr = LoadLibraryHelper(pHInst, rcPath);
-    if (hr == E_OUTOFMEMORY)
-        return hr;
-
-    // In case of default rc file, also try CORSystemDirectory.
-    // Note that GetRequestedRuntimeInfo is a function in ths shim.  As of 12/06, this is the only
-    // place where utilcode appears to take a dependency on the shim.  This forces everyone that links
-    // with us to also dynamically link to mscoree.dll.  Perhaps this should be a delay-load to prevent
-    // that static dependency and have a gracefull fallback when the shim isn't installed.
-    // We don't do this in DAC builds because mscordacwks.dll cannot take a dependency on other CLR
-    // dlls (eg. you must be able to examine a managed dump on a machine without any CLR installed).
-#ifndef DACCESS_COMPILE
-    if (FAILED(hr) && m_pResourceFile == m_pDefaultResource)
-    {
-#ifdef SELF_NO_HOST
-        WCHAR rcVersion[MAX_VERSION_STRING];
-        DWORD rcVersionSize;
-
-        DWORD corSystemPathSize;
-
-        // The reason for using GetRequestedRuntimeInfo is the ability to suppress message boxes
-        // with RUNTIME_INFO_DONT_SHOW_ERROR_DIALOG.
-        COUNT_T size = MAX_PATH;
-        hr = LegacyActivationShim::GetRequestedRuntimeInfo(
-            NULL, 
-            W("v")VER_PRODUCTVERSION_NO_QFE_STR_L, 
-            NULL, 
-            0,
-            RUNTIME_INFO_UPGRADE_VERSION|RUNTIME_INFO_DONT_SHOW_ERROR_DIALOG|RUNTIME_INFO_CONSIDER_POST_2_0,
-            rcPath.OpenUnicodeBuffer(size-1),
-            size,
-            &corSystemPathSize,
-            rcVersion,
-            NumItems(rcVersion),
-            &rcVersionSize);
-
-        rcPath.CloseBuffer(corSystemPathSize);
-
-        if (SUCCEEDED(hr))
-        {
-            if (rcVersionSize > 0)
-            {
-                rcPath.Append(rcVersion);
-                rcPath.Append(W("\\"));
-            }
-        }
-#else
-        // If we're hosted, we have the advantage of a CoreClrCallbacks reference.
-        // More importantly, we avoid calling back to mscoree.dll.
-        
-        hr = GetClrCallbacks().m_pfnGetCORSystemDirectory(rcPath);
-#endif
-        if (SUCCEEDED(hr))
-        {
-            hr = LoadLibraryHelper(pHInst, rcPath);
-        }
-    }
-#endif // !DACCESS_COMPILE
-
-#endif  // FEATURE_CORECLR
 
 #endif // CROSSGEN_COMPILE
 

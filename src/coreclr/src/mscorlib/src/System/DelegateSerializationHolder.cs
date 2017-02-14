@@ -7,7 +7,6 @@ using System;
 using System.Reflection;
 using System.Runtime.Remoting;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Globalization;
 using System.Diagnostics.Contracts;
 
@@ -25,10 +24,7 @@ namespace System
             if (method == null) 
                 throw new ArgumentNullException(nameof(method));
             Contract.EndContractBlock();
-    
-            if (!method.IsPublic || (method.DeclaringType != null && !method.DeclaringType.IsVisible))
-                new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Demand();
-    
+        
             Type c = delegateType.BaseType;
 
             if (c == null || (c != typeof(Delegate) && c != typeof(MulticastDelegate)))
@@ -231,9 +227,6 @@ namespace System
                     else
                         d = Delegate.CreateDelegate(type, targetType, de.methodName);
                 }
-
-                if ((d.Method != null && !d.Method.IsPublic) || (d.Method.DeclaringType != null && !d.Method.DeclaringType.IsVisible))
-                    new ReflectionPermission(ReflectionPermissionFlag.MemberAccess).Demand();
             }
             catch (Exception e)
             {

@@ -233,20 +233,6 @@ static void ConvertCriticalMethodToLinkDemand(MethodDesc *pCallerMD)
     }
     CONTRACTL_END;
 
-#if !defined(CROSSGEN_COMPILE) && defined(FEATURE_CAS_POLICY)
-    if (NingenEnabled())
-        return;
-
-    GCX_COOP();
-
-    OBJECTREF permSet = NULL;
-    GCPROTECT_BEGIN(permSet);
-
-    Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-    Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-
-    GCPROTECT_END();
-#endif // !CROSSGEN_COMPILE && FEATURE_CAS_POLICY
 }
 
 // static
@@ -324,7 +310,6 @@ BOOL SecurityTransparent::CheckCriticalAccess(AccessCheckContext* pContext,
             return TRUE;
         }
 
-#ifdef FEATURE_CORECLR
         // On the coreCLR, a method can be transparent even if the containing type is marked Critical.
         // This will happen when that method is an override of a base transparent method, and the type that
         // contains the override is marked Critical. And that's the only case it can happen.
@@ -334,7 +319,6 @@ BOOL SecurityTransparent::CheckCriticalAccess(AccessCheckContext* pContext,
         {
             return TRUE;
         }
-#endif // FEATURE_CORECLR
     	
         // an attached profiler may wish to have these checks suppressed
         if (Security::BypassSecurityChecksForProfiler(pCurrentMD))
@@ -395,41 +379,9 @@ BOOL SecurityTransparent::IsAllowedToAssert(MethodDesc *pMD)
         return TRUE;
     }
     
-#ifdef FEATURE_CORECLR
     // On CoreCLR only critical code may ever assert - there are no compatibility reasons to allow
     // transparent asserts.
     return FALSE;
-#else // !FEATURE_CORECLR
-    // We must be in a heterogenous AppDomain for transparent asserts to work
-    if (GetAppDomain()->GetSecurityDescriptor()->IsHomogeneous())
-    {
-        return FALSE;
-    }
-
-    ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
-    
-    // Only assemblies whose version requires them to use legacy transparency (rather than assemblies which
-    // get legacy transparency via RuleSet.Level1) can assert from transparent code 
-    if (!pMSD->AssemblyVersionRequiresLegacyTransparency())
-    {
-        return FALSE;
-    }
-
-    // Finally, the assembly must not have had any of the transparency attributes on it
-    const TokenSecurityDescriptorFlags transparencyAwareFlags = 
-        TokenSecurityDescriptorFlags_AllCritical    | // [SecurityCritical(SecurityCriticalScope.All)]
-        TokenSecurityDescriptorFlags_Critical       | // [SecurityCritical]
-        TokenSecurityDescriptorFlags_SafeCritical   | // [SecuritySafeCritical]
-        TokenSecurityDescriptorFlags_Transparent    | // [SecurityTransparent]
-        TokenSecurityDescriptorFlags_TreatAsSafe;     // [SecurityTreatAsSafe]
-    TokenSecurityDescriptorFlags moduleAttributes = pMSD->GetTokenFlags();
-    if ((moduleAttributes & transparencyAwareFlags) != TokenSecurityDescriptorFlags_None)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-#endif // FEATURE_CORECLR
 }
 
 // Functor class to aid in determining if a type requires a transparency check
@@ -528,40 +480,6 @@ CorInfoCanSkipVerificationResult SecurityTransparent::JITCanSkipVerification(Met
 
     CorInfoCanSkipVerificationResult canSkipVerif = hasSkipVerificationPermisson ? CORINFO_VERIFICATION_CAN_SKIP : CORINFO_VERIFICATION_CANNOT_SKIP;
 
-#ifndef FEATURE_CORECLR
-    // also check to see if the method is marked transparent
-    if (hasSkipVerificationPermisson)
-    { 
-        if (pDomainAssembly == GetAppDomain()->GetAnonymouslyHostedDynamicMethodsAssembly())
-        {
-            // This assembly is FullTrust. However, it cannot contain unverifiable code.
-            // The JIT compiler is not hardened to deal with invalid code. Hence, we cannot
-            // return CORINFO_VERIFICATION_RUNTIME_CHECK for IL that could have been generated
-            // by a low-trust assembly.
-            canSkipVerif = CORINFO_VERIFICATION_CANNOT_SKIP;
-        }
-        // also check to see if the method is marked transparent
-        else if (SecurityTransparent::IsMethodTransparent(pMD))
-        {
-            // If the assembly requested that even its transparent members not be verified, then we can skip
-            // verification.  Otherwise, we need to either inject a runtime demand in the v2 model, or fail
-            // verification in the v4 model.
-            ModuleSecurityDescriptor *pModuleSecDesc = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
-            if (pModuleSecDesc->CanTransparentCodeSkipVerification())
-            {
-                canSkipVerif = CORINFO_VERIFICATION_CAN_SKIP;
-            }
-            else if (pMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeSkipVerification())
-            {
-                canSkipVerif = CORINFO_VERIFICATION_RUNTIME_CHECK;
-            }
-            else
-            {
-                canSkipVerif = CORINFO_VERIFICATION_CANNOT_SKIP;
-            }
-        }
-    }
-#endif //FEATURE_CORECLR
 
     return canSkipVerif;
 }
@@ -587,14 +505,6 @@ CorInfoCanSkipVerificationResult SecurityTransparent::JITCanSkipVerification(Dom
     {
       // In CoreCLR, do not enable transparency checks here.  We depend on this method being "honest" in
       // JITCanSkipVerification to skip transparency checks on profile assemblies.
-#ifndef FEATURE_CORECLR
-        ModuleSecurityDescriptor *pMsd = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pAssembly->GetAssembly());
-        if (pMsd->IsAllTransparent() &&
-            pAssembly->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeSkipVerification())
-        {
-            canSkipVerif = CORINFO_VERIFICATION_RUNTIME_CHECK;
-        }
-#endif // !FEATURE_CORECLR
     }
 
     return canSkipVerif;			
@@ -620,34 +530,6 @@ bool SecurityTransparent::SecurityCalloutQuickCheck(MethodDesc *pCallerMD)
     // In coreclr, we modified the logic in the callout to also do some transparency method access checks
     // These checks need to happen regardless of trust level and we shouldn't be bailing out early 
     // just because we happen to be in Full Trust
-#ifndef FEATURE_CORECLR
-    // See if we need to process this callout for real, or if we can bail out early before setting up a HMF,
-    // and spending a lot of time processing the transparency evaluation.  The simplest case where we can do
-    // this is if the caller is critical.  In that case, we know that the caller is allowed to do whatever
-    // it wants, so we quit out.
-    // 
-    // Additionally, if the caller is using SecurityRuleSet.Level1, which turns transparency violations into
-    // security demands, we can bail out early if we know for sure all demands will succeed on the current
-    // call stack.  (Note: this remains true as long as we don't start generating callouts for transparent
-    // level 1 calling critical level 1, or transparent level 1 doing an assert, which are the only two
-    // violations which do not succeed in the face of a successful demand).
-    if (pCallerMD->IsCritical())
-    {
-        return true;
-    }
-    else
-    {
-        // The caller is transparent, so let's see if demands can cause transparency violations to succeed,
-        // and also if all demands issued from this context will succeed.
-        const SecurityTransparencyBehavior *pCallerTransparency = pCallerMD->GetAssembly()->TryGetSecurityTransparencyBehavior();
-        if (pCallerTransparency != NULL &&
-            pCallerTransparency->CanTransparentCodeCallLinkDemandMethods() &&
-            SecurityStackWalk::HasFlagsOrFullyTrustedIgnoreMode(0))
-        {
-            return true;
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     return false;
 }
@@ -690,11 +572,7 @@ CorInfoIsAccessAllowedResult SecurityTransparent::RequiresTransparentCodeChecks(
         // Check to see if the callee has a LinkDemand, if so we may need to intercept the call.
         if (pCalleeMD->RequiresLinktimeCheck())
         {
-            if (pCalleeMD->RequiresLinkTimeCheckHostProtectionOnly()
-#ifndef CROSSGEN_COMPILE
-                && GetHostProtectionManager()->GetProtectedCategories() == eNoChecks
-#endif // CROSSGEN_COMPILE
-                )
+            if (pCalleeMD->RequiresLinkTimeCheckHostProtectionOnly())
             {
                 // exclude HPA which are marked as LinkDemand and there is no HostProtection enabled currently
                 return CORINFO_ACCESS_ALLOWED;
@@ -728,44 +606,6 @@ VOID SecurityTransparent::PerformTransparencyChecksForLoadByteArray(MethodDesc* 
     }
     CONTRACTL_END
 
-#ifdef FEATURE_CAS_POLICY
-	GCX_COOP();
-	// check to see if the method that does the Load(byte[] ) is transparent
-	if (IsMethodTransparent(pCallerMD))
-	{		
-		Assembly* pLoadedAssembly = pLoadedSecDesc->GetAssembly();
-		// check to see if the byte[] being loaded is critical, i.e. not Transparent
-		if (!ModuleSecurityDescriptor::IsMarkedTransparent(pLoadedAssembly))
-		{
-			// if transparent code loads a byte[] that is critical, need to inject appropriate demands
-			if (pLoadedSecDesc->IsFullyTrusted()) // if the loaded code is full-trust
-			{
-				// do a full-demand for Full-Trust				
-				OBJECTREF permSet = NULL;
-				GCPROTECT_BEGIN(permSet);
-        			Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-					Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-				GCPROTECT_END();// do a full-demand for Full-Trust				
-			}
-			else
-			{
-				// otherwise inject a Demand for permissions being granted?
-				struct _localGC {
-                			OBJECTREF granted;
-                			OBJECTREF denied;
-            			} localGC;
-            	ZeroMemory(&localGC, sizeof(localGC));
-
-            	GCPROTECT_BEGIN(localGC);
-				{
-					localGC.granted = pLoadedSecDesc->GetGrantedPermissionSet(&(localGC.denied));
-					Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, localGC.granted);
-            	}
-				GCPROTECT_END();
-			}
-		}		
-	}	
-#endif // FEATURE_CAS_POLICY
 }
 
 static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCalleeMD) 
@@ -816,44 +656,6 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
                                                                                &gc.refMethodCasDemands,
                                                                                &gc.refMethodNonCasDemands);
 
-#ifdef FEATURE_APTCA
-    BOOL fCallerIsAPTCA = pCallerMD->GetAssembly()->AllowUntrustedCaller();
-
-    if ((linktimeCheckReason & LinktimeCheckReason_AptcaCheck))
-    {
-        if (fCallerIsAPTCA &&    
-            Security::IsUntrustedCallerCheckNeeded(pCalleeMD, pCallerMD->GetAssembly()))
-        {
-#ifdef _DEBUG
-            if (g_pConfig->LogTransparencyErrors())
-            {
-                SecurityTransparent::LogTransparencyError(pCallerMD, "Transparent method calling an APTCA protected assembly", pCalleeMD);
-            }
-            if (!g_pConfig->DisableTransparencyEnforcement())
-#endif // _DEBUG
-            {
-                // Depending on the transparency model, we need to either fail the attempt to call a method
-                // protected with the APTCA link demand, or conver it to a full demand.  Note that we need to
-                // upgrade to a full demand if either the caller of callee are in v2 mode, the APTCA check is
-                // conceptually a link demand, and for link demands we do the conversion if either assembly is
-                // using the v2 rules.
-                if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallLinkDemandMethods() ||
-                    pCalleeMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallLinkDemandMethods())
-                {
-                    OBJECTREF permSet = NULL;
-                    GCPROTECT_BEGIN(permSet);
-                    Security::GetPermissionInstance(&permSet, SECURITY_FULL_TRUST);
-                    Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, permSet);
-                    GCPROTECT_END();
-                }
-                else
-                {
-                    ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_LINKDEMAND);
-                }
-            }
-        }
-    }
-#endif // FEATURE_APTCA
 
             
     // The following logic turns link demands on the target method into full stack walks
@@ -909,15 +711,6 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
 
         if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallUnmanagedCode())
         {
-#ifdef FEATURE_APTCA
-            if (fCallerIsAPTCA)
-            {
-                // if the caller assembly is APTCA, then only inject this demand, for NON-APTCA we will allow
-                // calls to native code
-                // NOTE: the JIT would have already performed the LinkDemand for this anyways
-                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);        
-            }
-#endif // FEATURE_APTCA
         }
         else
         {
@@ -998,7 +791,6 @@ VOID SecurityTransparent::EnforceTransparentDelegateChecks(MethodTable* pDelegat
     } 
     CONTRACTL_END;
 
-#ifdef FEATURE_CORECLR
     // We only enforce delegate binding rules in partial trust
     if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
         return;
@@ -1009,7 +801,6 @@ VOID SecurityTransparent::EnforceTransparentDelegateChecks(MethodTable* pDelegat
     TypeString::AppendType(strDelegateType, pDelegateMT, TypeString::FormatNamespace | TypeString::FormatAngleBrackets| TypeString::FormatSignature);
 
     COMPlusThrowHR(COR_E_METHODACCESS, IDS_E_DELEGATE_BINDING_TRANSPARENCY, strDelegateType.GetUnicode(), strMethod.GetUnicode());
-#endif // FEATURE_CORECLR
 }
 
 #endif // CROSSGEN_COMPILE
@@ -1447,12 +1238,12 @@ public:
 
         ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
         if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
         {
             moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
         }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
         if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
         {
@@ -1535,202 +1326,6 @@ public:
     }
 };
 
-#ifndef FEATURE_CORECLR
-
-//---------------------------------------------------------------------------------------
-//
-// Transparency behavior implementation for v2 assemblies
-//
-
-class LegacyTransparencyBehaviorImpl : public ISecurityTransparencyImpl
-{
-public:
-    // Get bits that indicate how transparency should behave in different situations
-    virtual SecurityTransparencyBehaviorFlags GetBehaviorFlags() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return SecurityTransparencyBehaviorFlags_IntroducedCriticalsMayAddTreatAsSafe |
-               SecurityTransparencyBehaviorFlags_OpportunisticIsSafeCriticalMethods |
-               SecurityTransparencyBehaviorFlags_PartialTrustImpliesAllTransparent |
-               SecurityTransparencyBehaviorFlags_PublicImpliesTreatAsSafe |
-               SecurityTransparencyBehaviorFlags_TransparentCodeCanCallLinkDemand |
-               SecurityTransaprencyBehaviorFlags_TransparentCodeCanCallUnmanagedCode |
-               SecurityTransparencyBehaviorFlags_TransparentCodeCanSkipVerification |
-               SecurityTransparencyBehaviorFlags_UnsignedImpliesAPTCA;
-    }
-
-    // Legacy transparency field behavior mappings:
-    //  Attribute                         Behavior
-    //  -----------------------------------------------------
-    //  Critical (any)                    Critical
-    //  SafeCritical                      Safe critical
-    //  TAS (no critical)                 No effect
-    //  TAS (with any critical)           Safe critical
-    virtual FieldSecurityDescriptorFlags MapFieldAttributes(TokenSecurityDescriptorFlags tokenFlags) const
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Legacy transparency behaves the same for fields as the current transparency model, so we just forward
-        // this call to that implementation.
-        TransparencyBehaviorImpl forwardImpl;
-        return forwardImpl.MapFieldAttributes(tokenFlags);
-    }
-
-
-    // Legacy transparency method behavior mappings:
-    //  Attribute                         Behavior
-    //  -----------------------------------------------------
-    //  Critical (any)                    Critical
-    //  SafeCritical                      Safe critical
-    //  TAS (no critical)                 No effect
-    //  TAS (with any critical)           Safe critical
-    virtual MethodSecurityDescriptorFlags MapMethodAttributes(TokenSecurityDescriptorFlags tokenFlags) const
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Legacy transparency behaves the same for methods as the current transparency model, so we just forward
-        // this call to that implementation.
-        TransparencyBehaviorImpl forwardImpl;
-        return forwardImpl.MapMethodAttributes(tokenFlags);
-    }
-
-    // Legacy transparency module behavior mappings:
-    //  Attribute                         Behavior
-    //  -----------------------------------------------------
-    //  APTCA                             APTCA
-    //  ConditionlAPTCA                   Exception
-    //  Critical (scoped)                 Mixed transparency
-    //  Critical (all)                    All critical
-    //  SafeCritical                      All safe critical
-    //  TAS (no critical)                 No effect
-    //  TAS (with scoped critical)        No effect
-    //  TAS (with all critical)           All safe critical
-    //  Transparent                       All transparent
-    //
-    // Having no transparent, critical, or safe critical attributes means that the assembly should have all
-    // transparent types and all safe critical methods.
-    virtual ModuleSecurityDescriptorFlags MapModuleAttributes(TokenSecurityDescriptorFlags tokenFlags) const
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            SO_INTOLERANT;
-        }
-        CONTRACTL_END;
-
-        ModuleSecurityDescriptorFlags moduleFlags = ModuleSecurityDescriptorFlags_None;
-        bool fShouldBeOpportunisticallyCritical = true;
-
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
-        if (tokenFlags & TokenSecurityDescriptorFlags_APTCA)
-        {
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsAPTCA;
-        }
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
-
-        if (tokenFlags & TokenSecurityDescriptorFlags_Transparent)
-        {
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsAllTransparent;
-            fShouldBeOpportunisticallyCritical = false;
-        }
-
-        if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
-        {
-            fShouldBeOpportunisticallyCritical = false;
-
-            // If we're critical, but not all critical that means we're mixed.
-            if (tokenFlags & TokenSecurityDescriptorFlags_AllCritical)
-            {
-                moduleFlags |= ModuleSecurityDescriptorFlags_IsAllCritical;
-
-                // If we're all critical and treat as safe, that means we're safe critical
-                if (tokenFlags & TokenSecurityDescriptorFlags_TreatAsSafe)
-                {
-                    moduleFlags |= ModuleSecurityDescriptorFlags_IsTreatAsSafe;
-                }
-            }
-        }
-
-        // SafeCritical always means Critical + TreatAsSafe; we can get in this case for legacy assemblies if the
-        // assembly is actually a v4 assembly which is using the Legacy attribute.
-        if (tokenFlags & TokenSecurityDescriptorFlags_SafeCritical)
-        {
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsAllCritical |
-                           ModuleSecurityDescriptorFlags_IsTreatAsSafe;
-            fShouldBeOpportunisticallyCritical = false;
-        }
-
-        // If we didn't find an attribute that indicates the assembly cares about transparency, then it is
-        // opportunistically critical.
-        if (fShouldBeOpportunisticallyCritical)
-        {
-            _ASSERTE(!(moduleFlags & ModuleSecurityDescriptorFlags_IsAllTransparent));
-            _ASSERTE(!(moduleFlags & ModuleSecurityDescriptorFlags_IsAllCritical));
-
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsOpportunisticallyCritical;
-        }
-
-        // If the token asks to not have IL verification done in full trust, propigate that to the module
-        if (tokenFlags & TokenSecurityDescriptorFlags_SkipFullTrustVerification)
-        {
-            moduleFlags |= ModuleSecurityDescriptorFlags_SkipFullTrustVerification;
-        }
-
-        return moduleFlags;
-    }
-
-    // Legacy transparency type behavior mappings:
-    //  Attribute                         Behavior
-    //  -----------------------------------------------------
-    //  Critical (scoped)                 Critical, but not all critical
-    //  Critical (all)                    All critical
-    //  SafeCritical                      All safe critical
-    //  TAS (no critical)                 No effect on the type, but save TAS bit for members of the type
-    //  TAS (with scoped critical)        SafeCritical, but not all critical
-    //  TAS (with all critical)           All SafeCritical
-    virtual TypeSecurityDescriptorFlags MapTypeAttributes(TokenSecurityDescriptorFlags tokenFlags) const
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            SO_INTOLERANT;
-        }
-        CONTRACTL_END;
-
-        TypeSecurityDescriptorFlags typeFlags = TypeSecurityDescriptorFlags_None;
-
-        if (tokenFlags & TokenSecurityDescriptorFlags_Critical)
-        {
-            typeFlags |= TypeSecurityDescriptorFlags_IsCritical;
-
-            // We only consider all critical if the critical attribute was present
-            if (tokenFlags & TokenSecurityDescriptorFlags_AllCritical)
-            {
-                typeFlags |= TypeSecurityDescriptorFlags_IsAllCritical;
-            }
-        }
-
-        // SafeCritical always means all critical + TAS
-        if (tokenFlags & TokenSecurityDescriptorFlags_SafeCritical)
-        {
-            typeFlags |= TypeSecurityDescriptorFlags_IsCritical |
-                         TypeSecurityDescriptorFlags_IsAllCritical |
-                         TypeSecurityDescriptorFlags_IsTreatAsSafe;
-        }
-
-        if (tokenFlags & TokenSecurityDescriptorFlags_TreatAsSafe)
-        {
-            typeFlags |= TypeSecurityDescriptorFlags_IsTreatAsSafe;
-        }
-
-        return typeFlags;
-    }
-};
-
-#endif // !FEATURE_CORECLR
-
 //
 // Shared transparency behavior objects
 //
@@ -1775,13 +1370,6 @@ const SecurityTransparencyBehavior *GetOrCreateTransparencyBehavior(SecurityTran
 // static
 SecurityTransparencyBehavior *SecurityTransparencyBehavior::s_pStandardTransparencyBehavior = NULL;
 
-#ifndef FEATURE_CORECLR
-
-// Transpraency behavior object for v2 transparent assemblies
-// static
-SecurityTransparencyBehavior *SecurityTransparencyBehavior::s_pLegacyTransparencyBehavior = NULL;
-
-#endif // !FEATURE_CORECLR
 
 //---------------------------------------------------------------------------------------
 //
@@ -1804,14 +1392,6 @@ const SecurityTransparencyBehavior *SecurityTransparencyBehavior::GetTransparenc
     }
     CONTRACT_END;
 
-#ifndef FEATURE_CORECLR
-    if (ruleSet == SecurityRuleSet_Level1)
-    {
-		// Level 1 rules - v2.0 behavior
-        RETURN(GetOrCreateTransparencyBehavior<LegacyTransparencyBehaviorImpl>(&s_pLegacyTransparencyBehavior));
-    }
-    else
-#endif // FEATURE_CORECLR;
     {
 		// Level 2 rules - v4.0 behavior
         RETURN(GetOrCreateTransparencyBehavior<TransparencyBehaviorImpl>(&s_pStandardTransparencyBehavior));

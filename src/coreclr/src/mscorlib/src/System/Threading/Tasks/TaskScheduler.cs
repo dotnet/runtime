@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Security;
-using System.Security.Permissions;
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
 using System.Diagnostics;
@@ -204,7 +203,10 @@ namespace System.Threading.Tasks
             bool bInlined = false;
             try
             {
-                task.FireTaskScheduledIfNeeded(this);
+                if (TplEtwProvider.Log.IsEnabled())
+                {
+                    task.FireTaskScheduledIfNeeded(this);
+                }
                 bInlined = TryExecuteTaskInline(task, taskWasPreviouslyQueued);
             }
             finally
@@ -257,7 +259,10 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(task != null);
 
-            task.FireTaskScheduledIfNeeded(this);
+            if (TplEtwProvider.Log.IsEnabled())
+            {
+                task.FireTaskScheduledIfNeeded(this);
+            }
 
             this.QueueTask(task);
         }
@@ -441,7 +446,7 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(Environment.GetResourceString("TaskScheduler_ExecuteTask_WrongTaskScheduler"));
             }
 
-            return task.ExecuteEntry(true);
+            return task.ExecuteEntry();
         }
 
         ////////////////////////////////////////////////////////////
@@ -685,16 +690,7 @@ namespace System.Threading.Tasks
         }
 
         // preallocated SendOrPostCallback delegate
-        private static SendOrPostCallback s_postCallback = new SendOrPostCallback(PostCallback);
-
-        // this is where the actual task invocation occures
-        private static void PostCallback(object obj)
-        {
-            Task task = (Task) obj;
-
-            // calling ExecuteEntry with double execute check enabled because a user implemented SynchronizationContext could be buggy
-            task.ExecuteEntry(true);
-        }
+        private static readonly SendOrPostCallback s_postCallback = s => ((Task)s).ExecuteEntry(); // with double-execute check because SC could be buggy
     }
 
     /// <summary>

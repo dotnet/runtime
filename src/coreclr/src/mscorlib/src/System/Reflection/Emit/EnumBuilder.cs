@@ -20,13 +20,8 @@ namespace System.Reflection.Emit {
     using System.Reflection;
     using System.Runtime.InteropServices;
     using CultureInfo = System.Globalization.CultureInfo;
-    using System.Security.Permissions;
 
-    
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_EnumBuilder))]
-[System.Runtime.InteropServices.ComVisible(true)]
-    sealed public class EnumBuilder : TypeInfo, _EnumBuilder
+    sealed public class EnumBuilder : TypeInfo
     {
         public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
             if(typeInfo==null) return false;
@@ -137,7 +132,6 @@ namespace System.Reflection.Emit {
                             types, modifiers);
         }
         
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetConstructors(bindingAttr);
@@ -218,7 +212,6 @@ namespace System.Reflection.Emit {
             return m_typeBuilder.GetMembers(bindingAttr);
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             return m_typeBuilder.GetInterfaceMap(interfaceType);
@@ -312,7 +305,6 @@ namespace System.Reflection.Emit {
 
        // Use this function if client decides to form the custom attribute blob themselves
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
              m_typeBuilder.SetCustomAttribute(con, binaryAttribute);
@@ -341,9 +333,6 @@ namespace System.Reflection.Emit {
         {
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
-
-
-        internal int MetadataTokenInternal { get { return m_typeBuilder.MetadataTokenInternal; } }
     
         /*****************************************************
          * 

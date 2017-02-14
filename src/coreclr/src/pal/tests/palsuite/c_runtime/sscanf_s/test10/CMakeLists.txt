@@ -13,7 +13,5 @@ add_executable(paltest_sscanf_test10
 add_dependencies(paltest_sscanf_test10 coreclrpal)
 
 target_link_libraries(paltest_sscanf_test10
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -465,7 +465,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
             varDsc->lvArgReg       = genMapIntRegArgNumToRegNum(retBuffArgNum);
         }
 
-#if FEATURE_MULTIREG__ARGS
+#if FEATURE_MULTIREG_ARGS
         varDsc->lvOtherArgReg = REG_NA;
 #endif
         varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -488,6 +488,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
                 varDsc->lvType = TYP_I_IMPL;
             }
         }
+#ifdef FEATURE_SIMD
+        else if (featureSIMD && varTypeIsSIMD(info.compRetType))
+        {
+            varDsc->lvSIMDType = true;
+            varDsc->lvBaseType =
+                getBaseTypeAndSizeOfSIMDType(info.compMethodInfo->args.retTypeClass, &varDsc->lvExactSize);
+            assert(varDsc->lvBaseType != TYP_UNKNOWN);
+        }
+#endif // FEATURE_SIMD
+
         assert(isValidIntArgReg(varDsc->lvArgReg));
 
 #ifdef DEBUG
@@ -1059,7 +1069,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
 
             varDsc->lvIsRegArg = 1;
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varArgHndArgNum, TYP_I_IMPL);
-#if FEATURE_MULTIREG__ARGS
+#if FEATURE_MULTIREG_ARGS
             varDsc->lvOtherArgReg = REG_NA;
 #endif
             varDsc->setPrefReg(varDsc->lvArgReg, this);
@@ -1581,8 +1591,10 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 #endif // _TARGET_ARM_
         }
 
-        // If we saw any GC pointer fields above then the CORINFO_FLG_CONTAINS_GC_PTR has to be set!
-        noway_assert((containsGCpointers == false) || ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0));
+        // If we saw any GC pointer or by-ref fields above then CORINFO_FLG_CONTAINS_GC_PTR or
+        // CORINFO_FLG_CONTAINS_STACK_PTR has to be set!
+        noway_assert((containsGCpointers == false) ||
+                     ((typeFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_CONTAINS_STACK_PTR)) != 0));
 
         // If we have "Custom Layout" then we might have an explicit Size attribute
         // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
@@ -1992,14 +2004,14 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc)
 
         if (howToPassStruct == SPK_ByValueAsHfa)
         {
-            assert(type = TYP_STRUCT);
+            assert(type == TYP_STRUCT);
             return true;
         }
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)
         if (howToPassStruct == SPK_ByValue)
         {
-            assert(type = TYP_STRUCT);
+            assert(type == TYP_STRUCT);
             return true;
         }
 #endif
@@ -3125,37 +3137,6 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
         }
 #endif
     }
-
-#if FANCY_ARRAY_OPT
-
-    /* Special case: assignment node */
-
-    if (tree->gtOper == GT_ASG)
-    {
-        if (tree->gtType == TYP_INT)
-        {
-            unsigned   lclNum1;
-            LclVarDsc* varDsc1;
-
-            GenTreePtr op1 = tree->gtOp.gtOp1;
-
-            if (op1->gtOper != GT_LCL_VAR)
-                return;
-
-            lclNum1 = op1->gtLclVarCommon.gtLclNum;
-            noway_assert(lclNum1 < lvaCount);
-            varDsc1 = lvaTable + lclNum1;
-
-            if (varDsc1->lvAssignOne)
-                varDsc1->lvAssignTwo = true;
-            else
-                varDsc1->lvAssignOne = true;
-        }
-
-        return;
-    }
-
-#endif
 
 #ifdef _TARGET_XARCH_
     /* Special case: integer shift node by a variable amount */
@@ -5794,6 +5775,7 @@ void Compiler::lvaAlignFrame()
 
 #elif defined(_TARGET_X86_)
 
+#if DOUBLE_ALIGN
     if (genDoubleAlign())
     {
         // Double Frame Alignement for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
@@ -5802,6 +5784,30 @@ void Compiler::lvaAlignFrame()
         {
             // This can only happen with JitStress=1 or JitDoubleAlign=2
             lvaIncrementFrameSize(sizeof(void*));
+        }
+    }
+#endif
+
+    if (STACK_ALIGN > REGSIZE_BYTES)
+    {
+        if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+        {
+            // If we are not doing final layout, we don't know the exact value of compLclFrameSize
+            // and thus do not know how much we will need to add in order to be aligned.
+            // We add the maximum pad that we could ever have (which is 12)
+            lvaIncrementFrameSize(STACK_ALIGN - REGSIZE_BYTES);
+        }
+
+        // Align the stack with STACK_ALIGN value.
+        int adjustFrameSize = compLclFrameSize;
+#if defined(UNIX_X86_ABI)
+        // we need to consider spilled register(s) plus return address and/or EBP
+        int adjustCount = compCalleeRegsPushed + 1 + (codeGen->isFramePointerUsed() ? 1 : 0);
+        adjustFrameSize += (adjustCount * REGSIZE_BYTES) % STACK_ALIGN;
+#endif
+        if ((adjustFrameSize % STACK_ALIGN) != 0)
+        {
+            lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
         }
     }
 

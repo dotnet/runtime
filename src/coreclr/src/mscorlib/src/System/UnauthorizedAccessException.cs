@@ -13,31 +13,33 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Runtime.Serialization;
 
-namespace System {
+namespace System
+{
     // The UnauthorizedAccessException is thrown when access errors 
     // occur from IO or other OS methods.  
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class UnauthorizedAccessException : SystemException {
-        public UnauthorizedAccessException() 
-            : base(Environment.GetResourceString("Arg_UnauthorizedAccessException")) {
-            SetErrorCode(__HResults.COR_E_UNAUTHORIZEDACCESS);
-        }
-        
-        public UnauthorizedAccessException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.COR_E_UNAUTHORIZEDACCESS);
-        }
-        
-        public UnauthorizedAccessException(String message, Exception inner) 
-            : base(message, inner) {
-            SetErrorCode(__HResults.COR_E_UNAUTHORIZEDACCESS);
+    public class UnauthorizedAccessException : SystemException
+    {
+        public UnauthorizedAccessException()
+            : base(SR.Arg_UnauthorizedAccessException)
+        {
+            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
         }
 
-        protected UnauthorizedAccessException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        public UnauthorizedAccessException(String message)
+            : base(message)
+        {
+            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
         }
+
+        public UnauthorizedAccessException(String message, Exception inner)
+            : base(message, inner)
+        {
+            HResult = __HResults.COR_E_UNAUTHORIZEDACCESS;
+        }
+
+        protected UnauthorizedAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

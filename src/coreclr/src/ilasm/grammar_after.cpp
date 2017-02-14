@@ -372,16 +372,6 @@ static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
 /* fetch the next token, and return it   Also set the yylval.union if the
    lexical token also has a value */
    
-#if (0)   
-
-#define IsAlpha(x) ((('A' <= (x))&&((x) <= 'Z'))||(('a' <= (x))&&((x) <= 'z')))
-#define IsDigit(x) (('0' <= (x))&&((x) <= '9'))
-#define IsAlNum(x) (IsAlpha(x) || IsDigit(x))
-#define IsValidStartingSymbol(x) (IsAlpha(x)||((x)=='#')||((x)=='_')||((x)=='@')||((x)=='$'))
-#define IsValidContinuingSymbol(x) (IsAlNum(x)||((x)=='_')||((x)=='@')||((x)=='$')||((x)=='?'))
-void SetSymbolTables() { ; }
-
-#else
 
 BOOL _Alpha[128];
 BOOL _Digit[128];
@@ -433,7 +423,6 @@ BOOL IsAlNum(unsigned x) { return (x < 128)&&_AlNum[x]; }
 BOOL IsValidStartingSymbol(unsigned x) { return (x < 128)&&_ValidSS[x]; }     
 BOOL IsValidContinuingSymbol(unsigned x) { return (x < 128)&&_ValidCS[x]; } 
 
-#endif
 
 char* nextBlank(__in __nullterminated char* curPos)
 {

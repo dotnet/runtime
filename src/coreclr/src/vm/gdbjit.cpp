@@ -137,6 +137,14 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
                     info->members[1].m_member_type = arrayTypeInfo;
                 }
             }
+            // Ignore inheritance from System.Object and System.ValueType classes.
+            if (!typeHandle.IsValueType() &&
+                pMT->GetParentMethodTable() && pMT->GetParentMethodTable()->GetParentMethodTable())
+            {
+                static_cast<ClassTypeInfo*>(typeInfo)->m_parent =
+                    GetTypeInfoFromTypeHandle(typeHandle.GetParent(), pTypeMap);
+            }
+
             if (refTypeInfo)
                 return refTypeInfo;
             else
@@ -689,14 +697,7 @@ const unsigned char AbbrevTable[] = {
     4, DW_TAG_subprogram, DW_CHILDREN_yes,
         DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         DW_AT_frame_base, DW_FORM_exprloc, 0, 0,
 
     5, DW_TAG_variable, DW_CHILDREN_no,
@@ -725,14 +726,7 @@ const unsigned char AbbrevTable[] = {
     12, DW_TAG_subprogram, DW_CHILDREN_yes,
         DW_AT_name, DW_FORM_strp, DW_AT_linkage_name, DW_FORM_strp, DW_AT_decl_file, DW_FORM_data1, DW_AT_decl_line, DW_FORM_data1,
         DW_AT_type, DW_FORM_ref4, DW_AT_external, DW_FORM_flag_present,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, 
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         DW_AT_frame_base, DW_FORM_exprloc, DW_AT_object_pointer, DW_FORM_ref4, 0, 0,
 
     13, DW_TAG_formal_parameter, DW_CHILDREN_no,
@@ -746,25 +740,14 @@ const unsigned char AbbrevTable[] = {
         0, 0,
 
     16, DW_TAG_try_block, DW_CHILDREN_no,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
         0, 0,
 
     17, DW_TAG_catch_block, DW_CHILDREN_no,
-        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc,
-#if defined(_TARGET_AMD64_)
-        DW_FORM_data8,
-#elif defined(_TARGET_ARM_)
-        DW_FORM_data4,
-#else
-#error Unsupported platform!
-#endif
+        DW_AT_low_pc, DW_FORM_addr, DW_AT_high_pc, DW_FORM_size,
+        0, 0,
+
+    18, DW_TAG_inheritance, DW_CHILDREN_no, DW_AT_type, DW_FORM_ref4, DW_AT_data_member_location, DW_FORM_data1,
         0, 0,
 
     0
@@ -796,13 +779,7 @@ struct __attribute__((packed)) DebugInfoCU
 struct __attribute__((packed)) DebugInfoTryCatchSub
 {
     uint8_t m_sub_abbrev;
-#if defined(_TARGET_AMD64_)
-    uint64_t m_sub_low_pc, m_sub_high_pc;
-#elif defined(_TARGET_ARM_)
-    uint32_t m_sub_low_pc, m_sub_high_pc;
-#else
-#error Unsupported platform!
-#endif
+    uintptr_t m_sub_low_pc, m_sub_high_pc;
 };
 
 struct __attribute__((packed)) DebugInfoSub
@@ -812,13 +789,7 @@ struct __attribute__((packed)) DebugInfoSub
     uint32_t m_linkage_name;
     uint8_t m_file, m_line;
     uint32_t m_sub_type;
-#if defined(_TARGET_AMD64_)
-    uint64_t m_sub_low_pc, m_sub_high_pc;
-#elif defined(_TARGET_ARM_)
-    uint32_t m_sub_low_pc, m_sub_high_pc;
-#else
-#error Unsupported platform!
-#endif
+    uintptr_t m_sub_low_pc, m_sub_high_pc;
     uint8_t m_sub_loc[2];
 };
 
@@ -909,6 +880,13 @@ struct __attribute__((packed)) DebugInfoClassType
     uint8_t m_type_abbrev;
     uint32_t m_type_name;
     uint8_t m_byte_size;
+};
+
+struct __attribute__((packed)) DebugInfoInheritance
+{
+    uint8_t m_abbrev;
+    uint32_t m_type;
+    uint8_t m_data_member_location;
 };
 
 struct __attribute__((packed)) DebugInfoClassMember
@@ -1021,8 +999,10 @@ void ByteTypeInfo::DumpStrings(char* ptr, int& offset)
 void ByteTypeInfo::DumpDebugInfo(char *ptr, int &offset)
 {
     m_typedef_info->DumpDebugInfo(ptr, offset);
-    m_type_offset = m_typedef_info->m_typedef_type_offset;
     PrimitiveTypeInfo::DumpDebugInfo(ptr, offset);
+    // Replace offset from real type to typedef
+    if (ptr != nullptr)
+        m_type_offset = m_typedef_info->m_typedef_type_offset;
 }
 
 void PrimitiveTypeInfo::DumpDebugInfo(char* ptr, int& offset)
@@ -1052,7 +1032,8 @@ void PrimitiveTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members)
         : TypeInfoBase(typeHandle),
           m_num_members(num_members),
-          members(new TypeMember[num_members])
+          members(new TypeMember[num_members]),
+          m_parent(nullptr)
 {
 }
 
@@ -1392,6 +1373,11 @@ void ClassTypeInfo::DumpStrings(char* ptr, int& offset)
     {
         members[i].DumpStrings(ptr, offset);
     }
+
+    if (m_parent != nullptr)
+    {
+        m_parent->DumpStrings(ptr, offset);
+    }
 }
 
 void RefTypeInfo::DumpStrings(char* ptr, int& offset)
@@ -1428,6 +1414,20 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
     {
         return;
     }
+
+    if (m_parent != nullptr)
+    {
+        if (m_parent->m_type_offset == 0)
+        {
+            m_parent->DumpDebugInfo(ptr, offset);
+        }
+        else if (RefTypeInfo* m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+        {
+            if (m_p->m_value_type->m_type_offset == 0)
+                m_p->m_value_type->DumpDebugInfo(ptr, offset);
+        }
+    }
+
     // make sure that types of all members are dumped
     for (int i = 0; i < m_num_members; ++i)
     {
@@ -1463,6 +1463,22 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         }
     }
 
+    if (m_parent != nullptr)
+    {
+        if (ptr != nullptr)
+        {
+            DebugInfoInheritance buf;
+            buf.m_abbrev = 18;
+            if (RefTypeInfo *m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+                buf.m_type = m_p->m_value_type->m_type_offset;
+            else
+                buf.m_type = m_parent->m_type_offset;
+            buf.m_data_member_location = 0;
+            memcpy(ptr + offset, &buf, sizeof(DebugInfoInheritance));
+        }
+        offset += sizeof(DebugInfoInheritance);
+    }
+
     // members terminator
     if (ptr != nullptr)
     {
@@ -1475,7 +1491,6 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         if (members[i].m_static_member_address != 0)
             members[i].DumpStaticDebugInfo(ptr, offset);
     }
-
 }
 
 void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)

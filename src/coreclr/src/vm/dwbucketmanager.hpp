@@ -887,27 +887,7 @@ void BaseBucketParamsManager::GetPackageMoniker(__out_ecount(maxLength) WCHAR* t
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    bool success = false;
-    EX_TRY
-    {
-        wcsncpy_s(targetParam, maxLength, AppX::GetHeadPackageMoniker(), _TRUNCATE);
-        success = true;
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    if (!success)
-    {
-        // should this ever legitimately fail??
-        _ASSERTE(!"failed to get package moniker for watson");
-        wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
-    }
-#else
     _ASSERTE(!"AppX support NYI for CoreCLR");
-#endif // FEATURE_CORECLR
 }
 
 void BaseBucketParamsManager::GetPRAID(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
@@ -920,25 +900,7 @@ void BaseBucketParamsManager::GetPRAID(__out_ecount(maxLength) WCHAR* targetPara
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_CORECLR
-    LPCWSTR pPraid = NULL;
-    if (SUCCEEDED(AppX::GetApplicationId(pPraid)))
-    {
-        _snwprintf_s(targetParam,
-                    maxLength,
-                    _TRUNCATE,
-                    W("praid:%s"),
-                    pPraid);
-    }
-    else
-    {
-        // should this ever legitimately fail??
-        _ASSERTE(!"failed to get PRAID for watson");
-        wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
-    }
-#else
     _ASSERTE(!"PRAID support NYI for CoreCLR");
-#endif
 }
 
 void BaseBucketParamsManager::GetIlRva(__out_ecount(maxLength) WCHAR* targetParam, int maxLength)
@@ -1475,11 +1437,6 @@ WatsonBucketType GetWatsonBucketType()
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
-    if (AppX::IsAppXProcess() && !AppX::IsAppXNGen())
-        return MoCrash;
-    else
-#endif // FEATURE_APPX
 
 #ifdef FEATURE_WINDOWSPHONE
         return WinPhoneCrash;

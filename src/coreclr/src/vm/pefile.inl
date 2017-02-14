@@ -12,9 +12,6 @@
 
 #include "strongname.h"
 #include "strongnameholders.h"
-#ifdef FEATURE_FUSION
-#include "fusionbind.h"
-#endif
 #include "check.h"
 #include "simplerwlock.hpp"
 #include "eventtrace.h"
@@ -106,19 +103,7 @@ inline ULONG PEAssembly::HashIdentity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_VERSIONING
     return BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(m_pHostAssembly)->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
-#else
-    if (!m_identity->HasID())
-    {
-        if (!IsLoaded())
-            return 0;
-        else
-            return (ULONG) dac_cast<TADDR>(GetLoaded()->GetBase());
-    }
-    else
-        return m_identity->GetIDHash();
-#endif
 }
 
 inline void PEFile::ValidateForExecution()
@@ -179,23 +164,6 @@ inline BOOL PEFile::IsMarkedAsContentTypeWindowsRuntime()
     return (IsAfContentType_WindowsRuntime(GetFlags()));
 }
 
-#ifndef FEATURE_CORECLR
-inline BOOL PEFile::IsShareable()
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(m_identity));
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (!m_identity->HasID())
-        return FALSE;
-    return TRUE ;
-}
-#endif
 
 inline void PEFile::GetMVID(GUID *pMvid)
 {
@@ -525,9 +493,6 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
     CONTRACT_END;
 */
     SUPPORTS_DAC;
-#ifndef FEATURE_CORECLR
-_ASSERTE(m_bHasPersistentMDImport);
-#endif
 #if !defined(__GNUC__)
 
     _ASSERTE(!IsResource());
@@ -624,46 +589,6 @@ inline IMetaDataEmit *PEFile::GetEmitter()
     RETURN m_pEmitter;
 }
 
-#ifndef FEATURE_CORECLR
-inline IMetaDataAssemblyImport *PEFile::GetAssemblyImporter()
-{
-    CONTRACT(IMetaDataAssemblyImport *) 
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
-        THROWS;
-    }
-    CONTRACT_END;
-
-    if (m_pAssemblyImporter == NULL)
-        OpenAssemblyImporter();
-
-    RETURN m_pAssemblyImporter;
-}
-
-inline IMetaDataAssemblyEmit *PEFile::GetAssemblyEmitter()
-{
-    CONTRACT(IMetaDataAssemblyEmit *) 
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
-    }
-    CONTRACT_END;
-
-    if (m_pAssemblyEmitter == NULL)
-        OpenAssemblyEmitter();
-
-    RETURN m_pAssemblyEmitter;
-}
-#endif // FEATURE_CORECLR
 
 #endif // DACCESS_COMPILE
 
@@ -1391,7 +1316,7 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
 
     if (HasOpenedILimage())
     {
-#if defined(FEATURE_PREJIT) && defined(FEATURE_CORECLR)
+#if defined(FEATURE_PREJIT)
         if (m_openedILimage == m_nativeImage)
         {
             // On Apollo builds, we sometimes open the native image into the slot
@@ -1405,7 +1330,7 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
             TADDR taddrILMetadata = dac_cast<TADDR>(pDecoder->GetMetadata(&cbILMetadata));
             return ((taddrILMetadata <= taddrData) && (taddrData < taddrILMetadata + cbILMetadata));
         }
-#endif // defined(FEATURE_PREJIT) && defined(FEATURE_CORECLR)
+#endif // defined(FEATURE_PREJIT)
         return GetOpenedILimage()->IsPtrInImage(data);
     }
     else
@@ -1704,9 +1629,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
  
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FUSION
-    FusionBind::GetAssemblyNameDisplayName(GetFusionAssemblyName(), result, flags);
-#else
     if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
         !m_sTextualIdentity.IsEmpty())
     {
@@ -1718,7 +1640,6 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
         spec.InitializeSpec(this);
         spec.GetFileOrDisplayName(flags, result);
     }
-#endif // FEATURE_FUSION
 
 #else
     IMDInternalImport *pImport = GetMDImport();
@@ -1868,25 +1789,6 @@ inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
     return GetPersistentMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, pdwFlags);
 }
 
-#ifdef FEATURE_CAS_POLICY
-inline COR_TRUST *PEFile::GetAuthenticodeSignature()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (!m_fCheckedCertificate && HasSecurityDirectory())
-    {
-        CheckAuthenticodeSignature();
-    }
-
-    return m_certificate;
-}
-#endif
 
 // ------------------------------------------------------------
 // Hash support
@@ -1946,77 +1848,7 @@ inline BOOL PEAssembly::IsFullySigned()
     }
 }
 
-#ifndef FEATURE_CORECLR
-//---------------------------------------------------------------------------------------
-//
-// Mark that an assembly has had its strong name verification bypassed
-//
 
-inline void PEAssembly::SetStrongNameBypassed()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fStrongNameBypassed = TRUE;
-}
-
-inline BOOL PEAssembly::NeedsModuleHashChecks()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return ((m_flags & PEFILE_SKIP_MODULE_HASH_CHECKS) == 0) && !m_fStrongNameBypassed;
-}
-#endif // FEATURE_CORECLR
-
-#ifdef FEATURE_CAS_POLICY
-//---------------------------------------------------------------------------------------
-//
-// Verify the Authenticode and strong name signatures of an assembly during the assembly
-// load code path.  To verify the strong name signature outside of assembly load, use the
-// VefifyStrongName method instead.
-// 
-// If the applicaiton is using strong name bypass, then this method may not cause a real
-// strong name verification, delaying the assembly's strong name load until we know that
-// the verification is required.  If the assembly must be forced to have its strong name
-// verified, then the VerifyStrongName method should also be chosen.
-// 
-// See code:AssemblySecurityDescriptor::ResolveWorker#StrongNameBypass
-//
-
-inline void PEAssembly::DoLoadSignatureChecks()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS; // Fusion uses crsts on AddRef/Release
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ETWOnStartup(SecurityCatchCall_V1, SecurityCatchCallEnd_V1);
-
-    // If this isn't mscorlib or a dynamic assembly, verify the Authenticode signature.
-    if (IsSystem() || IsDynamic())
-    {
-        // If it was a dynamic module (or mscorlib), then we don't want to be doing module hash checks on it
-        m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-    }
-
-    // Check strong name signature. We only want to do this now if the application is not using the strong
-    // name bypass feature.  Otherwise we'll delay strong name verification until we figure out how trusted
-    // the assembly is.
-    // 
-    // For more information see code:AssemblySecurityDescriptor::ResolveWorker#StrongNameBypass
-
-    // Make sure m_pMDImport is initialized as we need to call VerifyStrongName which calls GetFlags
-    // BypassTrustedAppStrongNames = false is a relatively uncommon scenario so we need to make sure 
-    // the initialization order is always correct and we don't miss this uncommon case
-    _ASSERTE(GetMDImport());
-
-    if (!g_pConfig->BypassTrustedAppStrongNames())
-    { 
-        VerifyStrongName();
-    }
-}
-#endif // FEATURE_CAS_POLICY
 
 // ------------------------------------------------------------
 // Metadata access

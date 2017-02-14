@@ -43,9 +43,7 @@
 #include "datatest.h"
 #endif // TEST_DATA_CONSISTENCY
 
-#if defined(FEATURE_CORECLR)
 #include "dbgenginemetrics.h"
-#endif // FEATURE_CORECLR
 
 #include "../../vm/rejit.h"
 
@@ -1896,7 +1894,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     pDbgLockHolder->Acquire();
 }
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 
 HANDLE g_hContinueStartupEvent = INVALID_HANDLE_VALUE;
 
@@ -1966,7 +1964,7 @@ void NotifyDebuggerOfTelestoStartup()
     g_hContinueStartupEvent = NULL;
 }
 
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
 //---------------------------------------------------------------------------------------
 //
@@ -1999,7 +1997,7 @@ HRESULT Debugger::Startup(void)
 
     _ASSERTE(g_pEEInterface != NULL);
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
     if (IsWatsonEnabled() || IsTelestoDebugPackInstalled())
     {
         // Iff the debug pack is installed, then go through the telesto debugging pipeline.
@@ -2018,7 +2016,7 @@ HRESULT Debugger::Startup(void)
         // The transport requires the debug pack to be present.  Otherwise it'll raise a fatal error.
         return S_FALSE;
     }
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
     {
         DebuggerLockHolder dbgLockHolder(this);
@@ -9589,23 +9587,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     SENDIPCEVENT_BEGIN(this, pThread);
 
 
-#ifdef FEATURE_FUSION
-    // Fix for issue Whidbey - 106398
-    // Populate the pdb to fusion cache.
-
-    //
-    if (pRuntimeModule->IsIStream() == FALSE)
-    {
-        SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-
-        HRESULT hrCopy = S_OK;
-        EX_TRY
-        {
-            pRuntimeModule->FusionCopyPDBs(pRuntimeModule->GetPath());
-        }
-        EX_CATCH_HRESULT(hrCopy); // ignore failures
-    }
-#endif // FEATURE_FUSION
 
     DebuggerIPCEvent* ipce = NULL;
 
@@ -9804,7 +9785,6 @@ void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomai
 //   Use code:Debugger.SendUpdateModuleSymsEventAndBlock for that.
 void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *pAppDomain)
 {
-// @telest - do we need an #ifdef FEATURE_FUSION here?
     CONTRACTL
     {
         NOTHROW;
@@ -14964,21 +14944,6 @@ HRESULT Debugger::CopyModulePdb(Module* pRuntimeModule)
     }
 
     HRESULT hr = S_OK;
-#ifdef FEATURE_FUSION
-    //
-    // Populate the pdb to fusion cache.
-    //
-    if (pRuntimeModule->IsIStream() == FALSE)
-    {
-        SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        
-        EX_TRY
-        {
-            pRuntimeModule->FusionCopyPDBs(pRuntimeModule->GetPath());
-        }
-        EX_CATCH_HRESULT(hr); // ignore failures
-    }
-#endif // FEATURE_FUSION
 
     return hr;
 }

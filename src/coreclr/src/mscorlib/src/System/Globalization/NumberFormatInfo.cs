@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Globalization {
-    using System.Security.Permissions;
     using System.Runtime.Serialization;
     using System.Text;
     using System;
@@ -41,7 +40,6 @@ namespace System.Globalization {
     //
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     sealed public partial class NumberFormatInfo : ICloneable, IFormatProvider
     {
         // invariantInfo is constant irrespective of your current culture.
@@ -736,7 +734,6 @@ namespace System.Globalization {
         }
 
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] NativeDigits
         {
             get { return (String[])nativeDigits.Clone(); }
@@ -748,7 +745,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public DigitShapes DigitSubstitution
         {
             get { return (DigitShapes)digitSubstitution; }

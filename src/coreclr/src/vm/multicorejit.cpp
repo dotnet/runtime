@@ -33,49 +33,6 @@
 
 const wchar_t * AppxProfile    = W("Application.Profile");
 
-#if defined(FEATURE_APPX_BINDER)
-
-//static 
-bool MulticoreJitManager::IsLoadOkay(Module * pModule)
-{
-    CONTRACTL
-    {
-        THROWS;
-        SO_INTOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pModule->GetAssembly()->GetManifestFile()->IsWindowsRuntime())
-    {
-        PEFile * pFile = pModule->GetFile();
-    
-        ICLRPrivAssembly * pHostAsm = pFile->GetHostAssembly();
-
-        // Allow first party WinMD to load in multicore JIT background thread
-        if (pHostAsm != NULL)
-        {
-            BOOL shared = FALSE;
-
-            if (SUCCEEDED(pHostAsm->IsShareable(& shared)))
-            {
-                if (shared)
-                {
-                    LPCUTF8 simpleName = pModule->GetSimpleName();
-
-                    if (IsWindowsNamespace(simpleName))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-#endif
 
 
 void MulticoreJitFireEtw(const wchar_t * pAction, const wchar_t * pTarget, int p1, int p2, int p3)
@@ -327,14 +284,6 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
         }
 
         // If the load context is LOADFROM, store it in the flags.
-#ifdef FEATURE_FUSION
-        Assembly * pAssembly = pModule->GetAssembly();
-        LOADCTX_TYPE loadCtx = pAssembly->GetManifestFile()->GetLoadContext();
-        if(LOADCTX_TYPE_LOADFROM == loadCtx)
-        {
-            versionFlags |= VERSIONFLAG_LOADCTX_LOADFROM;
-        }
-#endif
     }
     EX_CATCH
     {
@@ -356,12 +305,8 @@ ModuleRecord::ModuleRecord(unsigned lenName, unsigned lenAsmName)
     wLoadLevel = 0;
     // Extra data
     lenModuleName = (unsigned short) lenName;
-#if defined(FEATURE_CORECLR)
     lenAssemblyName = (unsigned short) lenAsmName;
     recordID += RoundUp(lenModuleName) + RoundUp(lenAssemblyName);
-#else
-    recordID += RoundUp(lenModuleName);
-#endif
 }
 
 
@@ -375,7 +320,6 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     unsigned lenModuleName = (unsigned) strlen(pModuleName);
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
-#if defined(FEATURE_CORECLR)
     SString sAssemblyName;
     StackScratchBuffer scratch;
     pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
@@ -383,17 +327,7 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
-#endif
 
-#if defined(FEATURE_APPX_BINDER)
-
-    // Allow certain modules to load on background thread
-    if (AppX::IsAppXProcess() && MulticoreJitManager::IsLoadOkay(pMod))
-    {
-        flags |= FLAG_LOADOKAY;
-    }
-
-#endif
 
     return  moduleVersion.GetModuleVersion(pMod);
 }
@@ -422,12 +356,8 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
     const void * pModuleName = module.simpleName;
     unsigned lenModuleName = module.simpleName.GetSize();
 
-#if defined(FEATURE_CORECLR)
     const void * pAssemblyName = module.assemblyName;
     unsigned lenAssemblyName = module.assemblyName.GetSize();
-#else
-    unsigned lenAssemblyName = 0;
-#endif
 
     ModuleRecord mod(lenModuleName, lenAssemblyName);
     
@@ -442,12 +372,10 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
     {
         hr = WriteString(pModuleName, lenModuleName, pStream);
 
-#if defined(FEATURE_CORECLR)
         if (SUCCEEDED(hr))
         {
             hr = WriteString(pAssemblyName, lenAssemblyName, pStream);
         }
-#endif
     }
 
     return hr;
@@ -719,9 +647,6 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
     {
-#if !defined(FEATURE_CORECLR)
-        if (! pDomainAssembly->IsSystem())
-#endif
         {
             hr = HandleAssembly(pDomainAssembly);
         }
@@ -731,60 +656,6 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 }
 
 
-#if defined(FEATURE_APPX_BINDER)
-// ProfileName = ProcessName_CoreAppId.Profile   ; for server process, always use it for output
-//               ProcessName.Profile
-
-void AppendAppxProfileName(SString & name)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    {
-        WCHAR wszProcessName[_MAX_PATH];
-
-        if (WszGetModuleFileName(NULL, wszProcessName, _MAX_PATH) != 0)
-        {
-            WCHAR * pNameOnly = wcsrchr(wszProcessName, W('\\'));
-     
-            if (pNameOnly == NULL)
-            {
-                pNameOnly = wszProcessName;
-            }
-            else
-            {
-                pNameOnly ++;
-            }
-
-            WCHAR * pExt = wcsrchr(pNameOnly, W('.')); // last .
-
-            if (pExt != NULL)
-            {
-                * pExt = 0;
-            }
-
-            // Use process name only
-            name.Append(pNameOnly);
-            name.Append(W("_"));
-        }
-    }
-
-    LPCWSTR pAppId = NULL;
-    if (SUCCEEDED(AppX::GetApplicationId(pAppId)))
-    {
-        name.Append(pAppId);
-        name.Append(W(".Profile"));
-
-        return;
-    }
-
-    // default name
-    name.Append(AppxProfile);
-}
-#endif
 
 // static: single instace within a process
 
@@ -811,25 +682,6 @@ MulticoreJitRecorder::WriteMulticoreJitProfiler(PTP_CALLBACK_INSTANCE pInstance,
 
     if (pRecorder != NULL)
     {
-#if defined(FEATURE_APPX_BINDER)
-        if (pRecorder->m_fAppxMode)
-        {
-            const wchar_t * pOutputDir = NULL;
-
-            HRESULT hr = Clr::Util::GetLocalAppDataDirectory(&pOutputDir);
-
-            if (SUCCEEDED(hr))
-            {
-                pRecorder->m_fullFileName = pOutputDir;
-                pRecorder->m_fullFileName.Append(W("\\"));
-
-                AppendAppxProfileName(pRecorder->m_fullFileName);
-
-                pRecorder->StopProfile(false);
-            }
-        }
-        else
-#endif
         {
             pRecorder->StopProfile(false);
         }
@@ -854,9 +706,6 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
 
     // When running under Appx or CoreCLR for K, AppDomain is normally not shut down properly (CLR in hybrid case, or Alt-F4 shutdown), 
     // So we only allow writing out after profileWriteTimeout seconds
-#if !defined(FEATURE_CORECLR)
-    if (m_fAppxMode)
-#endif
     {
         // Get the timeout in seconds.
         int profileWriteTimeout = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfileWriteDelay);
@@ -1061,11 +910,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const wchar_t * pRoot, const wchar_t 
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
             m_pDomain,
-#if defined(FEATURE_CORECLR)
             m_pBinderContext,
-#else
-            NULL,
-#endif
             nSession,
             m_fAppxMode));
 
@@ -1235,11 +1080,7 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
     {
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-#if defined(FEATURE_CORECLR)
             pBinderContext,
-#else
-            NULL,
-#endif
             m_fAppxMode);
 
         if (pRecorder != NULL)
@@ -1386,48 +1227,6 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
     }
 }
 
-#if defined(FEATURE_APPX_BINDER)
-
-// Called from CorHost2::ExecuteMain
-void MulticoreJitManager::AutoStartProfileAppx(AppDomain * pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (InterlockedCompareExchange(& m_fAutoStartCalled, SETPROFILEROOTCALLED, 0) == 0) // Only allow the first call
-    {
-        WCHAR wzFilePath[_MAX_PATH];
-
-        UINT32 cchFilePath = NumItems(wzFilePath);
-
-        SString profileName;
-
-        // Try to find ProcessName_AppId.Profile
-        AppendAppxProfileName(profileName);
-
-        // Search for Application.Profile within the package
-        HRESULT hr = AppX::FindFileInCurrentPackage(profileName, &cchFilePath, wzFilePath);
-
-        if (SUCCEEDED(hr))
-        {
-            m_fAppxMode = true;
-            SetProfileRoot(pDomain, W("")); // Fake a SetProfileRoot call
-            StartProfile(pDomain, NULL, wzFilePath);
-        }
-        else
-        {
-            _FireEtwMulticoreJit(W("AUTOSTARTPROFILEAPPX"), profileName, hr, 0, 0);
-        }
-    }
-}
-
-#endif
 
 // Constructor
 
@@ -1473,17 +1272,6 @@ void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadL
     STANDARD_VM_CONTRACT;
 
 
-#if defined(FEATURE_APPX_BINDER) && !defined(FEATURE_CORECLR)
-    // When running under Appx, allow framework assembly / first party winmd to load
-    // load-level change not allowed in the background thread, unless for resource DLL (loaded for exception throwing), but this could still happen.
-    _ASSERTE(! GetThread()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled) || ModuleHasNoCode(pModule)
-             || m_fAppxMode && IsLoadOkay(pModule));
-
-#elif !defined(FEATURE_CORECLR)
-
-    _ASSERTE(! GetThread()->HasThreadStateNC(Thread::TSNC_CallingManagedCodeDisabled) || ModuleHasNoCode(pModule));
-
-#endif
 
     if (m_fRecorderActive)
     {

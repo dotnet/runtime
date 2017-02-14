@@ -143,10 +143,8 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern float Log10(float x);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static float Max(float x, float y) => Math.Max(x, y);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static float Min(float x, float y) => Math.Min(x, y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -201,7 +199,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern float Sinh(float x);
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern float Sqrt(float x);
 

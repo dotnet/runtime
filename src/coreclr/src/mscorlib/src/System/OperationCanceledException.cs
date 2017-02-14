@@ -18,7 +18,6 @@ using System.Threading;
 namespace System {
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class OperationCanceledException : SystemException
     {
         [NonSerialized] 

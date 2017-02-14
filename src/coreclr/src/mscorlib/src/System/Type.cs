@@ -19,7 +19,6 @@ namespace System
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
     using System.Security;
-    using System.Security.Permissions;
     using System.Collections;
     using System.Collections.Generic;
     using System.Runtime.Versioning;
@@ -29,10 +28,7 @@ namespace System
     using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Type))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Type : MemberInfo, _Type, IReflect
+    public abstract class Type : MemberInfo, IReflect
     {
         //
         // System.Type is appdomain agile type. Appdomain agile types cannot have precise static constructors. Make
@@ -81,25 +77,25 @@ namespace System
         // case-sensitive by default).
         ////  
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName, bool throwOnError, bool ignoreCase) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, ignoreCase, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName, bool throwOnError) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(String typeName) {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, false, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -109,7 +105,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -120,7 +116,7 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
             Func<AssemblyName, Assembly> assemblyResolver,
@@ -132,11 +128,14 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type ReflectionOnlyGetType(String typeName, bool throwIfNotFound, bool ignoreCase) 
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeType.GetType(typeName, throwIfNotFound, ignoreCase, true /*reflectionOnly*/, ref stackMark);
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
+            if (typeName.Length == 0 && throwIfNotFound)
+                throw new TypeLoadException(Environment.GetResourceString("Arg_TypeLoadNullStr"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyGetType"));
         }
 
         public virtual Type MakePointerType() { throw new NotSupportedException(); }
@@ -297,7 +296,6 @@ namespace System
 
 
         // Module Property associated with a class.
-        // _Type.Module
         public new abstract Module Module { get; }
 
         // Assembly Property associated with a class.
@@ -376,7 +374,6 @@ namespace System
         // This method will search for the specified constructor.  For constructors,
         //  unlike everything else, the default is to not look for static methods.  The
         //  reason is that we don't typically expose the class initializer.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(BindingFlags bindingAttr,
                                               Binder binder,
                                               CallingConventions callConvention, 
@@ -393,7 +390,6 @@ namespace System
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers)
         {
             if (types == null)
@@ -405,7 +401,6 @@ namespace System
             return GetConstructorImpl(bindingAttr, binder, CallingConventions.Any, types, modifiers);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo GetConstructor(Type[] types)
         {
             // The arguments are checked in the called version of GetConstructor.
@@ -422,15 +417,12 @@ namespace System
         // This routine will return an array of all constructors supported by the class.
         //  Unlike everything else, the default is to not look for static methods.  The
         //  reason is that we don't typically expose the class initializer.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo[] GetConstructors() {
             return GetConstructors(BindingFlags.Public | BindingFlags.Instance);
         }
  
-        [System.Runtime.InteropServices.ComVisible(true)]
         abstract public ConstructorInfo[] GetConstructors(BindingFlags bindingAttr);
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public ConstructorInfo TypeInitializer {
             get {
                 return GetConstructorImpl(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
@@ -674,16 +666,6 @@ namespace System
                 throw new ArgumentNullException(nameof(returnType));
             Contract.EndContractBlock();
             return GetPropertyImpl(name,Type.DefaultLookup,null,returnType,null,null);
-        }
-
-        internal PropertyInfo GetProperty(String name, BindingFlags bindingAttr, Type returnType)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
-                throw new ArgumentNullException(nameof(returnType));
-            Contract.EndContractBlock();
-            return GetPropertyImpl(name, bindingAttr, null, returnType, null, null);
         }
 
         public PropertyInfo GetProperty(String name)
@@ -1229,11 +1211,6 @@ namespace System
              [Pure]
              get {return IsMarshalByRefImpl();}
          }
-
-         internal bool HasProxyAttribute {
-             [Pure]
-            get {return HasProxyAttributeImpl();}
-        }
                        
         // Protected routine to determine if this class represents a value class
         // The default implementation of IsValueTypeImpl never returns true for non-runtime types.
@@ -1294,12 +1271,6 @@ namespace System
         // Protected routine to determine if this class is marshaled by ref
         protected virtual bool IsMarshalByRefImpl()
         {
-            return false;
-        }
-
-        internal virtual bool HasProxyAttributeImpl()
-        {
-            // We will override this in RuntimeType
             return false;
         }
 
@@ -1599,7 +1570,6 @@ namespace System
         // else returns false.  If this class and c are the same class false is
         // returned.
         // 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public virtual bool IsSubclassOf(Type c)
         {
@@ -1746,7 +1716,6 @@ namespace System
             return Equals(o as Type);
         }
 
-        // _Type.Equals(Type)
         [Pure]
         public virtual bool Equals(Type o)
         {
@@ -1777,14 +1746,12 @@ namespace System
         // This method will return an interface mapping for the interface
         //  requested.  It will throw an argument exception if the Type doesn't
         //  implemenet the interface.
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride"));
         }
 
         // this method is required so Object.GetType is not made virtual by the compiler 
-        // _Type.GetType()
         public new Type GetType()
         {
             return base.GetType();

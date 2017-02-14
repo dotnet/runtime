@@ -794,7 +794,7 @@ namespace System
             int resourceId;
 
             // get the path to Windows\System32
-            string system32 = Environment.UnsafeGetFolderPath(Environment.SpecialFolder.System);
+            string system32 = Environment.SystemDirectory;
 
             // trim the string "@tzres.dll" => "tzres.dll"
             string tzresDll = resources[0].TrimStart('@');

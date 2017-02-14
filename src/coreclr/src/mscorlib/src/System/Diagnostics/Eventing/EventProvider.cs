@@ -8,7 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security;
+#if !CORECLR
 using System.Security.Permissions;
+#endif // !CORECLR
 using System.Threading;
 using System;
 
@@ -43,7 +45,9 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a 
     /// controller callback)
     /// </summary>
+#if !CORECLR    
     [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
+#endif // CORECLR
     internal partial class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
@@ -559,7 +563,9 @@ namespace System.Diagnostics.Tracing
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
                 // we need to assert this permission for partial trust scenarios
+#if !CORECLR
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
+#endif
                 data = Microsoft.Win32.Registry.GetValue(regKey, valueName, null) as byte[];
                 if (data != null)
                 {

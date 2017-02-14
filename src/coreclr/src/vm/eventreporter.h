@@ -49,9 +49,7 @@ private:
     // Flag to indicate if the buffer is full
     BOOL fBufferFull;
 
-#ifdef FEATURE_CORECLR
     static void GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * pdwMinor, DWORD * pdwBuild, DWORD * pdwRevision);
-#endif // FEATURE_CORECLR
 
 public:
     // Construct 

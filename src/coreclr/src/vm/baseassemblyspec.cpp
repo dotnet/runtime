@@ -122,7 +122,6 @@ BOOL BaseAssemblySpec::IsMscorlib()
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
 
-#ifdef FEATURE_CORECLR
 BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 {
     CONTRACTL
@@ -150,9 +149,6 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
 }
 
 #define MSCORLIB_PUBLICKEY g_rbTheSilverlightPlatformKey
-#else
-#define MSCORLIB_PUBLICKEY g_rbNeutralPublicKey
-#endif
 
 
 // A satellite assembly for mscorlib is named "mscorlib.resources" or 
@@ -232,7 +228,6 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
     m_dwFlags &= ~afPublicKey;
 }
 
-#ifndef FEATURE_FUSION
 // Similar to BaseAssemblySpec::CompareEx, but allows the ref to be partially specified
 // Returns TRUE if ref matches def, FALSE otherwise.
 //
@@ -362,7 +357,6 @@ BOOL BaseAssemblySpec::RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAss
         return (CompareStrings(pRef->GetName(), pDef->GetName())==0);
     }
 }
-#endif // FEATURE_FUSION
 
 //===========================================================================================
 // This function may embed additional information, if required.
@@ -683,21 +677,9 @@ HRESULT BaseAssemblySpec::CreateFusionName(
                 }
             }
             else {
-#ifdef FEATURE_FUSION
-                IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_NULL_PUBLIC_KEY_TOKEN,
-                                                          NULL, 0));
-#endif
             }
         }
 
-#ifdef FEATURE_FUSION
-        // See if the assembly[ref] is retargetable (ie, for a generic assembly).
-        if (IsAfRetargetable(m_dwFlags)) {
-            BOOL bTrue = TRUE;
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_RETARGET, 
-                                                      &bTrue, sizeof(bTrue)));
-        }
-#endif
 
         // Set the Processor Architecture (if any)
         {
@@ -723,15 +705,7 @@ HRESULT BaseAssemblySpec::CreateFusionName(
             }
         }
 
-#ifdef FEATURE_FUSION
-        if (fIncludeCodeBase && m_wszCodeBase) {
-            IfFailGo(pFusionAssemblyName->SetProperty(ASM_NAME_CODEBASE_URL,
-                                                      (void*)m_wszCodeBase, 
-                                                      (DWORD)(wcslen(m_wszCodeBase)+1) * sizeof(WCHAR)));
-        }
-#else
         _ASSERTE(m_wszCodeBase == NULL);
-#endif
 
         *ppName = pFusionAssemblyName;
 

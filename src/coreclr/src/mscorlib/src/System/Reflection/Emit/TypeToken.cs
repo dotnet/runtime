@@ -17,10 +17,8 @@ namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
     using System.Threading;
-    using System.Security.Permissions;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct TypeToken {
     
         public static readonly TypeToken Empty = new TypeToken();

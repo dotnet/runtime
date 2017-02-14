@@ -10,21 +10,9 @@
  **                                                                                  **
  **************************************************************************************/
 
-#ifdef FEATURE_CORECLR
-// API deprecation does not apply to CoreCLR
 cpp_quote("#define DECLARE_DEPRECATED ")
 cpp_quote("#define DEPRECATED_CLR_STDAPI STDAPI")
-#else // !FEATURE_CORECLR
-// API deprecation is only applicable to Desktop runtime.
-cpp_quote("#ifndef USE_DEPRECATED_CLR_API_WITHOUT_WARNING")
-cpp_quote("#define DEPRECATED_CLR_API_MESG \"This API has been deprecated. Refer to http://go.microsoft.com/fwlink/?LinkId=143720 for more details.\"")
-cpp_quote("#define DECLARE_DEPRECATED __declspec(deprecated(DEPRECATED_CLR_API_MESG))")
-cpp_quote("#define DEPRECATED_CLR_STDAPI EXTERN_C DECLARE_DEPRECATED HRESULT STDAPICALLTYPE")
-cpp_quote("#else // USE_DEPRECATED_CLR_API_WITHOUT_WARNING")
-cpp_quote("#define DECLARE_DEPRECATED ")
-cpp_quote("#define DEPRECATED_CLR_STDAPI STDAPI")
-cpp_quote("#endif // !USE_DEPRECATED_CLR_API_WITHOUT_WARNING")
-#endif // FEATURE_CORECLR
+
 cpp_quote("")
 
 //
@@ -38,10 +26,8 @@ import "ivalidator.idl";
 
 #include "product_version.h"
 
-#ifdef FEATURE_CORECLR
 cpp_quote("struct IActivationFactory;")
 interface IActivationFactory;
-#endif
 
 const char* CLR_MAJOR_VERSION = VER_MAJORVERSION;
 const char* CLR_MINOR_VERSION = VER_MINORVERSION;
@@ -192,14 +178,11 @@ cpp_quote("EXTERN_GUID(IID_ICLROnEventManager, 0x1D0E0132, 0xE64F, 0x493D, 0x92,
 // IID ICLRRuntimeHost: uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
 
-#ifdef FEATURE_CORECLR
 // IID ICLRRuntimeHost2: uuid(712AB73F-2C22-4807-AD7E-F501D7B72C2D)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0x7E, 0xF5, 0x01, 0xD7, 0xb7, 0x2C, 0x2D);")
 
 // IID IID_ICLRExecutionManager: uuid(1000A3E7-B420-4620-AE30-FB19B587AD1D)
 cpp_quote("EXTERN_GUID(IID_ICLRExecutionManager, 0x1000A3E7, 0xB420, 0x4620, 0xAE, 0x30, 0xFB, 0x19, 0xB5, 0x87, 0xAD, 0x1D);")
-
-#endif // FEATURE_CORECLR
 
 #ifdef FEATURE_INCLUDE_ALL_INTERFACES
 // IID ICLRHostProtectionManager :     uuid{89F25F5C-CEEF-43e1-9CFA-A68CE863AAAC}
@@ -271,24 +254,7 @@ cpp_quote("EXTERN_GUID(IID_ITypeNameFactory, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0
 #pragma midl_echo("DEPRECATED_CLR_STDAPI LoadStringRCEx(LCID lcid, UINT iResouceID, _Out_writes_z_(iMax) LPWSTR szBuffer, int iMax, int bQuiet, int *pcwchUsed);")
 #endif
 
-#ifndef FEATURE_CORECLR
-// Ideally we would like to make the function pointer definition below as DEPRECATED_CLR_STDAPI. However,
-// since it is referenced in the following definition of LockClrVersion, it will result in a build failure
-// in our own build (since we treat warnings as errors).
-//
-// However, there is no other usage of this pointer outside LockClrVersion. Thus, we will not mark
-// the pointer as legacy API. This will ensure we can build the runtime and if someone tries to use
-// it via LockClrVersion, they will have build warning since LockClrVersion is marked as legacy API.
-#pragma midl_echo("typedef HRESULT (__stdcall *FLockClrVersionCallback) ();")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI LockClrVersion(FLockClrVersionCallback hostCallback,FLockClrVersionCallback *pBeginHostSetup,FLockClrVersionCallback *pEndHostSetup);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI CreateDebuggingInterfaceFromVersion(int iDebuggerVersion, LPCWSTR szDebuggeeVersion, IUnknown ** ppCordb);")
-#pragma midl_echo("DEPRECATED_CLR_STDAPI GetVersionFromProcess(HANDLE hProcess, _Out_writes_to_(cchBuffer, *dwLength) LPWSTR pVersion, DWORD cchBuffer, _Out_ DWORD* dwLength);")
-#endif
-
-
-#ifdef FEATURE_CORECLR
 #pragma midl_echo("typedef HRESULT  (STDAPICALLTYPE *FnGetCLRRuntimeHost)(REFIID riid, IUnknown **pUnk);")
-#endif
 
 typedef enum {
     HOST_TYPE_DEFAULT     = 0x0,
@@ -324,11 +290,9 @@ typedef enum {
   STARTUP_TRIM_GC_COMMIT        = 0x80000,                      // GC uses less committed space when system memory low
   STARTUP_ETW                   = 0x100000,
   STARTUP_ARM                   = 0x400000,                     // Enable the ARM feature.
-#ifdef FEATURE_CORECLR
   STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created 
   STARTUP_APPX_APP_MODEL        = 0x1000000,                     // jupiter app
   STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing
-#endif
 } STARTUP_FLAGS;
 
 typedef enum {
@@ -356,11 +320,8 @@ typedef enum
     APPDOMAIN_SECURITY_DEFAULT =0x0, 
     APPDOMAIN_SECURITY_SANDBOXED = 0x1,       // appdomain is sandboxed
     APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE = 0x2,         // no cross ad reverse pinvokes
-#ifdef FEATURE_CORECLR
     APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS = 0x4, //
-#endif //FEATURE_CORECLR
     APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS = 0x08, // do not pump messages during wait operations, do not call sync context
-#ifdef FEATURE_CORECLR
     // When passed by the host, this flag will allow any assembly to perform PInvoke or COMInterop operations.
     // Otherwise, by default, only platform assemblies can perform those operations.
     APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP = 0x10, 
@@ -369,7 +330,6 @@ typedef enum
     APPDOMAIN_ENABLE_ASSEMBLY_LOADFILE = 0x80,
 
     APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT = 0x100,
-#endif //FEATURE_CORECLR  
 } APPDOMAIN_SECURITY_FLAGS;
 
 #pragma midl_echo("STDAPI GetRequestedRuntimeVersionForCLSID(REFCLSID rclsid, _Out_writes_opt_(cchBuffer) LPWSTR pVersion, DWORD cchBuffer, _Out_opt_ DWORD* dwLength, CLSID_RESOLUTION_FLAGS dwResolutionFlags);")
@@ -1980,8 +1940,6 @@ interface ICLRRuntimeHost : IUnknown
                                       [out] DWORD  *pReturnValue);
 };
 
-#ifdef FEATURE_CORECLR
-
 // Keys for ICLRRuntmeHost2::Authenticate. No longer required.
 cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY 0x1C6CA6F94025800LL")
 cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY_NONGEN 0x1C6CA6F94025801LL")
@@ -2053,8 +2011,6 @@ interface ICLRExecutionManager : IUnknown
     // Parameters are ignored and reserved for future use.
     HRESULT Resume([in] DWORD dwAppDomainId);
 }
-
-#endif // FEATURE_CORECLR
 
 //*****************************************************************************
 // Interface to utilize HostProtection

@@ -7,7 +7,6 @@ using System;
 namespace System.Diagnostics {
     [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple=true)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ConditionalAttribute : Attribute
     {
         public ConditionalAttribute(String conditionString)

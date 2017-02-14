@@ -3203,9 +3203,6 @@ private:
     PTR_Object  m_LastThrownObjectInParentContext;                                        
     ULONG_PTR   m_LockCount;            // Number of locks the thread takes
                                         // before the transition.
-#ifndef FEATURE_CORECLR
-    ULONG_PTR   m_CriticalRegionCount;
-#endif // !FEATURE_CORECLR
     VPTR_VTABLE_CLASS(ContextTransitionFrame, Frame)
 
 public:
@@ -3244,18 +3241,6 @@ public:
         return (DWORD) m_LockCount;
     }
 
-#ifndef FEATURE_CORECLR
-    void SetCriticalRegionCount(DWORD criticalRegionCount)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_CriticalRegionCount = criticalRegionCount;
-    }
-    DWORD GetCriticalRegionCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (DWORD) m_CriticalRegionCount;
-    }
-#endif // !FEATURE_CORECLR
 
     // Let debugger know that we're transitioning between AppDomains.
     ETransitionType GetTransitionType()
@@ -3270,9 +3255,6 @@ public:
     , m_ReturnExecutionContext(NULL)
     , m_LastThrownObjectInParentContext(NULL)
     , m_LockCount(0)
-#ifndef FEATURE_CORECLR
-    , m_CriticalRegionCount(0)
-#endif // !FEATURE_CORECLR
     {
         LIMITED_METHOD_CONTRACT;
     }

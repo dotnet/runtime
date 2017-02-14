@@ -16,7 +16,6 @@ using System.Runtime.ConstrainedExecution;
 using System.Globalization;
 using System.Threading;
 using System.Diagnostics;
-using System.Security.Permissions;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime;
@@ -343,7 +342,8 @@ namespace System
                             // no one should be looking for a member whose name is longer than 1024
                             if (cUtf8Name > MAXNAMELEN)
                             {
-                                fixed (byte* pUtf8Name = new byte[cUtf8Name])
+                                byte[] utf8Name = new byte[cUtf8Name];
+                                fixed (byte* pUtf8Name = &utf8Name[0])
                                 {
                                     list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
                                 }
@@ -403,7 +403,6 @@ namespace System
                 // May replace the list with a new one if certain cache
                 // lookups succeed.  Also, may modify the contents of the list
                 // after merging these new data structures with cached ones.
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
                 internal void Insert(ref T[] list, string name, MemberListType listType)
                 {
                     bool lockTaken = false;
@@ -481,7 +480,6 @@ namespace System
                 }
 
                 // Modifies the existing list.
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
                 private void MergeWithGlobalList(T[] list)
                 {
                     T[] cachedMembers = m_allMembers;
@@ -963,29 +961,6 @@ namespace System
                             new MdFieldInfo(tkField, fieldAttributes, declaringType.GetTypeHandleInternal(), m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
-                        }
-                    }
-                }
-
-                private static void AddElementTypes(Type template, IList<Type> types)
-                {   
-                    if (!template.HasElementType)
-                        return;
-                    
-                    AddElementTypes(template.GetElementType(), types);
-                    
-                    for (int i = 0; i < types.Count; i ++)
-                    {
-                        if (template.IsArray)
-                        {
-                            if (template.IsSzArray)
-                                types[i] = types[i].MakeArrayType();
-                            else 
-                                types[i] = types[i].MakeArrayType(template.GetArrayRank());
-                        }
-                        else if (template.IsPointer)
-                        {
-                            types[i] = types[i].MakePointerType();
                         }
                     }
                 }
@@ -1629,7 +1604,6 @@ namespace System
 
             internal bool IsGlobal 
             { 
-                [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
                 get { return m_isGlobal; } 
             }
 
@@ -2524,8 +2498,6 @@ namespace System
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(System.Object);
         private static readonly RuntimeType StringType = (RuntimeType)typeof(System.String);
         private static readonly RuntimeType DelegateType = (RuntimeType)typeof(System.Delegate);
-
-        private static Type[] s_SICtorParamTypes;
         #endregion
 
         #region Constructor
@@ -2533,7 +2505,6 @@ namespace System
         #endregion
 
         #region Private\Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimeType m = o as RuntimeType;
@@ -2753,7 +2724,6 @@ namespace System
             return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
@@ -3246,7 +3216,6 @@ namespace System
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal sealed override RuntimeTypeHandle GetTypeHandleInternal()
         {
             return new RuntimeTypeHandle(this);
@@ -3342,7 +3311,6 @@ namespace System
             return RuntimeTypeHandle.IsInstanceOfType(this, o);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         [Pure]
         public override bool IsSubclassOf(Type type) 
         {
@@ -3581,11 +3549,6 @@ namespace System
         private static extern bool IsTypeExportedToWindowsRuntime(RuntimeType type);
 
 #endif // FEATURE_COMINTEROP
-
-        internal override bool HasProxyAttributeImpl() 
-        {
-            return RuntimeTypeHandle.HasProxyAttribute(this);
-        }
 
         internal bool IsDelegate()
         {
@@ -4784,33 +4747,6 @@ namespace System
                     throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
                 }
 
-                // If we're creating a delegate, we're about to call a
-                // constructor taking an integer to represent a target
-                // method. Since this is very difficult (and expensive)
-                // to verify, we're just going to demand UnmanagedCode
-                // permission before allowing this. Partially trusted
-                // clients can instead use Delegate.CreateDelegate,
-                // which allows specification of the target method via
-                // name or MethodInfo.
-                //if (isDelegate)
-                if (RuntimeType.DelegateType.IsAssignableFrom(invokeMethod.DeclaringType))
-                {
-                    // In CoreCLR, CAS is not exposed externally. So what we really are looking
-                    // for is to see if the external caller of this API is transparent or not.
-                    // We get that information from the fact that a Demand will succeed only if
-                    // the external caller is not transparent. 
-                    try
-                    {
-#pragma warning disable 618
-                        new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-#pragma warning restore 618
-                    }
-                    catch
-                    {
-                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, Environment.GetResourceString("NotSupported_DelegateCreationFromPT")));
-                    }
-                }
-
                 if (invokeMethod.GetParametersNoCopy().Length == 0)
                 {
                     if (args.Length != 0)
@@ -4868,17 +4804,8 @@ namespace System
             readonly ActivatorCacheEntry[] cache = new ActivatorCacheEntry[CACHE_SIZE];
 
             volatile ConstructorInfo     delegateCtorInfo;
-            volatile PermissionSet       delegateCreatePermissions;
 
             private void InitializeDelegateCreator() {
-                // No synchronization needed here. In the worst case we create extra garbage
-                PermissionSet ps = new PermissionSet(PermissionState.None);
-                ps.AddPermission(new ReflectionPermission(ReflectionPermissionFlag.MemberAccess));
-#pragma warning disable 618
-                ps.AddPermission(new SecurityPermission(SecurityPermissionFlag.UnmanagedCode));
-#pragma warning restore 618
-                delegateCreatePermissions = ps;
-
                 ConstructorInfo ctorInfo = typeof(CtorDelegate).GetConstructor(new Type[] {typeof(Object), typeof(IntPtr)});
                 delegateCtorInfo = ctorInfo; // this assignment should be last
             }
@@ -4891,7 +4818,6 @@ namespace System
                     
                     if (delegateCtorInfo == null)
                         InitializeDelegateCreator();
-                    delegateCreatePermissions.Assert();
 
                     // No synchronization needed here. In the worst case we create extra garbage
                     CtorDelegate ctor = (CtorDelegate)delegateCtorInfo.Invoke(new Object[] { null, RuntimeMethodHandle.GetFunctionPointer(ace.m_hCtorMethodHandle) });
@@ -5045,10 +4971,12 @@ namespace System
             return _CreateEnum(enumType, value);
         }
 
+#if FEATURE_COMINTEROP       
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
             String name, BindingFlags invokeAttr, Object target, Object[] args,
             bool[] byrefModifiers, int culture, String[] namedParameters);
+#endif // FEATURE_COMINTEROP        
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

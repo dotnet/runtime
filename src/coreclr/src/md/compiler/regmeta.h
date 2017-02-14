@@ -27,9 +27,6 @@
 #include <ivehandler.h>
 
 #include "sigparser.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 
 #include "winmdinterfaces.h"
 
@@ -2059,9 +2056,6 @@ private:
 
     CorValidatorModuleType      m_ModuleType;
     IVEHandler                  *m_pVEHandler;
-#ifndef FEATURE_CORECLR
-    ValidateRecordFunction      m_ValidateRecordFunctionTable[TBL_COUNT];
-#endif
     CCustAttrHash               m_caHash;   // Hashed list of custom attribute types seen.
     
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?

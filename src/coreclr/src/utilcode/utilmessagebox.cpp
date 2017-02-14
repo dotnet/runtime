@@ -24,29 +24,6 @@
 #include "commctrl.h"
 #endif
 
-#if !defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
-
-//
-// This should be used for runtime dialog box, because we assume the resource is from mscorrc.dll
-// For tools like ildasm or Shim which uses their own resource file, you need to define IDS_RTL in 
-// their resource file and define a function like this and append the style returned from the function 
-// to every calls to WszMessageBox.
-//
-UINT GetCLRMBRTLStyle() 
-{
-    WRAPPER_NO_CONTRACT;
-
-    UINT mbStyle = 0;
-    WCHAR buff[MAX_LONGPATH];                        
-    if(SUCCEEDED(UtilLoadStringRC(IDS_RTL, buff, MAX_LONGPATH, true))) {
-        if(wcscmp(buff, W("RTL_True")) == 0) {
-            mbStyle = 0x00080000 |0x00100000; // MB_RIGHT || MB_RTLREADING
-        }
-    }
-    return mbStyle;
-}
-
-#endif //!defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
 
 BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 {
@@ -72,16 +49,6 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 }
 
 
-#if !defined(FEATURE_CORESYSTEM) && !defined(FEATURE_CORECLR)
-enum ProbedTaskDialogIndirectState
-{
-    ProbedTaskDialogIndirectState_NotProbed = 0,
-    ProbedTaskDialogIndirectState_NotAvailable = 1,
-    ProbedTaskDialogIndirectState_Available = 2
-};
-
-static ProbedTaskDialogIndirectState siProbedTaskDialogIndirect = ProbedTaskDialogIndirectState_NotProbed;
-#endif // !FEATURE_CORESYSTEM && !FEATURE_CORECLR
 
 
 // We'd like to use TaskDialogIndirect for asserts coming from managed code in particular
@@ -109,157 +76,7 @@ int MessageBoxImpl(
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_CORESYSTEM) || defined (FEATURE_CORECLR)
     return WszMessageBox(hWnd, message, title, uType);
-#else
-    bool mustUseMessageBox = false;  // Mac, Silverlight, pre-Vista?  Do we support this type of message box?
-    decltype(TaskDialogIndirect)* pfnTaskDialogIndirect = NULL;
-    ULONG_PTR cookie = NULL;  // For activation context.
-    bool activatedActivationContext = false;
-    HModuleHolder hmodComctl32;
-    HANDLE hActCtx = INVALID_HANDLE_VALUE;
-
-    // Note: TaskDialogIndirect is only in the v6 and above versions of comctl32.  Windows
-    // stores that library in the WinSxS directory in a directory with 
-    // "Microsoft.Windows.Common-Controls" in the name.  Your application can only see
-    // this library if the linker has added a manifest dependency on the V6 common controls
-    // to your application.  Or, you can create an activation context to make this work,
-    // if your library also has the appropriate manifest dependency.
-    // Also, I'm not going to leave comctl32.dll mapped, to ensure it can't somehow 
-    // interfere with older versions.  Therefore, re-load comctl32.dll every time through
-    // this method.  We will record whether TaskDialogIndirect is available though, so
-    // we can fall back to MessageBox faster.
-
-    // We don't yet have a perfect mapping from all MessageBox behavior to TaskDialogIndirect behavior.
-    // Use MessageBox to avoid most of this complexity.
-    if (((uType & MB_ICONMASK) != MB_ICONWARNING) && (uType & MB_ICONMASK) != MB_ICONERROR  ||
-        (uType & MB_TYPEMASK) != MB_ABORTRETRYIGNORE ||
-        (uType & MB_DEFMASK) != 0 ||
-        (uType & MB_MODEMASK) != 0 ||
-        (uType & MB_MISCMASK) != 0)
-        mustUseMessageBox = true;
-    else if (mustUseMessageBox || siProbedTaskDialogIndirect == ProbedTaskDialogIndirectState_NotAvailable)
-        mustUseMessageBox = true;
-    else {
-        // Replace our application's ActivationContext temporarily, load comctl32
-        // & look for TaskDialogIndirect.  Don't cache pointer.
-        // The following code was suggested by some Windows experts.  We do not want
-		// to add a manifest to our library saying we use comctl32 v6, because that
-		// will mean loading a lot of extra libraries on startup (a significant perf hit).
-		// We could either store the manifest as a resource, or more creatively since
-		// we are effectively a Windows component, rely on %windir%\WindowsShell.manifest.
-        ACTCTX ctx = { sizeof(ACTCTX) };
-        ctx.dwFlags = 0;
-        StackSString manifestPath;  // Point this at %windir%\WindowsShell.manifest, for comctl32 version 6.
-        UINT numChars = WszGetWindowsDirectory(manifestPath.OpenUnicodeBuffer(MAX_PATH_FNAME), MAX_PATH_FNAME);
-        if (numChars == 0 || numChars >= MAX_PATH_FNAME)
-        {
-            _ASSERTE(0);  // How did this fail?
-        }
-        else {
-            manifestPath.CloseBuffer(numChars);
-            if (manifestPath[manifestPath.GetCount() - 1] != W('\\'))
-                manifestPath.Append(W('\\'));
-            manifestPath.Append(W("WindowsShell.manifest"));  // Other Windows components have already loaded this.
-            ctx.lpSource = manifestPath.GetUnicode();
-            hActCtx = CreateActCtx(&ctx);
-            if (hActCtx != INVALID_HANDLE_VALUE)
-            {           
-                if (!ActivateActCtx(hActCtx, &cookie))
-                {
-                    cookie = NULL;
-                    _ASSERTE(0);  // Why did ActivateActCtx fail?  (We'll continue executing & cope with the failure.)
-                }
-                else {
-                    activatedActivationContext = true;
-                    // Activation context was replaced - now we can load comctl32 version 6.
-                    hmodComctl32 = WszLoadLibrary(W("comctl32.dll"));
-
-                    if (hmodComctl32 != INVALID_HANDLE_VALUE) {
-                        pfnTaskDialogIndirect = (decltype(TaskDialogIndirect)*)GetProcAddress(hmodComctl32, "TaskDialogIndirect");
-                        if (pfnTaskDialogIndirect == NULL) {
-                            hmodComctl32.Release();
-                        }
-                    }
-                }
-            }
-        }
-
-        siProbedTaskDialogIndirect = (pfnTaskDialogIndirect == NULL) ? ProbedTaskDialogIndirectState_NotAvailable : ProbedTaskDialogIndirectState_Available;
-        mustUseMessageBox = (pfnTaskDialogIndirect == NULL);
-    }
-
-    int result = MB_OK;
-    if (mustUseMessageBox) {
-        result = WszMessageBox(hWnd, message, title, uType);
-    }
-    else {
-        _ASSERTE(pfnTaskDialogIndirect != NULL);
-        int nButtonPressed                  = 0;
-        TASKDIALOGCONFIG config             = {0};
-        config.cbSize                       = sizeof(config);
-        config.hwndParent                   = hWnd;
-        config.dwCommonButtons              = 0;
-        config.pszWindowTitle               = title;
-        config.dwFlags                      = (uType & MB_RTLREADING) ? TDF_RTL_LAYOUT : 0;
-
-        // Set the user-visible icon in the window.
-        _ASSERTE(((uType & MB_ICONMASK) == MB_ICONWARNING) || ((uType & MB_ICONMASK) == MB_ICONERROR));
-        config.pszMainIcon                  = ((uType & MB_ICONMASK) == MB_ICONWARNING) ? TD_WARNING_ICON : TD_ERROR_ICON;
-
-        config.pszMainInstruction           = title;
-        config.pszContent                   = message;
-        config.pszExpandedInformation       = detailedText;
-
-        // Set up the buttons
-        // Note about button hot keys: Windows keeps track of of where the last input came from
-        // (ie, mouse or keyboard).  If you use the mouse to interact w/ one dialog box and then use
-        // the keyboard, the next dialog will not include hot keys.  This is a Windows feature to
-        // minimize clutter on the screen for mouse users.
-        _ASSERTE((uType & MB_TYPEMASK) == MB_ABORTRETRYIGNORE);
-        StackSString abortLabel, debugLabel, ignoreLabel;
-        const WCHAR *pAbortLabel, *pDebugLabel, *pIgnoreLabel;
-
-        if (abortLabel.LoadResource(CCompRC::Optional, IDS_DIALOG_BOX_ABORT_BUTTON))
-            pAbortLabel = abortLabel.GetUnicode();
-        else
-            pAbortLabel = W("&Abort");
-        if (debugLabel.LoadResource(CCompRC::Optional, IDS_DIALOG_BOX_DEBUG_BUTTON))
-            pDebugLabel = debugLabel.GetUnicode();
-        else
-            pDebugLabel = W("&Debug");
-        if (ignoreLabel.LoadResource(CCompRC::Optional, IDS_DIALOG_BOX_IGNORE_BUTTON))
-            pIgnoreLabel = ignoreLabel.GetUnicode();
-        else
-            pIgnoreLabel = W("&Ignore");
-
-        const TASKDIALOG_BUTTON abortDebugIgnoreButtons[] = { 
-            { IDOK, pAbortLabel },
-            { IDRETRY, pDebugLabel },
-            { IDIGNORE, pIgnoreLabel }
-        };
-        config.pButtons = abortDebugIgnoreButtons;
-        config.cButtons = 3;
-
-        HRESULT hr = pfnTaskDialogIndirect(&config, &nButtonPressed, NULL, NULL);
-        _ASSERTE(hr == S_OK);
-        if (hr == S_OK) {
-            result = nButtonPressed;
-        }
-        else {
-            result = IDOK;
-        }
-
-        _ASSERTE(result == IDOK || result == IDRETRY || result == IDIGNORE);
-    }
-
-    if (activatedActivationContext) {
-        DeactivateActCtx(0, cookie);
-        ReleaseActCtx(hActCtx);  // perf isn't important so we won't bother caching the actctx
-    }
- 
-    return result;
-#endif
 }
 
 int UtilMessageBoxVA(
@@ -428,9 +245,6 @@ int UtilMessageBoxNonLocalizedVA(
             // in use.  However, outside the CLR (SELF_NO_HOST) we can't assume we have resources and
             // in CORECLR we can't even necessarily expect that our CLR callbacks have been initialized.
             // This code path is used for ASSERT dialogs.
-#if !defined(SELF_NO_HOST) && !defined(FEATURE_CORECLR)
-            uType |= GetCLRMBRTLStyle();
-#endif
             
             result = MessageBoxImpl(hWnd, formattedMessage, formattedTitle, details, uType);
             

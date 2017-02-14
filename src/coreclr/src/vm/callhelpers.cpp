@@ -35,17 +35,6 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 
     Module * pModule = pMethod->GetModule_NoLogging();
 
-#if defined(FEATURE_APPX_BINDER)
-    
-    // For Appx process, allow certain modules to load on background thread
-    if (AppX::IsAppXProcess())
-    {
-        if (MulticoreJitManager::IsLoadOkay(pModule))
-        {
-            return;
-        }
-    }
-#endif
 
     _ASSERTE(pModule->IsSystem());
 }

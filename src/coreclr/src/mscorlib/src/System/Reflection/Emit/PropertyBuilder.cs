@@ -17,7 +17,6 @@ namespace System.Reflection.Emit {
     using System;
     using System.Reflection;
     using CultureInfo = System.Globalization.CultureInfo;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
 
@@ -25,10 +24,7 @@ namespace System.Reflection.Emit {
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
     // 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_PropertyBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class PropertyBuilder : PropertyInfo, _PropertyBuilder
+    public sealed class PropertyBuilder : PropertyInfo
     { 
     
         // Make a private constructor so these cannot be constructed externally.
@@ -84,14 +80,6 @@ namespace System.Reflection.Emit {
         {
             get {return m_prToken;}
         }
-
-        internal int MetadataTokenInternal
-        {
-            get 
-            {
-                return m_tkProperty;
-            }
-        }
         
         public override Module Module
         {
@@ -135,7 +123,6 @@ namespace System.Reflection.Emit {
     
         // Use this function if client decides to form the custom attribute blob themselves
 
-[System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)

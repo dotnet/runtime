@@ -95,12 +95,6 @@ public:
     static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
     static FCDECL2(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg);
 
-#ifndef FEATURE_CORECLR
-#ifndef _WIN64
-    static FCDECL3(void*,           GetFinalStubTarget, LPVOID pStubArg, LPVOID pUnmngThis, DWORD dwFlags);
-#endif // !_WIN64
-    static FCDECL1(void,            DemandPermission, NDirectMethodDesc *pNMD);
-#endif // !FEATURE_CORECLR
 
     static FCDECL2(void,            ThrowInteropParamException, UINT resID, UINT paramIdx);
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);

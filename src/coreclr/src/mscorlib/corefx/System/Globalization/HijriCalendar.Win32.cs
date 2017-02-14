@@ -8,9 +8,10 @@ namespace System.Globalization
 {
     public partial class HijriCalendar : Calendar
     {
-        private static int GetHijriDateAdjustment()
+        private int GetHijriDateAdjustment()
         {
-            if (_hijriAdvance == Int32.MinValue) {
+            if (_hijriAdvance == Int32.MinValue)
+            {
                 // Never been set before.  Use the system value from registry.
                 _hijriAdvance = GetAdvanceHijriDate();
             }
@@ -36,11 +37,13 @@ namespace System.Globalization
         **      "AddHijriDate+1"  =>  Add +1 days to the current calculated Hijri date.
         **      "AddHijriDate+2"  =>  Add +2 days to the current calculated Hijri date.
         ============================================================================*/
-        private static int GetAdvanceHijriDate() {
+        private static int GetAdvanceHijriDate()
+        {
             int hijriAdvance = 0;
             Microsoft.Win32.RegistryKey key = null;
 
-            try {
+            try
+            {
                 // Open in read-only mode.
                 // Use InternalOpenSubKey so that we avoid the security check.
                 key = RegistryKey.GetBaseKey(RegistryKey.HKEY_CURRENT_USER).OpenSubKey(InternationalRegKey, false);
@@ -49,21 +52,28 @@ namespace System.Globalization
             catch (ObjectDisposedException) { return 0; }
             catch (ArgumentException) { return 0; }
 
-            if (key != null) {
-                try {
+            if (key != null)
+            {
+                try
+                {
                     Object value = key.InternalGetValue(HijriAdvanceRegKeyEntry, null, false, false);
-                    if (value == null) {
+                    if (value == null)
+                    {
                         return (0);
                     }
                     String str = value.ToString();
-                    if (String.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0) {
+                    if (String.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         if (str.Length == HijriAdvanceRegKeyEntry.Length)
                             hijriAdvance = -1;
-                        else {
+                        else
+                        {
                             str = str.Substring(HijriAdvanceRegKeyEntry.Length);
-                            try {
+                            try
+                            {
                                 int advance = Int32.Parse(str.ToString(), CultureInfo.InvariantCulture);
-                                if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri)) {
+                                if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
+                                {
                                     hijriAdvance = advance;
                                 }
                             }
@@ -75,10 +85,10 @@ namespace System.Globalization
                         }
                     }
                 }
-                finally {
+                finally
+                {
                     key.Close();
                 }
-
             }
             return (hijriAdvance);
         }

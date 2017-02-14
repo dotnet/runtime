@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [System.Runtime.CompilerServices.FriendAccessAllowed]
     internal sealed class WindowsRuntimeImportAttribute : Attribute
     {
-        public WindowsRuntimeImportAttribute()
+        internal WindowsRuntimeImportAttribute()
         { }
     }
 

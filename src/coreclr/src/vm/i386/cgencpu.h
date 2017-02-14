@@ -39,9 +39,6 @@ Stub * GenerateInitPInvokeFrameHelper();
 EXTERN_C void STDCALL PInvokeStackImbalanceHelper(void);
 #endif // MDA_SUPPORTED
 
-#ifndef FEATURE_CORECLR
-EXTERN_C void STDCALL CopyCtorCallStub(void);
-#endif // !FEATURE_CORECLR
 
 #ifdef FEATURE_STUBS_AS_IL
 EXTERN_C void SinglecastDelegateInvokeStub();
@@ -154,6 +151,11 @@ typedef INT32 StackElemType;
 // This represents some of the FramedMethodFrame fields that are
 // stored at negative offsets.
 //--------------------------------------------------------------------
+#define ENUM_ARGUMENT_AND_SCRATCH_REGISTERS() \
+    ARGUMENT_AND_SCRATCH_REGISTER(Eax) \
+    ARGUMENT_AND_SCRATCH_REGISTER(Ecx) \
+    ARGUMENT_AND_SCRATCH_REGISTER(Edx)
+
 #define ENUM_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(Edi) \
     CALLEE_SAVED_REGISTER(Esi) \
@@ -203,6 +205,7 @@ struct ArgumentRegisters {
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
 
+#ifndef WIN64EXCEPTIONS
 // Sufficient context for Try/Catch restoration.
 struct EHContext {
     INT32       Eax;
@@ -251,6 +254,7 @@ struct EHContext {
         Eip = 0;
     }
 };
+#endif // !WIN64EXCEPTIONS
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 

@@ -10,7 +10,6 @@ using System;
 using System.Security;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
@@ -35,7 +34,6 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
 
     public class CancellationTokenSource : IDisposable
     {
