@@ -114,7 +114,7 @@ namespace System
             Contract.Ensures(Contract.Result<byte[]>() != null);
             Contract.Ensures(Contract.Result<byte[]>().Length == 8);
 
-            return GetBytes((long)value);
+            return GetBytes(unchecked((long)value));
         }
 
         // Converts a float into an array of bytes with length 
@@ -261,7 +261,7 @@ namespace System
                 ThrowValueArgumentTooSmall();
             Contract.EndContractBlock();
 
-            return (ushort)ToInt16(value, startIndex);
+            return unchecked((ushort)ToInt16(value, startIndex));
         }
 
         // Converts an array of bytes into an uint.
@@ -293,7 +293,7 @@ namespace System
                 ThrowValueArgumentTooSmall();
             Contract.EndContractBlock();
 
-            return (ulong)ToInt64(value, startIndex);
+            return unchecked((ulong)ToInt64(value, startIndex));
         }
 
         // Converts an array of bytes into a float.  

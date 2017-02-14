@@ -154,7 +154,7 @@ namespace System.Net.Http.Functional.Tests
                             });
 
                             // Do a post to a remote server
-                            byte[] expectedData = Enumerable.Range(0, 20000).Select(i => (byte)i).ToArray();
+                            byte[] expectedData = Enumerable.Range(0, 20000).Select(i => unchecked((byte)i)).ToArray();
                             HttpContent content = new ByteArrayContent(expectedData);
                             content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
                             using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.RemoteEchoServer, content))
