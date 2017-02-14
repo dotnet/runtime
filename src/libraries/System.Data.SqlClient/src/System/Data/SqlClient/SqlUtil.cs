@@ -828,6 +828,10 @@ namespace System.Data.SqlClient
         {
             return Res.GetString(Res.SQL_SSPIGenerateError);
         }
+        internal static string KerberosTicketMissingError()
+        {
+            return Res.GetString(Res.SQL_KerberosTicketMissingError);
+        }
         internal static string Timeout()
         {
             return Res.GetString(Res.SQL_Timeout);
