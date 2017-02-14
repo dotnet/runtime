@@ -478,7 +478,8 @@ BASE_TEST_CS_SRC=		\
 	namedmutex-destroy-race.cs	\
 	thread6.cs	\
 	appdomain-threadpool-unload.cs	\
-	process-unref-race.cs
+	process-unref-race.cs	\
+	bug-46661.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
