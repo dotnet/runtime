@@ -1494,6 +1494,13 @@ FCIMPL5(VOID, Buffer::InternalBlockCopy, ArrayBase *src, int srcOffset, ArrayBas
 }
 FCIMPLEND
 
+void QCALLTYPE SpanNative::SpanClear(void *dst, size_t length)
+{
+    QCALL_CONTRACT;
+
+    memset(dst, 0, length);
+}
+
 void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
