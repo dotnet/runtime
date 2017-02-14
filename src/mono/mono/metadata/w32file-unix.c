@@ -78,7 +78,7 @@ typedef struct {
  * 4MB array.
  */
 static GHashTable *file_share_table;
-static mono_mutex_t file_share_mutex;
+static MonoCoopMutex file_share_mutex;
 
 static void
 time_t_to_filetime (time_t timeval, FILETIME *filetime)
@@ -94,7 +94,7 @@ static void
 file_share_release (FileShare *share_info)
 {
 	/* Prevent new entries racing with us */
-	mono_os_mutex_lock (&file_share_mutex);
+	mono_coop_mutex_lock (&file_share_mutex);
 
 	g_assert (share_info->handle_refs > 0);
 	share_info->handle_refs -= 1;
@@ -102,7 +102,7 @@ file_share_release (FileShare *share_info)
 	if (share_info->handle_refs == 0)
 		g_hash_table_remove (file_share_table, share_info);
 
-	mono_os_mutex_unlock (&file_share_mutex);
+	mono_coop_mutex_unlock (&file_share_mutex);
 }
 
 static gint
@@ -130,7 +130,7 @@ file_share_get (guint64 device, guint64 inode, guint32 new_sharemode, guint32 ne
 	gboolean exists = FALSE;
 
 	/* Prevent new entries racing with us */
-	mono_os_mutex_lock (&file_share_mutex);
+	mono_coop_mutex_lock (&file_share_mutex);
 
 	FileShare tmp;
 
@@ -168,7 +168,7 @@ file_share_get (guint64 device, guint64 inode, guint32 new_sharemode, guint32 ne
 		g_hash_table_insert (file_share_table, file_share, file_share);
 	}
 
-	mono_os_mutex_unlock (&file_share_mutex);
+	mono_coop_mutex_unlock (&file_share_mutex);
 
 	return(exists);
 }
@@ -182,13 +182,19 @@ _wapi_open (const gchar *pathname, gint flags, mode_t mode)
 	if (flags & O_CREAT) {
 		located_filename = mono_portability_find_file (pathname, FALSE);
 		if (located_filename == NULL) {
+			MONO_ENTER_GC_SAFE;
 			fd = open (pathname, flags, mode);
+			MONO_EXIT_GC_SAFE;
 		} else {
+			MONO_ENTER_GC_SAFE;
 			fd = open (located_filename, flags, mode);
+			MONO_EXIT_GC_SAFE;
 			g_free (located_filename);
 		}
 	} else {
+		MONO_ENTER_GC_SAFE;
 		fd = open (pathname, flags, mode);
+		MONO_EXIT_GC_SAFE;
 		if (fd == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 			gint saved_errno = errno;
 			located_filename = mono_portability_find_file (pathname, TRUE);
@@ -198,7 +204,9 @@ _wapi_open (const gchar *pathname, gint flags, mode_t mode)
 				return -1;
 			}
 
+			MONO_ENTER_GC_SAFE;
 			fd = open (located_filename, flags, mode);
+			MONO_EXIT_GC_SAFE;
 			g_free (located_filename);
 		}
 	}
@@ -211,7 +219,9 @@ _wapi_access (const gchar *pathname, gint mode)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = access (pathname, mode);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
@@ -221,7 +231,9 @@ _wapi_access (const gchar *pathname, gint mode)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = access (located_filename, mode);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -233,7 +245,9 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = chmod (pathname, mode);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
@@ -243,7 +257,9 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = chmod (located_filename, mode);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -255,7 +271,9 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = utime (filename, buf);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && errno == ENOENT && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (filename, TRUE);
@@ -265,7 +283,9 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = utime (located_filename, buf);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -277,7 +297,9 @@ _wapi_unlink (const gchar *pathname)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = unlink (pathname);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR || errno == EISDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
@@ -287,7 +309,9 @@ _wapi_unlink (const gchar *pathname)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = unlink (located_filename);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -301,9 +325,13 @@ _wapi_rename (const gchar *oldpath, const gchar *newpath)
 	gchar *located_newpath = mono_portability_find_file (newpath, FALSE);
 
 	if (located_newpath == NULL) {
+		MONO_ENTER_GC_SAFE;
 		ret = rename (oldpath, newpath);
+		MONO_EXIT_GC_SAFE;
 	} else {
+		MONO_ENTER_GC_SAFE;
 		ret = rename (oldpath, located_newpath);
+		MONO_EXIT_GC_SAFE;
 
 		if (ret == -1 && (errno == EISDIR || errno == ENAMETOOLONG || errno == ENOENT || errno == ENOTDIR || errno == EXDEV) && IS_PORTABILITY_SET) {
 			gint saved_errno = errno;
@@ -317,7 +345,9 @@ _wapi_rename (const gchar *oldpath, const gchar *newpath)
 				return -1;
 			}
 
+			MONO_ENTER_GC_SAFE;
 			ret = rename (located_oldpath, located_newpath);
+			MONO_EXIT_GC_SAFE;
 			g_free (located_oldpath);
 		}
 		g_free (located_newpath);
@@ -331,7 +361,9 @@ _wapi_stat (const gchar *path, struct stat *buf)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = stat (path, buf);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
@@ -341,7 +373,9 @@ _wapi_stat (const gchar *path, struct stat *buf)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = stat (located_filename, buf);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -353,7 +387,9 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = lstat (path, buf);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
@@ -377,9 +413,13 @@ _wapi_mkdir (const gchar *pathname, mode_t mode)
 	gchar *located_filename = mono_portability_find_file (pathname, FALSE);
 
 	if (located_filename == NULL) {
+		MONO_ENTER_GC_SAFE;
 		ret = mkdir (pathname, mode);
+		MONO_EXIT_GC_SAFE;
 	} else {
+		MONO_ENTER_GC_SAFE;
 		ret = mkdir (located_filename, mode);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -391,7 +431,9 @@ _wapi_rmdir (const gchar *pathname)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = rmdir (pathname);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR || errno == ENAMETOOLONG) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (pathname, TRUE);
@@ -401,7 +443,9 @@ _wapi_rmdir (const gchar *pathname)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = rmdir (located_filename);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -413,7 +457,9 @@ _wapi_chdir (const gchar *path)
 {
 	gint ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = chdir (path);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR || errno == ENAMETOOLONG) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
@@ -423,7 +469,9 @@ _wapi_chdir (const gchar *path)
 			return -1;
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = chdir (located_filename);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 	}
 
@@ -479,7 +527,9 @@ _wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 {
 	GDir *ret;
 
+	MONO_ENTER_GC_SAFE;
 	ret = g_dir_open (path, flags, error);
+	MONO_EXIT_GC_SAFE;
 	if (ret == NULL && ((*error)->code == G_FILE_ERROR_NOENT || (*error)->code == G_FILE_ERROR_NOTDIR || (*error)->code == G_FILE_ERROR_NAMETOOLONG) && IS_PORTABILITY_SET) {
 		gchar *located_filename = mono_portability_find_file (path, TRUE);
 		GError *tmp_error = NULL;
@@ -488,7 +538,9 @@ _wapi_g_dir_open (const gchar *path, guint flags, GError **error)
 			return(NULL);
 		}
 
+		MONO_ENTER_GC_SAFE;
 		ret = g_dir_open (located_filename, flags, &tmp_error);
+		MONO_EXIT_GC_SAFE;
 		g_free (located_filename);
 		if (tmp_error == NULL) {
 			g_clear_error (error);
@@ -622,7 +674,9 @@ _wapi_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 		gchar *pattern2 = g_strndup (pattern, strlen (pattern) - 2);
 		gint result2;
 
+		MONO_ENTER_GC_SAFE;
 		g_dir_rewind (dir);
+		MONO_EXIT_GC_SAFE;
 		result2 = mono_w32file_unix_glob (dir, pattern2, flags | W32FILE_UNIX_GLOB_APPEND | W32FILE_UNIX_GLOB_UNIQUE, &glob_buf);
 
 		g_free (pattern2);
@@ -632,7 +686,9 @@ _wapi_io_scandir (const gchar *dirname, const gchar *pattern, gchar ***namelist)
 		}
 	}
 
+	MONO_ENTER_GC_SAFE;
 	g_dir_close (dir);
+	MONO_EXIT_GC_SAFE;
 	if (glob_buf.gl_pathc == 0) {
 		return(0);
 	} else if (result != 0) {
@@ -1043,6 +1099,7 @@ static void _wapi_set_last_path_error_from_errno (const gchar *dir,
  */
 static void file_close (gpointer handle, gpointer data)
 {
+	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
 	MonoW32HandleFile *file_handle = (MonoW32HandleFile *)data;
 	gint fd = file_handle->fd;
 	
@@ -1122,7 +1179,9 @@ file_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread
 	}
 
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret = read (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
 			
@@ -1179,7 +1238,9 @@ file_write(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byt
 		 * because we only do advisory locking on POSIX
 		 * systems
 		 */
+		MONO_ENTER_GC_SAFE;
 		current_pos = lseek (fd, (off_t)0, SEEK_CUR);
+		MONO_EXIT_GC_SAFE;
 		if (current_pos == -1) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p lseek failed: %s", __func__,
 				   handle, strerror (errno));
@@ -1195,7 +1256,9 @@ file_write(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byt
 	}
 		
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
 	
@@ -1246,7 +1309,9 @@ static gboolean file_flush(gpointer handle)
 		return(FALSE);
 	}
 
+	MONO_ENTER_GC_SAFE;
 	ret=fsync(fd);
+	MONO_EXIT_GC_SAFE;
 	if (ret==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fsync of handle %p error: %s", __func__, handle,
 			  strerror(errno));
@@ -1323,9 +1388,13 @@ static guint32 file_seek(gpointer handle, gint32 movedistance,
 
 #ifdef PLATFORM_ANDROID
 	/* bionic doesn't support -D_FILE_OFFSET_BITS=64 */
+	MONO_ENTER_GC_SAFE;
 	newpos=lseek64(fd, offset, whence);
+	MONO_EXIT_GC_SAFE;
 #else
+	MONO_ENTER_GC_SAFE;
 	newpos=lseek(fd, offset, whence);
+	MONO_EXIT_GC_SAFE;
 #endif
 	if(newpos==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: lseek on handle %p returned error %s",
@@ -1389,7 +1458,9 @@ static gboolean file_setendoffile(gpointer handle)
 	 * than the length, truncate the file.
 	 */
 	
+	MONO_ENTER_GC_SAFE;
 	ret=fstat(fd, &statbuf);
+	MONO_EXIT_GC_SAFE;
 	if(ret==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p fstat failed: %s", __func__,
 			   handle, strerror(errno));
@@ -1398,7 +1469,9 @@ static gboolean file_setendoffile(gpointer handle)
 		return(FALSE);
 	}
 
+	MONO_ENTER_GC_SAFE;
 	pos=lseek(fd, (off_t)0, SEEK_CUR);
+	MONO_EXIT_GC_SAFE;
 	if(pos==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p lseek failed: %s", __func__,
 			  handle, strerror(errno));
@@ -1422,7 +1495,9 @@ static gboolean file_setendoffile(gpointer handle)
 		 * drop this write.
 		 */
 		do {
+			MONO_ENTER_GC_SAFE;
 			ret = write (fd, "", 1);
+			MONO_EXIT_GC_SAFE;
 		} while (ret == -1 && errno == EINTR &&
 			 !mono_thread_info_is_interrupt_state (info));
 
@@ -1434,7 +1509,9 @@ static gboolean file_setendoffile(gpointer handle)
 		}
 
 		/* And put the file position back after the write */
+		MONO_ENTER_GC_SAFE;
 		ret = lseek (fd, pos, SEEK_SET);
+		MONO_EXIT_GC_SAFE;
 		if (ret == -1) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p second lseek failed: %s",
 				   __func__, handle, strerror(errno));
@@ -1451,7 +1528,9 @@ static gboolean file_setendoffile(gpointer handle)
 	 * byte to the end of the file
 	 */
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret=ftruncate(fd, pos);
+		MONO_EXIT_GC_SAFE;
 	}
 	while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info)); 
 	if(ret==-1) {
@@ -1500,7 +1579,9 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	 */
 	mono_w32error_set_last (ERROR_SUCCESS);
 	
+	MONO_ENTER_GC_SAFE;
 	ret = fstat(fd, &statbuf);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p fstat failed: %s", __func__,
 			   handle, strerror(errno));
@@ -1513,7 +1594,11 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 #ifdef BLKGETSIZE64
 	if (S_ISBLK(statbuf.st_mode)) {
 		guint64 bigsize;
-		if (ioctl(fd, BLKGETSIZE64, &bigsize) < 0) {
+		gint res;
+		MONO_ENTER_GC_SAFE;
+		res = ioctl (fd, BLKGETSIZE64, &bigsize);
+		MONO_EXIT_GC_SAFE;
+		if (res < 0) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p ioctl BLKGETSIZE64 failed: %s",
 				   __func__, handle, strerror(errno));
 
@@ -1580,7 +1665,9 @@ static gboolean file_getfiletime(gpointer handle, FILETIME *create_time,
 		return(FALSE);
 	}
 	
+	MONO_ENTER_GC_SAFE;
 	ret=fstat(fd, &statbuf);
+	MONO_EXIT_GC_SAFE;
 	if(ret==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p fstat failed: %s", __func__, handle,
 			  strerror(errno));
@@ -1671,7 +1758,9 @@ static gboolean file_setfiletime(gpointer handle,
 	/* Get the current times, so we can put the same times back in
 	 * the event that one of the FileTime structs is NULL
 	 */
+	MONO_ENTER_GC_SAFE;
 	ret=fstat (fd, &statbuf);
+	MONO_EXIT_GC_SAFE;
 	if(ret==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p fstat failed: %s", __func__, handle,
 			  strerror(errno));
@@ -1746,6 +1835,7 @@ static gboolean file_setfiletime(gpointer handle,
 
 static void console_close (gpointer handle, gpointer data)
 {
+	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
 	MonoW32HandleFile *console_handle = (MonoW32HandleFile *)data;
 	gint fd = console_handle->fd;
 	
@@ -1812,7 +1902,9 @@ console_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesr
 	}
 	
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret=read(fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info));
 
 	if(ret==-1) {
@@ -1861,7 +1953,9 @@ console_write(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *
 	}
 	
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret = write(fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
 
@@ -1896,6 +1990,7 @@ static gsize find_typesize (void)
 
 static void pipe_close (gpointer handle, gpointer data)
 {
+	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
 	MonoW32HandleFile *pipe_handle = (MonoW32HandleFile*)data;
 	gint fd = pipe_handle->fd;
 
@@ -1964,7 +2059,9 @@ pipe_read (gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesrea
 		   numbytes, handle);
 
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret=read(fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret==-1 && errno==EINTR && !mono_thread_info_is_interrupt_state (info));
 		
 	if (ret == -1) {
@@ -2023,7 +2120,9 @@ pipe_write(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byt
 		   handle);
 
 	do {
+		MONO_ENTER_GC_SAFE;
 		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
 
@@ -2271,19 +2370,25 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 
 		mono_w32error_set_last (ERROR_TOO_MANY_OPEN_FILES);
 		
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
 		g_free (filename);
 		
 		return(INVALID_HANDLE_VALUE);
 	}
 
+	MONO_ENTER_GC_SAFE;
 	ret = fstat (fd, &statbuf);
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fstat error of file %s: %s", __func__,
 			   filename, strerror (errno));
 		_wapi_set_last_error_from_errno ();
 		g_free (filename);
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
 		
 		return(INVALID_HANDLE_VALUE);
 	}
@@ -2299,7 +2404,9 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 			 &file_handle.share_info) == FALSE) {
 		mono_w32error_set_last (ERROR_SHARING_VIOLATION);
 		g_free (filename);
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
 		
 		return (INVALID_HANDLE_VALUE);
 	}
@@ -2308,7 +2415,9 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: No space in the share table", __func__);
 
 		mono_w32error_set_last (ERROR_TOO_MANY_OPEN_FILES);
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
 		g_free (filename);
 		
 		return(INVALID_HANDLE_VALUE);
@@ -2322,15 +2431,24 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 	file_handle.attrs=attrs;
 
 #ifdef HAVE_POSIX_FADVISE
-	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN)
+	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN) {
+		MONO_ENTER_GC_SAFE;
 		posix_fadvise (fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-	if (attrs & FILE_FLAG_RANDOM_ACCESS)
+		MONO_EXIT_GC_SAFE;
+	}
+	if (attrs & FILE_FLAG_RANDOM_ACCESS) {
+		MONO_ENTER_GC_SAFE;
 		posix_fadvise (fd, 0, 0, POSIX_FADV_RANDOM);
+		MONO_EXIT_GC_SAFE;
+	}
 #endif
 
 #ifdef F_RDAHEAD
-	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN)
+	if (attrs & FILE_FLAG_SEQUENTIAL_SCAN) {
+		MONO_ENTER_GC_SAFE;
 		fcntl(fd, F_RDAHEAD, 1);
+		MONO_EXIT_GC_SAFE;
+	}
 #endif
 
 #ifndef S_ISFIFO
@@ -2348,11 +2466,15 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		handle_type = MONO_W32HANDLE_FILE;
 	}
 
+	MONO_ENTER_GC_SAFE; /* FIXME: mono_w32handle_new_fd should be updated with coop transitions */
 	handle = mono_w32handle_new_fd (handle_type, fd, &file_handle);
+	MONO_EXIT_GC_SAFE;
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating file handle", __func__);
 		g_free (filename);
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
 		
 		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		return(INVALID_HANDLE_VALUE);
@@ -2366,7 +2488,14 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 gboolean
 mono_w32file_close (gpointer handle)
 {
-	return mono_w32handle_close (handle);
+	gboolean res;
+	MONO_ENTER_GC_SAFE;
+	/* FIXME: we transition here and not in file_close, pipe_close,
+	 * console_close because w32handle_close is not coop aware yet, but it
+	 * calls back into w32file. */
+	res = mono_w32handle_close (handle);
+	MONO_EXIT_GC_SAFE;
+	return res;
 }
 
 gboolean mono_w32file_delete(const gunichar2 *name)
@@ -2580,7 +2709,9 @@ write_file (gint src_fd, gint dest_fd, struct stat *st_src, gboolean report_erro
 	buf = (gchar *) g_malloc (buf_size);
 
 	for (;;) {
+		MONO_ENTER_GC_SAFE;
 		remain = read (src_fd, buf, buf_size);
+		MONO_EXIT_GC_SAFE;
 		if (remain < 0) {
 			if (errno == EINTR && !mono_thread_info_is_interrupt_state (info))
 				continue;
@@ -2597,7 +2728,10 @@ write_file (gint src_fd, gint dest_fd, struct stat *st_src, gboolean report_erro
 
 		wbuf = buf;
 		while (remain > 0) {
-			if ((n = write (dest_fd, wbuf, remain)) < 0) {
+			MONO_ENTER_GC_SAFE;
+			n = write (dest_fd, wbuf, remain);
+			MONO_EXIT_GC_SAFE;
+			if (n < 0) {
 				if (errno == EINTR && !mono_thread_info_is_interrupt_state (info))
 					continue;
 
@@ -2626,6 +2760,7 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 	struct utimbuf dest_time;
 	gboolean ret = TRUE;
 	gint ret_utime;
+	gint syscall_res;
 	
 	if(name==NULL) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: name is NULL", __func__);
@@ -2673,12 +2808,17 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 		return(FALSE);
 	}
 
-	if (fstat (src_fd, &st) < 0) {
+	MONO_ENTER_GC_SAFE;
+	syscall_res = fstat (src_fd, &st);
+	MONO_EXIT_GC_SAFE;
+	if (syscall_res < 0) {
 		_wapi_set_last_error_from_errno ();
 
 		g_free (utf8_src);
 		g_free (utf8_dest);
+		MONO_ENTER_GC_SAFE;
 		close (src_fd);
+		MONO_EXIT_GC_SAFE;
 		
 		return(FALSE);
 	}
@@ -2691,7 +2831,9 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 
 		g_free (utf8_src);
 		g_free (utf8_dest);
+		MONO_ENTER_GC_SAFE;
 		close (src_fd);
+		MONO_EXIT_GC_SAFE;
 
 		mono_w32error_set_last (ERROR_SHARING_VIOLATION);
 		return (FALSE);
@@ -2719,7 +2861,9 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 
 		g_free (utf8_src);
 		g_free (utf8_dest);
+		MONO_ENTER_GC_SAFE;
 		close (src_fd);
+		MONO_EXIT_GC_SAFE;
 
 		return(FALSE);
 	}
@@ -2732,7 +2876,9 @@ CopyFile (const gunichar2 *name, const gunichar2 *dest_name, gboolean fail_if_ex
 	
 	dest_time.modtime = st.st_mtime;
 	dest_time.actime = st.st_atime;
+	MONO_ENTER_GC_SAFE;
 	ret_utime = utime (utf8_dest, &dest_time);
+	MONO_EXIT_GC_SAFE;
 	if (ret_utime == -1)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: file [%s] utime failed: %s", __func__, utf8_dest, strerror(errno));
 	
@@ -2812,14 +2958,20 @@ replace_cleanup:
 	g_free (utf8_replacedFileName);
 	g_free (utf8_replacementFileName);
 	g_free (utf8_backupFileName);
-	if (backup_fd != -1)
+	if (backup_fd != -1) {
+		MONO_ENTER_GC_SAFE;
 		close (backup_fd);
-	if (replaced_fd != -1)
+		MONO_EXIT_GC_SAFE;
+	}
+	if (replaced_fd != -1) {
+		MONO_ENTER_GC_SAFE;
 		close (replaced_fd);
+		MONO_EXIT_GC_SAFE;
+	}
 	return ret;
 }
 
-static mono_mutex_t stdhandle_mutex;
+static MonoCoopMutex stdhandle_mutex;
 
 static gpointer
 _wapi_stdhandle_create (gint fd, const gchar *name)
@@ -2932,7 +3084,7 @@ mono_w32file_get_std_handle (gint stdhandle)
 
 	handle = GINT_TO_POINTER (fd);
 
-	mono_os_mutex_lock (&stdhandle_mutex);
+	mono_coop_mutex_lock (&stdhandle_mutex);
 
 	ok = mono_w32handle_lookup (handle, MONO_W32HANDLE_CONSOLE,
 				  (gpointer *)&file_handle);
@@ -2950,8 +3102,8 @@ mono_w32file_get_std_handle (gint stdhandle)
 	}
 	
   done:
-	mono_os_mutex_unlock (&stdhandle_mutex);
-	
+	mono_coop_mutex_unlock (&stdhandle_mutex);
+
 	return(handle);
 }
 
@@ -3731,7 +3883,9 @@ mono_w32file_set_attributes (const gunichar2 *name, guint32 attrs)
 		if ((buf.st_mode & S_IROTH) != 0)
 			exec_mask |= S_IXOTH;
 
+		MONO_ENTER_GC_SAFE;
 		result = chmod (utf8_name, buf.st_mode | exec_mask);
+		MONO_EXIT_GC_SAFE;
 	}
 	/* Don't bother to reset executable (might need to change this
 	 * policy)
@@ -3818,7 +3972,9 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 	
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Creating pipe", __func__);
 
+	MONO_ENTER_GC_SAFE;
 	ret=pipe (filedes);
+	MONO_EXIT_GC_SAFE;
 	if(ret==-1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Error creating pipe: %s", __func__,
 			   strerror (errno));
@@ -3833,8 +3989,10 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 
 		mono_w32error_set_last (ERROR_TOO_MANY_OPEN_FILES);
 		
+		MONO_ENTER_GC_SAFE;
 		close (filedes[0]);
 		close (filedes[1]);
+		MONO_EXIT_GC_SAFE;
 		
 		return(FALSE);
 	}
@@ -3847,8 +4005,10 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 					   &pipe_read_handle);
 	if (read_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating pipe read handle", __func__);
+		MONO_ENTER_GC_SAFE;
 		close (filedes[0]);
 		close (filedes[1]);
+		MONO_EXIT_GC_SAFE;
 		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		
 		return(FALSE);
@@ -3862,8 +4022,10 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 		g_warning ("%s: error creating pipe write handle", __func__);
 		mono_w32handle_unref (read_handle);
 		
+		MONO_ENTER_GC_SAFE;
 		close (filedes[0]);
 		close (filedes[1]);
+		MONO_EXIT_GC_SAFE;
 		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		
 		return(FALSE);
@@ -3887,15 +4049,21 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	gint size, n, i;
 	gunichar2 *dir;
 	glong length, total = 0;
-	
+	gint syscall_res;
+
+	MONO_ENTER_GC_SAFE;
 	n = getfsstat (NULL, 0, MNT_NOWAIT);
+	MONO_EXIT_GC_SAFE;
 	if (n == -1)
 		return 0;
 	size = n * sizeof (struct statfs);
 	stats = (struct statfs *) g_malloc (size);
 	if (stats == NULL)
 		return 0;
-	if (getfsstat (stats, size, MNT_NOWAIT) == -1){
+	MONO_ENTER_GC_SAFE;
+	syscall_res = getfsstat (stats, size, MNT_NOWAIT);
+	MONO_EXIT_GC_SAFE;
+	if (syscall_res == -1){
 		g_free (stats);
 		return 0;
 	}
@@ -3982,11 +4150,15 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	gboolean (*parser)(guint32, gunichar2*, LinuxMountInfoParseState*) = NULL;
 
 	memset (buf, 0, len * sizeof (gunichar2));
+	MONO_ENTER_GC_SAFE;
 	fd = open ("/proc/self/mountinfo", O_RDONLY);
+	MONO_EXIT_GC_SAFE;
 	if (fd != -1)
 		parser = GetLogicalDriveStrings_MountInfo;
 	else {
+		MONO_ENTER_GC_SAFE;
 		fd = open ("/proc/mounts", O_RDONLY);
+		MONO_EXIT_GC_SAFE;
 		if (fd != -1)
 			parser = GetLogicalDriveStrings_Mounts;
 	}
@@ -4000,7 +4172,12 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	state.field_number = 1;
 	state.delimiter = ' ';
 
-	while ((state.nbytes = read (fd, state.buffer, GET_LOGICAL_DRIVE_STRINGS_BUFFER)) > 0) {
+	while (1) {
+		MONO_ENTER_GC_SAFE;
+		state.nbytes = read (fd, state.buffer, GET_LOGICAL_DRIVE_STRINGS_BUFFER);
+		MONO_EXIT_GC_SAFE;
+		if (!(state.nbytes > 0))
+			break;
 		state.buffer_index = 0;
 
 		while ((*parser)(len, buf, &state)) {
@@ -4022,8 +4199,11 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 	ret = state.total;
 
   done_and_out:
-	if (fd != -1)
+	if (fd != -1) {
+		MONO_ENTER_GC_SAFE;
 		close (fd);
+		MONO_EXIT_GC_SAFE;
+	}
 	return ret;
 }
 
@@ -4256,15 +4436,25 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 	/* Sigh, mntent and friends don't work well.
 	 * It stops on the first line that doesn't begin with a '/'.
 	 * (linux 2.6.5, libc 2.3.2.ds1-12) - Gonz */
+	MONO_ENTER_GC_SAFE;
 	fp = fopen ("/etc/mtab", "rt");
+	MONO_EXIT_GC_SAFE;
 	if (fp == NULL) {
+		MONO_ENTER_GC_SAFE;
 		fp = fopen ("/etc/mnttab", "rt");
+		MONO_EXIT_GC_SAFE;
 		if (fp == NULL)
 			return 1;
 	}
 
 	ptr = buf;
-	while (fgets (buffer, 512, fp) != NULL) {
+	while (1) {
+		gchar *fgets_res;
+		MONO_ENTER_GC_SAFE;
+		fgets_res = fgets (buffer, 512, fp);
+		MONO_EXIT_GC_SAFE;
+		if (!fgets_res)
+			break;
 		if (*buffer != '/')
 			continue;
 
@@ -4278,7 +4468,9 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 		dir = g_utf8_to_utf16 (*(splitted + 1), -1, NULL, &length, NULL);
 		g_strfreev (splitted);
 		if (total + length + 1 > len) {
+			MONO_ENTER_GC_SAFE;
 			fclose (fp);
+			MONO_EXIT_GC_SAFE;
 			g_free (dir);
 			return len * 2; /* guess */
 		}
@@ -4288,7 +4480,9 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 		total += length + 1;
 	}
 
+	MONO_ENTER_GC_SAFE;
 	fclose (fp);
+	MONO_EXIT_GC_SAFE;
 	return total;
 /* Commented out, does not work with my mtab!!! - Gonz */
 #ifdef NOTENABLED /* HAVE_MNTENT_H */
@@ -4299,18 +4493,30 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 	glong len, total = 0;
 	
 
+	MONO_ENTER_GC_SAFE;
 	fp = setmntent ("/etc/mtab", "rt");
+	MONO_EXIT_GC_SAFE;
 	if (fp == NULL) {
+		MONO_ENTER_GC_SAFE;
 		fp = setmntent ("/etc/mnttab", "rt");
+		MONO_EXIT_GC_SAFE;
 		if (fp == NULL)
 			return;
 	}
 
 	ptr = buf;
-	while ((mnt = getmntent (fp)) != NULL) {
+	while (1) {
+		MONO_ENTER_GC_SAFE;
+		mnt = getmntent (fp);
+		MONO_EXIT_GC_SAFE;
+		if (mnt == NULL)
+			break;
 		g_print ("GOT %s\n", mnt->mnt_dir);
 		dir = g_utf8_to_utf16 (mnt->mnt_dir, &len, NULL, NULL, NULL);
 		if (total + len + 1 > len) {
+			MONO_ENTER_GC_SAFE;
+			endmntent (fp);
+			MONO_EXIT_GC_SAFE;
 			return len * 2; /* guess */
 		}
 
@@ -4319,7 +4525,9 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 		total += len + 1;
 	}
 
+	MONO_ENTER_GC_SAFE;
 	endmntent (fp);
+	MONO_EXIT_GC_SAFE;
 	return total;
 }
 #endif
@@ -4359,11 +4567,15 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 
 	do {
 #ifdef HAVE_STATVFS
+		MONO_ENTER_GC_SAFE;
 		ret = statvfs (utf8_path_name, &fsstat);
+		MONO_EXIT_GC_SAFE;
 		isreadonly = ((fsstat.f_flag & ST_RDONLY) == ST_RDONLY);
 		block_size = fsstat.f_frsize;
 #elif defined(HAVE_STATFS)
+		MONO_ENTER_GC_SAFE;
 		ret = statfs (utf8_path_name, &fsstat);
+		MONO_EXIT_GC_SAFE;
 #if defined (MNT_RDONLY)
 		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
 #elif defined (MS_RDONLY)
@@ -4601,8 +4813,12 @@ static guint32
 GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 {
 	struct statfs buf;
-	
-	if (statfs (utf8_root_path_name, &buf) == -1)
+	gint res;
+
+	MONO_ENTER_GC_SAFE;
+	res = statfs (utf8_root_path_name, &buf);
+	MONO_EXIT_GC_SAFE;
+	if (res == -1)
 		return DRIVE_UNKNOWN;
 #if PLATFORM_MACOSX
 	return _wapi_get_drive_type (buf.f_fstypename);
@@ -4619,15 +4835,25 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 	gchar buffer [512];
 	gchar **splitted;
 
+	MONO_ENTER_GC_SAFE;
 	fp = fopen ("/etc/mtab", "rt");
+	MONO_EXIT_GC_SAFE;
 	if (fp == NULL) {
+		MONO_ENTER_GC_SAFE;
 		fp = fopen ("/etc/mnttab", "rt");
+		MONO_EXIT_GC_SAFE;
 		if (fp == NULL) 
 			return(DRIVE_UNKNOWN);
 	}
 
 	drive_type = DRIVE_NO_ROOT_DIR;
-	while (fgets (buffer, 512, fp) != NULL) {
+	while (1) {
+		gchar *fgets_res;
+		MONO_ENTER_GC_SAFE;
+		fgets_res = fgets (buffer, 512, fp);
+		MONO_EXIT_GC_SAFE;
+		if (fgets_res == NULL)
+			break;
 		splitted = g_strsplit (buffer, " ", 0);
 		if (!*splitted || !*(splitted + 1) || !*(splitted + 2)) {
 			g_strfreev (splitted);
@@ -4650,7 +4876,9 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 		g_strfreev (splitted);
 	}
 
+	MONO_ENTER_GC_SAFE;
 	fclose (fp);
+	MONO_EXIT_GC_SAFE;
 	return drive_type;
 }
 #endif
@@ -4694,7 +4922,11 @@ get_fstypename (gchar *utfpath)
 #if __linux__
 	_wapi_drive_type *current;
 #endif
-	if (statfs (utfpath, &stat) == -1)
+	gint statfs_res;
+	MONO_ENTER_GC_SAFE;
+	statfs_res = statfs (utfpath, &stat);
+	MONO_EXIT_GC_SAFE;
+	if (statfs_res == -1)
 		return NULL;
 #if PLATFORM_MACOSX
 	return g_strdup (stat.f_fstypename);
@@ -4815,8 +5047,8 @@ UnlockFile (gpointer handle, guint32 offset_low, guint32 offset_high, guint32 le
 void
 mono_w32file_init (void)
 {
-	mono_os_mutex_init (&stdhandle_mutex);
-	mono_os_mutex_init (&file_share_mutex);
+	mono_coop_mutex_init (&stdhandle_mutex);
+	mono_coop_mutex_init (&file_share_mutex);
 
 	mono_w32handle_register_ops (MONO_W32HANDLE_FILE,    &_wapi_file_ops);
 	mono_w32handle_register_ops (MONO_W32HANDLE_CONSOLE, &_wapi_console_ops);
@@ -4835,7 +5067,7 @@ mono_w32file_init (void)
 void
 mono_w32file_cleanup (void)
 {
-	mono_os_mutex_destroy (&file_share_mutex);
+	mono_coop_mutex_destroy (&file_share_mutex);
 
 	if (file_share_table)
 		g_hash_table_destroy (file_share_table);
@@ -4846,14 +5078,9 @@ mono_w32file_move (gunichar2 *path, gunichar2 *dest, gint32 *error)
 {
 	gboolean result;
 
-	MONO_ENTER_GC_SAFE;
-
 	result = MoveFile (path, dest);
 	if (!result)
 		*error = mono_w32error_get_last ();
-
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
 
@@ -4862,13 +5089,9 @@ mono_w32file_copy (gunichar2 *path, gunichar2 *dest, gboolean overwrite, gint32 
 {
 	gboolean result;
 
-	MONO_ENTER_GC_SAFE;
-
 	result = CopyFile (path, dest, !overwrite);
 	if (!result)
 		*error = mono_w32error_get_last ();
-
-	MONO_EXIT_GC_SAFE;
 
 	return result;
 }
@@ -4878,14 +5101,9 @@ mono_w32file_replace (gunichar2 *destinationFileName, gunichar2 *sourceFileName,
 {
 	gboolean result;
 
-	MONO_ENTER_GC_SAFE;
-
 	result = ReplaceFile (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
 	if (!result)
 		*error = mono_w32error_get_last ();
-
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
 
@@ -4895,14 +5113,10 @@ mono_w32file_get_file_size (gpointer handle, gint32 *error)
 	gint64 length;
 	guint32 length_hi;
 
-	MONO_ENTER_GC_SAFE;
-
 	length = GetFileSize (handle, &length_hi);
 	if(length==INVALID_FILE_SIZE) {
 		*error=mono_w32error_get_last ();
 	}
-
-	MONO_EXIT_GC_SAFE;
 
 	return length | ((gint64)length_hi << 32);
 }
@@ -4912,14 +5126,9 @@ mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *erro
 {
 	gboolean result;
 
-	MONO_ENTER_GC_SAFE;
-
 	result = LockFile (handle, position & 0xFFFFFFFF, position >> 32, length & 0xFFFFFFFF, length >> 32);
 	if (!result)
 		*error = mono_w32error_get_last ();
-
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
 
@@ -4928,49 +5137,26 @@ mono_w32file_unlock (gpointer handle, gint64 position, gint64 length, gint32 *er
 {
 	gboolean result;
 
-	MONO_ENTER_GC_SAFE;
-
 	result = UnlockFile (handle, position & 0xFFFFFFFF, position >> 32, length & 0xFFFFFFFF, length >> 32);
 	if (!result)
 		*error = mono_w32error_get_last ();
-
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
 
 gpointer
 mono_w32file_get_console_input (void)
 {
-	gpointer handle;
-
-	MONO_ENTER_GC_SAFE;
-	handle = mono_w32file_get_std_handle (STD_INPUT_HANDLE);
-	MONO_EXIT_GC_SAFE;
-
-	return handle;
+	return mono_w32file_get_std_handle (STD_INPUT_HANDLE);
 }
 
 gpointer
 mono_w32file_get_console_output (void)
 {
-	gpointer handle;
-
-	MONO_ENTER_GC_SAFE;
-	handle = mono_w32file_get_std_handle (STD_OUTPUT_HANDLE);
-	MONO_EXIT_GC_SAFE;
-
-	return handle;
+	return mono_w32file_get_std_handle (STD_OUTPUT_HANDLE);
 }
 
 gpointer
 mono_w32file_get_console_error (void)
 {
-	gpointer handle;
-
-	MONO_ENTER_GC_SAFE;
-	handle = mono_w32file_get_std_handle (STD_ERROR_HANDLE);
-	MONO_EXIT_GC_SAFE;
-
-	return handle;
+	return mono_w32file_get_std_handle (STD_ERROR_HANDLE);
 }
