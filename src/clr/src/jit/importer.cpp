@@ -6467,8 +6467,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             bool managedCall = (calliSig.callConv & GTF_CALL_UNMANAGED) == 0;
             if (managedCall)
             {
-                call->AsCall()->SetFatPointerCandidate();
-                setMethodHasFatPointer();
+                addFatPointerCandidate(call->AsCall());
             }
         }
     }
@@ -6772,7 +6771,31 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
-                GenTreePtr fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
+                GenTreePtr fptr = nullptr;
+                bool       coreRTGenericVirtualMethod =
+                    ((sig->callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI);
+#if COR_JIT_EE_VERSION > 460
+                if (coreRTGenericVirtualMethod)
+                {
+                    GenTreePtr runtimeMethodHandle = nullptr;
+                    if (callInfo->exactContextNeedsRuntimeLookup)
+                    {
+                        runtimeMethodHandle =
+                            impRuntimeLookupToTree(pResolvedToken, &callInfo->codePointerLookup, methHnd);
+                    }
+                    else
+                    {
+                        runtimeMethodHandle = gtNewIconEmbMethHndNode(pResolvedToken->hMethod);
+                    }
+                    fptr = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, GTF_EXCEPT,
+                                               gtNewArgList(thisPtr, runtimeMethodHandle));
+                }
+                else
+#endif // COR_JIT_EE_VERSION
+                {
+                    fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
+                }
+
                 if (compDonotInline())
                 {
                     return callRetTyp;
@@ -6792,6 +6815,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->gtCall.gtCallObjp = thisPtrCopy;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
+                if (coreRTGenericVirtualMethod)
+                {
+                    addFatPointerCandidate(call->AsCall());
+                }
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
                 {
