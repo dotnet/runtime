@@ -37,7 +37,6 @@
 #include "comdelegate.h"
 #include "siginfo.hpp"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #include "objectclone.h"
 #endif
 #include "typekey.h"

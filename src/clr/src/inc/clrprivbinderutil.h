@@ -737,9 +737,6 @@ namespace CLRPrivBinderUtil
     /** probably should be exposed on an instance (of something) method rather that magically calling GetAppDomain() **/
     ICLRPrivAssembly* RaiseAssemblyResolveEvent(IAssemblyName *pAssemblyName, ICLRPrivAssembly* pRequestingAssembly);
 
-    /** PLACEHOLDER - CLRPRivBinderFusion::BindAssemblyByName throws, despite being an HRESULT function,
-    most presumably because returning HRESULT is too lossy   **/
-
     /** Ultimately, only the binder can do ref-def matching, and it should be opaque to CLR. 
      This is not trivial to do, however, since we cannot do data conversion as the function is nofault **/
     BOOL CompareHostBinderSpecs(AssemblySpec* a1, AssemblySpec* a2);

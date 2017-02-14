@@ -46,7 +46,6 @@
 #include "appdomainnative.hpp"
 #ifdef FEATURE_REMOTING
 #include "remoting.h"
-#include "appdomainhelper.h"
 #endif
 #include "customattribute.h"
 #include "winnls.h"

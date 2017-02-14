@@ -31,7 +31,6 @@
 #include "appdomainstack.inl"
 #include "eventtrace.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #endif
 #include "comutilnative.h"
 #include "finalizerthread.h"
