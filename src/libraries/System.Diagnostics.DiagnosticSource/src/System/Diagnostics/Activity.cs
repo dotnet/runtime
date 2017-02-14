@@ -314,7 +314,7 @@ namespace System.Diagnostics
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
                 string parentId = ParentId[0] == s_rootIdPrefix ? ParentId : s_rootIdPrefix + ParentId;
-                ret = appendSuffix(parentId, "I_" + Interlocked.Increment(ref s_currentRootId));
+                ret = appendSuffix(parentId, "I-" + Interlocked.Increment(ref s_currentRootId));
             }
             else
             {
@@ -330,7 +330,7 @@ namespace System.Diagnostics
             //id MAY start with '/' and contain '.'. We return substring between them
             //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '/',
             //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id scenarios
-            int rootEnd = id.IndexOf('.');
+            int rootEnd = id.IndexOf(s_idDelimiter);
             if (rootEnd < 0)
                 rootEnd = id.Length;
             int rootStart = id[0] == s_rootIdPrefix ? 1 : 0;
@@ -340,7 +340,7 @@ namespace System.Diagnostics
         private string appendSuffix(string parentId, string suffix)
         {
 #if DEBUG
-            suffix = OperationName + "_" + suffix;
+            suffix = OperationName + "-" + suffix;
 #endif
             if (parentId.Length + suffix.Length <= 127)
                 return parentId + s_idDelimiter + suffix;
