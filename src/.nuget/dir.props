@@ -3,6 +3,9 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\dir.props" />
 
   <PropertyGroup>
+    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform>AnyCPU</PackagePlatform>
+  
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.10-x64</_parseDistroRid>
@@ -49,7 +52,6 @@
   <PropertyGroup Condition="'$(IsLineupPackage)' == 'true'">
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
-    <PackagePlatforms>x64;x86;arm64;arm;armel</PackagePlatforms>
   </PropertyGroup>
 
   <Choose>
