@@ -731,14 +731,22 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     // 2. Emit the method body
     mdToken tokPinningHelper = pCode->GetToken(MscorlibBinder::GetField(FIELD__PINNING_HELPER__M_DATA));
-    
+
     // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
-    // The trick below will do that. 
+    // The trick below will do that.
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokPinningHelper);
 
-    // 2.2 Push the hidden context param 
+#if defined(_TARGET_X86_)
+    // 2.2 Push the rest of the arguments for x86
+    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
+    {
+        pCode->EmitLDARG(i);
+    }
+#endif
+
+    // 2.3 Push the hidden context param
     // The context is going to be captured from the thisptr
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokPinningHelper);
@@ -746,16 +754,18 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitSUB();
     pCode->EmitLDIND_I();
 
-    // 2.3 Push the rest of the arguments
+#if !defined(_TARGET_X86_)
+    // 2.4 Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
+#endif
 
-    // 2.4 Push the target address
+    // 2.5 Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
-    // 2.5 Do the calli
+    // 2.6 Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
