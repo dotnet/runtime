@@ -379,7 +379,7 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (short)((((int)host & 0xFF) << 8) | (int)((host >> 8) & 0xFF));
+            return unchecked((short)((((int)host & 0xFF) << 8) | (int)((host >> 8) & 0xFF)));
 #endif
         }
 

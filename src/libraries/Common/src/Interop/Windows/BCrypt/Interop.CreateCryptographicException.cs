@@ -11,7 +11,7 @@ internal partial class Interop
     {
         internal static Exception CreateCryptographicException(NTSTATUS ntStatus)
         {
-            int hr = ((int)ntStatus) | 0x01000000;
+            int hr = unchecked((int)ntStatus) | 0x01000000;
             return new CryptographicException(hr);
         }
     }

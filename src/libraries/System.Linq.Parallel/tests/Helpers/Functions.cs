@@ -25,7 +25,7 @@ namespace System.Linq.Parallel.Tests
             long product = 1;
             for (int i = 0; i < count; i++, start++)
             {
-                product *= start;
+                product = unchecked(product * start);
             }
             return product;
         }

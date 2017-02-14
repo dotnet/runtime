@@ -149,7 +149,7 @@ namespace System.Numerics
                     Array.Clear(_bits, 2, _length - 2);
                 }
 
-                uint lo = (uint)value;
+                uint lo = unchecked((uint)value);
                 uint hi = (uint)(value >> 32);
 
                 _bits[0] = lo;

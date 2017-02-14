@@ -56,7 +56,7 @@ namespace System.Linq.Parallel.Tests
         {
             // The operation will overflow for long-running sizes, but that's okay:
             // The helper is overflowing too!
-            Assert.Equal(Functions.ProductRange(1, count), ParallelEnumerable.Range(1, count).Aggregate(1L, (x, y) => x * y));
+            Assert.Equal(Functions.ProductRange(1, count), ParallelEnumerable.Range(1, count).Aggregate(1L, (x, y) => unchecked(x * y)));
         }
 
         [Fact]
@@ -108,7 +108,8 @@ namespace System.Linq.Parallel.Tests
         [InlineData(16)]
         public static void Aggregate_Product_Result(int count)
         {
-            Assert.Equal(Functions.ProductRange(1, count) + ResultFuncModifier, ParallelEnumerable.Range(1, count).Aggregate(1L, (x, y) => x * y, result => result + ResultFuncModifier));
+            Assert.Equal(Functions.ProductRange(1, count) + ResultFuncModifier,
+                         ParallelEnumerable.Range(1, count).Aggregate(1L, (x, y) => unchecked(x * y), result => result + ResultFuncModifier));
         }
 
         [Fact]
@@ -168,7 +169,7 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = ParallelEnumerable.Range(1, count);
             long actual = query.Aggregate(
                 1L,
-                (accumulator, x) => accumulator * x,
+                (accumulator, x) => unchecked(accumulator * x),
                 (left, right) => left * right,
                 result => result + ResultFuncModifier);
             Assert.Equal(Functions.ProductRange(1, count) + ResultFuncModifier, actual);
@@ -237,7 +238,7 @@ namespace System.Linq.Parallel.Tests
             ParallelQuery<int> query = ParallelEnumerable.Range(1, count);
             long actual = query.Aggregate(
                 () => 1L,
-                (accumulator, x) => accumulator * x,
+                (accumulator, x) => unchecked(accumulator * x),
                 (left, right) => left * right,
                 result => result + ResultFuncModifier);
             Assert.Equal(Functions.ProductRange(1, count) + ResultFuncModifier, actual);
