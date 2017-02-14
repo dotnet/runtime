@@ -24,22 +24,21 @@ namespace System.Net.Http
 
         internal static bool IsEnabled()
         {
-            return s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteName);
+            //check if someone listens to HttpHandlerDiagnosticListener
+            return s_diagnosticListener.IsEnabled();
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            //HttpClientHandler is responsible to call DelegatingHandler.IsEnabled() before forwarding request here.
-            //This code will not be reached if ResponseWriteName is not enabled, unless consumer unsubscribes
+            //HttpClientHandler is responsible to call DiagnosticsHandler.IsEnabled() before forwarding request here.
+            //This code will not be reached if no one listens to 'HttpHandlerDiagnosticListener', unless consumer unsubscribes
             //from DiagnosticListener right after the check. So some requests happening right after subscription starts
             //might not be instrumented. Similarly, when consumer unsubscribes, extra requests might be instumented
 
             Guid loggingRequestId = Guid.NewGuid();
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteName))
-            {
-                LogHttpRequest(request,  loggingRequestId);
-            }
+            LogHttpRequest(request,  loggingRequestId);
+
             Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
 
             LogHttpResponse(responseTask, loggingRequestId);
@@ -53,17 +52,20 @@ namespace System.Net.Http
 
         private static void LogHttpRequest(HttpRequestMessage request, Guid loggingRequestId)
         {
-            long timestamp = Stopwatch.GetTimestamp();
+            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteName))
+            {
+                long timestamp = Stopwatch.GetTimestamp();
 
-            s_diagnosticListener.Write(
-                DiagnosticsHandlerLoggingStrings.RequestWriteName,
-                new
-                {
-                    Request = request,
-                    LoggingRequestId = loggingRequestId,
-                    Timestamp = timestamp
-                }
-            );
+                s_diagnosticListener.Write(
+                    DiagnosticsHandlerLoggingStrings.RequestWriteName,
+                    new
+                    {
+                        Request = request,
+                        LoggingRequestId = loggingRequestId,
+                        Timestamp = timestamp
+                    }
+                );
+            }
         }
 
         private static void LogHttpResponse(Task<HttpResponseMessage> responseTask, Guid loggingRequestId)
@@ -73,17 +75,32 @@ namespace System.Net.Http
                 {
                     long timestamp = Stopwatch.GetTimestamp();
 
-                    s_diagnosticListener.Write(
-                        DiagnosticsHandlerLoggingStrings.ResponseWriteName,
-                        new
-                        {
-                            Response = t.Status == TaskStatus.RanToCompletion ? t.Result : null,
-                            LoggingRequestId = (Guid)s,
-                            TimeStamp = timestamp,
-                            Exception = t.Exception,
-                            RequestTaskStatus = t.Status
-                        }
-                    );
+                    if (t.IsFaulted && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionWriteName))
+                    {
+                        s_diagnosticListener.Write(
+                            DiagnosticsHandlerLoggingStrings.ExceptionWriteName,
+                            new
+                            {
+                                LoggingRequestId = (Guid) s,
+                                Timestamp = timestamp,
+                                Exception = t.Exception,
+                            }
+                        );
+                    }
+
+                    if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteName))
+                    {
+                        s_diagnosticListener.Write(
+                            DiagnosticsHandlerLoggingStrings.ResponseWriteName,
+                            new
+                            {
+                                Response = t.Status == TaskStatus.RanToCompletion ? t.Result : null,
+                                LoggingRequestId = (Guid) s,
+                                TimeStamp = timestamp,
+                                RequestTaskStatus = t.Status
+                            }
+                        );
+                    }
                 }, loggingRequestId, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
         }
 

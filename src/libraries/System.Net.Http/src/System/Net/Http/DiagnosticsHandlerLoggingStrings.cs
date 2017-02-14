@@ -12,5 +12,6 @@ namespace System.Net.Http
         public const string DiagnosticListenerName = "HttpHandlerDiagnosticListener";
         public const string RequestWriteName = "System.Net.Http.Request";
         public const string ResponseWriteName = "System.Net.Http.Response";
+        public const string ExceptionWriteName = "System.Net.Http.Exception";
     }
 }
