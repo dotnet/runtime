@@ -114,6 +114,7 @@ EXIT /B %ERRORLEVEL%
       <WrapperShContents>$(WrapperShContents)for scriptFilePath in %24(find . -type f -iname '%2A.sh' ! -iname "runtests.sh" | sort)%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)do%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents) perl -pi -e 's/\r\n|\n|\r/\n/g' "%24scriptFilePath"%0a</WrapperShContents>
+      <WrapperShContents>$(WrapperShContents) chmod +x "%24scriptFilePath"%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)done%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)%0a</WrapperShContents>
       <WrapperShContents>$(WrapperShContents)echo BEGIN EXECUTION%0a</WrapperShContents>
