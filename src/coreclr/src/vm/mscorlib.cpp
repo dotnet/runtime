@@ -31,7 +31,8 @@
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
-#include "commethodrental.h"
+#include "excep.h"
+#include "fcall.h"
 #include "nlsinfo.h"
 #include "calendardata.h"
 #include "commodule.h"
@@ -95,7 +96,7 @@
 #include "multicorejit.h"
 #endif
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
 #include "clrprivtypecachereflectiononlywinrt.h"
 #endif
 

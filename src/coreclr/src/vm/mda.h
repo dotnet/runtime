@@ -295,7 +295,6 @@ private:
     friend class MdaXmlMessage;
     friend class MdaXmlIndustry;
     friend class MdaConfigFactory;
-    friend class EEConfigFactory;
     friend class MdaFramework;
     friend void EEStartupHelper(COINITIEE fFlags);
 

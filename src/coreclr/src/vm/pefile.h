@@ -642,9 +642,7 @@ protected:
 
 protected:
 
-    friend class CLRPrivBinderFusion;
 #ifndef DACCESS_COMPILE
-    // CLRPrivBinderFusion calls this for Fusion-bound assemblies in AppX processes.
     void SetHostAssembly(ICLRPrivAssembly * pHostAssembly)
     { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
 #endif //DACCESS_COMPILE

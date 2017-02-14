@@ -29,7 +29,6 @@
 #endif
 #include "eeconfig.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #include "objectclone.h"
 #else
 #include "callhelpers.h"

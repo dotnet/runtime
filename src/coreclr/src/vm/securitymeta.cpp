@@ -29,7 +29,6 @@
 #include "threads.h"
 #include "eventtrace.h"
 #ifdef FEATURE_REMOTING
-#include "appdomainhelper.h"
 #include "objectclone.h"
 #endif //FEATURE_REMOTING
 #include "typestring.h"
