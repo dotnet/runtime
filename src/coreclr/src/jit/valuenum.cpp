@@ -833,7 +833,7 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, unsigned handleFlags)
 }
 
 // Returns the value number for zero of the given "typ".
-// It has an unreached() for a "typ" that has no zero value, such as TYP_BYREF.
+// It has an unreached() for a "typ" that has no zero value, such as TYP_VOID.
 ValueNum ValueNumStore::VNZeroForType(var_types typ)
 {
     switch (typ)
@@ -861,6 +861,8 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_REF:
         case TYP_ARRAY:
             return VNForNull();
+        case TYP_BYREF:
+            return VNForByrefCon(0);
         case TYP_STRUCT:
 #ifdef FEATURE_SIMD
         // TODO-CQ: Improve value numbering for SIMD types.
@@ -1876,6 +1878,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     {
 #ifndef _TARGET_64BIT_
         case TYP_REF:
+        case TYP_BYREF:
 #endif
         case TYP_INT:
         {
@@ -1934,6 +1937,9 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     else
                         return VNForLongCon(INT64(arg0Val));
 #endif
+                case TYP_BYREF:
+                    assert(typ == TYP_BYREF);
+                    return VNForByrefCon((INT64)arg0Val);
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
                     if (srcIsUnsigned)
@@ -1962,6 +1968,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
             {
 #ifdef _TARGET_64BIT_
                 case TYP_REF:
+                case TYP_BYREF:
 #endif
                 case TYP_LONG:
                     INT64 arg0Val = GetConstantInt64(arg0VN);
@@ -1992,6 +1999,9 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                         case TYP_ULONG:
                             assert(typ == TYP_LONG);
                             return arg0VN;
+                        case TYP_BYREF:
+                            assert(typ == TYP_BYREF);
+                            return VNForByrefCon((INT64)arg0Val);
                         case TYP_FLOAT:
                             assert(typ == TYP_FLOAT);
                             if (srcIsUnsigned)
