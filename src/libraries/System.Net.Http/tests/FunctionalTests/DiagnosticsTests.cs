@@ -213,7 +213,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(16098)]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
         {
@@ -246,7 +245,7 @@ namespace System.Net.Http.Functional.Tests
                                     return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
                                 });
                             Task response = client.GetAsync(url, tcs.Token);
-                            await Assert.ThrowsAsync<IOException>(() => Task.WhenAll(response, request));
+                            await Assert.ThrowsAnyAsync<Exception>(() => Task.WhenAll(response, request));
                         }).Wait();
                     }
                 }
