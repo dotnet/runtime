@@ -66,20 +66,6 @@ InvariantFailed = Invariant failed.
 InvariantFailed_Cnd = Invariant failed: {0}
 MustUseCCRewrite = An assembly (probably "{1}") must be rewritten using the code contracts binary rewriter (CCRewrite) because it is calling Contract.{0} and the CONTRACTS_FULL symbol is defined.  Remove any explicit definitions of the CONTRACTS_FULL symbol from your project and rebuild.  CCRewrite can be downloaded from http://go.microsoft.com/fwlink/?LinkID=169180. \r\nAfter the rewriter is installed, it can be enabled in Visual Studio from the project's Properties page on the Code Contracts pane.  Ensure that "Perform Runtime Contract Checking" is enabled, which will define CONTRACTS_FULL.
 
-; Identity Reference Library
-#if FEATURE_IDENTITY_REFERENCE
-IdentityReference_IdentityNotMapped = Some or all identity references could not be translated.
-IdentityReference_MustBeIdentityReference = The targetType parameter must be of IdentityReference type.
-IdentityReference_AccountNameTooLong = Account name is too long.
-IdentityReference_DomainNameTooLong = Domain name is too long.
-IdentityReference_InvalidNumberOfSubauthorities = The number of sub-authorities must not exceed {0}.
-IdentityReference_IdentifierAuthorityTooLarge = The size of the identifier authority must not exceed 6 bytes.
-IdentityReference_InvalidSidRevision = SIDs with revision other than '1' are not supported.
-IdentityReference_CannotCreateLogonIdsSid = Well-known SIDs of type LogonIdsSid cannot be created.
-IdentityReference_DomainSidRequired = The domainSid parameter must be specified for creating well-known SID of type {0}.
-IdentityReference_NotAWindowsDomain = The domainSid parameter is not a valid Windows domain SID.
-#endif // FEATURE_IDENTITY_REFERENCE
-
 ; AccessException
 Acc_CreateGeneric = Cannot create a type for which Type.ContainsGenericParameters is true.
 Acc_CreateAbst = Cannot create an abstract class.
