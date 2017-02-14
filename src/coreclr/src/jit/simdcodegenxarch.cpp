@@ -243,6 +243,25 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             {
                 result = INS_pminsw;
             }
+            else if (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4)
+            {
+                if (baseType == TYP_BYTE)
+                {
+                    result = INS_pminsb;
+                }
+                else if (baseType == TYP_CHAR)
+                {
+                    result = INS_pminuw;
+                }
+                else if (baseType == TYP_INT)
+                {
+                    result = INS_pminsd;
+                }
+                else if (baseType == TYP_UINT)
+                {
+                    result = INS_pminud;
+                }
+            }
             else
             {
                 unreached();
@@ -265,6 +284,25 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             else if (baseType == TYP_SHORT)
             {
                 result = INS_pmaxsw;
+            }
+            else if (compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4)
+            {
+                if (baseType == TYP_BYTE)
+                {
+                    result = INS_pmaxsb;
+                }
+                else if (baseType == TYP_CHAR)
+                {
+                    result = INS_pmaxuw;
+                }
+                else if (baseType == TYP_INT)
+                {
+                    result = INS_pmaxsd;
+                }
+                else if (baseType == TYP_UINT)
+                {
+                    result = INS_pmaxud;
+                }
             }
             else
             {
