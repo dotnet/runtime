@@ -60,9 +60,6 @@ typedef DPTR(class PEImage)                PTR_PEImage;
 class PEImage 
 {
     friend class PEModule;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    friend class CCLRDebugManager;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 public:
     // ------------------------------------------------------------
     // Public constants

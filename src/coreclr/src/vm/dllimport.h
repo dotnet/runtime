@@ -645,7 +645,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
 EXTERN_C BOOL CallNeedsHostHook(size_t target);
 
-#ifndef FEATURE_INCLUDE_ALL_INTERFACES
 //
 // Inlinable implementation allows compiler to strip all code related to host hook
 //
@@ -660,7 +659,6 @@ inline BOOL CallNeedsHostHook(size_t target)
     LIMITED_METHOD_CONTRACT;
     return FALSE;
 }
-#endif
 
 // 
 // Limit length of string field in IL stub ETW events so that the whole
