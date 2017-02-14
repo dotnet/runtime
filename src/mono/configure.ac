@@ -334,7 +334,6 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE"
 		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
 		libdl=
-		dnl FIXME: Does eglib pick this up?
 		LIBS="$LIBS -lnetwork -ltextencoding"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
