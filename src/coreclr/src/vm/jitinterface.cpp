@@ -725,11 +725,31 @@ BOOL CEEInfo::shouldEnforceCallvirtRestriction(
 // If the need arises (i.e. performance issues) we will define sets of assemblies (e.g. all app assemblies)
 // The main point is that all this logic is concentrated in one place.
 
+// NOTICE: If you change this logic to allow multi-assembly version bubbles you
+// need to consider the impact on diagnostic tools. Currently there is an inlining
+// table which tracks inliner/inlinee relationships in R2R images but it is not
+// yet capable of encoding cross-assembly inlines. The scenario where this
+// may show are instrumenting profilers that want to instrument a given method A
+// using the ReJit APIs. If method A happens to inlined within method B in another 
+// assembly then the profiler needs to know that so it can rejit B too.
+// The recommended approach is to upgrade the inlining table (vm\inlinetracking.h\.cpp)
+// now that presumably R2R images have some way to refer to methods in other
+// assemblies in their version bubble. Chat with the diagnostics team if you need more 
+// details.
+//
+// There already is a case where cross-assembly inlining occurs in an
+// unreported fashion for methods marked NonVersionable. There is a specific 
+// exemption called out for this on ICorProfilerInfo6::EnumNgenModuleMethodsInliningThisMethod
+// and the impact of the cut was vetted with partners. It would not be appropriate 
+// to increase that unreported set without additional review.
+
+
 bool IsInSameVersionBubble(Assembly * current, Assembly * target)
 {
     LIMITED_METHOD_CONTRACT;
 
     // trivial case: current and target are identical
+    // DO NOT change this without reading the notice above
     if (current == target)
         return true;
 
@@ -740,6 +760,7 @@ bool IsInSameVersionBubble(Assembly * current, Assembly * target)
 static bool IsInSameVersionBubble(MethodDesc* pCurMD, MethodDesc *pTargetMD)
 {
     LIMITED_METHOD_CONTRACT;
+    // DO NOT change this without reading the notice above
     if (IsInSameVersionBubble(pCurMD->GetModule()->GetAssembly(),
                               pTargetMD->GetModule()->GetAssembly()))
     {
