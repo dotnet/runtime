@@ -150,8 +150,8 @@ namespace System.Diagnostics.Tests
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child1.OperationName}_1", child1.Id);
-            Assert.Equal($"{parent.Id}.{child2.OperationName}_2", child2.Id);
+            Assert.Equal($"{parent.Id}.{child1.OperationName}-1", child1.Id);
+            Assert.Equal($"{parent.Id}.{child2.OperationName}-2", child2.Id);
 #else
             Assert.Equal(parent.Id + ".1", child1.Id);
             Assert.Equal(parent.Id + ".2", child2.Id);
@@ -163,7 +163,7 @@ namespace System.Diagnostics.Tests
             var child3 = new Activity("child3");
             child3.Start();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child3.OperationName}_3", child3.Id);
+            Assert.Equal($"{parent.Id}.{child3.OperationName}-3", child3.Id);
 #else
             Assert.Equal(parent.Id + ".3", child3.Id);
 #endif
