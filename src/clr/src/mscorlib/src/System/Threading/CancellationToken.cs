@@ -9,7 +9,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime;
@@ -38,7 +37,6 @@ namespace System.Threading
     /// All members of this struct are thread-safe and may be used concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
     public struct CancellationToken
     {
@@ -317,11 +315,8 @@ namespace System.Threading
         }
 
         // the real work..
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private CancellationTokenRegistration Register(Action<Object> callback, Object state, bool useSynchronizationContext, bool useExecutionContext)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
@@ -341,8 +336,7 @@ namespace System.Threading
                 if (useSynchronizationContext)
                     capturedSyncContext = SynchronizationContext.Current;
                 if (useExecutionContext)
-                    capturedExecutionContext = ExecutionContext.Capture(
-                        ref stackMark, ExecutionContext.CaptureOptions.OptimizeDefaultCase); // ideally we'd also use IgnoreSyncCtx, but that could break compat
+                    capturedExecutionContext = ExecutionContext.Capture();
             }
 
             // Register the callback with the source.

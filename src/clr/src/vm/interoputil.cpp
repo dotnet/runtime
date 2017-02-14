@@ -46,9 +46,6 @@
 #include "clrtocomcall.h"
 #include "comcache.h"
 #include "commtmemberinfomap.h"
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include "comtypelibconverter.h"
-#endif
 #include "olevariant.h"
 #include "stdinterfaces.h"
 #include "notifyexternals.h"
@@ -294,7 +291,6 @@ static const BinderMethodID s_stubsDisposableToClosable[] =
     METHOD__IDISPOSABLE_TO_ICLOSABLE_ADAPTER__CLOSE
 };
 
-#ifdef FEATURE_CORECLR
 DEFINE_ASM_QUAL_TYPE_NAME(NCCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyCollectionChanged_WinRTName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCMA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToManagedAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCWA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToWinRTAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
@@ -306,20 +302,6 @@ DEFINE_ASM_QUAL_TYPE_NAME(CMDMA_ASM_QUAL_TYPE_NAME, g_ICommandToManagedAdapterNa
 DEFINE_ASM_QUAL_TYPE_NAME(CMDWA_ASM_QUAL_TYPE_NAME, g_ICommandToWinRTAdapterName, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(NCCEHWINRT_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventHandler_WinRT, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
 DEFINE_ASM_QUAL_TYPE_NAME(PCEHWINRT_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventHandler_WinRT_Name, g_SystemRuntimeWindowsRuntimeAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-#else
-DEFINE_ASM_QUAL_TYPE_NAME(NCCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyCollectionChanged_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCMA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCWA_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCWINRT_ASM_QUAL_TYPE_NAME, g_INotifyPropertyChanged_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCMA_ASM_QUAL_TYPE_NAME, g_NotifyPropertyChangedToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NPCWA_ASM_QUAL_TYPE_NAME, g_NotifyPropertyChangedToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDWINRT_ASM_QUAL_TYPE_NAME, g_ICommand_WinRTName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDMA_ASM_QUAL_TYPE_NAME, g_ICommandToManagedAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(CMDWA_ASM_QUAL_TYPE_NAME, g_ICommandToWinRTAdapterName, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(NCCEHWINRT_ASM_QUAL_TYPE_NAME, g_NotifyCollectionChangedEventHandler_WinRT, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-DEFINE_ASM_QUAL_TYPE_NAME(PCEHWINRT_ASM_QUAL_TYPE_NAME, g_PropertyChangedEventHandler_WinRT_Name, g_SystemAsmName, VER_ASSEMBLYVERSION_STR, g_ECMAKeyToken);
-
-#endif
 
 const WinRTInterfaceRedirector::NonMscorlibRedirectedInterfaceInfo WinRTInterfaceRedirector::s_rNonMscorlibInterfaceInfos[3] =
 {
@@ -2370,48 +2352,7 @@ HRESULT LoadTypeLibExWithFlags(LPCOLESTR  szFile,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_COMINTEROP_TLB_SUPPORT
     return E_FAIL;
-#else //FEATURE_COMINTEROP_TLB_SUPPORT
-
-    *pptlib = NULL;
-
-    GCX_PREEMP();
-
-    REGKIND rk = REGKIND_NONE;
-
-    if ((flags & TlbExporter_ExportAs64Bit) == TlbExporter_ExportAs64Bit)
-    {
-        rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_64BIT);
-    }
-    else if ((flags & TlbExporter_ExportAs32Bit) == TlbExporter_ExportAs32Bit)
-    {
-        rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_32BIT);
-    }
-
-    HRESULT hr = S_OK;
-    
-    EX_TRY
-    {
-        LeaveRuntimeHolder lrh((size_t)LoadTypeLibEx);
-        
-        hr = LoadTypeLibEx(szFile, rk, pptlib);
-
-        // If we fail with E_INVALIDARG, it's probably because we're on a downlevel
-        //  platform that doesn't support loading type libraries by bitness.
-        if (hr == E_INVALIDARG)
-        {
-            hr = LoadTypeLibEx(szFile, REGKIND_NONE, pptlib);
-        }
-    }
-    EX_CATCH
-    {
-        hr = E_OUTOFMEMORY;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return hr;
-#endif //FEATURE_COMINTEROP_TLB_SUPPORT
 }
 
 
@@ -6950,12 +6891,6 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
     LPCWSTR pwszClassName = winrtClassName.GetRawBuffer(&cchClassName);
     SString ssClassName(SString::Literal, pwszClassName, cchClassName);
 
-#ifndef FEATURE_CORECLR
-    if (ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_PRIVATE_DYNAMICTYPEUSAGE_KEYWORD))
-    {
-        FireEtwIInspectableRuntimeClassName(pwszClassName, GetClrInstanceId());
-    }
-#endif
     
     // Check a cache to see if this has already been looked up.
     AppDomain *pDomain = GetAppDomain();

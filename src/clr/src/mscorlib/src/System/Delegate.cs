@@ -191,7 +191,6 @@ namespace System {
             return  a.CombineImpl(b);
         }
             
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Delegate Combine(params Delegate[] delegates)
         {
             if (delegates == null || delegates.Length == 0)
@@ -432,7 +431,7 @@ namespace System {
         }
             
         // V1 API.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
@@ -482,7 +481,7 @@ namespace System {
         }
 
         // V2 API.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Delegate CreateDelegate(Type type, Object firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.

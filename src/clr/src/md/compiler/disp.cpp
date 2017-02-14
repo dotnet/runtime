@@ -16,9 +16,6 @@
 #include <corerror.h>
 #include <mdlog.h>
 #include <mdcommon.h>
-#ifdef FEATURE_COMINTEROP_TLB_SUPPORT
-#include <imptlb.h>
-#endif 
 
 #ifdef EnC_SUPPORTED
 #define ENC_DELTA_HACK
@@ -439,13 +436,6 @@ ErrExit:
     return hr;
 } // Disp::OpenScopeOnMemory
 
-#if defined(FEATURE_METADATA_IN_VM) && !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-
-#include <metahost.h>
-// Pointer to the activated CLR interface provided by the shim.
-extern ICLRRuntimeInfo * g_pCLRRuntime;
-
-#endif
 
 //*****************************************************************************
 // Get the directory where the CLR system resides.
@@ -458,27 +448,11 @@ Disp::GetCORSystemDirectory(
     DWORD                           cchBuffer,     // [in] Size of the buffer
     DWORD                          *pcchBuffer)    // [out] Number of characters returned
 {
-#if defined(FEATURE_METADATA_IN_VM) && !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-    
-    // This implies a machine-wide CLR install root, which may not exist for some CLR
-    // skus using standalone metadata.
-    *pcchBuffer = cchBuffer;
-    hr = g_pCLRRuntime->GetRuntimeDirectory(szBuffer, pcchBuffer);
 
-    END_ENTRYPOINT_NOTHROW;
-    
-    return hr;
-#else //!FEATURE_METADATA_IN_VM || FEATURE_CORECLR
-
-#ifdef FEATURE_CORECLR
     UNREACHABLE_MSG("Calling IMetaDataDispenser::GetCORSystemDirectory!  This code should not be "
                 "reachable or needs to be reimplemented for CoreCLR!");
-#endif //FEATURE_CORECLR
     
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_IN_VM || FEATURE_CORECLR
 } // Disp::GetCORSystemDirectory
 
 HRESULT Disp::FindAssembly(             // S_OK or error

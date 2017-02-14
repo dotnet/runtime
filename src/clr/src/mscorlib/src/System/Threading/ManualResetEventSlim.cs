@@ -13,7 +13,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System;
-using System.Security.Permissions;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -45,7 +44,6 @@ namespace System.Threading
     /// completed, and Reset, which should only be used when no other threads are
     /// accessing the event.
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("Set = {IsSet}")]
     public class ManualResetEventSlim : IDisposable
     {

@@ -1408,12 +1408,10 @@ BOOL FinalizerThread::FinalizerThreadWatchDogHelper()
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_CORECLR
     // This change was added late in Windows Phone 8, so we want to keep it minimal.
     // We should consider refactoring this later, as we've got a lot of dead code here now on CoreCLR.
     dwTimeout = INFINITE;
     maxTotalWait = INFINITE;
-#endif // FEATURE_CORECLR
 
     while (1) {
         struct Param

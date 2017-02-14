@@ -17,7 +17,6 @@
 namespace System.Threading {
 
     using System;
-    using System.Security.Permissions;
     using System.Runtime;
     using System.Runtime.Remoting;
     using System.Threading;
@@ -27,7 +26,6 @@ namespace System.Threading {
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public static class Monitor 
     {
         /*=========================================================================
@@ -76,7 +74,6 @@ namespace System.Threading {
         **             own the lock.
         =========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern void Exit(Object obj);
     
         /*=========================================================================

@@ -22,7 +22,6 @@ namespace System {
     using nuint = System.UInt32;
 #endif // BIT64
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public static class Buffer
     {
         // Copies from one primitive array to another primitive array without
@@ -205,7 +204,6 @@ namespace System {
                 *(src + len) = 0;
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe static void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len) {
             Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
@@ -218,7 +216,6 @@ namespace System {
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe static void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
         {
             Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");        
@@ -242,7 +239,6 @@ namespace System {
         // 1. This method is given access to other internal dlls and this close to release we do not want to change it.
         // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
         [FriendAccessAllowed]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 #if ARM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal unsafe static extern void Memcpy(byte* dest, byte* src, int len);
@@ -255,7 +251,6 @@ namespace System {
 #endif // ARM
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
@@ -581,7 +576,6 @@ namespace System {
 
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private unsafe static void _Memmove(byte* dest, byte* src, nuint len)
         {
@@ -590,7 +584,6 @@ namespace System {
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         extern private unsafe static void __Memmove(byte* dest, byte* src, nuint len);
 
         // The attributes on this method are chosen for best JIT performance. 

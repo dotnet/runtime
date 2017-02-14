@@ -16,7 +16,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
     using System.Globalization;
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class MissingFieldException : MissingMemberException, ISerializable {
         public MissingFieldException() 
@@ -49,14 +48,6 @@ namespace System {
                                                                        ClassName + "." + MemberName);
                 }
             }
-        }
-    
-        // Called from the EE
-        private MissingFieldException(String className, String fieldName, byte[] signature)
-        {
-            ClassName   = className;
-            MemberName  = fieldName;
-            Signature   = signature;
         }
     
         public MissingFieldException(String className, String fieldName)

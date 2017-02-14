@@ -13,13 +13,11 @@ namespace System {
     using System;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class WeakReference : ISerializable 
     {

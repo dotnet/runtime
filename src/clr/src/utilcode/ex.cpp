@@ -2037,9 +2037,9 @@ static DWORD MarkAsThrownByUsWorker(UINT numArgs, /*out*/ ULONG_PTR exceptionArg
 
     exceptionArgs[0] = arg0;
 
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && (defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE))
+#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] = (ULONG_PTR) (GetCLRModule());
-#endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
+#endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     
     return INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE;
 }
@@ -2086,15 +2086,15 @@ BOOL WasThrownByUs(const EXCEPTION_RECORD *pcER, DWORD dwExceptionCode)
     {
         return FALSE;
     }
-#if!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && (defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE))
+#if!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     if ( ((ULONG_PTR)(GetCLRModule())) != pcER->ExceptionInformation[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE - 1] )
     {
         return FALSE;
     }
     return TRUE;
-#else // !(!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && (defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)))
+#else // !(!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     return FALSE;
-#endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
+#endif // !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 }
 
 

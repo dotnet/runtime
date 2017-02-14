@@ -16,7 +16,6 @@ namespace System.Reflection
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Permissions;
     using System.Text;
     using System.Threading;
     using MemberListType = System.RuntimeType.MemberListType;
@@ -24,10 +23,7 @@ namespace System.Reflection
     using System.Runtime.CompilerServices;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MethodInfo : MethodBase, _MethodInfo
+    public abstract class MethodInfo : MethodBase
     {
         #region Constructor
         protected MethodInfo() { }
@@ -74,10 +70,8 @@ namespace System.Reflection
 
         public abstract MethodInfo GetBaseDefinition();
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type[] GetGenericArguments() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual MethodInfo GetGenericMethodDefinition() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
 
         public virtual MethodInfo MakeGenericMethod(params Type[] typeArguments) { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
@@ -132,14 +126,6 @@ namespace System.Reflection
             }
 
             return false;
-        }
-
-        internal override bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return !AppDomain.ProfileAPICheck || !IsNonW8PFrameworkAPI();
-            }
         }
 #endif
 
@@ -279,7 +265,6 @@ namespace System.Reflection
             return sbName.ToString();
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o) 
         { 
             RuntimeMethodInfo m = o as RuntimeMethodInfo;
@@ -302,12 +287,6 @@ namespace System.Reflection
         }
 
         internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
-
-        // Differs from MethodHandle in that it will return a valid handle even for reflection only loaded types
-        internal RuntimeMethodHandle GetMethodHandle()
-        {
-            return new RuntimeMethodHandle(this);
-        }
 
         internal RuntimeMethodInfo GetParentDefinition()
         {
@@ -522,14 +501,6 @@ namespace System.Reflection
             return RuntimeMethodHandle.GetImplAttributes(this);
         }
 
-        internal bool IsOverloaded
-        {
-            get 
-            {
-                return m_reflectedTypeCache.GetMethodList(MemberListType.CaseSensitive, Name).Length > 1;
-            }
-        }
-
         public override RuntimeMethodHandle MethodHandle 
         { 
             get 
@@ -615,7 +586,7 @@ namespace System.Reflection
         
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);

@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
     using System.IO;
     using System.Resources;
     using System.Security;
-    using System.Security.Permissions;
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
@@ -50,10 +49,7 @@ namespace System.Reflection.Emit
     }
 
     // deliberately not [serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ModuleBuilder))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class ModuleBuilder : Module, _ModuleBuilder
+    public class ModuleBuilder : Module
     {
         #region FCalls
 
@@ -248,60 +244,7 @@ namespace System.Reflection.Emit
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private extern static void PreSavePEFile(RuntimeModule module, int portableExecutableKind, int imageFileMachine);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void SavePEFile(RuntimeModule module, String fileName, int entryPoint, int isExe, bool isManifestFile);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void AddResource(
-            RuntimeModule module, String strName, 
-            byte[] resBytes, int resByteCount, int tkFile, int attribute,
-            int portableExecutableKind, int imageFileMachine);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void SetModuleName(RuntimeModule module, String strModuleName);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         internal extern static void SetFieldRVAContent(RuntimeModule module, int fdToken, byte[] data, int length);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void DefineNativeResourceFile(RuntimeModule module, 
-                                                            String strFilename, 
-                                                            int portableExecutableKind, 
-                                                            int ImageFileMachine);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void DefineNativeResourceBytes(RuntimeModule module,
-                                                             byte[] pbResource, int cbResource, 
-                                                             int portableExecutableKind, 
-                                                             int imageFileMachine);
-
-        internal void DefineNativeResource(PortableExecutableKinds portableExecutableKind, ImageFileMachine imageFileMachine)
-        {
-            string strResourceFileName = m_moduleData.m_strResourceFileName;
-            byte[] resourceBytes = m_moduleData.m_resourceBytes;
-
-            if (strResourceFileName != null)
-            {
-                DefineNativeResourceFile(GetNativeHandle(),
-                    strResourceFileName,
-                    (int)portableExecutableKind, (int)imageFileMachine);
-            }
-            else
-            if (resourceBytes != null)
-            {
-                DefineNativeResourceBytes(GetNativeHandle(),
-                    resourceBytes, resourceBytes.Length,
-                    (int)portableExecutableKind, (int)imageFileMachine);
-            }
-        }
 
         #endregion
 
@@ -434,17 +377,6 @@ namespace System.Reflection.Emit
         {
             m_moduleData = new ModuleBuilderData(this, strModuleName, strFileName, tkFile);
             m_TypeBuilderDict = new Dictionary<string, Type>();
-        }
-
-        // This is a method for changing module and file name of the manifest module (created by default for 
-        // each assembly).
-        internal void ModifyModuleName(string name)
-        {
-            // Reset the names in the managed ModuleBuilderData
-            m_moduleData.ModifyModuleName(name);
-
-            // Reset the name in the underlying metadata
-            ModuleBuilder.SetModuleName(GetNativeHandle(), name);
         }
 
         internal void SetSymWriter(ISymbolWriter writer)
@@ -700,19 +632,16 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className)
         {
             return GetType(className, false, false);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public override Type GetType(String className, bool throwOnError, bool ignoreCase)
         {
             lock(SyncRoot)
@@ -830,11 +759,6 @@ namespace System.Reflection.Emit
                 {
                     fullyQualifiedName = Path.Combine(ContainingAssemblyBuilder.m_assemblyData.m_strDir, fullyQualifiedName);
                     fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
-                }
-                
-                if (ContainingAssemblyBuilder.m_assemblyData.m_strDir != null && fullyQualifiedName != null) 
-                {
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery, fullyQualifiedName ).Demand();
                 }
 
                 return fullyQualifiedName;
@@ -1010,7 +934,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public TypeBuilder DefineType(String name, TypeAttributes attr, Type parent, Type[] interfaces)
         {
             Contract.Ensures(Contract.Result<TypeBuilder>() != null);
@@ -1061,10 +984,16 @@ namespace System.Reflection.Emit
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
 
                 // This enum is not generic, nested, and cannot have any element type.
-                Debug.Assert(name == enumBuilder.FullName);
+
+                // We ought to be able to make the following assertions:
+                //
+                //  Debug.Assert(name == enumBuilder.FullName);
+                //  Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
+                //
+                // but we can't because an embedded null ('\0') in the name will cause it to be truncated
+                // incorrectly.  Fixing that would be a breaking change.
 
                 // Replace the TypeBuilder object in m_TypeBuilderDict with this EnumBuilder object.
-                Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
                 m_TypeBuilderDict[name] = enumBuilder;
 
                 return enumBuilder;
@@ -1470,41 +1399,6 @@ namespace System.Reflection.Emit
             return new MethodToken(mr);
         }
 
-        public MethodToken GetConstructorToken(ConstructorInfo constructor, IEnumerable<Type> optionalParameterTypes)
-        {
-            if (constructor == null)
-            {
-                throw new ArgumentNullException(nameof(constructor));
-            }
-
-            lock (SyncRoot)
-            {
-                // useMethodDef is not applicable - constructors aren't generic
-                return new MethodToken(GetMethodTokenInternal(constructor, optionalParameterTypes, false));
-            }
-        }
-
-        public MethodToken GetMethodToken(MethodInfo method, IEnumerable<Type> optionalParameterTypes)
-        {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-
-            // useMethodDef flag only affects the result if we pass in a generic method definition. 
-            // If the caller is looking for a token for an ldtoken/ldftn/ldvirtftn instruction and passes in a generic method definition info/builder, 
-            // we correclty return the MethodDef/Ref token of the generic definition that can be used with ldtoken/ldftn/ldvirtftn. 
-            //
-            // If the caller is looking for a token for a call/callvirt/jmp instruction and passes in a generic method definition info/builder,
-            // we also return the generic MethodDef/Ref token, which is indeed not acceptable for call/callvirt/jmp instruction.
-            // But the caller can always instantiate the info/builder and pass it in. Then we build the right MethodSpec.
-
-            lock (SyncRoot)
-            {
-                return new MethodToken(GetMethodTokenInternal(method, optionalParameterTypes, true));
-            }
-        }
-
         internal int GetMethodTokenInternal(MethodBase method, IEnumerable<Type> optionalParameterTypes, bool useMethodDef)
         {
             int tk = 0;
@@ -1631,7 +1525,6 @@ namespace System.Reflection.Emit
             return new SymbolMethod(this, token, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public MethodToken GetConstructorToken(ConstructorInfo con)
         {
             // Return a token for the ConstructorInfo relative to the Module. 
@@ -1781,7 +1674,6 @@ namespace System.Reflection.Emit
 
         #region Other
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
@@ -1838,7 +1730,7 @@ namespace System.Reflection.Emit
         // For these reasons, we should consider making this API internal in Arrowhead
         // (as it is in Silverlight), and consider validating that we're within a call
         // to TypeBuilder.CreateType whenever this is used.
-        public ISymbolWriter GetSymWriter()
+        internal ISymbolWriter GetSymWriter()
         {
             return m_iSymWriter;
         }
@@ -1865,81 +1757,6 @@ namespace System.Reflection.Emit
             }
 
             return m_iSymWriter.DefineDocument(url, language, languageVendor, documentType);
-        }
-    
-        public void SetUserEntryPoint(MethodInfo entryPoint)
-        {
-            lock(SyncRoot)
-            {
-                SetUserEntryPointNoLock(entryPoint);
-            }
-        }
-
-        private void SetUserEntryPointNoLock(MethodInfo entryPoint)
-        {
-            // Set the user entry point. Compiler may generate startup stub before calling user main.
-            // The startup stub will be the entry point. While the user "main" will be the user entry
-            // point so that debugger will not step into the compiler entry point.
-
-            if (entryPoint == null)
-            {
-                throw new ArgumentNullException(nameof(entryPoint));
-            }
-            Contract.EndContractBlock();
-        
-            if (m_iSymWriter == null)
-            {
-                // Cannot set entry point when it is not a debug module
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotADebugModule"));
-            }
-
-            if (entryPoint.DeclaringType != null)
-            {
-                if (!entryPoint.Module.Equals(this))
-                {
-                    // you cannot pass in a MethodInfo that is not contained by this ModuleBuilder
-                    throw new InvalidOperationException(Environment.GetResourceString("Argument_NotInTheSameModuleBuilder"));
-                }
-            }
-            else
-            {
-                // unfortunately this check is missing for global function passed in as RuntimeMethodInfo. 
-                // The problem is that Reflection does not 
-                // allow us to get the containing module giving a global function
-                MethodBuilder mb = entryPoint as MethodBuilder;
-                if (mb != null && mb.GetModuleBuilder() != this)
-                {
-                    // you cannot pass in a MethodInfo that is not contained by this ModuleBuilder
-                    throw new InvalidOperationException(Environment.GetResourceString("Argument_NotInTheSameModuleBuilder"));                    
-                }                    
-            }
-                
-            // get the metadata token value and create the SymbolStore's token value class
-            SymbolToken       tkMethod = new SymbolToken(GetMethodTokenInternal(entryPoint).Token);
-
-            // set the UserEntryPoint
-            m_iSymWriter.SetUserEntryPoint(tkMethod);
-        }
-    
-        public void SetSymCustomAttribute(String name, byte[] data)
-        {
-            lock(SyncRoot)
-            {
-                SetSymCustomAttributeNoLock(name, data);
-            }
-        }
-
-        private void SetSymCustomAttributeNoLock(String name, byte[] data)
-        {
-            if (m_iSymWriter == null)
-            {
-                // Cannot SetSymCustomAttribute when it is not a debug module
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotADebugModule"));
-            }
-
-            // This API has never worked.  It seems like we might want to call m_iSymWriter.SetSymAttribute,
-            // but we don't have a metadata token to associate the attribute with.  Instead 
-            // MethodBuilder.SetSymCustomAttribute could be used to associate a symbol attribute with a specific method.
         }
     
         [Pure]

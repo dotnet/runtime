@@ -10,7 +10,6 @@ namespace System.Globalization {
     using System.Collections;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Runtime.Versioning;
     using System.Text;
@@ -56,7 +55,6 @@ namespace System.Globalization {
 
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class DateTimeFormatInfo : ICloneable, IFormatProvider
     {
         //
@@ -378,8 +376,6 @@ namespace System.Globalization {
         private int    nDataItem;
         [OptionalField(VersionAdded = 2)]
         internal bool m_isDefaultCalendar;                // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
-        [OptionalField(VersionAdded = 2)]
-        private static volatile Hashtable s_calendarNativeNames;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey)
 
         // This was synthesized by Whidbey so we knew what words might appear in the middle of a date string
         // Now we always synthesize so its not helpful
@@ -407,10 +403,6 @@ namespace System.Globalization {
             {
                 calendar = (Calendar) GregorianCalendar.GetDefaultInstance().Clone();
                 calendar.SetReadOnlyState(m_isReadOnly);
-            }
-            else
-            {
-                CultureInfo.CheckDomainSafetyObject(calendar, this);
             }
             InitializeOverridableProperties(m_cultureData, calendar.ID);
 
@@ -586,12 +578,6 @@ namespace System.Globalization {
                 if (value == calendar) {
                     return;
                 }
-
-                //
-                // Because the culture is agile object which can be attached to a thread and then thread can travel
-                // to another app domain then we prevent attaching any customized object to culture that we cannot contol.
-                //
-                CultureInfo.CheckDomainSafetyObject(value, this);
 
                 for (int i = 0; i < this.OptionalCalendars.Length; i++)
                 {
@@ -1370,7 +1356,6 @@ namespace System.Globalization {
 
 
         // Returns the string array of the one-letter day of week names.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] ShortestDayNames
         {
             get
@@ -1593,7 +1578,6 @@ namespace System.Globalization {
 
 
         // Returns the super short day of week names for the specified day of week.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public  String GetShortestDayName(DayOfWeek dayOfWeek)
         {
 
@@ -1971,7 +1955,6 @@ namespace System.Globalization {
         // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Japanese calendar.
         // DateTimeFormatInfo dtfi = new CultureInfo("ja-JP", false).DateTimeFormat.Calendar = new GregorianCalendar(GregorianCalendarTypes.Localized);
         // String nativeName = dtfi.NativeCalendarName; // Get the Japanese name for the Gregorian calendar.
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String NativeCalendarName
         {
             get
@@ -1998,7 +1981,6 @@ namespace System.Globalization {
         // WARNING: If more validation is ever done in one place, it should be done in the other.
         //
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void SetAllDateTimePatterns(String[] patterns, char format)
         {
             if (IsReadOnly)
@@ -2061,7 +2043,6 @@ namespace System.Globalization {
             return;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] AbbreviatedMonthGenitiveNames
         {
             get
@@ -2089,7 +2070,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String[] MonthGenitiveNames
          {
             get

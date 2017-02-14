@@ -27,9 +27,6 @@ VPTR_CLASS(Module)
 VPTR_CLASS(ReflectionModule)
 
 VPTR_CLASS(AppDomain)
-#ifndef FEATURE_CORECLR // FEATURE_NATIVE_IMAGE_GENERATION
-VPTR_MULTI_CLASS(CompilationDomain, AppDomain)
-#endif
 VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 
@@ -68,9 +65,6 @@ VPTR_CLASS(MappedImageLayout)
 VPTR_CLASS(LoadedImageLayout)
 #endif // !CROSSGEN_COMPILE && !FEATURE_PAL
 VPTR_CLASS(FlatImageLayout)
-#ifdef FEATURE_FUSION
-VPTR_CLASS(StreamImageLayout)
-#endif
 #ifdef FEATURE_COMINTEROP 
 VPTR_CLASS(ComMethodFrame)
 VPTR_CLASS(ComPlusMethodFrame)

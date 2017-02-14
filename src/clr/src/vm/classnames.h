@@ -16,9 +16,7 @@
 #define g_ArrayClassName "System.Array"
 
 #define g_NullableName "Nullable`1"
-#ifdef FEATURE_SPAN_OF_T
 #define g_ByReferenceName "ByReference`1"
-#endif
 
 #define g_CollectionsEnumerableItfName "System.Collections.IEnumerable"
 #define g_CollectionsEnumeratorClassName "System.Collections.IEnumerator"
@@ -158,18 +156,14 @@
 
 #define g_SecurityCriticalAttribute "System.Security.SecurityCriticalAttribute"
 #define g_SecurityTransparentAttribute "System.Security.SecurityTransparentAttribute"
-#ifndef FEATURE_CORECLR
-#define g_SecurityTreatAsSafeAttribute "System.Security.SecurityTreatAsSafeAttribute"
-#define g_SecurityRulesAttribute "System.Security.SecurityRulesAttribute"
-#endif //FEATURE_CORECLR
 
 #define g_SecuritySafeCriticalAttribute "System.Security.SecuritySafeCriticalAttribute"
 
-#if defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#if defined(FEATURE_CORESYSTEM)
 #define g_SecurityAPTCA "System.Security.AllowPartiallyTrustedCallersAttribute"
 #define g_SecurityPartialTrustVisibilityLevel "System.Security.PartialTrustVisibilityLevel"
 #define g_PartialTrustVisibilityLevel "PartialTrustVisibilityLevel"
-#endif // defined(FEATURE_APTCA) || defined(FEATURE_CORESYSTEM)
+#endif // defined(FEATURE_CORESYSTEM)
 
 #define g_ReferenceAssemblyAttribute "System.Runtime.CompilerServices.ReferenceAssemblyAttribute"
 

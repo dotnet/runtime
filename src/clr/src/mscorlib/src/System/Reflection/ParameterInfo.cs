@@ -13,15 +13,11 @@ namespace System.Reflection
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
-    using System.Security.Permissions;
     using System.Threading;
     using MdToken = System.Reflection.MetadataToken;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_ParameterInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public class ParameterInfo : _ParameterInfo, ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
     {
         #region Legacy Protected Members
         protected String NameImpl; 

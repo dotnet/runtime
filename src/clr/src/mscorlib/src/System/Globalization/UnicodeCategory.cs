@@ -13,7 +13,6 @@
 namespace System.Globalization {
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum UnicodeCategory {
 
         UppercaseLetter = 0,

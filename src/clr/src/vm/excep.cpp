@@ -58,10 +58,6 @@ IUEFManager * g_pUEFManager = NULL;
 // Support for extracting MethodDesc of a delegate.
 #include "comdelegate.h"
 
-#if defined(FEATURE_APPX_BINDER) && !defined(DACCESS_COMPILE)
-// For determining if we have a framework assembly trying to handle a corrupted state exception
-#include "policy.h"
-#endif // FEATURE_APPX && !DACCESS_COMPILE
 
 #ifndef FEATURE_PAL
 // Windows uses 64kB as the null-reference area
@@ -1644,6 +1640,7 @@ const char *TCFStringFromConst(TRY_CATCH_FINALLY tcf)
 }
 #endif //LOGGING
 
+#ifndef WIN64EXCEPTIONS
 // We're unwinding if we'll return to the EE's code.  Otherwise
 // we'll return to someplace in the current code.  Anywhere outside
 // this function is "EE code".
@@ -1675,7 +1672,6 @@ bool FinallyIsUnwinding(EHRangeTreeNode *pNode,
         return false;
 }
 
-#ifndef WIN64EXCEPTIONS
 BOOL LeaveCatch(ICodeManager* pEECM,
                 Thread *pThread,
                 CONTEXT *pCtx,
@@ -1690,7 +1686,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
     // We can assert these things here, and skip a call
     // to COMPlusCheckForAbort later.
 
@@ -1708,10 +1703,6 @@ BOOL LeaveCatch(ICodeManager* pEECM,
 
     SetSP(pCtx, (UINT_PTR)esp);
     return TRUE;
-#else // FEATURE_PAL
-    PORTABILITY_ASSERT("LeaveCatch");
-    return FALSE;
-#endif
 }
 #endif // WIN64EXCEPTIONS
 
@@ -1926,7 +1917,7 @@ HRESULT IsLegalTransition(Thread *pThread,
                 case TCF_NONE:
                 case TCF_TRY:
                 {
-#if !defined(WIN64EXCEPTIONS)
+#ifndef WIN64EXCEPTIONS
                     if (!FinallyIsUnwinding(pNode, pEECM, pReg, addrStart))
                     {
                         CONTEXT *pFilterCtx = pThread->GetFilterContext();
@@ -1946,14 +1937,14 @@ HRESULT IsLegalTransition(Thread *pThread,
                     {
                         return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY;
                     }
-#else  // _WIN64
+#else // !WIN64EXCEPTIONS
                     // <NOTE>
                     // Setting IP out of a non-unwinding finally clause is not supported on WIN64EXCEPTIONS because of funclets.
                     // This scenario is disabled with approval from VS because it's not considered to be a common user
                     // scenario.
                     // </NOTE>
                     return CORDBG_E_CANT_SET_IP_OUT_OF_FINALLY_ON_WIN64;
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
                     break;
                 }
@@ -2292,7 +2283,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // Preallocated exceptions will never have this flag set. However, its possible
         // that after this flag is set for a regular exception but before we throw, we have an async
         // exception like a RudeThreadAbort, which will replace the exception
@@ -2302,7 +2292,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
         // preallocated exception will not have the restored (or any) stack trace.
         PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
         pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         return;
     }
@@ -2315,14 +2304,12 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     bool         fSuccess = false;
     MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetTrueMethodTable();
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
     // normally.
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
     if (bAllowAllocMem && m_dFrameCount != 0)
     {
@@ -2363,19 +2350,15 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 struct _gc
                 {
                     StackTraceArray stackTrace;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     StackTraceArray stackTraceTemp;
                     PTRARRAYREF dynamicMethodsArrayTemp;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
                     PTRARRAYREF pOrigDynamicArray;
 
                     _gc()
                         : stackTrace()
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                         , stackTraceTemp()
                         , dynamicMethodsArrayTemp(static_cast<PTRArray *>(NULL))
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)                        
                         , dynamicMethodsArray(static_cast<PTRArray *>(NULL))
                         , pOrigDynamicArray(static_cast<PTRArray *>(NULL))
                     {}
@@ -2384,7 +2367,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                 _gc gc;
                 GCPROTECT_BEGIN(gc);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                 // If the flag indicating foreign exception raise has been setup, then check 
                 // if the exception object has stacktrace or not. If we have an async non-preallocated
                 // exception after setting this flag but before we throw, then the new
@@ -2399,14 +2381,11 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         fRaisingForeignException = FALSE;
                     }
                 }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                 // Replace stack (i.e. build a new stack trace) only if we are not raising a foreign exception.
                 // If we are, then we will continue to extend the existing stack trace.
                 if (bReplaceStack
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     && (!fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                 {
                     // Cleanup previous info
@@ -2440,7 +2419,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     // Fetch the stacktrace and the dynamic method array
                     ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pOrigDynamicArray);
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     if (fRaisingForeignException)
                     {
                         // Just before we append to the stack trace, mark the last recorded frame to be from
@@ -2455,7 +2433,6 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             refLastElementFromForeignStackTrace.fIsLastFrameFromForeignStackTrace = TRUE;
                         }
                     }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                     if (bSkipLastElement && gc.stackTrace.Size() != 0)
                         gc.stackTrace.AppendSkipLast(m_pStackTrace, m_pStackTrace + m_dFrameCount);
@@ -2477,9 +2454,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                     }
 
                     if ((gc.pOrigDynamicArray != NULL)
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     || (fRaisingForeignException)
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     )
                     {
                         // Since we have just restored the dynamic method array as well,
@@ -3773,12 +3748,10 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         pStackTraceElem->ip = currentIP;
         pStackTraceElem->sp = currentSP;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // When we are building stack trace as we encounter managed frames during exception dispatch,
         // then none of those frames represent a stack trace from a foreign exception (as they represent
         // the current exception). Hence, set the corresponding flag to FALSE.
         pStackTraceElem->fIsLastFrameFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
@@ -4130,32 +4103,6 @@ void DisableOSWatson(void)
     SetErrorMode(lastErrorMode | SEM_NOGPFAULTERRORBOX);
     LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetErrorMode = 0x%x\n", lastErrorMode | SEM_NOGPFAULTERRORBOX));
 
-#ifndef FEATURE_CORECLR
-    // CoreCLR is always hosted and so this condition is always false
-    if (RunningOnWin7() && !CLRHosted())
-    {
-        typedef DWORD (WINAPI * GetThreadErrorModeFnPtr)(void);
-        typedef BOOL  (WINAPI * SetThreadErrorModeFnPtr)(DWORD, LPDWORD);
-        GetThreadErrorModeFnPtr pFnGetThreadErrorMode;
-        SetThreadErrorModeFnPtr pFnSetThreadErrorMode;
-
-        HINSTANCE hKernel32 = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
-        if (hKernel32 != NULL)
-        {
-            pFnGetThreadErrorMode = (GetThreadErrorModeFnPtr)GetProcAddress(hKernel32, "GetThreadErrorMode");
-            pFnSetThreadErrorMode = (SetThreadErrorModeFnPtr)GetProcAddress(hKernel32, "SetThreadErrorMode");
-
-            // GetThreadErrorMode and SetThreadErrorMode should be available on Win7.
-            _ASSERTE((pFnGetThreadErrorMode != NULL) && (pFnSetThreadErrorMode != NULL));
-            if ((pFnGetThreadErrorMode != NULL) && (pFnSetThreadErrorMode != NULL))
-            {
-                DWORD dwOldMode = (*pFnGetThreadErrorMode)();
-                (*pFnSetThreadErrorMode)(dwOldMode | SEM_NOGPFAULTERRORBOX, &dwOldMode);
-                LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetThreadErrorMode = 0x%x\n", dwOldMode | SEM_NOGPFAULTERRORBOX));
-            }
-        }
-    }
-#endif // FEATURE_CORECLR
 }
 
 
@@ -4875,7 +4822,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 } // LONG DefaultCatchNoSwallowFilter()
 
-#if defined(FEATURE_CORECLR)
 // Note: This is used only for CoreCLR on WLC.
 //
 // We keep a pointer to the previous unhandled exception filter.  After we install, we use
@@ -4888,7 +4834,6 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
 // yet and having installed it but the original handler was NULL.
 static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = (LPTOP_LEVEL_EXCEPTION_FILTER)-1;
 #define FILTER_NOT_INSTALLED (LPTOP_LEVEL_EXCEPTION_FILTER) -1
-#endif // defined(FEATURE_CORECLR)
 
 
 BOOL InstallUnhandledExceptionFilter() {
@@ -5239,7 +5184,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     //
     if (pThread && (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) || pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled)))
     {
-#ifdef FEATURE_CORECLR
         // This assert shouldnt be hit in CoreCLR since:
         //
         // 1) It has no concept of managed entry point that is invoked by the shim. You can
@@ -5253,7 +5197,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             _ASSERTE(!"How come a thread with TSNC_ProcessedUnhandledException state entered the UEF on CoreCLR?");
         }
-#endif // FEATURE_CORECLR
 
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: have already processed unhandled exception for this thread.\n"));
         return EXCEPTION_CONTINUE_SEARCH;
@@ -5335,7 +5278,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             BOOL fIsProcessTerminating = TRUE;
 
-#ifdef FEATURE_CORECLR
             // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads in a given AppDomain.
             // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
             // return back to the filter, instead of letting the process terminate because of unhandled exception.
@@ -5359,7 +5301,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
                 fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
-#endif // FEATURE_CORECLR
 
 #ifndef FEATURE_PAL
             // Setup the watson bucketing details for UE processing.
@@ -5371,14 +5312,12 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // Send notifications to the AppDomains.
             NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
 
-#ifdef FEATURE_CORECLR
             // If the process is not terminating, then return back to the filter and ask it to execute
             if (!fIsProcessTerminating)
             {
                 pParam->retval = EXCEPTION_EXECUTE_HANDLER;
                 goto lDone;
             }
-#endif // FEATURE_CORECLR
         }
         else
         {
@@ -5564,7 +5503,6 @@ LONG InternalUnhandledExceptionFilter(
     //
     // Note: Also see the conditional UEF registration with the OS in EEStartupHelper.
 
-#ifdef FEATURE_CORECLR
     // We would be here only on CoreCLR for WLC since we dont register
     // the UEF with the OS for SL.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
@@ -5572,7 +5510,6 @@ LONG InternalUnhandledExceptionFilter(
     {
         STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
     }
-#endif // FEATURE_CORECLR
 
     return retval;
 
@@ -5640,9 +5577,9 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 // Returns
 //   the result of calling InternalUnhandledExceptionFilter
 //------------------------------------------------------------------------------
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 #pragma code_seg(push, uef, CLR_UEF_SECTION_NAME)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or EXCEPTION_CONTINUE_EXECUTION
     EXCEPTION_POINTERS *pExceptionInfo)         // Information about the exception.
 {
@@ -5670,47 +5607,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
         return retVal;
     }
 
-#ifndef FEATURE_CORECLR
-#ifdef _DEBUG
-    // V4 onwards, we will reach here in the UEF only on the following conditions:
-    //
-    // 1) Faulting address is in native code on a reverse pinvoke thread. An example is an exception that escaped
-    //    out of the reverse pinvoke thread but was caught in the native part of the thread. The native part then
-    //    had another exception that went unhandled. The difference between this and (3) below is that
-    //    we have a thread object here but not in (3).
-    //
-    //    An exception from PInvoke, that is never caught/rethrown in managed code and goes unhandled, also falls
-    //    in this category.
-    //
-    // 2) The exception escaped out of a reverse pinvoke thread and went unhandled.
-    //
-    // 3) Faulting thread was never seen by the runtime. An example is a another native thread
-    //    which the user code created that had unhandled exception.
-    //
-    // 4) A corrupting exception may become unhandled.
-    //
-    // This is not applicable to CoreCLR, as this unhandled exception filter is always set up, and all hardware exceptions in
-    // managed code, including those that are not process-corrupting, such as integer division by zero, will end up here.
-
-    // Assert these conditions here - we shouldnt be here for any other unhandled exception processing.
-    Thread *pThread = GetThread();
-    if ((pThread != NULL) && // condition 3
-        !(pThread->GetExceptionState()->IsExceptionInProgress() &&
-            pThread->GetExceptionState()->GetFlags()->ReversePInvokeEscapingException()) && // condition 2
-        (ExecutionManager::IsManagedCode((PCODE)pExceptionInfo->ExceptionRecord->ExceptionAddress))) // condition 1
-    {
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-        if (!CEHelper::IsProcessCorruptedStateException(pExceptionInfo->ExceptionRecord->ExceptionCode)) // condition 4
-        {
-            GCX_COOP();
-            _ASSERTE(CEHelper::IsProcessCorruptedStateException(pThread->GetThrowable())); // condition 4
-        }
-#else // !FEATURE_CORRUPTING_EXCEPTIONS
-        _ASSERTE(false);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    }
-#endif // _DEBUG
-#endif // !FEATURE_CORECLR
 
     retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
 
@@ -5723,9 +5619,9 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     return retVal;
 } // LONG __stdcall COMUnhandledExceptionFilter()
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
 #pragma code_seg(pop, uef)
-#endif // FEATURE_CORECLR && !FEATURE_PAL
+#endif // !FEATURE_PAL
 
 void PrintStackTraceToStdout();
 
@@ -6819,10 +6715,8 @@ exit:
 
 #ifndef FEATURE_PAL
 
-#ifdef FEATURE_CORECLR
     // Only proceed if Watson is enabled - CoreCLR may have it disabled.
     if (IsWatsonEnabled())
-#endif // FEATURE_CORECLR
     {
         BOOL fClearUEWatsonBucketTracker = TRUE;
         PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
@@ -7125,16 +7019,16 @@ bool IsInterceptableException(Thread *pThread)
 // appropriate exception code, or zero if the code is not a GC marker.
 DWORD GetGcMarkerExceptionCode(LPVOID ip)
 {
-#if defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+#if defined(HAVE_GCCOVER)
     WRAPPER_NO_CONTRACT;
 
     if (GCStress<cfg_any>::IsEnabled() && IsGcCoverageInterrupt(ip))
     {
         return STATUS_CLR_GCCOVER_CODE;
     }
-#else // !(defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR))
+#else // defined(HAVE_GCCOVER)
     LIMITED_METHOD_CONTRACT;
-#endif // defined(HAVE_GCCOVER) && defined(FEATURE_CORECLR)
+#endif // defined(HAVE_GCCOVER)
     return 0;
 }
 
@@ -9339,13 +9233,11 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return FALSE;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -9458,13 +9350,11 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return FALSE;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -9589,13 +9479,11 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // CoreCLR may have watson bucketing conditionally enabled.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10045,14 +9933,12 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
     BOOL fResult = TRUE;
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return fResult;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10307,14 +10193,12 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -10918,14 +10802,12 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     // On CoreCLR, Watson may not be enabled. Thus, we should
     // skip this.
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -11381,12 +11263,12 @@ UINT_PTR EHWatsonBucketTracker::RetrieveWatsonBucketIp()
 // This is *also* invoked from the DAC when buckets are requested.
 PTR_VOID EHWatsonBucketTracker::RetrieveWatsonBuckets()
 {
-#if defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     if (!IsWatsonEnabled())
     {
         return NULL;
     }
-#endif // defined(FEATURE_CORECLR) && !defined(DACCESS_COMPILE)
+#endif //!defined(DACCESS_COMPILE)
 
     CONTRACTL
     {
@@ -11407,12 +11289,10 @@ void EHWatsonBucketTracker::ClearWatsonBucketDetails()
 {
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_CORECLR
     if (!IsWatsonEnabled())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     CONTRACTL
     {
@@ -11670,25 +11550,6 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_APPX_BINDER
-    // In an Metro application, disallow application code to catch any corrupted state exception
-    if (AppX::IsAppXProcess())
-    {
-        // This call to GetFusionAssemblyNameNoCreate will return a valid fusion assembly name
-        // in the second pass of exception dispatch as the name would have been created in the first pass,
-        // if not already existent.
-        IAssemblyName *pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyNameNoCreate();
-        if (!pIAssemblyName)
-        {
-            pIAssemblyName = pMethodDesc->GetAssembly()->GetFusionAssemblyName();
-        }
-        
-        if (Fusion::Util::IsAnyFrameworkAssembly(pIAssemblyName) != S_OK)
-        {
-            return FALSE;
-        }
-    }
-#endif // FEATURE_APPX
 
     if (g_pConfig->LegacyCorruptedStateExceptionsPolicy())
     {
@@ -12613,9 +12474,6 @@ void ReturnToPreviousAppDomainHolder::SuppressRelease()
 #ifndef DACCESS_COMPILE
 // This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
 // checking whether the delegate can be invoked for the exception's corruption severity.
-//
-// This has been factored out of the #IFDEF FEATURE_EXCEPTION_NOTIFICATIONS so that existing ADUEN mechanism can be integrated with
-// the enhanced exception notifications.
 void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
         OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
 {
@@ -12641,7 +12499,6 @@ void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationH
     CALL_MANAGED_METHOD_NORET(args);
 }
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
 // To include definition of COMDelegate::GetMethodDesc
 #include "comdelegate.h"
 
@@ -13052,7 +12909,6 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
 }
 
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
 #ifdef WIN64EXCEPTIONS
 struct TAResetStateCallbackData
@@ -13872,24 +13728,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowSO()
 // Throw an InvalidCastException
 //==========================================================================
 
-#ifdef FEATURE_FUSION
-static const WCHAR *GetContextName(LOADCTX_TYPE kLoadContext,
-                                   BOOL         fIntrospectionOnly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Context names are treated as symbols and therefore not localized
-    switch (kLoadContext)
-    {
-    case LOADCTX_TYPE_DEFAULT:
-        return W("Default");
-    case LOADCTX_TYPE_LOADFROM:
-        return W("LoadFrom");
-    default:
-        return (fIntrospectionOnly ? W("InspectionContext") : W("LoadNeither"));
-    }
-}
-#endif
 
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
@@ -13899,12 +13737,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     WRAPPER_NO_CONTRACT;
 
     InlineSString<MAX_LONGPATH> sFormat;
-#ifdef FEATURE_FUSION
-    const WCHAR *pwzLoadContext = GetContextName(pPEAssembly->GetLoadContext(),
-                                                 pPEAssembly->IsIntrospectionOnly());
-#else
     const WCHAR *pwzLoadContext = W("Default");
-#endif
 
     if (pPEAssembly->GetPath().IsEmpty())
     {

@@ -20,14 +20,12 @@ using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Security.Permissions;
 using System.Runtime.Versioning;
 using SecurityException = System.Security.SecurityException;
 
 namespace System.IO {
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class FileLoadException : IOException {
 
         private String _fileName;   // the name of the file we could not load.

@@ -380,11 +380,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 
     size_t job_physical_memory_limit = (size_t)MAX_PTR;
     BOOL in_job_p = FALSE;
-#ifdef FEATURE_CORECLR
     HINSTANCE hinstKernel32 = 0;
-#else
-    HINSTANCE hinstPsapi = 0;
-#endif
 
     PIS_PROCESS_IN_JOB GCIsProcessInJob = 0;
     PQUERY_INFORMATION_JOB_OBJECT GCQueryInformationJobObject = 0;
@@ -396,21 +392,11 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 
     if (in_job_p)
     {
-#ifdef FEATURE_CORECLR
         hinstKernel32 = WszLoadLibrary(L"kernel32.dll");
         if (!hinstKernel32)
             goto exit;
 
         GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstKernel32, "K32GetProcessMemoryInfo");
-#else
-        // We need a way to get the working set in a job object and GetProcessMemoryInfo 
-        // is the way to get that. According to MSDN, we should use GetProcessMemoryInfo In order to 
-        // compensate for the incompatibility that psapi.dll introduced we are getting this dynamically.
-        hinstPsapi = WszLoadLibrary(L"psapi.dll");
-        if (!hinstPsapi)
-            return 0;
-        GCGetProcessMemoryInfo = (PGET_PROCESS_MEMORY_INFO)GetProcAddress(hinstPsapi, "GetProcessMemoryInfo");
-#endif
 
         if (!GCGetProcessMemoryInfo)
             goto exit;
@@ -462,11 +448,7 @@ exit:
     {
         job_physical_memory_limit = 0;
 
-#ifdef FEATURE_CORECLR
         FreeLibrary(hinstKernel32);
-#else
-        FreeLibrary(hinstPsapi);
-#endif
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);

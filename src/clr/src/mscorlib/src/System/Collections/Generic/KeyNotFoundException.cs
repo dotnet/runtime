@@ -20,7 +20,6 @@ namespace System.Collections.Generic {
     using System.Runtime.Serialization;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class KeyNotFoundException  : SystemException, ISerializable {
     
         public KeyNotFoundException () 

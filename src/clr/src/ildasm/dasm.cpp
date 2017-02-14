@@ -4576,36 +4576,6 @@ BOOL DumpClass(mdTypeDef cl, DWORD dwEntryPointToken, void* GUICookie, ULONG Wha
     pszClassName = (char*)(pc1 ? pc1 : "");
     pszNamespace = (char*)(pc2 ? pc2 : "");
 
-#if (0)
-
-    if((!IsTdNested(dwClassAttrs)))
-    {
-        // take care of namespace, if any
-        if(strcmp(pszNamespace,g_szNamespace))
-        {
-            if(strlen(g_szNamespace))
-            {
-                if(g_szAsmCodeIndent[0]) g_szAsmCodeIndent[strlen(g_szAsmCodeIndent)-2] = 0;
-                szptr = &szString[0];
-                szptr+=sprintf_s(szptr,SZSTRING_SIZE,"%s%s ",g_szAsmCodeIndent,UNSCOPE());
-                sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),COMMENT("// end of namespace %s"),ProperName(g_szNamespace));
-                printLine(GUICookie,szString);
-                printLine(GUICookie,"");
-            }
-            strcpy_s(g_szNamespace,MAX_MEMBER_LENGTH,pszNamespace);
-            if(strlen(g_szNamespace))
-            {
-                sprintf_s(szString,SZSTRING_SIZE,"%s%s %s",
-                    g_szAsmCodeIndent,KEYWORD(".namespace"), ProperName(g_szNamespace));
-                printLine(GUICookie,szString);
-                sprintf_s(szString,SZSTRING_SIZE,"%s%s",g_szAsmCodeIndent,SCOPE());
-                printLine(GUICookie,szString);
-                strcat_s(g_szAsmCodeIndent,MAX_MEMBER_LENGTH,"  ");
-            }
-        }
-    }
-
-#endif
 
     szptr = &szString[0];
     szptr+=sprintf_s(szptr,SZSTRING_SIZE,"%s%s ",g_szAsmCodeIndent,KEYWORD(".class"));
@@ -7571,24 +7541,6 @@ DoneInitialization:
                 }
             }
 
-#if (0)
-            /* Third, dump GC/EH info about the native methods, using the IPMap */
-            IMAGE_DATA_DIRECTORY *pIPMap;
-            if (g_pPELoader->IsPE32())
-            {
-                pIPMap = &g_pPELoader->ntHeaders32()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
-            }
-            else
-            {
-                pIPMap = &g_pPELoader->ntHeaders64()->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION];
-            }
-            DWORD        IPMapSize;
-            const BYTE * ipmap;
-            IPMapSize  = VAL32(pIPMap->Size);
-            g_pPELoader->getVAforRVA(VAL32(pIPMap->VirtualAddress), (void **) &ipmap);
-
-            DumpNativeInfo(ipmap, IPMapSize);
-#endif
 
             // If there were "ldptr", dump the .rdata section with labels
             if(g_iPtrCount)

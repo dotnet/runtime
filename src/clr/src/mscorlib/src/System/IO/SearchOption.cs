@@ -20,7 +20,6 @@ using System;
 
 namespace System.IO {
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum SearchOption
     {
         // Include only the current directory in the search operation

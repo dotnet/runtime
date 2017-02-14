@@ -6,19 +6,23 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-   [Serializable]
-   [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-   public class InvalidTimeZoneException : Exception
-   {
-       public InvalidTimeZoneException(String message)
-           : base(message) { }
+    [Serializable]
+    public class InvalidTimeZoneException : Exception
+    {
+        public InvalidTimeZoneException()
+        {
+        }
 
-       public InvalidTimeZoneException(String message, Exception innerException)
-           : base(message, innerException) { }
+        public InvalidTimeZoneException(String message)
+            : base(message)
+        {
+        }
 
-       protected InvalidTimeZoneException(SerializationInfo info, StreamingContext context)
-           : base(info, context) { }
+        public InvalidTimeZoneException(String message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
 
-       public InvalidTimeZoneException() { }
-   }
+        protected InvalidTimeZoneException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
 }

@@ -42,9 +42,6 @@ inline LinktimeCheckReason operator&=(LinktimeCheckReason &lhs, LinktimeCheckRea
 
 namespace SecurityDeclarative
 {
-    // Returns an instance of a well-known permission.  (It caches them, so each permission is created only once.)
-    void _GetSharedPermissionInstance(OBJECTREF *perm, int index);
-
     // Perform the declarative actions
     //   Callers:
     //     DoDeclarativeSecurity
@@ -129,20 +126,6 @@ namespace SecurityDeclarative
     inline BOOL FullTrustCheckForLinkOrInheritanceDemand(Assembly *pAssembly);
 
 
-#ifdef FEATURE_APTCA
-    // Returns TRUE if an APTCA check is necessary
-    //   Callers:
-    //     CanAccess
-    BOOL IsUntrustedCallerCheckNeeded(MethodDesc *pCalleeMD, Assembly *pCallerAssem = NULL);
-
-    // Perform the APTCA check
-    //   Callers:
-    //     CanAccess
-    //     Security::CheckLinkDemandAgainstAppDomain
-    void DoUntrustedCallerChecks(
-        Assembly *pCaller, MethodDesc *pCalee,
-        BOOL fFullStackWalk);
-#endif // FEATURE_APTCA
 
 #ifndef DACCESS_COMPILE
     // Calls PermissionSet.Demand
@@ -169,15 +152,6 @@ namespace SecurityDeclarative
 
     inline BOOL ClassIsVisibleOutsideItsAssembly(DWORD dwClassAttr, BOOL fIsGlobalClass);
 
-#ifdef FEATURE_APTCA
-    // Returns an instance of a SecurityException with the message "This method doesn't allow partially trusted callers"
-    //   Callers:
-    //     DoUntrustedCallerChecks
-    void DECLSPEC_NORETURN ThrowAPTCAException(Assembly *pCaller, MethodDesc *pCallee);
-#endif // FEATURE_APTCA
-#ifdef FEATURE_CAS_POLICY
-    void DECLSPEC_NORETURN ThrowHPException(EApiCategories protectedCategories, EApiCategories demandedCategories);
-#endif // FEATURE_CAS_POLICY
 
     // Add a declarative action and PermissionSet index to the linked list
     void AddDeclAction(CorDeclSecurity action, PsetCacheEntry *pClassPCE, PsetCacheEntry *pMethodPCE, DeclActionInfo** ppActionList, MethodDesc *pMeth);

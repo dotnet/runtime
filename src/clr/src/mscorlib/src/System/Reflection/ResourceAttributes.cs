@@ -15,7 +15,6 @@ namespace System.Reflection {
     using System;
 [Serializable]
 [Flags]  
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum ResourceAttributes
     {
         Public          =   0x0001,

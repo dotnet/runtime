@@ -21,7 +21,6 @@ namespace System {
 
     [Serializable]
     [CLSCompliant(false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct UIntPtr : IEquatable<UIntPtr>, ISerializable
     {
         unsafe private void* m_value;

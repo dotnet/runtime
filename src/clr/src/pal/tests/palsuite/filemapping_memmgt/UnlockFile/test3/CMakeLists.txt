@@ -13,9 +13,7 @@ add_executable(paltest_unlockfile_test3
 add_dependencies(paltest_unlockfile_test3 coreclrpal)
 
 target_link_libraries(paltest_unlockfile_test3
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )
 
 
@@ -30,7 +28,5 @@ add_executable(paltest_unlockfile_test3_helper
 add_dependencies(paltest_unlockfile_test3_helper coreclrpal)
 
 target_link_libraries(paltest_unlockfile_test3_helper
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

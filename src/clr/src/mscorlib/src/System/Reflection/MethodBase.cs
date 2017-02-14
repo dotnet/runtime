@@ -11,7 +11,6 @@ namespace System.Reflection
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Security.Permissions;
     using System.Text;
     using System.Threading;
 
@@ -48,10 +47,7 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_MethodBase))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class MethodBase : MemberInfo, _MethodBase
+    public abstract class MethodBase : MemberInfo
     {
         #region Static Members
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle)
@@ -70,7 +66,6 @@ namespace System.Reflection
             return m;
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())
@@ -79,8 +74,7 @@ namespace System.Reflection
             return RuntimeType.GetMethodBase(declaringType.GetRuntimeType(), handle.GetMethodInfo());
         }
 
-        [System.Security.DynamicSecurityMethod] // Specify DynamicSecurityMethod attribute to prevent inlining of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static MethodBase GetCurrentMethod()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -131,20 +125,6 @@ namespace System.Reflection
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
 #if FEATURE_APPX
-
-        // The C# dynamic and VB late bound binders need to call this API. Since we don't have time to make this
-        // public in Dev11, the C# and VB binders currently call this through a delegate. 
-        // When we make this API public (hopefully) in Dev12 we need to change the C# and VB binders to call this
-        // probably statically. The code is located in:
-        // C#: ndp\fx\src\CSharp\Microsoft\CSharp\SymbolTable.cs - Microsoft.CSharp.RuntimeBinder.SymbolTable..cctor
-        // VB: vb\runtime\msvbalib\helpers\Symbols.vb - Microsoft.VisualBasic.CompilerServices.Symbols..cctor
-        internal virtual bool IsDynamicallyInvokable
-        {
-            get
-            {
-                return true;
-            }
-        }
 #endif
         #endregion
 
@@ -172,7 +152,6 @@ namespace System.Reflection
 
         public virtual CallingConventions CallingConvention { get { return CallingConventions.Standard; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
         
         public virtual bool IsGenericMethodDefinition { get { return false; } }
@@ -227,7 +206,6 @@ namespace System.Reflection
 
         public bool IsSpecialName { get { return(Attributes & MethodAttributes.SpecialName) != 0; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public bool IsConstructor 
         {
             get 
@@ -239,9 +217,6 @@ namespace System.Reflection
             }
         }
 
-#pragma warning disable 618
-        [ReflectionPermissionAttribute(SecurityAction.Demand, Flags=ReflectionPermissionFlag.MemberAccess)]            
-#pragma warning restore 618
         public virtual MethodBody GetMethodBody()
         {
             throw new InvalidOperationException();

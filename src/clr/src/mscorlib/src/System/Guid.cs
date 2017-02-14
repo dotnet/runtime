@@ -16,7 +16,6 @@ namespace System {
     // Represents a Globally Unique Identifier.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct Guid : IFormattable, IComparable
         , IComparable<Guid>, IEquatable<Guid>
@@ -756,11 +755,6 @@ namespace System {
         private static unsafe bool StringToShort(String str, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
             return StringToShort(str, null, requiredLength, flags, out result, ref parseResult);
         }
-        private static unsafe bool StringToShort(String str, ref int parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
-            fixed(int * ppos = &parsePos) {
-                return StringToShort(str, ppos, requiredLength, flags, out result, ref parseResult);
-            }
-        }
         private static unsafe bool StringToShort(String str, int* parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult) {
             result = 0;
             int x;
@@ -812,9 +806,6 @@ namespace System {
                 return false;
             }
             return true;
-        }
-        private static unsafe bool StringToLong(String str, int flags, out long result, ref GuidResult parseResult) {
-            return StringToLong(str, null, flags, out result, ref parseResult);
         }
         private static unsafe bool StringToLong(String str, ref int parsePos, int flags, out long result, ref GuidResult parseResult) {
             fixed(int * ppos = &parsePos) {

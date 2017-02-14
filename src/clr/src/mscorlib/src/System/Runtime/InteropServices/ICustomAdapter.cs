@@ -15,7 +15,6 @@
 namespace System.Runtime.InteropServices {
     using System;
 
-[System.Runtime.InteropServices.ComVisible(true)]
     public interface ICustomAdapter
     {        
         [return:MarshalAs(UnmanagedType.IUnknown)] Object GetUnderlyingObject();

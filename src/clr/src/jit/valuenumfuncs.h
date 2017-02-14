@@ -18,10 +18,10 @@ ValueNumFuncDef(PtrToLoc, 2, false, false, false)           // Pointer (byref) t
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
 ValueNumFuncDef(PtrToStatic, 1, false, false, false)        // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).  Args: 0: FieldSeq, first element
                                                      // of which is the static var.
-ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiHeapDef.  Arguments are SSA numbers of var being defined.
-ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for Heap), 1: SSA #, 2: VN of definition.
-// Wouldn't need this if I'd made Heap a regular local variable...
-ValueNumFuncDef(PhiHeapDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
+ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
+ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
+// Wouldn't need this if I'd made memory a regular local variable...
+ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 
@@ -34,8 +34,11 @@ ValueNumFuncDef(CastClass, 2, false, false, false)          // Args: 0: Handle o
 ValueNumFuncDef(IsInstanceOf, 2, false, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
 ValueNumFuncDef(ReadyToRunCastClass, 2, false, false, false)          // Args: 0: Helper stub address, 1: object being cast.
 ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false, false)       // Args: 0: Helper stub address, 1: object being queried.
+ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, false, false)      // Args: 0: TypeHandle to translate
 
 ValueNumFuncDef(LdElemA, 3, false, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
+
+ValueNumFuncDef(ByrefExposedLoad, 3, false, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
 
 ValueNumFuncDef(GetRefanyVal, 2, false, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).
 

@@ -102,61 +102,6 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
     return address;
 }
 
-#ifndef FEATURE_CORECLR   
-// Call into the unhandled-exception processing code to launch Watson.
-// 
-// Arguments:
-//    address - address to distinguish callsite of break.
-//    
-// Notes:
-//    Invokes a watson dialog in response to a user break (Debug.Break).
-//    Assumes that caller has already enforced any policy it cares about related to whether a debugger is attached.
-void DoWatsonForUserBreak(UINT_PTR address)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(address != NULL);
-    }
-    CONTRACTL_END;
-
-    CONTEXT context;
-    EXCEPTION_RECORD exceptionRecord;
-    EXCEPTION_POINTERS exceptionPointers;
-
-    ZeroMemory(&context, sizeof(context));
-    ZeroMemory(&exceptionRecord, sizeof(exceptionRecord));
-    ZeroMemory(&exceptionPointers, sizeof(exceptionPointers));
-
-    // Try to locate the user managed code invoking System.Diagnostics.Debugger.Break
-    UINT_PTR userCodeAddress = FindMostRecentUserCodeOnStack();
-    if (userCodeAddress != NULL)
-    {
-        address = userCodeAddress;
-    }
-
-    LOG((LF_EH, LL_INFO10, "DoDebugBreak: break at %0p\n", address));
-
-    exceptionRecord.ExceptionAddress = reinterpret_cast< PVOID >(address);
-    exceptionPointers.ExceptionRecord = &exceptionRecord;
-    exceptionPointers.ContextRecord = &context;
-
-    Thread *pThread = GetThread();
-    PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pThread->GetExceptionState()->GetUEWatsonBucketTracker();
-    _ASSERTE(pUEWatsonBucketTracker != NULL);
-    pUEWatsonBucketTracker->SaveIpForWatsonBucket(address);
-    pUEWatsonBucketTracker->CaptureUnhandledInfoForWatson(TypeOfReportedError::UserBreakpoint, pThread, NULL);
-    if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() == NULL)
-    {
-        pUEWatsonBucketTracker->ClearWatsonBucketDetails();
-    }
-
-    WatsonLastChance(GetThread(), &exceptionPointers, TypeOfReportedError::UserBreakpoint);
-
-} // void DoDebugBreak()
-#endif // !FEATURE_CORECLR   
 
 // This does a user break, triggered by System.Diagnostics.Debugger.Break, or the IL opcode for break.
 //
@@ -210,12 +155,6 @@ FCIMPL0(void, DebugDebugger::Break)
     }
     else
     {   
-#ifndef FEATURE_CORECLR        
-        // No debugger attached -- Watson up.
-
-        // The HelperMethodFrame knows how to get the return address.
-        DoWatsonForUserBreak(HELPER_METHOD_FRAME_GET_RETURN_ADDRESS());
-#endif //FEATURE_CORECLR
     }
 
     HELPER_METHOD_FRAME_END();
@@ -507,7 +446,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers,
                             pStackFrameHelper->GetAppDomain());
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
         // When StackFrameHelper.IsLastFrameFromForeignExceptionStackTrace is invoked in managed code,
@@ -528,7 +466,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL,
                                 pStackFrameHelper->GetAppDomain());
         }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // Determine if there are any dynamic methods in the stack trace.  If there are,
         // allocate an ObjectArray large enough to hold an ObjRef to each one.
@@ -579,7 +516,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             I4 *pILI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
@@ -587,7 +523,6 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                                             ->GetDirectPointerToNonObjectElements();
                 pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace; 
             }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
 
@@ -1223,10 +1158,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // By default, assume that we have no frames from foreign exception stack trace.
         pData->fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // Now we know the size, allocate the information for the data struct
         if (pData->cElements != 0)
@@ -1239,7 +1172,6 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
             {
                 StackTraceElement const & cur = traceData[i];
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                 // If we come across any frame representing foreign exception stack trace,
                 // then set the flag indicating so. This will be used to allocate the
                 // corresponding array in StackFrameHelper.
@@ -1247,7 +1179,6 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 {
                     pData->fDoWeHaveAnyFramesFromForeignStackTrace = TRUE;
                 }
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
                 // Fill out the MethodDesc*
                 MethodDesc *pMD = cur.pFunc;
@@ -1270,9 +1201,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 }
 
                 pData->pElements[i].InitPass1(dwNativeOffset, pMD, (PCODE) cur.ip
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     , cur.fIsLastFrameFromForeignStackTrace
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
                     );
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();            
@@ -1294,9 +1223,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     , BOOL fIsLastFrameFromForeignStackTrace /*= FALSE*/
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1308,9 +1235,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     this->fIsLastFrameFromForeignStackTrace = fIsLastFrameFromForeignStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 }
 
 #ifndef DACCESS_COMPILE

@@ -6,7 +6,6 @@ namespace System.Globalization {
     using System;
 
     [Serializable]
-[System.Runtime.InteropServices.ComVisible(true)]
     public enum GregorianCalendarTypes {
         Localized = Calendar.CAL_GREGORIAN,
         USEnglish = Calendar.CAL_GREGORIAN_US,

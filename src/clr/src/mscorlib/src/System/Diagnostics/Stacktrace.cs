@@ -8,7 +8,6 @@ namespace System.Diagnostics {
     using System.Text;
     using System.Threading;
     using System.Security;
-    using System.Security.Permissions;
     using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -200,7 +199,6 @@ namespace System.Diagnostics {
         } 
 
         public virtual int GetNumberOfFrames() { return iFrameCount;}
-        public virtual void SetNumberOfFrames(int i) { iFrameCount = i;}
     
         //
         // serialization implementation
@@ -253,7 +251,6 @@ namespace System.Diagnostics {
     // StackTrace, we use an InheritanceDemand to prevent partially-trusted
     // subclasses.
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class StackTrace
     {
         private StackFrame[] frames;
@@ -516,7 +513,6 @@ namespace System.Diagnostics {
         // The nth element of this array is the same as GetFrame(n). 
         // The length of the array is the same as FrameCount.
         // 
-        [ComVisible(false)]
         public virtual StackFrame [] GetFrames()
         {
             if (frames == null || m_iNumOfFrames <= 0)

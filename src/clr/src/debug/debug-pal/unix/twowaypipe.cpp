@@ -24,10 +24,15 @@ bool TwoWayPipe::CreateServer(DWORD id)
     PAL_GetTransportPipeName(m_inPipeName, id, "in");
     PAL_GetTransportPipeName(m_outPipeName, id, "out");
 
+    unlink(m_inPipeName);
+
     if (mkfifo(m_inPipeName, S_IRWXU) == -1)
     {
         return false;
     }
+
+
+    unlink(m_outPipeName);
 
     if (mkfifo(m_outPipeName, S_IRWXU) == -1)
     {

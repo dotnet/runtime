@@ -483,6 +483,7 @@ MethodDesc *EEDbgInterfaceImpl::GetNativeCodeMethodDesc(const PCODE address)
     RETURN ExecutionManager::GetCodeMethodDesc(address);
 }
 
+#ifndef USE_GC_INFO_DECODER
 // IsInPrologOrEpilog doesn't seem to be used for code that uses GC_INFO_DECODER
 BOOL EEDbgInterfaceImpl::IsInPrologOrEpilog(const BYTE *address,
                                             size_t* prologSize)
@@ -511,6 +512,7 @@ BOOL EEDbgInterfaceImpl::IsInPrologOrEpilog(const BYTE *address,
 
     return FALSE;
 }
+#endif // USE_GC_INFO_DECODER
 
 // 
 // Given a collection of native offsets of a certain function, determine if each falls

@@ -22,9 +22,6 @@
 #include "assemblyname.hpp"
 #include "security.h"
 #include "field.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "strongname.h"
 #include "eeconfig.h"
 
@@ -62,15 +59,11 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
 
     EX_TRY
     {
-#ifdef FEATURE_CORECLR
         // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
         if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
             pImage->VerifyIsNIAssembly();
         else
             pImage->VerifyIsAssembly();
-#else
-        pImage->VerifyIsAssembly();
-#endif
     }
     EX_CATCH
     {
@@ -84,9 +77,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
 
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL,TRUE);
-#ifndef FEATURE_CORECLR
-    spec.SetCodeBase(sUrl);
-#endif
     spec.AssemblyNameInit(&gc.result, pImage);
     
     HELPER_METHOD_FRAME_END();
@@ -113,14 +103,10 @@ FCIMPL1(Object*, AssemblyNameNative::ToString, Object* refThisUNSAFE)
     spec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &pThis, FALSE, FALSE); 
 
     StackSString name;
-#ifndef FEATURE_FUSION
     spec.GetFileOrDisplayName(ASM_DISPLAYF_VERSION |
                               ASM_DISPLAYF_CULTURE |
                               ASM_DISPLAYF_PUBLIC_KEY_TOKEN,
                               name);
-#else
-    spec.GetFileOrDisplayName(0, name);
-#endif // FEATURE_FUSION
 
     pObj = (OBJECTREF) StringObject::NewString(name);
 
@@ -168,52 +154,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
-FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF rv        = NULL;
-    STRINGREF filename  = (STRINGREF) filenameUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(filename);
-
-    LPWSTR pCodeBase = NULL;
-    DWORD  dwCodeBase = 0;
-    CQuickBytes qb;
-
-    if (filename != NULL) {
-        WCHAR* pString;
-        int    iString;
-        filename->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-        dwCodeBase = (DWORD) iString;
-        pCodeBase = (LPWSTR) qb.AllocThrows((++dwCodeBase) * sizeof(WCHAR));
-        memcpy(pCodeBase, pString, dwCodeBase*sizeof(WCHAR));
-    }
-
-    if(pCodeBase) {
-        CQuickBytes qb2;
-        DWORD dwEscaped = 1;
-
-        DWORD flags = 0;
-        if (RunningOnWin7())
-            flags |= URL_ESCAPE_AS_UTF8;
-
-        UrlEscape(pCodeBase, (LPWSTR) qb2.Ptr(), &dwEscaped, flags);
-
-        LPWSTR result = (LPWSTR)qb2.AllocThrows((++dwEscaped) * sizeof(WCHAR));
-        HRESULT hr = UrlEscape(pCodeBase, result, &dwEscaped, flags);
-
-        if (SUCCEEDED(hr))
-            rv = StringObject::NewString(result);
-        else
-            COMPlusThrowHR(hr);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(rv);
-}
-FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent)
 {
@@ -295,18 +235,7 @@ FCIMPL3(FC_BOOL_RET, AssemblyNameNative::ReferenceMatchesDefinition, AssemblyNam
     AssemblySpec defSpec;
     defSpec.InitializeSpec(&(pThread->m_MarshalAlloc), (ASSEMBLYNAMEREF*) &gc.pDef, fParse, FALSE);
 
-#ifdef FEATURE_FUSION
-    SafeComHolder<IAssemblyName> pRefName (NULL);
-    IfFailThrow(refSpec.CreateFusionName(&pRefName, FALSE));
-
-    SafeComHolder <IAssemblyName> pDefName (NULL);
-    IfFailThrow(defSpec.CreateFusionName(&pDefName, FALSE));
-
-    // Order matters: Ref->IsEqual(Def)
-    result = (S_OK == pRefName->IsEqual(pDefName, ASM_CMPF_IL_ALL));
-#else
     result=AssemblySpec::RefMatchesDef(&refSpec,&defSpec);
-#endif
     HELPER_METHOD_FRAME_END();
     FC_RETURN_BOOL(result);
 }

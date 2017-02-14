@@ -21,7 +21,6 @@ namespace System.Threading
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public sealed class ThreadAbortException : SystemException 
     {
@@ -35,11 +34,6 @@ namespace System.Threading
         internal ThreadAbortException(SerializationInfo info, StreamingContext context) 
             : base(info, context) 
         {
-        }
-   
-        public Object ExceptionState 
-        {
-            get {return Thread.CurrentThread.AbortReason;}
         }
     }
 }

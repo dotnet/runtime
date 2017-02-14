@@ -19,10 +19,8 @@ namespace System.Reflection {
     
     using System;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Diagnostics.Contracts;
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ReflectionTypeLoadException : SystemException, ISerializable {
         private Type[] _classes;
         private Exception[] _exceptions;
@@ -30,11 +28,6 @@ namespace System.Reflection {
         // private constructor.  This is not called.
         private ReflectionTypeLoadException()
             : base(Environment.GetResourceString("ReflectionTypeLoad_LoadFailed")) {
-            SetErrorCode(__HResults.COR_E_REFLECTIONTYPELOAD);
-        }
-
-        // private constructor.  This is called from inside the runtime.
-        private ReflectionTypeLoadException(String message) : base(message) {
             SetErrorCode(__HResults.COR_E_REFLECTIONTYPELOAD);
         }
 

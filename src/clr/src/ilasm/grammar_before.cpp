@@ -29,17 +29,6 @@ static AsmParse* parser = 0;
 #define PASMM   (parser->assem->m_pManifest)
 #define PENV    (parser->penv)
 
-#if (0)
-
-#define nextchar                parser->penv->pfn_nextchar
-#define Sym                     parser->penv->pfn_Sym
-#define NewStrFromToken         parser->penv->pfn_NewStrFromToken
-#define NewStaticStrFromToken   parser->penv->pfn_NewStaticStrFromToken
-#define GetDouble               parser->penv->pfn_GetDouble
-
-void SetFunctionPtrs() {;}
-
-#else
 
 
 PFN_NEXTCHAR    nextchar;
@@ -57,7 +46,6 @@ void SetFunctionPtrs()
     GetDouble = PENV->pfn_GetDouble;
 }    
     
-#endif    
 
 static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3 = 0);
 static char* newString(__in __nullterminated const char* str1);

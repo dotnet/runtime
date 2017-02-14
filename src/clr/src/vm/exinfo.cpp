@@ -118,11 +118,9 @@ void ExInfo::Init()
     m_CorruptionSeverity = NotSet;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
     // By default, mark the tracker as not having delivered the first
     // chance exception notification
     m_fDeliveredFirstChanceNotification = FALSE;
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
 
     m_pTopMostHandlerDuringSO = NULL;
 

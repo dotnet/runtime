@@ -22,15 +22,12 @@ namespace System.Reflection
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Security;
     using System.Security.Policy;
-    using System.Security.Permissions;
     using System.IO;
     using StringBuilder = System.Text.StringBuilder;
     using System.Configuration.Assemblies;
     using StackCrawlMark = System.Threading.StackCrawlMark;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
-    using SecurityZone = System.Security.SecurityZone;
-    using IEvidenceFactory = System.Security.IEvidenceFactory;
     using System.Runtime.Serialization;
     using Microsoft.Win32;
     using System.Threading;
@@ -40,15 +37,11 @@ namespace System.Reflection
     using System.Runtime.Loader;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public delegate Module ModuleResolveEventHandler(Object sender, ResolveEventArgs e);
 
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Assembly))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Assembly : _Assembly, IEvidenceFactory, ICustomAttributeProvider, ISerializable
+    public abstract class Assembly : ICustomAttributeProvider, ISerializable
     {
         protected Assembly() {}
 
@@ -109,27 +102,20 @@ namespace System.Reflection
         }
 
         // Locate an assembly for reflection by the name of the file containing the manifest.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoadFrom(String assemblyFile)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            return RuntimeAssembly.InternalLoadFrom(
-                assemblyFile,
-                null, //securityEvidence
-                null, //hashValue
-                AssemblyHashAlgorithm.None,
-                true,  //forIntrospection
-                false, //suppressSecurityChecks
-                ref stackMark);
+            if (assemblyFile == null)
+                throw new ArgumentNullException(nameof(assemblyFile));
+            if (assemblyFile.Length == 0)
+                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
 
         // Evidence is protected in Assembly.Load()
         [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static Assembly LoadFrom(String assemblyFile,
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        internal static Assembly LoadFrom(String assemblyFile,
                                         Evidence securityEvidence)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -142,33 +128,10 @@ namespace System.Reflection
                 null, // hashValue
                 AssemblyHashAlgorithm.None,
                 false,// forIntrospection);
-                false,// suppressSecurityChecks
                 ref stackMark);
         }
 
-        // Evidence is protected in Assembly.Load()
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static Assembly LoadFrom(String assemblyFile,
-                                        Evidence securityEvidence,
-                                        byte[] hashValue,
-                                        AssemblyHashAlgorithm hashAlgorithm)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            return RuntimeAssembly.InternalLoadFrom(
-                assemblyFile, 
-                securityEvidence, 
-                hashValue, 
-                hashAlgorithm, 
-                false,
-                false,
-                ref stackMark);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly LoadFrom(String assemblyFile,
                                         byte[] hashValue,
                                         AssemblyHashAlgorithm hashAlgorithm)
@@ -183,7 +146,7 @@ namespace System.Reflection
 
         // Locate an assembly by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(String assemblyString)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -197,7 +160,7 @@ namespace System.Reflection
         // Calls Type.GetType for WinRT types.
         // Note: Type.GetType fails for assembly names that start with weird characters like '['. By calling it for managed types we would 
         // break AppCompat.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Type GetType_Compat(String assemblyString, String typeName)
         {
             // Normally we would get the stackMark only in public APIs. This is internal API, but it is AppCompat replacement of public API 
@@ -218,7 +181,7 @@ namespace System.Reflection
 
                 assembly = RuntimeAssembly.InternalLoadAssemblyName(
                     assemblyName, null, null, ref stackMark,
-                    true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+                    true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
             }
             return assembly.GetType(typeName, true /*throwOnError*/, false /*ignoreCase*/);
         }
@@ -226,29 +189,19 @@ namespace System.Reflection
         // Locate an assembly for reflection by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
         //
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoad(String assemblyString)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoad(assemblyString, null,  ref stackMark, true /*forIntrospection*/);
-        }
-    
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public static Assembly Load(String assemblyString, Evidence assemblySecurity)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoad(assemblyString, assemblySecurity, ref stackMark, false /*forIntrospection*/);
+            if (assemblyString == null)
+                throw new ArgumentNullException(nameof(assemblyString));
+            if (assemblyString.Length == 0)
+                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -260,12 +213,12 @@ namespace System.Reflection
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/);
         }
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static Assembly Load(AssemblyName assemblyRef, IntPtr ptrLoadContextBinder)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -277,18 +230,7 @@ namespace System.Reflection
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/, ptrLoadContextBinder);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of Load which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        public static Assembly Load(AssemblyName assemblyRef, Evidence assemblySecurity)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, assemblySecurity, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, false /*suppressSecurityChecks*/);
+            return RuntimeAssembly.InternalLoadAssemblyName(assemblyRef, null, null, ref stackMark, true /*thrownOnFileNotFound*/, false /*forIntrospection*/, ptrLoadContextBinder);
         }
 
         [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. http://go.microsoft.com/fwlink/?linkid=14202")]
@@ -302,7 +244,7 @@ namespace System.Reflection
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(byte[] rawAssembly)
         {
             Contract.Ensures(Contract.Result<Assembly>() != null);
@@ -316,28 +258,19 @@ namespace System.Reflection
         // Loads the assembly for reflection with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly)
         {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            AppDomain.CheckReflectionOnlyLoadSupported();
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.nLoadImage(
-                rawAssembly,
-                null, // symbol store
-                null, // evidence
-                ref stackMark,
-                true,  // fIntrospection
-                SecurityContextSource.CurrentAssembly);
+            if (rawAssembly == null)
+                throw new ArgumentNullException(nameof(rawAssembly));
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReflectionOnlyLoad"));
         }
 
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into the domain
         // of the caller. The second parameter is the raw bytes
         // representing the symbol store that matches the assembly.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(byte[] rawAssembly,
                                     byte[] rawSymbolStore)
         {
@@ -352,33 +285,6 @@ namespace System.Reflection
             MemoryStream assemblyStream = new MemoryStream(rawAssembly);
             MemoryStream symbolStream = (rawSymbolStore!=null)?new MemoryStream(rawSymbolStore):null;
             return alc.LoadFromStream(assemblyStream, symbolStream);
-        }
-
-        // Load an assembly from a byte array, controlling where the grant set of this assembly is
-        // propigated from.
-        [MethodImpl(MethodImplOptions.NoInlining)]  // Due to the stack crawl mark
-        public static Assembly Load(byte[] rawAssembly,
-                                    byte[] rawSymbolStore,
-                                    SecurityContextSource securityContextSource)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
-            AppDomain.CheckLoadByteArraySupported();
-
-            if (securityContextSource < SecurityContextSource.CurrentAppDomain ||
-                securityContextSource > SecurityContextSource.CurrentAssembly)
-            {
-                throw new ArgumentOutOfRangeException(nameof(securityContextSource));
-            }
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.nLoadImage(rawAssembly,
-                                              rawSymbolStore,
-                                              null,             // evidence
-                                              ref stackMark,
-                                              false,            // fIntrospection
-                                              securityContextSource);
         }
 
         private static Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
@@ -412,36 +318,17 @@ namespace System.Reflection
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static Assembly Load(Stream assemblyStream, Stream pdbStream)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadFromStream(assemblyStream, pdbStream, ref stackMark);
-        }
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
-        public static Assembly Load(Stream assemblyStream)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-            Contract.Ensures(!Contract.Result<Assembly>().ReflectionOnly);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoadFromStream(assemblyStream, null, ref stackMark);
-        }
-
         /*
          * Get the assembly that the current code is running from.
          */
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable 
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod 
         public static Assembly GetExecutingAssembly()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.GetExecutingAssembly(ref stackMark);
         }
        
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly GetCallingAssembly()
         {
             // LookForMyCallersCaller is not guarantee to return the correct stack frame
@@ -634,7 +521,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        [ComVisible(false)]
         public virtual Module ManifestModule
         {
             get
@@ -679,9 +565,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public virtual bool ReflectionOnly
         {
             get
@@ -831,9 +714,6 @@ namespace System.Reflection
             }
         }
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public virtual String ImageRuntimeVersion
         {
             get
@@ -853,7 +733,6 @@ namespace System.Reflection
             }
         }
 
-        [ComVisible(false)]
         public virtual Int64 HostContext
         {
             get
@@ -880,15 +759,6 @@ namespace System.Reflection
 
     }
 
-    // Keep this in sync with LOADCTX_TYPE defined in fusionpriv.idl
-    internal enum LoadContext
-    {
-       DEFAULT,
-       LOADFROM,
-       UNKNOWN,
-       HOSTED,
-    }
-
     [Serializable]
     internal class RuntimeAssembly : Assembly
     {
@@ -910,7 +780,6 @@ namespace System.Reflection
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
 #region private data members
-        [method: System.Security.SecurityCritical]
         private event ModuleResolveEventHandler _ModuleResolve;
         private string m_fullname;
         private object m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
@@ -992,7 +861,6 @@ namespace System.Reflection
         {
             get {
                 String codeBase = GetCodeBase(false);
-                VerifyCodeBaseDiscovery(codeBase);
                 return codeBase;
             }
         }
@@ -1010,7 +878,6 @@ namespace System.Reflection
             AssemblyName an = new AssemblyName();
 
             String codeBase = GetCodeBase(copiedName);
-            VerifyCodeBaseDiscovery(codeBase);
 
             an.Init(GetSimpleName(), 
                     GetPublicKey(),
@@ -1099,10 +966,6 @@ namespace System.Reflection
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        internal extern static void GetForwardedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private extern static void GetExportedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes); 
         
         public override Type[] GetExportedTypes()
@@ -1130,14 +993,14 @@ namespace System.Reflection
         }
 
         // Load a resource based on the NameSpace of the type.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Stream GetManifestResourceStream(Type type, String name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return GetManifestResourceStream(type, name, false, ref stackMark);
         }
     
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Stream GetManifestResourceStream(String name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1206,13 +1069,12 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static RuntimeAssembly InternalLoadFrom(String assemblyFile, 
                                                          Evidence securityEvidence,
                                                          byte[] hashValue, 
                                                          AssemblyHashAlgorithm hashAlgorithm,
                                                          bool forIntrospection,
-                                                         bool suppressSecurityChecks,
                                                          ref StackCrawlMark stackMark)
         {
             if (assemblyFile == null)
@@ -1224,7 +1086,7 @@ namespace System.Reflection
             an.CodeBase = assemblyFile;
             an.SetHashControl(hashValue, hashAlgorithm);
             // The stack mark is used for MDA filtering
-            return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection, suppressSecurityChecks);
+            return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection);
         }
 
         // Wrapper function to wrap the typical use of InternalLoad.
@@ -1236,7 +1098,7 @@ namespace System.Reflection
             return InternalLoad(assemblyString, assemblySecurity,  ref stackMark, IntPtr.Zero, forIntrospection);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
                                                      ref StackCrawlMark stackMark,
@@ -1253,7 +1115,7 @@ namespace System.Reflection
 
             return InternalLoadAssemblyName(an, assemblySecurity, null, ref stackMark, 
                                             pPrivHostBinder,
-                                            true  /*thrownOnFileNotFound*/, forIntrospection, false /* suppressSecurityChecks */);
+                                            true  /*thrownOnFileNotFound*/, forIntrospection);
         }
         
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
@@ -1289,10 +1151,9 @@ namespace System.Reflection
             ref StackCrawlMark stackMark,
             bool throwOnFileNotFound,
             bool forIntrospection,
-            bool suppressSecurityChecks,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
-            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, ptrLoadContextBinder);
         }
 
         internal static RuntimeAssembly InternalLoadAssemblyName(
@@ -1303,7 +1164,6 @@ namespace System.Reflection
             IntPtr pPrivHostBinder,
             bool throwOnFileNotFound, 
             bool forIntrospection,
-            bool suppressSecurityChecks,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
        
@@ -1323,34 +1183,11 @@ namespace System.Reflection
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
             }
 
-            if (assemblySecurity != null)
-            {
-                if (!suppressSecurityChecks)
-                {
-#pragma warning disable 618
-                    new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
-#pragma warning restore 618
-                }
-            }
-
             String codeBase = VerifyCodeBase(assemblyRef.CodeBase);
-            if (codeBase != null && !suppressSecurityChecks)
-            {
-                if (String.Compare( codeBase, 0, s_localFilePrefix, 0, 5, StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    // Of all the binders, Fusion is the only one that understands Web locations                 
-                     throw new ArgumentException(Environment.GetResourceString("Arg_InvalidFileName"), "assemblyRef.CodeBase");
-                }
-                else
-                {
-                    System.Security.Util.URLString urlString = new System.Security.Util.URLString( codeBase, true );
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery | FileIOPermissionAccess.Read , urlString.GetFileName() ).Demand();
-                }
-            }
 
             return nLoad(assemblyRef, codeBase, assemblySecurity, reqAssembly, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+                throwOnFileNotFound, forIntrospection, ptrLoadContextBinder);
         }
 
         // These are the framework assemblies that does reflection invocation
@@ -1376,15 +1213,6 @@ namespace System.Reflection
             ASSEMBLY_FLAGS flags = Flags;
             return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION) != 0;
         }
-
-        private bool IsDesignerBindingContext()
-        {
-            return RuntimeAssembly.nIsDesignerBindingContext(this);
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static bool nIsDesignerBindingContext(RuntimeAssembly assembly);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1407,75 +1235,21 @@ namespace System.Reflection
                                              IntPtr pPrivHostBinder,
                                              bool throwOnFileNotFound,
                                              bool forIntrospection,
-                                             bool suppressSecurityChecks, IntPtr ptrLoadContextBinder = default(IntPtr))
+                                             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
             return _nLoad(fileName, codeBase, assemblySecurity, locationHint, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, suppressSecurityChecks, ptrLoadContextBinder);
+                throwOnFileNotFound, forIntrospection, true /* suppressSecurityChecks */, ptrLoadContextBinder);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsReflectionOnly(RuntimeAssembly assembly);
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public override bool ReflectionOnly
         {
             get
             {
                 return IsReflectionOnly(GetNativeHandle());
-            }
-        }
-
-        // Loads the assembly with a COFF based IMAGE containing
-        // an emitted assembly. The assembly is loaded into the domain
-        // of the caller. Currently is implemented only for  UnmanagedMemoryStream
-        // (no derived classes since we are not calling Read())
-        internal static RuntimeAssembly InternalLoadFromStream(Stream assemblyStream, Stream pdbStream, ref StackCrawlMark stackMark)
-        {
-            if (assemblyStream  == null)
-                throw new ArgumentNullException(nameof(assemblyStream));
-
-            if (assemblyStream.GetType()!=typeof(UnmanagedMemoryStream))
-                throw new NotSupportedException();
-
-            if (pdbStream!= null && pdbStream.GetType()!=typeof(UnmanagedMemoryStream))
-                throw new NotSupportedException();
-
-            AppDomain.CheckLoadFromSupported();
-
-            UnmanagedMemoryStream umAssemblyStream = (UnmanagedMemoryStream)assemblyStream;
-            UnmanagedMemoryStream umPdbStream = (UnmanagedMemoryStream)pdbStream;
-            
-            unsafe
-            {
-                byte* umAssemblyStreamBuffer=umAssemblyStream.PositionPointer;
-                byte* umPdbStreamBuffer=(umPdbStream!=null)?umPdbStream.PositionPointer:null; 
-                long assemblyDataLength = umAssemblyStream.Length-umAssemblyStream.Position;
-                long pdbDataLength = (umPdbStream!=null)?(umPdbStream.Length-umPdbStream.Position):0;
-                
-                // use Seek() to benefit from boundary checking, the actual read is done using *StreamBuffer
-                umAssemblyStream.Seek(assemblyDataLength,SeekOrigin.Current);
-                
-                if(umPdbStream != null)
-                {
-                    umPdbStream.Seek(pdbDataLength,SeekOrigin.Current);                  
-                }
-                
-                BCLDebug.Assert(assemblyDataLength > 0L, "assemblyDataLength > 0L");
-    
-                RuntimeAssembly assembly = null;
-
-                nLoadFromUnmanagedArray(false, 
-                                                                 umAssemblyStreamBuffer, 
-                                                                 (ulong)assemblyDataLength, 
-                                                                 umPdbStreamBuffer,
-                                                                 (ulong)pdbDataLength, 
-                                                                 JitHelpers.GetStackCrawlMarkHandle(ref stackMark),
-                                                                 JitHelpers.GetObjectHandleOnStack(ref assembly));
-
-                return assembly;
             }
         }
 
@@ -1558,7 +1332,7 @@ namespace System.Reflection
                                                           StringHandleOnStack retFileName,
                                                           StackCrawlMarkHandle stackMark);
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             RuntimeAssembly retAssembly = null;
@@ -1587,9 +1361,6 @@ namespace System.Reflection
 
                 GetLocation(GetNativeHandle(), JitHelpers.GetStringHandleOnStack(ref location));
 
-                if (location != null)
-                    new FileIOPermission( FileIOPermissionAccess.PathDiscovery, location ).Demand();
-
                 return location;
             }
         }
@@ -1598,9 +1369,6 @@ namespace System.Reflection
         [SuppressUnmanagedCodeSecurity]
         private extern static void GetImageRuntimeVersion(RuntimeAssembly assembly, StringHandleOnStack retString);
 
-        // To not break compatibility with the V1 _Assembly interface we need to make this
-        // new member ComVisible(false).
-        [ComVisible(false)]
         public override String ImageRuntimeVersion
         {
             get{
@@ -1610,10 +1378,6 @@ namespace System.Reflection
             }
         }
 
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static bool IsGlobalAssemblyCache(RuntimeAssembly assembly);
-
         public override bool GlobalAssemblyCache
         {
             get
@@ -1621,10 +1385,6 @@ namespace System.Reflection
                 return false;
             }
         }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static Int64 GetHostContext(RuntimeAssembly assembly);
 
         public override Int64 HostContext
         {
@@ -1707,7 +1467,7 @@ namespace System.Reflection
                 if (length > Int64.MaxValue)
                     throw new NotImplementedException(Environment.GetResourceString("NotImplemented_ResourcesLongerThan2^63"));
 
-                return new UnmanagedMemoryStream(pbInMemoryResource, (long)length, (long)length, FileAccess.Read, true);
+                return new UnmanagedMemoryStream(pbInMemoryResource, (long)length, (long)length, FileAccess.Read);
             }
 
             //Console.WriteLine("GetManifestResourceStream: Blob "+name+" not found...");
@@ -1755,15 +1515,6 @@ namespace System.Reflection
             }
         }
 
-        private void VerifyCodeBaseDiscovery(String codeBase)
-        {
-            if ((codeBase != null) &&
-                (String.Compare( codeBase, 0, s_localFilePrefix, 0, 5, StringComparison.OrdinalIgnoreCase) == 0)) {
-                System.Security.Util.URLString urlString = new System.Security.Util.URLString( codeBase, true );
-                new FileIOPermission( FileIOPermissionAccess.PathDiscovery, urlString.GetFileName() ).Demand();
-            }
-        }
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void GetSimpleName(RuntimeAssembly assembly, StringHandleOnStack retSimpleName);
@@ -1795,19 +1546,6 @@ namespace System.Reflection
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private static extern void GetRawBytes(RuntimeAssembly assembly, ObjectHandleOnStack retRawBytes);
-
-        // Get the raw bytes of the assembly
-        internal byte[] GetRawBytes()
-        {
-            byte[] rawBytes = null;
-
-            GetRawBytes(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref rawBytes));
-            return rawBytes;
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
         private static extern void GetPublicKey(RuntimeAssembly assembly, ObjectHandleOnStack retPublicKey);
 
         internal byte[] GetPublicKey()
@@ -1815,50 +1553,6 @@ namespace System.Reflection
             byte[] publicKey = null;
             GetPublicKey(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref publicKey));
             return publicKey;
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private extern static void GetGrantSet(RuntimeAssembly assembly, ObjectHandleOnStack granted, ObjectHandleOnStack denied);
-
-        internal void GetGrantSet(out PermissionSet newGrant, out PermissionSet newDenied)
-        {
-            PermissionSet granted = null, denied = null;
-            GetGrantSet(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref granted), JitHelpers.GetObjectHandleOnStack(ref denied));
-            newGrant = granted; newDenied = denied;
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private extern static bool IsAllSecurityCritical(RuntimeAssembly assembly);
-
-        // Is everything introduced by this assembly critical
-        internal bool IsAllSecurityCritical()
-        {
-            return IsAllSecurityCritical(GetNativeHandle());
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private extern static bool IsAllSecuritySafeCritical(RuntimeAssembly assembly);
-
-        // Is everything introduced by this assembly safe critical
-        internal bool IsAllSecuritySafeCritical()
-        {
-            return IsAllSecuritySafeCritical(GetNativeHandle());
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private extern static bool IsAllPublicAreaSecuritySafeCritical(RuntimeAssembly assembly);
-
-        // Is everything introduced by this assembly safe critical
-        internal bool IsAllPublicAreaSecuritySafeCritical()
-        {
-            return IsAllPublicAreaSecuritySafeCritical(GetNativeHandle());
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -1890,7 +1584,7 @@ namespace System.Reflection
             return null;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -1898,14 +1592,14 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalGetSatelliteAssembly(culture, version, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         internal Assembly InternalGetSatelliteAssembly(CultureInfo culture,
                                                        Version version,
                                                        ref StackCrawlMark stackMark)
@@ -1919,7 +1613,7 @@ namespace System.Reflection
             return InternalGetSatelliteAssembly(name, culture, version, true, ref stackMark);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod  
         internal RuntimeAssembly InternalGetSatelliteAssembly(String name,
                                                               CultureInfo culture,
                                                               Version version,
@@ -1942,7 +1636,7 @@ namespace System.Reflection
 
             RuntimeAssembly retAssembly = nLoad(an, null, null, this,  ref stackMark, 
                                 IntPtr.Zero,
-                                throwOnFileNotFound, false, false);
+                                throwOnFileNotFound, false);
 
             if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
             {
@@ -1951,135 +1645,6 @@ namespace System.Reflection
 
             return retAssembly;
         }
-
-        // Helper method used by InternalGetSatelliteAssembly only. Not abstracted for use elsewhere.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable  
-        private RuntimeAssembly InternalProbeForSatelliteAssemblyNextToParentAssembly(AssemblyName an,
-                                                                                      String name,
-                                                                                      String codeBase,
-                                                                                      CultureInfo culture,
-                                                                                      bool throwOnFileNotFound,
-                                                                                      bool useLoadFile,
-                                                                                      ref StackCrawlMark stackMark)
-        {
-            // if useLoadFile == false, we do LoadFrom binds
-
-            RuntimeAssembly retAssembly = null;
-            String location = null;
-
-            if (useLoadFile)
-                location = Location;
-            
-            FileNotFoundException dllNotFoundException = null;
-
-            StringBuilder assemblyFile = new StringBuilder(useLoadFile ? location : codeBase,
-                                                           0,
-                                                           useLoadFile ? location.LastIndexOf('\\') + 1 : codeBase.LastIndexOf('/') + 1,
-                                                           Path.MaxPath);
-            assemblyFile.Append(an.CultureInfo.Name);
-            assemblyFile.Append(useLoadFile ? '\\' : '/');
-            assemblyFile.Append(name);
-            assemblyFile.Append(".DLL");
-
-            string fileNameOrCodeBase = assemblyFile.ToString();
-
-            AssemblyName loadFromAsmName = null;
-
-            if (useLoadFile == false)
-            {
-                loadFromAsmName = new AssemblyName();
-                // set just the codebase - we want this to be a pure LoadFrom
-                loadFromAsmName.CodeBase = fileNameOrCodeBase;
-            }
-
-            try
-            {
-                try
-                {
-                    retAssembly = useLoadFile ? nLoadFile(fileNameOrCodeBase, null) :
-                                                nLoad(loadFromAsmName, fileNameOrCodeBase, null, this, ref stackMark,
-                                                IntPtr.Zero,
-                                                throwOnFileNotFound, false, false);
-                }
-                catch (FileNotFoundException)
-                {
-                    // Create our own exception since the one caught doesn't have a filename associated with it, making it less useful for debugging.
-                    dllNotFoundException = new FileNotFoundException(String.Format(culture,
-                                                                                   Environment.GetResourceString("IO.FileNotFound_FileName"),
-                                                                                   fileNameOrCodeBase),
-                                                                     fileNameOrCodeBase); // Save this exception so we can throw it if we also don't find the .EXE
-                    retAssembly = null;
-                }
-            
-                if (retAssembly == null)
-                {
-                    // LoadFile will always throw, but LoadFrom will only throw if throwOnFileNotFound is true.
-                    // If an exception was thrown, we must have a dllNotFoundException ready for throwing later.
-                    BCLDebug.Assert((useLoadFile == false && throwOnFileNotFound == false) || dllNotFoundException != null,
-                                   "(useLoadFile == false && throwOnFileNotFound == false) || dllNotFoundException != null");
-                
-                    assemblyFile.Remove(assemblyFile.Length - 4, 4);
-                    assemblyFile.Append(".EXE");
-                    fileNameOrCodeBase = assemblyFile.ToString();
-                    
-                    if (useLoadFile == false)
-                        loadFromAsmName.CodeBase = fileNameOrCodeBase;
-
-                    try
-                    {
-                        retAssembly = useLoadFile ? nLoadFile(fileNameOrCodeBase, null) :
-                                                    nLoad(loadFromAsmName, fileNameOrCodeBase,  null, this, ref stackMark,
-                                                          IntPtr.Zero,
-                                                          false /* do not throw on file not found */, false, false);
-                            
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        retAssembly = null;
-                    }
-
-                    // It would be messy to have a FileNotFoundException that reports both .DLL and .EXE not found.
-                    // Using a .DLL extension for satellite assemblies is the more common scenario,
-                    // so just throw that exception.
-                    
-                    // In classic (i.e. non-AppX) mode, if binder logging is turned on, there will be separate  logs for
-                    // the .DLL and .EXE load attempts if the user is interested in digging deeper.
-                    
-                    if (retAssembly == null && throwOnFileNotFound)
-                        throw dllNotFoundException;
-                }
-            }
-            catch (DirectoryNotFoundException)
-            {
-                if (throwOnFileNotFound)
-                    throw;
-                retAssembly = null;
-            }
-            // No other exceptions should be caught here.
-
-            return retAssembly;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern RuntimeAssembly nLoadFile(String path, Evidence evidence);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern RuntimeAssembly nLoadImage(byte[] rawAssembly,
-                                                          byte[] rawSymbolStore,
-                                                          Evidence evidence,
-                                                          ref StackCrawlMark stackMark,
-                                                          bool fIntrospection,
-                                                          SecurityContextSource securityContextSource);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        static internal extern unsafe void nLoadFromUnmanagedArray(bool fIntrospection, 
-                                                                            byte* assemblyContent, 
-                                                                            ulong assemblySize,
-                                                                            byte* pdbContent, 
-                                                                            ulong pdbSize,
-                                                                            StackCrawlMarkHandle stackMark,
-                                                                            ObjectHandleOnStack retAssembly);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]

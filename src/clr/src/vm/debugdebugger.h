@@ -92,9 +92,7 @@ public:
     I4ARRAYREF rgiLineNumber;
     I4ARRAYREF rgiColumnNumber;
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     BOOLARRAYREF rgiLastFrameFromForeignExceptionStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
     OBJECTREF getSourceLineInfo;
     int iFrameCount;
@@ -136,11 +134,9 @@ private:
         DWORD dwILOffset;
         MethodDesc *pFunc;
         PCODE ip;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // TRUE if this element represents the last frame of the foreign
         // exception stack trace.
         BOOL			fIsLastFrameFromForeignStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         // Initialization done under TSL.
         // This is used when first collecting the stack frame data.
@@ -148,9 +144,7 @@ private:
             DWORD dwNativeOffset,
             MethodDesc *pFunc,
             PCODE ip
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
             , BOOL			fIsLastFrameFromForeignStackTrace = FALSE
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 			);
 
         // Initialization done outside the TSL.
@@ -171,9 +165,7 @@ public:
         DebugStackTraceElement* pElements;
         THREADBASEREF   TargetThread;
         AppDomain *pDomain;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         BOOL	fDoWeHaveAnyFramesFromForeignStackTrace;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
 
         GetStackFramesData() :  skip(0), 
@@ -184,9 +176,7 @@ public:
                                 TargetThread((THREADBASEREF)(TADDR)NULL)
         { 
             LIMITED_METHOD_CONTRACT;
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
             fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
         }
 

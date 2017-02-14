@@ -13,7 +13,5 @@ add_executable(paltest_reg_unreg_libraryw_neg
 add_dependencies(paltest_reg_unreg_libraryw_neg coreclrpal)
 
 target_link_libraries(paltest_reg_unreg_libraryw_neg
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

@@ -21,7 +21,6 @@ namespace System {
     // * Wrapper for unsigned 32 bit integers.
     [Serializable]
     [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct UInt32 : IComparable, IFormattable, IConvertible
         , IComparable<UInt32>, IEquatable<UInt32>
     {

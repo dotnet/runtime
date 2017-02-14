@@ -11,9 +11,6 @@
 
 #include "holder.h"
 #include "internalunknownimpl.h"
-#ifdef FEATURE_FUSION
-#include "fusion.h"
-#endif
 #include "clrprivbinding.h"
 #include "slist.h"
 #ifdef FEATURE_COMINTEROP
@@ -89,125 +86,6 @@ namespace CLRPrivBinderUtil
     }
 
     //=====================================================================================================================
-#ifdef FEATURE_FUSION
-    class CLRPrivAssemblyBindResultWrapper :
-        public IUnknownCommon<
-        IBindResult,
-        IAssemblyLocation>
-    {
-    public:
-        //-----------------------------------------------------------------------------------------------------------------
-        CLRPrivAssemblyBindResultWrapper(
-            IAssemblyName *pIAssemblyName,
-            PCWSTR wzAssemblyPath,
-            IILFingerprintFactory *pILFingerprintFactory
-            );
-
-        //-----------------------------------------------------------------------------------------------------------------
-        ~CLRPrivAssemblyBindResultWrapper();
-
-    protected:
-        //=================================================================================================================
-        // IBindResult methods
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetAssemblyNameDef)(
-            /*out*/ IAssemblyName **ppIAssemblyNameDef);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetNextAssemblyModuleName)(
-            /*in*/      DWORD   dwNIndex,
-            __inout_ecount(*pdwCCModuleName)    LPWSTR  pwzModuleName,
-            /*in, out, annotation("__inout")*/  LPDWORD pdwCCModuleName);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetAssemblyLocation)(
-            /*out*/ IAssemblyLocation **ppIAssemblyLocation);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetNativeImage)(
-            /*out*/ IBindResult **ppIBindResultNI,
-            /*out*/ BOOL         *pfIBindResultNIProbed);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(SetNativeImage)(
-            /*in*/  IBindResult  *pIBindResultNI,
-            /*out*/ IBindResult **ppIBindResultNIFinal);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(IsEqual)(
-            /*in*/ IUnknown *pIUnk);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetNextAssemblyNameRef)(
-            /*in*/  DWORD           dwNIndex,
-            /*out*/ IAssemblyName **ppIAssemblyNameRef);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetNextDependentAssembly)(
-            /*in*/  DWORD      dwNIndex,
-            /*out*/ IUnknown **ppIUnknownAssembly);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetAssemblyLocationOfILImage)(
-            /*out*/ IAssemblyLocation **ppAssemblyLocation);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetILFingerprint)(
-            /*out*/ IILFingerprint **ppFingerprint);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetSourceILTimestamp)(
-            /*out*/ FILETIME* pFileTime);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetSourceILSize)(
-            /*out*/ DWORD* pSize);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetNIInfo)(
-            /*out*/ INativeImageInstallInfo** pInfo);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetFlags)(
-            /*out*/ DWORD * pdwFlags);
-
-        //=================================================================================================================
-        // IAssemblyLocation methods
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetLocationType)(
-            /*out*/DWORD *pdwLocationType);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetPath)(
-            __inout_ecount(*pdwccAssemblyPath)  LPWSTR  pwzAssemblyPath,
-            /*in, annotation("__inout")*/       LPDWORD pdwccAssemblyPath);
-
-        //-----------------------------------------------------------------------------------------------------------------
-        STDMETHOD(GetHostID)(
-            /*out*/ UINT64 *puiHostID);
-
-    private:
-        inline PCWSTR GetILAssemblyPath()
-        { LIMITED_METHOD_CONTRACT; return m_wzAssemblyPath; }
-
-        NewArrayHolder<WCHAR>       m_wzAssemblyPath;
-        IAssemblyName *             m_pIAssemblyName;
-
-        // Since m_bIBindResultNISet and m_pIBindResultNI are separate data, they both need
-        // to be treated as volatile, making sure to always fetch m_bIBindResultNISet first
-        // and only read m_pIBindResultNI if m_bIBindResultNISet is true.
-        Volatile<bool>              m_bIBindResultNISet;
-        VolatilePtr<IBindResult>    m_pIBindResultNI;
-
-        IILFingerprint *            m_pIILFingerprint;
-        ReleaseHolder<IILFingerprintFactory> m_pILFingerprintFactory;
-
-        // Used as a leaf lock for publishing, such as m_pIBindResultNI.
-        Crst m_lock;
-    };  // class CLRPrivAssemblyBindResultWrapper
-#endif // FEATURE_FUSION
 
     //=================================================================================================================
     // Used to create an identity-only ICLRPrivAssembly from an ICLRPrivBinder. This is currently used when
@@ -858,9 +736,6 @@ namespace CLRPrivBinderUtil
 
     /** probably should be exposed on an instance (of something) method rather that magically calling GetAppDomain() **/
     ICLRPrivAssembly* RaiseAssemblyResolveEvent(IAssemblyName *pAssemblyName, ICLRPrivAssembly* pRequestingAssembly);
-
-    /** PLACEHOLDER - CLRPRivBinderFusion::BindAssemblyByName throws, despite being an HRESULT function,
-    most presumably because returning HRESULT is too lossy   **/
 
     /** Ultimately, only the binder can do ref-def matching, and it should be opaque to CLR. 
      This is not trivial to do, however, since we cannot do data conversion as the function is nofault **/

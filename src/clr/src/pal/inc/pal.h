@@ -1795,10 +1795,17 @@ typedef struct _CONTEXT {
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
-    // TODO WIP x86/Linux, need to fix this.
-    PDWORD Ebx;
-    PDWORD Esi;
+    // The ordering of these fields should be aligned with that
+    // of corresponding fields in CONTEXT
+    //
+    // (See FillRegDisplay in inc/regdisp.h for details)
     PDWORD Edi;
+    PDWORD Esi;
+    PDWORD Ebx;
+    PDWORD Edx;
+    PDWORD Ecx;
+    PDWORD Eax;
+
     PDWORD Ebp;
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
@@ -4954,6 +4961,7 @@ CoCreateGuid(OUT GUID * pguid);
 #define _wcstoui64    PAL__wcstoui64
 #define _flushall     PAL__flushall
 #define strnlen       PAL_strnlen
+#define wcsnlen       PAL_wcsnlen
 
 #ifdef _AMD64_ 
 #define _mm_getcsr    PAL__mm_getcsr

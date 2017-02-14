@@ -389,7 +389,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     do {                                                                                    \
         if (pRegDisplay->pCurrentContextPointers->reg != NULL)                              \
         {                                                                                   \
-            STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating reg %p to %p from %p\n",          \
+            STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating " #reg " %p to %p from %p\n",     \
                     pContextRecord->reg,                                                    \
                     *pRegDisplay->pCurrentContextPointers->reg,                             \
                     pRegDisplay->pCurrentContextPointers->reg);                             \
@@ -966,7 +966,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
         }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_CORECLR
         {
             // Switch to COOP mode since we are going to work
             // with throwable
@@ -1009,7 +1008,6 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
                 }
             }
         }
-#endif // FEATURE_CORECLR
 
 #ifndef FEATURE_PAL // Watson is on Windows only
         // Setup bucketing details for nested exceptions (rethrow and non-rethrow) only if we are in the first pass
@@ -1208,12 +1206,9 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
     CONTRACTL_END;
 
     CONTEXT _ctx = {0};
-#if defined(_TARGET_AMD64_)
-    REGDISPLAY regdisp = {0};
-#else
+
     // Ctor will initialize it to NULL
     REGDISPLAY regdisp;
-#endif // _TARGET_AMD64_
 
     pThread->FillRegDisplay(&regdisp, &_ctx);
 
@@ -2216,13 +2211,11 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
 #if defined(DEBUGGING_SUPPORTED)
                 if (ExceptionTracker::NotifyDebuggerOfStub(pThread, sf, pFrame))
                 {
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Deliver the FirstChanceNotification after the debugger, if not already delivered.
                     if (!this->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
 #endif // DEBUGGING_SUPPORTED
 
@@ -2556,14 +2549,12 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                     }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef FEATURE_EXCEPTION_NOTIFICATIONS
                     // Attempt to deliver the first chance notification to the AD only *AFTER* the debugger
                     // has done that, provided we have not already delivered it.
                     if (!this->DeliveredFirstChanceNotification())
                     {
                         ExceptionNotifications::DeliverFirstChanceNotification();
                     }
-#endif // FEATURE_EXCEPTION_NOTIFICATIONS
                 }
                 else
                 {
@@ -4690,7 +4681,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     throw std::move(ex);
 }
 
-#ifdef _AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 
 /*++
 Function :
@@ -4707,8 +4698,29 @@ Return value :
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
+#if defined(_TARGET_AMD64_)
     _ASSERTE(index < 16);
     return &((&pContext->Rax)[index]);
+#elif defined(_TARGET_X86_)
+    _ASSERTE(index < 8);
+
+    static const SIZE_T OFFSET_OF_REGISTERS[] =
+    {
+        offsetof(CONTEXT, Eax),
+        offsetof(CONTEXT, Ecx),
+        offsetof(CONTEXT, Edx),
+        offsetof(CONTEXT, Ebx),
+        offsetof(CONTEXT, Esp),
+        offsetof(CONTEXT, Ebp),
+        offsetof(CONTEXT, Esi),
+        offsetof(CONTEXT, Edi),
+    };
+
+    return (VOID*)(PBYTE(pContext) + OFFSET_OF_REGISTERS[index]);
+#else
+    PORTABILITY_ASSERT("GetRegisterAddressByIndex");
+    return NULL;
+#endif
 }
 
 /*++
@@ -4980,7 +4992,7 @@ Return value :
 --*/
 bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 {
-    BYTE * ip = (BYTE*)pContext->Rip;
+    BYTE * ip = (BYTE *)GetIP(pContext);
     BYTE rex = 0;
     bool hasOpSizePrefix = false;
 
@@ -5012,7 +5024,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
     // must have been an overflow.
     return divisor != 0;
 }
-#endif //_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
 
 BOOL IsSafeToCallExecutionManager()
 {
@@ -5059,7 +5071,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             return TRUE;
         }
 
-#ifdef _AMD64_
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
         // It is possible that an overflow was mapped to a divide-by-zero exception. 
         // This happens when we try to divide the maximum negative value of a
         // signed integer with -1. 
@@ -5072,7 +5084,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             // The exception was an integer overflow, so augment the exception code.
             ex->GetExceptionRecord()->ExceptionCode = EXCEPTION_INT_OVERFLOW;
         }
-#endif //_AMD64_
+#endif // _TARGET_AMD64_ || _TARGET_X86_
 
         // Create frame necessary for the exception handling
         FrameWithCookie<FaultingExceptionFrame> fef;

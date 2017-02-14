@@ -17,7 +17,6 @@ namespace System.Reflection {
     using System;
     [Serializable]
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum BindingFlags
     {
 

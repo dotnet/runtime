@@ -17,7 +17,6 @@
 
 using System.Collections.Generic;
 using System.Security;
-using System.Security.Permissions;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
@@ -26,8 +25,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [ComVisible(true)]
-    public static class Directory {
+    internal static class Directory {
 
         // Private class that holds search data that is passed around 
         // in the heap based stack recursion
@@ -49,6 +47,7 @@ namespace System.IO
             public readonly SearchOption searchOption;
         }
 
+#if PLATFORM_UNIX
         public static IEnumerable<String> EnumerateFiles(String path, String searchPattern, SearchOption searchOption)
         {
             if (path == null)
@@ -84,13 +83,14 @@ namespace System.IO
             return FileSystemEnumerableFactory.CreateFileNameIterator(path, path, searchPattern,
                                                                         includeFiles, includeDirs, searchOption, true);
         }
+#endif // PLATFORM_UNIX        
 
         internal static String InternalGetDirectoryRoot(String path) {
               if (path == null) return null;
             return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
-         /*===============================CurrentDirectory===============================
+        /*===============================CurrentDirectory===============================
         **Action:  Provides a getter and setter for the current directory.  The original
         **         current DirectoryInfo is the one from which the process was started.  
         **Returns: The current DirectoryInfo (from the getter).  Void from the setter.

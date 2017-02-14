@@ -2370,18 +2370,6 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         }        
     }
 
-    // Flags defined in COR_PRF_REQUIRE_PROFILE_IMAGE will force to JIT mscorlib if the
-    // user does not ngen mscorlib with /profiler. Similarly, the
-    // COR_PRF_DISABLE_ALL_NGEN_IMAGES flag always forces us to JIT mscorlib. Using the
-    // jitted version of mscorlib with HPA(Host Protection Attributes) enabled will cause
-    // stack overflow inside JIT. See Dev 10 Bug 637987 for the detail.
-    if (((dwEventMask & (COR_PRF_REQUIRE_PROFILE_IMAGE | COR_PRF_DISABLE_ALL_NGEN_IMAGES)) != 0) &&
-        (GetHostProtectionManager() != NULL) &&
-        (GetHostProtectionManager()->GetProtectedCategories() != eNoChecks))
-    {
-        return CORPROF_E_INCONSISTENT_FLAGS_WITH_HOST_PROTECTION_SETTING;
-    }
-
     // High event bits
 
     if (((dwEventMaskHigh & COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES) != 0) &&
@@ -6294,116 +6282,6 @@ HRESULT EEToProfInterfaceImpl::ProfilerDetachSucceeded()
     }
 }
 
-#ifdef FEATURE_FUSION
-
-// Minimal wrappers so that Fusion can call the GetAssemblyReferences profiler callback
-// without needing a ton of profapi includes.
-
-BOOL ShouldCallGetAssemblyReferencesProfilerCallback()
-{
-    return CORProfilerAddsAssemblyReferences();
-}
-
-void CallGetAssemblyReferencesProfilerCallbackIfNecessary(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext)
-{
-    BEGIN_PIN_PROFILER(CORProfilerAddsAssemblyReferences());
-    g_profControlBlock.pProfInterface->GetAssemblyReferences(wszAssemblyPath, pClosure, pContext);
-    END_PIN_PROFILER();
-}
-
-// Implementation of ICorProfilerAssemblyReferenceProvider, which is given to the profiler so
-// that it can call back into the CLR with extra assembly references that should be considered
-// while Fusion performs its assembly reference closure walk.
-class ProfilerAssemblyReferenceProvider : public ICorProfilerAssemblyReferenceProvider
-{
-public:
-    // IUnknown functions
-    virtual HRESULT __stdcall QueryInterface(REFIID id, void** pInterface)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (id == IID_IUnknown)
-        {
-            *pInterface = static_cast<IUnknown *>(this);
-        }
-        else if (id == IID_ICorProfilerAssemblyReferenceProvider)
-        {
-            *pInterface = static_cast<ICorProfilerAssemblyReferenceProvider *>(this);
-        }
-        else
-        {
-            *pInterface = NULL;
-            return E_NOINTERFACE;
-        }
-
-        AddRef();
-        return S_OK;
-    }
-
-    virtual ULONG __stdcall AddRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return InterlockedIncrement(&m_refCount);
-    }
-
-    virtual ULONG __stdcall Release()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        ULONG refCount = InterlockedDecrement(&m_refCount);
-
-        if (0 == refCount)
-        {
-            delete this;
-        }
-
-        return refCount;
-    }
-
-    // ICorProfilerAssemblyReferenceProvider functions
-    
-    // This is what the profiler calls to tell us about an assembly reference we should include
-    // when Fusion performs its closure walk.  When this is called, the walk is already underway,
-    // and is sitting on our stack already.
-    virtual HRESULT __stdcall AddAssemblyReference(const COR_PRF_ASSEMBLY_REFERENCE_INFO * pAssemblyRefInfo)
-    {
-        _ASSERTE(m_pClosure != NULL);
-
-        return m_pClosure->AddProfilerAssemblyReference(
-                pAssemblyRefInfo->pbPublicKeyOrToken,
-                pAssemblyRefInfo->cbPublicKeyOrToken,
-                pAssemblyRefInfo->szName,
-                pAssemblyRefInfo->pMetaData,
-                pAssemblyRefInfo->pbHashValue,
-                pAssemblyRefInfo->cbHashValue,
-                pAssemblyRefInfo->dwAssemblyRefFlags,
-                m_pContext);
-    }
-
-    // Implementation
-    ProfilerAssemblyReferenceProvider(IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext) :
-        m_refCount(1),
-        m_pClosure(pClosure),
-        m_pContext(pContext)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pClosure->AddRef();
-    }
-
-protected:
-    Volatile<LONG> m_refCount;
-
-    // Our interface into Fusion's closure walk.  We use this to inform Fusion about
-    // the assembly reference the profiler gave us.
-    ReleaseHolder<IAssemblyBindingClosure> m_pClosure;
-
-    // Extra context built up by fusion's closure walk that we need to remember.  The
-    // walk is already in action by the time we're called, and this structure remembers
-    // the lists that are getting built up by the walk
-    AssemblyReferenceClosureWalkContextForProfAPI * m_pContext;
-};
-
-#endif // FEATURE_FUSION
 
 
 HRESULT EEToProfInterfaceImpl::GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext)
@@ -6433,30 +6311,6 @@ HRESULT EEToProfInterfaceImpl::GetAssemblyReferences(LPCWSTR wszAssemblyPath, IA
                                 ));
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_FUSION
-
-    SString sPath;
-    _ASSERTE(IsCallback6Supported());
-
-    // Create an instance of the class implementing the interface we pass back to the profiler,
-    // feeding it the context we're currently at in Fusion's closure walk
-    ReleaseHolder<ProfilerAssemblyReferenceProvider> pReferenceProvider = 
-        new (nothrow) ProfilerAssemblyReferenceProvider(pClosure, pContext);
-    if (pReferenceProvider == NULL)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    {
-        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
-        // whose try/catch blocks aren't visible to the contract system        
-        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
-        hr = m_pCallback6->GetAssemblyReferences(
-            wszAssemblyPath, 
-            static_cast<ICorProfilerAssemblyReferenceProvider *>(pReferenceProvider));
-    }
-
-#endif // FEATURE_FUSION
 
     return hr;
 }

@@ -12,7 +12,6 @@ namespace System.Collections.ObjectModel
     using System.Diagnostics.Contracts;
        
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(false)]
     [DebuggerTypeProxy(typeof(Mscorlib_KeyedCollectionDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]        
     public abstract class KeyedCollection<TKey,TItem>: Collection<TItem>

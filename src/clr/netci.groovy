@@ -22,7 +22,6 @@ def static getOSGroup(def os) {
         'Windows_NT':'Windows_NT',
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
-        'OpenSUSE13.2': 'Linux',
         'OpenSUSE42.1': 'Linux',
         'LinuxARMEmulator': 'Linux']
     def osGroup = osGroupMap.get(os, null) 
@@ -45,7 +44,6 @@ class Constants {
                'Windows_NT_BuildOnly',
                'FreeBSD',
                'CentOS7.1',
-               'OpenSUSE13.2',
                'OpenSUSE42.1',
                'RHEL7.2',
                'LinuxARMEmulator',
@@ -53,7 +51,7 @@ class Constants {
                'Ubuntu16.10',
                'Fedora23']
 
-    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
+    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4']
 
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -590,7 +588,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         return
     }
     
-    def bidailyCrossList = ['RHEL7.2', 'Debian8.4', 'OpenSUSE13.2']
+    def bidailyCrossList = ['RHEL7.2', 'Debian8.4']
     // Non pull request builds.
     if (!isPR) {
         addNonPRTriggers(job, branch, isPR, architecture, os, configuration, scenario, isFlowJob, isWindowsBuildOnlyJob, isLinuxEmulatorBuild, bidailyCrossList)
@@ -619,7 +617,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
-                case 'OpenSUSE13.2':
                 case 'Debian8.4':
                 case 'RHEL7.2':
                     if (scenario == 'default') {
@@ -1186,13 +1183,46 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                contextString += " and Test"
             }
 
-            def arm64Users = ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansull', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard']
+            def arm64Users = [
+                'adiaaida',
+                'AndyAyersMS',
+                'briansull',
+                'BruceForstall',
+                'CarolEidt',
+                'cmckinsey',
+                'erozenfeld',
+                'jashook',
+                'JosephTremoulet',
+                'pgavlin',
+                'pkukol',
+                'russellhadley',
+                'RussKeldorph',
+                'sandreenko',
+                'sivarv',
+                'swaroop-sridhar',
+                'gkhanna79',
+                'jkotas',
+                'markwilkie',
+                'rahku',
+                'ramarag',
+                'tzwlai',
+                'weshaggard'
+            ]
+
             switch (os) {
                 case 'Windows_NT':
                     switch (scenario) {
                         case 'default':
-                            Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
-                            "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                            // For now only run Debug jobs on PR Trigger.
+                            if (configuration != 'Debug') {
+                                Utilities.addPrivateGithubPRTriggerForBranch(job, branch, contextString,
+                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*", null, arm64Users)
+                            }
+                            else {
+                                // Add "Checked Build And Test" and "Debug Build" to the above users' PRs since many of them
+                                // are at higher risk of ARM64-breaking changes.
+                                Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
+                            }
                             break
                         case 'pri1r2r':
                         case 'gcstress0x3':
@@ -1783,13 +1813,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                 case 'x86lb':
                     def arch = architecture
                     def buildOpts = ''
+                    
+                    // We need to explicitly run build-test.cmd with Exclude for x86compatjit and x86lb, so skip tests.
                     if (architecture == 'x86compatjit') {
                         arch = 'x86'
-                        buildOpts = 'compatjitcrossgen'
+                        buildOpts = 'compatjitcrossgen skiptests'
                     }
                     else if (architecture == 'x86lb') {
                         arch = 'x86'
-                        buildOpts = 'legacyjitcrossgen'
+                        buildOpts = 'legacyjitcrossgen skiptests'
                     }
                     
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
@@ -1918,8 +1950,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 setTestJobTimeOut(newJob, scenario)
 
                                 // Archive and process (only) the test results
-                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
-                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
                             }
                             else {
                                 buildCommands += "%WORKSPACE%\\tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
@@ -1930,11 +1962,15 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }                                        
                         else if (architecture == 'x86compatjit') {
                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\compatjit_x86_testenv.cmd"
-                            buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets TestEnv ${testEnvLocation}"
+                            def excludeLocation = "%WORKSPACE%\\tests\\x86_legacy_backend_issues.targets"
+                            buildCommands += "build-test.cmd ${runtestArguments} Exclude ${excludeLocation}"
+                            buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                         }
                         else if (architecture == 'x86lb') {
                             def testEnvLocation = "%WORKSPACE%\\tests\\x86\\legacyjit_x86_testenv.cmd"
-                            buildCommands += "tests\\runtest.cmd ${runtestArguments} Exclude0 x86_legacy_backend_issues.targets TestEnv ${testEnvLocation}"
+                            def excludeLocation = "%WORKSPACE%\\tests\\x86_legacy_backend_issues.targets"
+                            buildCommands += "build-test.cmd ${runtestArguments} Exclude ${excludeLocation}"
+                            buildCommands += "tests\\runtest.cmd ${runtestArguments} TestEnv ${testEnvLocation}"
                         }
                     }
 
@@ -1997,6 +2033,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                     }
                     else {
+                       // Up the timeout for arm64 testing.
+                       Utilities.setJobTimeout(newJob, 240)
+
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                        // Test build and run are launched together.
                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
@@ -2021,7 +2060,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
         case 'FreeBSD':
         case 'CentOS7.1':
         case 'RHEL7.2':
-        case 'OpenSUSE13.2':
         case 'OpenSUSE42.1':
         case 'Fedora23': // editor brace matching: {
             switch (architecture) {
@@ -2048,7 +2086,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     if (!enableCorefxTesting) {
                         // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
                         // only on supported OS platforms.
-                        if ((os == 'FreeBSD') || (os == 'OpenSUSE13.2'))
+                        if (os == 'FreeBSD')
                         {
                             buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${arch} ${standaloneGc}"
                         }
@@ -2089,8 +2127,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         setTestJobTimeOut(newJob, scenario)
 
                         // Archive and process (only) the test results
-                        Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
-                        Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/tests/**/testResults.xml")
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                        Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
                     }
                     break
                 case 'arm64':
@@ -2467,7 +2505,7 @@ combinedScenarios.each { scenario ->
                                     copyArtifacts("${corefxFolder}/linuxarmemulator_softfp_cross_${lowerConfiguration}") {
                                         includePatterns('bin/build.tar.gz')
                                         buildSelector {
-                                            latestSaved()
+                                            latestSuccessful(true)
                                         }
                                     }
                                 }
@@ -2503,7 +2541,7 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         //Skip stress modes for these scenarios
-                        if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
+                        if (os == 'RHEL7.2' || os == 'Debian8.4') {
                             return
                         }
                     }
@@ -2525,8 +2563,8 @@ combinedScenarios.each { scenario ->
                             return
                         }
                     }
-                    // For RedHat, Debian, and OpenSUSE, we only do Release pri1 builds.
-                    else if (os == 'RHEL7.2' || os == 'Debian8.4' || os == 'OpenSUSE13.2') {
+                    // For RedHat and Debian, we only do Release pri1 builds.
+                    else if (os == 'RHEL7.2' || os == 'Debian8.4') {
                         if (scenario != 'pri1') {
                             return
                         }
@@ -2787,9 +2825,6 @@ combinedScenarios.each { scenario ->
                                 // Get corefx
                                 shell("git clone https://github.com/dotnet/corefx fx")
 
-                                // CoreFX is changing their output format and scripts, pick a stable version until all that work has landed.
-                                shell("git -C ./fx checkout 551fe49174378adcbf785c0ab12fc69355cef6e8")
-
                                 // Build Linux corefx
                                 shell("./fx/build-native.sh -release -buildArch=x64 -os=Linux")
                                 shell("./fx/build-managed.sh -release -buildArch=x64 -osgroup=Linux -skiptests")
@@ -2815,8 +2850,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\$(pwd)/clr/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\$(pwd)/clr/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\$(pwd)/fx/bin/${osGroup}.AnyCPU.Release;\$(pwd)/fx/bin/Unix.AnyCPU.Release;\$(pwd)/fx/bin/AnyOS.AnyCPU.Release\" \\
-                --coreFxNativeBinDir=\"\$(pwd)/fx/bin/${osGroup}.${architecture}.Release\" \\
+                --coreFxBinDir=\"\$(pwd)/fx/bin/runtime/netcoreapp-${osGroup}-Release-${architecture}\" \\
                 --crossgen --runcrossgentests""")
 
                                 // Run coreclr tests w/ server GC & HeapVerify enabled
@@ -2855,12 +2889,13 @@ combinedScenarios.each { scenario ->
                                 copyArtifacts("${corefxFolder}/${osJobName}_release") {
                                     includePatterns('bin/build.tar.gz')
                                     buildSelector {
-                                        latestSaved()
+                                        latestSuccessful(true)
                                     }
                                 }
                         
+                                shell ("mkdir ./bin/CoreFxBinDir")
                                 // Unpack the corefx binaries
-                                shell("tar -xf ./bin/build.tar.gz")
+                                shell("tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir")
 
                                 // Unzip the tests first.  Exit with 0
                                 shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
@@ -2884,8 +2919,7 @@ combinedScenarios.each { scenario ->
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
                 --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
-                --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release;\${WORKSPACE}/bin/Unix.AnyCPU.Release;\${WORKSPACE}/bin/AnyOS.AnyCPU.Release\" \\
-                --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
+                --coreFxBinDir=\"\${WORKSPACE}/bin/CoreFxBinDir\" \\
                 --limitedDumpGeneration \\
                 ${testEnvOpt} ${serverGCString} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${sequentialString} ${playlistString}""")
                             }

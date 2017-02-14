@@ -703,9 +703,6 @@ class EEClassOptionalFields
     #define    MODULE_NON_DYNAMIC_STATICS      ((DWORD)-1)
     DWORD m_cbModuleDynamicID;
 
-#ifdef FEATURE_CER
-    DWORD m_dwReliabilityContract;
-#endif
 
     SecurityProperties m_SecProps;
 
@@ -1360,9 +1357,6 @@ public:
         _ASSERTE(HasCriticalTransparentInfo());
         return (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS ||
                (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_TAS_NOTCRITICAL
-#ifndef FEATURE_CORECLR
-            || (m_VMFlags & VMFLAG_TRANSPARENCY_MASK) == VMFLAG_TRANSPARENCY_CRITICAL_TAS
-#endif // !FEATURE_CORECLR;
             ;
     }
 
@@ -1388,9 +1382,6 @@ public:
     }
 
     void SetCriticalTransparentInfo(
-#ifndef FEATURE_CORECLR
-                                    BOOL fIsCritical,
-#endif // !FEATURE_CORECLR
                                     BOOL fIsTreatAsSafe,
                                     BOOL fIsAllTransparent,
                                     BOOL fIsAllCritical)
@@ -1399,9 +1390,7 @@ public:
         
         // TAS wihtout critical doesn't make sense - although it was allowed in the v2 desktop model,
         // so we need to allow it for compatibility reasons on the desktop.
-#ifdef FEATURE_CORECLR
         _ASSERTE(!fIsTreatAsSafe || fIsAllCritical);
-#endif // FEATURE_CORECLR
 
         //if nothing is set, then we're transparent.
         unsigned flags = VMFLAG_TRANSPARENCY_TRANSPARENT;
@@ -1415,13 +1404,6 @@ public:
             flags = fIsTreatAsSafe ? VMFLAG_TRANSPARENCY_ALLCRITICAL_TAS :
                                      VMFLAG_TRANSPARENCY_ALLCRITICAL;
         }
-#ifndef FEATURE_CORECLR
-        else if (fIsCritical)
-        {
-            flags = fIsTreatAsSafe ? VMFLAG_TRANSPARENCY_CRITICAL_TAS :
-                                     VMFLAG_TRANSPARENCY_CRITICAL;
-        }
-#endif // !FEATURE_CORECLR
         else
         {
             flags = fIsTreatAsSafe ? VMFLAG_TRANSPARENCY_TAS_NOTCRITICAL :
@@ -1770,14 +1752,6 @@ public:
     // Cached class level reliability contract info, see ConstrainedExecutionRegion.cpp for details.
     DWORD GetReliabilityContract();
 
-#ifdef FEATURE_CER
-    inline void SetReliabilityContract(DWORD dwValue)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_dwReliabilityContract = dwValue;
-    }
-#endif
 
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // Get number of eightbytes used by a struct passed in registers.

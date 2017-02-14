@@ -65,12 +65,16 @@ goto :EOF
 
 :DOIT
 set BENCHNAME=%~n1
+set BENCHDIR=%~p1
 set PERFOUT=perf-%BENCHNAME%
 set XMLOUT=%PERFOUT%-summary.xml
 
 echo --- Running %BENCHNAME%
 
+@rem copy benchmark and any input files
+
 xcopy /s %1 . >> %RUNLOG%
+xcopy /s %BENCHDIR%*.txt . >> %RUNLOG%
 
 set CORE_ROOT=%CORECLR_REPO%\sandbox
 

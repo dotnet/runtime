@@ -13,7 +13,5 @@ add_executable(paltest_getfiletime_test2
 add_dependencies(paltest_getfiletime_test2 coreclrpal)
 
 target_link_libraries(paltest_getfiletime_test2
-  pthread
-  m
-  coreclrpal
+  ${COMMON_TEST_LIBRARIES}
 )

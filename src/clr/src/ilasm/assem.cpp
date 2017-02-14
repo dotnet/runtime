@@ -231,24 +231,18 @@ Assembler::~Assembler()
         m_pDisp = NULL;
     }
 
-#ifdef FEATURE_CORECLR
 #ifdef FEATURE_PAL
     if (g_loader != NULL)
     {
         g_loader->Finish();
     }
 #endif
-#else
-    if (m_fDidCoInitialise)
-        CoUninitialize();
-#endif // FEATURE_CORECLR
 
 }
 
 
 BOOL Assembler::Init()
 {
-#ifdef FEATURE_CORECLR
 #ifdef FEATURE_PAL
     g_loader = CoreCLRLoader::Create(g_pszExeFile);
     if (g_loader == NULL)
@@ -259,14 +253,6 @@ BOOL Assembler::Init()
 #else
     metaDataGetDispenser = (MetaDataGetDispenserFunc)MetaDataGetDispenser;
 #endif // FEATURE_PAL
-#else
-    if(!m_fDidCoInitialise)
-    {
-        if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
-            return FALSE;
-        m_fDidCoInitialise = TRUE;
-    }
-#endif // FEATURE_CORECLR
     if (m_pCeeFileGen != NULL) {
         if (m_pCeeFile)
             m_pCeeFileGen->DestroyCeeFile(&m_pCeeFile);

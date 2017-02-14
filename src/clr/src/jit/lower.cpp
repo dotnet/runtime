@@ -167,8 +167,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(node->AsBlk());
-            break;
+        {
+            // TODO-Cleanup: Consider moving this code to LowerBlockStore, which is currently
+            // called from TreeNodeInfoInitBlockStore, and calling that method here.
+            GenTreeBlk* blkNode = node->AsBlk();
+            TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
+        }
+        break;
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -236,20 +241,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
                 LclVarDsc* varDsc = &comp->lvaTable[varNum];
 
-#if defined(_TARGET_64BIT_)
-                assert(varDsc->lvSize() == 16);
-                node->gtType = TYP_SIMD16;
-#else  // !_TARGET_64BIT_
-                if (varDsc->lvSize() == 16)
+                if (comp->lvaMapSimd12ToSimd16(varDsc))
                 {
+                    JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
+                    DISPNODE(node);
+                    JITDUMP("============");
+
                     node->gtType = TYP_SIMD16;
                 }
-                else
-                {
-                    // The following assert is guaranteed by lvSize().
-                    assert(varDsc->lvIsParam);
-                }
-#endif // !_TARGET_64BIT_
             }
 #endif // FEATURE_SIMD
             __fallthrough;
@@ -549,7 +548,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
     // transformation.
-    else if (jumpCnt < minSwitchTabJumpCnt)
+    else if ((jumpCnt < minSwitchTabJumpCnt) || comp->compStressCompile(Compiler::STRESS_SWITCH_CMP_BR_EXPANSION, 50))
     {
         // Lower the switch into a series of compare and branch IR trees.
         //
@@ -639,7 +638,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
                 GenTreePtr gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
                 LIR::Range caseRange    = LIR::SeqTree(comp, gtCaseBranch);
-                currentBBRange->InsertAtEnd(std::move(condRange));
+                currentBBRange->InsertAtEnd(std::move(caseRange));
             }
         }
 
@@ -944,6 +943,11 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                              info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots) DEBUGARG(call));
 #endif
 
+#if defined(UNIX_X86_ABI)
+        assert((info->padStkAlign > 0 && info->numSlots > 0) || (info->padStkAlign == 0));
+        putArg->AsPutArgStk()->setArgPadding(info->padStkAlign);
+#endif
+
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         // If the ArgTabEntry indicates that this arg is a struct
         // get and store the number of slots that are references.
@@ -1183,9 +1187,6 @@ void Lowering::LowerCall(GenTree* node)
 
     LowerArgsForCall(call);
 
-// RyuJIT arm is not set up for lowered call control
-#ifndef _TARGET_ARM_
-
     // note that everything generated from this point on runs AFTER the outgoing args are placed
     GenTree* result = nullptr;
 
@@ -1290,7 +1291,6 @@ void Lowering::LowerCall(GenTree* node)
 
         call->gtControlExpr = result;
     }
-#endif //!_TARGET_ARM_
 
     if (comp->opts.IsJit64Compat())
     {
@@ -1859,6 +1859,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     bool               isClosed;
     LIR::ReadOnlyRange secondArgRange = BlockRange().GetTreeRange(arg0, &isClosed);
     assert(isClosed);
+    BlockRange().Remove(std::move(secondArgRange));
 
     argEntry->node->gtOp.gtOp1 = callTarget;
 
@@ -3673,18 +3674,19 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     // make sure there are not any side effects between def of leaves and use
     if (!doAddrMode || AreSourcesPossiblyModifiedLocals(addr, base, index))
     {
-        JITDUMP("  No addressing mode\n");
+        JITDUMP("No addressing mode:\n  ");
+        DISPNODE(addr);
         return addr;
     }
 
     GenTreePtr arrLength = nullptr;
 
     JITDUMP("Addressing mode:\n");
-    JITDUMP("  Base\n");
+    JITDUMP("  Base\n    ");
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %u\n", scale, offset);
+        JITDUMP("  + Index * %u + %u\n    ", scale, offset);
         DISPNODE(index);
     }
     else
@@ -4198,12 +4200,6 @@ void Lowering::LowerStoreInd(GenTree* node)
     node->AsStoreInd()->SetRMWStatusDefault();
 }
 
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    GenTree* src = blkNode->Data();
-    TryCreateAddrMode(LIR::Use(BlockRange(), &blkNode->Addr(), blkNode), false);
-}
-
 //------------------------------------------------------------------------
 // LowerArrElem: Lower a GT_ARR_ELEM node
 //
@@ -4478,13 +4474,12 @@ void Lowering::DoPhase()
         m_block = block;
         for (GenTree* node : BlockRange().NonPhiNodes())
         {
-/* We increment the number position of each tree node by 2 to
-* simplify the logic when there's the case of a tree that implicitly
-* does a dual-definition of temps (the long case).  In this case
-* is easier to already have an idle spot to handle a dual-def instead
-* of making some messy adjustments if we only increment the
-* number position by one.
-*/
+            // We increment the number position of each tree node by 2 to simplify the logic when there's the case of
+            // a tree that implicitly does a dual-definition of temps (the long case).  In this case it is easier to
+            // already have an idle spot to handle a dual-def instead of making some messy adjustments if we only
+            // increment the number position by one.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
             node->gtSeqNum = currentLoc;
 #endif

@@ -18,7 +18,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
     using System.Globalization;
-    [System.Runtime.InteropServices.ComVisible(true)]
     [Serializable]
     public class MissingMethodException : MissingMemberException, ISerializable {
         public MissingMethodException() 
@@ -51,14 +50,6 @@ namespace System {
                                                                        (Signature != null ? " " + FormatSignature(Signature) : ""));
                 }
             }
-        }
-    
-        // Called from the EE
-        private MissingMethodException(String className, String methodName, byte[] signature)
-        {
-            ClassName   = className;
-            MemberName  = methodName;
-            Signature   = signature;
         }
     
         public MissingMethodException(String className, String methodName)

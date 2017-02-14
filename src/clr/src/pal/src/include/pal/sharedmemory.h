@@ -15,30 +15,33 @@
 #define _countof(a) (sizeof(a) / sizeof(a[0]))
 #endif // !_countof
 
+// The temporary folder is used for storing shared memory files and their lock files.
+// The location of the temporary folder varies (e.g. /data/local/tmp on Android)
+// and is set in TEMP_DIRECTORY_PATH. TEMP_DIRECTORY_PATH ends with '/'
 // - Global shared memory files go in:
-//     /tmp/.dotnet/shm/global/<fileName>
+//     {tmp}/.dotnet/shm/global/<fileName>
 // - Session-scoped shared memory files go in:
-//     /tmp/.dotnet/shm/session<sessionId>/<fileName>
+//     {tmp}/.dotnet/shm/session<sessionId>/<fileName>
 // - Lock files associated with global shared memory files go in:
-//     /tmp/.dotnet/lockfiles/global/<fileName>
+//     {tmp}/.dotnet/lockfiles/global/<fileName>
 // - Lock files associated with session-scoped shared memory files go in:
-//     /tmp/.dotnet/lockfiles/session<sessionId>/<fileName>
+//     {tmp}/.dotnet/lockfiles/session<sessionId>/<fileName>
 
 #define SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT (_MAX_FNAME - 1)
 #define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (_countof("Global\\") - 1 + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
 
-#define SHARED_MEMORY_TEMP_DIRECTORY_PATH "/tmp"
-#define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH "/tmp/.dotnet"
+#define SHARED_MEMORY_TEMP_DIRECTORY_PATH TEMP_DIRECTORY_PATH
+#define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet"
 
-#define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH "/tmp/.dotnet/shm"
-#define SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH "/tmp/.dotnet/lockfiles"
+#define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet/shm"
+#define SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet/lockfiles"
 static_assert_no_msg(_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH) >= _countof(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH));
 
 #define SHARED_MEMORY_GLOBAL_DIRECTORY_NAME "global"
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
 static_assert_no_msg(_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= _countof(SHARED_MEMORY_GLOBAL_DIRECTORY_NAME));
 
-#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE "/tmp/.coreclr.XXXXXX"
+#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE TEMP_DIRECTORY_PATH ".coreclr.XXXXXX"
 
 #define SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT (10)
 

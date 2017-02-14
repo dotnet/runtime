@@ -18,7 +18,6 @@ namespace System {
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-    using System.Security.Permissions;
     using System.Security;
     using System.IO;
     using System.Text;
@@ -27,11 +26,8 @@ namespace System {
     using System.Globalization;
     using System.Diagnostics.Contracts;
 
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_Exception))]
     [Serializable]
-    [ComVisible(true)]
-    public class Exception : ISerializable, _Exception
+    public class Exception : ISerializable
     {
         private void Init()
         {
@@ -537,33 +533,6 @@ namespace System {
 
         }
 
-        // This is used by remoting to preserve the server side stack trace
-        // by appending it to the message ... before the exception is rethrown
-        // at the client call site.
-        internal Exception PrepForRemoting()
-        {
-            String tmp = null;
-
-            if (_remoteStackIndex == 0)
-            {
-                tmp = Environment.NewLine+ "Server stack trace: " + Environment.NewLine
-                    + StackTrace 
-                    + Environment.NewLine + Environment.NewLine 
-                    + "Exception rethrown at ["+_remoteStackIndex+"]: " + Environment.NewLine;
-            }
-            else
-            {
-                tmp = StackTrace 
-                    + Environment.NewLine + Environment.NewLine 
-                    + "Exception rethrown at ["+_remoteStackIndex+"]: " + Environment.NewLine;
-            }
-
-            _remoteStackTraceString = tmp;
-            _remoteStackIndex++;
-
-            return this;
-        }
-
         // This method will clear the _stackTrace of the exception object upon deserialization
         // to ensure that references from another AD/Process dont get accidently used.
         [OnDeserialized]
@@ -797,19 +766,6 @@ namespace System {
         // and create a corresponding CrossAppDomainMarshaledException
         internal virtual String InternalToString()
         {
-            try 
-            {
-#pragma warning disable 618
-                SecurityPermission sp= new SecurityPermission(SecurityPermissionFlag.ControlEvidence | SecurityPermissionFlag.ControlPolicy);
-#pragma warning restore 618
-                sp.Assert();
-            }
-            catch  
-            {
-                //under normal conditions there should be no exceptions
-                //however if something wrong happens we still can call the usual ToString
-            }
-
             // Get the current stack trace string. 
             return ToString(true, true);
         }

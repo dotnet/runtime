@@ -16,15 +16,11 @@ namespace System.Reflection
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Threading;
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_FieldInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class FieldInfo : MemberInfo, _FieldInfo
+    public abstract class FieldInfo : MemberInfo
     {
         #region Static Members
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle)
@@ -43,7 +39,6 @@ namespace System.Reflection
             return f;            
         }           
         
-        [System.Runtime.InteropServices.ComVisible(false)]
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())
@@ -454,7 +449,6 @@ namespace System.Reflection
             }
         }
 
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RtFieldInfo m = o as RtFieldInfo;
@@ -757,7 +751,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             MdFieldInfo m = o as MdFieldInfo;

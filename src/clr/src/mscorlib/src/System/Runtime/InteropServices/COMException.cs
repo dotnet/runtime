@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices {
 
     // Exception for COM Interop errors where we don't recognize the HResult.
     // 
-    [ComVisible(true)]
     [Serializable]
     public class COMException : ExternalException {
         public COMException() 
@@ -44,18 +43,6 @@ namespace System.Runtime.InteropServices {
         public COMException(String message,int errorCode) 
             : base(message) {
             SetErrorCode(errorCode);
-        }
-
-        internal COMException(int hresult)
-            : base(Win32Native.GetMessage(hresult))
-        {
-            SetErrorCode(hresult);
-        }
-        
-        internal COMException(String message, int hresult, Exception inner)
-            : base(message, inner)
-        {
-            SetErrorCode(hresult);
         }
 
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context) {

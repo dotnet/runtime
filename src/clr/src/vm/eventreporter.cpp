@@ -20,9 +20,7 @@
 
 #include "../dlls/mscorrc/resource.h"
 
-#if defined(FEATURE_CORECLR)
 #include "getproductversionnumber.h"
-#endif // FEATURE_CORECLR
 
 //---------------------------------------------------------------------------------------
 //
@@ -84,30 +82,13 @@ EventReporter::EventReporter(EventReporterType type)
 
     ssMessage.Clear();
     if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_FRAMEWORK_VERSION))
-#ifndef FEATURE_CORECLR
-        m_Description.Append(W("Framework Version: "));
-#else // FEATURE_CORECLR
         m_Description.Append(W("CoreCLR Version: "));
-#endif // !FEATURE_CORECLR
     else
     {
         m_Description.Append(ssMessage);
     }
 
     BOOL fHasVersion = FALSE;
-#ifndef FEATURE_CORECLR
-    if (GetCLRModule() != NULL)
-    {
-        WCHAR buffer[80];
-        DWORD length;
-        if (SUCCEEDED(GetCORVersionInternal(buffer, 80, &length)))
-        {
-            m_Description.Append(buffer);
-            m_Description.Append(W("\n"));
-            fHasVersion = TRUE;
-        }
-    }
-#else // FEATURE_CORECLR
     DWORD dwMajorVersion = 0;
     DWORD dwMinorVersion = 0;
     DWORD dwBuild = 0;
@@ -115,7 +96,6 @@ EventReporter::EventReporter(EventReporterType type)
     EventReporter::GetCoreCLRInstanceProductVersion(&dwMajorVersion, &dwMinorVersion, &dwBuild, &dwRevision);
     m_Description.AppendPrintf(W("%lu.%lu.%lu.%lu\n"),dwMajorVersion, dwMinorVersion, dwBuild, dwRevision);
     fHasVersion = TRUE;
-#endif // !FEATURE_CORECLR
 
     if (!fHasVersion)
     {
@@ -699,7 +679,6 @@ void DoReportForUnhandledException(PEXCEPTION_POINTERS pExceptionInfo)
                 gc.throwable = pThread->GetThrowable();
                 _ASSERTE(gc.throwable != NULL);
 
-#ifdef FEATURE_CORECLR
                 // On CoreCLR, managed code execution happens in non-default AppDomains and all threads have an AD transition
                 // at their base from DefaultDomain to the target Domain before they start executing managed code. Thus, when 
                 // an exception goes unhandled in a non-default AppDomain on a reverse pinvoke thread, the original exception details are copied 
@@ -741,7 +720,6 @@ void DoReportForUnhandledException(PEXCEPTION_POINTERS pExceptionInfo)
                     }
                 }
                 else
-#endif // FEATURE_CORECLR
                 {
                     if (IsException(gc.throwable->GetMethodTable()))
                     {
@@ -796,7 +774,6 @@ void DoReportForUnhandledException(PEXCEPTION_POINTERS pExceptionInfo)
     }
 }
 
-#if defined(FEATURE_CORECLR)
 // This function will return the product version of CoreCLR
 // instance we are executing in.
 void EventReporter::GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * pdwMinor, DWORD * pdwBuild, DWORD * pdwRevision)
@@ -834,4 +811,3 @@ void EventReporter::GetCoreCLRInstanceProductVersion(DWORD * pdwMajor, DWORD * p
         LOG((LF_CORDB, LL_INFO100, "GetCoreCLRInstanceVersion: Unable to get CoreCLR version.\n"));
     }
 }
-#endif // FEATURE_CORECLR

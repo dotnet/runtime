@@ -231,13 +231,6 @@ inline LPCWSTR AppDomain::GetAppDomainManagerType()
     return m_AppDomainManagerType;
 }
 
-#ifndef FEATURE_CORECLR
-inline BOOL AppDomain::AppDomainManagerSetFromConfig()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_fAppDomainManagerSetInConfig;
-}
-#endif // !FEATURE_CORECLR
 
 inline EInitializeNewDomainFlags AppDomain::GetAppDomainManagerInitializeNewDomainFlags()
 {
@@ -245,7 +238,6 @@ inline EInitializeNewDomainFlags AppDomain::GetAppDomainManagerInitializeNewDoma
     return m_dwAppDomainManagerInitializeDomainFlags;
 }
 
-#ifdef FEATURE_CORECLR
 inline AppDomain::PathIterator AppDomain::IterateNativeDllSearchDirectories()
 {
     WRAPPER_NO_CONTRACT;
@@ -260,7 +252,6 @@ inline BOOL AppDomain::HasNativeDllSearchDirectories()
     return m_NativeDllSearchDirectories.GetCount() !=0;
 }
 
-#endif // FEATURE_CORECLR
 
 inline BOOL AppDomain::CanReversePInvokeEnter()
 {

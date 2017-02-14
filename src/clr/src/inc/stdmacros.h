@@ -277,7 +277,7 @@ inline ULONG RoundUpToPower2(ULONG x)
 
 
 #define DBG_GET_CLASS_NAME(pMT)        \
-        (pMT)->GetClass()->GetDebugClassName()
+        (((pMT) == NULL)  ? NULL : (pMT)->GetClass()->GetDebugClassName())
 
 #define DBG_CLASS_NAME_MT(pMT)         \
         (DBG_GET_CLASS_NAME(pMT) == NULL) ? "<null-class>" : DBG_GET_CLASS_NAME(pMT) 

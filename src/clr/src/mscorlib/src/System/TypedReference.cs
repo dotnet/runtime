@@ -11,12 +11,10 @@ namespace System {
     using System.Runtime.CompilerServices;
     using CultureInfo = System.Globalization.CultureInfo;
     using FieldInfo = System.Reflection.FieldInfo;
-    using System.Security.Permissions;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
     [CLSCompliant(false)] 
-    [System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct TypedReference
     {

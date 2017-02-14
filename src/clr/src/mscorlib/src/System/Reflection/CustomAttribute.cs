@@ -14,7 +14,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Security;
-using System.Security.Permissions;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
@@ -22,7 +21,6 @@ using System.Diagnostics.Contracts;
 namespace System.Reflection 
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CustomAttributeData
     {
         #region Public Static Members
@@ -515,10 +513,8 @@ namespace System.Reflection
         #region Public Members
         public Type AttributeType { get { return Constructor.DeclaringType; } }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual ConstructorInfo Constructor { get { return m_ctor; } }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments
         {
             get
@@ -576,7 +572,6 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public struct CustomAttributeNamedArgument
     {
         #region Public Static Members
@@ -666,7 +661,6 @@ namespace System.Reflection
     }
 
     [Serializable]
-    [ComVisible(true)]
     public struct CustomAttributeTypedArgument
     {
         #region Public Static Members
@@ -1106,24 +1100,6 @@ namespace System.Reflection
         #endregion
     }
 
-    // Note: This is a managed representation of a frame type defined in vm\frames.h; please ensure the layout remains
-    // synchronized.
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SecurityContextFrame
-    {
-        IntPtr m_GSCookie;      // This is actually at a negative offset in the real frame definition
-        IntPtr __VFN_table;     // This is the real start of the SecurityContextFrame
-        IntPtr m_Next;
-        IntPtr m_Assembly;
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern void Push(RuntimeAssembly assembly);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-        public extern void Pop();
-    }
-
     [Serializable]
     [StructLayout(LayoutKind.Auto)]
     internal struct CustomAttributeType
@@ -1153,7 +1129,6 @@ namespace System.Reflection
         public CustomAttributeEncoding EncodedType { get { return m_encodedType; } }
         public CustomAttributeEncoding EncodedEnumType { get { return m_encodedEnumType; } }
         public CustomAttributeEncoding EncodedArrayType { get { return m_encodedArrayType; } }
-        [System.Runtime.InteropServices.ComVisible(true)]
         public string EnumName { get { return m_enumName; } }
         #endregion
     }
@@ -1621,16 +1596,6 @@ namespace System.Reflection
             object[] attributes = CreateAttributeArrayHelper(arrayType, car.Length);
             int cAttributes = 0;
 
-            // Custom attribute security checks are done with respect to the assembly *decorated* with the 
-            // custom attribute as opposed to the *caller of GetCustomAttributes*.
-            // Since this assembly might not be on the stack and the attribute ctor or property setters we're about to invoke may
-            // make security demands, we push a frame on the stack as a proxy for the decorated assembly (this frame will be picked
-            // up an interpreted by the security stackwalker).
-            // Once we push the frame it will be automatically popped in the event of an exception, so no need to use CERs or the
-            // like.
-            SecurityContextFrame frame = new SecurityContextFrame();
-            frame.Push(decoratedModule.GetRuntimeAssembly());
-
             // Optimization for the case where attributes decorate entities in the same assembly in which case 
             // we can cache the successful APTCA check between the decorated and the declared assembly.
             Assembly lastAptcaOkAssembly = null;
@@ -1779,10 +1744,6 @@ namespace System.Reflection
 
                 attributes[cAttributes++] = attribute;
             }
-
-            // The frame will be popped automatically if we take an exception any time after we pushed it. So no need of a catch or
-            // finally or CERs here.
-            frame.Pop();
 
             if (cAttributes == car.Length && pcaCount == 0)
                 return attributes;
@@ -2069,9 +2030,8 @@ namespace System.Reflection
 #region Internal Static
         internal static bool IsSecurityAttribute(RuntimeType type)
         {
-#pragma warning disable 618
-            return type == (RuntimeType)typeof(SecurityAttribute) || type.IsSubclassOf(typeof(SecurityAttribute));
-#pragma warning restore 618
+            // TODO: Cleanup
+            return false;
         }
 
         internal static Attribute[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool includeSecCa, out int count)

@@ -179,9 +179,7 @@ public:
     unsigned short flags;
     unsigned short wLoadLevel;
     unsigned short lenModuleName;
-#if defined(FEATURE_CORECLR)
     unsigned short lenAssemblyName;
-#endif
 
     ModuleRecord(unsigned lenName = 0, unsigned lenAssemblyName = 0);
 
@@ -201,7 +199,6 @@ public:
         return (const char *) (this + 1); // after this record
     }
 
-#if defined(FEATURE_CORECLR)
     unsigned AssemblyNameLen() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -213,7 +210,6 @@ public:
     {
         return GetModuleName() + RoundUp(lenModuleName); // after the module name
     }
-#endif
 
     void SetLoadLevel(FileLoadLevel loadLevel)
     {
@@ -250,9 +246,7 @@ friend class MulticoreJitRecorder;
 
 private:
     ADID                               m_DomainID;
-#if defined(FEATURE_CORECLR)
     ICLRPrivBinder * m_pBinderContext;
-#endif
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
     BYTE                             * m_pFileBuffer;
@@ -300,9 +294,7 @@ private:
 
     HRESULT ReadCheckFile(const wchar_t * pFileName);
 
-#if defined(FEATURE_CORECLR)
     DomainAssembly * LoadAssembly(SString & assemblyName);
-#endif
 
 public:
 
@@ -344,9 +336,7 @@ class MulticoreJitRecorder
 {
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
-#if defined(FEATURE_CORECLR)
     ICLRPrivBinder * m_pBinderContext;
-#endif
     SString                   m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 
@@ -393,9 +383,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_pDomain           = pDomain;
-#if defined(FEATURE_CORECLR)
         m_pBinderContext    = pBinderContext;
-#endif
         m_JitInfoCount      = 0;
         m_ModuleCount       = 0;
         m_ModuleDepCount    = 0;
@@ -404,10 +392,6 @@ public:
         m_fAborted          = false;
         m_fAppxMode         = fAppxMode;
 
-#if defined(FEATURE_APPX_BINDER)
-
-        s_delayedWriteTimer = NULL;
-#endif
 
         m_stats.Clear();
     }

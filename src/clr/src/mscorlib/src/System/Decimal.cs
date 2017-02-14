@@ -57,7 +57,6 @@ namespace System {
     // the range of the Decimal type.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct Decimal : IFormattable, IComparable, IConvertible, IComparable<Decimal>, IEquatable<Decimal>, IDeserializationCallback
     {
@@ -346,9 +345,6 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallAddSub(ref Decimal d1, ref Decimal d2, byte bSign);
         
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallAddSubOverflowed(ref Decimal d1, ref Decimal d2, byte bSign, ref bool overflowed);
-        
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards positive infinity.
         public static Decimal Ceiling(Decimal d) {
@@ -358,13 +354,11 @@ namespace System {
         // Compares two Decimal values, returning an integer that indicates their
         // relationship.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static int Compare(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         private static extern int FCallCompare(ref Decimal d1, ref Decimal d2);
     
         // Compares this object to another object, returning an integer that
@@ -402,9 +396,6 @@ namespace System {
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallDivide(ref Decimal d1, ref Decimal d2);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallDivideOverflowed(ref Decimal d1, ref Decimal d2, ref bool overflowed);
 
     
         // Checks if this Decimal is equal to a given object. Returns true
@@ -628,14 +619,12 @@ namespace System {
     
         // Returns the larger of two Decimal values.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static Decimal Max(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2) >= 0? d1: d2;
         }
     
         // Returns the smaller of two Decimal values.
         //
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static Decimal Min(Decimal d1, Decimal d2) {
             return FCallCompare(ref d1, ref d2) < 0? d1: d2;
         }
@@ -696,9 +685,6 @@ namespace System {
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallMultiply(ref Decimal d1, ref Decimal d2);
-    
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void FCallMultiplyOverflowed(ref Decimal d1, ref Decimal d2, ref bool overflowed);
     
         // Returns the negated value of the given Decimal. If d is non-zero,
         // the result is -d. If d is zero, the result is zero.

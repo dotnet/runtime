@@ -13,14 +13,10 @@ namespace System.Reflection
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.ConstrainedExecution;
-    using System.Security.Permissions;
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_EventInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class EventInfo : MemberInfo, _EventInfo
+    public abstract class EventInfo : MemberInfo
     {
         #region Constructor
         protected EventInfo() { }
@@ -236,7 +232,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimeEventInfo m = o as RuntimeEventInfo;

@@ -2673,22 +2673,6 @@ public:
         return (ndirect.m_wFlags & kNativeNoMangle) != 0;
     }
 
-#ifndef FEATURE_CORECLR
-    BOOL HasSuppressUnmanagedCodeAccessAttr() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (ndirect.m_wFlags & kHasSuppressUnmanagedCodeAccess) != 0;
-    }
-
-    void SetSuppressUnmanagedCodeAccessAttr(BOOL value)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (value)
-            ndirect.m_wFlags |= kHasSuppressUnmanagedCodeAccess;
-    }
-#endif
 
     DWORD GetECallID() const
     {
@@ -3101,32 +3085,6 @@ public:
         return m_pComPlusCallInfo->m_pEventProviderMD;
     }
 
-#ifndef FEATURE_CORECLR
-
-    BOOL HasSuppressUnmanagedCodeAccessAttr()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_pComPlusCallInfo != NULL)
-        {
-            return (m_pComPlusCallInfo->m_flags & ComPlusCallInfo::kHasSuppressUnmanagedCodeAccess) != 0;
-        }
-        
-        // it is possible that somebody will call this before we initialized m_pComPlusCallInfo
-        return (GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
-                                                        COR_SUPPRESS_UNMANAGED_CODE_CHECK_ATTRIBUTE_ANSI,
-                                                        NULL,
-                                                        NULL) == S_OK);
-    }
-
-    void SetSuppressUnmanagedCodeAccessAttr(BOOL value)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (value)
-            FastInterlockOr(reinterpret_cast<DWORD *>(&m_pComPlusCallInfo->m_flags), ComPlusCallInfo::kHasSuppressUnmanagedCodeAccess);
-    }
-#endif // FEATURE_CORECLR
 
     BOOL RequiresArgumentWrapping()
     {

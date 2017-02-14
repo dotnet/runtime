@@ -18,7 +18,6 @@ namespace System.Runtime.CompilerServices {
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
@@ -131,7 +130,6 @@ namespace System.Runtime.CompilerServices {
         // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
         // below.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern void EnsureSufficientExecutionStack();
 
         // This method ensures that there is sufficient stack to execute the average Framework function.
@@ -139,7 +137,6 @@ namespace System.Runtime.CompilerServices {
         // Note: this method is not part of the CER support, and is not to be confused with ProbeForSufficientStack
         // below.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern bool TryEnsureSufficientExecutionStack();
 
         public static void ProbeForSufficientStack()
@@ -148,7 +145,6 @@ namespace System.Runtime.CompilerServices {
 
         // This method is a marker placed immediately before a try clause to mark the corresponding catch and finally blocks as
         // constrained. There's no code here other than the probe because most of the work is done at JIT time when we spot a call to this routine.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static void PrepareConstrainedRegions()
         {
             ProbeForSufficientStack();
@@ -156,7 +152,6 @@ namespace System.Runtime.CompilerServices {
 
         // When we detect a CER with no calls, we can point the JIT to this non-probing version instead
         // as we don't need to probe.
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public static void PrepareConstrainedRegionsNoOP()
         {
         }
@@ -168,10 +163,17 @@ namespace System.Runtime.CompilerServices {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, Object userData);
 
-        [PrePrepareMethod]
         internal static void ExecuteBackoutCodeHelper(Object backoutCode, Object userData, bool exceptionThrown)
         {
             ((CleanupCode)backoutCode)(userData, exceptionThrown);
+        }
+
+        /// <returns>true if given type is reference type or value type that contains references</returns>
+        static public bool IsReferenceOrContainsReferences<T>()
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementation for how this happens.
+            throw new InvalidOperationException();
         }
     }
 }

@@ -491,13 +491,8 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     if (!pLayout->IsNativeMachineFormat())
     {
-#ifdef FEATURE_CORECLR
         // For CoreCLR, be strict about disallowing machine mismatches.
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-#else
-        DoLog("Ready to Run disabled - mismatched architecture");
-        return NULL;
-#endif
     }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION

@@ -21,7 +21,6 @@ namespace System.IO {
     // Provides seek reference points.  To seek to the end of a stream,
     // call stream.Seek(0, SeekOrigin.End).
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum SeekOrigin
     {
         // These constants match Win32's FILE_BEGIN, FILE_CURRENT, and FILE_END

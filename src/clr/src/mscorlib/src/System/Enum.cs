@@ -15,7 +15,6 @@ using System.Diagnostics.Contracts;
 namespace System 
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
         #region Private Constants
@@ -70,7 +69,6 @@ namespace System
                     case CorElementType.U8:
                         return (*(ulong*)pValue).ToString("X16", null);
                     default:
-                        Debug.Assert(false, "Invalid Object type in Format");
                         throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
                 }
             }
@@ -105,7 +103,6 @@ namespace System
                     return ((UInt64)(Int64)value).ToString("X16", null);
                 // All unsigned types will be directly cast
                 default:
-                    Debug.Assert(false, "Invalid Object type in Format");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
         }
@@ -159,7 +156,7 @@ namespace System
             Debug.Assert(names.Length == values.Length);
 
             int index = values.Length - 1;
-            StringBuilder retval = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
             bool firstTime = true;
             ulong saveResult = result;
 
@@ -175,31 +172,40 @@ namespace System
                 {
                     result -= values[index];
                     if (!firstTime)
-                        retval.Insert(0, enumSeparatorString);
+                        sb.Insert(0, enumSeparatorString);
 
-                    retval.Insert(0, names[index]);
+                    sb.Insert(0, names[index]);
                     firstTime = false;
                 }
 
                 index--;
             }
 
-            // We were unable to represent this number as a bitwise or of valid flags
+            string returnString;
             if (result != 0)
-                return null; // return null so the caller knows to .ToString() the input
-
-            // For the case when we have zero
-            if (saveResult == 0)
             {
+                // We were unable to represent this number as a bitwise or of valid flags
+                returnString = null; // return null so the caller knows to .ToString() the input
+            }
+            else if (saveResult == 0)
+            {
+                // For the cases when we have zero
                 if (values.Length > 0 && values[0] == 0)
-                    return names[0]; // Zero was one of the enum values.
+                {
+                    returnString = names[0]; // Zero was one of the enum values.
+                }
                 else
-                    return "0";
+                {
+                    returnString = "0";
+                }
             }
             else
             {
-                return retval.ToString(); // Return the string representation
+                returnString = sb.ToString(); // Return the string representation
             }
+
+            StringBuilderCache.Release(sb);
+            return returnString;
         }
 
         internal static ulong ToUInt64(Object value)
@@ -244,7 +250,6 @@ namespace System
                     break;
                 // All unsigned types will be directly cast
                 default:
-                    Debug.Assert(false, "Invalid Object type in ToUInt64");
                     throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
 
@@ -361,13 +366,11 @@ namespace System
             return retValue;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object Parse(Type enumType, String value)
         {
             return Parse(enumType, value, false);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object Parse(Type enumType, String value, bool ignoreCase)
         {
             EnumResult parseResult = new EnumResult() { canThrow = true };
@@ -525,7 +528,6 @@ namespace System
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Type GetUnderlyingType(Type enumType)
         {
             if (enumType == null)
@@ -536,7 +538,6 @@ namespace System
             return enumType.GetEnumUnderlyingType();
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Array GetValues(Type enumType)
         {
             if (enumType == null)
@@ -553,7 +554,6 @@ namespace System
             return GetCachedValuesAndNames(enumType, false).Values;
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String GetName(Type enumType, Object value)
         {
             if (enumType == null)
@@ -563,7 +563,6 @@ namespace System
             return enumType.GetEnumName(value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String[] GetNames(Type enumType)
         {
             if (enumType == null)
@@ -580,7 +579,6 @@ namespace System
             return GetCachedValuesAndNames(enumType, true).Names;
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, Object value)
         {
             if (value == null)
@@ -629,7 +627,6 @@ namespace System
         }
 
         [Pure]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static bool IsDefined(Type enumType, Object value)
         {
             if (enumType == null)
@@ -639,7 +636,6 @@ namespace System
             return enumType.IsEnumDefined(value);
         }
         
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static String Format(Type enumType, Object value, String format)
         {
             if (enumType == null)
@@ -899,8 +895,8 @@ namespace System
         public int CompareTo(Object target)
         {
             const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
-            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported unerlying type
-            
+            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported underlying type
+
             if (this == null)
                 throw new NullReferenceException();
             Contract.EndContractBlock();
@@ -978,61 +974,31 @@ namespace System
         #region IConvertable
         public TypeCode GetTypeCode()
         {
-            Type enumType = this.GetType();
-            Type underlyingType = GetUnderlyingType(enumType);
-
-            if (underlyingType == typeof(Int32))
+            switch (InternalGetCorElementType())
             {
-                return TypeCode.Int32;
+                case CorElementType.I1:
+                    return TypeCode.SByte;
+                case CorElementType.U1:
+                    return TypeCode.Byte;
+                case CorElementType.Boolean:
+                    return TypeCode.Boolean;
+                case CorElementType.I2:
+                    return TypeCode.Int16;
+                case CorElementType.U2:
+                    return TypeCode.UInt16;
+                case CorElementType.Char:
+                    return TypeCode.Char;
+                case CorElementType.I4:
+                    return TypeCode.Int32;
+                case CorElementType.U4:
+                    return TypeCode.UInt32;
+                case CorElementType.I8:
+                    return TypeCode.Int64;
+                case CorElementType.U8:
+                    return TypeCode.UInt64;
+                default:
+                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
             }
-
-            if (underlyingType == typeof(sbyte))
-            {
-                return TypeCode.SByte;
-            }
-
-            if (underlyingType == typeof(Int16))
-            {
-                return TypeCode.Int16;
-            }
-
-            if (underlyingType == typeof(Int64))
-            {
-                return TypeCode.Int64;
-            }
-
-            if (underlyingType == typeof(UInt32))
-            {
-                return TypeCode.UInt32;
-            }
-
-            if (underlyingType == typeof(byte))
-            {
-                return TypeCode.Byte;
-            }
-
-            if (underlyingType == typeof(UInt16))
-            {
-                return TypeCode.UInt16;
-            }
-
-            if (underlyingType == typeof(UInt64))
-            {
-                return TypeCode.UInt64;
-            }
-
-            if (underlyingType == typeof(Boolean))
-            {
-                return TypeCode.Boolean;
-            }
-
-            if (underlyingType == typeof(Char))
-            {
-                return TypeCode.Char;
-            }
-
-            Debug.Assert(false, "Unknown underlying type.");
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
         }
 
         /// <internalonly/>
@@ -1128,7 +1094,6 @@ namespace System
     
         #region ToObject
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, sbyte value)
         {
             if (enumType == null)
@@ -1142,7 +1107,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, short value)
         {
             if (enumType == null)
@@ -1156,7 +1120,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, int value)
         {
             if (enumType == null)
@@ -1170,7 +1133,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, byte value)
         {
             if (enumType == null)
@@ -1185,7 +1147,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, ushort value)
         {
             if (enumType == null)
@@ -1200,7 +1161,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, uint value)
         {
             if (enumType == null)
@@ -1214,7 +1174,6 @@ namespace System
             return InternalBoxEnum(rtType, value);
         }
 
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, long value)
         {
             if (enumType == null)
@@ -1229,7 +1188,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [System.Runtime.InteropServices.ComVisible(true)]
         public static Object ToObject(Type enumType, ulong value)
         {
             if (enumType == null)

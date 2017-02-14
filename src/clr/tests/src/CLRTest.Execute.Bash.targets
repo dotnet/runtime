@@ -109,7 +109,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_GCStress" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
-  exit 0
+  exit 2
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
@@ -117,7 +117,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ \( ! -z "$COMPlus_JitStress" \) -o \( ! -z "$COMPlus_JitStressRegs" \) -o \( ! -z "$COMPlus_JITMinOpts" \) ]
 then
   echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET"
-  exit 0
+  exit 2
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
@@ -125,7 +125,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_HeapVerify" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
-  exit 0
+  exit 2
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
@@ -274,6 +274,7 @@ $(BashCLRTestArgPrep)
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
       <_CLRTestExecutionScriptText>
         <![CDATA[
+%23%21/usr/bin/env bash
 TakeLock()
 {
     echo "in takeLock"

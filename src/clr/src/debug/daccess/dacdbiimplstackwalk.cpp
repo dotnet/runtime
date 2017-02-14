@@ -1156,13 +1156,13 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     // Do a partial copy first.
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
 
-    pContext->Edi = *pRegDisp->pEdi;
-    pContext->Esi = *pRegDisp->pEsi;
-    pContext->Ebx = *pRegDisp->pEbx;
-    pContext->Ebp = *pRegDisp->pEbp;
-    pContext->Eax = *pRegDisp->pEax;
-    pContext->Ecx = *pRegDisp->pEcx;
-    pContext->Edx = *pRegDisp->pEdx;
+    pContext->Edi = *pRegDisp->GetEdiLocation();
+    pContext->Esi = *pRegDisp->GetEsiLocation();
+    pContext->Ebx = *pRegDisp->GetEbxLocation();
+    pContext->Ebp = *pRegDisp->GetEbpLocation();
+    pContext->Eax = *pRegDisp->GetEaxLocation();
+    pContext->Ecx = *pRegDisp->GetEcxLocation();
+    pContext->Edx = *pRegDisp->GetEdxLocation();
     pContext->Esp = pRegDisp->SP;
     pContext->Eip = pRegDisp->ControlPC;
 

@@ -201,7 +201,8 @@ public:
                     _ASSERTE(eightByteSize == 8);
                     _ASSERTE(IS_ALIGNED((SIZE_T)genRegDest, 8));
 
-                    (*fn)(dac_cast<PTR_PTR_Object>(genRegDest), sc, 0);
+                    uint32_t flags = eightByteClassification == SystemVClassificationTypeIntegerByRef ? GC_CALL_INTERIOR : 0;
+                    (*fn)(dac_cast<PTR_PTR_Object>(genRegDest), sc, flags);
                 }
 
                 genRegDest += eightByteSize;

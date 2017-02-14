@@ -15,15 +15,11 @@ namespace System.Reflection
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Text;
     using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
     [Serializable]
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComDefaultInterface(typeof(_PropertyInfo))]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class PropertyInfo : MemberInfo, _PropertyInfo
+    public abstract class PropertyInfo : MemberInfo
     {
         #region Constructor
         protected PropertyInfo() { }
@@ -196,7 +192,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal override bool CacheEquals(object o)
         {
             RuntimePropertyInfo m = o as RuntimePropertyInfo;

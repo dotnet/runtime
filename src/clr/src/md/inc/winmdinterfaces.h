@@ -103,15 +103,7 @@ HRESULT VerifyNotWinMDHelper(IUnknown *pUnknown
                             ,int       line
 #endif //_DEBUG
                             );
-#if defined(FEATURE_METADATA_IN_VM) && !defined(FEATURE_CORECLR)
-#ifdef _DEBUG
-#define VerifyNotWinMD(pUnknown, assertMsg) VerifyNotWinMDHelper(pUnknown, assertMsg, __FILE__, __LINE__)
-#else
-#define VerifyNotWinMD(pUnknown, assertMsg) VerifyNotWinMDHelper(pUnknown)
-#endif
-#else
 #define VerifyNotWinMD(pUnknown, assertMsg) S_OK
-#endif // FEATURE_METADATA_IN_VM 
 
 
 #endif //__WINMDINTERFACES_H__

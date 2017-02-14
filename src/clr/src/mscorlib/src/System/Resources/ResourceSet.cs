@@ -17,7 +17,6 @@ namespace System.Resources {
     using System.Collections;
     using System.IO;
     using System.Globalization;
-    using System.Security.Permissions;
     using System.Runtime.InteropServices;
     using System.Reflection;
     using System.Runtime.Serialization;
@@ -31,7 +30,6 @@ namespace System.Resources {
     // stores them in a hash table.  Custom IResourceReaders can be used.
     // 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ResourceSet : IDisposable, IEnumerable
     {
         [NonSerialized] protected IResourceReader Reader;
@@ -158,7 +156,6 @@ namespace System.Resources {
 #if LOOSELY_LINKED_RESOURCE_REFERENCE
         // Optional - used for resolving assembly manifest resource references.
         // This can safely be null.
-        [ComVisible(false)]
         public Assembly Assembly {
             get { return _assembly; }
             /*protected*/ set { _assembly = value; }
@@ -181,7 +178,6 @@ namespace System.Resources {
             return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer, Version=4.0.1.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken, throwOnError: true);
         }
 
-        [ComVisible(false)]
         public virtual IDictionaryEnumerator GetEnumerator()
         {
             return GetEnumeratorHelper();

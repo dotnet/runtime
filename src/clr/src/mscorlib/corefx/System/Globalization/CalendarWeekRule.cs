@@ -7,7 +7,6 @@ using System;
 namespace System.Globalization
 {
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum CalendarWeekRule
     {
         FirstDay = 0,           // Week 1 begins on the first day of the year

@@ -50,7 +50,6 @@
 #include "genericdict.h"
 #include "array.h"
 #include "debuginfostore.h"
-#include "constrainedexecutionregion.h"
 #include "security.h"
 #include "safemath.h"
 #include "threadstatics.h"
@@ -63,9 +62,7 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifdef FEATURE_CORECLR
 #include "runtimehandles.h"
-#endif
 
 //========================================================================
 //
@@ -5415,7 +5412,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             EEPolicy::HandleOutOfMemory();
         }
 
-#if defined(FEATURE_EXCEPTIONDISPATCHINFO)
         // If the flag indicating ForeignExceptionRaise has been set,
         // then do not clear the "_stackTrace" field of the exception object.
         if (GetThread()->GetExceptionState()->IsRaisingForeignException())
@@ -5423,7 +5419,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
             ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
         else
-#endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
         {
             ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
         }
@@ -5830,13 +5825,11 @@ HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORIN
 {
     FCALL_CONTRACT;
 
-#ifdef FEATURE_CORECLR
     // If we're in full trust, then we don't enforce the delegate binding rules
     if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
     {
         return;
     }
-#endif // FEATURE_CORECLR
 
     // Tailcall to the real implementation
     ENDFORBIDGC();
@@ -6043,9 +6036,6 @@ NOINLINE HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd
         if ((pCurrent->IsInterceptedForDeclSecurity() &&
             !(pCurrent->IsInterceptedForDeclSecurityCASDemandsOnly() &&
                 SecurityStackWalk::HasFlagsOrFullyTrusted(0)))
-#ifdef FEATURE_COMPRESSEDSTACK
-                || SecurityStackWalk::MethodIsAnonymouslyHostedDynamicMethodWithCSToEvaluate(pCurrent)
-#endif //FEATURE_COMPRESSEDSTACK
                 )
         {
             MethodSecurityDescriptor MDSecDesc(pCurrent);
@@ -6107,16 +6097,9 @@ NOINLINE HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HAN
     
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
     {
-#ifdef FEATURE_CORECLR
         // Transparent methods that contains unverifiable code is not allowed.
         MethodDesc *pMethod = GetMethod(methHnd_);
         SecurityTransparent::ThrowMethodAccessException(pMethod);
-#else // FEATURE_CORECLR        
-    //
-    // inject a full-demand for unmanaged code permission at runtime
-    // around methods in transparent assembly that contains unverifiable code
-        Security::SpecialDemand(SSWT_DECLARATIVE_DEMAND, SECURITY_UNMANAGED_CODE);
-#endif // FEATURE_CORECLR
     }
     HELPER_METHOD_FRAME_END_POLL();
 }

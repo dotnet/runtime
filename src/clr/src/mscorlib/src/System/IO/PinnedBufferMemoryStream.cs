@@ -42,8 +42,8 @@ namespace System.IO {
             _pinningHandle = new GCHandle(array, GCHandleType.Pinned);
             // Now the byte[] is pinned for the lifetime of this instance.
             // But I also need to get a pointer to that block of memory...
-            fixed(byte* ptr = _array)
-                Initialize(ptr, len, len, FileAccess.Read, true);
+            fixed(byte* ptr = &_array[0])
+                Initialize(ptr, len, len, FileAccess.Read);
         }
 
         ~PinnedBufferMemoryStream()

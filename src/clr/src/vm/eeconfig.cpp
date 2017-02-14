@@ -16,14 +16,6 @@
 #endif
 #include "eeconfig.h"
 #include "method.hpp"
-#ifndef FEATURE_CORECLR
-#include <xmlparser.h>
-#include <mscorcfg.h>
-#include "eeconfigfactory.h"
-#endif
-#ifdef FEATURE_FUSION
-#include "fusionsetup.h"
-#endif
 #include "eventtrace.h"
 #include "eehash.h"
 #include "eemessagebox.h"
@@ -33,9 +25,7 @@
 #ifdef FEATURE_WIN_DB_APPCOMPAT
 #include "QuirksApi.h"
 #endif
-#ifdef FEATURE_CORECLR
 #include "configuration.h"
-#endif
 
 using namespace clr;
 
@@ -294,9 +284,7 @@ HRESULT EEConfig::Init()
     
     INDEBUG(fStressLog = true;)
 
-#ifdef FEATURE_CORECLR
     fVerifyAllOnLoad = false;
-#endif
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     fDebuggable = false;
@@ -798,14 +786,12 @@ HRESULT EEConfig::sync()
     }
 
     bool gcConcurrentWasForced = false;
-#ifdef FEATURE_CORECLR
     // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
     // positive value as 'forcing' concurrent GC to be on. Because the standard logic
     // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
     // like any other nonzero value), we will explicitly check the DWORD later if this
     // check returns false.
     gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), false);
-#endif
 
     int gcConcurrentConfigVal = 0;
     if (!gcConcurrentWasForced)
@@ -975,14 +961,9 @@ HRESULT EEConfig::sync()
 #endif
 
     iGCForceCompact     =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_gcForceCompact, iGCForceCompact);
-#ifdef FEATURE_CORECLR
     iGCNoAffinitize = Configuration::GetKnobBooleanValue(W("System.GC.NoAffinitize"), 
                                                          CLRConfig::UNSUPPORTED_GCNoAffinitize);
     iGCHeapCount = Configuration::GetKnobDWORDValue(W("System.GC.HeapCount"), CLRConfig::UNSUPPORTED_GCHeapCount);
-#else
-    iGCNoAffinitize = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCNoAffinitize);
-    iGCHeapCount = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCHeapCount);
-#endif
 
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
@@ -1084,26 +1065,6 @@ HRESULT EEConfig::sync()
         g_IBCLogger.DisableAllInstr();
 #endif
 
-#ifdef FEATURE_FUSION
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapSet, (LPWSTR*)&pZapSet));
-
-    m_fFreepZapSet = true;
-    
-    if (pZapSet == NULL)
-    {
-        m_fFreepZapSet = false;
-        pZapSet = W("");
-    }
-    if (wcslen(pZapSet) > 3)
-    {
-        _ASSERTE(!"Zap Set String must be less than 3 chars");
-        delete[] pZapSet;
-        m_fFreepZapSet = false;
-        pZapSet = W("");
-    }
-
-    fNgenBindOptimizeNonGac = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NgenBind_OptimizeNonGac) != 0;
-#endif
 
     dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
@@ -1137,59 +1098,6 @@ HRESULT EEConfig::sync()
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
 #endif
 
-#ifndef FEATURE_CORECLR
-    // These two values respect the Shim's policy of favoring config files over registry settings.
-    fLegacyNullReferenceExceptionPolicy = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::UNSUPPORTED_legacyNullReferenceExceptionPolicy,
-                                                                            fLegacyNullReferenceExceptionPolicy) != 0);
-    fLegacyUnhandledExceptionPolicy = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::UNSUPPORTED_legacyUnhandledExceptionPolicy,
-                                                                        fLegacyUnhandledExceptionPolicy) != 0);
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    // Check if the user has overriden how Corrupted State Exceptions (CSE) will be handled. If the 
-    // <runtime> section of app.exe.config has "legacyCorruptedStateExceptionsPolicy" set to 1, then
-    // V4 runtime will treat CSE in the same fashion as V2.
-    fLegacyCorruptedStateExceptionsPolicy = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_legacyCorruptedStateExceptionsPolicy) != 0);
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-    fLegacyVirtualMethodCallVerification = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_legacyVirtualMethodCallVerification,
-                                                                             fLegacyVirtualMethodCallVerification,
-                                                                             REGUTIL::COR_CONFIG_ALL, TRUE,
-                                                                             CONFIG_SYSTEMONLY) != 0);
-
-    fLegacyApartmentInitPolicy = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_legacyApartmentInitPolicy, 
-                                                                    fLegacyApartmentInitPolicy) != 0);
-
-    fLegacyComHierarchyVisibility = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_legacyComHierarchyVisibility, 
-                                                                    fLegacyComHierarchyVisibility) != 0);
-
-    fLegacyComVTableLayout = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_legacyComVTableLayout, 
-                                                                    fLegacyComVTableLayout) != 0);
-    fNewComVTableLayout = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_newComVTableLayout, 
-                                                                    fNewComVTableLayout) != 0);
-        
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_legacyImpersonationPolicy) != 0)
-        iImpersonationPolicy = IMP_NOFLOW;
-    else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_alwaysFlowImpersonationPolicy) != 0)
-        iImpersonationPolicy = IMP_ALWAYSFLOW;
-
-    fLegacyLoadMscorsnOnStartup = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::UNSUPPORTED_legacyLoadMscorsnOnStartup, 
-                                                                    fLegacyLoadMscorsnOnStartup) != 0);
-    fBypassStrongNameVerification = (GetConfigDWORDFavoringConfigFile_DontUse_(W("bypassTrustedAppStrongNames"), fBypassStrongNameVerification) != 0) &&  // App opted in
-                                    (GetConfigDWORD_DontUse_(SN_CONFIG_BYPASS_POLICY_W, TRUE, REGUTIL::COR_CONFIG_MACHINE) != 0);                        // And the machine policy allows for bypass
-    fGeneratePublisherEvidence = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_generatePublisherEvidence, fGeneratePublisherEvidence) != 0);
-    fEnforceFIPSPolicy = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_enforceFIPSPolicy, fEnforceFIPSPolicy) != 0);
-    fLegacyHMACMode = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_legacyHMACMode, fLegacyHMACMode) != 0);
-
-    fCacheBindingFailures = !(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_disableCachingBindingFailures));
-    fUseLegacyIdentityFormat = 
-#ifdef FEATURE_APPX
-                               AppX::IsAppXProcess() ||
-#endif
-                               (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_useLegacyIdentityFormat) != 0);
-    fDisableFusionUpdatesFromADManager = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_disableFusionUpdatesFromADManager) != 0);
-    fDisableCommitThreadStack = (GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_disableCommitThreadStack, fDisableCommitThreadStack) != 0);
-    fProbeForStackOverflow = !(CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_disableStackOverflowProbing));
-#endif // FEATURE_CORECLR
     
 #ifdef _DEBUG
     fDebuggable         = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_JitDebuggable,      fDebuggable)         != 0);
@@ -1264,26 +1172,13 @@ HRESULT EEConfig::sync()
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_CORECLR
     //Eager verification of all assemblies.
     fVerifyAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_VerifyAllOnLoad, fVerifyAllOnLoad) != 0);
-#endif //FEATURE_CORECLR
 
 #ifdef _DEBUG
     fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);
 #endif //_DEBUG
 
-#ifdef FEATURE_FUSION
-    if(g_pConfig) {
-        LPCWSTR result = NULL;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(CLRConfig::EXTERNAL_developerInstallation, CONFIG_SYSTEM, &result)) && result)
-        {
-            // <TODO> CTS, add addtional checks to ensure this is an SDK installation </TODO>
-            if(SString::_wcsicmp(result, W("true")) == 0)
-                m_fDeveloperInstallation = true;
-        }
-    }
-#endif
 
 #ifdef AD_NO_UNLOAD
     fAppDomainUnload = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AppDomainNoUnload) == 0);
@@ -1367,12 +1262,6 @@ HRESULT EEConfig::sync()
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
 #ifdef FEATURE_PREJIT
-#ifndef FEATURE_CORECLR
-    DWORD iNgenHardBindOverride = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_HardPrejitEnabled, iNgenHardBind);
-    _ASSERTE(iNgenHardBindOverride < NGEN_HARD_BIND_COUNT);
-    if (iNgenHardBindOverride < NGEN_HARD_BIND_COUNT)
-        iNgenHardBind = NgenHardBindType(iNgenHardBindOverride);
-#endif
 #ifdef _DEBUG
     dwNgenForceFailureMask  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureMask);
     dwNgenForceFailureCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureCount);
@@ -1565,305 +1454,6 @@ SIZE_T EEConfig::GetSizeOfProcessBindingFile()
     return g_dwHostConfigFile;
 }
 
-#if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE) // unimpactful install --> no config files
-
-/**************************************************************/
-static void MessageBoxParseError(HRESULT hr, __in_z LPCWSTR wszFile);
-
-#define IfFailParseError(FILE, ISAPPCONFIG, ...) \
-    do \
-    { \
-        /* On error, always show an error dialog and return an error result when process is immersive; */ \
-        /* otherwise show dialog (conditionally for App config) and swallow error. */ \
-        if (FAILED(hr = (__VA_ARGS__)) && (!(ISAPPCONFIG) || AppX::IsAppXProcess() || GetConfigDWORDInternal_DontUse_(CLRConfig::EXTERNAL_NotifyBadAppCfg,false))) \
-        { \
-            MessageBoxParseError(hr, FILE); \
-            if (AppX::IsAppXProcess()) \
-            { /* Fail on bad config in AppX process. */ \
-                return hr; \
-            } \
-            else \
-            { \
-                hr = S_FALSE; \
-            } \
-        } \
-    } while (false)
-
-/**************************************************************/
-HRESULT EEConfig::SetupConfiguration()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    WCHAR version[_MAX_PATH];
-    DWORD dwVersion = _MAX_PATH;
-
-    HRESULT hr = S_OK;
-    // Get the version location
-    IfFailRet(GetCORVersionInternal(version, _MAX_PATH, & dwVersion));
-
-    // See if the environment has specified an XML file
-    NewArrayHolder<WCHAR> file(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CONFIG));
-    if(file != NULL)
-    {
-        IfFailParseError(file, false, AppendConfigurationFile(file, version));
-    }
-
-    // We need to read configuration information from 3 sources... the app config file, the
-    // host supplied config file, and the machine.config file. The order in which we
-    // read them are very import. If the different config sources specify the same config
-    // setting, we will use the setting of the first one read.
-    //
-    // In the pecking order, machine.config should always have the final say. The host supplied config
-    // file should follow, and lastly, the app config file.
-    //
-    // Note: the order we read them is not the order they are published. Need to read the AppConfig
-    // first so that we can decide if we should import machine.config (yes in Classic, typically no
-    // in AppX). We still publish in the order required as described above.
-
-    enum
-    {
-        MachineConfig = 0,
-        HostConfig    = 1,
-        AppConfig     = 2,
-        NumConfig     = 3,
-    };
-
-    ConfigSource * rgpSources[NumConfig] = { nullptr };
-
-    // Create ConfigSource objects for all config files.
-    for (size_t i = 0; i < NumConfig; ++i)
-    {
-        rgpSources[i] = new (nothrow) ConfigSource();
-        if (rgpSources[i] == NULL)
-        {
-            while (i != 0)
-            {
-                --i;
-                delete rgpSources[i];
-                rgpSources[i] = nullptr;
-            }
-            return E_OUTOFMEMORY;
-        }
-    }
-
-    // Publish ConfigSource objects in required order. It's ok that the file contents are imported below,
-    // since we're in EEStartup and this data cannot be accessed by any other threads yet.
-    for (size_t i = 0; i < NumConfig; ++i)
-    {
-        m_Configuration.Append(rgpSources[i]);
-    }
-
-    // ----------------------------------------------------
-    // Import the app.config file, or in the case of an
-    // AppX process check to make sure no app.config file
-    // exists unless launched with AO_DESIGNMODE.
-    // ----------------------------------------------------
-    
-    do
-    {
-        size_t cchProcExe=0;
-        PathString wzProcExe;
-        EX_TRY
-        {
-
-
-
-            // Get name of file used to create process
-            if (g_pCachedModuleFileName)
-            {
-                wzProcExe.Set(g_pCachedModuleFileName);
-                cchProcExe = wzProcExe.GetCount();
-            }
-            else
-            {
-                cchProcExe = WszGetModuleFileName(NULL, wzProcExe);
-
-                if (cchProcExe == 0)
-                {
-                    hr = HRESULT_FROM_GetLastError();
-                    break;
-                }
-            }
-
-            if (cchProcExe != 0)
-            {
-                wzProcExe.Append(CONFIGURATION_EXTENSION);
-
-                if (AppX::IsAppXProcess() && !AppX::IsAppXDesignMode())
-                {
-                    if (clr::fs::Path::Exists(wzProcExe))
-                    {
-                        hr = CLR_E_APP_CONFIG_NOT_ALLOWED_IN_APPX_PROCESS;
-                        break;
-                    }
-                }
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-        if (cchProcExe != 0)
-        {
-            IfFailParseError(wzProcExe, true, AppendConfigurationFile(wzProcExe, version));
-
-            // We really should return a failure hresult if the app config file is bad, but that
-            // would be a breaking change. Not sure if it's worth it yet.
-            hr = S_OK;
-            break;
-        }
-    } while (false);
-    
-
-    if (hr != S_OK)
-        return hr;
-    // ----------------------------------------------------
-    // Import machine.config, if needed.
-    // ----------------------------------------------------
-    if (!AppX::IsAppXProcess() || AppX::IsAppXDesignMode())
-    {
-        WCHAR wzSystemDir[_MAX_PATH];
-        DWORD cchSystemDir = COUNTOF(wzSystemDir);
-        IfFailRet(GetInternalSystemDirectory(wzSystemDir, &cchSystemDir));
-
-        // cchSystemDir already includes the NULL
-        if(cchSystemDir + StrLen(MACHINE_CONFIGURATION_FILE) <= _MAX_PATH)
-        {
-            IfFailRet(StringCchCat(wzSystemDir, COUNTOF(wzSystemDir), MACHINE_CONFIGURATION_FILE));
-
-            // CLR_STARTUP_OPT:
-            // The machine.config file can be very large.  We cannot afford
-            // to parse all of it at CLR startup time.
-            //
-            // Accordingly, we instruct the XML parser to stop parsing the
-            // machine.config file when it sees the end of the
-            // <runtime>...</runtime> section that holds our data (if any).
-            //
-            // By construction, this section is now placed near the top
-            // of machine.config.
-            // 
-            IfFailParseError(wzSystemDir, false, ImportConfigurationFile(
-                rgpSources[MachineConfig]->Table(), wzSystemDir, version, stopAfterRuntimeSection));
-
-            if (hr == S_FALSE) // means that we couldn't find machine.config
-                hr = S_OK;
-        }
-    }
-
-    // ----------------------------------------------------
-    // Import the host supplied config file, if needed.
-    // ----------------------------------------------------
-    // Cannot host an AppX managed process, so no need to check devModeEnabled.
-    if (!AppX::IsAppXProcess())
-    {
-        if (GetProcessBindingFile() != NULL && GetSizeOfProcessBindingFile() > 0)
-        {
-            IfFailRet(ImportConfigurationFile(
-                rgpSources[HostConfig]->Table(), GetProcessBindingFile(), version));
-        }
-    }
-
-    return hr;
-}
-
-//
-// There was an error 'hr' parsing the file 'wszFile'.
-// Pop up a MessageBox reporting the error, unless the config setting
-// 'NoGuiFromShim' is in effect.
-//
-static void MessageBoxParseError(HRESULT hr, __in_z LPCWSTR wszFile)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(FAILED(hr)); 
-    } CONTRACTL_END;
-
-    if (!REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_NoGuiFromShim, FALSE))
-    {
-        EEMessageBoxCatastrophic(IDS_EE_CONFIGPARSER_ERROR, IDS_EE_CONFIGPARSER_ERROR_CAPTION, wszFile, hr);
-    }
-}
-
-/**************************************************************/
-
-STDAPI GetXMLObjectEx(IXMLParser **ppv);
-
-HRESULT EEConfig::ImportConfigurationFile(
-    ConfigStringHashtable* pTable,
-    LPCWSTR pszFileName,
-    LPCWSTR version,
-    ParseCtl parseCtl)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pTable));
-        PRECONDITION(CheckPointer(pszFileName));
-        PRECONDITION(CheckPointer(version));
-        INJECT_FAULT(return E_OUTOFMEMORY);
-    } CONTRACTL_END;
-
-    NonVMComHolder<IXMLParser>         pIXMLParser(NULL);
-    NonVMComHolder<IStream>            pFile(NULL);
-    NonVMComHolder<EEConfigFactory>    factory(NULL); 
-
-    HRESULT hr = CreateConfigStreamHelper(pszFileName, &pFile);
-    if(FAILED(hr)) goto Exit;
-
-    hr = GetXMLObjectEx(&pIXMLParser);
-    if(FAILED(hr)) goto Exit;
-
-    factory = new (nothrow) EEConfigFactory(pTable, version, parseCtl);
-    
-    if ( ! factory) { 
-        hr = E_OUTOFMEMORY; 
-        goto Exit; 
-    }
-    factory->AddRef(); // RefCount = 1 
-
-    
-    hr = pIXMLParser->SetInput(pFile); // filestream's RefCount=2
-    if ( ! SUCCEEDED(hr)) 
-        goto Exit;
-
-    hr = pIXMLParser->SetFactory(factory); // factory's RefCount=2
-    if ( ! SUCCEEDED(hr)) 
-        goto Exit;
-
-    {
-        CONTRACT_VIOLATION(ThrowsViolation); // @todo: Run() throws!
-        hr = pIXMLParser->Run(-1);
-    }
-    
-Exit:  
-    if (hr == (HRESULT) XML_E_MISSINGROOT)
-        hr = S_OK;
-    else if (Assembly::FileNotFound(hr))
-        hr = S_FALSE;
-
-    return hr;
-}
-
-HRESULT EEConfig::AppendConfigurationFile(
-    LPCWSTR pszFileName,
-    LPCWSTR version,
-    ParseCtl parseCtl)
-{
-    LIMITED_METHOD_CONTRACT;
-    HRESULT hr = S_OK;
-
-    ConfigStringHashtable* pTable = m_Configuration.Append();
-    IfNullRet(pTable);
-
-    return ImportConfigurationFile(pTable, pszFileName, version, parseCtl);
-}
-
-
-#endif // FEATURE_CORECLR && !CROSSGEN_COMPILE
 
 bool EEConfig::RequireZap(LPCUTF8 assemblyName) const
 {

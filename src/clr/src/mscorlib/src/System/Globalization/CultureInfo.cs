@@ -36,7 +36,6 @@ namespace System.Globalization {
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Runtime.Versioning;
-    using System.Security.Permissions;
     using System.Reflection;
     using Microsoft.Win32;
     using System.Diagnostics;
@@ -44,7 +43,6 @@ namespace System.Globalization {
     using System.Resources;
 
     [Serializable]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public partial class CultureInfo : ICloneable, IFormatProvider {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
@@ -366,25 +364,6 @@ namespace System.Globalization {
         }
 #endif // FEATURE_USE_LCID
 
-        //
-        // CheckDomainSafetyObject throw if the object is customized object which cannot be attached to 
-        // other object (like CultureInfo or DateTimeFormatInfo).
-        //
-
-        internal static void CheckDomainSafetyObject(Object obj, Object container)
-        {
-            if (obj.GetType().Assembly != typeof(System.Globalization.CultureInfo).Assembly) {
-                
-                throw new InvalidOperationException(
-                            String.Format(
-                                CultureInfo.CurrentCulture, 
-                                Environment.GetResourceString("InvalidOperation_SubclassedObject"), 
-                                obj.GetType(),
-                                container.GetType()));
-            }
-            Contract.EndContractBlock();
-        }
-
 #region Serialization
         // We need to store the override from the culture data record.
         private bool    m_useUserOverride;
@@ -417,21 +396,6 @@ namespace System.Globalization {
             }
 #endif
             m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
-
-            // in case we have non customized CultureInfo object we shouldn't allow any customized object  
-            // to be attached to it for cross app domain safety.
-            if (this.GetType().Assembly == typeof(System.Globalization.CultureInfo).Assembly)
-            {
-                if (textInfo != null)
-                {
-                    CheckDomainSafetyObject(textInfo, this);
-                }
-                
-                if (compareInfo != null)
-                {
-                    CheckDomainSafetyObject(compareInfo, this);
-                }
-            }
         }
 
 #if FEATURE_USE_LCID
@@ -466,21 +430,8 @@ namespace System.Globalization {
             this.cultureID = this.m_cultureData.ILANGUAGE;
 #endif
         }
+
 #endregion Serialization
-
-
-        // Is it safe to pass the CultureInfo cross AppDomain boundaries, not necessarily as an instance
-        // member of Thread. This is different from IsSafeCrossDomain, which implies passing the CultureInfo
-        // as a Thread instance member. 
-        internal bool CanSendCrossDomain()
-        {
-            bool isSafe = false;
-            if (this.GetType() == typeof(System.Globalization.CultureInfo))
-            {
-                isSafe = true;
-            }
-            return isSafe;
-        }
 
         // Constructor called by SQL Server's special munged culture - creates a culture with
         // a TextInfo and CompareInfo that come from a supplied alternate source. This object
@@ -909,7 +860,6 @@ namespace System.Globalization {
         //
         ////////////////////////////////////////////////////////////////////////
 #if FEATURE_USE_LCID
-        [System.Runtime.InteropServices.ComVisible(false)]
         public virtual int KeyboardLayoutId
         {
             get
@@ -970,7 +920,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public String IetfLanguageTag
         {
             get
@@ -1218,7 +1167,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public CultureTypes CultureTypes
         {
             get
@@ -1433,7 +1381,6 @@ namespace System.Globalization {
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public CultureInfo GetConsoleFallbackUICulture()
         {
             Contract.Ensures(Contract.Result<CultureInfo>() != null);
@@ -1844,9 +1791,6 @@ namespace System.Globalization {
         
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int nativeGetLocaleInfoExInt(String localeName, uint field);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool nativeSetThreadLocale(String localeName);
 
         private static String GetDefaultLocaleName(int localeType)
         {
