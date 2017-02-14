@@ -630,9 +630,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse, labComputeRight);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brtrue, labReturnFalse);
+            _ilg.Emit(OpCodes.Brfalse, labReturnFalse);
 
             // compute right
             _ilg.MarkLabel(labComputeRight);
@@ -645,9 +643,7 @@ namespace System.Linq.Expressions.Compiler
             FreeLocal(locRight);
 
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brtrue_S, labReturnFalse);
+            _ilg.Emit(OpCodes.Brfalse_S, labReturnFalse);
 
             // check left for null again
             _ilg.Emit(OpCodes.Ldloca, locLeft);
@@ -703,9 +699,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse, labComputeRight);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse, labReturnTrue);
+            _ilg.Emit(OpCodes.Brtrue, labReturnTrue);
 
             // compute right
             _ilg.MarkLabel(labComputeRight);
@@ -718,9 +712,7 @@ namespace System.Linq.Expressions.Compiler
             FreeLocal(locRight);
 
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse_S, labReturnTrue);
+            _ilg.Emit(OpCodes.Brtrue_S, labReturnTrue);
 
             // check left for null again
             _ilg.Emit(OpCodes.Ldloca, locLeft);
