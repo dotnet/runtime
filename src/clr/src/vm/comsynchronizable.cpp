@@ -1314,7 +1314,6 @@ void ThreadBaseObject::InitExisting()
 
 }
 
-#ifndef FEATURE_LEAK_CULTURE_INFO
 OBJECTREF ThreadBaseObject::GetManagedThreadCulture(BOOL bUICulture)
 {
     CONTRACTL {
@@ -1430,7 +1429,6 @@ void ThreadBaseObject::ResetManagedThreadCulture(BOOL bUICulture)
     }
 }
 
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 
 FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
@@ -1467,31 +1465,6 @@ FCIMPL1(void, ThreadNative::DisableComObjectEagerCleanup, ThreadBaseObject* pThi
 FCIMPLEND
 #endif //FEATURE_COMINTEROP
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-FCIMPL1(FC_BOOL_RET, ThreadNative::SetThreadUILocale, StringObject* localeNameUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL result = TRUE;
-
-    STRINGREF name = (STRINGREF) localeNameUNSAFE;
-    VALIDATEOBJECTREF(name);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    
-    LCID lcid=NewApis::LocaleNameToLCID(name->GetBuffer(),0);
-    if (lcid == 0)
-    {
-        ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
-    }
-
-
-    HELPER_METHOD_FRAME_END();
-   
-    FC_RETURN_BOOL(result);
-}
-FCIMPLEND
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 FCIMPL0(Object*, ThreadNative::GetDomain)
 {
@@ -1754,31 +1727,7 @@ FCIMPLEND
 // unloaded and this culture will survive although the type metadata will be unloaded 
 // and GC will crash first time accessing this object after the app domain unload.
 //
-#ifdef FEATURE_LEAK_CULTURE_INFO
-FCIMPL4(FC_BOOL_RET, ThreadNative::nativeGetSafeCulture, 
-        ThreadBaseObject*   threadUNSAFE, 
-        int                 appDomainId, 
-        CLR_BOOL            isUI, 
-        OBJECTREF*          safeCulture)
-{
-    FCALL_CONTRACT;
 
-    THREADBASEREF thread(threadUNSAFE);
-
-    CULTUREINFOBASEREF pCulture = isUI ? thread->GetCurrentUICulture() : thread->GetCurrentUserCulture();
-    if (pCulture != NULL) {
-        if (pCulture->IsSafeCrossDomain() || pCulture->GetCreatedDomainID() == ADID(appDomainId)) {
-            SetObjectReference(safeCulture, pCulture, pCulture->GetAppDomain());
-        } else {
-            FC_RETURN_BOOL(FALSE);
-        }
-    }
-    FC_RETURN_BOOL(TRUE);
-}
-FCIMPLEND
-#endif // FEATURE_LEAK_CULTURE_INFO
-
-#ifndef FEATURE_LEAK_CULTURE_INFO
 void QCALLTYPE ThreadNative::nativeInitCultureAccessors()
 {
     QCALL_CONTRACT;
@@ -1790,7 +1739,6 @@ void QCALLTYPE ThreadNative::nativeInitCultureAccessors()
 
     END_QCALL;
 }
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 
 void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)

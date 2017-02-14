@@ -2032,10 +2032,8 @@ Thread::Thread()
     contextHolder.SuppressRelease();
     savedRedirectContextHolder.SuppressRelease();
 
-#ifndef FEATURE_LEAK_CULTURE_INFO
     managedThreadCurrentCulture = NULL;
     managedThreadCurrentUICulture = NULL;
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     m_ullProcessorUsageBaseline = 0;
@@ -3508,15 +3506,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         // Free all structures related to thread statics for this thread
         DeleteThreadStaticData();
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-        //Clear the references which could create cycles
-        //  This allows the GC to collect them
-        THREADBASEREF thread = (THREADBASEREF) GetExposedObjectRaw();
-        if (thread != NULL)
-        {
-            thread->ResetCulture();
-        }
-#endif
     }
 
     if  (GCHeapUtilities::IsGCHeapInitialized())
@@ -10170,38 +10159,7 @@ void Thread::DeleteThreadStaticData(AppDomain *pDomain)
     }
 }
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-void Thread::ResetCultureForDomain(ADID id)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
 
-    THREADBASEREF thread = (THREADBASEREF) GetExposedObjectRaw();
-
-    if (thread == NULL)
-        return;
-
-    CULTUREINFOBASEREF userCulture = thread->GetCurrentUserCulture();
-    if (userCulture != NULL)
-    {
-        if (!userCulture->IsSafeCrossDomain() && userCulture->GetCreatedDomainID() == id)
-            thread->ResetCurrentUserCulture();
-    }
-
-    CULTUREINFOBASEREF UICulture = thread->GetCurrentUICulture();
-    if (UICulture != NULL)
-    {
-        if (!UICulture->IsSafeCrossDomain() && UICulture->GetCreatedDomainID() == id)
-            thread->ResetCurrentUICulture();
-    }
-}
-#endif // FEATURE_LEAK_CULTURE_INFO
-
-#ifndef FEATURE_LEAK_CULTURE_INFO
 void Thread::InitCultureAccessors()
 {
     CONTRACTL {
@@ -10225,7 +10183,6 @@ void Thread::InitCultureAccessors()
         pCurrentCulture = (OBJECTREF*)pThread->GetStaticFieldAddress(managedThreadCurrentUICulture);
     }
 }
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 
 ARG_SLOT Thread::CallPropertyGet(BinderMethodID id, OBJECTREF pObject)

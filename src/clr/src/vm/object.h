@@ -1707,14 +1707,8 @@ private:
     INT32    iDataItem;                     // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
     INT32    iCultureID;                    // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
 #endif // !FEATURE_COREFX_GLOBALIZATION
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    INT32 m_createdDomainID;
-#endif // FEATURE_LEAK_CULTURE_INFO
     CLR_BOOL m_isReadOnly;
     CLR_BOOL m_isInherited;
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    CLR_BOOL m_isSafeCrossDomain;
-#endif // FEATURE_LEAK_CULTURE_INFO
     CLR_BOOL m_useUserOverride;
 
 public:
@@ -1731,17 +1725,6 @@ public:
         return m_name;
     }// GetName
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    BOOL IsSafeCrossDomain()
-    {
-        return m_isSafeCrossDomain;
-    }// IsSafeCrossDomain
-
-    ADID GetCreatedDomainID()
-    {
-        return ADID(m_createdDomainID);
-    }// GetCreatedDomain
-#endif // FEATURE_LEAK_CULTURE_INFO
 
 }; // class CultureInfoBaseObject
 
@@ -1910,10 +1893,6 @@ private:
     OBJECTREF     m_SynchronizationContext;
     OBJECTREF     m_Name;
     OBJECTREF     m_Delegate;
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    CULTUREINFOBASEREF     m_CurrentUserCulture;
-    CULTUREINFOBASEREF     m_CurrentUICulture;
-#endif
 #ifdef IO_CANCELLATION_ENABLED
     OBJECTREF     m_CancellationSignals;
 #endif
@@ -1977,14 +1956,12 @@ public:
     OBJECTREF GetDelegate()                   { LIMITED_METHOD_CONTRACT; return m_Delegate; }
     void      SetDelegate(OBJECTREF delegate);
 
-#ifndef FEATURE_LEAK_CULTURE_INFO
     CULTUREINFOBASEREF GetCurrentUserCulture();
     CULTUREINFOBASEREF GetCurrentUICulture();
     OBJECTREF GetManagedThreadCulture(BOOL bUICulture);
     void ResetManagedThreadCulture(BOOL bUICulture);
     void ResetCurrentUserCulture();
     void ResetCurrentUICulture();
-#endif
 
 #ifdef FEATURE_REMOTING
     // These expose the remoting context (System\Remoting\Context)
@@ -2004,31 +1981,6 @@ public:
     }
 #endif
 
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    CULTUREINFOBASEREF GetCurrentUserCulture()
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        return m_CurrentUserCulture;
-    }
-
-    void ResetCurrentUserCulture()
-    { 
-        WRAPPER_NO_CONTRACT; 
-        ClearObjectReference((OBJECTREF *)&m_CurrentUserCulture);
-    }
-
-    CULTUREINFOBASEREF GetCurrentUICulture() 
-    { 
-        LIMITED_METHOD_CONTRACT; 
-        return m_CurrentUICulture;
-    }
-
-    void ResetCurrentUICulture()
-    { 
-        WRAPPER_NO_CONTRACT; 
-        ClearObjectReference((OBJECTREF *)&m_CurrentUICulture);
-    }
-#endif // FEATURE_LEAK_CULTURE_INFO
 
     OBJECTREF GetSynchronizationContext()
     {
