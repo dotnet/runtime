@@ -857,8 +857,8 @@ namespace System
 
             // TODO: Perhaps do switch casing to improve small size perf
 
-            var i = (nuint)0;
-            var n = (nuint)0;
+            nuint i = 0;
+            nuint n = 0;
             while ((n = i + 8) <= (pointerSizeLength))
             {
                 Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
