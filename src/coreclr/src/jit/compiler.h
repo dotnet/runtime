@@ -2138,9 +2138,10 @@ public:
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
     // Return true if call is a recursive call; return false otherwise.
+    // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
     {
-        return (call->gtCallMethHnd == info.compMethodHnd);
+        return (call->gtCallMethHnd == impInlineRoot()->info.compMethodHnd);
     }
 
     //-------------------------------------------------------------------------
