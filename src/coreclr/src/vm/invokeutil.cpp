@@ -1980,9 +1980,6 @@ bool InvokeUtil::IsDangerousMethod(MethodDesc *pMD)
 #ifdef FEATURE_METHOD_RENTAL
             CLASS__METHOD_RENTAL,
 #endif // FEATURE_METHOD_RENTAL
-#ifdef FEATURE_ISOSTORE
-            CLASS__ISS_STORE_FILE,
-#endif
             CLASS__TYPE_HANDLE,
             CLASS__METHOD_HANDLE,
             CLASS__FIELD_HANDLE,

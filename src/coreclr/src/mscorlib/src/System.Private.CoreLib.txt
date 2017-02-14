@@ -1184,40 +1184,6 @@ InvalidOperation_APIInvalidForCurrentContext = The API '{0}' cannot be used on t
 InvalidProgram_Default = Common Language Runtime detected an invalid program.
 
 ; Isolated Storage
-#if FEATURE_ISOSTORE
-IsolatedStorage_AssemblyMissingIdentity = Unable to determine assembly of the caller.
-IsolatedStorage_ApplicationMissingIdentity = Unable to determine application identity of the caller.
-IsolatedStorage_DomainMissingIdentity = Unable to determine domain of the caller.
-IsolatedStorage_AssemblyGrantSet = Unable to determine granted permission for assembly.
-IsolatedStorage_DomainGrantSet = Unable to determine granted permission for domain.
-IsolatedStorage_ApplicationGrantSet = Unable to determine granted permission for application.
-IsolatedStorage_Init = Initialization failed.
-IsolatedStorage_ApplicationNoEvidence = Unable to determine identity of application.
-IsolatedStorage_AssemblyNoEvidence = Unable to determine identity of assembly.
-IsolatedStorage_DomainNoEvidence = Unable to determine the identity of domain.
-IsolatedStorage_DeleteDirectories = Unable to delete; directory or files in the directory could be in use.
-IsolatedStorage_DeleteFile = Unable to delete file.
-IsolatedStorage_CreateDirectory = Unable to create directory.
-IsolatedStorage_DeleteDirectory = Unable to delete, directory not empty or does not exist.
-IsolatedStorage_Operation_ISFS = Operation not permitted on IsolatedStorageFileStream.
-IsolatedStorage_Operation = Operation not permitted.
-IsolatedStorage_Path = Path must be a valid file name.
-IsolatedStorage_FileOpenMode = Invalid mode, see System.IO.FileMode.
-IsolatedStorage_SeekOrigin = Invalid origin, see System.IO.SeekOrigin.
-IsolatedStorage_Scope_U_R_M = Invalid scope, expected User, User|Roaming or Machine.
-IsolatedStorage_Scope_Invalid = Invalid scope.
-IsolatedStorage_Exception = An error occurred while accessing IsolatedStorage.
-IsolatedStorage_QuotaIsUndefined = {0} is not defined for this store. An operation was performed that requires access to {0}. Stores obtained using enumeration APIs do not have a well-defined {0}, since partial evidence is used to open the store.
-IsolatedStorage_CurrentSizeUndefined = Current size cannot be determined for this store.
-IsolatedStorage_DomainUndefined = Domain cannot be determined on an Assembly or Application store.
-IsolatedStorage_ApplicationUndefined = Application cannot be determined on an Assembly or Domain store.
-IsolatedStorage_AssemblyUndefined = Assembly cannot be determined for an Application store.
-IsolatedStorage_StoreNotOpen = Store must be open for this operation.
-IsolatedStorage_OldQuotaLarger = The new quota must be larger than the old quota.
-IsolatedStorage_UsageWillExceedQuota = There is not enough free space to perform the operation.
-IsolatedStorage_NotValidOnDesktop = The Site scope is currently not supported.
-IsolatedStorage_OnlyIncreaseUserApplicationStore = Increasing the quota of this scope is not supported.  Only the user application scope’s quota can be increased.
-#endif  // FEATURE_ISOSTORE
 
 ; Verification Exception
 Verification_Exception = Operation could destabilize the runtime.
