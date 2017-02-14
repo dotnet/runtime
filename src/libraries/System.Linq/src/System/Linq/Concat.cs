@@ -33,9 +33,21 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the source enumerables.</typeparam>
         private sealed class Concat2Iterator<TSource> : ConcatIterator<TSource>
         {
+            /// <summary>
+            /// The first source to concatenate.
+            /// </summary>
             private readonly IEnumerable<TSource> _first;
+
+            /// <summary>
+            /// The second source to concatenate.
+            /// </summary>
             private readonly IEnumerable<TSource> _second;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Concat2Iterator{TSource}"/> class.
+            /// </summary>
+            /// <param name="first">The first source to concatenate.</param>
+            /// <param name="second">The second source to concatenate.</param>
             internal Concat2Iterator(IEnumerable<TSource> first, IEnumerable<TSource> second)
             {
                 Debug.Assert(first != null);
@@ -134,23 +146,55 @@ namespace System.Linq
         /// </remarks>
         private sealed class ConcatNIterator<TSource> : ConcatIterator<TSource>
         {
+            /// <summary>
+            /// The linked list of previous sources.
+            /// </summary>
             private readonly ConcatNIterator<TSource> _tail;
+            
+            /// <summary>
+            /// The source associated with this iterator.
+            /// </summary>
             private readonly IEnumerable<TSource> _head;
+
+            /// <summary>
+            /// The logical index associated with this iterator.
+            /// </summary>
             private readonly int _headIndex;
 
-            // We employ an optimization where we set a flag if all of the enumerables being concatenated
-            // are ICollections. This allows us to determine in O(1) time whether we can preallocate for
-            // ToArray and ToList, and whether we can get the count of the iterator cheaply.
+            /// <summary>
+            /// <c>true</c> if all sources this iterator concatenates implement <see cref="ICollection{TSource}"/>;
+            /// otherwise, <c>false</c>.
+            /// </summary>
+            /// <remarks>
+            /// This flag allows us to determine in O(1) time whether we can preallocate for <see cref="ToArray"/>
+            /// and <see cref="ToList"/>, and whether we can get the count of the iterator cheaply.
+            /// </remarks>
             private readonly bool _hasOnlyCollections;
 
+            /// <summary>
+            /// Gets the empty <see cref="ConcatNIterator{TSource}"/> from which all other such iterators are created.
+            /// </summary>
             internal static ConcatNIterator<TSource> Empty { get; } = new ConcatNIterator<TSource>();
             
+            /// <summary>
+            /// Creates the empty iterator.
+            /// </summary>
             private ConcatNIterator()
             {
                 _headIndex = -1;
                 _hasOnlyCollections = true;
             }
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ConcatNIterator{TSource}"/> class.
+            /// </summary>
+            /// <param name="tail">The linked list of previous sources.</param>
+            /// <param name="head">The source associated with this iterator.</param>
+            /// <param name="headIndex">The logical index associated with this iterator.</param>
+            /// <param name="hasOnlyCollections">
+            /// <c>true</c> if all sources this iterator concatenates implement <see cref="ICollection{TSource}"/>;
+            /// otherwise, <c>false</c>.
+            /// </param>
             private ConcatNIterator(ConcatNIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
             {
                 Debug.Assert(tail != null);
@@ -164,6 +208,13 @@ namespace System.Linq
                 _hasOnlyCollections = hasOnlyCollections;
             }
 
+            /// <summary>
+            /// Gets whether this iterator contains no sources.
+            /// </summary>
+            /// <remarks>
+            /// Only one empty iterator should ever exist, so this property is equivalent to a
+            /// reference-equality comparison against <see cref="Empty"/>.
+            /// </remarks>
             private bool IsEmpty
             {
                 get
