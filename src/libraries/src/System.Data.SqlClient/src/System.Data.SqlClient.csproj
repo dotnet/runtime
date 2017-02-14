@@ -154,6 +154,7 @@
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SspiClientContextStatus.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Unix.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
     </Compile>

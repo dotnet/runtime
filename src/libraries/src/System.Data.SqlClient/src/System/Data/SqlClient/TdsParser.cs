@@ -6319,7 +6319,7 @@ namespace System.Data.SqlClient
         {
             try
             {
-                SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj, receivedBuff, ref sendBuff, _sniSpnBuffer);
+                SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj.sspiClientContextStatus, receivedBuff, ref sendBuff, _sniSpnBuffer);
             }
             catch (Exception e)
             {
