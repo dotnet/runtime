@@ -147,7 +147,6 @@ set(VM_SOURCES_WKS
     comdatetime.cpp
     comdependenthandle.cpp
     comdynamic.cpp
-    comisolatedstorage.cpp
     commemoryfailpoint.cpp
     commodule.cpp
     compatibilityswitch.cpp
