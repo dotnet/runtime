@@ -77,7 +77,6 @@
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
-
   </PropertyGroup>
 
   <!-- Output paths -->
