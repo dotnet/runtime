@@ -1525,33 +1525,6 @@ typedef REF<PermissionListSetObject> PERMISSIONLISTSETREF;
 typedef PermissionListSetObject*     PERMISSIONLISTSETREF;
 #endif
     
-#if defined(FEATURE_IMPERSONATION)
-class SecurityContextObject: public Object
-{
-    friend class MscorlibBinder;
-
-private:
-    
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size. 
-
-    OBJECTREF               _executionContext;
-#ifdef FEATURE_IMPERSONATION
-    OBJECTREF               _windowsIdentity;
-#endif // FEATURE_IMPERSONATION
-    INT32                   _disableFlow;
-    CLR_BOOL                _isNewCapture;
-public:
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SecurityContextObject> SECURITYCONTEXTREF;
-#else
-typedef SecurityContextObject*     SECURITYCONTEXTREF;
-#endif
-#endif // #if defined(FEATURE_IMPERSONATION)
 
 #define SYNCCTXPROPS_REQUIRESWAITNOTIFICATION 0x1 // Keep in sync with SynchronizationContext.cs SynchronizationContextFlags
 class ThreadBaseObject;
@@ -2219,9 +2192,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pDefaultContext;     // Default managed context for this AD.
 #endif    
     OBJECTREF    m_pApplicationTrust;    // App ApplicationTrust.
-#ifdef FEATURE_IMPERSONATION
-    OBJECTREF    m_pDefaultPrincipal;  // Lazily computed default principle object used by threads
-#endif // FEATURE_IMPERSONATION
 #ifdef FEATURE_REMOTING    
     OBJECTREF    m_pURITable;          // Identity table for remoting
 #endif    
