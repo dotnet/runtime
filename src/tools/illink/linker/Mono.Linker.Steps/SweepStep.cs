@@ -127,7 +127,13 @@ namespace Mono.Linker.Steps {
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
 				var reference = references [i];
-				var r = Context.Resolver.Resolve (reference);
+				AssemblyDefinition r = null;
+				try {
+					r = Context.Resolver.Resolve (reference);
+				}
+				catch (AssemblyResolutionException) {
+					continue;
+				}
 				if (!AreSameReference (r.Name, target.Name))
 					continue;
 

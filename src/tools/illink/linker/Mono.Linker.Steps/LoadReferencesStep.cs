@@ -48,8 +48,16 @@ namespace Mono.Linker.Steps {
 
 			_references.Add (assembly.Name, assembly);
 
-			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences)
-				ProcessReferences (Context.Resolve (reference));
+			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
+				AssemblyDefinition definition = null;
+				try {
+					definition = Context.Resolve (reference);
+				}
+				catch (AssemblyResolutionException) {
+					continue;
+				}
+				ProcessReferences (definition);
+			}
 		}
 	}
 }
