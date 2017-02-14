@@ -410,22 +410,6 @@ EPolicyAction EEPolicy::GetActionOnFailure(EClrFailure failure)
     }
 
     EPolicyAction finalAction = GetActionOnFailureNoHostNotification(failure);
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostPolicyManager *pHostPolicyManager = CorHost2::GetHostPolicyManager();
-    if (pHostPolicyManager)
-    {
-#ifdef _DEBUG
-        Thread* pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_Escalation);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pHostPolicyManager->OnFailure(failure, finalAction);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     return finalAction;
 }
 
@@ -441,22 +425,6 @@ void EEPolicy::NotifyHostOnTimeout(EClrOperation operation, EPolicyAction action
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostPolicyManager *pHostPolicyManager = CorHost2::GetHostPolicyManager();
-    if (pHostPolicyManager)
-    {
-#ifdef _DEBUG
-        Thread* pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_Escalation);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pHostPolicyManager->OnTimeout(operation, action);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 
@@ -471,22 +439,6 @@ void EEPolicy::NotifyHostOnDefaultAction(EClrOperation operation, EPolicyAction 
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostPolicyManager *pHostPolicyManager = CorHost2::GetHostPolicyManager();
-    if (pHostPolicyManager)
-    {
-#ifdef _DEBUG
-        Thread* pThread = GetThread();
-        if (pThread)
-        {
-            pThread->AddFiberInfo(Thread::ThreadTrackInfo_Escalation);
-        }
-#endif
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pHostPolicyManager->OnDefaultAction(operation, action);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)

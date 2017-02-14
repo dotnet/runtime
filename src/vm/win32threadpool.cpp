@@ -448,21 +448,6 @@ BOOL ThreadpoolMgr::Initialize()
     CPThreadCounter.counts.AsLongLong = counts.AsLongLong;
 
 #ifndef FEATURE_PAL    
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRIoCompletionHosted())
-    {
-        HANDLE hPort;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = CorHost2::GetHostIoCompletionManager()->CreateIoCompletionPort(&hPort);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-            goto end;
-
-        GlobalCompletionPort = hPort;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         GlobalCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE,
                                                       NULL,
@@ -578,37 +563,6 @@ BOOL ThreadpoolMgr::SetMaxThreads(DWORD MaxWorkerThreads,
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostThreadpoolManager *threadpoolProvider = CorHost2::GetHostThreadpoolManager();
-    if (threadpoolProvider) {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = threadpoolProvider->SetMaxThreads(MaxWorkerThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    IHostIoCompletionManager *ioCompletionProvider = CorHost2::GetHostIoCompletionManager();
-    if (ioCompletionProvider) {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ioCompletionProvider->SetMaxThreads(MaxIOCompletionThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    if (threadpoolProvider && ioCompletionProvider) {
-        return TRUE;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (IsInitialized())
     {
@@ -637,37 +591,6 @@ BOOL ThreadpoolMgr::GetMaxThreads(DWORD* MaxWorkerThreads,
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-    IHostThreadpoolManager *threadpoolProvider = CorHost2::GetHostThreadpoolManager();
-    if (threadpoolProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = threadpoolProvider->GetMaxThreads(MaxWorkerThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    IHostIoCompletionManager *ioCompletionProvider = CorHost2::GetHostIoCompletionManager();
-    if (ioCompletionProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ioCompletionProvider->GetMaxThreads(MaxIOCompletionThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    if (threadpoolProvider && ioCompletionProvider) {
-        return TRUE;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (!MaxWorkerThreads || !MaxIOCompletionThreads)
     {
@@ -722,36 +645,6 @@ BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-    IHostThreadpoolManager *threadpoolProvider = CorHost2::GetHostThreadpoolManager();
-    if (threadpoolProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = threadpoolProvider->SetMinThreads(MinWorkerThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    IHostIoCompletionManager *ioCompletionProvider = CorHost2::GetHostIoCompletionManager();
-    if (ioCompletionProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ioCompletionProvider->SetMinThreads(MinIOCompletionThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-    if (threadpoolProvider && ioCompletionProvider) {
-        return TRUE;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (!IsInitialized())
     {
@@ -824,37 +717,6 @@ BOOL ThreadpoolMgr::GetMinThreads(DWORD* MinWorkerThreads,
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-    IHostThreadpoolManager *threadpoolProvider = CorHost2::GetHostThreadpoolManager();
-    if (threadpoolProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = threadpoolProvider->GetMinThreads(MinWorkerThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    IHostIoCompletionManager *ioCompletionProvider = CorHost2::GetHostIoCompletionManager();
-    if (ioCompletionProvider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ioCompletionProvider->GetMinThreads(MinIOCompletionThreads);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-    }
-
-    if (threadpoolProvider && ioCompletionProvider) {
-        return TRUE;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (!MinWorkerThreads || !MinIOCompletionThreads)
     {
@@ -891,37 +753,6 @@ BOOL ThreadpoolMgr::GetAvailableThreads(DWORD* AvailableWorkerThreads,
 
     if (IsInitialized())
     {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-        IHostThreadpoolManager *threadpoolProvider = CorHost2::GetHostThreadpoolManager();
-        if (threadpoolProvider) {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            hr = threadpoolProvider->GetAvailableThreads(AvailableWorkerThreads);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-            if (FAILED(hr))
-            {
-                SetLastHRError(hr);
-                return FALSE;
-            }
-        }
-
-        IHostIoCompletionManager *ioCompletionProvider = CorHost2::GetHostIoCompletionManager();
-        if (ioCompletionProvider) {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            hr = ioCompletionProvider->GetAvailableThreads(AvailableIOCompletionThreads);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-            if (FAILED(hr))
-            {
-                SetLastHRError(hr);
-                return FALSE;
-            }
-        }
-
-        if (threadpoolProvider && ioCompletionProvider) {
-            return TRUE;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
         if (!AvailableWorkerThreads || !AvailableIOCompletionThreads)
         {
@@ -1078,33 +909,6 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
 
     EnsureInitialized();
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr = S_OK;
-
-    IHostThreadpoolManager *provider = CorHost2::GetHostThreadpoolManager();
-    if (provider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-
-        if(UnmanagedTPRequest)
-        {
-            hr = provider->QueueUserWorkItem(Function, Context, Flags);
-        }
-        else
-        {
-            hr = provider->QueueUserWorkItem(ExecuteHostRequest, Context, Flags);
-        }
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr))
-        {
-            SetLastHRError(hr);
-            return FALSE;
-        }
-        else
-        {
-            return TRUE;
-        }
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (Flags == CALL_OR_QUEUE)
     {
@@ -3567,23 +3371,6 @@ BOOL ThreadpoolMgr::BindIoCompletionCallback(HANDLE FileHandle,
 
     EnsureInitialized();
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostIoCompletionManager *provider = CorHost2::GetHostIoCompletionManager();
-    if (provider) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        errCode = provider->Bind(GlobalCompletionPort, FileHandle);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(errCode))
-        {
-            SetLastHRError(errCode);
-            return FALSE;
-        }
-        else
-        {
-            return TRUE;
-        }
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     _ASSERTE(GlobalCompletionPort != NULL);
 

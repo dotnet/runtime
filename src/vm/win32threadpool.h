@@ -556,12 +556,6 @@ public:
 
     inline static BOOL IsThreadPoolHosted()
     {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostThreadpoolManager *provider = CorHost2::GetHostThreadpoolManager();
-        if (provider)
-            return TRUE;
-        else
-#endif
             return FALSE;
     }
 

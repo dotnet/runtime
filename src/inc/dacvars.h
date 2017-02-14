@@ -92,9 +92,6 @@ DEFINE_DACVAR(ULONG, PTR_ReadyToRunJitManager, ExecutionManager__m_pReadyToRunJi
 DEFINE_DACVAR_NO_DUMP(ULONG, VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(ULONG, VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-DEFINE_DACVAR(ULONG, PTR_ConnectionNameTable, CCLRDebugManager__m_pConnectionNameHash, CCLRDebugManager::m_pConnectionNameHash)
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 DEFINE_DACVAR(ULONG, PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(ULONG, PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(ULONG, PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
@@ -153,7 +150,7 @@ DEFINE_DACVAR(ULONG, DWORD, CExecutionEngine__TlsIndex, CExecutionEngine::TlsInd
 
 DEFINE_DACVAR(ULONG, LONG, GCScan__m_GcStructuresInvalidCnt, GCScan::m_GcStructuresInvalidCnt)
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 DEFINE_DACVAR(ULONG, int, CCLRErrorReportingManager__g_ECustomDumpFlavor, CCLRErrorReportingManager::g_ECustomDumpFlavor)
 #endif
 

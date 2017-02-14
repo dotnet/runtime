@@ -140,13 +140,6 @@
 //    +-FuncEvalFrame         - frame for debugger function evaluation
 #endif // DEBUGGING_SUPPORTED
 //    |
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
-//    |
-//    +-ReverseEnterRuntimeFrame
-//    |
-//    +-LeaveRuntimeFrame
-//    |
-#endif
 //    |
 //    +-ExceptionFilterFrame - this frame wraps call to exception filter
 //    |
@@ -270,10 +263,6 @@ FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 #ifdef _TARGET_X86_
 FRAME_TYPE_NAME(UMThkCallFrame)
-#endif
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
-FRAME_TYPE_NAME(ReverseEnterRuntimeFrame)
-FRAME_TYPE_NAME(LeaveRuntimeFrame)
 #endif
 FRAME_TYPE_NAME(InlinedCallFrame)
 FRAME_TYPE_NAME(ContextTransitionFrame)
@@ -2957,65 +2946,6 @@ struct ComToManagedExRecord
 };
 #endif // _TARGET_X86_
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
-//-----------------------------------------------------------------------------
-// ReverseEnterRuntimeFrame
-//-----------------------------------------------------------------------------
-
-class ReverseEnterRuntimeFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(ReverseEnterRuntimeFrame, Frame)
-
-public:
-    //------------------------------------------------------------------------
-    // Performs cleanup on an exception unwind
-    //------------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    virtual void ExceptionUnwind()
-    {
-        WRAPPER_NO_CONTRACT;
-         GetThread()->ReverseLeaveRuntime();
-    }
-#endif
-
-    //---------------------------------------------------------------
-    // Expose key offsets and values for stub generation.
-    //---------------------------------------------------------------
-
-    static UINT32 GetNegSpaceSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return sizeof(GSCookie);
-    }
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(ReverseEnterRuntimeFrame)
-};
-
-//-----------------------------------------------------------------------------
-// LeaveRuntimeFrame
-//-----------------------------------------------------------------------------
-
-class LeaveRuntimeFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(LeaveRuntimeFrame, Frame)
-
-public:
-    //------------------------------------------------------------------------
-    // Performs cleanup on an exception unwind
-    //------------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    virtual void ExceptionUnwind()
-    {
-        WRAPPER_NO_CONTRACT;
-         Thread::EnterRuntime();
-    }
-#endif
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(LeaveRuntimeFrame)
-};
-#endif
 
 //------------------------------------------------------------------------
 // This frame is pushed by any JIT'ted method that contains one or more

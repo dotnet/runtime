@@ -110,15 +110,9 @@ static inline BOOL ThreadNotStarted(Thread *t)
 static inline BOOL ThreadIsRunning(Thread *t)
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    return (t &&
-            (t->m_State & (Thread::TS_ReportDead|Thread::TS_Dead)) == 0 &&
-            (CLRTaskHosted()? t->GetHostTask()!=NULL:t->HasValidThreadHandle()));
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     return (t &&
             (t->m_State & (Thread::TS_ReportDead|Thread::TS_Dead)) == 0 &&
             (t->HasValidThreadHandle()));
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 static inline BOOL ThreadIsDead(Thread *t)
@@ -1491,14 +1485,6 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::SetThreadUILocale, StringObject* localeNameUN
         ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *manager = CorHost2::GetHostTaskManager();
-    if (manager) {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        result = (manager->SetUILocale(lcid) == S_OK);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif  // FEATURE_INCLUDE_ALL_INTERFACES
 
     HELPER_METHOD_FRAME_END();
    
