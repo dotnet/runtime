@@ -24270,10 +24270,12 @@ unsigned Compiler::fgMeasureIR()
         {
             for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
             {
-                fgWalkTreePre(&stmt->gtStmtExpr, [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
-                    (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
-                    return Compiler::WALK_CONTINUE;
-                }, &nodeCount);
+                fgWalkTreePre(&stmt->gtStmtExpr,
+                              [](GenTree** slot, fgWalkData* data) -> Compiler::fgWalkResult {
+                                  (*reinterpret_cast<unsigned*>(data->pCallbackData))++;
+                                  return Compiler::WALK_CONTINUE;
+                              },
+                              &nodeCount);
             }
         }
         else
