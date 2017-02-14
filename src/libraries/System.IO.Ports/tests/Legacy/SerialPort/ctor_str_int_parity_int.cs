@@ -16,36 +16,36 @@ public class ctor_str_int_parity_int : PortsTest
     private enum ThrowAt { Set, Open };
 
     [Fact]
-    public void COM1_9600_Odd_5()
+    public void COM1_9600_Odd_7()
     {
         string portName = "COM1";
         int baudRate = 9600;
         int parity = (int)Parity.Odd;
-        int dataBits = 5;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits);
     }
 
 
     [Fact]
-    public void COM2_14400_None_5()
+    public void COM2_14400_None_7()
     {
         string portName = "COM2";
         int baudRate = 14400;
         int parity = (int)Parity.None;
-        int dataBits = 5;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits);
     }
 
 
     [Fact]
-    public void COM3_28800_Mark_6()
+    public void COM3_28800_Mark_7()
     {
         string portName = "COM3";
         int baudRate = 28800;
         int parity = (int)Parity.Mark;
-        int dataBits = 6;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits);
     }
@@ -89,23 +89,23 @@ public class ctor_str_int_parity_int : PortsTest
 
     //[] Error checking for PortName
     [Fact]
-    public void Empty_9600_None_5()
+    public void Empty_9600_None_7()
     {
         string portName = string.Empty;
         int baudRate = 9600;
         int parity = (int)Parity.None;
-        int dataBits = 5;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentException), ThrowAt.Set);
     }
 
     [Fact]
-    public void Null_14400_Even_6()
+    public void Null_14400_Even_8()
     {
         string portName = null;
         int baudRate = 14400;
         int parity = (int)Parity.Even;
-        int dataBits = 6;
+        int dataBits = 8;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentNullException), ThrowAt.Set);
     }
@@ -151,12 +151,12 @@ public class ctor_str_int_parity_int : PortsTest
 
 
     [Fact]
-    public void PHYSICALDRIVE0_14400_Even_5()
+    public void PHYSICALDRIVE0_14400_Even_7()
     {
         string portName = "PHYSICALDRIVE0";
         int baudRate = 14400;
         int parity = (int)Parity.Even;
-        int dataBits = 5;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentException), ThrowAt.Open);
     }
@@ -164,24 +164,24 @@ public class ctor_str_int_parity_int : PortsTest
 
     //[] Error checking for BaudRate
     [Fact]
-    public void COM1_Int32MinValue_None_5()
+    public void COM1_Int32MinValue_None_8()
     {
         string portName = "Com1";
         int baudRate = int.MinValue;
         int parity = (int)Parity.None;
-        int dataBits = 5;
+        int dataBits = 8;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
     }
 
 
     [Fact]
-    public void COM2_Neg1_Even_6()
+    public void COM2_Neg1_Even_7()
     {
         string portName = "Com2";
         int baudRate = -1;
         int parity = (int)Parity.Even;
-        int dataBits = 6;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
     }
@@ -213,24 +213,24 @@ public class ctor_str_int_parity_int : PortsTest
 
     //[] Error checking for Parity
     [Fact]
-    public void COM1_9600_Int32MinValue_5()
+    public void COM1_9600_Int32MinValue_7()
     {
         string portName = "Com1";
         int baudRate = 9600;
         int parity = int.MinValue;
-        int dataBits = 5;
+        int dataBits = 7;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
     }
 
 
     [Fact]
-    public void COM2_14400_Neg1_6()
+    public void COM2_14400_Neg1_8()
     {
         string portName = "Com2";
         int baudRate = 14400;
         int parity = -1;
-        int dataBits = 6;
+        int dataBits = 8;
 
         VerifyCtor(portName, baudRate, parity, dataBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
     }

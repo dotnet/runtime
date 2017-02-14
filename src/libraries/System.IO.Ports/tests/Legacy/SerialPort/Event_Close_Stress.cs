@@ -83,6 +83,7 @@ public class Event_Close_Stress : PortsTest
         }
     }
 
+    [OuterLoop("Slow Test")]
     [ConditionalFact(nameof(HasNullModem))]
     public void ErrorReceived_Close_Stress()
     {

@@ -239,7 +239,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void Count_EQ_Zero()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

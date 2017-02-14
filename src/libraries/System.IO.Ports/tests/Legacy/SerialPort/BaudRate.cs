@@ -24,8 +24,6 @@ public class BaudRate_Property : PortsTest
 
     private enum ThrowAt { Set, Open };
 
-    private int _exitValue = TCSupport.PassExitCode;
-
     #region Test Cases
     [ConditionalFact(nameof(HasNullModem))]
     public void BaudRate_Default()
@@ -104,13 +102,6 @@ public class BaudRate_Property : PortsTest
         VerifyException(int.MaxValue, ThrowAt.Open, typeof(ArgumentOutOfRangeException));
     }
 
-    [ConditionalFact(nameof(HasOneSerialPort), Skip="Modern serial ports are happy to set 12345 baud")]
-    public void BaudRate_12345()
-    {
-        Debug.WriteLine("Verifying 12345 BaudRate");
-        Type expectedException = typeof(System.IO.IOException);
-        VerifyException(12345, ThrowAt.Open, expectedException);
-    }
     #endregion
 
     #region Verification for Test Cases

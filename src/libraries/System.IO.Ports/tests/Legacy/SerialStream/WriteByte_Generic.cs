@@ -9,6 +9,7 @@ using System.IO.Ports;
 using System.IO.PortsTests;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 using ThreadState = System.Threading.ThreadState;
@@ -89,7 +90,7 @@ namespace Legacy.SerialStream
         }
 
         [OuterLoop("Slow test")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void SuccessiveReadTimeout()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -118,7 +119,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void SuccessiveReadTimeoutWithWriteSucceeding()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -168,17 +169,11 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ActiveIssue(16033)]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void BytesToWrite()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-
-                int waitTime;
-
                 Debug.WriteLine("Verifying BytesToWrite with one call to Write");
 
                 com.Handshake = Handshake.RequestToSend;
@@ -186,105 +181,49 @@ namespace Legacy.SerialStream
                 com.WriteTimeout = 200;
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-                t.Start();
-                waitTime = 0;
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                Task task = Task.Run(() => WriteRandomDataBlock(com, TCSupport.MinimumBlockingByteCount));
+                TCSupport.WaitForTaskToStart(task);
 
-                waitTime = 0;
-                while (com.BytesToWrite < 1 && waitTime < 250)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com, TCSupport.MinimumBlockingByteCount);
 
-                if (1 != com.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", 1,
-                        com.BytesToWrite);
-                }
-
-                // Wait for write method to timeout
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                // Wait for write method to timeout and complete the task
+                TCSupport.WaitForTaskCompletion(task);
             }
 
 
         }
 
         [OuterLoop("Slow Test")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void BytesToWriteSuccessive()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com);
-                var t1 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-                var t2 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-
-                int waitTime;
-
                 Debug.WriteLine("Verifying BytesToWrite with successive calls to Write");
 
                 com.Handshake = Handshake.RequestToSend;
                 com.Open();
                 com.WriteTimeout = 4000;
 
-                // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-                t1.Start();
-                waitTime = 0;
-                while (t1.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
-                waitTime = 0;
-                while (com.BytesToWrite < 1 && waitTime < 250)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
-                if (1 != com.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", 1,
-                        com.BytesToWrite);
-                }
+                int blockLength = TCSupport.MinimumBlockingByteCount;
 
                 // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
-                t2.Start();
-                waitTime = 0;
-                while (t2.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                Task t1 = Task.Run(() => WriteRandomDataBlock(com, blockLength));
 
-                waitTime = 0;
-                while (com.BytesToWrite < 1 * 2 && waitTime < 250)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForTaskToStart(t1);
 
-                if (1 * 2 != com.BytesToWrite)
-                {
+                TCSupport.WaitForWriteBufferToLoad(com, blockLength);
 
-                    Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after second write", 1 * 2,
-                        com.BytesToWrite);
-                }
+                // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+                Task t2 = Task.Run(() => WriteRandomDataBlock(com, blockLength));
+
+                TCSupport.WaitForTaskToStart(t2);
+
+                TCSupport.WaitForWriteBufferToLoad(com, blockLength*2);
 
                 // Wait for both write methods to timeout
-                while (t1.IsAlive || t2.IsAlive)
-                    Thread.Sleep(100);
-
+                TCSupport.WaitForTaskCompletion(t1);
+                TCSupport.WaitForTaskCompletion(t2);
             }
         }
 
@@ -293,34 +232,23 @@ namespace Legacy.SerialStream
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-
-                int waitTime;
-
-                // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
                 Debug.WriteLine("Verifying Handshake=None");
 
                 com.Open();
-                t.Start();
-                waitTime = 0;
 
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                // Write a random byte[] asynchronously so we can verify some things while the write call is blocking
+                Task task = Task.Run(() => WriteRandomDataBlock(com, TCSupport.MinimumBlockingByteCount));
 
-                // Wait for both write methods to timeout
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                TCSupport.WaitForTaskToStart(task);
+
+                // Wait for write methods to complete
+                TCSupport.WaitForTaskCompletion(task);
 
                 Assert.Equal(0, com.BytesToWrite);
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSend()
         {
             Verify_Handshake(Handshake.RequestToSend);
@@ -332,7 +260,7 @@ namespace Legacy.SerialStream
             Verify_Handshake(Handshake.XOnXOff);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSendXOnXOff()
         {
             Verify_Handshake(Handshake.RequestToSendXOnXOff);
@@ -378,30 +306,6 @@ namespace Legacy.SerialStream
         }
 
 
-        private class AsyncWriteRndByteArray
-        {
-            private readonly SerialPort _com;
-
-
-            public AsyncWriteRndByteArray(SerialPort com)
-            {
-                _com = com;
-            }
-
-
-            public void WriteRndByteArray()
-            {
-                var rndGen = new Random(-55);
-
-                try
-                {
-                    _com.BaseStream.WriteByte((byte)rndGen.Next(0, 256));
-                }
-                catch (TimeoutException)
-                {
-                }
-            }
-        }
         #endregion
 
         #region Verification for Test Cases
@@ -449,7 +353,7 @@ namespace Legacy.SerialStream
             // Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
             if (maxPercentageDifference < percentageDifference)
             {
-                Fail("ERROR!!!: The write method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
+                Fail("ERROR!!!: The write method timed-out in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference);
             }
         }
 
@@ -458,11 +362,6 @@ namespace Legacy.SerialStream
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                var asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1);
-                var t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
-
-                var waitTime = 0;
-
                 Debug.WriteLine("Verifying Handshake={0}", handshake);
                 com1.Handshake = handshake;
                 com1.Open();
@@ -480,34 +379,18 @@ namespace Legacy.SerialStream
                     Thread.Sleep(250);
                 }
 
-                // Write a random byte asynchronously so we can verify some things while the write call is blocking
-                t.Start();
-                waitTime = 0;
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                // Write a block of random data asynchronously so we can verify some things while the write call is blocking
+                Task task = Task.Run(() => WriteRandomDataBlock(com1, TCSupport.MinimumBlockingByteCount));
 
-                waitTime = 0;
-                while (com1.BytesToWrite < 1 && waitTime < 250)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForTaskToStart(task);
 
-                // Verify that the correct number of bytes are in the buffer
-                if (1 != com1.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite={0} actual {1}", 1, com1.BytesToWrite);
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, TCSupport.MinimumBlockingByteCount);
 
                 // Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
                 if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
                     com1.CtsHolding)
                 {
-                    Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", false, com1.CtsHolding);
+                    Fail("ERROR!!! Expected CtsHolding={0} actual {1}", false, com1.CtsHolding);
                 }
 
                 // Setup to ensure write will succeed
@@ -522,23 +405,35 @@ namespace Legacy.SerialStream
                 }
 
                 // Wait till write finishes
-                while (t.IsAlive)
-                    Thread.Sleep(100);
+                TCSupport.WaitForTaskCompletion(task);
 
                 // Verify that the correct number of bytes are in the buffer
-                if (0 != com1.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite=0 actual {0}", com1.BytesToWrite);
-                }
+                // (There should be nothing because it's all been transmitted after the flow control was released)
+                Assert.Equal(0, com1.BytesToWrite);
 
                 // Verify that CtsHolding is true if the RequestToSend or RequestToSendXOnXOff handshake method is used
                 if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
                     !com1.CtsHolding)
                 {
-                    Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", true, com1.CtsHolding);
+                    Fail("ERROR!!! Expected CtsHolding={0} actual {1}", true, com1.CtsHolding);
                 }
             }
+        }
 
+
+        private static void WriteRandomDataBlock(SerialPort com, int blockLength)
+        {
+            var rndGen = new Random(-55);
+            byte[] randomData = new byte[blockLength];
+            rndGen.NextBytes(randomData);
+
+            try
+            {
+                com.BaseStream.Write(randomData, 0, randomData.Length);
+            }
+            catch (TimeoutException)
+            {
+            }
         }
 
         #endregion

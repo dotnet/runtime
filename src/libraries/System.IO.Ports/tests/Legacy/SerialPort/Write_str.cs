@@ -14,8 +14,10 @@ public class Write_str : PortsTest
     // The string size used when verifying encoding 
     public static readonly int ENCODING_STRING_SIZE = 4;
 
-    //The string size used for large string testing
-    public static readonly int LARGE_STRING_SIZE = 2048;
+    // The string size used for large string testing
+    // This has been reduced from 2048 to 2000 because the associated byte buffer size (i.e. 4096 bytes) is too large
+    // to allow single read/write transactions on a FTDI USB-Serial device
+    public static readonly int LARGE_STRING_SIZE = 2000;
 
     //The default number of times the write method is called when verifying write
     public static readonly int DEFAULT_NUM_WRITES = 3;

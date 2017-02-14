@@ -13,7 +13,7 @@ public class Close : PortsTest
 {
     // The number of the bytes that should read/write buffers
     static readonly int numReadBytes = 32;
-    static readonly int numWriteBytes = 32;
+    static readonly int numWriteBytes = TCSupport.MinimumBlockingByteCount;
 
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void CloseWithoutOpen()
@@ -49,7 +49,7 @@ public class Close : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void OpenFillBuffersClose()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -72,7 +72,7 @@ public class Close : PortsTest
             Thread.Sleep(500);
 
             serPortProp.SetProperty("Handshake", Handshake.RequestToSend);
-            serPortProp.SetProperty("BytesToWrite", numWriteBytes);
+            serPortProp.SetProperty("BytesToWrite", numWriteBytes-TCSupport.HardwareTransmitBufferSize);
             serPortProp.SetProperty("BytesToRead", numReadBytes);
 
             Debug.WriteLine("Verifying properties after port is open and buffers have been filled");

@@ -106,44 +106,35 @@ public class RtsEnable_Property : PortsTest
         VerifyRtsEnableWithHandshake(false, Handshake.XOnXOff);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void RtsEnable_true_Handshake_RequestToSend()
     {
         Debug.WriteLine("Verifying true RtsEnable after setting Handshake to RequestToSend");
-
-
         VerifyRtsEnableWithHandshake(true, Handshake.RequestToSend);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void RtsEnable_false_Handshake_RequestToSend()
     {
         Debug.WriteLine("Verifying false RtsEnable after setting Handshake to RequestToSend");
-
-
         VerifyRtsEnableWithHandshake(false, Handshake.RequestToSend);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void RtsEnable_true_Handshake_RequestToSendXOnXOff()
     {
         Debug.WriteLine("Verifying true RtsEnable after setting Handshake to RequestToSendXOnXOff");
-
-
         VerifyRtsEnableWithHandshake(true, Handshake.RequestToSendXOnXOff);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void RtsEnable_false_Handshake_RequestToSendXOnXOff()
     {
         Debug.WriteLine("Verifying false RtsEnable after setting Handshake to RequestToSendXOnXOff");
-
-
         VerifyRtsEnableWithHandshake(false, Handshake.RequestToSendXOnXOff);
     }
 
-
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void RtsEnable_true_false_AfterOpen()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -318,8 +309,7 @@ public class RtsEnable_Property : PortsTest
                 com1.RtsEnable = rtsEnable;
             }
 
-            expetectedRtsEnable = handshake == Handshake.RequestToSend || handshake == Handshake.RequestToSendXOnXOff ?
-                true : rtsEnable;
+            expetectedRtsEnable = handshake == Handshake.RequestToSend || handshake == Handshake.RequestToSendXOnXOff || rtsEnable;
 
             VerifyRtsEnable(com1, expetectedRtsEnable);
 

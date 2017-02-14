@@ -53,13 +53,6 @@ public class StopBits_Property : PortsTest
     }
 
     [ConditionalFact(nameof(HasNullModem))]
-    public void StopBits_1Point5_BeforeOpen()
-    {
-        Debug.WriteLine("Verifying 1.5 StopBits before open");
-        VerifyStopBitsBeforeOpen((int)StopBits.OnePointFive, 5);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
     public void StopBits_2_BeforeOpen()
     {
         Debug.WriteLine("Verifying 2 StopBits before open");
@@ -74,20 +67,11 @@ public class StopBits_Property : PortsTest
     }
 
     [ConditionalFact(nameof(HasNullModem))]
-    public void StopBits_1Point5_AfterOpen()
-    {
-        Debug.WriteLine("Verifying 1.5 StopBits after open");
-        VerifyStopBitsAfterOpen((int)StopBits.OnePointFive, 5);
-    }
-
-
-    [ConditionalFact(nameof(HasNullModem))]
     public void StopBits_2_AfterOpen()
     {
         Debug.WriteLine("Verifying 2 StopBits after open");
         VerifyStopBitsAfterOpen((int)StopBits.Two);
     }
-
 
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void StopBits_Int32MinValue()
@@ -95,7 +79,6 @@ public class StopBits_Property : PortsTest
         Debug.WriteLine("Verifying Int32.MinValue StopBits");
         VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
-
 
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void StopBits_Neg1()
@@ -128,13 +111,6 @@ public class StopBits_Property : PortsTest
         VerifyException(int.MaxValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
 
-
-    [ConditionalFact(nameof(HasOneSerialPort))]
-    public void StopBits_1Point5()
-    {
-        Debug.WriteLine("Verifying 1.5 StopBits");
-        VerifyException((int)StopBits.OnePointFive, ThrowAt.Open, typeof(System.IO.IOException));
-    }
     #endregion
 
     #region Verification for Test Cases

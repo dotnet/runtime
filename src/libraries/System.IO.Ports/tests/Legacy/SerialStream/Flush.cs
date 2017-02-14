@@ -151,7 +151,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Flush_Once()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -184,7 +184,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Flush_Multiple()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -219,7 +219,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Flush_Cycle()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -269,7 +269,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void InOutBufferFilled_Flush_Once()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -313,12 +313,9 @@ namespace Legacy.SerialStream
                 while (t.IsAlive)
                     Thread.Sleep(100);
             }
-
-
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
-
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void InOutBufferFilled_Flush_Multiple()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -364,15 +361,10 @@ namespace Legacy.SerialStream
                 // Wait for write method to timeout
                 while (t.IsAlive)
                     Thread.Sleep(100);
-
-
             }
-
-
         }
 
-
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void InOutBufferFilled_Flush_Cycle()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

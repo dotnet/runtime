@@ -250,7 +250,7 @@ public class ReadTimeout_Property : PortsTest
 
             com2.WriteLine(string.Empty);
 
-            Assert.True(task.Wait(2000));
+            TCSupport.WaitForTaskCompletion(task);
         }
     }
 

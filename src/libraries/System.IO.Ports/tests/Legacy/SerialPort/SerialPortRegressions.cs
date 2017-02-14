@@ -4,53 +4,52 @@
 
 using System.IO.Ports;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
 public class SerialPortRegressions : PortsTest
 {
-    private static string s_receivedstr = "";
-    private static SerialPort s_com1;
-    private static SerialPort s_com2;
-    private static bool s_readComplete;
-
     [ConditionalFact(nameof(HasLoopbackOrNullModem))]
     public void UTF8Encoding()
     {
-        VerifyReadExisting(new System.Text.UTF8Encoding());
+        VerifyReadExisting(new UTF8Encoding());
     }
 
-    void VerifyReadExisting(System.Text.Encoding encoding)
+    void VerifyReadExisting(Encoding encoding)
     {
         // TODO - this test text did not come across from legacy properly.
         string text = "????????????4??????????????????,?11????????????????????????????????????????????????,????????????,??????????";
-        using (s_com1 = TCSupport.InitFirstSerialPort())
-        using (s_com2 = TCSupport.InitSecondSerialPort(s_com1))
+        string receivedstr = "";
+        SerialPort com1;
+        SerialPort com2;
+
+        using (com1 = TCSupport.InitFirstSerialPort())
+        using (com2 = TCSupport.InitSecondSerialPort(com1))
         {
-            s_com1.ReadTimeout = 500;
-            s_com1.Encoding = encoding;
-            s_com2.Encoding = encoding;
+            com1.ReadTimeout = 500;
+            com1.Encoding = encoding;
+            com2.Encoding = encoding;
 
-            s_com1.Open();
+            TCSupport.SetHighSpeed(com1,com2);
 
-            if (!s_com2.IsOpen)
+            com1.Open();
+
+            if (!com2.IsOpen)
                 //This is necessary since com1 and com2 might be the same port if we are using a loopback
-                s_com2.Open();
+                com2.Open();
 
-            s_com2.DataReceived += com2_DataReceived;
-            s_com1.Write(text);
+            com2.DataReceived += (sender, args) => {
+                receivedstr += com2.ReadExisting();
+            };
+
+            com1.Write(text);
 
             //3 seconds is more than enough time to write a few bytes to the other port	
-            TCSupport.WaitForPredicate(() => s_readComplete, 3000,
-                "ReadExisting did not complete in a timely fashion.  Timeout");
+            TCSupport.WaitForPredicate(() => receivedstr.Length >= text.Length, 3000,
+                "Data was not returned in a timely fashion.  Timeout");
 
-            Assert.Equal(text, s_receivedstr);
+            Assert.Equal(text, receivedstr);
         }
-    }
-
-    private static void com2_DataReceived(object o, SerialDataReceivedEventArgs e)
-    {
-        s_receivedstr += s_com2.ReadExisting();
-        s_readComplete = true;
     }
 }

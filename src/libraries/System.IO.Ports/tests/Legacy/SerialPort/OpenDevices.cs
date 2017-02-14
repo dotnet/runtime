@@ -12,47 +12,31 @@ using Xunit;
 
 public class OpenDevices : PortsTest
 {
-    //Determines how long the randomly generated PortName is
-    public static readonly int rndPortNameSize = 256;
-
     [Fact]
-    public bool OpenDevices01()
+    public void OpenDevices01()
     {
         DosDevices dosDevices = new DosDevices();
         Regex comPortNameRegex = new Regex(@"com\d{1,3}", RegexOptions.IgnoreCase);
-        bool retValue = true;
 
         foreach (KeyValuePair<string, string> keyValuePair in dosDevices)
         {
-            SerialPort com1;
-
             if (!string.IsNullOrEmpty(keyValuePair.Key) && !comPortNameRegex.IsMatch(keyValuePair.Key))
             {
-                com1 = new SerialPort(keyValuePair.Key);
-                try
+                using (SerialPort com1 = new SerialPort(keyValuePair.Key))
                 {
-                    com1.Open();
-                    Debug.WriteLine("Error <KEY> no exception thrown with {0}", keyValuePair.Key);
-                    retValue = false;
-                    com1.Close();
+                    Debug.WriteLine($"Checking exception thrown with Key {keyValuePair.Key}");
+                    Assert.ThrowsAny<Exception>(() => com1.Open());
                 }
-                catch (Exception) { }
             }
 
             if (!string.IsNullOrEmpty(keyValuePair.Value) && !comPortNameRegex.IsMatch(keyValuePair.Key))
             {
-                com1 = new SerialPort(keyValuePair.Value);
-                try
+                using (SerialPort com1 = new SerialPort(keyValuePair.Value))
                 {
-                    com1.Open();
-                    Debug.WriteLine("Error <VALUE> no exception thrown with {0}", keyValuePair.Value);
-                    retValue = false;
-                    com1.Close();
+                    Debug.WriteLine($"Checking exception thrown with Value {keyValuePair.Value}");
+                    Assert.ThrowsAny<Exception>(() => com1.Open());
                 }
-                catch (Exception) { }
             }
         }
-
-        return retValue;
     }
 }

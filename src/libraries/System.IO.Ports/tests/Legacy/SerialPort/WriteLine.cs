@@ -212,6 +212,8 @@ public class WriteLine : PortsTest
         {
             string stringToWrite = TCSupport.GetRandomString(NEWLINE_TESTING_STRING_SIZE,TCSupport.CharacterOptions.None);
 
+            TCSupport.SetHighSpeed(com1,com2);
+
             com1.Encoding = encoding;
             com1.Open();
 

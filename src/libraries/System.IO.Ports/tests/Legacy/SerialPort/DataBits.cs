@@ -49,20 +49,6 @@ public class DataBits_Property : PortsTest
     }
 
     [ConditionalFact(nameof(HasNullModem))]
-    public void DataBits_5_BeforeOpen()
-    {
-        Debug.WriteLine("Verifying 5 DataBits before open");
-        VerifyDataBitsBeforeOpen(5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void DataBits_6_BeforeOpen()
-    {
-        Debug.WriteLine("Verifying 6 DataBits before open");
-        VerifyDataBitsBeforeOpen(6, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
     public void DataBits_7_BeforeOpen()
     {
         Debug.WriteLine("Verifying 7 DataBits before open");
@@ -74,20 +60,6 @@ public class DataBits_Property : PortsTest
     {
         Debug.WriteLine("Verifying 8 DataBits before open");
         VerifyDataBitsBeforeOpen(8, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void DataBits_5_AfterOpen()
-    {
-        Debug.WriteLine("Verifying 5 DataBits after open");
-        VerifyDataBitsAfterOpen(5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void DataBits_6_AfterOpen()
-    {
-        Debug.WriteLine("Verifying 6 DataBits after open");
-        VerifyDataBitsAfterOpen(6, DEFAULT_BYTE_SIZE);
     }
 
     [ConditionalFact(nameof(HasNullModem))]
@@ -160,29 +132,6 @@ public class DataBits_Property : PortsTest
         VerifyException(int.MaxValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
     
-    [ConditionalFact(nameof(HasOneSerialPort))]
-    public void DataBits_8_StopBitsOnePointFive()
-    {
-        using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-        {
-            SerialPortProperties serPortProp = new SerialPortProperties();
-
-            Debug.WriteLine("Verifying setting DataBits=8 from 5 with StopBits=1.5");
-
-            com.DataBits = 5;
-            com.StopBits = StopBits.OnePointFive;
-            com.Open();
-
-            serPortProp.SetAllPropertiesToOpenDefaults();
-            serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
-            serPortProp.SetProperty("StopBits", StopBits.OnePointFive);
-            serPortProp.SetProperty("DataBits", 5);
-
-            Assert.Throws<IOException>(() => com.DataBits = 8);
-
-            serPortProp.VerifyPropertiesAndPrint(com);
-        }
-    }
     #endregion
 
     #region Verification for Test Cases

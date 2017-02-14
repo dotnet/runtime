@@ -61,7 +61,7 @@ public class Open_stress : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void OpenReceiveDataAndRTS()
     {
         Thread workerThread = new Thread(OpenReceiveDataAndRTS_WorkerThread);

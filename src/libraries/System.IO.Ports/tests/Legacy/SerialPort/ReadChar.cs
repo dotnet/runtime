@@ -19,7 +19,10 @@ public class ReadChar : PortsTest
     public static int maxRandomTimeout = 2000;
 
     //The number of random bytes to receive for large input buffer testing
-    public static readonly int largeNumRndBytesToRead = 4096;
+    // This was 4096, but the largest buffer setting on FTDI USB-Serial devices is "4096", which actually only allows a read of 4094 or 4095 bytes
+    // The test code assumes that we will be able to do this transfer as a single read, so 4000 is safer and would seem to be about 
+    // as rigourous a test
+    public static readonly int largeNumRndBytesToRead = 4000;
 
     //The number of random characters to receive
     public static int numRndChar = 8;
@@ -205,6 +208,8 @@ public class ReadChar : PortsTest
             //Put the first byte of the utf32 encoder char in the last byte of this buffer
             //when we read this later the buffer will have to be resized
             byteXmitBuffer[byteXmitBuffer.Length - 1] = utf32CharBytes[0];
+
+            TCSupport.SetHighSpeed(com1, com2);
 
             com1.Open();
 
@@ -447,7 +452,8 @@ public class ReadChar : PortsTest
             TCSupport.WaitForExpected(() => com1.BytesToRead, numBytes,
                 5000, "Err_91818aheid BytesToRead");
 
-            Assert.Throws<TimeoutException>(() => com1.ReadChar());
+            // We expect this to fail, because it can't read a surrogate
+            Assert.Throws<ArgumentException>(() => com1.ReadChar());
 
             int result = com1.Read(charRcvBuffer, 0, 2);
 
@@ -495,6 +501,8 @@ public class ReadChar : PortsTest
 
             com1.ReadTimeout = 500;
             com1.Encoding = encoding;
+
+            TCSupport.SetHighSpeed(com1,com2);
 
             com1.Open();
 

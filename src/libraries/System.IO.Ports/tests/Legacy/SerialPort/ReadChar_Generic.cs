@@ -6,6 +6,7 @@ using System;
 using System.IO.Ports;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Linq;
 using Legacy.Support;
 using Xunit;
 
@@ -190,7 +191,6 @@ public class ReadChar_Generic : PortsTest
             char[] expectedChars = new char[numRndChar];
             char[] actualChars = new char[numRndChar + 1];
 
-            int charRead;
             int actualCharIndex = 0;
             int waitTime;
 
@@ -231,6 +231,7 @@ public class ReadChar_Generic : PortsTest
 
             while (true)
             {
+                int charRead;
                 try
                 {
                     charRead = com1.ReadChar();
@@ -243,7 +244,7 @@ public class ReadChar_Generic : PortsTest
                 actualCharIndex++;
             }
 
-            Assert.Equal(expectedChars, actualChars);
+            Assert.Equal(expectedChars, actualChars.Take(expectedChars.Length).ToArray());
 
             if (1 < com1.BytesToRead)
             {
@@ -356,7 +357,6 @@ public class ReadChar_Generic : PortsTest
     {
         char[] charRcvBuffer = new char[expectedChars.Length];
         int rcvBufferSize = 0;
-        int readInt;
         int i;
         int waitTime = 0;
 
@@ -372,6 +372,7 @@ public class ReadChar_Generic : PortsTest
         i = 0;
         while (true)
         {
+            int readInt;
             try
             {
                 readInt = com1.ReadChar();

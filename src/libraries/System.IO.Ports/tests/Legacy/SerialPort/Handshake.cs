@@ -14,16 +14,11 @@ public class Handshake_Property : PortsTest
 {
     //The default number of bytes to read/write to verify the speed of the port
     //and that the bytes were transfered successfully
-    public static readonly int DEFAULT_BYTE_SIZE = 8;
+    private static readonly int DEFAULT_BYTE_SIZE = TCSupport.MinimumBlockingByteCount;
 
     //The number of bytes to send when send XOn or XOff, the actual XOn/XOff char will be inserted somewhere
     //in the array of bytes
-    public static readonly int DEFAULT_BYTE_SIZE_XON_XOFF = 16;
-
-    //If the percentage difference between the expected time to transfer with the specified handshake
-    //and the actual time found through Stopwatch is greater then 5% then the Handshake value was not correctly
-    //set and the testcase fails.
-    public static readonly double MAX_ACCEPTABEL_PERCENTAGE_DIFFERENCE = .05;
+    private static readonly int DEFAULT_BYTE_SIZE_XON_XOFF = TCSupport.MinimumBlockingByteCount*2;
 
     //The default time to wait after writing some bytes
     private const int DEFAULT_WAIT_AFTER_READ_OR_WRITE = 500;
@@ -72,14 +67,14 @@ public class Handshake_Property : PortsTest
     }
 
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void Handshake_RequestToSend_BeforeOpen()
     {
         Debug.WriteLine("Verifying RequestToSend Handshake before open");
         VerifyHandshakeBeforeOpen((int)Handshake.RequestToSend);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void Handshake_RequestToSendXOnXOff_BeforeOpen()
     {
         Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake before open");
@@ -100,14 +95,14 @@ public class Handshake_Property : PortsTest
         VerifyHandshakeAfterOpen((int)Handshake.XOnXOff);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void Handshake_RequestToSend_AfterOpen()
     {
         Debug.WriteLine("Verifying RequestToSend Handshake after open");
         VerifyHandshakeAfterOpen((int)Handshake.RequestToSend);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void Handshake_RequestToSendXOnXOff_AfterOpen()
     {
         Debug.WriteLine("Verifying RequestToSendXOnXOff Handshake after open");
