@@ -3,7 +3,7 @@
 
   <Import Project="Microsoft.NETCore.Native.props" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), packaging.props))\packaging.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <PackagePlatforms>x64;x86;arm64;arm;</PackagePlatforms>
@@ -12,5 +12,5 @@
 
   <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\dir.targets" />
 </Project>

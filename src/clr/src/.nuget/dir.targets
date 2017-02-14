@@ -6,7 +6,7 @@
   <Target Name="FilterProjects" BeforeTargets="Build">
     <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
 
-    <!-- Only build packages for current RID -->
+    <!-- Only build packages for current RID or non-RID-specific -->
     <ItemGroup>
       <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
