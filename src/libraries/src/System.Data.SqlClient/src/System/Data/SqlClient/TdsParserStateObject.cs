@@ -15,8 +15,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+
 #if MANAGED_SNI
 using System.Data.SqlClient.SNI;
+using System.Net.Security;
+using System.Net;
 #endif
 
 namespace System.Data.SqlClient
@@ -242,6 +245,32 @@ namespace System.Data.SqlClient
         // Set to true to enable checking the call stacks match when packet retry occurs.
         internal static bool _checkNetworkPacketRetryStacks;
 #pragma warning restore 0649
+#endif
+
+#if MANAGED_SNI
+
+        internal SspiClientContextStatus sspiClientContextStatus = new SspiClientContextStatus();
+
+        internal class SspiClientContextStatus
+        {
+            public SafeFreeCredentials CredentialsHandle
+            {
+                get;
+                set;
+            }
+
+            public SafeDeleteContext SecurityContext
+            {
+                get;
+                set;
+            }
+
+            public ContextFlagsPal ContextFlags
+            {
+                get;
+                set;
+            }
+        }
 #endif
 
         //////////////////
@@ -770,9 +799,9 @@ namespace System.Data.SqlClient
         }
 
 #if MANAGED_SNI
-        internal void CreateConnectionHandle(string serverName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
+        internal void CreateConnectionHandle(string serverName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, ref byte[] spnBuffer, bool flushCache, bool async, bool parallel, bool isIntegratedSecurity)
         {
-            _sessionHandle = SNIProxy.Singleton.CreateConnectionHandle(this, serverName, ignoreSniOpenTimeout, timerExpire, out instanceName, spnBuffer, flushCache, async, parallel);
+            _sessionHandle = SNIProxy.Singleton.CreateConnectionHandle(this, serverName, ignoreSniOpenTimeout, timerExpire, out instanceName, ref spnBuffer, flushCache, async, parallel, isIntegratedSecurity);
             if(_sessionHandle == null)
             {
                 _parser.ProcessSNIError(this);
@@ -785,7 +814,6 @@ namespace System.Data.SqlClient
                 _sessionHandle.SetAsyncCallbacks(ReceiveAsyncCallbackDispatcher, SendAsyncCallbackDispatcher);
             }
         }
-
 #else
         private SNINativeMethodWrapper.ConsumerInfo CreateConsumerInfo(bool async)
         {

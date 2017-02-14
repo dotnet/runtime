@@ -14,8 +14,11 @@ namespace System.Data.ProviderBase
     {
         internal static DbConnectionPoolIdentity GetCurrent()
         {
-            throw new PlatformNotSupportedException();
+            string sidString = (!string.IsNullOrWhiteSpace(System.Environment.UserDomainName) ? System.Environment.UserDomainName + "\\" : "")
+                                + System.Environment.UserName;
+            bool isNetwork = false;
+            bool isRestricted = false;
+            return new DbConnectionPoolIdentity(sidString, isRestricted, isNetwork);
         }
     }
 }
-
