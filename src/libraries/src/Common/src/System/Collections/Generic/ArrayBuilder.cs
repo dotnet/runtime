@@ -75,6 +75,24 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Gets the first item in this builder.
+        /// </summary>
+        public T First()
+        {
+            Debug.Assert(_count > 0);
+            return _array[0];
+        }
+
+        /// <summary>
+        /// Gets the last item in this builder.
+        /// </summary>
+        public T Last()
+        {
+            Debug.Assert(_count > 0);
+            return _array[_count - 1];
+        }
+
+        /// <summary>
         /// Creates an array from the contents of this builder.
         /// </summary>
         /// <remarks>

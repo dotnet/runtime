@@ -176,6 +176,33 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Reserves a region if the items' count can be predetermined; otherwise, adds the items to this builder.
+        /// </summary>
+        /// <param name="items">The items to reserve or add.</param>
+        /// <returns><c>true</c> if the items were reserved; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        /// If the items' count is predetermined to be 0, no reservation is made and the return value is <c>false</c>.
+        /// The effect is the same as if the items were added, since adding an empty collection does nothing.
+        /// </remarks>
+        public bool ReserveOrAdd(IEnumerable<T> items)
+        {
+            int itemCount;
+            if (EnumerableHelpers.TryGetCount(items, out itemCount))
+            {
+                if (itemCount > 0)
+                {
+                    Reserve(itemCount);
+                    return true;
+                }
+            }
+            else
+            {
+                AddRange(items);
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Creates an array from the contents of this builder.
         /// </summary>
         /// <remarks>
