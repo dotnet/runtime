@@ -250,27 +250,6 @@ namespace System.Data.SqlClient
 #if MANAGED_SNI
 
         internal SspiClientContextStatus sspiClientContextStatus = new SspiClientContextStatus();
-
-        internal class SspiClientContextStatus
-        {
-            public SafeFreeCredentials CredentialsHandle
-            {
-                get;
-                set;
-            }
-
-            public SafeDeleteContext SecurityContext
-            {
-                get;
-                set;
-            }
-
-            public ContextFlagsPal ContextFlags
-            {
-                get;
-                set;
-            }
-        }
 #endif
 
         //////////////////

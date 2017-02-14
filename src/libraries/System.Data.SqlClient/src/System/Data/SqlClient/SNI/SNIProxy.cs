@@ -101,13 +101,11 @@ namespace System.Data.SqlClient.SNI
         /// <param name="serverName">Service Principal Name buffer</param>
         /// <param name="serverNameLength">Length of Service Principal Name</param>
         /// <returns>SNI error code</returns>
-        public void GenSspiClientContext(TdsParserStateObject tdsParserStateObject, byte[] receivedBuff, ref byte[] sendBuff, byte[] serverName)
+        public void GenSspiClientContext(SspiClientContextStatus sspiClientContextStatus, byte[] receivedBuff, ref byte[] sendBuff, byte[] serverName)
         {
-            SNITCPHandle tcpHandle = (SNITCPHandle)tdsParserStateObject.Handle;
-
-            SafeDeleteContext securityContext = tdsParserStateObject.sspiClientContextStatus.SecurityContext;
-            ContextFlagsPal contextFlags = tdsParserStateObject.sspiClientContextStatus.ContextFlags;
-            SafeFreeCredentials credentialsHandle = tdsParserStateObject.sspiClientContextStatus.CredentialsHandle;
+            SafeDeleteContext securityContext = sspiClientContextStatus.SecurityContext;
+            ContextFlagsPal contextFlags = sspiClientContextStatus.ContextFlags;
+            SafeFreeCredentials credentialsHandle = sspiClientContextStatus.CredentialsHandle;
 
             SecurityBuffer[] inSecurityBufferArray = null;
             if (securityContext == null) //first iteration
@@ -146,9 +144,9 @@ namespace System.Data.SqlClient.SNI
 
             sendBuff = outSecurityBuffer.token;
 
-            tdsParserStateObject.sspiClientContextStatus.SecurityContext = securityContext;
-            tdsParserStateObject.sspiClientContextStatus.ContextFlags = contextFlags;
-            tdsParserStateObject.sspiClientContextStatus.CredentialsHandle = credentialsHandle;
+            sspiClientContextStatus.SecurityContext = securityContext;
+            sspiClientContextStatus.ContextFlags = contextFlags;
+            sspiClientContextStatus.CredentialsHandle = credentialsHandle;
 
             if (IsErrorStatus(statusCode.ErrorCode))
             {
