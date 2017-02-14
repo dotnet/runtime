@@ -29,6 +29,17 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("type", () => Expression.TypeIs(exp, byRef));
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void TypePointer(bool useInterpreter)
+        {
+            Expression exp = Expression.Constant(0);
+            Type pointer = typeof(int*);
+            var test = Expression.TypeIs(exp, pointer);
+            var lambda = Expression.Lambda<Func<bool>>(test);
+            var func = lambda.Compile(useInterpreter);
+            Assert.False(func());
+        }
+
         [Fact]
         public void UnreadableExpression()
         {

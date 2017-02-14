@@ -52,7 +52,7 @@ namespace System.Linq.Expressions
         {
             Type cType = Expression.Type;
 
-            if (cType.GetTypeInfo().IsValueType)
+            if (cType.GetTypeInfo().IsValueType || TypeOperand.IsPointer)
             {
                 if (cType.IsNullableType())
                 {
