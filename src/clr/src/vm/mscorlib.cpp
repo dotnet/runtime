@@ -45,7 +45,6 @@
 #include "decimal.h"
 #include "currency.h"
 #include "comdatetime.h"
-#include "comisolatedstorage.h"
 #include "number.h"
 #include "compatibilityswitch.h"
 #ifdef FEATURE_REMOTING
