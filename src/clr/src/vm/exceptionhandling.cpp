@@ -2680,7 +2680,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                 EE_ILEXCEPTION_CLAUSE EHClause;
                 PTR_EXCEPTION_CLAUSE_TOKEN pEHClauseToken = pJitMan->GetNextEHClause(&EnumState, &EHClause);
 
-                EH_LOG((LL_INFO100, "  considering %s clause [%x,%x], ControlPc is %s clause (offset %x)",
+                EH_LOG((LL_INFO100, "  considering %s clause [%x,%x), ControlPc is %s clause (offset %x)",
                         (IsFault(&EHClause)         ? "fault"   :
                         (IsFinally(&EHClause)       ? "finally" :
                         (IsFilterHandler(&EHClause) ? "filter"  :
