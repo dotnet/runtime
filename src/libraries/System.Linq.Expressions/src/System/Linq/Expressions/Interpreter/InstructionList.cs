@@ -847,11 +847,6 @@ namespace System.Linq.Expressions.Interpreter
             Emit(TypeEqualsInstruction.Instance);
         }
 
-        public void EmitNullableTypeEquals()
-        {
-            Emit(NullableTypeEqualsInstruction.Instance);
-        }
-
         public void EmitArrayLength()
         {
             Emit(ArrayLengthInstruction.Instance);
