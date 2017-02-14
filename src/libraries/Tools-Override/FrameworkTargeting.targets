@@ -62,7 +62,7 @@
   <Target Name="SetupDefaultReferences">
     <ItemGroup Condition="'$(IncludeDefaultReferences)' =='true'">
       <!-- netstandard is a default reference whenever building for NETStandard or building an implementation assembly -->
-      <DefaultReference Condition="$(NuGetTargetMoniker.StartsWith('.NETStandard')) OR '$(IsReferenceAssembly)' != 'true'"
+      <DefaultReference Condition="($(NuGetTargetMoniker.StartsWith('.NETStandard')) OR '$(IsReferenceAssembly)' != 'true') AND Exists('$(RefPath)netstandard.dll')"
                         Include="netstandard" />
     </ItemGroup>
   </Target>

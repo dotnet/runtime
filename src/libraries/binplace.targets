@@ -23,41 +23,46 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinplaceConfiguration)' == ''">
+    <!-- binplace to directories for the target vertical -->
     <BinplaceConfiguration Include="$(BuildConfiguration)">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true'" Include="netcoreapp-$(OSGroup)">
+
+    <!-- binplace to directories for packages -->
+    <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(OSGroup)">
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
       <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' And '$(_bc_TargetGroup)'=='uap'" Include="uap-$(OSGroup)">
+    <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(OSGroup)">
       <RefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</RefPath>
       <RuntimePath>$(UAPPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' And '$(_bc_TargetGroup)'=='uapaot'" Include="uapaot-$(OSGroup)">
+    <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(OSGroup)">
       <RefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</RefPath>
       <RuntimePath>$(UAPAOTPackageRuntimePath)</RuntimePath>
     </BinplaceConfiguration>
+
     <!-- Setup the shared framework directory for testing -->
     <BinplaceConfiguration Condition="'$(BinplaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinplaceConfiguration>
+
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">
-      <RefPath>$(RefRootPath)netstandard</RefPath>
+      <RefPath>$(RefRootPath)netstandard/</RefPath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netcoreapp'"
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
                            Include="netcoreapp-$(OSGroup)">
-      <RefPath>$(RefRootPath)netcoreapp</RefPath>
+      <RefPath>$(RefRootPath)netcoreapp/</RefPath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'uap'"
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
                            Include="uap-$(OSGroup)">
-      <RefPath>$(RefRootPath)uap</RefPath>
+      <RefPath>$(RefRootPath)uap/</RefPath>
     </BinplaceConfiguration>
-    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' AND '$(_bc_TargetGroup)' != 'netfx'"
+    <BinplaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
                            Include="netfx-$(OSGroup)">
-      <RefPath>$(RefRootPath)netfx</RefPath>
+      <RefPath>$(RefRootPath)netfx/</RefPath>
     </BinplaceConfiguration>
   </ItemGroup>
 
@@ -102,8 +107,8 @@
     <ItemGroup>
       <_currentBinplaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
 
-      <RuntimeDir Include="@(_currentBinplaceConfigurations->'%(RuntimePath)')"/>
-      <TargetingPackDir Include="@(_currentBinplaceConfigurations->'%(RefPath)')"/>
+      <RuntimeDir Include="%(_currentBinplaceConfigurations.RuntimePath)" />
+      <TargetingPackDir Include="%(_currentBinplaceConfigurations.RefPath)" />
     </ItemGroup>
   </Target>
 
