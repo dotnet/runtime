@@ -291,7 +291,7 @@ namespace System.Linq
                 Debug.Assert(!_hasOnlyCollections);
 
                 var builder = new SparseArrayBuilder<TSource>(initialize: true);
-                var deferredCopies = new ArrayBuilder<IEnumerable<TSource>>();
+                var deferredCopies = new ArrayBuilder<int>();
 
                 for (int i = 0; ; i++)
                 {
@@ -308,7 +308,7 @@ namespace System.Linq
 
                     if (builder.ReserveOrAdd(source))
                     {
-                        deferredCopies.Add(source);
+                        deferredCopies.Add(i);
                     }
                 }
 
@@ -318,7 +318,7 @@ namespace System.Linq
                 for (int i = 0; i < markers.Count; i++)
                 {
                     Marker marker = markers[i];
-                    IEnumerable<TSource> source = deferredCopies[i];
+                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i]);
                     EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
                 }
 
