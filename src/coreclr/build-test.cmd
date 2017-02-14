@@ -261,7 +261,7 @@ if defined __UpdateInvalidPackagesArg (
   set __up=-updateinvalidpackageversions
 )
 
-call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__up% %__RunArgs% %__unprocessedBuildArgs%
+call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__up% %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
     echo     %__BuildLog%
