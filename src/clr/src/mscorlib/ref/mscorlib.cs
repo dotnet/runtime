@@ -3245,6 +3245,8 @@ namespace System
         [System.Security.SecuritySafeCriticalAttribute]
         public System.String Replace(char oldChar, char newChar) { throw null; }
         public System.String Replace(System.String oldValue, System.String newValue) { throw null; }
+		public System.String Replace(System.String oldValue, System.String newValue, System.StringComparison comparison) { throw null; }
+        public System.String Replace(System.String oldValue, System.String newValue, System.Boolean ignoreCase, System.Globalization.CultureInfo cultureInfo) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         public string[] Split(char separator, int count, System.StringSplitOptions options = (System.StringSplitOptions)(0)) { throw null; }
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]

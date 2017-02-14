@@ -2452,7 +2452,8 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
     __in                   int         cchSource,            // number of characters lpStringSource after sourceIndex
     __in                   int         sourceIndex,          // index from where the search will start in lpStringSource
     __in_ecount(cchValue)  LPCWSTR     lpStringValue,        // the string we search for
-    __in                   int         cchValue)             // length of the string we search for
+    __in                   int         cchValue,			 // length of the string we search for
+    __out_opt              LPINT       pcchFound)        	 // length of the string we found in source     
 {
     CONTRACTL {
         QCALL_CHECK;
@@ -2496,7 +2497,8 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
                         lpStringValue,
                         cchValue,
                         dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION,
-                        dwFindNLSStringFlags & FIND_ENDSWITH);
+                        dwFindNLSStringFlags & FIND_ENDSWITH,
+                        pcchFound);
             if (retValue >= 0)
             {
                 retValue += sourceIndex - cchSource + 1;
@@ -2511,7 +2513,8 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
                         lpStringValue,
                         cchValue,
                         dwFindNLSStringFlags & FIND_NLS_STRING_FLAGS_NEGATION,
-                        dwFindNLSStringFlags & FIND_STARTSWITH);
+                        dwFindNLSStringFlags & FIND_STARTSWITH,
+                        pcchFound);
 
             if  (retValue >= 0)
             {
@@ -2530,7 +2533,9 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
                                         &lpStringSource[sourceIndex - cchSource + 1],
                                         cchSource,
                                         lpStringValue,
-                                        cchValue, NULL, NULL, NULL, (LPARAM) handle);
+                                        cchValue, 
+                                        pcchFound,
+                                        NULL, NULL, (LPARAM) handle);
             }
 
             if (retValue >= 0)
@@ -2547,7 +2552,9 @@ int QCALLTYPE COMNlsInfo::InternalFindNLSStringEx(
                                         &lpStringSource[sourceIndex],
                                         cchSource,
                                         lpStringValue,
-                                        cchValue, NULL, NULL, NULL, (LPARAM) handle);
+                                        cchValue, 
+                                        pcchFound, 
+                                        NULL, NULL, (LPARAM) handle);
             }
 
             if (retValue >= 0)

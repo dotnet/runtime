@@ -694,7 +694,7 @@ namespace System.Globalization
             if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal))
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
 
-            return IndexOfCore(source, new string(value, 1), startIndex, count, options);
+            return IndexOfCore(source, new string(value, 1), startIndex, count, options, null);
         }
 
 
@@ -741,7 +741,7 @@ namespace System.Globalization
             if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal))
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
 
-            return IndexOfCore(source, value, startIndex, count, options);
+            return IndexOfCore(source, value, startIndex, count, options, null);
         }
 
         ////////////////////////////////////////////////////////////////////////

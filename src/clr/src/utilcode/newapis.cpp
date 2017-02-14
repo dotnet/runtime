@@ -754,12 +754,14 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
     int IndexOfString(  __in LPCWSTR lpLocaleName,
                         __in_ecount(cchCount1) LPCWSTR pString1,   // String to search in
                         __in int  cchCount1,                       // length of pString1
-                        __in_ecount(cchCount2) LPCWSTR pString2,    // String we're looking for
+                        __in_ecount(cchCount2) LPCWSTR pString2,   // String we're looking for
                         __in int cchCount2,                        // length of pString2                  
                         __in DWORD dwFlags,                        // search flags
-                        __in BOOL startWith)                       // true if we need to check for prefix case
+                        __in BOOL startWith,					   // true if we need to check for prefix case
+                        __out_opt LPINT pcchFound)                 // length of the string we found in source   
     {
         int iRetVal = -1;
+        int foundLengthInSource = 0;
 
         //
         //  Check the ranges.
@@ -788,6 +790,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
         if (dwFlags == COMPARE_OPTIONS_ORDINAL)
         {
             iRetVal = FastIndexOfString(pString1, cchCount1, pString2, cchCount2);
+            foundLengthInSource = cchCount2;
             goto lExit;
         }
         //For dwFlags, 0 is the default, 1 is ignore case, we can handle both.
@@ -801,6 +804,11 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
                     iRetVal = FastIndexOfString(pString1, cchCount1, pString2, cchCount2);
                 else
                     iRetVal = FastIndexOfStringInsensitive(pString1, cchCount1, pString2, cchCount2);
+				
+                // both are ascii strings,
+                // the length should be the same as the length of the string we are searching for.
+                foundLengthInSource = cchCount2;
+				
                 goto lExit;
             }
         }
@@ -832,6 +840,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
                 if (result == CSTR_EQUAL)
                 { 
                     iRetVal = iOffset; 
+                    foundLengthInSource = iLength;
                     break;
                 }
                 else if (result == 0)
@@ -848,6 +857,9 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
         {
             iRetVal = -1;
         }
+		
+        if(iRetVal != -1 && pcchFound != NULL)
+            *pcchFound = foundLengthInSource;
 
         return iRetVal;
     }
@@ -859,13 +871,16 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
     int LastIndexOfString(  __in LPCWSTR lpLocaleName,
                             __in_ecount(cchCount1) LPCWSTR pString1,   // String to search in
                             __in int  cchCount1,                       // length of pString1
-                            __in_ecount(cchCount2) LPCWSTR pString2,    // String we're looking for
+                            __in_ecount(cchCount2) LPCWSTR pString2,   // String we're looking for
                             __in int cchCount2,                        // length of pString2                  
                             __in DWORD dwFlags,
-                            __in BOOL endWith)                         // check suffix case
+                            __in BOOL endWith, 						   // check suffix case
+                            __out_opt LPINT pcchFound)                 // length of the string we found in source
         {
         INT32       iRetVal = -1;
         BOOL        comparedOrdinal = FALSE;
+		
+        int foundLengthInSource = 0;
 
         // Check for empty strings
         if (cchCount1 == 0)
@@ -896,6 +911,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
         {
             iRetVal = FastLastIndexOfString(pString1, cchCount1, pString2, cchCount2);
             comparedOrdinal = TRUE;
+            foundLengthInSource = cchCount2;
             goto lExit;
         }
 
@@ -910,6 +926,8 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
                 else
                     iRetVal = FastLastIndexOfStringInsensitive(pString1, cchCount1, pString2, cchCount2);
                 comparedOrdinal = TRUE;
+				
+                foundLengthInSource = cchCount2;
                 goto lExit;
             }
         }
@@ -923,6 +941,7 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
                 if (NewApis::CompareStringEx(lpLocaleName, dwFlags, pString2, cchCount2, &pString1[cchCount1 + iOffset - iLength], iLength, NULL, NULL, 0) == CSTR_EQUAL)
                 { 
                     iRetVal= cchCount1 + iOffset - iLength;
+                    foundLengthInSource = iLength;
                     break;
                 }
             }
@@ -940,6 +959,9 @@ inline BOOL IsInvariantCasing(__in LPCWSTR lpLocaleName, __in DWORD dwMapFlags)
                 iRetVal = -1;
             }
         }
+		
+        if(iRetVal != -1 && pcchFound != NULL)
+            *pcchFound = foundLengthInSource;
 
         return iRetVal;
     }
