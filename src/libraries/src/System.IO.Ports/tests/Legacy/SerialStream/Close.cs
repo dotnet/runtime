@@ -197,7 +197,7 @@ namespace Legacy.SerialStream
             }
         }
         
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void OpenFillBuffersClose()
         {
             using(var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

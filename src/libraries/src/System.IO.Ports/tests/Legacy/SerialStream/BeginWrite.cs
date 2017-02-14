@@ -212,7 +212,7 @@ namespace Legacy.SerialStream
             VerifyWrite(new byte[bufferLength], offset, count, new UnicodeEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void LargeBuffer()
         {
             int bufferLength = LARGE_BUFFER_SIZE;
@@ -266,7 +266,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Callback_State()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

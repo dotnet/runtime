@@ -321,6 +321,9 @@ public class Read_char_int_int : PortsTest
             //Put the first byte of the utf32 encoder char in the last byte of this buffer
             //when we read this later the buffer will have to be resized
             byteXmitBuffer[byteXmitBuffer.Length - 1] = utf32CharBytes[0];
+
+            TCSupport.SetHighSpeed(com1,com2);
+
             com1.Open();
 
             if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
@@ -726,6 +729,8 @@ public class Read_char_int_int : PortsTest
 
                 buffer[i] = randChar;
             }
+
+            TCSupport.SetHighSpeed(com1, com2);
 
             Debug.WriteLine(
                 "Verifying read method buffer.Length={0}, offset={1}, count={2}, endocing={3} with {4} random chars",

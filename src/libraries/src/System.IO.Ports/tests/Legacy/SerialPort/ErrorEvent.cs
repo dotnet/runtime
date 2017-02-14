@@ -59,7 +59,7 @@ public class ErrorEvent : PortsTest
 	}
 */
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void ErrorEvent_RxOver()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -234,76 +234,16 @@ public class ErrorEvent : PortsTest
     #endregion
 
     #region Verification for Test Cases
-    public class ErrorEventHandler
-    {
-        public readonly List<SerialError> EventType = new List<SerialError>();
-        public readonly List<SerialPort> Source = new List<SerialPort>();
-        public readonly List<int> BytesToRead = new List<int>();
-        public int NumEventsHandled;
-        private readonly SerialPort _com;
 
-        public ErrorEventHandler(SerialPort com)
+    private class ErrorEventHandler : TestEventHandler<SerialError>
+    {
+        public ErrorEventHandler(SerialPort com) : base(com, false, false)
         {
-            _com = com;
-            NumEventsHandled = 0;
         }
 
         public void HandleEvent(object source, SerialErrorReceivedEventArgs e)
         {
-            int bytesToRead;
-
-            lock (_com)
-            {
-                bytesToRead = _com.BytesToRead;
-            }
-
-            lock (this)
-            {
-                BytesToRead.Add(bytesToRead);
-                EventType.Add(e.EventType);
-                Source.Add((SerialPort)source);
-                NumEventsHandled++;
-                System.Threading.Monitor.Pulse(this);
-            }
-        }
-
-        public bool WaitForEvent(int maxMilliseconds, int totalNumberOfEvents)
-        {
-            Stopwatch sw = new Stopwatch();
-
-            lock (this)
-            {
-                sw.Start();
-                while (maxMilliseconds > sw.ElapsedMilliseconds && NumEventsHandled < totalNumberOfEvents)
-                {
-                    System.Threading.Monitor.Wait(this, (int)(maxMilliseconds - sw.ElapsedMilliseconds));
-                }
-
-                return totalNumberOfEvents <= NumEventsHandled;
-            }
-        }
-
-
-        //Since we can not guarantee the order or the exact time that the event handler is called 
-        //We will look for an event that was fired that matches the type and that bytesToRead 
-        //is greater then the parameter    
-        public void Validate(SerialError eventType, int bytesToRead)
-        {
-            lock (this)
-            {
-                for (int i = 0; i < EventType.Count; i++)
-                {
-                    if (eventType == EventType[i] && bytesToRead <= BytesToRead[i] && Source[i] == _com)
-                    {
-                        EventType.RemoveAt(i);
-                        BytesToRead.RemoveAt(i);
-                        Source.RemoveAt(i);
-                        NumEventsHandled--;
-                        return;
-                    }
-                }
-            }
-            Assert.True(false, $"Failed to validate expected type {eventType}, bytesToRead {bytesToRead}, actualTypes (first 6) {string.Join(",", EventType.Take(6))}");
+            HandleEvent(source, e.EventType);
         }
     }
     #endregion

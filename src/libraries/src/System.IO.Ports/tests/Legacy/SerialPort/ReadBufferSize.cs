@@ -13,13 +13,8 @@ using Xunit;
 
 public class ReadBufferSize_Property : PortsTest
 {
-    public static readonly int MAX_RANDMOM_BUFFER_SIZE = 1024 * 16;
-    public static readonly int LARGE_BUFFER_SIZE = 1024 * 128;
-
-    public delegate void ReadMethodDelegate(SerialPort com, int bufferSize);
-
-    //The default new lint to read from when testing timeout with ReadTo(str)
-    public static readonly string DEFAULT_READ_TO_STRING = "\r\n";
+    private static readonly int MAX_RANDOM_BUFFER_SIZE = 1024 * 16;
+    private static readonly int LARGE_BUFFER_SIZE = 1024 * 128;
 
     #region Test Cases
 
@@ -131,7 +126,7 @@ public class ReadBufferSize_Property : PortsTest
     public void ReadBufferSize_Rnd()
     {
         Random rndGen = new Random(-55);
-        uint newReadBufferSize = (uint)rndGen.Next(MAX_RANDMOM_BUFFER_SIZE);
+        uint newReadBufferSize = (uint)rndGen.Next(MAX_RANDOM_BUFFER_SIZE);
 
         newReadBufferSize &= 0xFFFFFFFE; //Make sure the new buffer size is even by clearing the lowest order bit    
 
@@ -261,8 +256,7 @@ public class ReadBufferSize_Property : PortsTest
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
                 com2.Write(xmitBytes, xmitBytes.Length / 2, xmitBytes.Length / 2);
 
-                while (newBytesToRead > com1.BytesToRead)
-                    System.Threading.Thread.Sleep(50);
+                TCSupport.WaitForReadBufferToLoad(com1, newBytesToRead);
 
                 System.Threading.Thread.Sleep(250);
                     //This is to wait for the bytes to be received after the buffer is full
@@ -285,8 +279,7 @@ public class ReadBufferSize_Property : PortsTest
             com2.Write(xmitBytes, 0, xmitBytes.Length);
             com2.Write(xmitBytes, xmitBytes.Length / 2, xmitBytes.Length / 2);
 
-            while (newBytesToRead > com1.BytesToRead)
-                System.Threading.Thread.Sleep(50);
+            TCSupport.WaitForReadBufferToLoad(com1, newBytesToRead);
 
             serPortProp.SetProperty("BytesToRead", newBytesToRead);
             Debug.WriteLine("Verifying properties after writing bytes");
@@ -334,10 +327,7 @@ public class ReadBufferSize_Property : PortsTest
 
             com2.Write(xmitBytes, 0, xmitBytes.Length / 2);
 
-            while (bytesToRead > com1.BytesToRead)
-            {
-                System.Threading.Thread.Sleep(50);
-            }
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToRead);
 
             System.Threading.Thread.Sleep(250); //This is to wait for the bytes to be received after the buffer is full
 

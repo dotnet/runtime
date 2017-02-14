@@ -134,10 +134,9 @@ public class Buffer<T>
         }
     }
 
-    public bool Compare(T[] data, int index, int count)
+    public void Compare(T[] data, int index, int count)
     {
         IEnumerator<T> enumerator = _queue.GetEnumerator();
-        bool result = true;
 
         count += index;
 
@@ -145,8 +144,7 @@ public class Buffer<T>
         {
             if (!_comparer.Equals(enumerator.Current, data[index]))
             {
-                Debug.WriteLine("Err_84264lked Expected {0} actual {1}", data[index], enumerator.Current);
-                result = false;
+                PortsTest.Fail("Err_84264lked Expected {0} actual {1}", data[index], enumerator.Current);
             }
 
             ++index;
@@ -154,28 +152,21 @@ public class Buffer<T>
 
         if (index != count)
         {
-            Debug.WriteLine("Err_5587456jdivmeo Expected to iterate through {0} items actual {1}", count, index);
-            result = false;
+            PortsTest.Fail("Err_5587456jdivmeo Expected to iterate through {0} items actual {1}", count, index);
         }
-
-        return result;
     }
 
-    public bool CompareAndRemove(T[] data, int index, int count)
+    public void CompareAndRemove(T[] data, int index, int count)
     {
-        T currentItem;
-        bool result = true;
-
         count += index;
 
         while (0 < _queue.Count && index < count)
         {
-            currentItem = _queue.Dequeue();
+            T currentItem = _queue.Dequeue();
 
             if (!_comparer.Equals(currentItem, data[index]))
             {
-                Debug.WriteLine("Err_84264lked Expected {0} actual {1}", data[index], currentItem);
-                result = false;
+                PortsTest.Fail("Err_84264lked Expected {0} actual {1}", data[index], currentItem);
             }
 
             ++index;
@@ -183,10 +174,7 @@ public class Buffer<T>
 
         if (index != count)
         {
-            Debug.WriteLine("Err_5587456jdivmeo Expected to iterate through {0} items actual {1}", count, index);
-            result = false;
+            PortsTest.Fail("Err_5587456jdivmeo Expected to iterate through {0} items actual {1}", count, index);
         }
-
-        return result;
     }
 }

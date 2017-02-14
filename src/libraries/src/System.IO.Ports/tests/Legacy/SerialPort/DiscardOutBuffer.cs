@@ -14,16 +14,15 @@ using Xunit;
 public class DiscardOutBuffer : PortsTest
 {
     //The string used with Write(str) to fill the input buffer
-    public static readonly string DEFAULT_STRING = "Hello World";
+    private static readonly string DEFAULT_STRING = new string('H', TCSupport.MinimumBlockingByteCount);
 
     //The buffer length used whe filling the output buffer
     // This was set to 8, but the TX Fifo on a UART can swallow that completely, so you can't then tell if the data has been sent or not.
-    public static readonly int DEFAULT_BUFFER_LENGTH = 128;
+    private static readonly int DEFAULT_BUFFER_LENGTH = TCSupport.MinimumBlockingByteCount;
 
     #region Test Cases
 
-    [ActiveIssue(15752)]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void OutBufferFilled_Discard_Once()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -35,7 +34,7 @@ public class DiscardOutBuffer : PortsTest
 
             Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
 
-            WaitForTxBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+            TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
             VerifyDiscard(com1);
 
@@ -45,8 +44,7 @@ public class DiscardOutBuffer : PortsTest
         }
     }
 
-    [ActiveIssue(15752)]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void OutBufferFilled_Discard_Multiple()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -59,7 +57,7 @@ public class DiscardOutBuffer : PortsTest
 
             Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
 
-            WaitForTxBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+            TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
             VerifyDiscard(com1);
             VerifyDiscard(com1);
@@ -71,8 +69,7 @@ public class DiscardOutBuffer : PortsTest
         }
     }
 
-    [ActiveIssue(15752)]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void OutBufferFilled_Discard_Cycle()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -86,7 +83,7 @@ public class DiscardOutBuffer : PortsTest
 
             Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
 
-            WaitForTxBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+            TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
             VerifyDiscard(com1);
 
@@ -96,7 +93,7 @@ public class DiscardOutBuffer : PortsTest
 
             Task task2 = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
 
-            WaitForTxBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+            TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
             VerifyDiscard(com1);
 
@@ -106,14 +103,12 @@ public class DiscardOutBuffer : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void InAndOutBufferFilled_Discard()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
         using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
         {
-            int origBytesToRead;
-
             Debug.WriteLine("Verifying Discard method after input buffer has been filled");
 
             com1.Open();
@@ -123,12 +118,13 @@ public class DiscardOutBuffer : PortsTest
             com1.Handshake = Handshake.RequestToSend;
             com2.Write(DEFAULT_STRING);
 
-            WaitForTxBufferToLoad(com2, DEFAULT_STRING.Length);
+            // Wait for the data to pass from COM2 to com1
+            TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_STRING.Length);
 
             Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
-            origBytesToRead = com1.BytesToRead;
+            int origBytesToRead = com1.BytesToRead;
 
-            WaitForTxBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+            TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
             VerifyDiscard(com1);
 
@@ -164,19 +160,5 @@ public class DiscardOutBuffer : PortsTest
     }
     #endregion
 
-    /// <summary>
-    /// Wait for the write data to be written into a blocked (by adverse flow control) port
-    /// </summary>
-    private static void WaitForTxBufferToLoad(SerialPort com, int bufferLength)
-    {
-        Stopwatch sw = Stopwatch.StartNew();
-        while (com.BytesToWrite < bufferLength)
-        {
-            System.Threading.Thread.Sleep(50);
-            if (sw.ElapsedMilliseconds > 3000)
-            {
-                Assert.True(false, "Timeout while waiting for data to be written to port");
-            }
-        }
-    }
+ 
 }

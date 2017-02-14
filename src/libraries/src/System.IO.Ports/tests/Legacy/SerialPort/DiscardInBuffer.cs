@@ -103,7 +103,7 @@ public class DiscardInBuffer : PortsTest
             Assert.Equal(com1.BytesToWrite, origBytesToWrite);
             
             //Wait for write method to timeout
-            task.Wait();
+            TCSupport.WaitForTaskCompletion(task);
         }
     }
 

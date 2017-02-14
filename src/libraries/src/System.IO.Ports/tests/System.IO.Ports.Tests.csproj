@@ -107,6 +107,7 @@
     <Compile Include="Legacy\SerialStream\WriteTimeout.cs" />
     <Compile Include="Legacy\SerialStream\Write_byte_int_int.cs" />
     <Compile Include="Legacy\SerialStream\Write_byte_int_int_Generic.cs" />
+    <Compile Include="Legacy\Support\FlowControlCapabilities.cs" />
     <Compile Include="Legacy\Support\LocalMachineSerialInfo.cs" />
     <Compile Include="Legacy\Support\PortHelper.cs" />
     <Compile Include="Legacy\Support\SerialPortConnection.cs" />
@@ -114,10 +115,14 @@
     <Compile Include="Legacy\Support\TCSupport.cs" />
     <Compile Include="Legacy\Support\TestDelegate.cs" />
     <Compile Include="Legacy\Support\PortsTest.cs" />
+    <Compile Include="Legacy\Support\TestEventHandler.cs" />
     <Compile Include="System\IO\Ports\SmokeTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Legacy\Manual\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

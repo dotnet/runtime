@@ -52,12 +52,10 @@ namespace Legacy.SerialStream
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Stream serialStream;
-
                 Debug.WriteLine("Verifying write method throws exception after a call to Cloes()");
 
                 com.Open();
-                serialStream = com.BaseStream;
+                Stream serialStream = com.BaseStream;
                 com.Close();
 
                 VerifyWriteException(serialStream, typeof(ObjectDisposedException));
@@ -80,7 +78,7 @@ namespace Legacy.SerialStream
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Timeout()
         {
             var rndGen = new Random(-55);
@@ -91,7 +89,7 @@ namespace Legacy.SerialStream
             VerifyTimeout(writeTimeout);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

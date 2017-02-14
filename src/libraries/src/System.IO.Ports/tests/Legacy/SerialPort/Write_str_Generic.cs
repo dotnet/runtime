@@ -28,10 +28,10 @@ public class Write_str_Generic : PortsTest
     //then the contents of the string itself
     public static readonly string DEFAULT_STRING = "DEFAULT_STRING";
 
-    //The string size used when veryifying BytesToWrite 
-    public static readonly int STRING_SIZE_BYTES_TO_WRITE = 4;
+    //The string size used when verifying BytesToWrite 
+    public static readonly int STRING_SIZE_BYTES_TO_WRITE = 2*TCSupport.MinimumBlockingByteCount;
 
-    //The string size used when veryifying Handshake 
+    //The string size used when verifying Handshake 
     public static readonly int STRING_SIZE_HANDSHAKE = 8;
     public static readonly int NUM_TRYS = 5;
 
@@ -104,9 +104,8 @@ public class Write_str_Generic : PortsTest
         }
     }
 
-    [ActiveIssue(15752)]
     [OuterLoop("Slow test")]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void SuccessiveReadTimeout()
     {
         using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -133,7 +132,7 @@ public class Write_str_Generic : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void SuccessiveReadTimeoutWithWriteSucceeding()
     {
         using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -182,8 +181,7 @@ public class Write_str_Generic : PortsTest
         }
     }
 
-    [ActiveIssue(15752)]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void BytesToWrite()
     {
         using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -209,19 +207,7 @@ public class Write_str_Generic : PortsTest
                 waitTime += 50;
             }
 
-            waitTime = 0;
-
-            while (STRING_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
-            {
-                Thread.Sleep(50);
-                waitTime += 50;
-            }
-
-            if (STRING_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
-            {
-                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", STRING_SIZE_BYTES_TO_WRITE,
-                    com.BytesToWrite);
-            }
+            TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE);
 
             //Wait for write method to timeout
             while (t.IsAlive)
@@ -229,8 +215,7 @@ public class Write_str_Generic : PortsTest
         }
     }
 
-    [ActiveIssue(15752)]
-    [ConditionalFact(nameof(HasOneSerialPort))]
+    [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
     public void BytesToWriteSuccessive()
     {
         using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -257,19 +242,7 @@ public class Write_str_Generic : PortsTest
                 waitTime += 50;
             }
 
-            waitTime = 0;
-
-            while (STRING_SIZE_BYTES_TO_WRITE > com.BytesToWrite && waitTime < 500)
-            {
-                Thread.Sleep(50);
-                waitTime += 50;
-            }
-
-            if (STRING_SIZE_BYTES_TO_WRITE != com.BytesToWrite)
-            {
-                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after first write", STRING_SIZE_BYTES_TO_WRITE,
-                    com.BytesToWrite);
-            }
+            TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE);
 
             //Write a random string asynchronously so we can verify some things while the write call is blocking
             t2.Start();
@@ -282,20 +255,8 @@ public class Write_str_Generic : PortsTest
                 waitTime += 50;
             }
 
-            waitTime = 0;
-
-            while (STRING_SIZE_BYTES_TO_WRITE * 2 > com.BytesToWrite && waitTime < 500)
-            {
-                Thread.Sleep(50);
-                waitTime += 50;
-            }
-
-            if (STRING_SIZE_BYTES_TO_WRITE * 2 != com.BytesToWrite)
-            {
-                Fail("ERROR!!! Expcted BytesToWrite={0} actual {1} after second write", STRING_SIZE_BYTES_TO_WRITE * 2,
-                    com.BytesToWrite);
-            }
-
+            TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE*2);
+            
             //Wait for both write methods to timeout
             while (t1.IsAlive || t2.IsAlive)
                 Thread.Sleep(100);

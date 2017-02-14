@@ -12,16 +12,16 @@ using Xunit;
 
 public class BytesToWrite_Property : PortsTest
 {
-    static readonly int DEFAULT_NUM_RND_BYTES = 8;
+    static readonly int DEFAULT_NUM_RND_BYTES = TCSupport.MinimumBlockingByteCount;
 
     //The default number of chars to write with when testing timeout with Write(char[], int, int)
-    static readonly int DEFAULT_WRITE_CHAR_ARRAY_SIZE = 8;
+    static readonly int DEFAULT_WRITE_CHAR_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
     //The default number of bytes to write with when testing timeout with Write(byte[], int, int)
-    static readonly int DEFAULT_WRITE_BYTE_ARRAY_SIZE = 8;
+    static readonly int DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
     //The default string to write with when testing timeout with Write(str)
-    static readonly string DEFAULT_STRING_TO_WRITE = "TEST";
+    static readonly string DEFAULT_STRING_TO_WRITE = new string('H', TCSupport.MinimumBlockingByteCount);
 
     //Delegate to start asynchronous write on the SerialPort com with buffer of size bufferLength
     delegate int WriteMethodDelegate(SerialPort com, int bufferSize);
@@ -44,28 +44,28 @@ public class BytesToWrite_Property : PortsTest
         }
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void BytesToWrite_Write_byte_int_int()
     {
         Debug.WriteLine("Verifying BytesToWrite with Write(byte[] buffer, int offset, int count)");
         VerifyBytesToWrite(Write_byte_int_int, DEFAULT_NUM_RND_BYTES, false);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void BytesToWrite_Write_char_int_int()
     {
         Debug.WriteLine("Verifying BytesToWrite with Write(char[] buffer, int offset, int count)");
         VerifyBytesToWrite(Write_char_int_int, DEFAULT_NUM_RND_BYTES, false);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void BytesToWrite_Write_str()
     {
         Debug.WriteLine("Verifying BytesToWrite with WriteChar()");
         VerifyBytesToWrite(Write_str, 1, false);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
+    [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
     public void BytesToWrite_WriteLine()
     {
         Debug.WriteLine("Verifying BytesToWrite with WriteLine()");
@@ -97,7 +97,7 @@ public class BytesToWrite_Property : PortsTest
             System.Threading.Thread.Sleep(200);
 
             actualBytesToWrite = com1.BytesToWrite;
-            expectedBytesToWrite = task.Result;
+            expectedBytesToWrite = task.Result - TCSupport.HardwareTransmitBufferSize;
 
             com2.Open();
             com2.RtsEnable = true;

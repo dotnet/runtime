@@ -118,74 +118,6 @@ public class Parity_Property : PortsTest
         VerifyParityAfterOpen((int)Parity.Space, DEFAULT_BYTE_SIZE);
     }
 
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_None_DataBits_5()
-    {
-        using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-        {
-            Debug.WriteLine("Verifying None Parity with 5 DataBits");
-            com1.DataBits = 5;
-            com1.Open();
-            VerifyParity(com1, DEFAULT_BYTE_SIZE, 5);
-        }
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Even_DataBits_5_Read()
-    {
-        Debug.WriteLine("Verifying Even Parity with 5 DataBits on Read");
-        VerifyReadParity((int)Parity.Even, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Odd_DataBits_5_Read()
-    {
-        Debug.WriteLine("Verifying Odd Parity with 5 DataBits on Read");
-        VerifyReadParity((int)Parity.Odd, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Mark_DataBits_5_Read()
-    {
-        Debug.WriteLine("Verifying Mark Parity with 5 DataBits on Read");
-        VerifyReadParity((int)Parity.Mark, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Space_DataBits_5_Read()
-    {
-        Debug.WriteLine("Verifying Space Parity with 5 DataBits on Read");
-        VerifyReadParity((int)Parity.Space, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Even_DataBits_5_Write()
-    {
-        Debug.WriteLine("Verifying Even Parity with 5 DataBits on Write");
-        VerifyWriteParity((int)Parity.Even, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Odd_DataBits_5_Write()
-    {
-        Debug.WriteLine("Verifying Odd Parity with 5 DataBits on Write");
-        VerifyWriteParity((int)Parity.Odd, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Mark_DataBits_5_Write()
-    {
-        Debug.WriteLine("Verifying Mark Parity with 5 DataBits on Write");
-        VerifyWriteParity((int)Parity.Mark, 5, DEFAULT_BYTE_SIZE);
-    }
-
-    [ConditionalFact(nameof(HasNullModem))]
-    public void Parity_Space_DataBits_5_Write()
-    {
-        Debug.WriteLine("Verifying Space Parity with 5 DataBits on Write");
-        VerifyWriteParity((int)Parity.Space, 5, DEFAULT_BYTE_SIZE);
-    }
-
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void Parity_Int32MinValue()
     {
@@ -199,14 +131,6 @@ public class Parity_Property : PortsTest
         Debug.WriteLine("Verifying -1 Parity");
         VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
     }
-
-    [ConditionalFact(nameof(HasOneSerialPort))]
-    public void Parity_5()
-    {
-        Debug.WriteLine("Verifying 5 Parity");
-        VerifyException(5, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
-    }
-
 
     [ConditionalFact(nameof(HasOneSerialPort))]
     public void Parity_Int32MaxValue()
@@ -646,19 +570,22 @@ public class Parity_Property : PortsTest
     {
         double stopBits = -1;
 
-        switch ((int)com.StopBits)
+        switch (com.StopBits)
         {
-            case (int)StopBits.One:
+            case StopBits.One:
                 stopBits = 1.0;
                 break;
 
-            case (int)StopBits.OnePointFive:
+            case StopBits.OnePointFive:
                 stopBits = 1.5;
                 break;
 
-            case (int)StopBits.Two:
+            case StopBits.Two:
                 stopBits = 2.0;
                 break;
+
+            default:
+                throw new ArgumentOutOfRangeException();
         }
         return stopBits;
     }
