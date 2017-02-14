@@ -21,12 +21,5 @@
       Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
     -->
     <DebugType>Portable</DebugType>
-
-    <!--
-      Full signing with Open key doesn't work with Portable Csc.
-      https://github.com/dotnet/roslyn/issues/8210
-    -->
-    <UseOpenKey>false</UseOpenKey>
   </PropertyGroup>
-  
 </Project>
