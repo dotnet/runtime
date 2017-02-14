@@ -90,14 +90,6 @@ void QCALLTYPE SecurityPolicy::GetGrantedPermissions(QCall::ObjectHandleOnStack 
     END_QCALL;
 }
 
-#ifdef FEATURE_IMPERSONATION
-FCIMPL0(DWORD, SecurityPolicy::GetImpersonationFlowMode)
-{
-    FCALL_CONTRACT;
-    return (g_pConfig->ImpersonationMode());
-}
-FCIMPLEND
-#endif
 
 void SecurityPolicy::CreateSecurityException(__in_z const char *szDemandClass, DWORD dwFlags, OBJECTREF *pThrowable)
 {
