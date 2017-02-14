@@ -24,7 +24,7 @@
   </PropertyGroup>
 
   <!-- derive an OS Group based on the OS Family -->
-  <PropertyGroup Condition="'$(_runtimeOSFamily)' != ''">
+  <PropertyGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__BuildOS)' != ''">$(__BuildOS)</_derivedPackageTargetOSGroup>
