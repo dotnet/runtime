@@ -1619,6 +1619,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
             else
 #endif // FEATURE_INTERPRETER
             {
+                ReJitPublishMethodHolder publishWorker(this, pCode);
                 SetStableEntryPointInterlocked(pCode);
             }
         }

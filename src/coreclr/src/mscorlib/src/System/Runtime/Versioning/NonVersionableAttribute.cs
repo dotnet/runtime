@@ -13,6 +13,12 @@
 ** is never changed in ReadyToRun native images. Any changes to such members or types would be 
 ** breaking changes for ReadyToRun.
 **
+** Applying this type also has the side effect that the inlining tables in R2R images will not
+** report that inlining of NonVersionable attributed methods occured. These inlining tables are used
+** by profilers to figure out the set of methods that need to be rejited when one method is instrumented,
+** so in effect NonVersionable methods are also non-instrumentable. Generally this is OK for
+** extremely trivial low level methods where NonVersionable gets used, but if there is any plan to 
+** significantly extend its usage or allow 3rd parties to use it please discuss with the diagnostics team.
 ===========================================================*/
 using System;
 using System.Diagnostics;

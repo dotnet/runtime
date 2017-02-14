@@ -1742,6 +1742,7 @@ void ZapImage::Compile()
         OutputEntrypointsTableForReadyToRun();
         OutputDebugInfoForReadyToRun();
         OutputTypesTableForReadyToRun(m_pMDImport);
+        OutputInliningTableForReadyToRun();
     }
     else
 #endif
