@@ -72,9 +72,6 @@ namespace SecurityPolicy
     void QCALLTYPE GetGrantedPermissions(QCall::ObjectHandleOnStack retGranted, QCall::ObjectHandleOnStack retDenied, QCall::StackCrawlMarkHandle stackmark);
 
 
-#ifdef FEATURE_IMPERSONATION
-    FCDECL0(DWORD, GetImpersonationFlowMode);
-#endif // #ifdef FEATURE_IMPERSONATION
 
     FCDECL0(FC_BOOL_RET, IsDefaultThreadSecurityInfo);
     void QCALLTYPE _GetLongPathName(LPCWSTR wszPath, QCall::StringHandleOnStack retLongPath);
