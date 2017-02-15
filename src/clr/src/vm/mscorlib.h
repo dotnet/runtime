@@ -507,9 +507,6 @@ DEFINE_FIELD_U(_stackTraceString,  ExceptionObject,    _stackTraceString)
 DEFINE_FIELD_U(_remoteStackTraceString, ExceptionObject, _remoteStackTraceString)
 DEFINE_FIELD_U(_dynamicMethods,    ExceptionObject,    _dynamicMethods)
 DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
-#ifdef FEATURE_SERIALIZATION
-DEFINE_FIELD_U(_safeSerializationManager, ExceptionObject, _safeSerializationManager)
-#endif // FEATURE_SERIALIZATION
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_remoteStackIndex,  ExceptionObject,    _remoteStackIndex)
