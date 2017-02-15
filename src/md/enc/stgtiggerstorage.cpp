@@ -138,9 +138,6 @@ TiggerStorage::GetDefaultVersion(
     
     if (g_pDefaultVersion == NULL)
     {
-#ifdef FEATURE_METADATA_STANDALONE_WINRT
-        g_pDefaultVersion = "";
-#else //!FEATURE_METADATA_STANDALONE_WINRT
 #ifndef DACCESS_COMPILE
         HRESULT hr;
         
@@ -170,7 +167,6 @@ TiggerStorage::GetDefaultVersion(
 #else
         DacNotImpl();
 #endif //DACCESS_COMPILE
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
     }
     
     *ppVersion = g_pDefaultVersion;

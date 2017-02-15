@@ -20,7 +20,7 @@
 
 #include <rwutil.h>
 
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
 
 LOADEDMODULES * LOADEDMODULES::s_pLoadedModules = NULL;
 UTSemReadWrite * LOADEDMODULES::m_pSemReadWrite = NULL;
@@ -363,7 +363,7 @@ ErrExit:
 
 #endif //_DEBUG
 
-#endif //FEATURE_METADATA_IN_VM || FEATURE_METADATA_STANDALONE_WINRT
+#endif //FEATURE_METADATA_IN_VM 
 
 #ifdef FEATURE_METADATA_IN_VM
 
