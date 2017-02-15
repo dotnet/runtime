@@ -22539,6 +22539,14 @@ void Compiler::fgRemoveEmptyFinally()
 {
     JITDUMP("\n*************** In fgRemoveEmptyFinally()\n");
 
+#if FEATURE_EH_FUNCLETS
+    // We need to do this transformation before funclets are created.
+    assert(!fgFuncletsCreated);
+#endif // FEATURE_EH_FUNCLETS
+
+    // Assume we don't need to update the bbPreds lists.
+    assert(!fgComputePredsDone);
+
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
@@ -22767,6 +22775,14 @@ void Compiler::fgRemoveEmptyFinally()
 void Compiler::fgRemoveEmptyTry()
 {
     JITDUMP("\n*************** In fgRemoveEmptyTry()\n");
+
+#if FEATURE_EH_FUNCLETS
+    // We need to do this transformation before funclets are created.
+    assert(!fgFuncletsCreated);
+#endif // FEATURE_EH_FUNCLETS
+
+    // Assume we don't need to update the bbPreds lists.
+    assert(!fgComputePredsDone);
 
 #ifdef FEATURE_CORECLR
     bool enableRemoveEmptyTry = true;
@@ -23022,6 +23038,7 @@ void Compiler::fgRemoveEmptyTry()
                     fgRemoveStmt(block, finallyRet);
                     block->bbJumpKind = BBJ_ALWAYS;
                     block->bbJumpDest = continuation;
+                    fgAddRefPred(continuation, block);
                 }
             }
         }
@@ -23086,6 +23103,14 @@ void Compiler::fgRemoveEmptyTry()
 void Compiler::fgCloneFinally()
 {
     JITDUMP("\n*************** In fgCloneFinally()\n");
+
+#if FEATURE_EH_FUNCLETS
+    // We need to do this transformation before funclets are created.
+    assert(!fgFuncletsCreated);
+#endif // FEATURE_EH_FUNCLETS
+
+    // Assume we don't need to update the bbPreds lists.
+    assert(!fgComputePredsDone);
 
 #ifdef FEATURE_CORECLR
     bool enableCloning = true;
@@ -23591,7 +23616,7 @@ void Compiler::fgCloneFinally()
         BasicBlock* firstClonedBlock = blockMap[firstBlock];
         firstClonedBlock->bbCatchTyp = BBCT_NONE;
 
-        // Cleanup the contination
+        // Cleanup the continuation
         fgCleanupContinuation(normalCallFinallyReturn);
 
         // Todo -- mark cloned blocks as a cloned finally....
@@ -23898,6 +23923,271 @@ void Compiler::fgUpdateFinallyTargetFlags()
         }
     }
 #endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+}
+
+//------------------------------------------------------------------------
+// fgMergeFinallyChains: tail merge finally invocations
+//
+// Notes:
+//
+//    Looks for common suffixes in chains of finally invocations
+//    (callfinallys) and merges them. These typically arise from
+//    try-finallys where there are multiple exit points in the try
+//    that have the same target.
+
+void Compiler::fgMergeFinallyChains()
+{
+    JITDUMP("\n*************** In fgMergeFinallyChains()\n");
+
+#if FEATURE_EH_FUNCLETS
+    // We need to do this transformation before funclets are created.
+    assert(!fgFuncletsCreated);
+#endif // FEATURE_EH_FUNCLETS
+
+    // Assume we don't need to update the bbPreds lists.
+    assert(!fgComputePredsDone);
+
+    if (compHndBBtabCount == 0)
+    {
+        JITDUMP("No EH in this method, nothing to merge.\n");
+        return;
+    }
+
+    if (opts.MinOpts())
+    {
+        JITDUMP("Method compiled with minOpts, no merging.\n");
+        return;
+    }
+
+    if (opts.compDbgCode)
+    {
+        JITDUMP("Method compiled with debug codegen, no merging.\n");
+        return;
+    }
+
+#if !FEATURE_EH_FUNCLETS
+    // For non-funclet models (x86) the callfinallys may contain
+    // statements and the continuations contain GT_END_LFINs.  So no
+    // merging is possible until the GT_END_LFIN blocks can be merged
+    // and merging is not safe unless the callfinally blocks are split.
+    JITDUMP("EH using non-funclet model; merging not yet implemented.\n");
+    return;
+#endif // !FEATURE_EH_FUNCLETS
+
+#if !FEATURE_EH_CALLFINALLY_THUNKS
+    // For non-thunk EH models (arm32) the callfinallys may contain
+    // statements, and merging is not safe unless the callfinally
+    // blocks are split.
+    JITDUMP("EH using non-callfinally thunk model; merging not yet implemented.\n");
+    return;
+#endif
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\n*************** Before fgMergeFinallyChains()\n");
+        fgDispBasicBlocks();
+        fgDispHandlerTab();
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // Look for finallys.
+    bool hasFinally = false;
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+
+        // Check if this is a try/finally.
+        if (HBtab->HasFinallyHandler())
+        {
+            hasFinally = true;
+            break;
+        }
+    }
+
+    if (!hasFinally)
+    {
+        JITDUMP("Method does not have any try-finallys; no merging.\n");
+        return;
+    }
+
+    // Process finallys from outside in, merging as we go. This gives
+    // us the desired bottom-up tail merge order for callfinally
+    // chains: outer merges may enable inner merges.
+    bool            canMerge = false;
+    bool            didMerge = false;
+    BlockToBlockMap continuationMap(getAllocator());
+
+    // Note XTnum is signed here so we can count down.
+    for (int XTnum = compHndBBtabCount - 1; XTnum >= 0; XTnum--)
+    {
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+
+        // Screen out non-finallys
+        if (!HBtab->HasFinallyHandler())
+        {
+            continue;
+        }
+
+        JITDUMP("Examining callfinallys for EH#%d.\n", XTnum);
+
+        // Find all the callfinallys that invoke this finally.
+        BasicBlock* firstCallFinallyRangeBlock = nullptr;
+        BasicBlock* endCallFinallyRangeBlock   = nullptr;
+        ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &endCallFinallyRangeBlock);
+
+        // Clear out any stale entries in the continuation map
+        continuationMap.RemoveAll();
+
+        // Build a map from each continuation to the "canonical"
+        // callfinally for that continuation.
+        unsigned          callFinallyCount  = 0;
+        BasicBlock* const beginHandlerBlock = HBtab->ebdHndBeg;
+
+        for (BasicBlock* currentBlock = firstCallFinallyRangeBlock; currentBlock != endCallFinallyRangeBlock;
+             currentBlock             = currentBlock->bbNext)
+        {
+            // Ignore "retless" callfinallys (where the finally doesn't return).
+            if (currentBlock->isBBCallAlwaysPair() && (currentBlock->bbJumpDest == beginHandlerBlock))
+            {
+                // The callfinally must be empty, so that we can
+                // safely retarget anything that branches here to
+                // another callfinally with the same contiuation.
+                assert(currentBlock->isEmpty());
+
+                // This callfinally invokes the finally for this try.
+                callFinallyCount++;
+
+                // Locate the continuation
+                BasicBlock* const leaveBlock        = currentBlock->bbNext;
+                BasicBlock* const continuationBlock = leaveBlock->bbJumpDest;
+
+                // If this is the first time we've seen this
+                // continuation, register this callfinally as the
+                // canonical one.
+                if (!continuationMap.Lookup(continuationBlock))
+                {
+                    continuationMap.Set(continuationBlock, currentBlock);
+                }
+            }
+        }
+
+        // Now we've seen all the callfinallys and their continuations.
+        JITDUMP("EH#%i has %u callfinallys, %u continuations\n", XTnum, callFinallyCount, continuationMap.GetCount());
+
+        // If there are more callfinallys than continuations, some of the
+        // callfinallys must share a continuation, and we can merge them.
+        const bool tryMerge = callFinallyCount > continuationMap.GetCount();
+
+        if (!tryMerge)
+        {
+            JITDUMP("EH#%i does not have any mergeable callfinallys\n", XTnum);
+            continue;
+        }
+
+        canMerge = true;
+
+        // Walk the callfinally region, looking for blocks that jump
+        // to a callfinally that invokes this try's finally, and make
+        // sure they all jump to the appropriate canonical
+        // callfinally.
+        for (BasicBlock* currentBlock = firstCallFinallyRangeBlock; currentBlock != endCallFinallyRangeBlock;
+             currentBlock             = currentBlock->bbNext)
+        {
+            bool merged = fgRetargetBranchesToCanonicalCallFinally(currentBlock, beginHandlerBlock, continuationMap);
+            didMerge    = didMerge || merged;
+        }
+    }
+
+    if (!canMerge)
+    {
+        JITDUMP("Method had try-finallys, but did not have any mergeable finally chains.\n");
+    }
+    else
+    {
+        assert(didMerge);
+        JITDUMP("Method had try-finallys and some callfinally merges were performed.\n");
+
+#if DEBUG
+
+        if (verbose)
+        {
+            printf("\n*************** After fgMergeFinallyChains()\n");
+            fgDispBasicBlocks();
+            fgDispHandlerTab();
+            printf("\n");
+        }
+
+#endif // DEBUG
+    }
+}
+
+//------------------------------------------------------------------------
+// fgRetargetBranchesToCanonicalCallFinally: find non-canonical callfinally
+// invocations and make them canonical.
+//
+// Arguments:
+//     block -- block to examine for call finally invocation
+//     handler -- start of the finally region for the try
+//     continuationMap -- map giving the canonical callfinally for
+//        each continuation
+//
+// Returns:
+//     true iff the block's branch was retargeted.
+
+bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
+                                                        BasicBlock*      handler,
+                                                        BlockToBlockMap& continuationMap)
+{
+    // We expect callfinallys to be invoked by a BBJ_ALWAYS at this
+    // stage in compilation.
+    if (block->bbJumpKind != BBJ_ALWAYS)
+    {
+        // Possible paranoia assert here -- no flow successor of
+        // this block should be a callfinally for this try.
+        return false;
+    }
+
+    // Screen out cases that are not callfinallys to the right
+    // handler.
+    BasicBlock* const callFinally = block->bbJumpDest;
+
+    if (!callFinally->isBBCallAlwaysPair())
+    {
+        return false;
+    }
+
+    if (callFinally->bbJumpDest != handler)
+    {
+        return false;
+    }
+
+    // Ok, this is a callfinally that invokes the right handler.
+    // Get its continuation.
+    BasicBlock* const leaveBlock        = callFinally->bbNext;
+    BasicBlock* const continuationBlock = leaveBlock->bbJumpDest;
+
+    // Find the canonical callfinally for that continuation.
+    BasicBlock* const canonicalCallFinally = continuationMap[continuationBlock];
+    assert(canonicalCallFinally != nullptr);
+
+    // If the block already jumps to the canoncial call finally, no work needed.
+    if (block->bbJumpDest == canonicalCallFinally)
+    {
+        return false;
+    }
+
+    // Else, retarget it so that it does...
+    JITDUMP("Redirecting branch in BB%02u from BB%02u to BB%02u.\n", block->bbNum, callFinally->bbNum,
+            canonicalCallFinally->bbNum);
+
+    block->bbJumpDest = canonicalCallFinally;
+    fgAddRefPred(canonicalCallFinally, block);
+    assert(callFinally->bbRefs > 0);
+    fgRemoveRefPred(callFinally, block);
+
+    return true;
 }
 
 // FatCalliTransformer transforms calli that can use fat function pointer.
