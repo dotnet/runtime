@@ -17,9 +17,9 @@ namespace System.Net
     // Unfortunately, this property is not exposed in .NET Core, so it can't be changed
     // This will result in inefficient memory usage when sending (POST'ing) large
     // amounts of data to the server such as from a file stream.
-    internal class RequestStream : Stream
+    internal sealed class RequestStream : Stream
     {
-        private MemoryStream _buffer = new MemoryStream();
+        private readonly MemoryStream _buffer = new MemoryStream();
 
         public RequestStream()
         {
@@ -105,6 +105,16 @@ namespace System.Net
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState)
+        {
+            return _buffer.BeginWrite(buffer, offset, count, asyncCallback, asyncState);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            _buffer.EndWrite(asyncResult);
         }
 
         public ArraySegment<byte> GetBuffer()

@@ -423,6 +423,12 @@ namespace System.Net.Http
                 return ReadAsyncPrivate(buffer, offset, count, cancellationToken);
             }
 
+            public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+                TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+            public override int EndRead(IAsyncResult asyncResult) =>
+                TaskToApm.End<int>(asyncResult);
+
             public async Task<int> ReadAsyncPrivate(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 if (count == 0)
