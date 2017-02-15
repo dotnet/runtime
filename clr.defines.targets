@@ -28,8 +28,6 @@
         <CDefines Condition="'$(FeatureInteropDebugging)' == 'true'">$(CDefines);FEATURE_INTEROP_DEBUGGING</CDefines>
         <CDefines Condition="'$(FeatureIpcman)' == 'true'">$(CDefines);FEATURE_IPCMAN</CDefines>
         <CDefines Condition="'$(FeatureIsolatedStorageQuotaEnforcement)' == 'true'">$(CDefines);FEATURE_ISOLATED_STORAGE_QUOTA_ENFORCEMENT</CDefines>
-        <CDefines Condition="'$(FeatureIsostore)' == 'true'">$(CDefines);FEATURE_ISOSTORE</CDefines>
-        <CDefines Condition="'$(FeatureIsostoreLight)' == 'true'">$(CDefines);FEATURE_ISOSTORE_LIGHT</CDefines>
         <CDefines Condition="'$(FeatureIsymReader)' == 'true'">$(CDefines);FEATURE_ISYM_READER</CDefines>
         <CDefines Condition="'$(FeatureLazyCOWPages)' == 'true'">$(CDefines);FEATURE_LAZY_COW_PAGES</CDefines>
         <CDefines Condition="'$(FeatureLegacyNetCFDbgHostControl)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF_DBG_HOST_CONTROL</CDefines> 
@@ -102,8 +100,6 @@
         <DefineConstants Condition="'$(FeatureIncludeAllInterfaces)' == 'true'">$(DefineConstants);FEATURE_INCLUDE_ALL_INTERFACES</DefineConstants>
         <DefineConstants Condition="'$(FeatureImplicitLongPath)' == 'true'">$(DefineConstants);FEATURE_IMPLICIT_LONGPATH</DefineConstants>
         <DefineConstants Condition="'$(FeatureIsolatedStorageQuotaEnforcement)' == 'true'">$(DefineConstants);FEATURE_ISOLATED_STORAGE_QUOTA_ENFORCEMENT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureIsostore)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE</DefineConstants>
-        <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
         <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>

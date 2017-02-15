@@ -644,13 +644,6 @@ DEFINE_METHOD(IREFLECT,             GET_FIELDS,             GetFields,          
 DEFINE_METHOD(IREFLECT,             GET_METHODS,            GetMethods,                 IM_BindingFlags_RetArrMethodInfo)
 DEFINE_METHOD(IREFLECT,             INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 
-#ifdef FEATURE_ISOSTORE
-#ifndef FEATURE_ISOSTORE_LIGHT
-DEFINE_CLASS(ISS_STORE,             IsolatedStorage,        IsolatedStorage)
-#endif // !FEATURE_ISOSTORE_LIGHT
-DEFINE_CLASS(ISS_STORE_FILE,        IsolatedStorage,        IsolatedStorageFile)
-DEFINE_CLASS(ISS_STORE_FILE_STREAM, IsolatedStorage,        IsolatedStorageFileStream)
-#endif 
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttribute)
