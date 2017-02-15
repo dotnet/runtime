@@ -446,29 +446,6 @@ FCIMPL3(LPVOID, MarshalNative::GetUnmanagedThunkForManagedMethodPtr, LPVOID pfnM
     CONTRACTL_END;
 
     LPVOID pThunk = NULL;
-#ifdef FEATURE_MIXEDMODE    
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (pfnMethodToWrap == NULL)
-        COMPlusThrowArgumentNull(W("pfnMethodToWrap"));
-    if (pbSignature == NULL)
-        COMPlusThrowArgumentNull(W("pbSignature"));
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4996) // Suppress warning on call to deprecated method
-#endif
-    Module *pModule = SystemDomain::GetCallersModule(1);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-    PREFIX_ASSUME(pModule != NULL);
-    pThunk = pModule->GetUMThunk(pfnMethodToWrap, pbSignature, cbSignature);
-    if (!pThunk) 
-        COMPlusThrowOM();
-
-    HELPER_METHOD_FRAME_END();
-#endif // FEATURE_MIXEDMODE    
     return pThunk;
 }
 FCIMPLEND
@@ -488,31 +465,6 @@ FCIMPL3(LPVOID, MarshalNative::GetManagedThunkForUnmanagedMethodPtr, LPVOID pfnM
     CONTRACTL_END;
 
     LPVOID pThunk = NULL;
-#ifdef FEATURE_MIXEDMODE    
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (pfnMethodToWrap == NULL)
-        COMPlusThrowArgumentNull(W("pfnMethodToWrap"));
-    if (pbSignature == NULL)
-        COMPlusThrowArgumentNull(W("pbSignature"));
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4996) // Suppress warning on call to deprecated method
-#endif
-    Module *pModule = SystemDomain::GetCallersModule(1);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-    if (!pModule)
-        ThrowOutOfMemory();
-    
-    pThunk = pModule->GetMUThunk(pfnMethodToWrap, pbSignature, cbSignature);
-    if (!pThunk) 
-        ThrowOutOfMemory();
-
-    HELPER_METHOD_FRAME_END();
-#endif //  FEATURE_MIXEDMODE    
     return pThunk;
 }
 FCIMPLEND

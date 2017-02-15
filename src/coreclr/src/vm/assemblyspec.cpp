@@ -252,46 +252,6 @@ HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
 } // AssemblySpec::InitializeSpecInternal
 
 
-#ifdef FEATURE_MIXEDMODE
-void AssemblySpec::InitializeSpec(HMODULE hMod,
-                                  BOOL fIntrospectionOnly /*=FALSE*/)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Normalize this boolean as it tends to be used for comparisons
-    m_fIntrospectionOnly = !!fIntrospectionOnly;
-
-    PEDecoder pe(hMod);
-
-    if (!pe.CheckILFormat())
-    {
-        StackSString path;
-        PEImage::GetPathFromDll(hMod, path);
-        EEFileLoadException::Throw(path, COR_E_BADIMAGEFORMAT);
-    }
-
-    COUNT_T size;
-    const void *data = pe.GetMetadata(&size);   
-    SafeComHolder<IMDInternalImport> pImport;
-    IfFailThrow(GetMetaDataInternalInterface((void *) data, size, ofRead, 
-                                             IID_IMDInternalImport,
-                                             (void **) &pImport));
-
-    mdAssembly a;
-    if (FAILED(pImport->GetAssemblyFromScope(&a)))
-        ThrowHR(COR_E_ASSEMBLYEXPECTED);
-
-    InitializeSpec(a, pImport, NULL, fIntrospectionOnly);
-}
-#endif //FEATURE_MIXEDMODE
 
 void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 {

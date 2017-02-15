@@ -11,18 +11,11 @@
 include <AsmMacros.inc>
 include AsmConstants.inc
 
-ifdef FEATURE_MIXEDMODE
-IJWNOADThunk__MakeCall                  equ ?MakeCall@IJWNOADThunk@@KAXXZ 
-IJWNOADThunk__FindThunkTarget           equ ?FindThunkTarget@IJWNOADThunk@@QEAAPEBXXZ
-endif
 gfHostConfig                            equ ?g_fHostConfig@@3KA
 NDirect__IsHostHookEnabled              equ ?IsHostHookEnabled@NDirect@@SAHXZ
 
 extern CreateThreadBlockThrow:proc
 extern TheUMEntryPrestubWorker:proc
-ifdef FEATURE_MIXEDMODE
-extern IJWNOADThunk__FindThunkTarget:proc
-endif
 extern UMEntryPrestubUnwindFrameChainHandler:proc
 extern UMThunkStubUnwindFrameChainHandler:proc
 extern g_TrapReturningThreads:dword
@@ -463,42 +456,6 @@ CopyStackArgs:
         jmp             ArgumentsSetup
         
 NESTED_END UM2MThunk_WrapperHelper, _TEXT
-
-ifdef FEATURE_MIXEDMODE
-NESTED_ENTRY IJWNOADThunk__MakeCall, _TEXT
-        ; METHODDESC_REGISTER = IJWNOADThunk*
-
-        alloc_stack     68h
-
-        save_reg_postrsp    rcx, 70h
-        save_reg_postrsp    rdx, 78h
-        save_reg_postrsp    r8,  80h
-        save_reg_postrsp    r9,  88h
-
-        save_xmm128_postrsp xmm0, 20h
-        save_xmm128_postrsp xmm1, 30h
-        save_xmm128_postrsp xmm2, 40h
-        save_xmm128_postrsp xmm3, 50h
-    END_PROLOGUE
-
-        mov             rcx, METHODDESC_REGISTER
-        call            IJWNOADThunk__FindThunkTarget
-
-        movdqa          xmm0, xmmword ptr [rsp + 20h]
-        movdqa          xmm1, xmmword ptr [rsp + 30h]
-        movdqa          xmm2, xmmword ptr [rsp + 40h]
-        movdqa          xmm3, xmmword ptr [rsp + 50h]
-
-        mov             rcx, [rsp + 70h]
-        mov             rdx, [rsp + 78h]
-        mov             r8,  [rsp + 80h]
-        mov             r9 , [rsp + 88h]
-
-        ; The target is in rax
-        add             rsp, 68h
-        TAILJMP_RAX
-NESTED_END IJWNOADThunk__MakeCall, _TEXT
-endif ; FEATURE_MIXEDMODE
 
         end
 

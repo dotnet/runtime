@@ -1779,40 +1779,6 @@ private:
     NgenStats                *m_pNgenStats;
 #endif // FEATURE_PREJIT
 
-#ifdef FEATURE_MIXEDMODE 
-    // LoaderHeap for storing thunks
-    PTR_LoaderHeap           m_pThunkHeap;
-
-    // Self-initializing accessor for thunk heap
-    LoaderHeap              *GetThunkHeap();
-    // Self-initializing accessor for domain-independent thunk heap
-    LoaderHeap              *GetDllThunkHeap();
-
-
-public:
-    UMEntryThunk*            GetADThunkTable();
-    void                     SetADThunkTable(UMEntryThunk* pTable);
-
-protected:
-    // Domain that the IJW fixups were applied in
-    ADID                    m_DomainIdOfIJWFixups;
-
-public:
-    ADID                    GetDomainIdOfIJWFixups()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERT(m_DomainIdOfIJWFixups != ADID());
-        return m_DomainIdOfIJWFixups;
-    }
-
-    void                     SetDomainIdOfIJWFixups(ADID id)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERT(id != ADID());
-        m_DomainIdOfIJWFixups = id;
-    }
-
-#endif // FEATURE_MIXEDMODE
 
 protected:
 
@@ -1862,9 +1828,6 @@ protected:
 
     void ApplyMetaData();
 
-#ifdef FEATURE_MIXEDMODE
-    void FixupVTables();
-#endif 
 
     void FreeClassTables();
 
@@ -2698,10 +2661,6 @@ public:
 
     BOOL CanExecuteCode();
 
-#ifdef FEATURE_MIXEDMODE
-    LPVOID GetUMThunk(LPVOID pManagedIp, PCCOR_SIGNATURE pSig, ULONG cSig);
-    LPVOID GetMUThunk(LPVOID pUnmanagedIp, PCCOR_SIGNATURE pSig, ULONG cSig);
-#endif // FEATURE_MIXEDMODE
 
     // This data is only valid for NGEN'd modules, and for modules we're creating at NGEN time.
     ModuleCtorInfo* GetZapModuleCtorInfo()
@@ -2713,9 +2672,6 @@ public:
 
  private:
 
-#ifdef FEATURE_MIXEDMODE 
-    class MUThunkHash *m_pMUThunkHash;
-#endif // FEATURE_MIXEDMODE
 
  public:
 #ifndef DACCESS_COMPILE
