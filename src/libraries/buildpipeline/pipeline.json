@@ -284,8 +284,7 @@
           "Parameters": {
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework=uap -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=arm /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"BuildMoniker=none\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -300,8 +299,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=uap -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -317,8 +315,7 @@
             "PB_Platform": "x86",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-framework=uap -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -333,8 +330,7 @@
           "Parameters": {
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=arm /p:ConfigurationGroup=Release /p:\"EnableCloudTest=false\" /p:\"BuildMoniker=none\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -349,8 +345,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -364,10 +359,8 @@
           "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -382,8 +375,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "**NOT_USED**"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -673,8 +665,7 @@
           "Parameters": {
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework:uap -buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=arm /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"BuildMoniker=none\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -689,8 +680,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework:uap -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -706,8 +696,7 @@
             "PB_Platform": "x86",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-framework:uap -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x86 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -722,8 +711,7 @@
           "Parameters": {
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework:uapaot -buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=arm /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=false\" /p:\"BuildMoniker=none\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -738,8 +726,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework:uapaot -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -755,8 +742,7 @@
             "PB_Platform": "x86",
             "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-framework:uapaot -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/t:CloudBuild /p:ArchGroup=x86 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -771,8 +757,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-allConfigurations -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "**NOT_USED**"
+            "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
