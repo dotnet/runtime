@@ -31,9 +31,6 @@ VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 
 VPTR_CLASS(DomainAssembly)
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-VPTR_CLASS(DomainModule)
-#endif
 #ifdef FEATURE_REMOTING
 #ifdef _TARGET_AMD64_ // HAS_REMOTING_PRECODE
 VPTR_CLASS(CNonVirtualThunkMgr)
@@ -54,9 +51,6 @@ VPTR_CLASS(DelegateInvokeStubManager)
 VPTR_CLASS(TailCallStubManager)
 VPTR_CLASS(PEFile)
 VPTR_CLASS(PEAssembly)
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-VPTR_CLASS(PEModule)
-#endif
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)

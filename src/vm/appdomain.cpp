@@ -5939,109 +5939,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     RETURN result;
 } // AppDomain::LoadDomainAssembly
 
-#ifdef  FEATURE_MULTIMODULE_ASSEMBLIES
-
-#ifndef CROSSGEN_COMPILE
-// Thread stress
-class LoadDomainModuleStress : APIThreadStress
-{
-public:
-    AppDomain *pThis;
-    DomainAssembly *pAssembly;
-    PEModule *pFile;
-    FileLoadLevel targetLevel;
-
-    LoadDomainModuleStress(AppDomain *pThis, DomainAssembly *pAssembly, PEModule *pFile, FileLoadLevel targetLevel)
-        : pThis(pThis), pAssembly(pAssembly), pFile(pFile), targetLevel(targetLevel) {LIMITED_METHOD_CONTRACT;}
-
-    void Invoke()
-    {
-        WRAPPER_NO_CONTRACT;
-        STATIC_CONTRACT_SO_INTOLERANT;
-        SetupThread();
-        pThis->LoadDomainModule(pAssembly, pFile, targetLevel);
-    }
-};
-#endif // CROSSGEN_COMPILE
-
-DomainModule *AppDomain::LoadDomainModule(DomainAssembly *pAssembly, PEModule *pFile,
-                                          FileLoadLevel targetLevel)
-{
-    CONTRACT(DomainModule *)
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(CheckPointer(pFile));
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
-                      || RETVAL->GetLoadLevel() >= targetLevel);
-        POSTCONDITION(RETVAL->CheckNoError(targetLevel));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    GCX_PREEMP();
-
-#ifndef CROSSGEN_COMPILE
-    // Thread stress
-    LoadDomainModuleStress ts (this, pAssembly, pFile, targetLevel);
-#endif
-
-    // Check for existing fully loaded assembly
-    DomainModule *result = pAssembly->FindModule(pFile);
-    if (result == NULL)
-    {
-        LoadLockHolder lock(this);
-
-        // Check again in case we were racing
-        result = pAssembly->FindModule(pFile);
-        if (result == NULL)
-        {
-            // Find the list lock entry
-            FileLoadLock *fileLock = (FileLoadLock *) lock->FindFileLock(pFile);
-            if (fileLock == NULL)
-            {
-                // We are the first one in - create the DomainModule
-                NewHolder<DomainModule> pDomainModule(new DomainModule(this, pAssembly, pFile));
-                fileLock = FileLoadLock::Create(lock, pFile, pDomainModule);
-                pDomainModule.SuppressRelease();
-            }
-            else
-                fileLock->AddRef();
-
-            lock.Release();
-
-            // We pass our ref on fileLock to LoadDomainFile to release.
-
-            // Note that if we throw here, we will poison fileLock with an error condition,
-            // so it will not be removed until app domain unload.  So there is no need
-            // to release our ref count.
-
-            result = (DomainModule *) LoadDomainFile(fileLock, targetLevel);
-        }
-        else
-        {
-            lock.Release();
-            result->EnsureLoadLevel(targetLevel);
-        }
-
-    }
-    else
-        result->EnsureLoadLevel(targetLevel);
-
-    // Malformed metadata may contain an Assembly reference to what is actually
-    // a Module. In this case we need to throw an exception, since returning a
-    // DomainAssembly as a DomainModule is a type safety violation.
-    if (result->IsAssembly())
-    {
-        ThrowHR(COR_E_ASSEMBLY_NOT_EXPECTED);
-    }
-
-    RETURN result;
-}
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
 
 struct LoadFileArgs
 {
@@ -6402,19 +6299,8 @@ DomainFile *AppDomain::LoadDomainNeutralModuleDependency(Module *pModule, FileLo
             ThrowHR(SECURITY_E_INCOMPATIBLE_SHARE);
         }
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES        
-        if (pModule == pAssembly->GetManifestModule())
-            pDomainFile = pDomainAssembly;
-        else
-        {
-            pDomainFile = LoadDomainModule(pDomainAssembly, (PEModule*) pModule->GetFile(), targetLevel);
-            STRESS_LOG4(LF_CLASSLOADER, LL_INFO100,"LDNMD:  DF: for %p[%p/%p] is %p",
-                        pModule,pDomainAssembly,pModule->GetFile(),pDomainFile);
-        }
-#else
         _ASSERTE (pModule == pAssembly->GetManifestModule());
         pDomainFile = pDomainAssembly;
-#endif
     }
     else
     {

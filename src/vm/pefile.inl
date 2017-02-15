@@ -336,11 +336,7 @@ inline BOOL PEFile::IsResource() const
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    return IsModule() && dac_cast<PTR_PEModule>(this)->IsResource();
-#else
     return FALSE;
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 }
 
 inline BOOL PEFile::IsIStream() const
@@ -354,13 +350,6 @@ inline BOOL PEFile::IsIntrospectionOnly() const
 {
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_TOLERANT;
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    if (IsModule())
-    {
-        return dac_cast<PTR_PEModule>(this)->GetAssembly()->IsIntrospectionOnly();
-    }
-    else
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
     {
         return (m_flags & PEFILE_INTROSPECTIONONLY) != 0;
     }
@@ -370,16 +359,9 @@ inline BOOL PEFile::IsIntrospectionOnly() const
 inline PEAssembly *PEFile::GetAssembly() const
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    if (IsAssembly())
-        return dac_cast<PTR_PEAssembly>(this);
-    else
-        return dac_cast<PTR_PEModule>(this)->GetAssembly();
-#else
     _ASSERTE(IsAssembly());
     return dac_cast<PTR_PEAssembly>(this);
 
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 }
 
 // ------------------------------------------------------------
@@ -610,10 +592,6 @@ inline LPCUTF8 PEFile::GetSimpleName()
 
     if (IsAssembly())
         RETURN dac_cast<PTR_PEAssembly>(this)->GetSimpleName();
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    else if (IsModule())
-        RETURN dac_cast<PTR_PEModule>(this)->GetSimpleName();
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
     else 
     {
         LPCUTF8 szScopeName;
@@ -1853,84 +1831,6 @@ inline BOOL PEAssembly::IsFullySigned()
 // ------------------------------------------------------------
 // Metadata access
 // ------------------------------------------------------------
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-inline PEAssembly *PEModule::GetAssembly()
-{
-    CONTRACT(PEAssembly *)
-    {
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CANNOT_TAKE_LOCK;
-        SO_TOLERANT;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    RETURN m_assembly;
-}
-
-inline BOOL PEModule::IsResource()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-#ifdef DACCESS_COMPILE
-    _ASSERTE(m_bIsResource!=-1);
-#else
-    if (m_bIsResource==-1)
-    {
-        DWORD flags;
-        if (FAILED(m_assembly->GetPersistentMDImport()->GetFileProps(m_token, NULL, NULL, NULL, &flags)))
-        {
-            _ASSERTE(!"If this fires, then we have to throw for corrupted images");
-            flags = 0;
-        }
-        m_bIsResource=((flags & ffContainsNoMetaData) != 0);
-    }
-#endif
-    
-    return m_bIsResource;
-}
-
-inline LPCUTF8 PEModule::GetSimpleName()
-{
-    CONTRACT(LPCUTF8)
-    {
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(strlen(RETVAL) > 0);
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-    
-    LPCUTF8 name;
-    
-    if (FAILED(m_assembly->GetPersistentMDImport()->GetFileProps(m_token, &name, NULL, NULL, NULL)))
-    {
-        _ASSERTE(!"If this fires, then we have to throw for corrupted images");
-        name = "";
-    }
-    
-    RETURN name;
-}
-
-inline mdFile PEModule::GetToken()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_token;
-}
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
 #ifndef DACCESS_COMPILE
 inline void PEFile::RestoreMDImport(IMDInternalImport* pImport)
