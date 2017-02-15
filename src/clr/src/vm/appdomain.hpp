@@ -2356,11 +2356,6 @@ public:
                                         FileLoadLevel targetLevel,
                                         AssemblyLoadSecurity *pLoadSecurity = NULL);
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    DomainModule *LoadDomainModule(DomainAssembly *pAssembly,
-                                   PEModule *pFile,
-                                   FileLoadLevel targetLevel);
-#endif 
 
     CHECK CheckValidModule(Module *pModule);
 #ifdef FEATURE_LOADER_OPTIMIZATION    

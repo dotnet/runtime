@@ -310,14 +310,6 @@ class Zapper
     void CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
     ZapImage * CompileModule(CORINFO_MODULE_HANDLE hModule,
                              IMetaDataAssemblyEmit *pEmit);
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES 
-    void CompileNonManifestModules(ULONG hashAlgId, SArray<HANDLE> &hFiles);
-    static void * GetMapViewOfFile(
-                                HANDLE hFile,
-                                DWORD * pdwFileLen);
-    static void ComputeHashValue(HANDLE hFile, int hashAlg,
-                                 BYTE **ppHashValue, DWORD *cbHashValue);
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES 
     void InstallCompiledAssembly(LPCWSTR szAssemblyName, LPCWSTR szNativeImagePath, HANDLE hFile, SArray<HANDLE> &hFiles);
 
     HRESULT GetExceptionHR();

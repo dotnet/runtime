@@ -130,9 +130,6 @@ public:
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
     static Assembly *CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs *args);
-#ifdef  FEATURE_MULTIMODULE_ASSEMBLIES    
-    ReflectionModule *CreateDynamicModule(LPCWSTR szModuleName, LPCWSTR szFileName, BOOL fIsTransient, INT32* ptkFile = NULL);
-#endif
 
     MethodDesc *GetEntryPoint();
 
@@ -237,12 +234,6 @@ public:
         return ModuleIterator(this);
     }
 
-#ifdef  FEATURE_MULTIMODULE_ASSEMBLIES
-    //****************************************************************************************
-    //
-    // Find the module 
-    Module* FindModule(PEFile *pFile, BOOL includeLoading = FALSE);
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
 
     //****************************************************************************************
     //
@@ -619,10 +610,6 @@ public:
     //****************************************************************************************
     //
 
-#ifdef  FEATURE_MULTIMODULE_ASSEMBLIES
-    PEModule * LoadModule_AddRef(mdFile kFile, BOOL fLoadResource);
-    PEModule * RaiseModuleResolveEvent_AddRef(LPCSTR szName, mdFile kFile);
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
     static BOOL FileNotFound(HRESULT hr);
 
     //****************************************************************************************
@@ -721,12 +708,6 @@ protected:
     // Keep track of the vars that need to be freed.
     short int m_FreeFlag;
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    // Hash of files in manifest by name to File token
-    PTR_EEUtf8StringHashTable m_pAllowedFiles;
-    // Critical section guarding m_pAllowedFiles
-    Crst m_crstAllowedFiles;
-#endif 
 
 private:
 
