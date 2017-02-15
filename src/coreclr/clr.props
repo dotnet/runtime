@@ -132,7 +132,6 @@
     <FeatureMdaSupported>false</FeatureMdaSupported>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
-    <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
     <FeatureReJIT>false</FeatureReJIT>
     <FeatureVersioningLog>false</FeatureVersioningLog>
