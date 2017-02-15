@@ -50,7 +50,6 @@
 #include "debugdebugger.h"
 #include "assemblyname.hpp"
 #include "assemblynative.hpp"
-#include "rwlock.h"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
 #include "nativeoverlapped.h"
