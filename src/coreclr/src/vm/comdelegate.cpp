@@ -18,9 +18,6 @@
 #include "field.h"
 #include "dllimportcallback.h"
 #include "dllimport.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "eeconfig.h"
 #include "mdaassistants.h"
 #include "cgensys.h"
@@ -919,28 +916,11 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         {
             _ASSERTE(pRefFirstArg == NULL || *pRefFirstArg == NULL);
 
-#ifdef FEATURE_REMOTING
-            if (!pTargetMethod->IsStatic())
-            {
-                // Open-instance delegate may have remoted target if the method is declared by
-                // an interface, by a type deriving from MarshalByRefObject, or by System.Object.
-                // The following condition is necessary but not sufficient as it's always possible
-                // to invoke the delegate on a local instance. Precise check would require doing
-                // the check at invocation time. We are secure because we demand MemberAccess when
-                // there is a possibility that the invocation will be remote.
-                // 
-                MethodTable *pMT = pTargetMethod->GetMethodTable();
-                targetPossiblyRemoted = (pMT == g_pObjectClass || pMT->IsInterface() || pMT->IsMarshaledByRef());
-            }
-#endif // FEATURE_REMOTING
         }
         else
         {
             // closed-static is OK and we can check the target in the closed-instance case
             pInstanceMT = (*pRefFirstArg == NULL ? NULL : (*pRefFirstArg)->GetMethodTable());
-#ifdef FEATURE_REMOTING
-            targetPossiblyRemoted = InvokeUtil::IsTargetRemoted(pTargetMethod, pInstanceMT);
-#endif
         }
 
         RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetPossiblyRemoted));
@@ -2407,29 +2387,8 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 
         ret = COMDelegate::TheDelegateInvokeStub();
     }
-#ifdef FEATURE_REMOTING
-    else if (pMD == pClass->m_pBeginInvokeMethod)
-    {
-        CRemotingServices::EnsureRemotingStarted();
-
-        if (!ValidateBeginInvoke(pClass))
-            COMPlusThrow(kInvalidProgramException);
-
-        ret = CTPMethodTable::GetDelegateStubEntryPoint();
-    }
-    else if (pMD == pClass->m_pEndInvokeMethod)
-    {
-        CRemotingServices::EnsureRemotingStarted();
-
-        if (!ValidateEndInvoke(pClass))
-            COMPlusThrow(kInvalidProgramException);
-
-        ret = CTPMethodTable::GetDelegateStubEntryPoint();
-    }
-#endif // FEATURE_REMOTING
     else
     {
-#ifndef FEATURE_REMOTING
 
         // Since we do not support asynchronous delegates in CoreCLR, we much ensure that it was indeed a async delegate call
         // and not an invalid-delegate-layout condition. 
@@ -2440,7 +2399,6 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             COMPlusThrow(kPlatformNotSupportedException);
         }
 
-#endif //FEATURE_REMOTING
 
         _ASSERTE(!"Bad Delegate layout");
         COMPlusThrow(kInvalidProgramException);

@@ -24,9 +24,6 @@
 
 #include <pedecoder.h>
 
-#ifdef FEATURE_REMOTING
-#include <crossdomaincalls.h>
-#endif
 
 #include <mdfileformat.h>
 
@@ -5545,9 +5542,6 @@ NativeImageDumper::EnumMnemonics s_MTFlagsLow[] =
     MTFLAG_ENTRY(GenericsMask_GenericInst),
     MTFLAG_ENTRY(GenericsMask_SharedInst),
     MTFLAG_ENTRY(GenericsMask_TypicalInst),
-#if defined(FEATURE_REMOTING)
-    MTFLAG_ENTRY(ContextStatic),
-#endif
     MTFLAG_ENTRY(HasRemotingVtsInfo),
     MTFLAG_ENTRY(HasVariance),
     MTFLAG_ENTRY(HasDefaultCtor),
@@ -5788,9 +5782,6 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(FIXED_ADDRESS_VT_STATICS),
         VMF_ENTRY(HASLAYOUT),
         VMF_ENTRY(ISNESTED),
-#ifdef FEATURE_REMOTING
-        VMF_ENTRY(CANNOT_BE_BLITTED_BY_OBJECT_CLONER),
-#endif
         VMF_ENTRY(IS_EQUIVALENT_TYPE),
 
         VMF_ENTRY(HASOVERLAYEDFIELDS),
@@ -6897,12 +6888,6 @@ void NativeImageDumper::DumpFieldDesc( PTR_FieldDesc fd, const char * name )
                                offsetof(FieldDesc, m_dword1),
                                fieldsize(FieldDesc, m_dword1),
                                fd->m_isThreadLocal );
-#if defined(FEATURE_REMOTING)
-    m_display->WriteFieldFlag( "m_isContextLocal",
-                               offsetof(FieldDesc, m_dword1),
-                               fieldsize(FieldDesc, m_dword1),
-                               fd->m_isContextLocal );
-#endif
     m_display->WriteFieldFlag( "m_isRVA", offsetof(FieldDesc, m_dword1),
                                fieldsize(FieldDesc, m_dword1),
                                fd->m_isRVA );
@@ -6934,30 +6919,6 @@ void NativeImageDumper::DumpFieldDesc( PTR_FieldDesc fd, const char * name )
 #endif
     DisplayEndStructure( ALWAYS ); //name
 }
-#if defined(FEATURE_REMOTING)
-NativeImageDumper::EnumMnemonics s_XADOptFlags[] =
-{
-#define XAD_ENTRY(x) NativeImageDumper::EnumMnemonics( RemotableMethodInfo:: x, W(#x) )
-      XAD_ENTRY(XAD_FLAGS_INITIALIZED),
-      XAD_ENTRY(XAD_NOT_OPTIMIZABLE),
-      XAD_ENTRY(XAD_BLITTABLE_ARGS),
-      XAD_ENTRY(XAD_BLITTABLE_RET),
-
-      //this is actually the OR of the three below this.  It is a "flag" so
-      //it gets cleared out.
-      XAD_ENTRY(XAD_RET_GC_REF),
-      XAD_ENTRY(XAD_RET_FLOAT),
-      XAD_ENTRY(XAD_RET_DOUBLE),
-#ifdef FEATURE_HFA
-      XAD_ENTRY(XAD_RET_HFA_TYPE),
-#endif
-
-      XAD_ENTRY(XAD_METHOD_IS_VIRTUAL),
-      XAD_ENTRY(XAD_ARGS_HAVE_A_FLOAT),
-
-#undef XAD_ENTRY
-};
-#endif
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -7440,133 +7401,6 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     }
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_REMOTING)
-    //RemotingVtsInfo comes after the generic dictionaries.  So if I
-    //don't have extents, I can't print them.
-    if(haveCompleteExtents &&
-        mt->HasRemotingVtsInfo() 
-        && CHECK_OPT(METHODTABLES)
-        )
-    {
-        _ASSERTE(clazz == GetClassFromMT(mt));
-        /* REVISIT_TODO Tue 12/13/2005
-         * Is this right?  is m_wNumStaticFields actually the number of static
-         * fields?
-         */
-        unsigned numFields = (unsigned)(CountFields(mt)
-            - clazz->GetNumStaticFields());
-        PTR_RemotingVtsInfo vts = *mt->GetRemotingVtsInfoPtr();
-        m_display->StartStructureWithOffset( "OptionalMember_RemotingVtsInfo",
-                                             mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_RemotingVtsInfo),
-                                             sizeof(void*),
-                                             DPtrToPreferredAddr(vts),
-                                             RemotingVtsInfo::GetSize(numFields)
-                                             );
-
-        DisplayStartArrayWithOffset( m_pCallbacks, W("%-30s: %s"),
-                                     RemotingVtsInfo, ALWAYS );
-        for( int i = 0; i < _countof(vts->m_pCallbacks); ++i )
-        {
-            PTR_MethodDesc md( vts->m_pCallbacks[i].GetValue() );
-            DisplayStartElement( "Callback", ALWAYS );
-            DisplayWriteElementString( "CallbackType", s_VTSCallbackNames[i],
-                                       ALWAYS );
-            if (CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(md)))
-            {
-                DoWriteFieldMethodDesc( "MethodDesc", UINT_MAX, UINT_MAX, md );
-            }
-            else
-            {
-                WriteElementMethodDesc( "MethodDesc", md );
-            }
-            DisplayEndElement( ALWAYS ); //Callback
-        }
-        DisplayEndArray( NULL, ALWAYS ); //m_pCallbacks
-#ifdef _DEBUG
-        DisplayWriteFieldInt( m_dwNumFields, vts->m_dwNumFields,
-                              RemotingVtsInfo, ALWAYS );
-#endif
-        /* REVISIT_TODO Tue 12/13/2005
-         * Is there any reason to dump this map?
-         */
-        m_display->WriteFieldEmpty("m_rFieldTypes",
-                                   offsetof(RemotingVtsInfo, m_rFieldTypes),
-                                   RemotingVtsInfo::GetSize(numFields)
-                                   - offsetof(RemotingVtsInfo, m_rFieldTypes) );
-        DisplayEndStructure( ALWAYS ); //OptionalMember_RemotingVtsInfo
-    }
-
-    //RemotableMethodInfo comes after the generic dictionaries.  So if I
-    //don't have extents, I can't print them.
-    if(haveCompleteExtents &&
-        mt->HasRemotableMethodInfo() && 
-        CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_CrossDomainOptimizationInfo cdOpt = *mt->GetRemotableMethodInfoPtr();
-        if( cdOpt == NULL )
-        {
-            _ASSERTE(mt->GetNumVtableSlots() == 0 );
-            m_display->WriteElementPointer("OptionalMember_RemotableMethodInfo",
-                                           NULL); 
-        }
-        else
-        {
-            _ASSERTE(mt->GetNumVtableSlots() > 0 );
-
-            unsigned size = sizeof(RemotableMethodInfo) * mt->GetNumVtableSlots();
-            //one remotable method info for each method.
-            m_display->StartStructureWithOffset( "OptionalMember_RemotableMethodInfo",
-                                                 mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_RemotableMethodInfo),
-                                                 sizeof(void*),
-                                                 DPtrToPreferredAddr(cdOpt),
-                                                 size );
-            m_display->StartArrayWithOffset( "m_rmi",
-                                             offsetof(CrossDomainOptimizationInfo,
-                                                      m_rmi),
-                                             mt->GetNumVtableSlots()
-                                             * sizeof(RemotableMethodInfo), NULL );
-            PTR_RemotableMethodInfo rmi( PTR_HOST_MEMBER_TADDR(CrossDomainOptimizationInfo, cdOpt, m_rmi) ); 
-            for( unsigned i = 0; i < mt->GetNumVtableSlots(); ++i )
-            {
-                PTR_RemotableMethodInfo current = rmi + i;
-                DisplayStartStructure( "RemotableMethodInfo",
-                                       DPtrToPreferredAddr(current),
-                                       sizeof(*current), ALWAYS );
-                DisplayWriteFieldEnumerated( m_OptFlags, current->m_OptFlags,
-                                             RemotableMethodInfo, s_XADOptFlags,
-                                             W(", "), ALWAYS );
-                DisplayEndStructure( ALWAYS ); //RemotableMethodInfo 
-            }
-            DisplayEndArray( "Total RemotableMethodInfos", ALWAYS ); //m_rmi
-            DisplayEndStructure( ALWAYS ); // OptionalMember_RemotableMethodInfo
-        }
-    }
-
-    //ContextStatics comes after the generic dictionaries.  So if I
-    //don't have extents, I can't print them.
-    if(haveCompleteExtents &&
-        mt->HasContextStatics() && 
-        CHECK_OPT(METHODTABLES)
-        )
-    {
-        PTR_ContextStaticsBucket statics =
-            *(mt->GetContextStaticsBucketPtr());
-        m_display->StartStructureWithOffset( "OptionalMember_ContextStatics",
-                                             mt->GetOffsetOfOptionalMember(MethodTable::OptionalMember_ContextStatics),
-                                             sizeof(void*),
-                                             DPtrToPreferredAddr(statics),
-                                             sizeof(*statics) );
-
-#define HANDLE_FIELD(field) \
-        DisplayWriteFieldInt( field, statics->field, \
-                              ContextStaticsBucket, ALWAYS )
-        HANDLE_FIELD(m_dwContextStaticsOffset);
-        HANDLE_FIELD(m_wContextStaticsSize);
-#undef HANDLE_FIELD
-        DisplayEndStructure( ALWAYS ); //OptionalMember_ContextStatics                                                                           
-    }
-#endif
     DisplayEndStructure( METHODTABLES ); //MethodTable
 } // NativeImageDumper::DumpMethodTable
 #ifdef _PREFAST_

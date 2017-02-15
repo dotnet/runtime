@@ -20,9 +20,6 @@
 #include "eeconfig.h"
 #include "excep.h"
 #include "comdelegate.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h" // create context bound and remote class instances
-#endif
 #include "field.h"
 #include "ecall.h"
 

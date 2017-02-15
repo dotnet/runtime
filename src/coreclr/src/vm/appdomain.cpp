@@ -23,9 +23,6 @@
 #endif
 #include "comdynamic.h"
 #include "mlinfo.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "posterror.h"
 #include "assemblynative.hpp"
 #include "shimload.h"
@@ -36,9 +33,6 @@
 #include "eventtrace.h"
 #include "comdelegate.h"
 #include "siginfo.hpp"
-#ifdef FEATURE_REMOTING
-#include "objectclone.h"
-#endif
 #include "typekey.h"
 
 #include "caparser.h"
@@ -68,11 +62,6 @@
 #include "appdomain.inl"
 #include "typeparse.h"
 #include "mdaassistants.h"
-#ifdef FEATURE_REMOTING
-#include "mscorcfg.h"
-#include "appdomainconfigfactory.hpp"
-#include "crossdomaincalls.h"
-#endif
 #include "threadpoolrequest.h"
 
 #include "nativeoverlapped.h"
@@ -2102,57 +2091,7 @@ COMorRemotingFlag AppDomain::GetPreferComInsteadOfManagedRemotingFromConfigFile(
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_REMOTING
-    COMorRemotingFlag res = COMorRemoting_NotInitialized;
-    NonVMComHolder<IXMLParser>         pIXMLParser(NULL);
-    NonVMComHolder<IStream>            pFile(NULL);
-    NonVMComHolder<AppDomainConfigFactory>    factory(NULL); 
-
-    EX_TRY
-    {
-        HRESULT hr;
-        CQuickBytes qb;
-    
-        // get config file URL which is a combination of app base and config file name
-        IfFailGo(m_pFusionContext->PrefetchAppConfigFile());
-
-        LPWSTR wzConfigFileUrl = (LPWSTR)qb.AllocThrows(MAX_URL_LENGTH * sizeof(WCHAR));
-        DWORD dwSize = static_cast<DWORD>(qb.Size());
-
-        IfFailGo(m_pFusionContext->Get(ACTAG_APP_CFG_LOCAL_FILEPATH, wzConfigFileUrl, &dwSize, 0));
-
-        IfFailGo(CreateConfigStream(wzConfigFileUrl, &pFile));
-        
-        IfFailGo(GetXMLObjectEx(&pIXMLParser));
-
-        factory = new (nothrow) AppDomainConfigFactory();
-        
-        if (!factory) { 
-            goto ErrExit;
-        }
-        factory->AddRef(); // RefCount = 1 
-
-
-        IfFailGo(pIXMLParser->SetInput(pFile)); // filestream's RefCount=2
-
-        IfFailGo(pIXMLParser->SetFactory(factory)); // factory's RefCount=2
-
-        IfFailGo(pIXMLParser->Run(-1));
-
-        res = factory->GetCOMorRemotingFlag();
-ErrExit: ;
-
-    }
-    EX_CATCH
-    {
-        ;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return res;
-#else // FEATURE_REMOTING
     return COMorRemoting_COM;
-#endif // FEATURE_REMOTING
 }
 #endif // FEATURE_COMINTEROP
 
@@ -3564,9 +3503,6 @@ struct CallersDataWithStackMark
 {
     StackCrawlMark* stackMark;
     BOOL foundMe;
-#ifdef FEATURE_REMOTING    
-    BOOL skippingRemoting;
-#endif
     MethodDesc* pFoundMethod;
     MethodDesc* pPrevMethod;
     AppDomain*  pAppDomain;
@@ -3761,25 +3697,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     Frame* frame = pCf->GetFrame();
     _ASSERTE(pCf->IsFrameless() || frame);
 
-#ifdef FEATURE_REMOTING
-    if (pFunc == MscorlibBinder::GetMethod(METHOD__STACK_BUILDER_SINK__PRIVATE_PROCESS_MESSAGE))
-    {
-        _ASSERTE(!pCaller->skippingRemoting);
-        pCaller->skippingRemoting = true;
-        return SWA_CONTINUE;
-    }
-    // And we spot the client end because there's a transparent proxy transition
-    // frame pushed.
-    if (frame && frame->GetFrameType() == Frame::TYPE_TP_METHOD_FRAME)
-    {
-        pCaller->skippingRemoting = false;
-        return SWA_CONTINUE;
-    }
-
-    // Skip any frames into between the server and client remoting endpoints.
-    if (pCaller->skippingRemoting)
-        return SWA_CONTINUE;
-#endif
 
 
     // Skipping reflection frames. We don't need to be quite as exhaustive here
@@ -3847,7 +3764,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
         return SWA_CONTINUE;
     }
 
-#ifndef FEATURE_REMOTING
     // If remoting is not available, we only set the caller if the crawlframe is from the same domain.
     // Why? Because if the callerdomain is different from current domain,
     // there have to be interop/native frames in between.
@@ -3857,7 +3773,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // In general, if the caller is INTEROP, we set the caller/callerdomain to be NULL 
     // (To be precise: they are already NULL and we don't change them).
     if (pCf->GetAppDomain() == GetAppDomain())
-#endif // FEATURE_REMOTING
     // We must either be looking for the caller, or the caller's caller when
     // we've already found the caller (we used a non-null value in pFoundMethod
     // simply as a flag, the correct method to return in both case is the
@@ -4264,14 +4179,6 @@ AppDomain::~AppDomain()
 
 
 
-#ifdef FEATURE_REMOTING
-    if (!g_fEEInit)
-    {
-        GCX_COOP();         // See SystemDomain::EnumAllStaticGCRefs if you are removing this
-        CrossDomainTypeMap::FlushStaleEntries();
-        CrossDomainFieldMap::FlushStaleEntries();
-    }
-#endif //  FEATURE_REMOTING
 
 #ifdef FEATURE_COMINTEROP
     if (m_pNameToTypeMap != nullptr)
@@ -4858,16 +4765,7 @@ OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
 
     OBJECTREF activator;
     activator=setup.Call_RetOBJECTREF(args);
-#ifdef FEATURE_REMOTING
-    if (activator != NULL)
-    {
-        GCPROTECT_BEGIN(activator);
-        retval=AppDomainHelper::CrossContextCopyTo(adid,&activator);
-        GCPROTECT_END();
-    }
-#else
     _ASSERTE(activator==NULL);
-#endif
     
 #if defined(FEATURE_MULTICOREJIT)
     // Disable AutoStartProfile in default domain from this code path.
@@ -8512,22 +8410,6 @@ void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
     //
     if (!NingenEnabled())
     {
-#ifdef FEATURE_REMOTING
-        EX_TRY
-        {
-            ADID domainId = GetId();
-            MethodDescCallSite  domainUnloaded(METHOD__REMOTING_SERVICES__DOMAIN_UNLOADED);
-    
-            ARG_SLOT args[1];
-            args[0] = domainId.m_dwId;
-            domainUnloaded.Call(args);
-        }
-        EX_CATCH
-        {
-            //we don't care if it fails
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-#endif //  FEATURE_REMOTING
     }
 
     ClearGCRoots();
@@ -9595,25 +9477,6 @@ end:
 }
 #endif // _DEBUG
 
-#ifdef FEATURE_REMOTING
-OBJECTREF AppDomain::GetAppDomainProxy()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    OBJECTREF orProxy = CRemotingServices::CreateProxyForDomain(this);
-
-    _ASSERTE(orProxy->IsTransparentProxy());
-
-    return orProxy;
-}
-#endif
 
 #endif // CROSSGEN_COMPILE
 

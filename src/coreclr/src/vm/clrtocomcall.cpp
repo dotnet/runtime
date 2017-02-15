@@ -21,9 +21,6 @@
 #include "dllimport.h"
 #include "mlinfo.h"
 #include "eeconfig.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "corhost.h"
 #include "reflectioninvocation.h"
 #include "mdaassistants.h"
@@ -460,15 +457,6 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 
     if (*ppStubMD)
     {
-#ifdef FEATURE_REMOTING
-#ifndef HAS_REMOTING_PRECODE
-        if (!pMD->IsStatic())
-        {
-            pStub = TheGenericComplusCallStub();
-        }
-        else
-#endif // !HAS_REMOTING_PRECODE
-#endif
         {
             pStub = *pComInfo->GetAddrOfILStubField();
         }
@@ -481,13 +469,6 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     return pStub;
 }
 
-#ifdef FEATURE_REMOTING
-extern
-Signature InitMessageData(messageData *msgData, 
-                          FramedMethodFrame *pFrame, 
-                          Module **ppModule, 
-                          SigTypeContext *pTypeContext);
-#endif // FEATURE_REMOTING
 
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {
@@ -649,213 +630,6 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
     return 0;
 }
 
-#ifdef FEATURE_REMOTING
-UINT32 CLRToCOMLateBoundWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DISPID DispId = DISPID_UNKNOWN;
-    const unsigned cbExtraSlots = 7;
-    DWORD BindingFlags = BINDER_AllLookup;
-    UINT32 fpRetSize;
-    mdProperty pd;
-    LPCUTF8 strMemberName;
-    mdToken tkMember;
-    ULONG uSemantic;
-
-    LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMLateBoundWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    // Retrieve the method table and the method desc of the call.
-    MethodTable *pItfMT = pMD->GetInterfaceMethodTable();
-    ComPlusCallMethodDesc *pItfMD = pMD;
-    IMDInternalImport *pMDImport = pItfMT->GetMDImport();
-
-    // Make sure this is only called on dispath only interfaces.
-    _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
-
-    // If this is a method impl MD then we need to retrieve the actual interface MD that
-    // this is a method impl for.
-    // REVISIT_TODO: Stop using ComSlot to convert method impls to interface MD
-    // _ASSERTE(pMD->m_pComPlusCallInfo->m_cachedComSlot == 7);
-    // GopalK
-    if (!pMD->GetMethodTable()->IsInterface()) {
-        pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(pMD->m_pComPlusCallInfo->m_cachedComSlot - cbExtraSlots);
-        CONSISTENCY_CHECK(pMD->GetInterfaceMD() == pItfMD);
-    }
-
-    // See if there is property information for this member.
-    hr = pItfMT->GetModule()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &pd, &strMemberName, &uSemantic);
-    if (hr == S_OK)
-    {
-        // We are dealing with a property accessor.
-        tkMember = pd;
-
-        // Determine which type of accessor we are dealing with.
-        switch (uSemantic)
-        {
-            case msGetter:
-            {
-                // We are dealing with a INVOKE_PROPERTYGET.
-                BindingFlags |= BINDER_GetProperty;
-                break;
-            }
-
-            case msSetter:
-            {
-                // We are dealing with a INVOKE_PROPERTYPUT or a INVOKE_PROPERTYPUTREF.
-                ULONG cAssoc;
-                ASSOCIATE_RECORD* pAssoc;
-                HENUMInternal henum;
-                BOOL bPropHasOther = FALSE;
-
-                // Retrieve all the associates.
-                IfFailThrow(pMDImport->EnumAssociateInit(pd,&henum));
-                
-                cAssoc = pMDImport->EnumGetCount(&henum);
-                _ASSERTE(cAssoc > 0);
-                
-                ULONG allocSize = cAssoc * sizeof(ASSOCIATE_RECORD);
-                if (allocSize < cAssoc)
-                    COMPlusThrow(kTypeLoadException, IDS_EE_TOOMANYASSOCIATES);
-                
-                pAssoc = (ASSOCIATE_RECORD*) _alloca((size_t) allocSize);
-                IfFailThrow(pMDImport->GetAllAssociates(&henum, pAssoc, cAssoc));
-                
-                pMDImport->EnumClose(&henum);
-
-                // Check to see if there is both a set and an other. If this is the case
-                // then the setter is a INVOKE_PROPERTYPUTREF otherwise we will make it a
-                // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                for (ULONG i = 0; i < cAssoc; i++)
-                {
-                    if (pAssoc[i].m_dwSemantics == msOther)
-                    {
-                        bPropHasOther = TRUE;
-                        break;
-                    }
-                }
-
-                if (bPropHasOther)
-                {
-                    // There is both a INVOKE_PROPERTYPUT and a INVOKE_PROPERTYPUTREF for this
-                    // property so we need to be specific and make this invoke a INVOKE_PROPERTYPUTREF.
-                    BindingFlags |= BINDER_PutRefDispProperty;
-                }
-                else
-                {
-                    // There is only a setter so we need to make the invoke a Set which will map to
-                    // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
-                    BindingFlags = BINDER_SetProperty;
-                }
-                break;
-            }
-
-            case msOther:
-            {
-                // We are dealing with a INVOKE_PROPERTYPUT
-                BindingFlags |= BINDER_PutDispProperty;
-                break;
-            }
-
-            default:
-            {
-                _ASSERTE(!"Invalid method semantic!");
-            }
-        }
-    }
-    else
-    {
-        // We are dealing with a normal method.
-        strMemberName = pItfMD->GetName();
-        tkMember = pItfMD->GetMemberDef();
-        BindingFlags |= BINDER_InvokeMethod;
-    }
-
-    struct _gc {
-        OBJECTREF MemberNameObj;
-        OBJECTREF ItfTypeObj;
-        OBJECTREF WrapperTypeArr;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-    {
-        // Retrieve the exposed type object for the interface.
-        gc.ItfTypeObj = pItfMT->GetManagedClassObject();
-
-        // Retrieve the name of the member we will be invoking on. If the member
-        // has a DISPID then we will use that to optimize the invoke.
-        hr = pItfMD->GetMDImport()->GetDispIdOfMemberDef(tkMember, (ULONG*)&DispId);
-        if (hr == S_OK)
-        {
-            WCHAR strTmp[64];
-            
-            _snwprintf_s(strTmp, COUNTOF(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, DispId);
-            gc.MemberNameObj = StringObject::NewString(strTmp);
-        }
-        else
-        {
-            gc.MemberNameObj = StringObject::NewString(strMemberName);
-        }
-
-        // MessageData struct will be used in creating the message object
-        messageData msgData;
-        Module *pModule = NULL;
-        SigTypeContext typeContext;
-        Signature signature = InitMessageData(&msgData, pFrame, &pModule, &typeContext);
-
-        // If the call requires object wrapping, then set up the array
-        // of wrapper types.
-        if (pMD->RequiresArgumentWrapping())
-            gc.WrapperTypeArr = SetUpWrapperInfo(pItfMD);
-
-        _ASSERTE(!signature.IsEmpty() && pModule);
-
-        // Allocate metasig on the stack
-        MetaSig mSig(signature, pModule, &typeContext);
-        msgData.pSig = &mSig; 
-
-        MethodDescCallSite forwardCallToInvoke(METHOD__CLASS__FORWARD_CALL_TO_INVOKE, &gc.ItfTypeObj);
-
-        // Prepare the arguments that will be passed to the method.
-        ARG_SLOT Args[] =
-        {
-            ObjToArgSlot(gc.ItfTypeObj),
-            ObjToArgSlot(gc.MemberNameObj),
-            (ARG_SLOT)BindingFlags,
-            ObjToArgSlot(pFrame->GetThis()),
-            ObjToArgSlot(gc.WrapperTypeArr),
-            (ARG_SLOT)&msgData,
-        };
-
-        // Retrieve the array of members from the type object.
-        forwardCallToInvoke.CallWithValueTypes(Args);
-
-        // the return value is written into the Frame's neginfo, so we don't 
-        // need to return it directly.  We can just have the stub do that work.
-        // However, the stub needs to know what type of FP return this is, if 
-        // any, so we return the fpReturnSize info as the return value.
-        {
-            mSig.Reset();
-
-            ArgIterator argit(&mSig);
-            fpRetSize = argit.GetFPReturnSize();
-        }
-    }
-    GCPROTECT_END();
-
-    return fpRetSize;
-}
-#endif // FEATURE_REMOTING
 
 // calls that propagate from CLR to COM
 
@@ -908,14 +682,6 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMet
     {
         returnValue = CLRToCOMEventCallWorker(pFrame, pMD);
     }
-#ifdef FEATURE_REMOTING
-    else if (pItfMT->GetComInterfaceType() == ifDispatch)
-    {
-        // If the interface is a Dispatch only interface then convert the early bound
-        // call to a late bound call.
-        returnValue = CLRToCOMLateBoundWorker(pFrame, pMD);
-    }
-#endif // FEATURE_REMOTING
     else
     {
         LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));

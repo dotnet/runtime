@@ -63,9 +63,6 @@ EXTERN_C void checkStack(void);
 
 #define USE_INDIRECT_CODEHEADER
 
-#ifdef FEATURE_REMOTING
-#define HAS_REMOTING_PRECODE                    1
-#endif
 
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);

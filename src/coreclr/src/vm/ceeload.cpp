@@ -44,11 +44,6 @@
 #include "metadataexports.h"
 #include "inlinetracking.h"
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#include "crossdomaincalls.h"
-#include "objectclone.h"
-#endif
 
 #ifdef FEATURE_PREJIT
 #include "exceptionhandling.h"
@@ -1311,24 +1306,6 @@ void Module::Destruct()
     FreeClassTables();
     
 
-#if defined(FEATURE_REMOTING) && !defined(HAS_REMOTING_PRECODE)
-    // Destroys thunks for all methods included in hash table.
-    if (m_pInstMethodHashTable != NULL)
-    {
-        InstMethodHashTable::Iterator it(m_pInstMethodHashTable);
-        InstMethodHashEntry *pEntry;
-
-        while (m_pInstMethodHashTable->FindNext(&it, &pEntry))
-        {
-            MethodDesc *pMD = pEntry->GetMethod();
-            if (!pMD->IsRestored())
-                continue;
-
-            if(pMD->GetMethodTable()->IsMarshaledByRef())
-                CRemotingServices::DestroyThunk(pMD);
-        }
-    }
-#endif // FEATURE_REMOTING && !HAS_REMOTING_PRECODE
 
 #ifdef DEBUGGING_SUPPORTED 
     if (g_pDebugInterface)
@@ -8473,43 +8450,6 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     }
 }
 
-#ifdef FEATURE_REMOTING
-static void IsCrossAppDomainOptimizableWrapper(MethodDesc * pMD,
-                                               DWORD* pnumDwords)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    EX_TRY
-    {
-        if (pMD->GetNumGenericMethodArgs() == 0 && !pMD->IsStatic())
-            RemotableMethodInfo::IsCrossAppDomainOptimizable(pMD, pnumDwords);
-    }
-    EX_CATCH
-    {
-        // If there is an exception, it'll mean the info for this method will remain uninitialized.
-        // Just ignore the exception. At runtime, we'll try to initialize it
-        // An exception is possible during ngen if all dependencies are not available
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-}
-
-static void PrepareRemotableMethodInfo(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (!pMT->HasRemotableMethodInfo())
-        return;
-
-    MethodTable::MethodIterator it(pMT);
-    for (; it.IsValid(); it.Next())
-    {
-        DWORD numDwords = 0;
-        IsCrossAppDomainOptimizableWrapper(it.GetMethodDesc(), &numDwords);
-    }
-}
-#endif // FEATURE_REMOTING
 
 bool Module::AreAllClassesFullyLoaded()
 {
@@ -8562,9 +8502,6 @@ void Module::PrepareTypesForSave(DataImage *image)
             if (pMT == NULL || !pMT->IsFullyLoaded())
                 continue;
 
-#ifdef FEATURE_REMOTING
-            PrepareRemotableMethodInfo(pMT);
-#endif // FEATURE_REMOTING
 
         }
     }
@@ -8594,16 +8531,6 @@ void Module::PrepareTypesForSave(DataImage *image)
             }
         }
 
-#ifdef FEATURE_REMOTING
-        for(COUNT_T i = 0; i < pTypes.GetCount(); i ++)
-        {
-            MethodTable * pMT = pTypes[i].AsMethodTable();
-
-            PrepareRemotableMethodInfo(pMT);
-
-            // @todo: prepare critical instantiated types?
-        }
-#endif // FEATURE_REMOTING
     }
 
     image->GetPreloader()->TriageForZap(FALSE, FALSE);

@@ -42,16 +42,6 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#ifdef FEATURE_REMOTING
-#define TransparentProxyObject___stubData 0x8
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stubData == offsetof(TransparentProxyObject, _stubData))
-
-#define TransparentProxyObject___stub 0x14
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stub == offsetof(TransparentProxyObject, _stub))
-
-#define TransparentProxyObject___pMT 0xc
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___pMT == offsetof(TransparentProxyObject, _pMT))
-#endif // FEATURE_REMOTING
 
 // CONTEXT from rotor_pal.h
 #define CONTEXT_Edi 0x9c

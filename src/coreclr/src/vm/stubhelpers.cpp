@@ -22,9 +22,6 @@
 #include "gcheaputilities.h"
 #include "interoputil.h"
 #include "gcscan.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>

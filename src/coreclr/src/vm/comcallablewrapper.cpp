@@ -16,9 +16,6 @@
 #include "clrtypes.h"
 
 #include "comcallablewrapper.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 #include "object.h"
 #include "field.h"
@@ -409,17 +406,6 @@ MethodTable* RefineProxy(OBJECTREF pServer)
     
     MethodTable* pRefinedClass = NULL;
     
-#ifdef FEATURE_REMOTING
-    GCPROTECT_BEGIN(pServer);
-    if (pServer->IsTransparentProxy())
-    {
-        // if we have a transparent proxy let us refine it fully 
-        // before giving it out to unmanaged code
-        REFLECTCLASSBASEREF refClass= CRemotingServices::GetClass(pServer);
-        pRefinedClass = refClass->GetType().GetMethodTable();
-    }
-    GCPROTECT_END();
-#endif
 
     RETURN pRefinedClass;
 }
@@ -1286,10 +1272,6 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     MethodTable* pMT = pTemplate->GetClassType().GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
 
-#ifdef FEATURE_REMOTING
-    if (CRemotingServices::IsTransparentProxy(OBJECTREFToObject(oref)))
-        m_flags |= enum_IsObjectTP;
-#endif
     
     m_pMT = pMT;
     m_pWrap = pWrap; 
@@ -2736,11 +2718,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
     pServer = *ppObj;
 
-#ifdef FEATURE_REMOTING
-    Context *pContext = Context::GetExecutionContext(pServer);
-#else
     Context *pContext = GetAppDomain()->GetDefaultContext();
-#endif
 
     // Force Refine the object if it is a transparent proxy
     RefineProxy(pServer);

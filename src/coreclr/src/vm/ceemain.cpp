@@ -158,9 +158,6 @@
 #include "eedbginterfaceimpl.h"
 #include "debugdebugger.h"
 #include "cordbpriv.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "comdelegate.h"
 #include "appdomain.hpp"
 #include "perfcounters.h"
@@ -869,9 +866,6 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef CROSSGEN_COMPILE
 
         // Initialize remoting
-#ifdef FEATURE_REMOTING
-        CRemotingServices::Initialize();
-#endif // FEATURE_REMOTING
 
         // weak_short, weak_long, strong; no pin
         if (!Ref_Initialize())

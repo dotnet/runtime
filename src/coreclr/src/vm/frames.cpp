@@ -24,9 +24,6 @@
 #include "dbginterface.h"
 #include "gms.h"
 #include "eeconfig.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "ecall.h"
 #include "clsload.hpp"
 #include "cgensys.h"
@@ -1013,34 +1010,6 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     }
 }
 
-#ifdef FEATURE_REMOTING
-#include "objectclone.h"
-void GCSafeCollectionFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    PTR_GCSafeCollection collection = dac_cast<PTR_GCSafeCollection>(m_pCollection);
-    collection->ReportGCRefs(fn, sc);
-}
-
-#ifndef DACCESS_COMPILE
-GCSafeCollectionFrame::GCSafeCollectionFrame(void *collection)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    _ASSERTE(collection != NULL);
-    m_pCollection = collection;
-
-    Frame::Push();
-}
-
-VOID GCSafeCollectionFrame::Pop()
-{
-    LIMITED_METHOD_CONTRACT;
-    Frame::Pop();
-}
-#endif // !DACCESS_COMPILE
-#endif // FEATURE_REMOTING
 
 #ifndef DACCESS_COMPILE
 //--------------------------------------------------------------------
@@ -1537,76 +1506,6 @@ BOOL TransitionFrame::Protects(OBJECTREF * ppORef)
 
 //
 //+----------------------------------------------------------------------------
-#ifdef FEATURE_REMOTING
-
-#ifndef DACCESS_COMPILE
-TPMethodFrame::TPMethodFrame(TransitionBlock * pTransitionBlock)
-    : FramedMethodFrame(pTransitionBlock, NULL)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-void TPMethodFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Delegate to FramedMethodFrame
-    FramedMethodFrame::GcScanRoots(fn, sc);
-    FramedMethodFrame::PromoteCallerStack(fn, sc);
-
-    MetaSig::RETURNTYPE returnType = GetFunction()->ReturnsObject();
-
-    // Promote the returned object
-    if(returnType == MetaSig::RETOBJ)
-    {
-        (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    }
-    else if (returnType == MetaSig::RETBYREF)
-    {
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
-    }
-
-    return;
-}
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     TPMethodFrame::TraceFrame    public
-//
-//  Synopsis:   Return where the frame will execute next - the result is filled
-//              into the given "trace" structure.  The frame is responsible for
-//              detecting where it is in its execution lifetime.
-//
-//
-
-//
-//+----------------------------------------------------------------------------
-BOOL TPMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch, 
-                               TraceDestination *trace, REGDISPLAY *regs)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // We want to set a frame patch, unless we're already at the
-    // frame patch, in which case we'll trace stable entrypoint which 
-    // should be set by now.
-
-    if (fromPatch)
-    {
-        trace->InitForStub(GetFunction()->GetStableEntryPoint());
-    }
-    else
-    {
-#ifdef DACCESS_COMPILE
-        DacNotImpl();
-#else
-        trace->InitForStub(GetEEFuncEntryPoint(TransparentProxyStubPatchLabel));
-#endif
-    }
-    return TRUE;
-
-}
-#endif // FEATURE_REMOTING
 
 #ifdef FEATURE_COMINTEROP
 
@@ -2096,38 +1995,6 @@ void ContextTransitionFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
         
     // The dac only cares about strong references at the moment.  Since this is always
     // in a weak ref, we don't report it here.
-#if defined(FEATURE_REMOTING) && !defined(DACCESS_COMPILE)
-    Context *returnContext = GetReturnContext();
-    PREFIX_ASSUME(returnContext != NULL);
-    _ASSERTE(returnContext);
-    _ASSERTE(returnContext->GetDomain());    // this will make sure is a valid pointer
-
-    // In the VM we operate on a local to avoid double relocation.  In the dac we actually want
-    // to know the real location.
-#ifdef DACCESS_COMPILE
-    PTR_PTR_Object ppRef = returnContext->GetExposedObjectRawUncheckedPtr();
-    
-    if (*ppRef == NULL)
-        return;
-        
-    (*fn)(ppRef, sc, 0);
-
-#else // DACCESS_COMPILE
-    // We are in the middle of the GC. OBJECTREFs can't be used here since their built-in validation
-    // chokes on objects that have been relocated already
-    Object *pRef = returnContext->GetExposedObjectRawUnchecked();
-    
-    if (pRef == NULL)
-        return;
-
-    LOG((LF_GC, INFO3, "ContextTransitionFrame Protection Frame Promoting" FMT_ADDR "to ", DBG_ADDR(pRef) ));
-    // Don't check app domains here - the objects are in the parent frame's app domain
-
-    (*fn)(&pRef, sc, 0);
-    LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(pRef)));    
-#endif // !DACCESS_COMPILE
-
-#endif    
 }
 
 

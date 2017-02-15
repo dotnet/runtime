@@ -224,13 +224,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // These are all copied across from the old MT, i.e. don't depend on the
     // instantiation.
-#ifdef FEATURE_REMOTING  
-    BOOL fHasRemotingVtsInfo = pOldMT->HasRemotingVtsInfo();
-    BOOL fHasContextStatics = pOldMT->HasContextStatics();
-#else
     BOOL fHasRemotingVtsInfo = FALSE;
     BOOL fHasContextStatics = FALSE;
-#endif
     BOOL fHasGenericsStaticsInfo = pOldMT->HasGenericsStaticsInfo();
     BOOL fHasThreadStatics = (pOldMT->GetNumThreadStaticFields() > 0);
 
@@ -479,12 +474,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     //    enum_flag_NGEN_NeedsRestore
 #endif // FEATURE_PREJIT
 
-#if defined(_DEBUG) && defined (FEATURE_REMOTING)
-    if (pOldMT->IsContextful() || pOldMT->GetClass()->HasRemotingProxyAttribute())
-    {
-        _ASSERTE(pOldMT->RequiresManagedActivation());
-    }
-#endif // _DEBUG
     if (pOldMT->RequiresManagedActivation())
     {
         // Will also set enum_flag_RemotingConfigChecked
@@ -497,12 +486,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (fHasGenericsStaticsInfo)
         pMT->SetDynamicStatics(TRUE);
 
-#ifdef FEATURE_REMOTING  
-    if (fHasRemotingVtsInfo)
-        pMT->SetHasRemotingVtsInfo();
-    if (fHasContextStatics)
-        pMT->SetHasContextStatics();
-#endif
 
 #ifdef FEATURE_COMINTEROP
     if (fHasCCWTemplate)
@@ -621,35 +604,12 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pMT->SetupGenericsStaticsInfo(pStaticFieldDescs);
     }
 
-#ifdef FEATURE_REMOTING  
-    // We do not cache the data for for non-canonical methods.
-    _ASSERTE(!pMT->HasRemotableMethodInfo());
-#endif
 
     // VTS info doesn't depend on the exact instantiation but we make a copy
     // anyway since we can't currently deal with the possibility of having a
     // cross module pointer to the data block. Eventually we might be able to
     // tokenize this reference, but determine first whether there's enough
     // performance degradation to justify the extra complexity.
-#ifdef FEATURE_REMOTING  
-    if (fHasRemotingVtsInfo)
-    {
-        RemotingVtsInfo *pOldInfo = pOldMT->GetRemotingVtsInfo();
-        DWORD            cbInfo   = RemotingVtsInfo::GetSize(pOldMT->GetNumIntroducedInstanceFields());
-        RemotingVtsInfo *pNewInfo = (RemotingVtsInfo*)pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbInfo)));
-
-        memcpyNoGCRefs(pNewInfo, pOldInfo, cbInfo);
-
-        *(pMT->GetRemotingVtsInfoPtr()) = pNewInfo;
-    }
-    
-    // if there are thread or context static make room for them there is no sharing with the other MethodTable
-    if (fHasContextStatics)
-    {
-        // this is responsible for setting the flag and allocation in the loader heap
-        pMT->SetupContextStatics(pamTracker, pOldMT->GetContextStaticsSize());
-    }
-#endif //FEATURE_REMOTING
 
     pMT->SetCl(pOldMT->GetCl());
     
@@ -657,10 +617,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(!fContainsGenericVariables == !pMT->ContainsGenericVariables());
     _ASSERTE(!fHasGenericsStaticsInfo == !pMT->HasGenericsStaticsInfo());
     _ASSERTE(!pLoaderModule->GetAssembly()->IsDomainNeutral() == !pMT->IsDomainNeutral());
-#ifdef FEATURE_REMOTING      
-    _ASSERTE(!fHasRemotingVtsInfo == !pMT->HasRemotingVtsInfo());
-    _ASSERTE(!fHasContextStatics == !pMT->HasContextStatics());
-#endif    
 #ifdef FEATURE_COMINTEROP
     _ASSERTE(!fHasDynamicInterfaceMap == !pMT->HasDynamicInterfaceMap());
     _ASSERTE(!fHasRCWPerTypeData == !pMT->HasRCWPerTypeData());

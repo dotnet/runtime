@@ -14,11 +14,7 @@
 #include "security.h"
 #include "securitypolicy.h"
 #include "appdomain.inl"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#else
 #include "callhelpers.h"
-#endif
 
 #ifdef _DEBUG
 void AppDomainStack::CheckOverridesAssertCounts()

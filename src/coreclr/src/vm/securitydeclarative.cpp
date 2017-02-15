@@ -12,9 +12,6 @@
 #include "securitydeclarative.inl"
 #include "eventtrace.h"
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif // FEATURE_REMOTING
 
 
 //-----------------------------------------------------------------------------

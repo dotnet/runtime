@@ -13,9 +13,6 @@
 #include "typehandle.h"
 #include "field.h"
 #include "security.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "jitinterface.h"
@@ -648,21 +645,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             OBJECTREF o;
             bool remoting = false;
         
-#ifdef FEATURE_REMOTING          
-            if (pVMT->IsTransparentProxy())
-                COMPlusThrow(kMissingMethodException,W("NotSupported_Constructor"));
-
-            if (pVMT->MayRequireManagedActivation())
-            {
-                o = CRemotingServices::CreateProxyOrObject(pVMT);
-                remoting = true;
-            }
-            else
-                o = AllocateObject(pVMT);
-
-#else
             o = AllocateObject(pVMT);
-#endif            
             GCPROTECT_BEGIN(o);
 
             MethodDescCallSite ctor(pMeth, &o);
@@ -731,10 +714,6 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     MethodDescCallSite ctor(pMeth);
 
     // We've got the class, lets allocate it and call the constructor
-#ifdef FEATURE_REMOTING      
-    _ASSERTE(!pVMT->IsTransparentProxy());
-    _ASSERTE(!pVMT->MayRequireManagedActivation());
-#endif     
    
     // Nullables don't take this path, if they do we need special logic to make an instance
     _ASSERTE(!Nullable::IsNullableType(instantiatedType));
@@ -1252,14 +1231,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         MethodTable * pMT = ownerType.AsMethodTable();
 
-#ifdef FEATURE_REMOTING
-        if (pMT->MayRequireManagedActivation())
-        {
-            gc.retVal = CRemotingServices::CreateProxyOrObject(pMT);
-            fForceActivationForRemoting = TRUE;
-        }
-        else
-#endif        
         {
             if (pMT != g_pStringClass)
                 gc.retVal = pMT->Allocate();
@@ -1267,12 +1238,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     }
     else
     {
-#ifdef FEATURE_REMOTING
-        if (gc.target != NULL)
-        {
-            fForceActivationForRemoting = gc.target->IsTransparentProxy();
-        }
-#endif
     }
 
     {
@@ -2913,10 +2878,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     
     // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
     // transparent proxy or the jit will get confused.
-#ifdef FEATURE_REMOTING    
-    if (pMT->IsContextful())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-#endif
 
 #ifdef FEATURE_COMINTEROP
     // Also do not allow allocation of uninitialized RCWs (COM objects).
@@ -2970,10 +2931,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetSafeUninitializedObject, ReflectCla
 
     // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
     // transparent proxy or the jit will get confused.
-#ifdef FEATURE_REMOTING        
-    if (pMT->IsContextful())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-#endif    
 
 #ifdef FEATURE_COMINTEROP
     // Also do not allow allocation of uninitialized RCWs (COM objects).
