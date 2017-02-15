@@ -32,11 +32,23 @@
             Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*">
+      <ReferenceCopyLocalPaths 
+        Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
+        Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
+      >
         <Private>false</Private>
         <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
-  </Target>
+    
+    <WriteLinesToFile
+      File="$(RuntimePath)\xunit.console.exe.config"
+      Lines="$([System.IO.File]::ReadAllText('$(ToolsDir)\XUnitNetFXConfigFileTemplate.txt').Replace('{RuntimePath}', $(RuntimePath)))"
+      Overwrite="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(RuntimePath)\xunit.console.exe.config" />
+    </ItemGroup>
+</Target>
 </Project>

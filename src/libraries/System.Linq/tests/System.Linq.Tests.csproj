@@ -14,6 +14,7 @@
     <Compile Include="TakeLastTests.cs" />
     <Compile Include="OrderByTests.cs" />
     <Compile Include="ToHashSetTests.cs" />
+    <Compile Include="SelectManyTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
