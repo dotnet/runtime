@@ -81,9 +81,6 @@ public:
     static BOOL QCALLTYPE InternalGetUserDefaultUILanguage(QCall::StringHandleOnStack userDefaultUiLanguage);
     static BOOL QCALLTYPE InternalGetSystemDefaultUILanguage(QCall::StringHandleOnStack systemDefaultUiLanguage);
 
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-    static FCDECL0(Object*, nativeGetResourceFallbackArray);
-
     //
     // Native helper functions for methods in DateTimeFormatInfo
     //
