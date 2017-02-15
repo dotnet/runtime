@@ -35,10 +35,9 @@ extern int tkill (pid_t tid, int signal);
 
 #include <sys/resource.h>
 
-/* FIXME: Haiku lacks pthread_attr_setschedpolicy */
-#if !defined(__HAIKU__)
-static void
-reset_priority (pthread_attr_t *attr)
+#ifdef MONO_THREADS_PLATFORM_HAS_ATTR_SETSCHED
+void
+mono_threads_platform_reset_priority (pthread_attr_t *attr)
 {
 	struct sched_param param;
 	gint res;
@@ -124,10 +123,7 @@ mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_
 	g_assert (!res);
 #endif /* HAVE_PTHREAD_ATTR_SETSTACKSIZE */
 
-/* FIXME: Haiku lacks pthread_attr_setschedpolicy */
-#if !defined(__HAIKU__)
-	reset_priority (&attr);
-#endif
+	mono_threads_platform_reset_priority (&attr);
 
 	if (stack_size) {
 		res = pthread_attr_getstacksize (&attr, &min_stack_size);

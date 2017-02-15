@@ -7,6 +7,12 @@
 #include <os/kernel/OS.h>
 
 void
+mono_threads_platform_reset_priority(pthread_attr_t *attr)
+{
+	/* FIXME: Implement this on Haiku */
+}
+
+void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	thread_info ti;
