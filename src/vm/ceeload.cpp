@@ -5652,22 +5652,6 @@ DomainAssembly * Module::LoadAssembly(
 
     bool fHasBindableIdentity = HasBindableIdentity(kAssemblyRef);
     
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    if (IsIntrospectionOnly())
-    {
-        // We will not get here on GC thread
-        GCX_PREEMP();
-        
-        AssemblySpec spec;
-        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainFile(GetAppDomain())->GetDomainAssembly(), IsIntrospectionOnly());
-        if (szWinRtTypeClassName != NULL)
-        {
-            spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
-        }
-        pDomainAssembly = GetAppDomain()->BindAssemblySpecForIntrospectionDependencies(&spec);
-    }
-    else
-#endif //FEATURE_REFLECTION_ONLY_LOAD
     {
         PEAssemblyHolder pFile = GetDomainFile(GetAppDomain())->GetFile()->LoadAssembly(
                 kAssemblyRef, 

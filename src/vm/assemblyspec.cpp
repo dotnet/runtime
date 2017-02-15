@@ -921,28 +921,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         RETURN pAssembly;
     }
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    if (IsIntrospectionOnly() && (GetCodeBase() == NULL))
-    {
-        SafeComHolder<IAssemblyName> pIAssemblyName;
-        IfFailThrow(CreateFusionName(&pIAssemblyName));
-
-        // Note: We do not support introspection-only collectible assemblies (yet)
-        AppDomain::AssemblyIterator i = pDomain->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeIntrospection | kExcludeCollectible));
-        CollectibleAssemblyHolder<DomainAssembly *> pCachedDomainAssembly;
-
-        while (i.Next(pCachedDomainAssembly.This()))
-        {
-            _ASSERTE(!pCachedDomainAssembly->IsCollectible());
-            IAssemblyName * pCachedAssemblyName = pCachedDomainAssembly->GetAssembly()->GetFusionAssemblyName();
-            if (S_OK == pCachedAssemblyName->IsEqual(pIAssemblyName, ASM_CMPF_IL_ALL))
-            {
-                RETURN pCachedDomainAssembly;
-            }
-        }
-    }
-#endif // FEATURE_REFLECTION_ONLY_LOAD
 
     PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound, fRaisePrebindEvents, pCallerStackMark, pLoadSecurity));
     if (pFile == NULL)
