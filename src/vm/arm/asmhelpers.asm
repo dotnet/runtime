@@ -64,11 +64,6 @@
 
     IMPORT GetCurrentSavedRedirectContext
 
-#ifdef FEATURE_MIXEDMODE
-    SETALIAS IJWNOADThunk__FindThunkTarget, ?FindThunkTarget@IJWNOADThunk@@QAAPBXXZ
-    IMPORT  $IJWNOADThunk__FindThunkTarget
-#endif
-
     ;; Imports to support virtual import fixup for ngen images
     IMPORT VirtualMethodFixupWorker
     ;; Import to support cross-moodule external method invocation in ngen images
@@ -562,41 +557,6 @@ UM2MThunk_WrapperHelper_ArgumentsSetup
 
         NESTED_END
 
-; ------------------------------------------------------------------
-;
-; IJWNOADThunk::MakeCall
-;
-; On entry:
-;   r12 : IJWNOADThunk *
-;
-; On exit:
-;  Tail calls to real managed target
-;
-
-#ifdef FEATURE_MIXEDMODE
-        NESTED_ENTRY IJWNOADThunk__MakeCall
-
-        ; Can't pass C++ mangled names to NESTED_ENTRY and my attempts to use EQU to define an alternate name
-        ; for a symbol didn't work. Just define a label for the decorated name of the method and export it
-        ; manually.
-|?MakeCall@IJWNOADThunk@@KAXXZ|
-        EXPORT |?MakeCall@IJWNOADThunk@@KAXXZ|
-
-        PROLOG_PUSH {r0-r4,lr}
-        PROLOG_VPUSH {d0-d7}
-
-        CHECK_STACK_ALIGNMENT
-
-        mov         r0, r12     ; IJWNOADThunk * is this pointer for IJWNOADThunk::FindThunkTarget
-        bl          $IJWNOADThunk__FindThunkTarget
-        mov         r12, r0     ; Returns real jump target in r0, save this in r12
-
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP  {r0-r4,lr}
-        EPILOG_BRANCH_REG r12
-
-        NESTED_END
-#endif
 
 ; ------------------------------------------------------------------
 

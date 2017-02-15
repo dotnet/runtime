@@ -143,9 +143,6 @@ class DomainFile
     }
 #endif
 
-#ifdef FEATURE_MIXEDMODE
-    LPVOID GetUMThunk(LPVOID pManagedIp, PCCOR_SIGNATURE pSig, ULONG cSig);
-#endif
 
     void ReleaseFiles() DAC_EMPTY();
 
