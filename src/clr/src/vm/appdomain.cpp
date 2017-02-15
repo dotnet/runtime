@@ -4212,10 +4212,6 @@ AppDomain::AppDomain()
 #endif // FEATURE_TYPEEQUIVALENCE
 
 #ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    m_pReflectionOnlyWinRtBinder = NULL;
-    m_pReflectionOnlyWinRtTypeCache = NULL;
-#endif // FEATURE_REFLECTION_ONLY_LOAD
     m_pNameToTypeMap = NULL;
     m_vNameToTypeMapVersion = 0;
     m_nEpoch = 0;
@@ -4278,16 +4274,6 @@ AppDomain::~AppDomain()
 #endif //  FEATURE_REMOTING
 
 #ifdef FEATURE_COMINTEROP
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    if (m_pReflectionOnlyWinRtBinder != NULL)
-    {
-        m_pReflectionOnlyWinRtBinder->Release();
-    }
-    if (m_pReflectionOnlyWinRtTypeCache != NULL)
-    {
-        m_pReflectionOnlyWinRtTypeCache->Release();
-    }
-#endif // FEATURE_REFLECTION_ONLY_LOAD
     if (m_pNameToTypeMap != nullptr)
     {
         delete m_pNameToTypeMap;
@@ -4461,10 +4447,6 @@ void AppDomain::Init()
 #ifdef FEATURE_COMINTEROP
     if (!AppX::IsAppXProcess())
     {
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-        m_pReflectionOnlyWinRtTypeCache = clr::SafeAddRef(new CLRPrivTypeCacheReflectionOnlyWinRT());
-        m_pReflectionOnlyWinRtBinder = clr::SafeAddRef(new CLRPrivBinderReflectionOnlyWinRT(m_pReflectionOnlyWinRtTypeCache));
-#endif
     }
 #endif //FEATURE_COMINTEROP
 
@@ -7327,63 +7309,6 @@ EndTry2:;
         HRESULT hrBindResult = S_OK;
         PEAssemblyHolder result;
         
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
-        // We want to keep this holder around to avoid closing and remapping the file again - calls to Fusion further down will open the file again
-        ReleaseHolder<IMetaDataAssemblyImport> pMetaDataAssemblyImport;
-        
-        // Special case ReflectionOnlyLoadFrom on .winmd (WinRT) assemblies
-        if (pSpec->IsIntrospectionOnly() && (pSpec->m_wszCodeBase != NULL))
-        {   // This is a LoadFrom request - we need to find out if it is .winmd file or classic managed assembly
-            HRESULT hr = S_OK;
-            
-            StackSString sPath(pSpec->GetCodeBase());
-            PEAssembly::UrlToPath(sPath);
-            
-            // Open MetaData of the file
-            hr = GetAssemblyMDInternalImportEx(
-                sPath, 
-                IID_IMetaDataAssemblyImport, 
-                MDInternalImport_Default, 
-                (IUnknown **)&pMetaDataAssemblyImport);
-            if (SUCCEEDED(hr))
-            {
-                DWORD dwAssemblyFlags = 0;
-                hr = pMetaDataAssemblyImport->GetAssemblyProps(
-                    TokenFromRid(1, mdtAssembly), 
-                    nullptr,    // ppbPublicKey
-                    nullptr,    // pcbPublicKey
-                    nullptr,    // pulHashAlgId
-                    nullptr,    // szName
-                    0,          // cchName
-                    nullptr,    // pchName
-                    nullptr,    // pMetaData
-                    &dwAssemblyFlags);
-                if (SUCCEEDED(hr) && IsAfContentType_WindowsRuntime(dwAssemblyFlags))
-                {   // It is .winmd file
-                    _ASSERTE(!AppX::IsAppXProcess());
-                    
-                    ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-                    ReleaseHolder<PEAssembly> pAssembly;
-
-                    hr = m_pReflectionOnlyWinRtBinder->BindAssemblyExplicit(sPath, &pPrivAssembly);
-                    if (SUCCEEDED(hr))
-                    {
-                        hr = BindHostedPrivAssembly(nullptr, pPrivAssembly, nullptr, &pAssembly, TRUE);
-                        _ASSERTE(FAILED(hr) || (pAssembly != nullptr));
-                    }
-                    if (FAILED(hr))
-                    {
-                        if (fThrowOnFileNotFound)
-                        {
-                            ThrowHR(hr);
-                        }
-                        return nullptr;
-                    }
-                    return pAssembly.Extract();
-                }
-            }
-        }
-#endif //FEATURE_COMINTEROP && FEATURE_REFLECTION_ONLY_LOAD
 
         EX_TRY
         {
@@ -7427,28 +7352,6 @@ EndTry2:;
                     if (fAddFileToCache)
                     {
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-                        // <TODO> PERF: This doesn't scale... </TODO>
-                        if (pSpec->IsIntrospectionOnly() && (pSpec->GetCodeBase() != NULL))
-                        {
-                            IAssemblyName * pIAssemblyName = result->GetFusionAssemblyName();
-
-                            AppDomain::AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
-                                kIncludeLoaded | kIncludeIntrospection));
-                            CollectibleAssemblyHolder<DomainAssembly *> pCachedDomainAssembly;
-                            while (i.Next(pCachedDomainAssembly.This()))
-                            {
-                                IAssemblyName * pCachedAssemblyName = pCachedDomainAssembly->GetAssembly()->GetFusionAssemblyName();
-                                if (pCachedAssemblyName->IsEqual(pIAssemblyName, ASM_CMPF_IL_ALL) == S_OK)
-                                {
-                                    if (!pCachedDomainAssembly->GetAssembly()->GetManifestModule()->GetFile()->Equals(result))
-                                    {
-                                        COMPlusThrow(kFileLoadException, IDS_EE_REFLECTIONONLY_LOADFROM, pSpec->GetCodeBase());
-                                    }
-                                }
-                            }
-                        }
-#endif //FEATURE_REFLECTION_ONLY_LOAD
 
                         if (pSpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
                         {
@@ -7614,139 +7517,6 @@ EndTry2:;
 } // AppDomain::BindAssemblySpec
 
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-DomainAssembly * 
-AppDomain::BindAssemblySpecForIntrospectionDependencies(
-    AssemblySpec * pSpec)
-{
-    STANDARD_VM_CONTRACT;
-    
-    PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
-    PRECONDITION(pSpec->IsIntrospectionOnly());
-    PRECONDITION(this == ::GetAppDomain());
-    
-    PEAssemblyHolder result;
-    HRESULT hr;
-    
-    if (!pSpec->HasUniqueIdentity())
-    {
-        if (!pSpec->HasBindableIdentity())
-        {
-            COMPlusThrowHR(E_UNEXPECTED);
-        }
-        
-        // In classic (non-AppX), this is initilized by AppDomain constructor
-        _ASSERTE(m_pReflectionOnlyWinRtBinder != NULL);
-        
-        ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-        hr = m_pReflectionOnlyWinRtBinder->BindWinRtType(
-            pSpec->GetWinRtTypeNamespace(), 
-            pSpec->GetWinRtTypeClassName(), 
-            pSpec->GetParentAssembly(), 
-            &pPrivAssembly);
-        if (FAILED(hr))
-        {
-            if (hr == CLR_E_BIND_TYPE_NOT_FOUND)
-            {   // We could not find the type - throw TypeLoadException to give user type name for diagnostics
-                EX_THROW(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_REFLECTIONONLY_WINRT_LOADFAILURE));
-            }
-            if (!Exception::IsTransient(hr))
-            {   // Throw the HRESULT as exception wrapped by TypeLoadException to give user type name for diagnostics
-                EEMessageException ex(hr);
-                EX_THROW_WITH_INNER(EETypeLoadException, (pSpec->GetWinRtTypeNamespace(), pSpec->GetWinRtTypeClassName(), nullptr, nullptr, IDS_EE_REFLECTIONONLY_WINRT_LOADFAILURE), &ex);
-            }
-            IfFailThrow(hr);
-        }
-        
-        IfFailThrow(BindHostedPrivAssembly(nullptr, pPrivAssembly, nullptr, &result, TRUE));
-        _ASSERTE(result != nullptr);
-        return LoadDomainAssembly(pSpec, result, FILE_LOADED);
-    }
-    
-    EX_TRY
-    {
-        if (!IsCached(pSpec))
-        {
-            result = TryResolveAssembly(pSpec, TRUE /*fPreBind*/);
-            if (result != NULL && result->CanUseWithBindingCache())
-            {
-                // Failure to add simply means someone else beat us to it. In that case
-                // the FindCachedFile call below (after catch block) will update result
-                // to the cached value.
-                AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
-            }
-        }
-    }
-    EX_CATCH
-    {
-        Exception *ex = GET_EXCEPTION();
-        AssemblySpec NewSpec(this);
-        AssemblySpec *pFailedSpec = NULL;
-
-        // Let transient exceptions propagate
-        if (ex->IsTransient())
-        {
-            EX_RETHROW;
-        }
-
-        // Non-"file not found" exception also propagate
-        BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, ex->GetHR(), &pFailedSpec);
-        if(fFailure)
-        {
-            if (AddExceptionToCache(pFailedSpec, ex))
-            {
-                if ((pFailedSpec == pSpec) && EEFileLoadException::CheckType(ex))
-                {
-                    EX_RETHROW; //preserve the information
-                }
-                else
-                    EEFileLoadException::Throw(pFailedSpec, ex->GetHR(), ex);
-            }
-        }
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-    result = FindCachedFile(pSpec);
-    result.SuppressRelease();
-
-
-    if (result)
-    {
-        // It was either already in the spec cache or the prebind event returned a result.
-        return LoadDomainAssembly(pSpec, result, FILE_LOADED);
-    }
-
-
-    // Otherwise, look in the list of assemblies already loaded for reflectiononly.
-    IAssemblyName * ptmp = NULL;
-    hr = pSpec->CreateFusionName(&ptmp);
-    if (FAILED(hr))
-    {
-        COMPlusThrowHR(hr);
-    }
-    SafeComHolder<IAssemblyName> pIAssemblyName(ptmp);
-
-    // Note: We do not support introspection-only collectible assemblies (yet)
-    AppDomain::AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(
-        kIncludeLoaded | kIncludeIntrospection | kExcludeCollectible));
-    CollectibleAssemblyHolder<DomainAssembly *> pCachedDomainAssembly;
-    
-    while (i.Next(pCachedDomainAssembly.This()))
-    {
-        _ASSERTE(!pCachedDomainAssembly->IsCollectible());
-        IAssemblyName * pCachedAssemblyName = pCachedDomainAssembly->GetAssembly()->GetFusionAssemblyName();
-        if (pCachedAssemblyName->IsEqual(pIAssemblyName, ASM_CMPF_IL_ALL) == S_OK)
-        {
-            return pCachedDomainAssembly;
-        }
-    }
-    // If not found in that list, it is an ERROR. Yes, this is by design.
-    StackSString name;
-    pSpec->GetFileOrDisplayName(0, name);
-    COMPlusThrow(kFileLoadException, IDS_EE_REFLECTIONONLY_LOADFAILURE,name);
-} // AppDomain::BindAssemblySpecForIntrospectionDependencies
-#endif // FEATURE_REFLECTION_ONLY_LOAD
 
 PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind)
 {
@@ -10561,25 +10331,6 @@ AppDomain::RaiseAssemblyResolveEvent(
     StackSString ssName;
     pSpec->GetFileOrDisplayName(0, ssName);
     
-#ifdef FEATURE_REFLECTION_ONLY_LOAD    
-    if ( (!fIntrospection) && (!fPreBind) )
-    {
-        methodId = METHOD__APP_DOMAIN__ON_ASSEMBLY_RESOLVE;  // post-bind execution event (the classic V1.0 event)
-    }
-    else if ((!fIntrospection) && fPreBind)
-    {
-        RETURN NULL; // There is currently no prebind execution resolve event
-    }
-    else if (fIntrospection && !fPreBind)
-    {
-        RETURN NULL; // There is currently no post-bind introspection resolve event
-    }
-    else
-    {
-        _ASSERTE( fIntrospection && fPreBind );
-        methodId = METHOD__APP_DOMAIN__ON_REFLECTION_ONLY_ASSEMBLY_RESOLVE; // event for introspection assemblies
-    }
-#else // FEATURE_REFLECTION_ONLY_LOAD
     if (!fPreBind) 
     {
         methodId = METHOD__APP_DOMAIN__ON_ASSEMBLY_RESOLVE;  // post-bind execution event (the classic V1.0 event)
@@ -10589,7 +10340,6 @@ AppDomain::RaiseAssemblyResolveEvent(
         RETURN NULL;
     }
         
-#endif // FEATURE_REFLECTION_ONLY_LOAD
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted
     // condition.  Note, however, that this exposes us to possible recursion failures, if the host tries to

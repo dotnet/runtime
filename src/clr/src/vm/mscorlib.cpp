@@ -95,10 +95,6 @@
 #include "multicorejit.h"
 #endif
 
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
-#include "clrprivtypecachereflectiononlywinrt.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "windowsruntimebufferhelper.h"
 #endif

@@ -2485,9 +2485,6 @@ public:
         PEAssembly **      ppAssembly, 
         BOOL               fIsIntrospectionOnly = FALSE) DAC_EMPTY_RET(S_OK);
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD    
-    virtual DomainAssembly *BindAssemblySpecForIntrospectionDependencies(AssemblySpec *pSpec) DAC_EMPTY_RET(NULL);
-#endif
 
     PEAssembly *TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind);
 
@@ -3832,11 +3829,6 @@ public:
 #ifdef FEATURE_COMINTEROP
 
 private:
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    // ReflectionOnly WinRT binder and its TypeCache (only in classic = non-AppX; the scenario is not supported in AppX)
-    CLRPrivBinderReflectionOnlyWinRT *    m_pReflectionOnlyWinRtBinder;
-    CLRPrivTypeCacheReflectionOnlyWinRT * m_pReflectionOnlyWinRtTypeCache;
-#endif // FEATURE_REFLECTION_ONLY_LOAD
 
 #endif //FEATURE_COMINTEROP
 

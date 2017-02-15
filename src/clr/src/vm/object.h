@@ -2137,9 +2137,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
     OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
     OBJECTREF    m_pAsmResolveEventHandler; // Delegate for 'resolve assembly' event
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    OBJECTREF    m_pReflectionAsmResolveEventHandler; //Delegate for 'reflection resolve assembly' event
-#endif    
 #ifdef FEATURE_REMOTING
     OBJECTREF    m_pDefaultContext;     // Default managed context for this AD.
 #endif    
