@@ -3562,11 +3562,17 @@ public:
 
     void fgRemoveEmptyFinally();
 
+    void fgMergeFinallyChains();
+
     void fgCloneFinally();
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
     void fgUpdateFinallyTargetFlags();
+
+    bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
+                                                  BasicBlock*      handler,
+                                                  BlockToBlockMap& continuationMap);
 
     GenTreePtr fgGetCritSectOfStaticMethod();
 
