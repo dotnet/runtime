@@ -3317,7 +3317,6 @@ if test "x$host" != "x$target"; then
 		TARGET=ARM;
 		arch_target=arm;
 		AC_DEFINE(TARGET_ARM, 1, [...])
-		AC_DEFINE(TARGET_ANDROID, 1, [...])
 		ACCESS_UNALIGNED="no"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		# Can't use tls, since it depends on the runtime detection of tls offsets
@@ -3330,6 +3329,11 @@ if test "x$host" != "x$target"; then
 			CPPFLAGS="$CPPFLAGS"
 			;;
    		armv5-*-linux-androideabi*)
+			AC_DEFINE(TARGET_ANDROID, 1, [...])
+			CPPFLAGS="$CPPFLAGS"
+			;;
+   		*-linux-androideabi*)
+			AC_DEFINE(TARGET_ANDROID, 1, [...])
 			CPPFLAGS="$CPPFLAGS"
 			;;
 		esac
@@ -3349,23 +3353,33 @@ if test "x$host" != "x$target"; then
 		TARGET=X86;
 		arch_target=x86;
 		AC_DEFINE(TARGET_X86, 1, [...])
-		AC_DEFINE(TARGET_ANDROID, 1, [...])
 		CPPFLAGS="$CPPFLAGS"
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h		
 		with_tls=pthread
 		target_mach=no
+
+		case "$target" in
+		*-linux-android*)
+			AC_DEFINE(TARGET_ANDROID, 1, [...])
+			;;
+		esac
 		;;
    x86_64*-linux-*)
 		TARGET=AMD64;
 		arch_target=amd64;
 		AC_DEFINE(TARGET_AMD64, 1, [...])
-		AC_DEFINE(TARGET_ANDROID, 1, [...])
 		CPPFLAGS="$CPPFLAGS"
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 		with_tls=pthread
 		target_mach=no
+
+		case "$target" in
+		*-linux-android*)
+			AC_DEFINE(TARGET_ANDROID, 1, [...])
+			;;
+		esac
 		;;
    x86_64-ps4-freebsd)
 		TARGET=AMD64;
@@ -3384,12 +3398,16 @@ if test "x$host" != "x$target"; then
 		TARGET=ARM64;
 		arch_target=arm64;
 		AC_DEFINE(TARGET_ARM64, 1, [...])
-		AC_DEFINE(TARGET_ANDROID, 1, [...])
 		CPPFLAGS="$CPPFLAGS"
 		# Can't use tls, since it depends on the runtime detection of tls offsets
 		# in mono-compiler.h
 		with_tls=pthread
 		target_mach=no
+		case "$target" in
+		*-linux-android*)
+			AC_DEFINE(TARGET_ANDROID, 1, [...])
+			;;
+		esac
 		;;
 	aarch64-*)
 		TARGET=ARM64
