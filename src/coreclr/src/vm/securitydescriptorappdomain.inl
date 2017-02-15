@@ -12,9 +12,6 @@
 
 inline ApplicationSecurityDescriptor::ApplicationSecurityDescriptor(AppDomain *pAppDomain) :
     SecurityDescriptorBase<IApplicationSecurityDescriptor>(pAppDomain, NULL, NULL, pAppDomain->GetLoaderAllocator()),
-#ifdef FEATURE_PLS
-    m_hDomainPermissionListSet(NULL),
-#endif // FEAUTRE_PLS
     m_dwDomainWideSpecialFlags(0xFFFFFFFF),
     m_fIsInitializationInProgress(TRUE),
     m_fIsDefaultAppdomain(FALSE),
