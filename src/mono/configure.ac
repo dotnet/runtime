@@ -4106,6 +4106,8 @@ if test "x$enable_btls" = "xyes"; then
 		BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$BTLS_ROOT/util/android-cmake/android.toolchain.cmake"
 		if test "x$with_btls_android_ndk" != "x"; then
 			BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DANDROID_NDK=\"$with_btls_android_ndk\""
+		else
+			AC_MSG_ERROR([Need to pass the --with-btls-android-ndk argument when building with BTLS support on Android.])
 		fi
 	fi
 
