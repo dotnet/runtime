@@ -25,5 +25,5 @@
     <Project Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\dir.traversal.targets" />
 </Project>
