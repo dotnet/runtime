@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "ceemain.h"
-#include "rwlock.h"
 #include "hosting.h"
 #include "eepolicy.h"
 #include "clrex.h"

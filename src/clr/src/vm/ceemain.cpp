@@ -161,7 +161,6 @@
 #include "comdelegate.h"
 #include "appdomain.hpp"
 #include "perfcounters.h"
-#include "rwlock.h"
 #ifdef FEATURE_IPCMAN
 #include "ipcmanagerinterface.h"
 #endif // FEATURE_IPCMAN
@@ -877,10 +876,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
-#ifdef FEATURE_RWLOCK
-        // Initialize RWLocks
-        CRWLock::ProcessInit();
-#endif // FEATURE_RWLOCK
 
 
 #ifdef FEATURE_IPCMAN

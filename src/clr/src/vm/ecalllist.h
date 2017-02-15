@@ -71,24 +71,6 @@ FCFuncStart(gDependentHandleFuncs)
 FCFuncEnd()
 
 
-#ifdef FEATURE_RWLOCK
-FCFuncStart(gRWLockFuncs)
-    FCFuncElement("AcquireReaderLockInternal",  CRWLock::StaticAcquireReaderLockPublic)
-    FCFuncElement("AcquireWriterLockInternal",  CRWLock::StaticAcquireWriterLockPublic)
-    FCFuncElement("ReleaseReaderLockInternal",  CRWLock::StaticReleaseReaderLockPublic)
-    FCFuncElement("ReleaseWriterLockInternal",  CRWLock::StaticReleaseWriterLockPublic)
-    FCFuncElement("FCallUpgradeToWriterLock",  CRWLock::StaticDoUpgradeToWriterLockPublic)
-    FCFuncElement("DowngradeFromWriterLockInternal",  CRWLock::StaticDowngradeFromWriterLock)
-    FCFuncElement("FCallReleaseLock",  CRWLock::StaticDoReleaseLock)
-    FCFuncElement("RestoreLockInternal",  CRWLock::StaticRestoreLockPublic)
-    FCFuncElement("PrivateGetIsReaderLockHeld",  CRWLock::StaticIsReaderLockHeld)
-    FCFuncElement("PrivateGetIsWriterLockHeld",  CRWLock::StaticIsWriterLockHeld)
-    FCFuncElement("PrivateGetWriterSeqNum",  CRWLock::StaticGetWriterSeqNum)
-    FCFuncElement("AnyWritersSince",  CRWLock::StaticAnyWritersSince)
-    FCFuncElement("PrivateInitialize",  CRWLock::StaticPrivateInitialize)
-    FCFuncElement("PrivateDestruct",  CRWLock::StaticPrivateDestruct)
-FCFuncEnd()
-#endif // FEATURE_RWLOCK
 
 
 
@@ -1505,9 +1487,6 @@ FCClassElement("ParseNumbers", "System", gParseNumbersFuncs)
 
 
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
-#ifdef FEATURE_RWLOCK
-FCClassElement("ReaderWriterLock", "System.Threading", gRWLockFuncs)
-#endif  // FEATURE_RWLOCK
 FCClassElement("RegisteredWaitHandleSafe", "System.Threading", gRegisteredWaitHandleFuncs)
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
