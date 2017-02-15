@@ -83,6 +83,22 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public void PointerType()
+        {
+            Type pointerType = typeof(int).MakePointerType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(pointerType, null));
+        }
+
+        [Fact]
+        public void ByRefType()
+        {
+            Type byRefType = typeof(int).MakeByRefType();
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Label(byRefType, null));
+        }
+
+        [Fact]
         public void NameIsStringRepresentation()
         {
             Assert.Equal("name", Expression.Label("name").ToString());
