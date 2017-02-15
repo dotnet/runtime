@@ -12,9 +12,6 @@
 
 #include "field.h"
 #include "excep.h"
-#ifdef FEATURE_REMOTING
-#include "message.h"
-#endif // FEATURE_REMOTING
 #include "eeconfig.h"
 #include "rwlock.h"
 #include "runtimehandles.h"

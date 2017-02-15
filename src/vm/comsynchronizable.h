@@ -88,10 +88,6 @@ public:
     static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL0(Object*, GetDomain);
-#ifdef FEATURE_REMOTING
-    static FCDECL1(Object*, GetContextFromContextID,        LPVOID ContextID);
-    static FCDECL6(Object*, InternalCrossContextCallback, ThreadBaseObject* refThis, ContextBaseObject* refContext, LPVOID contextID, INT32 appDomainId, Object* oDelegateUNSAFE, PtrArray* oArgsUNSAFE);
-#endif    
     static void QCALLTYPE nativeInitCultureAccessors();
 
     static

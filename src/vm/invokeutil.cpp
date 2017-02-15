@@ -18,9 +18,6 @@
 #include "method.hpp"
 #include "threads.h"
 #include "excep.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "security.h"
 #include "field.h"
 #include "customattribute.h"
@@ -940,13 +937,6 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
     // Give a second chance to thunking classes to do the 
     // correct cast
     if (ty.IsNull()) {
-#ifdef FEATURE_REMOTING
-        BOOL fCastOK = FALSE;
-        if ((*target)->IsTransparentProxy()) {
-            fCastOK = CRemotingServices::CheckCast(*target, enclosingType);
-        }
-        if(!fCastOK) 
-#endif            
         {
             COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
         }
@@ -1151,37 +1141,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     {
         _ASSERTE(!fldTH.IsTypeDesc());
         MethodTable *pMT = fldTH.AsMethodTable();
-#ifdef FEATURE_REMOTING        
-        if((*target) != NULL && (*target)->IsTransparentProxy()) {
-            OBJECTREF val = *valueObj;        
-            GCPROTECT_BEGIN(val)
-
-            void* valueData;
-            if (Nullable::IsNullableType(fldTH)) {
-                // Special case for Nullable<T>, we need a true nullable that is gc protected.  The easiest
-                // way to make one is to allocate an object on the heap 
-                OBJECTREF trueNullable = fldTH.AsMethodTable()->Allocate();
-                BOOL typesChecked;
-                typesChecked = Nullable::UnBox(trueNullable->GetData(), val, fldTH.AsMethodTable());
-                _ASSERTE(typesChecked);
-                val = trueNullable;
-                valueData = val->GetData();
-            }
-            else if (val == NULL) {
-                // Null is the universal null object.  (Is this a good idea?)
-                int size = pMT->GetNumInstanceFieldBytes();
-                valueData = _alloca(size);
-                memset(valueData, 0, size);
-            }
-            else 
-                valueData = val->GetData();
-
-            OBJECTREF unwrapped = CRemotingServices::GetObjectFromProxy(*target);
-            CRemotingServices::FieldAccessor(pField, unwrapped, valueData, FALSE);
-            GCPROTECT_END();
-        }
-        else 
-#endif            
         {
             void* pFieldData;
             if (pField->IsStatic()) 
@@ -1336,14 +1295,6 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         if (pField->IsStatic())
             p = pField->GetCurrentStaticAddress();
         else {
-#ifdef FEATURE_REMOTING            
-            OBJECTREF o = *target;
-            if(o->IsTransparentProxy()) {
-                OBJECTREF unwrapped = CRemotingServices::GetObjectFromProxy(o);
-                CRemotingServices::FieldAccessor(pField, unwrapped, (void*)obj->GetData(), TRUE);
-            }
-            else
-#endif                
                 p = (*((BYTE**)target)) + pField->GetOffset() + sizeof(Object);
         }
         GCPROTECT_END();

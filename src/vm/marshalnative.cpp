@@ -34,9 +34,6 @@
 #include "marshalnative.h"
 #include "fcall.h"
 #include "dllimportcallback.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "comdelegate.h"
 #include "handletablepriv.h"
 #include "mdaassistants.h"
@@ -1490,17 +1487,6 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
     BOOL fSet = FALSE;
     
     // Start by checking if we can cast the obj to the wrapper type.
-#ifdef FEATURE_REMOTING
-    if (pObjMT->IsTransparentProxy())
-    {
-        if (CRemotingServices::CheckCast(gc.obj, pNewWrapMT))
-        {
-            gc.refRetVal = gc.obj;
-            fSet = TRUE;
-        }
-    }
-    else
-#endif
     if (TypeHandle(pObjMT).CanCastTo(TypeHandle(pNewWrapMT)))
     {
         gc.refRetVal = gc.obj;
@@ -2285,9 +2271,6 @@ FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CL
         COMPlusThrowArgumentNull(W("otp"));
     
     if (
-#ifdef FEATURE_REMOTING
-        CRemotingServices::IsTransparentProxy(OBJECTREFToObject(oref)) ||
-#endif
         !oref->GetMethodTable()->IsComImport())
     {
         CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);

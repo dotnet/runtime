@@ -226,13 +226,8 @@ class Object
     // advance to the true method table or class.
     BOOL            IsTransparentProxy()                        
     { 
-#ifdef FEATURE_REMOTING
-        WRAPPER_NO_CONTRACT;
-        return( GetMethodTable()->IsTransparentProxy() );
-#else
         LIMITED_METHOD_CONTRACT;
         return FALSE;
-#endif
     }
 
 #define MARKED_BIT 0x1
@@ -1273,10 +1268,6 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr() {
 // RuntimeMethodInfo, and RtFieldInfo.
 class BaseObjectWithCachedData : public Object
 {
-#ifdef FEATURE_REMOTING
-    protected:
-        OBJECTREF  m_CachedData;
-#endif //FEATURE_REMOTING
 };
 
 // This is the Class version of the Reflection object.
@@ -1547,114 +1538,6 @@ public:
     }
 };
 
-#ifdef FEATURE_REMOTING
-class CallContextRemotingDataObject : public Object
-{
-private:
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size. 
-    OBJECTREF _logicalCallID;
-public:
-    OBJECTREF GetLogicalCallID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _logicalCallID;
-    }
-};
-
-class CallContextSecurityDataObject : public Object
-{
-private:
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size. 
-    OBJECTREF _principal;
-public:
-    OBJECTREF GetPrincipal()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _principal;
-    }
-
-    void SetPrincipal(OBJECTREF ref)
-    {
-        WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked(&_principal, ref);
-    }
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<CallContextSecurityDataObject> CCSECURITYDATAREF;
-typedef REF<CallContextRemotingDataObject> CCREMOTINGDATAREF;
-#else
-typedef CallContextSecurityDataObject*     CCSECURITYDATAREF;
-typedef CallContextRemotingDataObject*     CCREMOTINGDATAREF;
-#endif
-
-class LogicalCallContextObject : public Object
-{
-    friend class MscorlibBinder;
-    
-    // These field are also defined in the managed representation.  (CallContext.cs) If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size.
-private :
-    OBJECTREF               m_Datastore;
-    CCREMOTINGDATAREF       m_RemotingData;
-    CCSECURITYDATAREF       m_SecurityData;
-    OBJECTREF               m_HostContext;
-    OBJECTREF               _sendHeaders;
-    OBJECTREF               _recvHeaders;
-    CLR_BOOL                m_IsCorrelationMgr;
-
-public:
-    CCSECURITYDATAREF GetSecurityData()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SecurityData;
-    }
-
-    // This is an unmanaged equivalent of System.Runtime.Remoting.Messaging.LogicalCallContext.HasInfo
-    BOOL ContainsDataForSerialization() 
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        return (ContainsNonSecurityDataForSerialization() ||
-               (m_SecurityData != NULL && m_SecurityData->GetPrincipal() != NULL));
-    }
-
-    BOOL ContainsNonSecurityDataForSerialization() 
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // m_Datastore may contain 0 items even if it's non-NULL in which case it does
-        // not really contain any useful data for serialization and this function could
-        // return FALSE. However we don't waste time trying to detect this case - it will
-        // be reset to NULL the first time a call is made due to how LogicalCallContext's
-        // ISerializable implementation works.
-        return (m_Datastore != NULL ||
-               (m_RemotingData != NULL && m_RemotingData->GetLogicalCallID() != NULL) ||
-                m_HostContext != NULL);
-    }
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<LogicalCallContextObject> LOGICALCALLCONTEXTREF;
-#else
-typedef LogicalCallContextObject*     LOGICALCALLCONTEXTREF;
-#endif
-
-#endif // FEATURE_REMOTING
 
 
 
@@ -1886,9 +1769,6 @@ private:
     //  size.  The order here must match that order which the loader will choose
     //  when laying out the managed class.  Note that the layouts are checked
     //  at run time, not compile time.
-#ifdef FEATURE_REMOTING    
-    OBJECTREF     m_ExposedContext;
-#endif    
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     OBJECTREF     m_Name;
@@ -1963,23 +1843,6 @@ public:
     void ResetCurrentUserCulture();
     void ResetCurrentUICulture();
 
-#ifdef FEATURE_REMOTING
-    // These expose the remoting context (System\Remoting\Context)
-    OBJECTREF GetExposedContext() { LIMITED_METHOD_CONTRACT; return m_ExposedContext; }
-    OBJECTREF SetExposedContext(OBJECTREF newContext) 
-    {
-        WRAPPER_NO_CONTRACT;
-
-        OBJECTREF oldContext = m_ExposedContext;
-
-        // Note: this is a very dangerous unchecked assignment.  We are taking
-        // responsibilty here for cleaning out the ExposedContext field when 
-        // an app domain is unloaded.
-        SetObjectReferenceUnchecked( (OBJECTREF *)&m_ExposedContext, newContext );
-
-        return oldContext;
-    }
-#endif
 
 
     OBJECTREF GetSynchronizationContext()
@@ -2024,22 +1887,6 @@ public:
 //  
 class MarshalByRefObjectBaseObject : public Object
 {
-#ifdef FEATURE_REMOTING
-    friend class MscorlibBinder;
-
-  public:
-    static int GetOffsetOfServerIdentity() { LIMITED_METHOD_CONTRACT; return offsetof(MarshalByRefObjectBaseObject, m_ServerIdentity); }
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-    OBJECTREF     m_ServerIdentity;
-
-  protected:
-    MarshalByRefObjectBaseObject() {LIMITED_METHOD_CONTRACT;}
-   ~MarshalByRefObjectBaseObject() {LIMITED_METHOD_CONTRACT;}   
-#endif   
 };
 
 
@@ -2137,13 +1984,7 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
     OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
     OBJECTREF    m_pAsmResolveEventHandler; // Delegate for 'resolve assembly' event
-#ifdef FEATURE_REMOTING
-    OBJECTREF    m_pDefaultContext;     // Default managed context for this AD.
-#endif    
     OBJECTREF    m_pApplicationTrust;    // App ApplicationTrust.
-#ifdef FEATURE_REMOTING    
-    OBJECTREF    m_pURITable;          // Identity table for remoting
-#endif    
     OBJECTREF    m_pProcessExitEventHandler; // Delegate for 'process exit' event.  Only used in Default appdomain.
     OBJECTREF    m_pDomainUnloadEventHandler; // Delegate for 'about to unload domain' event
     OBJECTREF    m_pUnhandledExceptionEventHandler; // Delegate for 'unhandled exception' event
@@ -2205,13 +2046,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
         WRAPPER_NO_CONTRACT;
         SetObjectReference(&m_pPolicies, ref, m_pDomain );
     }
-#ifdef FEATURE_REMOTING
-    void SetDefaultContext(OBJECTREF ref)
-    {
-        WRAPPER_NO_CONTRACT;
-        SetObjectReference(&m_pDefaultContext,ref,m_pDomain);
-    }
-#endif
     BOOL HasSetPolicy()
     {
         LIMITED_METHOD_CONTRACT;

@@ -9,9 +9,6 @@
 
 #ifdef DECLARE_DATA
 #include "asmconstants.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #ifdef FEATURE_PREJIT
 #include "compile.h"
 #endif

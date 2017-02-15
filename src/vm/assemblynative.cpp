@@ -28,8 +28,6 @@
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
-#ifdef FEATURE_REMOTING
-#endif
 #include "stackprobe.h"
 
 #include "appdomainnative.hpp"
@@ -274,18 +272,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
             dwSpecialFlags = pDomainSecDesc->GetSpecialFlags();
         }
 
-#ifdef FEATURE_REMOTING
-        // Caller may be in another appdomain context, in which case we'll need to marshal/unmarshal the grant
-        // and deny sets across.
-        if (pCallersDomain != GetAppDomain())
-        {
-            gc.granted = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.granted));
-            if (gc.denied != NULL)
-            {
-                gc.denied = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.denied));
-            }
-        }
-#endif // FEATURE_REMOTING
 
         // Instead of resolving policy, the loader should use an inherited grant set
         loadSecurity.m_pGrantSet = &gc.granted;

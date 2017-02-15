@@ -5554,21 +5554,6 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
         return TRUE;
     }
 
-#if defined(FEATURE_REMOTING) && !defined(CROSSGEN_COMPILE)
-    else if (pAccessingAssembly->GetDomain() != pTargetAssembly->GetDomain() &&
-             pAccessingAssembly->GetFusionAssemblyName()->IsEqual(pTargetAssembly->GetFusionAssemblyName(), ASM_CMPF_NAME | ASM_CMPF_PUBLIC_KEY_TOKEN) == S_OK)
-    {
-        // If we're accessing an internal type across AppDomains, we'll end up saying that an assembly is
-        // not allowed to access internal types in itself, since the Assembly *'s will not compare equal. 
-        // This ends up being confusing for users who don't have a deep understanding of the loader and type
-        // system, and also creates different behavior if your assembly is shared vs unshared (if you are
-        // shared, your Assembly *'s will match since they're in the shared domain).
-        // 
-        // In order to ease the confusion, we'll consider assemblies to be friends of themselves in this
-        // scenario -- if a name and public key match succeeds, we'll grant internal access across domains.
-        return TRUE;
-    }
-#endif // FEATURE_REMOTING && !CROSSGEN_COMPILE
     else if (pOptionalTargetField != NULL)
     {
         return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetField);

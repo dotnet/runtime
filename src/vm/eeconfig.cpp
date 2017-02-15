@@ -1068,9 +1068,6 @@ HRESULT EEConfig::sync()
 
     dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
-#ifdef FEATURE_REMOTING
-    fUseNewCrossDomainRemoting = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_UseNewCrossDomainRemoting, fUseNewCrossDomainRemoting);
-#endif
 
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));

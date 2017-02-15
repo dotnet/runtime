@@ -13837,13 +13837,6 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
     InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
 
     thCastTo.GetName(strCastToName);
-#ifdef FEATURE_REMOTING
-    if (thCastFrom.IsTransparentProxy())
-    {
-        COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCASTPROXY, strCastToName.GetUnicode());
-    }
-    else
-#endif
     {
         thCastFrom.GetName(strCastFromName);
         // Attempt to catch the A.T != A.T case that causes so much user confusion.

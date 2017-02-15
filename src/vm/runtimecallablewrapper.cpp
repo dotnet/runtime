@@ -35,16 +35,10 @@ class Object;
 #include "notifyexternals.h"
 #include "winrttypenameconverter.h"
 #include "../md/compiler/custattr.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "mdaassistants.h"
 #include "olevariant.h"
 #include "interopconverter.h"
 #include "typestring.h"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#endif
 #include "caparser.h"
 #include "classnames.h"
 #include "objectnative.h"
@@ -1876,13 +1870,6 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
 
     ReleaseRCWList_Args* args = (ReleaseRCWList_Args*)pData;
 
-#ifdef FEATURE_REMOTING
-    if (InSendMessage())
-    {
-        args->ctxBusy = TRUE;
-        return S_OK;
-    }
-#endif
 
     RCW* pHead = (RCW *)args->pHead;
 
@@ -2409,9 +2396,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
     // calling Marshal.CleanupUnusedObjectsInCurrentContext periodically. The best place
     // to make that call is within their own message pump.
     if (!disableEagerCleanup 
-#ifdef FEATURE_REMOTING
-        && !InSendMessage()
-#endif
        )
     {
         _ASSERTE(g_pRCWCleanupList != NULL);

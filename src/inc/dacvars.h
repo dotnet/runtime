@@ -162,9 +162,6 @@ DEFINE_DACVAR(ULONG, BOOL, dac__g_fAppX, ::g_fAppX)
 
 DEFINE_DACVAR(ULONG, BOOL, SString__s_IsANSIMultibyte, SString::s_IsANSIMultibyte)
 
-#ifdef FEATURE_REMOTING
-DEFINE_DACVAR_NO_DUMP(ULONG, MethodTable, CTPMethodTable__s_pThunkTable, CTPMethodTable::s_pThunkTable)
-#endif // FEATURE_REMOTING
 
 DEFINE_DACVAR(ULONG, INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
 
