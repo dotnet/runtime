@@ -126,6 +126,9 @@
     <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
       <Link>System\Data\Locale\Locale.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">

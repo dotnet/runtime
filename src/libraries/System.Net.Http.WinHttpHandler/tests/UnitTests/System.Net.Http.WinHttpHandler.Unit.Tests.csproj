@@ -73,6 +73,9 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
     </Compile>

@@ -103,6 +103,17 @@ namespace System.Net.Http
         {
             return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            return _innerStream.BeginRead(buffer, offset, count, callback, state);
+        }
+
+        public override int EndRead(IAsyncResult asyncResult)
+        {
+            return _innerStream.EndRead(asyncResult);
+        }
+        
         #endregion Read
 
         #region Write
@@ -135,6 +146,16 @@ namespace System.Net.Http
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        {
+            return _innerStream.BeginWrite(buffer, offset, count, callback, state);
+        }
+
+        public override void EndWrite(IAsyncResult asyncResult)
+        {
+            _innerStream.EndWrite(asyncResult);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

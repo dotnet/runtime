@@ -179,6 +179,12 @@ namespace System.Security.Cryptography
             return ReadAsyncInternal(buffer, offset, count, cancellationToken);
         }
 
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult) =>
+            TaskToApm.End<int>(asyncResult);
+
         private async Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // To avoid a race with a stream's position pointer & generating race 
@@ -395,6 +401,12 @@ namespace System.Security.Cryptography
             CheckWriteArguments(buffer, offset, count);
             return WriteAsyncInternal(buffer, offset, count, cancellationToken);
         }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult) =>
+            TaskToApm.End(asyncResult);
 
         private async Task WriteAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

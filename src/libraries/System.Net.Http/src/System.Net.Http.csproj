@@ -169,6 +169,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="AssemblyInfo.Net46.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Net46.cs" />
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -355,6 +358,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="netcore50\System\Net\cookie.cs" />
     <Compile Include="netcore50\System\Net\cookieexception.cs" />
