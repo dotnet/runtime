@@ -76,9 +76,6 @@ DEFINE_FIELD_U(AssemblyLoad,               AppDomainBaseObject, m_pAssemblyEvent
 DEFINE_FIELD_U(_TypeResolve,               AppDomainBaseObject, m_pTypeEventHandler)
 DEFINE_FIELD_U(_ResourceResolve,           AppDomainBaseObject, m_pResourceEventHandler)
 DEFINE_FIELD_U(_AssemblyResolve,           AppDomainBaseObject, m_pAsmResolveEventHandler)
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-DEFINE_FIELD_U(ReflectionOnlyAssemblyResolve,  AppDomainBaseObject, m_pReflectionAsmResolveEventHandler)
-#endif
 #ifdef FEATURE_REMOTING
 DEFINE_FIELD_U(_DefaultContext,            AppDomainBaseObject, m_pDefaultContext)
 #endif
@@ -103,13 +100,6 @@ DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,
 DEFINE_METHOD(APP_DOMAIN,           ON_RESOURCE_RESOLVE,    OnResourceResolveEvent,     IM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(APP_DOMAIN,           ON_TYPE_RESOLVE,        OnTypeResolveEvent,         IM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_RESOLVE,    OnAssemblyResolveEvent,     IM_Assembly_Str_RetAssembly)
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-DEFINE_METHOD(APP_DOMAIN,           ON_REFLECTION_ONLY_ASSEMBLY_RESOLVE, OnReflectionOnlyAssemblyResolveEvent, IM_Assembly_Str_RetAssembly) 
-#ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(APP_DOMAIN,           ON_REFLECTION_ONLY_NAMESPACE_RESOLVE, OnReflectionOnlyNamespaceResolveEvent, IM_Assembly_Str_RetArrAssembly)
-#endif //FEATURE_COMINTEROP
-DEFINE_METHOD(APP_DOMAIN,           ENABLE_RESOLVE_ASSEMBLIES_FOR_INTROSPECTION, EnableResolveAssembliesForIntrospection, IM_Str_RetVoid)
-#endif //FEATURE_REFLECTION_ONLY_LOAD
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolveEvent, IM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP

@@ -313,26 +313,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
     BOOL fIsSameAssembly = (pAssembly->GetManifestFile()->GetILimage() == pFile->GetILimage());
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    if (fForIntrospection)
-    {
-        IAssemblyName * pIAssemblyName = pAssembly->GetFusionAssemblyName();
-
-        AppDomain::AssemblyIterator i = GetAppDomain()->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeIntrospection));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
-        while (i.Next(pDomainAssembly.This()))
-        {
-            Assembly * pCachedAssembly = pDomainAssembly->GetAssembly();
-            IAssemblyName * pCachedAssemblyName = pCachedAssembly->GetFusionAssemblyName();
-            if ((pAssembly != pCachedAssembly) && (S_OK == pCachedAssemblyName->IsEqual(pIAssemblyName, ASM_CMPF_IL_ALL)))
-            {
-                COMPlusThrow(kFileLoadException, IDS_EE_REFLECTIONONLY_LOADFROM, W("")); //@todo: need to fill in assemblyname
-            }
-        }
-    }
-#endif // FEATURE_REFLECTION_ONLY_LOAD    
 
     LOG((LF_CLASSLOADER, 
          LL_INFO100, 

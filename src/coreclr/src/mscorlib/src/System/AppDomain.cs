@@ -246,9 +246,6 @@ namespace System
             }
         }
 
-#if FEATURE_REFLECTION_ONLY_LOAD
-        public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
-#endif // FEATURE_REFLECTION_ONLY
 
         private ApplicationTrust _applicationTrust;
         private EventHandler     _processExit;
@@ -656,53 +653,6 @@ namespace System
             }
         }
 
-#if FEATURE_REFLECTION_ONLY_LOAD
-        private Assembly ResolveAssemblyForIntrospection(Object sender, ResolveEventArgs args)
-        {
-            Contract.Requires(args != null);
-            return Assembly.ReflectionOnlyLoad(ApplyPolicy(args.Name));
-        }
-        
-        // Helper class for method code:EnableResolveAssembliesForIntrospection
-        private class NamespaceResolverForIntrospection
-        {
-            private IEnumerable<string> _packageGraphFilePaths;
-            public NamespaceResolverForIntrospection(IEnumerable<string> packageGraphFilePaths)
-            {
-                _packageGraphFilePaths = packageGraphFilePaths;
-            }
-            
-            public void ResolveNamespace(
-                object sender, 
-                System.Runtime.InteropServices.WindowsRuntime.NamespaceResolveEventArgs args)
-            {
-                Contract.Requires(args != null);
-                
-                IEnumerable<string> fileNames = System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMetadata.ResolveNamespace(
-                    args.NamespaceName,
-                    null,   // windowsSdkFilePath ... Use OS installed .winmd files
-                    _packageGraphFilePaths);
-                foreach (string fileName in fileNames)
-                {
-                    args.ResolvedAssemblies.Add(Assembly.ReflectionOnlyLoadFrom(fileName));
-                }
-            }
-        }
-        
-        // Called only by native function code:ValidateWorker
-        private void EnableResolveAssembliesForIntrospection(string verifiedFileDirectory)
-        {
-            CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(ResolveAssemblyForIntrospection);
-            
-            string[] packageGraphFilePaths = null;
-            if (verifiedFileDirectory != null)
-                packageGraphFilePaths = new string[] { verifiedFileDirectory };
-            NamespaceResolverForIntrospection namespaceResolver = new NamespaceResolverForIntrospection(packageGraphFilePaths);
-            
-            System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeMetadata.ReflectionOnlyNamespaceResolve += 
-                new EventHandler<System.Runtime.InteropServices.WindowsRuntime.NamespaceResolveEventArgs>(namespaceResolver.ResolveNamespace);
-        }
-#endif // FEATURE_REFLECTION_ONLY_LOAD
 
         public ObjectHandle CreateInstance(String assemblyName,
                                            String typeName)
