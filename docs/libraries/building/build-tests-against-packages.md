@@ -41,7 +41,7 @@ This scenario uses a versions file (https://github.com/dotnet/versions/blob/mast
  - ```build-tests.cmd -BuildTestsAgainstPackages -- /p:"PackagesDrops=[ProjectDir]bin/packages/[Release|Debug]/"```
   - -BuildTestsAgainstPackages tells the build to use the project.json files you generated in the "Generate Test project.json files" step
   - /p:"PackagesDrops=[ProjectDir]bin/packages/[Release|Debug]/" tells the build to use the packages from your local build drop.
-   - If the package versions you are referencing have been published publically, you can omit the "PackagesDrops" property.
+   - If the package versions you are referencing have been published publicly, you can omit the "PackagesDrops" property.
 
 ## Common Questions
 
