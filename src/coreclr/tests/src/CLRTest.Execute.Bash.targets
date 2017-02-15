@@ -103,13 +103,17 @@ fi
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
-    <PropertyGroup>        
+    <PropertyGroup>
+      <!-- An exit code of 2 indicates "Skipped" for regular non-windows runs, but "Failed" in Helix -->
+      <GCBashScriptExitCode Condition="'$(BuildTestsAgainstPackages)' != 'true'">2</GCBashScriptExitCode>
+      <GCBashScriptExitCode Condition="'$(BuildTestsAgainstPackages)' == 'true'">0</GCBashScriptExitCode>
+
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_GCStress" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
-  exit 2
+  exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
@@ -117,7 +121,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ \( ! -z "$COMPlus_JitStress" \) -o \( ! -z "$COMPlus_JitStressRegs" \) -o \( ! -z "$COMPlus_JITMinOpts" \) ]
 then
   echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET"
-  exit 2
+  exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
@@ -125,7 +129,7 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$COMPlus_HeapVerify" ]
 then
   echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
-  exit 2
+  exit $(GCBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
 
