@@ -563,8 +563,15 @@ struct InlineInfo
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
+    unsigned numberOfGcRefLocals; // Number of TYP_REF and TYP_BYREF locals
+
+    bool HasGcRefLocals() const
+    {
+        return numberOfGcRefLocals > 0;
+    }
+
     bool thisDereferencedFirst;
-    bool hasPinnedLocals;
+
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;
 #endif // FEATURE_SIMD
