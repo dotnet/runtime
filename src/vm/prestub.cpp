@@ -838,39 +838,31 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
     
     // 2. Emit the method body
-    unsigned int numArgs = msig.NumFixedArgs();
     if (msig.HasThis())
     {
         // 2.1 Push the thisptr
         pCode->EmitLoadThis();
-        numArgs++;
     }
 
 #if defined(_TARGET_X86_)
-    if (numArgs < NUM_ARGUMENT_REGISTERS)
-    {
-#endif // _TARGET_X86_
-        // 2.2 Push the hidden context param
-        // InstantiatingStub
-        pCode->EmitLDC((TADDR)pHiddenArg);
-#if defined(_TARGET_X86_)
-    }
-#endif // _TARGET_X86_
-
-    // 2.3 Push the rest of the arguments
+    // 2.2 Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-
-#if defined(_TARGET_X86_)
-    if (numArgs >= NUM_ARGUMENT_REGISTERS)
-    {
-        // 2.4 Push the hidden context param
-        // InstantiatingStub
-        pCode->EmitLDC((TADDR)pHiddenArg);
-    }
 #endif // _TARGET_X86_
+
+    // 2.3 Push the hidden context param
+    // InstantiatingStub
+    pCode->EmitLDC((TADDR)pHiddenArg);
+
+#if !defined(_TARGET_X86_)
+    // 2.4 Push the rest of the arguments for not x86
+    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
+    {
+        pCode->EmitLDARG(i);
+    }
+#endif // !_TARGET_X86_
 
     // 2.5 Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
