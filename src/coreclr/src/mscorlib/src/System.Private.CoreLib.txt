@@ -1183,8 +1183,6 @@ InvalidOperation_APIInvalidForCurrentContext = The API '{0}' cannot be used on t
 ; InvalidProgramException
 InvalidProgram_Default = Common Language Runtime detected an invalid program.
 
-; Isolated Storage
-
 ; Verification Exception
 Verification_Exception = Operation could destabilize the runtime.
 
