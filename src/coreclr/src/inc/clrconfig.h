@@ -164,9 +164,6 @@ public:
     // 
     // Methods to do config value (DWORD and String) lookups.
     // 
-#ifdef FEATURE_WIN_DB_APPCOMPAT    
-    static HRESULT getQuirkEnabledAndValueFromWinDB(LPCWSTR wszQuirkName, BOOL* isEnabled, CPT_QUIRK_DATA* quirkData);
-#endif
     static BOOL IsConfigEnabled(const ConfigDWORDInfo & info);
 
     // Look up a DWORD config value.
@@ -201,9 +198,6 @@ public:
     // Register PerformanceDefaults' LookupConfigValue so CLRConfig can support 'MayHavePerformanceDefault' values
     static void RegisterGetPerformanceDefaultValueCallback(GetPerformanceDefaultValueFunction func);
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-    static void RegisterWinDbQuirkApis(PFN_CptQuirkIsEnabled3 func1, PFN_CptQuirkGetData2 func2);
-#endif // FEATURE_WIN_DB_APPCOMPAT
 
     
 private:
@@ -213,10 +207,6 @@ private:
     // Function pointer to PerformanceDefaults' LookupConfigValue function (can't static bind from utilcode to VM)
     static GetPerformanceDefaultValueFunction s_GetPerformanceDefaultValueCallback;
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-    static PFN_CptQuirkIsEnabled3 s_IsQuirkEnabledCallback;
-    static PFN_CptQuirkGetData2 s_GetQuirkValueCallback;
-#endif // FEATURE_WIN_DB_APPCOMPAT
     
     // Helper method to translate LookupOptions to REGUTIL::CORConfigLevel
     static REGUTIL::CORConfigLevel GetConfigLevel(LookupOptions options);
