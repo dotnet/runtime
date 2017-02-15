@@ -405,7 +405,7 @@
     ]
   },
   {
-    "Name": "System.Configuration",
+    "Name": "System.Configuration.ConfigurationManager",
     "Description": "Provides types that support using configuration files.",
     "CommonTypes": [
       "System.Configuration.Configuration",
@@ -786,6 +786,11 @@
       "System.IO.Pipes.PipeAuditRule",
       "System.IO.Pipes.PipeAccessRights"
     ]
+  },
+  {
+    "Name": "System.IO.Ports",
+    "Description": "TODO",
+    "CommonTypes": [ ]
   },
   {
     "Name": "System.IO.UnmanagedMemoryStream",
@@ -1529,6 +1534,11 @@
       "System.Security.Cryptography.DataProtectionScope",
       "System.Security.Cryptography.ProtectedData"
     ]
+  },
+  {
+    "Name": "System.Security.Cryptography.Xml",
+    "Description": "TODO",
+    "CommonTypes": [ ]
   },
   {
     "Name": "System.Security.Cryptography.X509Certificates",
