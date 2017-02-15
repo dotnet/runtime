@@ -4830,10 +4830,15 @@ DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit,
             // Get the value we need from the register.
             //
 
-            // Check for RIP-relative addressing mode.
+            // Check for RIP-relative addressing mode for AMD64
+            // Check for Displacement only addressing mode for x86
             if ((mod == 0) && (rm == 5))
             {
+#if defined(_TARGET_AMD64_)
                 result = (DWORD64)ip + sizeof(INT32) + *(INT32*)ip;
+#else
+                result = (DWORD64)(*(DWORD*)ip);
+#endif // _TARGET_AMD64_
             }
             else
             {
