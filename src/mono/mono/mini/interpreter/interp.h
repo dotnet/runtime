@@ -5,9 +5,6 @@
 int
 mono_interp_regression_list (int verbose, int count, char *images []);
 
-gpointer
-mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
-
 void
 mono_interp_init (void);
 

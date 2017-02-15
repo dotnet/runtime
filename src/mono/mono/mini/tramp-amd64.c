@@ -29,10 +29,6 @@
 #include "mini-amd64.h"
 #include "debugger-agent.h"
 
-#ifdef ENABLE_INTERPRETER
-#include "interpreter/interp.h"
-#endif
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
@@ -973,9 +969,8 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	return buf;
 }
+#endif /* !DISABLE_JIT */
 
-
-#ifdef ENABLE_INTERPRETER
 /*
  * mono_arch_get_enter_icall_trampoline:
  *
@@ -986,6 +981,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
+#ifdef ENABLE_INTERPRETER
 	const int gregs_num = 6;
 	guint8 *start = NULL, *code, *exits [gregs_num], *leave_tramp;
 	MonoJumpInfo *ji = NULL;
@@ -1067,9 +1063,11 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		*info = mono_tramp_info_create ("enter_icall_trampoline", start, code - start, ji, unwind_ops);
 
 	return start;
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif /* ENABLE_INTERPRETER */
 }
-#endif
-#endif /* !DISABLE_JIT */
 
 #ifdef DISABLE_JIT
 gpointer
@@ -1135,12 +1133,10 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	return NULL;
 }
 
-#ifdef ENABLE_INTERPRETER
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
-#endif
 #endif /* DISABLE_JIT */
