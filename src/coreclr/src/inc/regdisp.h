@@ -477,35 +477,21 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
 inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
 {
 #ifdef _TARGET_X86_
-    switch (regNum)
+    _ASSERTE(regNum < 8);
+
+    static const SIZE_T OFFSET_OF_REGISTERS[] =
     {
-    case 0:
-        return (size_t *)&regs->Eax;
-        break;
-    case 1:
-        return (size_t *)&regs->Ecx;
-        break;
-    case 2:
-        return (size_t *)&regs->Edx;
-        break;
-    case 3:
-        return (size_t *)&regs->Ebx;
-        break;
-    case 4:
-        return (size_t *)&regs->Esp;
-        break;
-    case 5:
-        return (size_t *)&regs->Ebp;
-        break;
-    case 6:
-        return (size_t *)&regs->Esi;
-        break;
-    case 7:
-        return (size_t *)&regs->Edi;
-        break;
-    default:
-        _ASSERTE (!"unknown regNum");
-    }
+        offsetof(CONTEXT, Eax),
+        offsetof(CONTEXT, Ecx),
+        offsetof(CONTEXT, Edx),
+        offsetof(CONTEXT, Ebx),
+        offsetof(CONTEXT, Esp),
+        offsetof(CONTEXT, Ebp),
+        offsetof(CONTEXT, Esi),
+        offsetof(CONTEXT, Edi),
+    };
+
+    return (PTR_size_t)(PTR_BYTE(regs) + OFFSET_OF_REGISTERS[regNum]);
 #elif defined(_TARGET_AMD64_)
     _ASSERTE(regNum < 16);
     return &regs->Rax + regNum;
