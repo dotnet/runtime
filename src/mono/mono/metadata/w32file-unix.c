@@ -1099,7 +1099,7 @@ static void _wapi_set_last_path_error_from_errno (const gchar *dir,
  */
 static void file_close (gpointer handle, gpointer data)
 {
-	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
+	/* FIXME: after mono_w32handle_close is coop-aware, change this to MONO_REQ_GC_UNSAFE_MODE and leave just the switch to SAFE around close() below */
 	MONO_ENTER_GC_UNSAFE;
 	MonoW32HandleFile *file_handle = (MonoW32HandleFile *)data;
 	gint fd = file_handle->fd;
@@ -1839,7 +1839,7 @@ static gboolean file_setfiletime(gpointer handle,
 
 static void console_close (gpointer handle, gpointer data)
 {
-	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
+	/* FIXME: after mono_w32handle_close is coop-aware, change this to MONO_REQ_GC_UNSAFE_MODE and leave just the switch to SAFE around close() below */
 	MONO_ENTER_GC_UNSAFE;
 	MonoW32HandleFile *console_handle = (MonoW32HandleFile *)data;
 	gint fd = console_handle->fd;
@@ -1998,7 +1998,7 @@ static gsize find_typesize (void)
 
 static void pipe_close (gpointer handle, gpointer data)
 {
-	MONO_REQ_GC_SAFE_MODE; /* FIXME: after mono_w32handle_close is coop-aware, change this to UNSAFE_MODE and switch to SAFE around close() below */
+	/* FIXME: after mono_w32handle_close is coop-aware, change this to MONO_REQ_GC_UNSAFE_MODE and leave just the switch to SAFE around close() below */
 	MONO_ENTER_GC_UNSAFE;
 	MonoW32HandleFile *pipe_handle = (MonoW32HandleFile*)data;
 	gint fd = pipe_handle->fd;
