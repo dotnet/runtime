@@ -3563,6 +3563,39 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     }
 #endif // DEBUG
 
+    const bool isContainedNode = !info.isLocalDefUse && consume == 0 && produce == 0 && tree->canBeContained();
+    if (isContainedNode)
+    {
+        assert(info.internalIntCount == 0);
+        assert(info.internalFloatCount == 0);
+
+        // Contained nodes map to the concatenated lists of their operands.
+        LocationInfoList locationInfoList;
+        for (GenTree* op : tree->Operands())
+        {
+            if (!op->gtLsraInfo.definesAnyRegisters)
+            {
+                assert(ComputeOperandDstCount(op) == 0);
+                continue;
+            }
+
+            LocationInfoList operandList;
+            bool             removed = operandToLocationInfoMap.TryRemove(op, &operandList);
+            assert(removed);
+
+            locationInfoList.Append(operandList);
+        }
+
+        if (!locationInfoList.IsEmpty())
+        {
+            bool added = operandToLocationInfoMap.AddOrUpdate(tree, locationInfoList);
+            assert(added);
+            tree->gtLsraInfo.definesAnyRegisters = true;
+        }
+
+        return;
+    }
+
     // Handle the case of local variable assignment
     Interval* varDefInterval = nullptr;
     RefType   defRefType     = RefTypeDef;
@@ -4070,27 +4103,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // SaveDef position must be at the same location as Def position of call node.
     buildUpperVectorRestoreRefPositions(tree, defLocation, liveLargeVectors);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-
-    bool isContainedNode = !noAdd && consume == 0 && produce == 0 &&
-                           (tree->OperIsFieldListHead() || ((tree->TypeGet() != TYP_VOID) && !tree->OperIsStore()));
-    if (isContainedNode)
-    {
-        // Contained nodes map to the concatenated lists of their operands.
-        for (GenTree* op : tree->Operands())
-        {
-            if (!op->gtLsraInfo.definesAnyRegisters)
-            {
-                assert(ComputeOperandDstCount(op) == 0);
-                continue;
-            }
-
-            LocationInfoList operandList;
-            bool             removed = operandToLocationInfoMap.TryRemove(op, &operandList);
-            assert(removed);
-
-            locationInfoList.Append(operandList);
-        }
-    }
 
     if (!locationInfoList.IsEmpty())
     {
