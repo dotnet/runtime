@@ -18,10 +18,6 @@
 #include "runtimecallablewrapper.h"
 #include "cominterfacemarshaler.h"
 #include "interopconverter.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#include "crossdomaincalls.h"
-#endif
 #include "notifyexternals.h"
 #include "comdelegate.h"
 #include "winrttypenameconverter.h"
@@ -395,92 +391,6 @@ OBJECTREF COMInterfaceMarshaler::HandleInProcManagedComponent()
     return oref;
 }
 
-#ifdef FEATURE_REMOTING
-
-OBJECTREF COMInterfaceMarshaler::GetObjectForRemoteManagedComponentNoThrow()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    
-    OBJECTREF oref = NULL;
-    
-    EX_TRY
-    {
-        oref = GetObjectForRemoteManagedComponent();
-    }
-    EX_CATCH
-    {
-        oref = NULL;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-    return oref;
-}
-
-
-//--------------------------------------------------------------------
-// OBJECTREF COMInterfaceMarshaler::GetObjectForRemoteManagedComponent()
-// setup managed proxy to remote object
-//--------------------------------------------------------------------
-OBJECTREF COMInterfaceMarshaler::GetObjectForRemoteManagedComponent()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(m_fIsRemote == true);
-        PRECONDITION(CheckPointer(m_pIManaged));
-    }
-    CONTRACTL_END;
-    
-    OBJECTREF oref = NULL;
-
-    GCPROTECT_BEGIN(oref)
-    {
-        BSTR bstr;
-        HRESULT hr;
-
-        {
-            GCX_PREEMP();
-            hr = m_pIManaged->GetSerializedBuffer(&bstr);
-        }
-
-        if (hr == S_OK)
-        {
-            if (bstr != NULL)
-            {
-                // this could throw an exception
-                // also this would free up the BSTR that we pass in
-                BOOL fLegacyMode = (GetAppDomain()->GetComOrRemotingFlag() == COMorRemoting_LegacyMode);
-                oref = ConvertBSTRToObject(bstr, !fLegacyMode);
-                
-                if (oref != NULL)
-                {
-                    // setup a COM call wrapper
-                    ComCallWrapper* pComCallWrap = ComCallWrapper::InlineGetWrapper(&oref);
-                    _ASSERTE(pComCallWrap != NULL);
-                    
-                    // InlineGetWrapper AddRef's the wrapper
-                    pComCallWrap->Release();
-                }
-            }
-        }
-        else
-        {
-            COMPlusThrowHR(hr);
-        }
-    }   
-    GCPROTECT_END();    
-
-    return oref;
-}
-#endif // FEATURE_REMOTING
 
 //--------------------------------------------------------------------------------
 // void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj)
@@ -1046,49 +956,6 @@ OBJECTREF COMInterfaceMarshaler::HandleTPComponents()
     }
     CONTRACTL_END;
     
-#ifdef FEATURE_REMOTING
-    OBJECTREF oref = NULL;
-     
-    if (m_fIsRemote || CRemotingServices::IsTransparentProxy(OBJECTREFToObject(GetCCWObject())))
-    {
-        if (!m_fIsRemote)
-        {
-            oref = HandleInProcManagedComponent();
-        }
-        else
-        {            
-            if (!m_typeHandle.IsNull() && !m_typeHandle.IsComObjectType())
-            {
-                // if the user wants explicit calls,
-                // we better serialize/deserialize
-                oref = GetObjectForRemoteManagedComponent();
-            }
-            else
-            {
-                oref = GetObjectForRemoteManagedComponentNoThrow();
-            }
-        }            
-                
-        if (oref != NULL)
-        {
-            OBJECTREF realProxy = ObjectToOBJECTREF(CRemotingServices::GetRealProxy(OBJECTREFToObject(oref)));
-            if(realProxy != NULL)
-            {
-                // call setIUnknown on real proxy    
-                GCPROTECT_BEGIN(oref)
-                {
-                    CRemotingServices::CallSetDCOMProxy(realProxy, m_pUnknown);
-                }
-                GCPROTECT_END();
-                return oref;
-            }                    
-            else
-            {
-                return oref;
-            }
-        }
-    }
-#endif // FEATURE_REMOTING
 
     return NULL;
 }

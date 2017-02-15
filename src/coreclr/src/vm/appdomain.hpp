@@ -2692,9 +2692,6 @@ public:
 
     //****************************************************************************************
     // Get the proxy for this app domain
-#ifdef FEATURE_REMOTING    
-    OBJECTREF GetAppDomainProxy();
-#endif
 
     ADIndex GetIndex()
     {

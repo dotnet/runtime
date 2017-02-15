@@ -7,9 +7,6 @@
 #include "common.h"
 #include "fptrstubs.h"
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 // -------------------------------------------------------
 // FuncPtr stubs
@@ -93,18 +90,6 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
 
     PCODE target = NULL;
 
-#ifdef FEATURE_REMOTING
-    if (pMD->IsInterface() && !pMD->IsStatic())
-    {
-        // FuncPtrStubs on interface virtuals are used to transition
-        // into the remoting system with the exact interface method.
-
-        _ASSERTE(type == PRECODE_STUB);
-
-        target = CRemotingServices::GetDispatchInterfaceHelper(pMD);
-    }
-    else
-#endif // FEATURE_REMOTING
     if (type != GetDefaultType(pMD) &&
         // Always use stable entrypoint for LCG. If the cached precode pointed directly to JITed code,
         // we would not be able to reuse it when the DynamicMethodDesc got reused for a new DynamicMethod.

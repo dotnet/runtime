@@ -5417,9 +5417,6 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                                          TRACE_LEVEL_INFORMATION, 
                                          CLR_STARTENUMERATION_KEYWORD))
         {
-#ifdef FEATURE_REMOTING
-            if(!pMethodTable->IsTransparentProxy())
-#endif
             {
                 MethodTable::MethodIterator iter(pMethodTable);
                 for (; iter.IsValid(); iter.Next())

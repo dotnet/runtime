@@ -49,11 +49,6 @@
 #endif // FEATURE_HIJACK
 //    |
 //    |
-#ifdef FEATURE_REMOTING
-//    +-GCSafeCollectionFrame   - this handles reporting for GCSafeCollections, which are
-//    |                           generally used during appdomain transitions
-//    |
-#endif // FEATURE_REMOTING
 //    |
 //    +-InlinedCallFrame        - if a call to unmanaged code is hoisted into
 //    |                           a JIT'ted caller, the calling method keeps
@@ -224,9 +219,6 @@ FRAME_TYPE_NAME(HelperMethodFrame_1OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_2OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 FRAME_ABSTRACT_TYPE_NAME(FramedMethodFrame)
-#ifdef FEATURE_REMOTING
-FRAME_TYPE_NAME(TPMethodFrame)
-#endif
 FRAME_TYPE_NAME(SecureDelegateFrame)
 FRAME_TYPE_NAME(MulticastFrame)
 FRAME_ABSTRACT_TYPE_NAME(UnmanagedToManagedFrame)
@@ -254,9 +246,6 @@ FRAME_TYPE_NAME(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
 FRAME_TYPE_NAME(ProtectByRefsFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)
-#ifdef FEATURE_REMOTING
-FRAME_TYPE_NAME(GCSafeCollectionFrame)
-#endif // FEATURE_REMOTING
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
@@ -650,9 +639,6 @@ public:
         TYPE_SECURITY,
         TYPE_CALL,
         TYPE_FUNC_EVAL,
-#ifdef FEATURE_REMOTING        
-        TYPE_TP_METHOD_FRAME,
-#endif        
         TYPE_MULTICAST,
         
         // HMFs and derived classes should use this so the profiling API knows it needs
@@ -1747,48 +1733,6 @@ protected:
 // 
 //
 //+----------------------------------------------------------------------------
-#ifdef FEATURE_REMOTING
-class TPMethodFrame : public FramedMethodFrame
-{
-    VPTR_VTABLE_CLASS(TPMethodFrame, FramedMethodFrame)
-
-public:
-    TPMethodFrame(TransitionBlock * pTransitionBlock);
-
-    virtual int GetFrameType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_TP_METHOD_FRAME;
-    }
-
-    // GC protect arguments
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-    // Our base class is a a M2U TransitionType; but we're not. So override and set us back to None.
-    ETransitionType GetTransitionType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TT_NONE;
-    }
-
-#if defined(_TARGET_X86_) && !defined(DACCESS_COMPILE)
-    void SetCbStackPop(UINT cbStackPop)
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Number of bytes to pop for x86 is stored right before the return value
-        void * pReturnValue = GetReturnValuePtr();
-        *(((DWORD *)pReturnValue) - 1) = cbStackPop;
-    }
-#endif
-
-    // Aid the debugger in finding the actual address of callee
-    virtual BOOL TraceFrame(Thread *thread, BOOL fromPatch,
-                            TraceDestination *trace, REGDISPLAY *regs);
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(TPMethodFrame)
-};
-#endif // FEATURE_REMOTING
 
 //------------------------------------------------------------------------
 // This represents a call Delegate.Invoke for secure delegate
@@ -2588,28 +2532,6 @@ public:
 typedef VPTR(class InterpreterFrame) PTR_InterpreterFrame;
 #endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_REMOTING
-class GCSafeCollectionFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(GCSafeCollectionFrame, Frame)
-    PTR_VOID m_pCollection;
-
-    public:
-        //--------------------------------------------------------------------
-        // This constructor pushes a new GCFrame on the frame chain.
-        //--------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-        GCSafeCollectionFrame() { }
-        GCSafeCollectionFrame(void *collection);
-#endif
-
-        virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-        VOID Pop();
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_DTOR(GCSafeCollectionFrame)
-};
-#endif // FEATURE_REMOTING
 
 //-----------------------------------------------------------------------------
 

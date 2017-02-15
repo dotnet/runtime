@@ -58,7 +58,6 @@
         <CDefines Condition="'$(FeaturePrejit)' == 'true'">$(CDefines);FEATURE_PREJIT</CDefines>
         <CDefines Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(CDefines);FEATURE_RANDOMIZED_STRING_HASHING</CDefines>
         <CDefines Condition="'$(FeatureReJIT)' == 'true'">$(CDefines);FEATURE_REJIT</CDefines>
-        <CDefines Condition="'$(FeatureRemoting)' == 'true'">$(CDefines);FEATURE_REMOTING</CDefines>
         <CDefines Condition="'$(FeatureSortTables)' == 'true'">$(CDefines);FEATURE_SORT_TABLES</CDefines>
         <CDefines Condition="'$(FeatureStackProbe)' == 'true'">$(CDefines);FEATURE_STACK_PROBE</CDefines>
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
@@ -115,7 +114,6 @@
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfmon)' == 'true'">$(DefineConstants);FEATURE_PERFMON</DefineConstants>
         <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
-        <DefineConstants Condition="'$(FeatureRemoting)' == 'true'">$(DefineConstants);FEATURE_REMOTING</DefineConstants>
         <DefineConstants Condition="'$(FeatureSortTables)' == 'true'">$(DefineConstants);FEATURE_SORT_TABLES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>

@@ -1217,32 +1217,6 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
 }
 FCIMPLEND
 
-#ifdef FEATURE_REMOTING    
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsContextful, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-    
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-    
-    if (typeHandle.IsTypeDesc())
-        FC_RETURN_BOOL(FALSE);
-
-    MethodTable* pMT= typeHandle.GetMethodTable();
-    
-    if (!pMT)
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(pMT->IsContextful());
-}
-FCIMPLEND
-#endif
 
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsValueType, ReflectClassBaseObject *pTypeUNSAFE)
 {

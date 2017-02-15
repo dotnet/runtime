@@ -188,18 +188,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitOneNative, SafeHandle* safeWaitHandleUNS
     // array.
     HANDLE handles[1];
     handles[0] = sh->GetHandle();
-#ifdef FEATURE_REMOTING
-    if (exitContext != NULL &&
-        targetContext != defaultContext)
-    {
-        Context::WaitArgs waitOneArgs = {1, handles, TRUE, timeout, TRUE, &res};
-        Context::CallBackInfo callBackInfo = {Context::Wait_callback, (void*) &waitOneArgs};
-        Context::RequestCallBack(CURRENT_APPDOMAIN_ID,defaultContext, &callBackInfo);
-    }
-    else
-#else
     _ASSERTE(exitContext == NULL || targetContext == defaultContext);
-#endif        
     {
         // Support for pause/resume (FXFREEZE)
         while(true)
@@ -269,18 +258,7 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
     Context* defaultContext;
     defaultContext = pThread->GetDomain()->GetDefaultContext();
     _ASSERTE(defaultContext);
-#ifdef FEATURE_REMOTING    
-    if (exitContext != NULL &&
-        targetContext != defaultContext)
-    {
-        Context::WaitArgs waitMultipleArgs = {numWaiters, internalHandles, waitForAll, timeout, TRUE, &res};
-        Context::CallBackInfo callBackInfo = {Context::Wait_callback, (void*) &waitMultipleArgs};
-        Context::RequestCallBack(CURRENT_APPDOMAIN_ID,defaultContext, &callBackInfo);
-    }
-    else
-#else
     _ASSERTE(exitContext == NULL || targetContext == defaultContext);
-#endif        
     {
         // Support for pause/resume (FXFREEZE)
         while(true)
@@ -345,18 +323,7 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     HANDLE handles[2];
     handles[0] = shSignal->GetHandle();
     handles[1] = shWait->GetHandle();
-#ifdef FEATURE_REMOTING
-    if (exitContext != NULL &&
-        targetContext != defaultContext)
-    {
-        Context::SignalAndWaitArgs signalAndWaitArgs = {handles, timeout, TRUE, &res};
-        Context::CallBackInfo callBackInfo = {Context::SignalAndWait_callback, (void*) &signalAndWaitArgs};
-        Context::RequestCallBack(CURRENT_APPDOMAIN_ID,defaultContext, &callBackInfo);
-    }
-    else
-#else
     _ASSERTE(exitContext == NULL || targetContext == defaultContext);
-#endif        
     {
         res = pThread->DoSignalAndWait(handles,timeout,TRUE /*alertable*/);
     }

@@ -30,8 +30,6 @@
 #include "jitinterface.h"
 #include "appdomainstack.inl"
 #include "eventtrace.h"
-#ifdef FEATURE_REMOTING
-#endif
 #include "comutilnative.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -4930,10 +4928,6 @@ void Thread::SetExposedObject(OBJECTREF exposed)
         StoreObjectInHandle(m_ExposedObject, exposed);
         // This makes sure the contexts on the backing thread
         // and the managed thread start off in sync with each other.
-#ifdef FEATURE_REMOTING        
-        _ASSERTE(m_Context);
-        ((THREADBASEREF)exposed)->SetExposedContext(m_Context->GetExposedObjectRaw());
-#endif        
         // BEWARE: the IncExternalCount call below may cause GC to happen.
 
         // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
@@ -7965,40 +7959,6 @@ void MakeCallWithAppDomainTransition(
 }
 
 
-#ifdef FEATURE_REMOTING
-void Thread::SetExposedContext(Context *c)
-{
-
-    // Set the ExposedContext ...
-
-    // Note that we use GetxxRaw() here to cover our bootstrap case
-    // for AppDomain proxy creation
-    // Leaving the exposed object NULL lets us create the default
-    // managed context just before we marshal a new AppDomain in
-    // RemotingServices::CreateProxyForDomain.
-
-    Thread* pThread = GetThread();
-    if (!pThread)
-        return;
-
-    CONTRACTL {
-        NOTHROW;
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if(m_ExposedObject != NULL) {
-        THREADBASEREF threadObj = (THREADBASEREF) ObjectFromHandle(m_ExposedObject);
-        if(threadObj != NULL)
-        if (!c)
-            threadObj->SetExposedContext(NULL);
-        else
-            threadObj->SetExposedContext(c->GetExposedObjectRaw());
-
-    }
-}
-#endif
 
 void Thread::InitContext()
 {
@@ -8013,9 +7973,6 @@ void Thread::InitContext()
     _ASSERTE(m_pDomain == NULL);
     GCX_COOP_NO_THREAD_BROKEN();
     m_Context = SystemDomain::System()->DefaultDomain()->GetDefaultContext();
-#ifdef FEATURE_REMOTING    
-    SetExposedContext(m_Context);
-#endif
     m_pDomain = m_Context->GetDomain();
     _ASSERTE(m_pDomain);
     m_pDomain->ThreadEnter(this, NULL);
@@ -8042,9 +7999,6 @@ void Thread::ClearContext()
 
     // must set exposed context to null first otherwise object verification
     // checks will fail AV when m_Context is null
-#ifdef FEATURE_REMOTING        
-    SetExposedContext(NULL);
-#endif
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
@@ -8087,14 +8041,7 @@ void Thread::DoContextCallBack(ADID appDomain, Context *pContext, Context::ADCal
     }
     else
     {
-#ifdef FEATURE_REMOTING    
-        _ASSERTE(pContext->GetDomain()==::GetAppDomain());
-        Context::ADCallBackArgs callTgtArgs = {pTarget, args};
-        Context::CallBackInfo callBackInfo = {Context::ADTransition_callback, (void*) &callTgtArgs};
-        Context::RequestCallBack(appDomain,pContext, (void*) &callBackInfo);
-#else
         UNREACHABLE();
-#endif
     }
     LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Done at esp %p\n", espVal));
 }
@@ -8170,13 +8117,7 @@ void Thread::DoADCallBack(AppDomain* pDomain , Context::ADCallBackFcnType pTarge
     }
     else
     {
-#ifdef FEATURE_REMOTING
-        Context::ADCallBackArgs callTgtArgs = {pTarget, args};
-        Context::CallBackInfo callBackInfo = {Context::ADTransition_callback, (void*) &callTgtArgs};
-        Context::RequestCallBack(CURRENT_APPDOMAIN_ID, pCurrDomain->GetDefaultContext(), (void*) &callBackInfo);
-#else
         UNREACHABLE();
-#endif
     }
     LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Done at esp %p\n", espVal));
 }
@@ -8250,13 +8191,7 @@ void Thread::DoADCallBack(ADID appDomainID , Context::ADCallBackFcnType pTarget,
     }
     else
     {
-#ifdef FEATURE_REMOTING    
-        Context::ADCallBackArgs callTgtArgs = {pTarget, args};
-        Context::CallBackInfo callBackInfo = {Context::ADTransition_callback, (void*) &callTgtArgs};
-        Context::RequestCallBack(CURRENT_APPDOMAIN_ID, pCurrDomain->GetDefaultContext(), (void*) &callBackInfo);
-#else
         UNREACHABLE();
-#endif
     }
     LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Done at esp %p\n", espVal));
 }
@@ -8373,9 +8308,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
         m_pDomain = pDomain;
         SetAppDomain(m_pDomain);
     }
-#ifdef FEATURE_REMOTING
-    SetExposedContext(pContext);
-#endif
 }
 
 // main difference between EnterContext and ReturnToContext is that are allowed to return
@@ -8489,9 +8421,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
     CantStopHolder hCantStop;
 
     m_Context = pReturnContext;
-#ifdef FEATURE_REMOTING        
-    SetExposedContext(pReturnContext);
-#endif
 
     if (fChangedDomains)
     {
@@ -8629,350 +8558,6 @@ void Thread::ReturnToContextAndOOM(ContextTransitionFrame* pFrame)
     COMPlusThrowOM();
 }
 
-#ifdef FEATURE_REMOTING
-// for cases when marshaling is not needed
-// throws it is able to take a shortcut, otherwise just returns
-void Thread::RaiseCrossContextExceptionHelper(Exception* pEx, ContextTransitionFrame* pFrame)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifndef FEATURE_PAL
-    // Ensure that IP for WatsonBucketing has been collected if the exception is preallocated.
-#ifdef _DEBUG
-
-    // On CoreCLR, Watson may not be enabled. Thus, we should
-    // skip this.
-    if (IsWatsonEnabled())
-    {
-        if (CLRException::IsPreallocatedExceptionObject(CLRException::GetThrowableFromException(pEx)))
-        {
-            // If a preallocated exception escapes unhandled till the AD Transition boundary, then
-            // AppDomainTransitionExceptionFilter will capture the watson buckets and stick them
-            // in the UE Watson bucket tracker.
-            //
-            // This is done *only* for exceptions escaping AD transition boundaries that are NOT
-            // at the thread base.
-            PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = GetThread()->GetExceptionState()->GetUEWatsonBucketTracker();
-            if(pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
-            {
-                _ASSERTE(pUEWatsonBucketTracker->CapturedAtADTransition() || pUEWatsonBucketTracker->CapturedForThreadAbort());
-            }
-        }
-    }
-#endif // _DEBUG
-#endif // !FEATURE_PAL
-
-#ifdef FEATURE_TESTHOOKS
-    ADID adid=GetAppDomain()->GetId();
-#endif
-
-#define RETURNANDTHROWNEWEXCEPTION(pOldException, Type, ExArgs)                 \
-    {                                                                           \
-    Exception::Delete(pOldException);                                           \
-    SetLastThrownObject(NULL);                                                  \
-    ReturnToContext(pFrame);                                                    \
-    CONTRACT_VIOLATION(ThrowsViolation);                                        \
-    TESTHOOKCALL(LeftAppDomain(adid.m_dwId));                                   \
-    Type ex ExArgs;                                                             \
-    COMPlusThrow(CLRException::GetThrowableFromException(&ex));                 \
-    }
-
-#define RETURNANDRETHROW(ex)                                                    \
-    {                                                                           \
-        SafeSetLastThrownObject (NULL);                                         \
-        ReturnToContext(pFrame);                                                \
-        CONTRACT_VIOLATION(ThrowsViolation);                                    \
-        TESTHOOKCALL(LeftAppDomain(adid.m_dwId));                               \
-        PAL_CPP_THROW(Exception*,ex);                                           \
-    }
-
-    CANNOTTHROWCOMPLUSEXCEPTION(); //no exceptions until returning to context
-
-    Frame* pUnloadBoundary = GetUnloadBoundaryFrame();
-
-    LOG((LF_EH, LL_INFO100, "Exception crossed into another context.  Rethrowing in new context.\n"));
-
-
-    // will throw a kAppDomainUnloadedException if necessary
-    if (ShouldChangeAbortToUnload(pFrame, pUnloadBoundary))
-        RETURNANDTHROWNEWEXCEPTION(pEx,EEResourceException,(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound")));
-
-    // Can't marshal return value from unloaded appdomain.  Haven't
-    // yet hit the boundary.  Throw a generic exception instead.
-    // ThreadAbort is more consistent with what goes on elsewhere --
-    // the AppDomainUnloaded is only introduced at the top-most boundary.
-    //
-
-    if (GetDomain() == SystemDomain::AppDomainBeingUnloaded()
-        && GetThread()!=SystemDomain::System()->GetUnloadingThread() &&
-            GetThread()!=FinalizerThread::GetFinalizerThread())
-    {
-        if (pUnloadBoundary)
-            RETURNANDTHROWNEWEXCEPTION(pEx,EEException,(kThreadAbortException))            
-        else
-            RETURNANDTHROWNEWEXCEPTION(pEx,EEResourceException,(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound")));            
-    }
-
-    if (IsRudeAbort())
-        RETURNANDTHROWNEWEXCEPTION(pEx,EEException,(kThreadAbortException));            
-
-
-    // There are a few classes that have the potential to create
-    // infinite loops if we try to marshal them.  For ThreadAbort,
-    // ExecutionEngine, StackOverflow, and
-    // OutOfMemory, throw a new exception of the same type.
-    //
-    // <TODO>@NICE: We lose the inner stack trace.  A little better
-    // would be to at least check if the inner exceptions are
-    // all the same type as the outer.  They could be
-    // rethrown if this were true.</TODO>
-    //
-
-    if(pEx && !pEx->IsDomainBound())
-    {
-        RETURNANDRETHROW(pEx);
-    }
-#undef RETURNANDTHROWNEWEXCEPTION
-#undef RETURNANDRETHROW
-}
-
-Thread::RaiseCrossContextResult
-Thread::TryRaiseCrossContextException(Exception **ppExOrig,
-                                      Exception *pException,
-                                      RuntimeExceptionKind *pKind,
-                                      OBJECTREF *ppThrowable,
-                                      ORBLOBREF *pOrBlob)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    BOOL bIsClassInitException = FALSE;
-    RaiseCrossContextResult result = RaiseCrossContextSuccess;
-    int alreadyMarshaling = StartedMarshalingException();
- 
-    EX_TRY
-    {
-        bIsClassInitException = (pException->GetHR() == COR_E_TYPEINITIALIZATION);        
-
-        //just in case something throws
-        //!!!should be released before any call to ReturnToContext !!!
-        ExceptionHolder exception(*ppExOrig);
-        
-        if (IsExceptionOfType(kOutOfMemoryException, pException))
-            *pKind = kOutOfMemoryException;
-        else
-        if (IsExceptionOfType(kThreadAbortException, pException))
-            *pKind = kThreadAbortException;
-        else
-        if (IsExceptionOfType(kStackOverflowException, pException))
-            *pKind = kStackOverflowException;
-        else
-        if (alreadyMarshaling)
-        {
-            // If we started marshaling already, something went wrong
-            // This should only happen in case of busted ResourceManager
-            _ASSERTE(!"Already marshalling the exception for cross AD transition - perhaps ResourceManager issue?");
-
-            // ASK: Instead of throwing ExecutionEngineException from here, is there a better
-            // ResourceManager related exception that can be thrown instead? If none, can
-            // kContextMarshalException be thrown? Its obsolete but comes close to the usage
-            // context.
-            *pKind = kContextMarshalException;
-        }
-            
-        // Serialize the exception
-        if (*pKind == kLastException)
-        {
-            *ppThrowable = CLRException::GetThrowableFromException(exception);
-            _ASSERTE(*ppThrowable != NULL);
-
-            AppDomainHelper::MarshalObject(ppThrowable, pOrBlob);
-        }
-    }
-    EX_CATCH
-    {
-        // We got a new Exception in original domain
-        *ppExOrig = EXTRACT_EXCEPTION();
-        // Got ClassInitException while marshaling ClassInitException. Class is unusable. Do not attempt anymore.
-        if (bIsClassInitException && *ppExOrig && ((*ppExOrig)->GetHR() == COR_E_TYPEINITIALIZATION))
-            result = RaiseCrossContextClassInit;
-        else
-            result = RaiseCrossContextRetry;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    FinishedMarshalingException();
-
-    return result;
-}
-
-// * pEx should be deleted before popping the frame, except for one case
-// * SafeSetLastThrownObject is called after pEx is deleted
-void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, ContextTransitionFrame* pFrame)
-{
-    CONTRACTL
-    {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACTL_END;
-
-    // <TODO>@TODO: Set the IsInUnmanagedHandler bits (aka IgnoreThreadAbort bits) appropriately.</TODO>
-    
-    GCX_COOP();
-
-    // These are the only data transfered between the appdomains
-    // Make sure that anything added here is appdomain agile
-    RuntimeExceptionKind kind = kLastException;
-    RaiseCrossContextResult result = RaiseCrossContextSuccess;
-    ORBLOBREF orBlob = NULL;
-
-    // Get the corruption severity for the exception caught at AppDomain transition boundary.
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    CorruptionSeverity severity = GetThread()->GetExceptionState()->GetLastActiveExceptionCorruptionSeverity();
-    if (severity == NotSet)
-    {
-        // No severity set at this point implies the exception was not corrupting
-        severity = NotCorrupting;
-    }
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-#ifdef FEATURE_TESTHOOKS
-    ADID adid=GetAppDomain()->GetId();
-#endif
-
-#define MAX_RAISE_RETRY_COUNT  256
-
-    DWORD dwRaiseRetryCount;
-    for (dwRaiseRetryCount = 0; dwRaiseRetryCount < MAX_RAISE_RETRY_COUNT; dwRaiseRetryCount++)
-    {
-        // pEx is NULL means that the exception is CLRLastThrownObjectException
-        CLRLastThrownObjectException lastThrown;
-        Exception* pException = pExOrig?pExOrig:&lastThrown;
-
-        // Set the current frame
-        SetFrame(pFrame);
-        RaiseCrossContextExceptionHelper(pExOrig, pFrame);
-        _ASSERTE(pFrame->GetReturnContext());
-
-        struct _gc {
-            OBJECTREF pThrowable;
-            ORBLOBREF orBlob;
-        } gc;
-        ZeroMemory(&gc, sizeof(_gc));
-
-        GCPROTECT_BEGIN(gc);
-        result = Thread::TryRaiseCrossContextException(&pExOrig, pException, &kind, &gc.pThrowable, &gc.orBlob);
-        GCPROTECT_END();
-
-        if (result != RaiseCrossContextRetry)
-        {
-            orBlob = gc.orBlob;
-            break;
-        }
- 
-        // We got a new exception and therefore need to retry marshaling it.
-        GCX_COOP_NO_DTOR();
-    }
-
-    // Set the exception kind if we exceed MAX_RAISE_RETRY_COUNT, something is really wrong.
-    if (dwRaiseRetryCount == MAX_RAISE_RETRY_COUNT)
-    {
-        LOG((LF_EH, LL_INFO100, "Unable to marshal the exception event after maximum retries (%d). Using ContextMarshalException instead.\n", MAX_RAISE_RETRY_COUNT));
-        // This might be a good place to use ContextMarshalException type. However, it is marked obsolete.
-        kind = kContextMarshalException;
-    }
-
-    // Return to caller domain
-    {
-        // ReturnToContext does not work inside GC_PROTECT and has GC_NOTRIGGER contract.
-        // GCX_FORBID() ensures that the formerly protected values remain intact.
-        GCX_FORBID();
-        ReturnToContext(pFrame);
-    }
-
-    {
-        struct _gc {
-            OBJECTREF pMarshaledInit;
-            OBJECTREF pMarshaledThrowable;
-            ORBLOBREF orBlob;
-        } gc;
-        ZeroMemory(&gc, sizeof(_gc));
-
-        gc.orBlob = orBlob;
-
-        // Create the appropriate exception
-        GCPROTECT_BEGIN(gc);
-#ifdef FEATURE_TESTHOOKS
-        TESTHOOKCALL(LeftAppDomain(adid.m_dwId));
-#endif        
-        if (result == RaiseCrossContextClassInit)
-        {
-            HRESULT hr=S_OK;
-            EX_TRY
-            {
-                WCHAR wszTemplate[30];
-                IfFailThrow(UtilLoadStringRC(IDS_EE_NAME_UNKNOWN,
-                                             wszTemplate,
-                                             sizeof(wszTemplate)/sizeof(wszTemplate[0]),
-                                             FALSE));
-                
-                CreateTypeInitializationExceptionObject(wszTemplate, NULL, &gc.pMarshaledInit, &gc.pMarshaledThrowable);
-            }
-            EX_CATCH
-            {
-                // Unable to create ClassInitException in caller domain
-                hr=COR_E_TYPEINITIALIZATION;
-            }
-            EX_END_CATCH(RethrowTransientExceptions);
-            IfFailThrow(hr);
-        }
-        else
-        {
-            switch (kind)
-            {
-            case kLastException:
-                gc.pMarshaledThrowable = gc.orBlob;
-
-                break;
-            case kOutOfMemoryException:
-                COMPlusThrowOM();
-                break;
-            case kStackOverflowException:
-                gc.pMarshaledThrowable = CLRException::GetPreallocatedStackOverflowException();
-                break;
-            default:
-                {
-                    EEException ex(kind);
-                    gc.pMarshaledThrowable = CLRException::GetThrowableFromException(&ex);
-                }
-            }
-        }
-
-        // ... and throw it.
-        VALIDATEOBJECTREF(gc.pMarshaledThrowable);
-        COMPlusThrow(gc.pMarshaledThrowable
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-            , severity
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-            );
-
-        GCPROTECT_END();
-    }
-}
-
-#else // FEATURE_REMOTING
 
 void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, ContextTransitionFrame* pFrame)
 {
@@ -8989,7 +8574,6 @@ void DECLSPEC_NORETURN Thread::RaiseCrossContextException(Exception* pExOrig, Co
     COMPlusThrow(CLRException::GetThrowableFromException(pException));
 }
 
-#endif
 
 struct FindADCallbackType {
     AppDomain *pSearchDomain;

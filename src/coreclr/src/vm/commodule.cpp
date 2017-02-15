@@ -1046,12 +1046,7 @@ Object* GetTypesInner(Module* pModule)
 
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
-#ifdef FEATURE_REMOTING
-    // we skip the TransparentProxy type if this is mscorlib, so we can make the array one element smaller
-    AllocSize = !bSystemAssembly ? dwNumTypeDefs : dwNumTypeDefs - 1;
-#else
     AllocSize = dwNumTypeDefs;
-#endif
     refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, MscorlibBinder::GetClass(CLASS__CLASS));
 
     int curPos = 0;

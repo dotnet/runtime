@@ -11,9 +11,6 @@
 #include "frames.h"
 #include "excep.h"
 #include "registration.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "typeparse.h"
 #include "mdaassistants.h"
 

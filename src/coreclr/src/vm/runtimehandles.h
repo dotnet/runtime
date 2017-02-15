@@ -193,9 +193,6 @@ public:
     void QCALLTYPE GetDefaultConstructor(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retMethod);
 
     static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, ReflectClassBaseObject* pType);
-#ifdef FEATURE_REMOTING	
-    static FCDECL1(FC_BOOL_RET, IsContextful, ReflectClassBaseObject* pType);
-#endif
     static FCDECL1(FC_BOOL_RET, IsValueType, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
     

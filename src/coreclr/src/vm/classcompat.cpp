@@ -36,9 +36,6 @@
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "sigformat.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "eeprofinterfaces.h"
 #include "dllimportcallback.h"
 #include "listlock.h"
