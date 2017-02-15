@@ -2682,11 +2682,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoString *f
 		return FALSE;
 	}
 
-	MONO_ENTER_GC_SAFE;
-
 	mono_w32file_close (file);
-
-	MONO_EXIT_GC_SAFE;
 
 	if (*werror)
 		return FALSE;

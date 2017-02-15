@@ -3651,7 +3651,9 @@ mono_w32file_find_close (gpointer handle)
 
 	mono_w32handle_unlock_handle (handle);
 	
+	MONO_ENTER_GC_SAFE;
 	mono_w32handle_unref (handle);
+	MONO_EXIT_GC_SAFE;
 	
 	return(TRUE);
 }
@@ -4032,9 +4034,10 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 					    &pipe_write_handle);
 	if (write_handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating pipe write handle", __func__);
+
+		MONO_ENTER_GC_SAFE;
 		mono_w32handle_unref (read_handle);
 		
-		MONO_ENTER_GC_SAFE;
 		close (filedes[0]);
 		close (filedes[1]);
 		MONO_EXIT_GC_SAFE;
