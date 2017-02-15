@@ -526,11 +526,6 @@ DEFINE_METASIG(IM(Str_RetArrStr, s, a(s)))
 #endif //FEATURE_COMINTEROP
 
 // Object Clone 
-#ifdef FEATURE_SERIALIZATION
-DEFINE_METASIG_T(IM(SerInfo_RetVoid, C(SERIALIZATION_INFO), v))
-DEFINE_METASIG_T(IM(SerInfo_StrContext_RetVoid, C(SERIALIZATION_INFO) g(STREAMING_CONTEXT), v))
-DEFINE_METASIG_T(SM(Obj_ArrStr_ArrObj_OutStreamingContext_RetSerializationInfo, j a(s) a(j) r(g(STREAMING_CONTEXT)), C(SERIALIZATION_INFO)))
-#endif // FEATURE_SERIALIZATION
 DEFINE_METASIG(SM(Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj, j r(s) r(s) r(a(s)) r(a(j)), j))
 
 // Execution Context
