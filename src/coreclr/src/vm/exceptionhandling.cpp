@@ -4331,7 +4331,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
         dispatcherContext.ControlPcIsUnwound = !!(currentFrameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
         // Check whether we have a function table entry for the current controlPC.
@@ -4482,7 +4482,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
         dispatcherContext.ControlPcIsUnwound = !!(frameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
 
