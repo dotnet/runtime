@@ -1842,9 +1842,6 @@ namespace System.Globalization {
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool InternalGetSystemDefaultUILanguage(StringHandleOnStack systemDefaultUiLanguage);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern String[] nativeGetResourceFallbackArray();
     }
 }
 
