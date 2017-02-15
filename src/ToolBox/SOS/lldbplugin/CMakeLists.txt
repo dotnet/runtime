@@ -35,6 +35,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     add_definitions(-DDBG_TARGET_ARM64=1)
     add_definitions(-DDBG_TARGET_WIN64=1)
     add_definitions(-DBIT64)
+    SET(REQUIRE_LLDBPLUGIN false)
 endif()
 
 set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
