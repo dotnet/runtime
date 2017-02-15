@@ -1051,6 +1051,8 @@ public:
                           PermissionSetDecl*pPermissionSets);
     BinStr* EncodeSecAttr(__in __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps);
 
+    HRESULT AllocateStrongNameSignature();
+
     // Custom values paraphernalia:
 public:
     mdToken m_tkCurrentCVOwner;
