@@ -39,6 +39,8 @@ namespace System
         public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
         public static bool IsNotWindowsSubsystemForLinux => !IsWindowsSubsystemForLinux;
 
+        public static bool IsNotFedoraOrRedHat => !IsDistroAndVersion("fedora") && !IsDistroAndVersion("rhel");
+
         private static bool GetIsWindowsSubsystemForLinux()
         {
             // https://github.com/Microsoft/BashOnWindows/issues/423#issuecomment-221627364
