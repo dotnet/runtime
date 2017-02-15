@@ -7,9 +7,6 @@
 #include "common.h"
 #include "appdomain.hpp"
 #include "appdomainnative.hpp"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "security.h"
 #include "vars.hpp"
 #include "eeconfig.h"
@@ -41,9 +38,6 @@ inline AppDomain *AppDomainNative::ValidateArg(APPDOMAINREF pThis)
 
     // Should not get here with a Transparent proxy for the this pointer -
     // should have always called through onto the real object
-#ifdef FEATURE_REMOTING
-    _ASSERTE(! CRemotingServices::IsTransparentProxy(OBJECTREFToObject(pThis)));
-#endif
 
     AppDomain* pDomain = (AppDomain*)pThis->GetDomain();
 
@@ -62,156 +56,6 @@ inline AppDomain *AppDomainNative::ValidateArg(APPDOMAINREF pThis)
 }
 
 
-#ifdef FEATURE_REMOTING
-//************************************************************************
-FCIMPL5(Object*, AppDomainNative::CreateDomain, StringObject* strFriendlyNameUNSAFE, Object* appdomainSetupUNSAFE, Object* providedEvidenceUNSAFE, Object* creatorsEvidenceUNSAFE, void* parentSecurityDescriptor)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        OBJECTREF       retVal;
-        STRINGREF       strFriendlyName;
-        OBJECTREF       appdomainSetup;
-        OBJECTREF       providedEvidence;
-        OBJECTREF       creatorsEvidence;
-        OBJECTREF       entryPointProxy;
-    } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
-    gc.strFriendlyName=(STRINGREF)strFriendlyNameUNSAFE;
-    gc.appdomainSetup=(OBJECTREF)appdomainSetupUNSAFE;
-    gc.providedEvidence=(OBJECTREF)providedEvidenceUNSAFE;
-    gc.creatorsEvidence=(OBJECTREF)creatorsEvidenceUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    CreateDomainHelper(&gc.strFriendlyName, &gc.appdomainSetup, &gc.providedEvidence, &gc.creatorsEvidence, parentSecurityDescriptor, &gc.entryPointProxy, &gc.retVal);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
-FCIMPL5(Object*, AppDomainNative::CreateInstance, StringObject* strFriendlyNameUNSAFE, Object* appdomainSetupUNSAFE, Object* providedEvidenceUNSAFE, Object* creatorsEvidenceUNSAFE, void* parentSecurityDescriptor)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        OBJECTREF       retVal;
-        STRINGREF       strFriendlyName;
-        OBJECTREF       appdomainSetup;
-        OBJECTREF       providedEvidence;
-        OBJECTREF       creatorsEvidence;
-        OBJECTREF       entryPointProxy;
-    } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
-    gc.strFriendlyName=(STRINGREF)strFriendlyNameUNSAFE;
-    gc.appdomainSetup=(OBJECTREF)appdomainSetupUNSAFE;
-    gc.providedEvidence=(OBJECTREF)providedEvidenceUNSAFE;
-    gc.creatorsEvidence=(OBJECTREF)creatorsEvidenceUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    CreateDomainHelper(&gc.strFriendlyName, &gc.appdomainSetup, &gc.providedEvidence, &gc.creatorsEvidence, parentSecurityDescriptor, &gc.entryPointProxy, &gc.retVal);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(gc.entryPointProxy);
-}
-FCIMPLEND
-
-void AppDomainNative::CreateDomainHelper (STRINGREF* ppFriendlyName, OBJECTREF* ppAppdomainSetup, OBJECTREF* ppProvidedEvidence, OBJECTREF* ppCreatorsEvidence, void* parentSecurityDescriptor, OBJECTREF* pEntryPointProxy, OBJECTREF* pRetVal)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(IsProtectedByGCFrame(ppFriendlyName));
-        PRECONDITION(IsProtectedByGCFrame(ppAppdomainSetup));
-        PRECONDITION(IsProtectedByGCFrame(ppProvidedEvidence));
-        PRECONDITION(IsProtectedByGCFrame(ppCreatorsEvidence));
-        PRECONDITION(IsProtectedByGCFrame(pEntryPointProxy));
-        PRECONDITION(IsProtectedByGCFrame(pRetVal));
-    }
-    CONTRACTL_END;
-
-
-    AppDomainCreationHolder<AppDomain> pDomain;
-
-    // This helper will send the AppDomain creation notifications for profiler / debugger.
-    // If it throws, its backout code will also send a notification.
-    // If it succeeds, then we still need to send a AppDomainCreateFinished notification.
-    AppDomain::CreateUnmanagedObject(pDomain);
-
-#ifdef PROFILING_SUPPORTED
-    EX_TRY
-#endif    
-    {
-        OBJECTREF setupInfo=NULL;
-        GCPROTECT_BEGIN(setupInfo);
-
-        MethodDescCallSite prepareDataForSetup(METHOD__APP_DOMAIN__PREPARE_DATA_FOR_SETUP);
-
-        ARG_SLOT args[8];
-        args[0]=ObjToArgSlot(*ppFriendlyName);
-        args[1]=ObjToArgSlot(*ppAppdomainSetup);
-        args[2]=ObjToArgSlot(*ppProvidedEvidence);
-        args[3]=ObjToArgSlot(*ppCreatorsEvidence);
-        args[4]=PtrToArgSlot(parentSecurityDescriptor);
-        args[5]=PtrToArgSlot(NULL);
-        args[6]=PtrToArgSlot(NULL);
-        args[7]=PtrToArgSlot(NULL);
-
-        setupInfo = prepareDataForSetup.Call_RetOBJECTREF(args);
-
-
-        // We need to ensure that the AppDomainProxy is generated before we call into DoSetup, since
-        // GetAppDomainProxy will ensure that remoting is correctly configured in the domain.  DoSetup can
-        // end up loading user assemblies into the domain, and those assemblies may require that remoting be
-        // setup already.  For instance, C++/CLI applications may trigger the CRT to try to marshal a
-        // reference to the default domain into the current domain, which won't work correctly without this
-        // setup being done.
-        *pRetVal = pDomain->GetAppDomainProxy();
-
-        *pEntryPointProxy=pDomain->DoSetup(&setupInfo);
-
-
-        GCPROTECT_END();
-
-        pDomain->CacheStringsForDAC();
-    }
-
-#ifdef PROFILING_SUPPORTED
-    EX_HOOK
-    {
-        // Need the first assembly loaded in to get any data on an app domain.
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-            GCX_PREEMP();
-            g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID)(AppDomain *) pDomain, GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
-        }
-    }
-    EX_END_HOOK;
-
-    // Need the first assembly loaded in to get any data on an app domain.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-        GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID)(AppDomain*) pDomain, S_OK);
-        END_PIN_PROFILER();
-    }        
-#endif // PROFILING_SUPPORTED
-
-    ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)(*ppFriendlyName)->GetBuffer());
-
-    // DoneCreating releases ownership of AppDomain.  After this call, there should be no access to pDomain.
-    pDomain.DoneCreating();
-}
-#endif // FEATURE_REMOTING
 
 void QCALLTYPE AppDomainNative::SetupDomainSecurity(QCall::AppDomainHandle pDomain,
                                                     QCall::ObjectHandleOnStack ohEvidence,
@@ -856,25 +700,6 @@ FCIMPL1(FC_BOOL_RET, AppDomainNative::IsDomainIdValid, INT32 dwId)
 }
 FCIMPLEND
 
-#ifdef FEATURE_REMOTING
-FCIMPL0(Object*, AppDomainNative::GetDefaultDomain)
-{
-    FCALL_CONTRACT;
-
-    APPDOMAINREF rv = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(rv);
-
-    if (GetThread()->GetDomain()->IsDefaultDomain())
-        rv = (APPDOMAINREF) SystemDomain::System()->DefaultDomain()->GetExposedObject();
-    else
-        rv = (APPDOMAINREF) SystemDomain::System()->DefaultDomain()->GetAppDomainProxy();
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(rv);
-}
-FCIMPLEND
-#endif    
 
 FCIMPL1(INT32, AppDomainNative::GetId, AppDomainBaseObject* refThisUNSAFE)
 {

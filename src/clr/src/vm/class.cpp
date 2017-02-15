@@ -184,15 +184,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     // default appdomain and mscorlib.dll module during shutdown
     _ASSERTE(!pOwningMT->IsTransparentProxy());
 
-#if defined(FEATURE_REMOTING) && !defined(HAS_REMOTING_PRECODE)
-    // Destruct the method descs by walking the chunks.
-    MethodTable::IntroducedMethodIterator it(pOwningMT);
-    for (; it.IsValid(); it.Next())
-    {
-        MethodDesc * pMD = it.GetMethodDesc();
-        pMD->Destruct();
-    }
-#endif
   
 #ifdef FEATURE_COMINTEROP 
     if (GetSparseCOMInteropVTableMap() != NULL && !pOwningMT->IsZapped())

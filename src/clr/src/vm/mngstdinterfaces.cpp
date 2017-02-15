@@ -24,9 +24,6 @@
 #include "excep.h"
 #include "security.h"
 #include "typeparse.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 //
 // Declare the static field int the ManagedStdInterfaceMap class.
@@ -215,28 +212,7 @@ LPVOID MngStdItfBase::ForwardCallToManagedView(
         _ASSERTE(Lr.Obj != NULL);
 
         MethodTable *pTargetMT = Lr.Obj->GetMethodTable();
-#ifdef FEATURE_REMOTING
-        if (pTargetMT->IsTransparentProxy())
-        {
-            // If we get here with a transparent proxy instead of a COM object we need to re-dispatch the call to the TP stub.
-            // This can be tricky since the stack is no longer in the right state to make the call directly. Instead we build a
-            // small thunk that directly transitions into the remoting system. That way we can use the existing 
-            // MethodDesc::CallTarget routine to dispatch the call and get the extra argument on the stack (the method desc
-            // pointer for the interface method needed by the TP stub) without re-routing ourselves through the fcall stub that
-            // would just get us back to here.
-
-            MethodDescCallSite mngItf(pMngItfMD, CRemotingServices::GetStubForInterfaceMethod(pMngItfMD));
-
-            // Call the stub with the args we were passed originally.
-            Result = (Object*)mngItf.Call_RetArgSlot(pArgs);
-            if (mngItf.GetMetaSig()->IsObjectRefReturnType()) 
-            {
-                Lr.Result = ObjectToOBJECTREF(Result);
-                RetValIsProtected = TRUE;
-            }
-        }
-        else
-#endif // FEATURE_REMOTING
+        
         {
             // The target isn't a TP so it better be a COM object.
             _ASSERTE(Lr.Obj->GetMethodTable()->IsComObjectType());

@@ -3246,12 +3246,6 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadOrContextStaticAddress(VMPTR_FieldDe
     {
         fieldAddress = pRuntimeThread->GetStaticFieldAddrNoCreate(pFieldDesc, NULL);
     }
-#ifdef FEATURE_REMOTING
-    else if (pFieldDesc->IsContextStatic())
-    {
-        fieldAddress = PTR_TO_TADDR(pRuntimeThread->GetContext()->GetStaticFieldAddrNoCreate(pFieldDesc));
-    }
-#endif
     else
     {
         // In case we have more special cases added later, this will allow us to notice the need to

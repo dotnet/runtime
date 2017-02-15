@@ -27,8 +27,6 @@
 #include "eedbginterfaceimpl.inl"
 #include "dllimportcallback.h"
 #include "threads.h"
-#ifdef FEATURE_REMOTING
-#endif
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"

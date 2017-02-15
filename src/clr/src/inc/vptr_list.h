@@ -31,12 +31,6 @@ VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 
 VPTR_CLASS(DomainAssembly)
-#ifdef FEATURE_REMOTING
-#ifdef _TARGET_AMD64_ // HAS_REMOTING_PRECODE
-VPTR_CLASS(CNonVirtualThunkMgr)
-#endif
-VPTR_CLASS(CVirtualThunkMgr)
-#endif
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -65,11 +59,6 @@ VPTR_CLASS(ComPlusMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 VPTR_CLASS(ContextTransitionFrame)
-#ifdef FEATURE_REMOTING
-VPTR_CLASS(GCSafeCollectionFrame)
-VPTR_CLASS(GCSafeObjectTable)
-VPTR_CLASS(GCSafeObjectHashTable)
-#endif
 #ifdef FEATURE_INTERPRETER
 VPTR_CLASS(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
@@ -106,9 +95,6 @@ VPTR_CLASS(DynamicHelperFrame)
 #endif
 #if !defined(_TARGET_X86_)
 VPTR_CLASS(StubHelperFrame)
-#endif
-#ifdef FEATURE_REMOTING
-VPTR_CLASS(TPMethodFrame)
 #endif
 #if defined(_TARGET_X86_)
 VPTR_CLASS(UMThkCallFrame)

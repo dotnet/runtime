@@ -8,11 +8,7 @@
 
 #include "common.h"
 #include "security.h"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#else
 #include "callhelpers.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 

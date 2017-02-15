@@ -166,9 +166,6 @@ GetTypeFieldValueFlags(TypeHandle typeHandle,
             otherFlags |= CLRDATA_VALUE_FROM_TASK_LOCAL;
         }
         else
-#ifdef FEATURE_REMOTING                    
-            if (!fieldDesc->IsContextStatic())
-#endif                
         {
             otherFlags |= CLRDATA_VALUE_FROM_INSTANCE;
         }
@@ -1436,13 +1433,6 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
         baseAddr =
             TO_CDADDR(tlsThread->GetStaticFieldAddrNoCreate(fieldDesc, NULL));
     }
-#ifdef FEATURE_REMOTING            
-    else if (fieldDesc->IsContextStatic())
-    {
-        // XXX Microsoft - Microsoft says Context is going away.
-        return E_NOTIMPL;
-    }
-#endif    
     else if (fieldDesc->IsStatic())
     {
         baseAddr = TO_CDADDR

@@ -47,11 +47,6 @@
 #include "comdatetime.h"
 #include "number.h"
 #include "compatibilityswitch.h"
-#ifdef FEATURE_REMOTING
-#include "remotingnative.h"
-#include "message.h"
-#include "stackbuildersink.h"
-#endif
 #include "debugdebugger.h"
 #include "assemblyname.hpp"
 #include "assemblynative.hpp"

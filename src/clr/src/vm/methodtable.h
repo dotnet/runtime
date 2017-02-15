@@ -59,10 +59,6 @@ class    Object;
 class    Stub;
 class    Substitution;
 class    TypeHandle;
-#ifdef FEATURE_REMOTING
-class   CrossDomainOptimizationInfo;
-typedef DPTR(CrossDomainOptimizationInfo) PTR_CrossDomainOptimizationInfo;
-#endif
 class   Dictionary;
 class   AllocMemTracker;
 class   SimpleRWLock;
@@ -878,7 +874,7 @@ public:
     // mark the class type as COM object class
     void SetComObjectType();
 
-#if defined(FEATURE_TYPEEQUIVALENCE) || defined(FEATURE_REMOTING)
+#if defined(FEATURE_TYPEEQUIVALENCE)
     // mark the type as opted into type equivalence
     void SetHasTypeEquivalence();
 #endif
@@ -1963,43 +1959,6 @@ public:
     // The following service adjusts a MethodTable based on the supplied instance.  As
     // we add new thunking layers, we just need to teach this service how to navigate
     // through them.
-#ifdef FEATURE_REMOTING
-    inline BOOL IsTransparentProxy()
-    { 
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_TransparentProxy;
-    }
-    inline void SetTransparentProxy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
-        SetFlag(enum_flag_Category_TransparentProxy);
-    }
-
-    inline BOOL IsMarshaledByRef()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_Category_MarshalByRef_Mask) == enum_flag_Category_MarshalByRef;
-    }
-    inline void SetMarshaledByRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
-        SetFlag(enum_flag_Category_MarshalByRef);
-    }
-
-    inline BOOL IsContextful()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_Contextful;
-    }
-    inline void SetIsContextful()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
-        SetFlag(enum_flag_Category_Contextful);
-    }
-#else // FEATURE_REMOTING
     inline BOOL IsTransparentProxy()
     {
         return FALSE;
@@ -2014,7 +1973,6 @@ public:
     {
         return FALSE;
     }
-#endif // FEATURE_REMOTING
     
     inline bool RequiresFatDispatchTokens()
     {
@@ -2974,39 +2932,6 @@ public:
     //-------------------------------------------------------------------
     // REMOTEABLE METHOD INFO
     //
-#ifdef FEATURE_REMOTING
-    BOOL    HasRemotableMethodInfo();
-
-    PTR_CrossDomainOptimizationInfo GetRemotableMethodInfo()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        _ASSERTE(HasRemotableMethodInfo());
-        return *GetRemotableMethodInfoPtr();
-    }
-    void SetupRemotableMethodInfo(AllocMemTracker *pamTracker);
-
-    //-------------------------------------------------------------------
-    // REMOTING VTS INFO
-    //
-    // This optional addition to MethodTables allows us to locate VTS (Version
-    // Tolerant Serialization) event callback methods and optionally
-    // serializable fields quickly. We also store the NotSerialized field
-    // information in here so remoting can avoid one more touch of the metadata
-    // during cross appdomain cloning.
-    //
-
-    void SetHasRemotingVtsInfo();
-    BOOL HasRemotingVtsInfo();
-    PTR_RemotingVtsInfo GetRemotingVtsInfo();
-    PTR_RemotingVtsInfo AllocateRemotingVtsInfo( AllocMemTracker *pamTracker, DWORD dwNumFields);
-#endif // FEATURE_REMOTING
 
 #ifdef FEATURE_COMINTEROP
     void SetHasGuidInfo();
@@ -3150,9 +3075,6 @@ public:
     inline DWORD GetAttrClass();
 
     inline BOOL IsSerializable();
-#ifdef FEATURE_REMOTING
-    inline BOOL CannotBeBlittedByObjectCloner();
-#endif
     inline BOOL HasFieldsWhichMustBeInited();
     inline BOOL SupportsAutoNGen();
     inline BOOL RunCCTorAsIfNGenImageExists();
@@ -3871,9 +3793,6 @@ private:
         enum_flag_GenericsMask_SharedInst   = 0x00000020,   // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
         enum_flag_GenericsMask_TypicalInst  = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
 
-#ifdef FEATURE_REMOTING
-        enum_flag_ContextStatic             = 0x00000040,
-#endif
         enum_flag_HasRemotingVtsInfo        = 0x00000080,   // Optional data present indicating VTS methods and optional fields
 
         enum_flag_HasVariance               = 0x00000100,   // This is an instantiated type some of whose type parameters are co or contra-variant
@@ -3914,9 +3833,6 @@ private:
         enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
-#ifdef FEATURE_REMOTING
-                                      SET_FALSE(enum_flag_ContextStatic) |
-#endif
                                       SET_FALSE(enum_flag_HasVariance) |
                                       SET_FALSE(enum_flag_HasDefaultCtor) |
                                       SET_FALSE(enum_flag_HasPreciseInitCctors),
@@ -4249,14 +4165,7 @@ private:
 #define METHODTABLE_COMINTEROP_OPTIONAL_MEMBERS()
 #endif
 
-#ifdef FEATURE_REMOTING
-#define METHODTABLE_REMOTING_OPTIONAL_MEMBERS() \
-    METHODTABLE_OPTIONAL_MEMBER(RemotingVtsInfo,        PTR_RemotingVtsInfo,            GetRemotingVtsInfoPtr       ) \
-    METHODTABLE_OPTIONAL_MEMBER(RemotableMethodInfo,    PTR_CrossDomainOptimizationInfo,GetRemotableMethodInfoPtr   ) \
-    METHODTABLE_OPTIONAL_MEMBER(ContextStatics,         PTR_ContextStaticsBucket,       GetContextStaticsBucketPtr  )
-#else
 #define METHODTABLE_REMOTING_OPTIONAL_MEMBERS()
-#endif
 
     enum OptionalMemberId
     {
@@ -4368,25 +4277,6 @@ private:
     ************************************/
 
 public:
-#ifdef FEATURE_REMOTING
-    inline BOOL HasContextStatics();
-    inline void SetHasContextStatics();
-
-    inline PTR_ContextStaticsBucket GetContextStaticsBucket()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(HasContextStatics());
-        PTR_ContextStaticsBucket pBucket = *GetContextStaticsBucketPtr();
-        _ASSERTE(pBucket != NULL);
-        return pBucket;
-    }
-
-    inline DWORD GetContextStaticsOffset();
-    inline WORD GetContextStaticsSize();
-
-    void SetupContextStatics(AllocMemTracker *pamTracker, WORD dwContextStaticsSize);
-    DWORD AllocateContextStaticsOffset();
-#endif
 
     BOOL Validate ();
 

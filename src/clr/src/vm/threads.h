@@ -2492,9 +2492,6 @@ public:
         return m_Context;
     }
 
-#ifdef FEATURE_REMOTING
-    void SetExposedContext(Context *c);
-#endif
 
     // This callback is used when we are executing in the EE and discover that we need
     // to switch appdomains.

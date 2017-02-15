@@ -797,24 +797,6 @@ public:
 
     //================================================================
     // Does it represent a one way method call with no out/return parameters?
-#ifdef FEATURE_REMOTING
-    inline BOOL IsOneWay()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END
-
-        return (S_OK == GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
-                                                                "System.Runtime.Remoting.Messaging.OneWayAttribute",
-                                                                NULL,
-                                                                NULL));
-
-    }
-#endif // FEATURE_REMOTING
 
     //================================================================
     // FCalls.
@@ -2930,12 +2912,7 @@ struct ComPlusCallInfo
         kHasCopyCtorArgs                = 0x4,
     };
 
-#if defined(FEATURE_REMOTING) && !defined(HAS_REMOTING_PRECODE)
-    // These two fields cannot overlap in this case because of AMD64 GenericComPlusCallStub uses m_pILStub on the COM event provider path
-    struct
-#else
     union
-#endif
     {
         // IL stub for CLR to COM call
         PCODE m_pILStub; 

@@ -34,9 +34,6 @@
 #include "posterror.h"
 #include <corerror.h>
 #include <mscoree.h>
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "mtx.h"
 #include "cgencpu.h"
 #include "interopconverter.h"
@@ -246,24 +243,6 @@ Unknown_QueryInterface_Internal(ComCallWrapper* pWrap, IUnknown* pUnk, REFIID ri
             pDestItf = ComCallWrapper::GetComIPFromCCW(pWrap, riid, NULL, GetComIPFromCCW::CheckVisibility);
             if (pDestItf == NULL)
             {
-#ifdef FEATURE_REMOTING
-                // Check if the wrapper is a transparent proxy if so delegate the QI to the real proxy
-                if (pWrap->IsObjectTP())
-                {
-                    ARG_SLOT ret = 0;
-                    {
-                        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-                        OBJECTREF oref = pWrap->GetObjectRef();
-                        OBJECTREF realProxy = ObjectToOBJECTREF(CRemotingServices::GetRealProxy(OBJECTREFToObject(oref)));                
-                        _ASSERTE(realProxy != NULL);            
-                    
-                        if (!CRemotingServices::CallSupportsInterface(realProxy, riid, &ret))
-                            goto ErrExit;
-                    } // end GCX_COOP scope, pDestItf must be assigned to in preemptive mode
-
-                    pDestItf = (IUnknown*)ret;
-                }
-#endif // FEATURE_REMOTING
             }
         }
 
@@ -2467,44 +2446,6 @@ HRESULT __stdcall WeakReferenceSource_GetWeakReference (
     return hr;
 }
 
-#ifdef FEATURE_REMOTING
-// HELPER to call RealProxy::GetIUnknown to get the iunknown to give out
-// for this transparent proxy for calls to IMarshal
-IUnknown* GetIUnknownForTransparentProxyHelper(SimpleComCallWrapper *pSimpleWrap)
-{
-    CONTRACT (IUnknown*)
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pSimpleWrap));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    IUnknown* pMarshalerObj = NULL;
-
-    GCX_COOP();
-
-    EX_TRY
-    {
-        OBJECTREF oref = pSimpleWrap->GetObjectRef();
-        GCPROTECT_BEGIN(oref)
-        {
-            pMarshalerObj = GetIUnknownForTransparentProxy(&oref, TRUE);  
-            oref = NULL;
-        }
-        GCPROTECT_END();
-    }
-    EX_CATCH
-    {
-     // ignore
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-   
-    RETURN pMarshalerObj;
-}
-#endif // FEATURE_REMOTING
 
 // Helper to setup IMarshal 
 HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap, ULONG dwDestContext, IMarshal **ppMarshalRet)
@@ -2521,31 +2462,6 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
     HRESULT hr = S_OK;
 
-#ifdef FEATURE_REMOTING
-    // transparent proxies are special
-    if (pSimpleWrap->IsObjectTP())
-    {
-        SafeComHolderPreemp<IUnknown> pMarshalerObj = NULL;
-
-        pMarshalerObj = GetIUnknownForTransparentProxyHelper(pSimpleWrap);
-        // QI for the IMarshal Interface and verify that we don't get back
-        // a pointer to us (GetIUnknownForTransparentProxyHelper could return
-        // a pointer back to the same object if realproxy::GetCOMIUnknown 
-        // is not overriden
-        if (pMarshalerObj != NULL)
-        {
-            SafeComHolderPreemp<IMarshal> pMsh = NULL;
-            hr = SafeQueryInterfacePreemp(pMarshalerObj, IID_IMarshal, (IUnknown**)&pMsh);
-
-            // make sure we don't recurse
-            if(SUCCEEDED(hr) && pMsh != pMarsh) 
-            {
-                *ppMarshalRet = pMsh.Extract();
-                return S_OK;
-            }
-        }
-    }
-#endif // FEATURE_REMOTING
 
     // In case of APPX process we always use the standard marshaller.
     // In Non-APPX process use standard marshalling for everything except in-proc servers.

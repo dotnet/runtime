@@ -66,9 +66,6 @@
 #define g_PropertyChangedEventHandler_WinRT_Name "System.Runtime.InteropServices.WindowsRuntime.PropertyChangedEventHandler_WinRT"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING
-#define g_ContextBoundObjectClassName "System.ContextBoundObject"
-#endif
 
 #define g_DateClassName "System.DateTime"
 #define g_DateTimeOffsetClassName "System.DateTimeOffset"

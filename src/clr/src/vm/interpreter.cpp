@@ -23,9 +23,6 @@
 #include "runtimehandles.h"
 #include "vars.hpp"
 #include "cycletimer.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
 {
@@ -5993,20 +5990,6 @@ void Interpreter::NewObj()
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);
             switch (newHelper)
             {
-#ifdef FEATURE_REMOTING
-            case CORINFO_HELP_NEW_CROSSCONTEXT:
-                {
-                    if (CRemotingServices::RequiresManagedActivation(pNewObjMT) && !pNewObjMT->IsComObjectType())
-                    {
-                        thisArgObj = CRemotingServices::CreateProxyOrObject(pNewObjMT);
-                    }
-                    else
-                    {
-                        thisArgObj = AllocateObject(pNewObjMT);
-                    }
-                }
-                break;
-#endif // FEATURE_REMOTING
             case CORINFO_HELP_NEWFAST:
             default:
                 thisArgObj = AllocateObject(pNewObjMT);
@@ -7330,12 +7313,6 @@ void Interpreter::LdFld(FieldDesc* fldIn)
     {
         OBJECTREF obj = OBJECTREF(OpStackGet<Object*>(stackInd));
         ThrowOnInvalidPointer(OBJECTREFToObject(obj));
-#ifdef FEATURE_REMOTING
-        if (obj->IsTransparentProxy())
-        {
-            NYI_INTERP("Thunking objects not supported");
-        }
-#endif
         if (valCit == CORINFO_TYPE_VALUECLASS)
         {
             void* srcPtr = fld->GetInstanceAddress(obj);

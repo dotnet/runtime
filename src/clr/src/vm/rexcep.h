@@ -143,9 +143,6 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
 
 DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  COR_E_CODECONTRACTFAILED)
 
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_SystemNS,           ContextMarshalException,        false,  COR_E_CONTEXTMARSHAL)
-#endif
 
 DEFINE_EXCEPTION(g_ReflectionNS,       CustomAttributeFormatException, false,  COR_E_CUSTOMATTRIBUTEFORMAT)
 
@@ -256,14 +253,8 @@ DEFINE_EXCEPTION(g_SystemNS,           PlatformNotSupportedException,  false,  C
 
 DEFINE_EXCEPTION(g_SystemNS,           RankException,                  false,  COR_E_RANK)
 DEFINE_EXCEPTION(g_ReflectionNS,       ReflectionTypeLoadException,    false,  COR_E_REFLECTIONTYPELOAD)
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_RemotingNS,         RemotingException,              false,  COR_E_REMOTING)
-#endif // FEATURE_REMOTING
 DEFINE_EXCEPTION(g_CompilerServicesNS, RuntimeWrappedException,        false,  COR_E_RUNTIMEWRAPPED)
 
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_RemotingNS,         ServerException,                false,  COR_E_SERVER)
-#endif // FEATURE_REMOTING
 
 DEFINE_EXCEPTION(g_SecurityNS,         SecurityException,              true,
                  COR_E_SECURITY, CORSEC_E_INVALID_STRONGNAME,
