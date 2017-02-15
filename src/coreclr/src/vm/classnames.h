@@ -166,10 +166,6 @@
 
 #define g_CriticalFinalizerObjectName "CriticalFinalizerObject"
 
-#ifdef FEATURE_SERIALIZATION
-#define g_StreamingContextName "StreamingContext"
-#endif
-
 #define g_AssemblySignatureKeyAttribute "System.Reflection.AssemblySignatureKeyAttribute"
 
 #endif //!__CLASSNAMES_H__
