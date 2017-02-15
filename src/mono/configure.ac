@@ -1432,8 +1432,6 @@ if test x$host_win32 = xno; then
 
 	AC_CHECK_FUNCS(getgrgid_r)
 	AC_CHECK_FUNCS(getgrnam_r)
-	AC_CHECK_FUNCS(getpwnam_r)
-	AC_CHECK_FUNCS(getpwuid_r)
 	AC_CHECK_FUNCS(getresuid)
 	AC_CHECK_FUNCS(setresuid)
 	AC_CHECK_FUNCS(kqueue)
@@ -1453,6 +1451,11 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(sched_getaffinity)
 	AC_CHECK_FUNCS(sched_setaffinity)
 	AC_CHECK_FUNCS(sched_getcpu)
+
+	if test x$platform_android != xyes; then
+		AC_CHECK_FUNCS(getpwnam_r)
+		AC_CHECK_FUNCS(getpwuid_r)
+	fi
 
 	dnl ****************************************************************
 	dnl *** Check for sched_setaffinity from glibc versions before   ***
