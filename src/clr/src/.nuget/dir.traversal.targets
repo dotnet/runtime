@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="$(MSBuildThisFileDirectory)..\..\dir.traversal.targets" />
+
+  <Target Name="FilterProjects" BeforeTargets="Build">
+    <Error Condition="'$(PackageRID)' == ''" Text="'PackageRID' property must be specified."/>
+
+    <!-- Only build packages for current RID or non-RID-specific -->
+    <ItemGroup>
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Project Remove="@(Project)" />
+      <Project Include="@(_projectsToBuild)" />
+    </ItemGroup>
+  </Target>
+</Project>
