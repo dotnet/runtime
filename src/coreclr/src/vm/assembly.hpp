@@ -244,10 +244,6 @@ public:
     Module* FindModule(PEFile *pFile, BOOL includeLoading = FALSE);
 #endif //  FEATURE_MULTIMODULE_ASSEMBLIES
 
-#ifdef  FEATURE_MIXEDMODE
-    // Finds loading modules as well
-    DomainFile* FindIJWDomainFile(HMODULE hMod, const SString &path);
-#endif
     //****************************************************************************************
     //
     // Get the domain the assembly lives in.

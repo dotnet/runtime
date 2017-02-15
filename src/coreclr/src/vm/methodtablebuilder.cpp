@@ -6269,14 +6269,6 @@ MethodTableBuilder::InitMethodDesc(
             pNewNMD->ndirect.m_cbStackArgumentSize = 0xFFFF;
 #endif // defined(_TARGET_X86_)
 
-#ifdef FEATURE_MIXEDMODE // IJW
-            if (RVA != 0 && IsMiUnmanaged(dwImplFlags) && IsMiNative(dwImplFlags))
-            {
-                // Note that we cannot initialize the stub directly now in the general case,
-                // as LoadLibrary may not have been performed yet.
-                pNewNMD->SetIsEarlyBound();
-            }
-#endif // FEATURE_MIXEDMODE
 
             pNewNMD->GetWriteableData()->m_pNDirectTarget = pNewNMD->GetNDirectImportThunkGlue()->GetEntrypoint();
         }

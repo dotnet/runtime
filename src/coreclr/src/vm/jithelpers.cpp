@@ -1295,41 +1295,6 @@ HCIMPLEND
 //
 //========================================================================
 
-#ifdef FEATURE_MIXEDMODE
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-        PRECONDITION(pFD->IsStatic());
-        PRECONDITION(pFD->IsRVA() && pFD->GetModule()->IsRvaFieldTls(pFD->GetOffset()));
-    } CONTRACTL_END;
-
-    void *addr = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    Module* pModule = pFD->GetModule();
-
-    // Get the ThreadLocalStoragePointer in the TEB.
-    LPVOID pTlsPtr     = ClrTeb::GetLegacyThreadLocalStoragePointer();
-
-    // pTlsPtr is pointing at an array of pointers, each of which points to
-    // the TLS block of a dll.  So here, we need to get the TLS index for
-    // the dll, add that to pTlsPtr, and dereference it to get the TLS
-    // block of the dll.
-    DWORD  tlsIndex    = pModule->GetTlsIndex();
-    LPVOID pDllTlsBase = (LPVOID)*((UINT_PTR*)pTlsPtr + tlsIndex);
-
-    // Finally, we need to find the field offset into the TLS block.
-    addr = (LPVOID)((PBYTE)pDllTlsBase + pModule->GetFieldTlsOffset(pFD->GetOffset()));
-
-    HELPER_METHOD_FRAME_END();
-
-    return addr;
-}
-HCIMPLEND
-#endif // FEATURE_MIXEDMODE
 
 #ifdef FEATURE_REMOTING
 HCIMPL1(void*, JIT_GetStaticFieldAddr_Context, FieldDesc *pFD)

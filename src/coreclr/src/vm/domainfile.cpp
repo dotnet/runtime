@@ -30,7 +30,7 @@
 #include "compile.h"
 #endif  // FEATURE_PREJIT
 
-#include "umthunkhash.h"
+#include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
 #include "winrthelpers.h"
@@ -102,10 +102,6 @@ DomainFile::~DomainFile()
         m_pOriginalFile->Release();
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
-    if (m_pUMThunkHash)
-        delete m_pUMThunkHash;
-#endif
     delete m_pError;
 }
 
@@ -1169,10 +1165,6 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
-    if (!GetCurrentModule()->IsResource())
-        GetCurrentModule()->FixupVTables();
-#endif
 }
 
 void DomainFile::FinishLoad()
@@ -3534,29 +3526,3 @@ DomainModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
-LPVOID DomainFile::GetUMThunk(LPVOID pManagedIp, PCCOR_SIGNATURE pSig, ULONG cSig)
-{
-    CONTRACT (LPVOID)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END
-
-
-    if (m_pUMThunkHash == NULL)
-    {
-        UMThunkHash *pUMThunkHash = new UMThunkHash(GetModule(), this->GetAppDomain());
-        if (FastInterlockCompareExchangePointer(&m_pUMThunkHash, pUMThunkHash, NULL) != NULL)
-        {
-            delete pUMThunkHash;
-        }
-    }
-    RETURN m_pUMThunkHash->GetUMThunk(pManagedIp, pSig, cSig);
-}
-#endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE

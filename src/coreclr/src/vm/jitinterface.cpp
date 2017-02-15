@@ -9581,27 +9581,6 @@ void* CEEInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method,
 
     if (pMD->NDirectTargetIsImportThunk())
     {
-#ifdef FEATURE_MIXEDMODE // IJW
-        if (pMD->IsEarlyBound()
-#ifdef FEATURE_MULTICOREJIT
-            // Bug 126723: Calling ClassInit in multicore JIT background thread, return NULL
-            // When multicore JIT is enabled (StartProfile called), calling managed code is not allowed in the background thread
-            && GetAppDomain()->GetMulticoreJitManager().AllowCCtorsToRunDuringJITing()
-#endif
-            )
-        {
-            EX_TRY
-            {
-                pMD->InitEarlyBoundNDirectTarget();
-                _ASSERTE(!pMD->NDirectTargetIsImportThunk());
-                result = pMD->GetNDirectTarget();
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-        }
-#endif // FEATURE_MIXEDMODE
     }
     else
     {

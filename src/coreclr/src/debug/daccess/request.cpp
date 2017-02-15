@@ -1580,9 +1580,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
         ModuleData->FileReferencesMap = PTR_CDADDR(pModule->m_FileReferencesMap.pTable);
         ModuleData->ManifestModuleReferencesMap = PTR_CDADDR(pModule->m_ManifestModuleReferencesMap.pTable);
 
-#ifdef FEATURE_MIXEDMODE // IJW
-        ModuleData->pThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
-#endif // FEATURE_MIXEDMODE // IJW
     }
     EX_CATCH
     {

@@ -30,9 +30,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-ifdef FEATURE_MIXEDMODE
-EXTERN _IJWNOADThunkJumpTargetHelper@4:PROC
-endif
 EXTERN _StubRareEnableWorker@4:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
@@ -607,105 +604,6 @@ _StubRareDisableTHROW proc public
         retn
 _StubRareDisableTHROW endp
 
-
-ifdef FEATURE_MIXEDMODE
-; VOID __stdcall IJWNOADThunkJumpTarget(void);
-; This routine is used by the IJWNOADThunk to determine the callsite of the domain-specific stub to call.
-_IJWNOADThunkJumpTarget@0 proc public
-
-        push ebp
-        mov ebp, esp
-
-        ; EAX contains IJWNOADThunk*
-        ; Must retain ebx, ecx, edx, esi, edi.
-
-        ; save ebx - holds the IJWNOADThunk*
-        ; save ecx - holds the current AppDomain ID.
-        ; save edx - holds the cached AppDomain ID.
-        push ebx
-        push ecx
-
-        ; put the IJWNOADThunk into ebx for safe keeping
-        mov ebx, eax
-
-        ; get thread - assumes registers are preserved
-        call _GetThread@0
-
-        ; if thread is null, go down un-optimized path
-        test eax,eax
-        jz cachemiss
-
-        ; get current domain - assumes registers are preserved
-        call _GetAppDomain@0
-
-        ; if domain is null, go down un-optimized path
-        test eax,eax
-        jz cachemiss
-
-        ; get the current appdomain id
-        mov ecx, [eax + AppDomain__m_dwId]
-
-        ; test it against each cache location
-        mov eax, ebx
-        add eax, IJWNOADThunk__m_cache
-        cmp ecx, [eax]
-        je cachehit
-
-        add eax, IJWNOADThunk__NextCacheOffset
-        cmp ecx, [eax]
-        je cachehit
-
-        add eax, IJWNOADThunk__NextCacheOffset
-        cmp ecx, [eax]
-        je cachehit
-
-        add eax, IJWNOADThunk__NextCacheOffset
-        cmp ecx, [eax]
-        je cachehit
-
-cachemiss:
-        ; save extra registers
-        push edx
-        push esi
-        push edi
-
-        ; call unoptimized path
-        push ebx                ; only arg is IJWNOADThunk*
-        call _IJWNOADThunkJumpTargetHelper@4
-
-        ; restore extra registers
-        pop edi
-        pop esi
-        pop edx
-        
-        ; jump back up to the epilog
-        jmp complete
-
-cachehit:
-        ; found a matching ADID, get the code addr.
-        mov eax, [eax + IJWNOADThunk__CodeAddrOffsetFromADID]
-
-        ; if the callsite is null, go down the un-optimized path
-        test eax, eax
-        jz cachemiss
-
-complete:
-        ; restore regs
-        pop ecx
-        pop ebx
-
-        mov esp, ebp
-        pop ebp
-
-        ; Jump to callsite
-        jmp eax
-        
-        ; This will never be executed. It is just to help out stack-walking logic
-        ; which disassembles the epilog to unwind the stack.
-        ret
-_IJWNOADThunkJumpTarget@0 endp
-
-endif
 
 InternalExceptionWorker proc public
         pop     edx             ; recover RETADDR

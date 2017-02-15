@@ -4020,12 +4020,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     DisplayWriteFieldPointer( m_pNgenStats,
                               DataPtrToDisplay((TADDR)module->m_pNgenStats),
                               Module, MODULE );
-#if defined(FEATURE_MIXEDMODE)
-    DisplayWriteFieldPointer( m_pThunkHeap,
-                              DataPtrToDisplay(dac_cast<TADDR>(module->m_pThunkHeap)),
-                              Module, MODULE );
-    _ASSERTE(module->m_pThunkHeap == NULL);
-#endif
 
     DisplayWriteFieldAddress(m_propertyNameSet,
                              DPtrToPreferredAddr(module->m_propertyNameSet),
