@@ -238,10 +238,6 @@
 
 #include "../binder/inc/coreclrbindercommon.h"
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-// This is required to register our UEF callback with the UEF chain manager
-#include <mscoruefwrapper.h>
-#endif // FEATURE_UEF_CHAINMANAGER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
