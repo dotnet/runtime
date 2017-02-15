@@ -3748,9 +3748,7 @@ private:
     STRINGREF   _remoteStackTraceString;
     PTRARRAYREF _dynamicMethods;
     STRINGREF   _source;         // Mainly used by VB.
-#ifdef FEATURE_SERIALIZATION
-    OBJECTREF   _safeSerializationManager;
-#endif // FEATURE_SERIALIZATION
+
     IN_WIN64(void* _xptrs;)
     IN_WIN64(UINT_PTR    _ipForWatsonBuckets;) // Contains the IP of exception for watson bucketing
     INT32       _remoteStackIndex;
