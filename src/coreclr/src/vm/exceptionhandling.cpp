@@ -4698,29 +4698,7 @@ Return value :
 --*/
 VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
 {
-#if defined(_TARGET_AMD64_)
-    _ASSERTE(index < 16);
-    return &((&pContext->Rax)[index]);
-#elif defined(_TARGET_X86_)
-    _ASSERTE(index < 8);
-
-    static const SIZE_T OFFSET_OF_REGISTERS[] =
-    {
-        offsetof(CONTEXT, Eax),
-        offsetof(CONTEXT, Ecx),
-        offsetof(CONTEXT, Edx),
-        offsetof(CONTEXT, Ebx),
-        offsetof(CONTEXT, Esp),
-        offsetof(CONTEXT, Ebp),
-        offsetof(CONTEXT, Esi),
-        offsetof(CONTEXT, Edi),
-    };
-
-    return (VOID*)(PBYTE(pContext) + OFFSET_OF_REGISTERS[index]);
-#else
-    PORTABILITY_ASSERT("GetRegisterAddressByIndex");
-    return NULL;
-#endif
+    return getRegAddr(index, pContext);
 }
 
 /*++
