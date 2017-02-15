@@ -3230,7 +3230,17 @@
         "4.0.0.0": "4.4.0"
       }
     },
-    "System.Configuration": {
+    "System.Configuration.ConfigurationManager": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
+    "System.IO.Ports": {
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.4.0"
+      }
+    },
+    "System.Security.Cryptography.Xml": {
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.4.0"
       }
