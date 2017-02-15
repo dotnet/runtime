@@ -4,7 +4,6 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;</PackagePlatforms>
     <OutputPath>$(PackagesOutputPath)</OutputPath>
   </PropertyGroup>
   <ItemGroup>

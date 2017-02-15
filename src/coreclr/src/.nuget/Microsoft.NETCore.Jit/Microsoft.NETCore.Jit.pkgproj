@@ -1,74 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <SkipValidatePackage>true</SkipValidatePackage>
-    <PackagePlatforms>x64;x86;arm64;arm;armel;</PackagePlatforms>
-    <OutputPath>$(PackagesOutputPath)</OutputPath>
-    <IncludeRuntimeJson>true</IncludeRuntimeJson>
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>arm64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>x86</Platform>
-    </ProjectReference>
-    <ProjectReference Include="win\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
-    <ProjectReference Include="linux\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="debian\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="debian\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>armel</Platform>
-    </ProjectReference>
-    <ProjectReference Include="fedora\23\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="fedora\24\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="opensuse\13.2\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="opensuse\42.1\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="rhel\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="ubuntu\14.04\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="ubuntu\14.04\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
-    <ProjectReference Include="ubuntu\16.04\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="ubuntu\16.04\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>arm</Platform>
-    </ProjectReference>
-    <ProjectReference Include="ubuntu\16.10\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="alpine\3.4.3\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-    <ProjectReference Include="tizen\4.0.0\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>armel</Platform>
-    </ProjectReference>
-    <ProjectReference Include="osx\Microsoft.NETCore.Jit.pkgproj">
-      <Platform>amd64</Platform>
-    </ProjectReference>
-  </ItemGroup>
+
+  <PropertyGroup>
+    <LongNamePlatform>$(PackagePlatform)</LongNamePlatform>
+    <LongNamePlatform Condition="'$(LongNamePlatform)'=='x64'">amd64</LongNamePlatform>
+    <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
+    <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
+    <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).0$(BuildNumberMinor)</LongNameSuffix>
+    <CrossTargetLongNameSuffix>_$(CrossTargetPlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).0$(BuildNumberMinor)</CrossTargetLongNameSuffix>
+  </PropertyGroup>
+
+  <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
