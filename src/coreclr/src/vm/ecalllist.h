@@ -1028,8 +1028,6 @@ FCFuncStart(gCultureInfoFuncs)
     
     QCFuncElement("InternalGetUserDefaultUILanguage", COMNlsInfo::InternalGetUserDefaultUILanguage)
     QCFuncElement("InternalGetSystemDefaultUILanguage", COMNlsInfo::InternalGetSystemDefaultUILanguage)
-// Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
-    FCFuncElement("nativeGetResourceFallbackArray", COMNlsInfo::nativeGetResourceFallbackArray)
 FCFuncEnd()
 
 FCFuncStart(gTextInfoFuncs)
