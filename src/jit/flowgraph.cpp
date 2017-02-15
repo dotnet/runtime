@@ -23965,13 +23965,15 @@ void Compiler::fgMergeFinallyChains()
         return;
     }
 
+    bool enableMergeFinallyChains = true;
+
 #if !FEATURE_EH_FUNCLETS
     // For non-funclet models (x86) the callfinallys may contain
     // statements and the continuations contain GT_END_LFINs.  So no
     // merging is possible until the GT_END_LFIN blocks can be merged
     // and merging is not safe unless the callfinally blocks are split.
     JITDUMP("EH using non-funclet model; merging not yet implemented.\n");
-    return;
+    enableMergeFinallyChains = false;
 #endif // !FEATURE_EH_FUNCLETS
 
 #if !FEATURE_EH_CALLFINALLY_THUNKS
@@ -23979,8 +23981,14 @@ void Compiler::fgMergeFinallyChains()
     // statements, and merging is not safe unless the callfinally
     // blocks are split.
     JITDUMP("EH using non-callfinally thunk model; merging not yet implemented.\n");
-    return;
+    enableMergeFinallyChains = false;
 #endif
+
+    if (!enableMergeFinallyChains)
+    {
+        JITDUMP("fgMergeFinallyChains disabled\n");
+        return;
+    }
 
 #ifdef DEBUG
     if (verbose)
