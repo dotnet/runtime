@@ -34,12 +34,6 @@ namespace System
             BCLDebug.Assert(false, "SharedStatics..ctor() is never called.");
         }
 
-        private volatile String _Remoting_Identity_IDGuid;
-
-        // Note this may not need to be process-wide.
-        private int _Remoting_Identity_IDSeqNum;
-
-
         // This is the total amount of memory currently "reserved" via
         // all MemoryFailPoints allocated within the process.
         // Stored as a long because we need to use Interlocked.Add.
