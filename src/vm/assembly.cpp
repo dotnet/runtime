@@ -54,11 +54,6 @@
 #include "peimagelayout.inl"
 
 
-#ifdef FEATURE_TRACELOGGING
-#include "clrtracelogging.h"
-#endif // FEATURE_TRACELOGGING
-
-
 // Define these macro's to do strict validation for jit lock and class init entry leaks.
 // This defines determine if the asserts that verify for these leaks are defined or not.
 // These asserts can sometimes go off even if no entries have been leaked so this defines
@@ -155,42 +150,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #define REFEMIT_MANIFEST_MODULE_NAME W("RefEmit_InMemoryManifestModule")
 
 
-#ifdef FEATURE_TRACELOGGING
-//----------------------------------------------------------------------------------------------
-// Reads and logs the TargetFramework attribute for an assembly. For example: [assembly: TargetFramework(".NETFramework,Version=v4.0")]
-//----------------------------------------------------------------------------------------------
-void Assembly::TelemetryLogTargetFrameworkAttribute()
-{
-    const BYTE  *pbAttr;                // Custom attribute data as a BYTE*.
-    ULONG       cbAttr;                 // Size of custom attribute data.
-    HRESULT hr = GetManifestImport()->GetCustomAttributeByName(GetManifestToken(), TARGET_FRAMEWORK_TYPE, (const void**)&pbAttr, &cbAttr);
-    bool dataLogged = false; 
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pbAttr, cbAttr);
-        LPCUTF8 lpTargetFramework;
-        ULONG cbTargetFramework;
-        if (SUCCEEDED(cap.ValidateProlog()))
-        {
-            if (SUCCEEDED(cap.GetString(&lpTargetFramework, &cbTargetFramework)))
-            {
-                if ((lpTargetFramework != NULL) && (cbTargetFramework != 0))
-                {
-                    SString s(SString::Utf8, lpTargetFramework, cbTargetFramework);
-                    CLRTraceLog::Logger::LogTargetFrameworkAttribute(s.GetUnicode(), GetSimpleName());
-                    dataLogged = true;
-                }
-            }
-        }
-    }
-    if (!dataLogged) 
-    { 
-        CLRTraceLog::Logger::LogTargetFrameworkAttribute(L"", GetSimpleName());
-    }
-}
-
-#endif // FEATURE_TRACELOGGING
-
 //----------------------------------------------------------------------------------------------
 // Does most Assembly initialization tasks. It can assume the ctor has already run
 // and the assembly is safely destructable. Whether this function throws or succeeds,
@@ -253,13 +212,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     if (!m_pManifest->IsReadyToRun())
         CacheManifestExportedTypes(pamTracker);
-
-
-#ifdef FEATURE_TRACELOGGING
-
-    TelemetryLogTargetFrameworkAttribute();
-
-#endif // FEATURE_TRACELOGGING
 
 
     // Check for the assemblies that contain SIMD Vector types.

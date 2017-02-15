@@ -118,10 +118,6 @@ public:
     Assembly(BaseDomain *pDomain, PEAssembly *pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
     void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
 
-#if defined(FEATURE_TRACELOGGING)
-	void TelemetryLogTargetFrameworkAttribute();
-#endif // FEATURE_TRACELOGGING
-
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
