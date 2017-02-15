@@ -77,7 +77,6 @@
         <CDefines Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(CDefines);FEATURE_USE_ASM_GC_WRITE_BARRIERS</CDefines>
         <CDefines Condition="'$(BinderDebugLog)' == 'true'">$(CDefines);BINDER_DEBUG_LOG</CDefines>
         <CDefines Condition="'$(FeatureSymDiff)' == 'true'">$(CDefines);FEATURE_SYMDIFF</CDefines>
-        <CDefines Condition="'$(FeatureWinDbAppCompat)' == 'true'">$(CDefines);FEATURE_WIN_DB_APPCOMPAT</CDefines>
         <CDefines Condition="'$(FeatureImplicitTls)' == 'true'">$(CDefines);FEATURE_IMPLICIT_TLS</CDefines>
         <CDefines Condition="'$(FeatureReadyToRun)' == 'true'">$(CDefines);FEATURE_READYTORUN</CDefines>
         <CDefines Condition="'$(FeatureReadyToRunCompiler)' == 'true'">$(CDefines);FEATURE_READYTORUN_COMPILER</CDefines>
@@ -121,7 +120,6 @@
         <DefineConstants Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
         <DefineConstants Condition="'$(BinderDebugLog)' == 'true'">$(DefineConstants);BINDER_DEBUG_LOG</DefineConstants>
         <DefineConstants Condition="'$(FeatureSymDiff)' == 'true'">$(DefineConstants);FEATURE_SYMDIFF</DefineConstants>
-        <DefineConstants Condition="'$(FeatureWinDbAppCompat)' == 'true'">$(DefineConstants);FEATURE_WIN_DB_APPCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureReadyToRun)' == 'true'">$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
 
         <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
