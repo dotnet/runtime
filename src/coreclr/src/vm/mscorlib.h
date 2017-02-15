@@ -831,10 +831,6 @@ DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
 DEFINE_METHOD(METHOD_HANDLE,        GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeMethodHandle_RetIntPtr)
 
-#ifdef FEATURE_METHOD_RENTAL
-DEFINE_CLASS(METHOD_RENTAL,         ReflectionEmit,         MethodRental)
-#endif // FEATURE_METHOD_RENTAL
-
 DEFINE_CLASS(MISSING,               Reflection,             Missing)
 DEFINE_FIELD(MISSING,               VALUE,                  Value)
 
