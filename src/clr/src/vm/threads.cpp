@@ -54,10 +54,6 @@
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-// This is required to register our UEF callback with the UEF chain manager
-#include <mscoruefwrapper.h>
-#endif // FEATURE_UEF_CHAINMANAGER
 
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
@@ -9309,14 +9305,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
         }
     }
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-    if (g_pUEFManager && (ret == EXCEPTION_CONTINUE_SEARCH))
-    {
-        // Since the "UEF" of this runtime instance didnt handle the exception,
-        // invoke the other registered UEF callbacks as well
-        ret = g_pUEFManager->InvokeUEFCallbacks(pExceptionInfo);
-    }
-#endif // FEATURE_UEF_CHAINMANAGER
 
     END_SO_INTOLERANT_CODE;
     return ret;
