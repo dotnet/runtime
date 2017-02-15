@@ -152,9 +152,7 @@ class RegMeta :
     public IMetaDataAssemblyImport, 
     public IMetaDataTables2
 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT
     , public IMetaDataInfo 
-#endif
 
 #ifdef FEATURE_METADATA_EMIT
     , public IMetaDataEmit2 
@@ -1489,7 +1487,6 @@ public:
         const void **ppv,                       // [OUT] put pointer to MD stream here.
         ULONG       *pcb);                      // [OUT] put size of the stream here.
 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT
 
 //*****************************************************************************
 // IMetaDataInfo
@@ -1508,7 +1505,6 @@ public:
         ULONGLONG *   pcbData,          // [out] Size of the mapped memory region..
         DWORD *       pdwMappingType);  // [out] Type of file mapping (code:CorFileMapping).
 
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
 
 #if defined(FEATURE_METADATA_IN_VM) && defined(FEATURE_PREJIT)
 

@@ -549,12 +549,10 @@ RegMeta::QueryInterface(
         *ppUnk = static_cast<IMetaDataTables2 *>(this);
     }
 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT
     else if (riid == IID_IMetaDataInfo)
     {
         *ppUnk = static_cast<IMetaDataInfo *>(this);
     }
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
 
 #ifdef FEATURE_METADATA_EMIT
     else if (riid == IID_IMetaDataEmit)
@@ -685,7 +683,6 @@ ErrExit:
     return hr;
 } // RegMeta::QueryInterface
 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT
 
 //---------------------------------------------------------------------------------------
 // 
@@ -781,7 +778,6 @@ ErrExit:
     return hr;
 } // RegMeta::GetFileMapping
 
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
 
 //------------------------------------------------------------------------------
 // Metadata dump 
