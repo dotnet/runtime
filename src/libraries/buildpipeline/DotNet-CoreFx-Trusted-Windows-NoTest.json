@@ -413,14 +413,6 @@
     "PB_BuildArguments": {
       "value": "-buildArch=x64 -Release -- /p:SignType=test /p:RuntimeOS=win10",
       "allowOverride": true
-    },
-    "PB_BuildTestsArguments": {
-      "value": "-buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10",
-      "allowOverride": true
-    },
-    "PB_CreateHelixArguments": {
-      "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT",
-      "allowOverride": true
     }
   },
   "demands": [
