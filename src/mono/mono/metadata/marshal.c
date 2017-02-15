@@ -814,7 +814,7 @@ mono_array_to_lparray (MonoArray *array)
 		break;
 	case MONO_TYPE_CLASS:
 		nativeArraySize = array->max_length;
-		nativeArray = (void **)malloc(sizeof(gpointer) * nativeArraySize);
+		nativeArray = (void **)g_malloc (sizeof(gpointer) * nativeArraySize);
 		for(i = 0; i < nativeArraySize; ++i) {
 			nativeArray[i] = mono_cominterop_get_com_interface (((MonoObject **)array->vector)[i], klass->element_class, &error);
 			if (mono_error_set_pending_exception (&error))
