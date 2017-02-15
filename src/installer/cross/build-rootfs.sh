@@ -104,14 +104,10 @@ for i in "$@" ; do
     esac
 done
 
-if [[ "$__BuildArch" == "arm" ]]; then
-    __UbuntuPackages+=" ${__LLDB_Package:-}"
-fi
-
 if [ "$__BuildArch" == "armel" ]; then
     __LLDB_Package="lldb-3.5-dev"
-    __UbuntuPackages+=" ${__LLDB_Package:-}"
 fi
+__UbuntuPackages+=" ${__LLDB_Package:-}"
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 
