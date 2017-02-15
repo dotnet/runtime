@@ -582,11 +582,6 @@ FCFuncStart(gCOMClassWriter)
     QCFuncElement("DefineCustomAttribute", COMDynamicWrite::DefineCustomAttribute)
 FCFuncEnd()
 
-#ifdef FEATURE_METHOD_RENTAL
-FCFuncStart(gCOMMethodRental)
-    QCFuncElement("SwapMethodBody", COMMethodRental::SwapMethodBody)
-FCFuncEnd()
-#endif // FEATURE_METHOD_RENTAL
 
 FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
@@ -1589,9 +1584,6 @@ FCClassElement("MemoryFailPoint", "System.Runtime", gMemoryFailPointFuncs)
 FCClassElement("Message", "System.Runtime.Remoting.Messaging", gMessageFuncs)
 #endif    
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
-#ifdef FEATURE_METHOD_RENTAL
-FCClassElement("MethodRental", "System.Reflection.Emit", gCOMMethodRental)
-#endif // FEATURE_METHOD_RENTAL
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("MngdHiddenLengthArrayMarshaler", "System.StubHelpers", gMngdHiddenLengthArrayMarshalerFuncs)

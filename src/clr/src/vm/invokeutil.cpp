@@ -1977,9 +1977,6 @@ bool InvokeUtil::IsDangerousMethod(MethodDesc *pMD)
     {
         // All methods on these types are considered dangerous
         static const BinderClassID dangerousTypes[] = {
-#ifdef FEATURE_METHOD_RENTAL
-            CLASS__METHOD_RENTAL,
-#endif // FEATURE_METHOD_RENTAL
             CLASS__TYPE_HANDLE,
             CLASS__METHOD_HANDLE,
             CLASS__FIELD_HANDLE,
