@@ -9,7 +9,6 @@
 
 #include "corhost.h"
 #include "synch.h"
-#include "rwlock.h"
 
 void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
                                 )
@@ -211,77 +210,6 @@ void CLREventBase::SetMonitorEvent()
     }
 }
 
-#ifdef FEATURE_RWLOCK
-void CLREventBase::CreateRWLockWriterEvent (BOOL bInitialState,  // If TRUE, initial state is signalled
-                                        CRWLock *pRWLock
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;           
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((g_fEEStarted));        
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
-        PRECONDITION((GetThread() != NULL));        
-        PRECONDITION((!IsOSEvent()));
-    }
-    CONTRACTL_END;
-
-    SetAutoEvent();
-
-    {
-        HANDLE h = UnsafeCreateEvent(NULL,FALSE,bInitialState,NULL);
-        if (h == NULL) {
-            ThrowOutOfMemory();
-        }
-        m_handle = h;
-    }
-
-    SetInDeadlockDetection();
-}
-
-void CLREventBase::CreateRWLockReaderEvent (BOOL bInitialState,  // If TRUE, initial state is signalled
-                                        CRWLock *pRWLock
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;           
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((g_fEEStarted));        
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
-        PRECONDITION((GetThread() != NULL));        
-        PRECONDITION((!IsOSEvent()));
-    }
-    CONTRACTL_END;
-
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager == NULL) {
-        HANDLE h = UnsafeCreateEvent(NULL,TRUE,bInitialState,NULL);
-        if (h == NULL) {
-            ThrowOutOfMemory();
-        }
-        m_handle = h;
-    }
-    else {
-        IHostManualEvent *pEvent;
-        HRESULT hr;
-        SIZE_T cookie = (SIZE_T)pRWLock->GetObjectHandle();
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateRWLockReaderEvent(bInitialState, cookie, &pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        m_handle = (HANDLE)pEvent;
-    }
-
-    SetInDeadlockDetection();
-}
-#endif // FEATURE_RWLOCK
 
 
 void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled

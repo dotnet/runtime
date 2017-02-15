@@ -17,7 +17,6 @@
 #include "fcall.h"
 #include "qcall.h"
 #include "cgensys.h"
-#include "rwlock.h"
 
 #define SPFLAGSASSERTION        0x01
 #define SPFLAGSUNMANAGEDCODE    0x02

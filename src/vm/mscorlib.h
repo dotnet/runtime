@@ -893,20 +893,6 @@ DEFINE_METHOD(PROPERTY,             GET_GETTER,             GetGetMethod,       
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
 
 
-#ifdef FEATURE_RWLOCK
-DEFINE_CLASS_U(Threading,              ReaderWriterLock,           CRWLock)
-DEFINE_FIELD_U(_hWriterEvent,              CRWLock, _hWriterEvent)
-DEFINE_FIELD_U(_hReaderEvent,              CRWLock, _hReaderEvent)
-DEFINE_FIELD_U(_hObjectHandle,             CRWLock, _hObjectHandle)
-DEFINE_FIELD_U(_dwState,                   CRWLock, _dwState)
-DEFINE_FIELD_U(_dwULockID,                 CRWLock, _dwULockID)
-DEFINE_FIELD_U(_dwLLockID,                 CRWLock, _dwLLockID)
-DEFINE_FIELD_U(_dwWriterID,                CRWLock, _dwWriterID)
-DEFINE_FIELD_U(_dwWriterSeqNum,            CRWLock, _dwWriterSeqNum)
-DEFINE_FIELD_U(_wWriterLevel,              CRWLock, _wWriterLevel)
-#endif  // FEATURE_RWLOCK
-
-
 
 DEFINE_CLASS(METADATA_IMPORT,       Reflection,             MetadataImport)
 DEFINE_METHOD(METADATA_IMPORT,      THROW_ERROR,            ThrowError,                 SM_Int_RetVoid)

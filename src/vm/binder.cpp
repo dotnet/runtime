@@ -13,7 +13,6 @@
 #include "field.h"
 #include "excep.h"
 #include "eeconfig.h"
-#include "rwlock.h"
 #include "runtimehandles.h"
 #include "customattribute.h"
 #include "debugdebugger.h"
