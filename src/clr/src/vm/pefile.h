@@ -136,14 +136,6 @@ private:
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
 
-#ifdef FEATURE_MIXEDMODE
-protected:
-    // Returns TRUE if this file references managed CRT (msvcmNN*).
-    BOOL ReferencesManagedCRT();
-    
-    // Checks for unsupported loads of C++/CLI assemblies into multiple runtimes in this process.
-    void CheckForDisallowedInProcSxSLoad();
-#endif // FEATURE_MIXEDMODE
 
 private:
     void CheckForDisallowedInProcSxSLoadWorker();

@@ -5259,37 +5259,6 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
 }
 #endif // CROSSGEN_COMPILE
 
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
-//*******************************************************************************
-void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    _ASSERTE(IsEarlyBound());
-
-    if (IsClassConstructorTriggeredAtLinkTime())
-    {
-        GetMethodTable()->CheckRunClassInitThrowing();
-    }
-
-    const void *target = GetModule()->GetInternalPInvokeTarget(GetRVA());
-    _ASSERTE(target != 0);
-
-    if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)target))
-        target = (BYTE*) FalseGetLastError;
-
-    // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
-    // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
-    // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
-    SetNDirectTarget((LPVOID)target);
-}
-#endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE
 
 //*******************************************************************************
 void MethodDesc::ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport)

@@ -2334,12 +2334,6 @@ public:
 
     DomainAssembly * FindAssembly(PEAssembly * pFile, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
 
-#ifdef FEATURE_MIXEDMODE
-    // Finds only loaded modules, elevates level if needed
-    Module* GetIJWModule(HMODULE hMod) DAC_EMPTY_RET(NULL);
-    // Finds loading modules
-    DomainFile* FindIJWDomainFile(HMODULE hMod, const SString &path) DAC_EMPTY_RET(NULL);
-#endif //  FEATURE_MIXEDMODE
 
     Assembly *LoadAssembly(AssemblySpec* pIdentity,
                            PEAssembly *pFile,
@@ -4281,9 +4275,6 @@ public:
 #endif
     static BOOL SetGlobalSharePolicyUsingAttribute(IMDInternalImport* pScope, mdMethodDef mdMethod);
 
-#ifdef FEATURE_MIXEDMODE
-    static HRESULT RunDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved);
-#endif // FEATURE_MIXEDMODE
 
     //****************************************************************************************
     //

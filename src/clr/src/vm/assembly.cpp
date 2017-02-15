@@ -1834,37 +1834,6 @@ Module* Assembly::FindModule(PEFile *pFile, BOOL includeLoading)
 }
 #endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
-#ifdef FEATURE_MIXEDMODE
-DomainFile* Assembly::FindIJWDomainFile(HMODULE hMod, const SString &path)
-{
-    CONTRACT (DomainFile*)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(GetManifestModule()));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    ModuleIterator i = IterateModules();
-    while (i.Next())
-    {
-        PEFile *pFile = i.GetModule()->GetFile();
-
-        if (   !pFile->IsResource()
-            && !pFile->IsDynamic()
-            && !pFile->IsILOnly())
-        {
-            if ( (pFile->GetLoadedIL()!= NULL && pFile->GetIJWBase() == hMod)
-                || PEImage::PathEquals(pFile->GetPath(), path))
-                RETURN i.GetModule()->GetDomainFile();
-        }
-    }
-    RETURN NULL;
-}
-#endif // FEATURE_MIXEDMODE
 
 //*****************************************************************************
 // Set up the list of names of any friend assemblies

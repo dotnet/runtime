@@ -347,9 +347,6 @@ private:
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
     void SetError(WORD error) { if (!m_error) m_error = error; }
-#ifdef FEATURE_MIXEDMODE
-    void BestGuessNDirectDefaults(MethodDesc* pMD);
-#endif 
 
 public:     
     DWORD GetStubFlags() 
@@ -580,12 +577,6 @@ protected:
 EXTERN_C void PInvokeStubForHost(void);
 #endif
 
-#ifdef FEATURE_MIXEDMODE // IJW
-// This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
-BOOL HeuristicDoesThisLooksLikeAnApiCall(LPBYTE pTarget);
-BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
-DWORD __stdcall FalseGetLastError();
-#endif // FEATURE_MIXEDMODE
 
 class NDirectStubParameters
 {
