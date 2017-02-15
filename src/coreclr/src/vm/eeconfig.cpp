@@ -22,9 +22,6 @@
 #include "corhost.h"
 #include "regex_util.h"
 #include "clr/fs/path.h"
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-#include "QuirksApi.h"
-#endif
 #include "configuration.h"
 
 using namespace clr;
@@ -169,28 +166,6 @@ void *EEConfig::operator new(size_t size)
     RETURN g_EEConfigMemory;
 }
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-void InitWinAppCompatDBApis()
-{
-    STANDARD_VM_CONTRACT;
-
-    HMODULE hMod = WszLoadLibraryEx(QUIRKSAPI_DLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-
-    PFN_CptQuirkIsEnabled3 pfnIsQuirkEnabled = NULL;
-    PFN_CptQuirkGetData2 pfnQuirkGetData = NULL;
-
-    if(hMod != NULL) 
-    {
-        pfnIsQuirkEnabled = (PFN_CptQuirkIsEnabled3)GetProcAddress(hMod, "QuirkIsEnabled3");
-        pfnQuirkGetData   = (PFN_CptQuirkGetData2)GetProcAddress(hMod, "QuirkGetData2");
-    }
-
-    if(pfnIsQuirkEnabled != NULL && pfnQuirkGetData != NULL)
-    {
-        CLRConfig::RegisterWinDbQuirkApis(pfnIsQuirkEnabled,pfnQuirkGetData);
-    }
-}
-#endif // FEATURE_WIN_DB_APPCOMPAT
 
 /**************************************************************/
 HRESULT EEConfig::Init()
@@ -433,9 +408,6 @@ HRESULT EEConfig::Init()
     // statically link to EEConfig.
     CLRConfig::RegisterGetConfigValueCallback(&GetConfigValueCallback);
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-    InitWinAppCompatDBApis();
-#endif // FEATURE_WIN_DB_APPCOMPAT
 
     return S_OK;
 }
