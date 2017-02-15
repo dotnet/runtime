@@ -146,9 +146,7 @@ DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  C
 
 DEFINE_EXCEPTION(g_ReflectionNS,       CustomAttributeFormatException, false,  COR_E_CUSTOMATTRIBUTEFORMAT)
 
-#if defined(FEATURE_X509)
 DEFINE_EXCEPTION(g_CryptographyNS,     CryptographicException,         false,  CORSEC_E_CRYPTO)
-#endif // FEATURE_X509
 
 DEFINE_EXCEPTION(g_SystemNS,           DataMisalignedException,        false,  COR_E_DATAMISALIGNED)
 
