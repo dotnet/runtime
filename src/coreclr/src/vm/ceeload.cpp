@@ -5792,15 +5792,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL
         pModule = NULL;
 
 #ifndef DACCESS_COMPILE
-#if defined(FEATURE_MULTIMODULE_ASSEMBLIES)
-    // check if actually loaded, unless happens during GC (GC works only with loaded assemblies)
-    if (!GCHeapUtilities::IsGCInProgress() && onlyLoadedInAppDomain && pModule && !pModule->IsManifest())
-    {
-        DomainModule *pDomainModule = pModule->FindDomainModule(GetAppDomain());
-        if (pDomainModule == NULL || !pDomainModule->IsLoaded())
-            pModule = NULL;
-    }    
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 #endif // !DACCESS_COMPILE
     RETURN pModule;
 }
@@ -5822,99 +5813,6 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile,
     }
     CONTRACT_END;
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-
-    // Handle the module ref case
-    if (TypeFromToken(kFile) == mdtModuleRef)
-    {
-        LPCSTR moduleName;
-        IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &moduleName));
-        
-        mdFile kFileLocal = GetAssembly()->GetManifestFileToken(moduleName);
-        
-        if (kFileLocal == mdTokenNil)
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        
-        RETURN GetAssembly()->GetManifestModule()->LoadModule(pDomain, kFileLocal, permitResources, bindOnly);
-    }
-
-    // First, make sure the assembly is loaded in our domain
-
-    DomainAssembly *pDomainAssembly = GetAssembly()->FindDomainAssembly(pDomain);
-    if (!bindOnly)
-    {
-        if (pDomainAssembly == NULL)
-            pDomainAssembly = GetAssembly()->GetDomainAssembly(pDomain);
-        pDomain->LoadDomainFile(pDomainAssembly, FILE_LOADED);
-    }
-
-    if (kFile == mdFileNil)
-        RETURN pDomainAssembly;
-
-    if (pDomainAssembly == NULL)
-        RETURN NULL;
-
-    // Now look for the module in the rid maps
-
-    Module *pModule = LookupFile(kFile);
-    if (pModule == NULL && !IsManifest())
-    {
-        // If we didn't find it there, look at the "master rid map" in the manifest file
-        Assembly *pAssembly = GetAssembly();
-        mdFile kMatch = pAssembly->GetManifestFileToken(GetMDImport(), kFile);
-        if (IsNilToken(kMatch)) {
-            if (kMatch == mdFileNil)
-                pModule = pAssembly->GetManifestModule();
-            else
-                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        else
-            pModule = pAssembly->GetManifestModule()->LookupFile(kMatch);
-    }
-
-    // Get a DomainModule for our domain
-
-    DomainModule *pDomainModule = NULL;
-    if (pModule)
-    {
-        pDomainModule = pModule->FindDomainModule(pDomain);
-
-        if (!bindOnly && (permitResources || !pModule->IsResource()))
-        {
-            if (pDomainModule == NULL)
-                pDomainModule = pDomain->LoadDomainModule(pDomainAssembly, (PEModule*) pModule->GetFile(), FILE_LOADED);
-            else
-                pDomain->LoadDomainFile(pDomainModule, FILE_LOADED);
-        }
-    }
-    else if (!bindOnly)
-    {
-        PEModuleHolder pFile(GetAssembly()->LoadModule_AddRef(kFile, permitResources));
-        if (pFile)
-            pDomainModule = pDomain->LoadDomainModule(pDomainAssembly, pFile, FILE_LOADED);
-    }
-    
-    if (pDomainModule != NULL && pDomainModule->GetCurrentModule() != NULL)
-    {
-        // Make sure the module we're loading isn't its own assembly
-        if (pDomainModule->GetCurrentModule()->IsManifest())
-            COMPlusThrowHR(COR_E_ASSEMBLY_NOT_EXPECTED);
-        
-        // Cache the result in the rid map
-        StoreFileThrowing(kFile, pDomainModule->GetCurrentModule());
-    }
-    
-    // Make sure we didn't load a different module than what was in the rid map
-    CONSISTENCY_CHECK(pDomainModule == NULL || pModule == NULL || pDomainModule->GetModule() == pModule);
-
-    // We may not want to return a resource module
-    if (!permitResources && pDomainModule != NULL && pDomainModule->GetFile()->IsResource())
-        pDomainModule = NULL;
-
-    RETURN pDomainModule;
-#else //!FEATURE_MULTIMODULE_ASSEMBLIES
     if (bindOnly)
     {
         RETURN  NULL;
@@ -5939,7 +5837,6 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile,
         SString name(SString::Utf8, psModuleName);
         EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
     }
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 }
 #endif // !DACCESS_COMPILE
 
@@ -13266,15 +13163,8 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
     mdFile token;
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    if (pFile->IsAssembly())
-        token = mdFileNil;
-    else
-        token = ((PEModule *)pFile)->GetToken();
-#else
     _ASSERTE(pFile->IsAssembly());
     token = mdFileNil;
-#endif
 
     // Initial memory block for Modules must be zero-initialized (to make it harder
     // to introduce Destruct crashes arising from OOM's during initialization.)

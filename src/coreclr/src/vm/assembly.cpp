@@ -114,10 +114,6 @@ enum ReasonForNotSharing
 //----------------------------------------------------------------------------------------------
 Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_FreeFlag(0),
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    m_pAllowedFiles(NULL),
-    m_crstAllowedFiles(CrstAllowedFiles),
-#endif
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
@@ -243,9 +239,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     m_pSharedSecurityDesc = Security::CreateSharedSecurityDescriptor(this);
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    m_pAllowedFiles = new EEUtf8StringHashTable();
-#endif
 
     COUNTER_ONLY(GetPerfCounters().m_Loading.cAssemblies++);
 
@@ -352,10 +345,6 @@ Assembly::~Assembly()
     if (m_pwStrongNameKeyContainer && (m_FreeFlag & FREE_KEY_CONTAINER))
         delete[] m_pwStrongNameKeyContainer;
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    if (m_pAllowedFiles)
-        delete(m_pAllowedFiles);
-#endif 
     if (IsDynamic()) {
         if (m_pOnDiskManifest)
             // clear the on disk manifest if it is not cleared yet.
@@ -945,87 +934,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-ReflectionModule *Assembly::CreateDynamicModule(LPCWSTR wszModuleName, LPCWSTR wszFileName, BOOL fIsTransient, INT32* ptkFile)
-{
-    CONTRACT(ReflectionModule *)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-    
-    AllocMemTracker amTracker;
-    
-    // Add a manifest entry for the module
-    mdFile token;
-    IMetaDataAssemblyEmit *pAssemblyEmit = GetManifestFile()->GetAssemblyEmitter();
-    IfFailThrow(pAssemblyEmit->DefineFile(wszFileName, NULL, 0, 0, &token));
-
-    if (ptkFile)
-        *ptkFile = (INT32)token;
-    
-    GetManifestModule()->UpdateDynamicMetadataIfNeeded();
-    
-    // Define initial metadata for the module
-    SafeComHolder<IMetaDataEmit> pEmit;
-    PEFile::DefineEmitScope(IID_IMetaDataEmit, (void **)&pEmit);
-    
-    // the module name will be set later when we create the ReflectionModule
-    
-    // Create the PEFile for the module
-    PEModuleHolder pFile(PEModule::Create(GetManifestFile(), token, pEmit));
-    
-    // Create the DomainModule
-    NewHolder<DomainModule> pDomainModule(new DomainModule(::GetAppDomain(), GetDomainAssembly(), pFile));
-    
-    // Create the module itself
-    ReflectionModuleHolder pWrite(ReflectionModule::Create(this, pFile, &amTracker, wszModuleName, fIsTransient));
-    
-    amTracker.SuppressRelease(); //@todo: OOM: is this the right place to commit the tracker?
-    pWrite->SetIsTenured();
-    
-    // Modules take the DebuggerAssemblyControlFlags down from its parent Assembly initially.
-    // By default, this turns on JIT optimization.
-    
-    pWrite->SetDebuggerInfoBits(GetDebuggerInfoBits());
-    
-    // Associate the two
-    pDomainModule->SetModule(pWrite);
-    m_pManifest->StoreFileThrowing(token, pWrite);
-    
-    // Simulate loading process
-    pDomainModule->Begin();
-    pDomainModule->DeliverSyncEvents();
-    pDomainModule->DeliverAsyncEvents();
-    pDomainModule->FinishLoad();
-    pDomainModule->ClearLoading();
-    pDomainModule->m_level = FILE_ACTIVE;
-    
-    pDomainModule.SuppressRelease();
-    ReflectionModule *pModule = pWrite.Extract();
-
-    LPCSTR szUTF8FileName;
-    CQuickBytes qbLC;
-
-    // Get the UTF8 file name
-    IfFailThrow(m_pManifest->GetMDImport()->GetFileProps(token, &szUTF8FileName, NULL, NULL, NULL));
-    UTF8_TO_LOWER_CASE(szUTF8FileName, qbLC);
-    LPCSTR szUTF8FileNameLower = (LPUTF8) qbLC.Ptr();
-
-    CrstHolder lock(&m_crstAllowedFiles);
-
-    // insert the value into manifest's look up table.
-    // Need to perform case insensitive hashing as well.    
-    m_pAllowedFiles->InsertValue(szUTF8FileName, (HashDatum)(size_t)token, TRUE);
-    m_pAllowedFiles->InsertValue(szUTF8FileNameLower, (HashDatum)(size_t)token, TRUE);
-    
-    // Now make file token associate with the loaded module
-    m_pManifest->StoreFileThrowing(token, pModule);
-
-    RETURN pModule;
-} // Assembly::CreateDynamicModule
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
 
 #endif // CROSSGEN_COMPILE
 
@@ -1207,37 +1115,7 @@ void Assembly::SetParent(BaseDomain* pParent)
 mdFile Assembly::GetManifestFileToken(LPCSTR name)
 {
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    HashDatum datum;
-    // Note: We're doing a case sensitive lookup
-    // This is OK because the lookup string and the string we insert into the hashtable
-    // are obtained from the same place.
-
-    // m_pAllowedFiles only grows - entries are never deleted from it. So we do not take
-    // a lock around GetValue. If the code is modified such that we delete entries from m_pAllowedFiles,
-    // reconsider whether the callers that consume the mdFile should take the m_crstAllowedFiles lock.
-    if (m_pAllowedFiles->GetValue(name, &datum)) {
-
-        if (datum != NULL) // internal module
-            return (mdFile)(size_t)PTR_TO_TADDR(datum);
-        else // manifest file
-            return mdFileNil;
-    }
-    else
-        return mdTokenNil; // not found
-#else
     return mdFileNil;
-#endif 
 }
 
 mdFile Assembly::GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile)
@@ -1661,105 +1539,6 @@ void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
 }
 void Assembly::CacheManifestFiles()
 {
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    mdToken tkFile;
-    LPCSTR pszFileName;
-    CQuickBytes qbLC;
-    
-    HENUMInternalHolder phEnum(GetManifestImport());
-    phEnum.EnumInit(mdtFile,
-                    mdTokenNil);
-    
-    
-    DWORD dwCount = GetManifestImport()->EnumGetCount(&phEnum);
-    LockOwner lockOwner  = { &m_crstAllowedFiles, IsOwnerOfCrst };
-    if (!m_pAllowedFiles->Init(dwCount+1, &lockOwner))
-        ThrowOutOfMemory();
-
-    CrstHolder lock(&m_crstAllowedFiles);
-
-    m_nextAvailableModuleIndex = dwCount+1;
-    
-    while (GetManifestImport()->EnumNext(&phEnum, &tkFile))
-    {
-        if (TypeFromToken(tkFile) == mdtFile)
-        {
-            IfFailThrow(GetManifestImport()->GetFileProps(
-                tkFile, 
-                &pszFileName, 
-                NULL,           // hash
-                NULL,           // hash len
-                NULL));         // flags
-
-            // Add to hash table
-            m_pAllowedFiles->InsertValue(pszFileName, (HashDatum)(size_t)tkFile, TRUE);
-            
-            // Need to perform case insensitive hashing as well.
-            {
-                UTF8_TO_LOWER_CASE(pszFileName, qbLC);
-                pszFileName = (LPUTF8) qbLC.Ptr();
-            }
-            
-            // Add each internal module
-            m_pAllowedFiles->InsertValue(pszFileName, (HashDatum)(size_t)tkFile, TRUE);
-        }
-    }
-    
-    HENUMInternalHolder phEnumModules(GetManifestImport());
-    phEnumModules.EnumInit(mdtModuleRef, mdTokenNil);
-    mdToken tkModuleRef;
-    
-    while (GetManifestImport()->EnumNext(&phEnumModules, &tkModuleRef))
-    {
-        LPCSTR pszModuleRefName, pszModuleRefNameLower;
-        
-        if (TypeFromToken(tkModuleRef) == mdtModuleRef)
-        {
-            IfFailThrow(GetManifestImport()->GetModuleRefProps(tkModuleRef, &pszModuleRefName));
-            
-            // Convert to lower case and lookup
-            {
-                UTF8_TO_LOWER_CASE(pszModuleRefName, qbLC);
-                pszModuleRefNameLower = (LPUTF8) qbLC.Ptr();
-            }
-
-            HashDatum datum;
-            if (m_pAllowedFiles->GetValue(pszModuleRefNameLower, &datum))
-            {
-                mdFile tkFileForModuleRef = (mdFile)(size_t)datum;
-                m_pAllowedFiles->InsertValue(pszModuleRefName, (HashDatum)(size_t)tkFileForModuleRef);
-            }
-        }
-    }
-    
-    // Add the manifest file
-    if (!GetManifestImport()->IsValidToken(GetManifestImport()->GetModuleFromScope()))
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-    IfFailThrow(GetManifestImport()->GetScopeProps(&pszFileName, NULL));
-
-    // Add to hash table
-    m_pAllowedFiles->InsertValue(pszFileName, NULL, TRUE);
-    
-    // Need to perform case insensitive hashing as well.
-    {
-        UTF8_TO_LOWER_CASE(pszFileName, qbLC);
-        pszFileName = (LPUTF8) qbLC.Ptr();
-    }
-    
-    m_pAllowedFiles->InsertValue(pszFileName, NULL, TRUE);
-    
-    RETURN;
-#endif
 }
 
 
@@ -1814,25 +1593,6 @@ void Assembly::PublishModuleIntoAssembly(Module *module)
 
 
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-Module* Assembly::FindModule(PEFile *pFile, BOOL includeLoading)
-{
-    CONTRACT(Module *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    DomainFile *pModule = GetDomainAssembly()->FindModule(pFile, includeLoading);
-
-    if (pModule == NULL)
-        RETURN NULL;
-    else
-        RETURN pModule->GetModule();
-}
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
 
 //*****************************************************************************
@@ -2587,144 +2347,6 @@ BOOL Assembly::FileNotFound(HRESULT hr)
            (hr == CLR_E_BIND_TYPE_NOT_FOUND);
 }
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-PEModule * Assembly::LoadModule_AddRef(mdFile kFile, BOOL fLoadResource)
-{
-    CONTRACT(PEModule *) 
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, fLoadResource ? NULL_NOT_OK : NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END
-    
-    if (! ((TypeFromToken(kFile) == mdtFile) &&
-           GetManifestImport()->IsValidToken(kFile)) )
-    {
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_FILE_TOKEN);
-    }
-    
-    LPCSTR psModuleName;
-    DWORD dwFlags;
-    IfFailThrow(GetManifestImport()->GetFileProps(
-        kFile, 
-        &psModuleName, 
-        NULL, 
-        NULL, 
-        &dwFlags));
-    
-    if (! (IsFfContainsMetaData(dwFlags) || fLoadResource) ) 
-        RETURN NULL;
-    
-    SString name(SString::Utf8, psModuleName);
-    PEModule * pModule = NULL;
-    
-    if (AssemblySpec::VerifyBindingString((LPCWSTR)name))
-    {
-        EX_TRY
-        {
-            GCX_PREEMP();
-
-            if (!m_pManifestFile->GetPath().IsEmpty()) {
-                StackSString path = m_pManifestFile->GetPath();
-                
-                SString::Iterator i = path.End()-1;
-            
-                if (PEAssembly::FindLastPathSeparator(path, i)) {
-                    path.Truncate(++i);
-                    path.Insert(i, name);
-                }
-                pModule = PEModule::Open(m_pManifestFile, kFile, path);
-            }
-        }
-        EX_CATCH
-        {
-            Exception *ex = GET_EXCEPTION();
-            if (FileNotFound(ex->GetHR()) ||
-                (ex->GetHR() == FUSION_E_INVALID_NAME))
-                pModule = RaiseModuleResolveEvent_AddRef(psModuleName, kFile);
-
-            if (pModule == NULL)
-            {
-                EEFileLoadException::Throw(name, ex->GetHR(), ex);
-            }
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-
-    if (pModule == NULL)
-    {
-        pModule = RaiseModuleResolveEvent_AddRef(psModuleName, kFile);
-        if (pModule == NULL)
-        {
-            EEFileLoadException::Throw(name, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
-        }
-    }
-
-    RETURN pModule;    
-}
-
-PEModule * Assembly::RaiseModuleResolveEvent_AddRef(LPCSTR szName, mdFile kFile)
-{
-    CONTRACT(PEModule *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-        
-    Module* pModule = NULL;
-
-#ifndef CROSSGEN_COMPILE
-    GCX_COOP();
-
-    struct _gc {
-        OBJECTREF AssemblyRef;
-        STRINGREF str;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    
-    GCPROTECT_BEGIN(gc);
-    if ((gc.AssemblyRef = GetExposedObject()) != NULL) 
-    {
-        MethodDescCallSite onModuleResolve(METHOD__ASSEMBLY__ON_MODULE_RESOLVE, &gc.AssemblyRef);
-        gc.str = StringObject::NewString(szName);
-        ARG_SLOT args[2] = {
-            ObjToArgSlot(gc.AssemblyRef),
-            ObjToArgSlot(gc.str)
-        };
-        
-        REFLECTMODULEBASEREF ResultingModuleRef = 
-            (REFLECTMODULEBASEREF) onModuleResolve.Call_RetOBJECTREF(args);
-        
-        if (ResultingModuleRef != NULL)
-        {
-            pModule = ResultingModuleRef->GetModule();
-        }
-    }
-    GCPROTECT_END();
-
-    if (pModule && ( (!(pModule->IsIntrospectionOnly())) != !(IsIntrospectionOnly()) ))
-    {
-        COMPlusThrow(kFileLoadException, IDS_CLASSLOAD_MODULE_RESOLVE_INTROSPECTION_MISMATCH);
-    }
-
-    if ((pModule != NULL) && 
-        (pModule == m_pManifest->LookupFile(kFile)))
-    {
-        RETURN clr::SafeAddRef((PEModule *)pModule->GetFile());
-    }
-#endif // CROSSGEN_COMPILE
-
-    RETURN NULL;
-}
-#endif //  FEATURE_MULTIMODULE_ASSEMBLIES
 
 BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
                               PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
