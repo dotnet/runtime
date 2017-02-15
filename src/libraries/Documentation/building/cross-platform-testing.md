@@ -1,6 +1,6 @@
 # Running XUnit tests cross platform
 
-Unlike Windows, where we run tests as part of the build, we have a seperate
+Unlike Windows, where we run tests as part of the build, we have a separate
 explicit testing step on Linux and OSX. Over time, this special step will go
 away in favor of a similar "run tests during the build" model.
 
