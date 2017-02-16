@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Text.Encoding.CodePages.csproj">
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Text.Encoding.CodePages.builds" />
+    <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

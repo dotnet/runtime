@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Runtime.WindowsRuntime.UI.Xaml.csproj">
       <SupportedFramework>netcore45;wpa81</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.builds" />
+    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.csproj" />
     <!-- Not supported for desktop -->
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />

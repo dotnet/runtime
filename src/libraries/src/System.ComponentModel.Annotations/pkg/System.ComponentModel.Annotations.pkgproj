@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.ComponentModel.Annotations.csproj">
       <SupportedFramework>net463;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.ComponentModel.Annotations.builds" />
+    <ProjectReference Include="..\src\System.ComponentModel.Annotations.csproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45">

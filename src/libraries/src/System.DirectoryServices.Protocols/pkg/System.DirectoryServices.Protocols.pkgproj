@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.DirectoryServices.Protocols.csproj">
       <SupportedFramework>netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.DirectoryServices.Protocols.builds" />
+    <ProjectReference Include="..\src\System.DirectoryServices.Protocols.csproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
