@@ -31,5 +31,5 @@ done
 export CORECLR_SERVER_GC="$__ServerGC"
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-$working_tree_root/run.sh build-managed -tests $__UnprocessedBuildArgs
+$working_tree_root/run.sh build-managed -testsOnly $__UnprocessedBuildArgs
 exit $?

@@ -64,6 +64,11 @@ build-tests
 build -debug -buildArch=x64
 ```
 
+- Building the src and then building and running the tests
+```
+build -tests
+```
+
 - Building for different target frameworks
 ```
 build -framework netcoreapp
