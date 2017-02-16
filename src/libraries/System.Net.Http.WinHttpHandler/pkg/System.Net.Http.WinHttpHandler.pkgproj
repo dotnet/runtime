@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Net.Http.WinHttpHandler.csproj">
       <SupportedFramework>net46;netcoreapp1.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.Http.WinHttpHandler.builds" />
+    <ProjectReference Include="..\src\System.Net.Http.WinHttpHandler.csproj" />
     <NotSupportedOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>

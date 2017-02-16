@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\Microsoft.CSharp.csproj">
       <SupportedFramework>net463;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\Microsoft.CSharp.builds" />
+    <ProjectReference Include="..\src\Microsoft.CSharp.csproj" />
     <InboxOnTargetFramework Include="MonoAndroid10">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>

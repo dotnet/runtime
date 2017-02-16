@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.IO.Compression.csproj">
       <SupportedFramework>netcoreapp2.0;net463;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.Compression.builds" />
+    <ProjectReference Include="..\src\System.IO.Compression.csproj" />
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>

@@ -6,7 +6,7 @@
     <MinClientVersion>2.8.6</MinClientVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Collections.Immutable.builds">
+    <ProjectReference Include="..\src\System.Collections.Immutable.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>

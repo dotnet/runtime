@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Runtime.WindowsRuntime.csproj">
       <SupportedFramework>netcore451;wpa81</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.builds" />
+    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.csproj" />
     <!-- Not supported for desktop -->
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />

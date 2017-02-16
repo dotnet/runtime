@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Security.Permissions.csproj">
       <SupportedFramework>netcoreapp2.0;net461;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Permissions.builds" />
+    <ProjectReference Include="..\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
