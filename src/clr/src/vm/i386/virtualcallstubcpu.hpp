@@ -16,9 +16,6 @@
 
 #ifdef DECLARE_DATA
 #include "asmconstants.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #endif
 
 #include <pshpack1.h>  // Since we are placing code, we want byte packing of the structs
@@ -539,120 +536,6 @@ __declspec (naked) void ResolveWorkerAsmStub()
     }
 }
 
-#ifdef FEATURE_REMOTING
-/*  For an in-context dispatch, we will find the target. This
-    is the slow path, and erects a MachState structure for 
-    creating a HelperMethodFrame
-
-    Entry stack:
-            dispatch token
-            return address of caller to stub
-
-   Call stack:
-            pointer to StubDispatchFrame
-            call site
-            dispatch token
-            StubDispatchFrame
-                GSCookie
-                negspace
-                vptr
-                datum
-                ArgumentRegisters (ecx, edx)
-                CalleeSavedRegisters (ebp, ebx, esi, edi)
-            return address of caller to stub
-*/    
-__declspec (naked) void InContextTPDispatchAsmStub()
-{
-    CANNOT_HAVE_CONTRACT;
-
-    __asm {
-        // Pop dispatch token
-        pop         eax
-
-        // push ebp-frame
-        push        ebp
-        mov         ebp,esp
-
-        // save CalleeSavedRegisters
-        push        ebx
-        push        esi
-        push        edi
-
-        // push ArgumentRegisters
-        push        ecx
-        push        edx
-
-        mov         esi, esp
-
-        push        eax                     // token
-        push        esi                     // pTransitionContext
-
-        // Make the call
-        call    VSD_GetTargetForTPWorker
-
-        // From here on, mustn't trash eax
-        
-        // pop ArgumentRegisters
-        pop     edx
-        pop     ecx
-
-        // pop CalleeSavedRegisters
-        pop edi
-        pop esi
-        pop ebx
-        pop ebp
-
-        // Now jump to the target
-        jmp     eax             // continue on into the method
-    }
-}
-
-/*  For an in-context dispatch, we will try to find the target in
-    the resolve cache. If this fails, we will jump to the full
-    version of InContextTPDispatchAsmStub
-    
-    Entry stack:
-        dispatch slot number of interface MD
-        caller return address
-    ECX: this object
-*/    
-__declspec (naked) void InContextTPQuickDispatchAsmStub()
-{
-    CANNOT_HAVE_CONTRACT;
-
-    __asm {
-        // Spill registers
-        push        ecx
-        push        edx
-
-        // Arg 2 -  token
-        mov         eax, [esp + 8]
-        push        eax
-
-        // Arg 1 - this
-        push        ecx
-
-        // Make the call
-        call        VSD_GetTargetForTPWorkerQuick
-
-        // Restore registers
-        pop         edx
-        pop         ecx
-
-        // Test to see if we found a target
-        test        eax, eax
-        jnz         TargetFound
-
-        // If no target, jump to the slow worker
-        jmp         InContextTPDispatchAsmStub
-
-    TargetFound:
-        // We got a target, so pop off the token and jump to it
-        add         esp,4
-        jmp         eax
-    }
-}
-#endif // FEATURE_REMOTING
 
 /* Call the callsite back patcher.  The fail stub piece of the resolver is being
 call too often, i.e. dispatch stubs are failing the expect MT test too often.

@@ -81,9 +81,7 @@ void ResetWatsonBucketsFavorWorker(void * pParam);
 
 extern LONG g_watsonAlreadyLaunched;
 
-#if !defined(FEATURE_UEF_CHAINMANAGER)
 extern HandleHolder g_hWatsonCompletionEvent;
-#endif // FEATURE_UEF_CHAINMANAGER
 
 //----------------------------------------------------------------------------
 // Passes data between DoFaultReport and DoFaultReportCallback

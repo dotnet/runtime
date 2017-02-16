@@ -1778,29 +1778,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             }
             break;
 
-#ifdef FEATURE_REMOTING
-        case Frame::TYPE_TP_METHOD_FRAME:
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_TP_METHOD_FRAME.\n"));
-            if (d->ShouldIgnoreNonmethodFrames())
-            {
-                // Transparant Proxies push a frame onto the stack that they
-                // use to figure out where they're really going; this frame
-                // doesn't actually contain any code, although it does have
-                // enough info into fooling our routines into thinking it does:
-                // Just ignore these.
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping frame 0x%x b/c it's "
-                    "a transparant proxy frame!\n", frame));
-                use = false;
-            }
-            else
-            {
-                // Otherwise do the same thing as for internal frames
-                LOG((LF_CORDB, LL_INFO100000, "DWSP: NOT Skipping frame 0x%x even though it's "
-                    "a transparant proxy frame!\n", frame));
-                INTERNAL_FRAME_ACTION(d, use);
-            }
-            break;
-#endif
         default:
             _ASSERTE(!"Invalid frame type!");
             break;

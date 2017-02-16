@@ -12,9 +12,6 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH 
 #include "profattach.h"
@@ -94,48 +91,6 @@ void CallFinalizer(Object* obj)
     {
         if (!((obj->GetHeader()->GetBits()) & BIT_SBLK_FINALIZER_RUN))
         {
-#ifdef FEATURE_REMOTING        
-            if (pMT->IsContextful())
-            {
-                Object *proxy = OBJECTREFToObject(CRemotingServices::GetProxyFromObject(ObjectToOBJECTREF(obj)));
-
-                _ASSERTE(proxy && "finalizing an object that was never wrapped?????");                
-                if (proxy == NULL)
-                {
-                    // Quite possibly the app abruptly shutdown while a proxy
-                    // was being setup for a contextful object. We will skip
-                    // finalizing this object.
-                    _ASSERTE (g_fEEShutDown);
-                    return;
-                }
-                else
-                {
-                    // This saves us from the situation where an object gets GC-ed 
-                    // after its Context. 
-                    OBJECTREF stub = ((TRANSPARENTPROXYREF)ObjectToOBJECTREF(proxy))->GetStubData();
-                    Context *pServerCtx = *((Context **)stub->UnBox());
-                    // Check if the context is valid             
-                    if (!Context::ValidateContext(pServerCtx))
-                    {
-                        // Since the server context is gone (GC-ed)
-                        // we will associate the server with the default 
-                        // context for a good faith attempt to run 
-                        // the finalizer
-                        // We want to do this only if we are using RemotingProxy
-                        // and not for other types of proxies (eg. SvcCompPrxy)
-                        OBJECTREF orRP = ObjectToOBJECTREF(CRemotingServices::GetRealProxy(proxy));
-                        if(CTPMethodTable::IsInstanceOfRemotingProxy(
-                            orRP->GetMethodTable()))
-                        {
-                            *((Context **)stub->UnBox()) = (Context*) GetThread()->GetContext();
-                        }
-                    }
-                    // call Finalize on the proxy of the server object.
-                    obj = proxy;
-                    pMT = obj->GetMethodTable();
-                }
-            }
-#endif // FEATURE_REMOTING         
 
             _ASSERTE(obj->GetMethodTable() == pMT);
             _ASSERTE(pMT->HasFinalizer() || pMT->IsTransparentProxy());

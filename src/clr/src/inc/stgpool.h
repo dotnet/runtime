@@ -310,12 +310,11 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-// @todo: Triton workaround: FEATURE_METADATA_STANDALNE_WINRT_RO is supposed to disable FEATURE_PREJIT - remove this #ifdef once we figure out how to get that working in the CoreClr build. 
-#if !(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
         m_HotHeap = hotHeap;
 #else
         _ASSERTE(!"InitHotData(): Not supposed to exist in RoMetaData.dll");
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
     }
 #endif //FEATURE_PREJIT
 
@@ -345,8 +344,7 @@ protected:
             return CLDB_E_INDEX_NOTFOUND;
         }
 
-// @todo: Triton workaround: FEATURE_METADATA_STANDALNE_WINRT_RO is supposed to disable FEATURE_PREJIT - remove this #if once we figure out how to get that working in the CoreClr build. 
-#if !(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #ifdef FEATURE_PREJIT
         // try hot data first
         if (!m_HotHeap.IsEmpty())
@@ -359,7 +357,7 @@ protected:
             _ASSERTE(hr == S_FALSE);
         }
 #endif //FEATURE_PREJIT
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
 
         
         pData->Init(m_pSegData + nOffset, m_cbSegSize - nOffset);
@@ -381,11 +379,10 @@ protected:
     } // StgPoolReadOnly::GetData
     
 private:
-// @todo: Triton workaround: FEATURE_METADATA_STANDALNE_WINRT_RO is supposed to disable FEATURE_PREJIT - remove this #if once we figure out how to get that working in the CoreClr build. 
-#if !(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
     // hot pool data
     MetaData::HotHeap m_HotHeap;
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(FEATURE_METADATA_STANDALNE_WINRT_RO))
+#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
     
 };  // class StgPoolReadOnly
 

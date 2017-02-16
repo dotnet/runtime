@@ -4491,12 +4491,6 @@ void CordbProcess::GetModulesInLoadOrder(
 // static 
 void CordbProcess::CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData)
 {
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES)
-    EnumerateConnectionsData * pCallbackData = reinterpret_cast<EnumerateConnectionsData *>(pUserData);
-    INTERNAL_DAC_CALLBACK(pCallbackData->m_pThis);
-
-    pCallbackData->m_uIndex += 1;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 //---------------------------------------------------------------------------------------
@@ -4513,20 +4507,6 @@ void CordbProcess::CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUse
 // static  
 void CordbProcess::EnumerateConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData)
 {
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES)
-    EnumerateConnectionsData * pCallbackData = reinterpret_cast<EnumerateConnectionsData *>(pUserData);
-    INTERNAL_DAC_CALLBACK(pCallbackData->m_pThis);
-
-    // get the next entry in the array to be filled in
-    EnumerateConnectionsEntry * pEntry = &(pCallbackData->m_pEntryArray[pCallbackData->m_uIndex]);
-
-    // initialize the StringCopyHolder in the entry and copy over the name of the connection
-    new (&(pEntry->m_pName)) StringCopyHolder;
-    pEntry->m_pName.AssignCopy(pName);
-    pEntry->m_dwID = id;
-
-    pCallbackData->m_uIndex += 1;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 //---------------------------------------------------------------------------------------
@@ -4538,51 +4518,6 @@ void CordbProcess::QueueFakeConnectionEvents()
 {
     PUBLIC_API_ENTRY_FOR_SHIM(this);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    EnumerateConnectionsData callbackData;
-    callbackData.m_pThis = this;
-    callbackData.m_uIndex = 0;
-    callbackData.m_pEntryArray = NULL;
-
-    UINT32 uSize = 0;
-
-    // We must take the process lock before calling DAC primitives which will call back into DBI.
-    // On the other hand, we must NOT be holding the lock when we call out to the shim.
-    // So introduce a new scope here.
-    {
-        RSLockHolder lockHolder(GetProcessLock());
-        GetDAC()->EnumerateConnections(CountConnectionsCallback, &callbackData);
-
-        // save the size for later
-        uSize = callbackData.m_uIndex;
-
-        // Allocate the array to store the connections.  This array will be released when the dtor runs.
-        callbackData.m_uIndex = 0;
-        callbackData.m_pEntryArray = new EnumerateConnectionsEntry[uSize];
-        GetDAC()->EnumerateConnections(EnumerateConnectionsCallback, &callbackData);
-        _ASSERTE(uSize == callbackData.m_uIndex);
-    }
-
-    {
-        // V2 would send CreateConnection for all connections, and then ChangeConnection
-        // for all connections.
-        PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(this); 
-        for (UINT32 i = 0; i < uSize; i++)
-        {
-            EnumerateConnectionsEntry * pEntry = &(callbackData.m_pEntryArray[i]);
-            GetShim()->GetShimCallback()->CreateConnection(
-                this, 
-                (CONNID)pEntry->m_dwID, 
-                const_cast<WCHAR *>((const WCHAR *)(pEntry->m_pName)));
-        }
-
-        for (UINT32 i = 0; i < uSize; i++)
-        {
-            EnumerateConnectionsEntry * pEntry = &(callbackData.m_pEntryArray[i]);
-            GetShim()->GetShimCallback()->ChangeConnection(this, (CONNID)pEntry->m_dwID);
-        }
-    }
-#endif
 }
 
 //

@@ -20,7 +20,6 @@
 #else // CLR
 #define FEATURE_UNTRUSTED_CALLERS
 #define FEATURE_RELIABILITY_CONTRACTS
-#define FEATURE_SERIALIZATION
 #endif
 
 using System;

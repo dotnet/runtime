@@ -22,9 +22,6 @@
 #include "corhost.h"
 #include "regex_util.h"
 #include "clr/fs/path.h"
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-#include "QuirksApi.h"
-#endif
 #include "configuration.h"
 
 using namespace clr;
@@ -169,28 +166,6 @@ void *EEConfig::operator new(size_t size)
     RETURN g_EEConfigMemory;
 }
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-void InitWinAppCompatDBApis()
-{
-    STANDARD_VM_CONTRACT;
-
-    HMODULE hMod = WszLoadLibraryEx(QUIRKSAPI_DLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-
-    PFN_CptQuirkIsEnabled3 pfnIsQuirkEnabled = NULL;
-    PFN_CptQuirkGetData2 pfnQuirkGetData = NULL;
-
-    if(hMod != NULL) 
-    {
-        pfnIsQuirkEnabled = (PFN_CptQuirkIsEnabled3)GetProcAddress(hMod, "QuirkIsEnabled3");
-        pfnQuirkGetData   = (PFN_CptQuirkGetData2)GetProcAddress(hMod, "QuirkGetData2");
-    }
-
-    if(pfnIsQuirkEnabled != NULL && pfnQuirkGetData != NULL)
-    {
-        CLRConfig::RegisterWinDbQuirkApis(pfnIsQuirkEnabled,pfnQuirkGetData);
-    }
-}
-#endif // FEATURE_WIN_DB_APPCOMPAT
 
 /**************************************************************/
 HRESULT EEConfig::Init()
@@ -433,9 +408,6 @@ HRESULT EEConfig::Init()
     // statically link to EEConfig.
     CLRConfig::RegisterGetConfigValueCallback(&GetConfigValueCallback);
 
-#ifdef FEATURE_WIN_DB_APPCOMPAT
-    InitWinAppCompatDBApis();
-#endif // FEATURE_WIN_DB_APPCOMPAT
 
     return S_OK;
 }
@@ -1068,9 +1040,6 @@ HRESULT EEConfig::sync()
 
     dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
-#ifdef FEATURE_REMOTING
-    fUseNewCrossDomainRemoting = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_UseNewCrossDomainRemoting, fUseNewCrossDomainRemoting);
-#endif
 
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
@@ -1300,17 +1269,6 @@ HRESULT EEConfig::sync()
         MethodTable::AllowParentMethodDataCopy();
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // Get the symbol reading policy setting which is maintained by the hosting API (since it can be overridden there)
-    const DWORD notSetToken = 0xFFFFFFFF;
-    DWORD iSymbolReadingConfig = GetConfigDWORDFavoringConfigFile_DontUse_(CLRConfig::EXTERNAL_SymbolReadingPolicy, notSetToken );
-    if( iSymbolReadingConfig != notSetToken &&
-        iSymbolReadingConfig <= eSymbolReadingFullTrustOnly )
-    {
-        ESymbolReadingPolicy policy = ESymbolReadingPolicy(iSymbolReadingConfig);
-        CCLRDebugManager::SetSymbolReadingPolicy( policy, eSymbolReadingSetByConfig );
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #if defined(_DEBUG) && defined(_TARGET_AMD64_)
     m_cGenerateLongJumpDispatchStubRatio = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,

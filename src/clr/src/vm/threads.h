@@ -1031,14 +1031,10 @@ class BaseStackGuard;
 // 
 // A code:Thread contains all the per-thread information needed by the runtime.  You can get at this
 // structure throught the and OS TLS slot see code:#RuntimeThreadLocals for more 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-class Thread: public ICLRTask2
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
 // Implementing IUnknown would prevent the field (e.g. m_Context) layout from being rearranged (which will need to be fixed in 
 // "asmconstants.h" for the respective architecture). As it is, ICLRTask derives from IUnknown and would have got IUnknown implemented
 // here - so doing this explicitly and maintaining layout sanity should be just fine.
 class Thread: public IUnknown
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 {
     friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
     friend class  ThreadStore;
@@ -1302,10 +1298,6 @@ public:
         DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP Reset (BOOL fFull)
         DAC_EMPTY_RET(E_FAIL);
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    STDMETHODIMP GetMemStats(COR_GC_THREAD_STATS *memUsage)
-        DAC_EMPTY_RET(E_FAIL);
-#endif //FEATURE_INCLUDE_ALL_INTERFACES
     STDMETHODIMP ExitTask()
         DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP Abort()
@@ -2500,9 +2492,6 @@ public:
         return m_Context;
     }
 
-#ifdef FEATURE_REMOTING
-    void SetExposedContext(Context *c);
-#endif
 
     // This callback is used when we are executing in the EE and discover that we need
     // to switch appdomains.
@@ -2784,9 +2773,6 @@ public:
     )
     {
         WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        _ASSERTE (m_pHostTask == NULL || GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
          return ::GetThreadContext (GetThreadHandle(), lpContext);
     }
 
@@ -2796,9 +2782,6 @@ public:
     )
     {
         WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        _ASSERTE (m_pHostTask == NULL || GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
          return ::SetThreadContext (GetThreadHandle(), lpContext);
     }
 #endif
@@ -2806,12 +2789,7 @@ public:
     BOOL HasValidThreadHandle ()
     {
         WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        return m_pHostTask != NULL ||
-            GetThreadHandle() != INVALID_HANDLE_VALUE;
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
         return GetThreadHandle() != INVALID_HANDLE_VALUE;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     }
 
     DWORD       GetThreadId()
@@ -2853,17 +2831,6 @@ public:
         return m_dwConnectionId;
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTask* GetHostTask() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pHostTask;
-    }
-
-    IHostTask* GetHostTaskWithAddRef();
-
-    void ReleaseHostTask();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     void SetConnectionId(CONNID dwConnectionId)
     {
@@ -3573,9 +3540,6 @@ public:
     OBJECTREF GetCulture(BOOL bUICulture);
 
     // Release user cultures that can't survive appdomain unload
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    void ResetCultureForDomain(ADID id);
-#endif // FEATURE_LEAK_CULTURE_INFO
 
     // Functions to set the culture on the thread.
     void SetCultureId(LCID lcid, BOOL bUICulture);
@@ -4517,11 +4481,9 @@ public:
  public:
 
      typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
-#ifndef FEATURE_LEAK_CULTURE_INFO
     void InitCultureAccessors();
     FieldDesc *managedThreadCurrentCulture;
     FieldDesc *managedThreadCurrentUICulture;
-#endif
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
@@ -4776,10 +4738,6 @@ public:
     LONG  m_stressThreadCount;
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-public:
-    IHostTask *m_pHostTask;
-#endif
 
 private:
     PVOID      m_pFiberData;
@@ -5576,9 +5534,6 @@ private:
     HRESULT hr;
 };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-IHostTask *GetCurrentHostTask();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 
 typedef Thread::AVInRuntimeImplOkayHolder AVInRuntimeImplOkayHolder;
@@ -6065,59 +6020,12 @@ struct PendingSync
     void Restore(BOOL bRemoveFromSB);
 };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-
-//
-// Tracking of unmanaged locks has very low value. It is only
-// exposed via SQL hosting interfaces. The hosts cannot really
-// do anything interesting with it because of the unmanaged locks 
-// are always taken with holders in the VM, and hosts can keep 
-// track of the unmanaged locks taken via hosting API. We should 
-// consider getting rid of it in the next SxS version.
-//
-
-#define INCTHREADLOCKCOUNT()                                    \
-{                                                               \
-        /* IncLockCount() asserts GetThread() == this */        \
-        BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;             \
-        Thread *thread = GetThread();                           \
-        if (thread)                                             \
-            thread->IncLockCount();                             \
-        END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;               \
-}
-
-#define INCTHREADLOCKCOUNTTHREAD(thread)                        \
-{                                                               \
-        /* IncLockCount() asserts GetThread() == this */        \
-        if (thread)                                             \
-            (thread)->IncLockCount();                           \
-}
-
-#define DECTHREADLOCKCOUNT( )                                   \
-{                                                               \
-        /* IncLockCount() asserts GetThread() == this */        \
-        BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;             \
-        Thread *thread = GetThread();                           \
-        if (thread)                                             \
-            thread->DecLockCount();                             \
-        END_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;               \
-}
-
-#define DECTHREADLOCKCOUNTTHREAD(thread)                        \
-{                                                               \
-        /* IncLockCount() asserts GetThread() == this */        \
-        if (thread)                                             \
-            (thread)->DecLockCount();                           \
-}
-
-#else
 
 #define INCTHREADLOCKCOUNT() { }
 #define DECTHREADLOCKCOUNT() { }
 #define INCTHREADLOCKCOUNTTHREAD(thread) { }
 #define DECTHREADLOCKCOUNTTHREAD(thread) { }
 
-#endif
 
 // --------------------------------------------------------------------------------
 // GCHolder is used to implement the normal GCX_ macros.

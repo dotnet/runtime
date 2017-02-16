@@ -40,9 +40,6 @@
 #include "eventtrace.h"
 #include "fieldmarshaler.h"
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 #include "eeprofinterfaces.h"
 #include "dllimportcallback.h"
@@ -76,9 +73,6 @@
 #include "genericdict.h"
 #include "typestring.h"
 #include "typedesc.h"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#endif
 #include "array.h"
 
 #ifdef FEATURE_INTERPRETER
@@ -623,7 +617,7 @@ void MethodTable::SetComObjectType()
 
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_TYPEEQUIVALENCE) || defined(FEATURE_REMOTING)
+#if defined(FEATURE_TYPEEQUIVALENCE)
 void MethodTable::SetHasTypeEquivalence()
 {
     LIMITED_METHOD_CONTRACT;
@@ -967,56 +961,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     return pMT;
 }
 
-#ifdef FEATURE_REMOTING  
-//==========================================================================================
-void MethodTable::SetupRemotableMethodInfo(AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // Make RMI for a method table.
-    CrossDomainOptimizationInfo *pRMIBegin = NULL;
-    if (GetNumMethods() > 0)
-    {
-        SIZE_T requiredSize = CrossDomainOptimizationInfo::SizeOf(GetNumVtableSlots());
-        pRMIBegin = (CrossDomainOptimizationInfo*) pamTracker->Track(GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(requiredSize)));
-        _ASSERTE(IS_ALIGNED(pRMIBegin, sizeof(void*)));
-    }
-    *(GetRemotableMethodInfoPtr()) = pRMIBegin;
-}
-
-//==========================================================================================
-PTR_RemotingVtsInfo MethodTable::AllocateRemotingVtsInfo(AllocMemTracker *pamTracker, DWORD dwNumFields)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Size the data structure to contain enough bit flags for all the
-    // instance fields.
-    DWORD cbInfo = RemotingVtsInfo::GetSize(dwNumFields);
-    RemotingVtsInfo *pInfo = (RemotingVtsInfo*)pamTracker->Track(GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbInfo)));
-
-    // Note: Memory allocated on loader heap is zero filled
-    // ZeroMemory(pInfo, cbInfo);
-
-#ifdef _DEBUG
-    pInfo->m_dwNumFields = dwNumFields;
-#endif
-
-    *(GetRemotingVtsInfoPtr()) = pInfo;
-
-    return pInfo;
-}
-#endif //  FEATURE_REMOTING  
 
 #ifdef FEATURE_COMINTEROP
 #ifndef CROSSGEN_COMPILE
@@ -4287,25 +4231,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     }
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING
-    if (HasRemotableMethodInfo())
-    {
-        if (GetNumMethods() > 0)
-        {
-            // The CrossDomainOptimizationInfo was populated earlier in Module::PrepareTypesForSave
-            CrossDomainOptimizationInfo* pRMI = GetRemotableMethodInfo();
-            SIZE_T sizeToBeSaved = CrossDomainOptimizationInfo::SizeOf(this);
-            image->StoreStructure(pRMI, sizeToBeSaved,
-                                  DataImage::ITEM_CROSS_DOMAIN_INFO);
-        }
-    }
-
-    // Store any optional VTS (Version Tolerant Serialization) info.
-    if (HasRemotingVtsInfo())
-        image->StoreStructure(GetRemotingVtsInfo(),
-                              RemotingVtsInfo::GetSize(GetNumIntroducedInstanceFields()),
-                              DataImage::ITEM_VTS_INFO);
-#endif //FEATURE_REMOTING
 
 #ifdef _DEBUG
     if (GetDebugClassName() != NULL && !image->IsStored(GetDebugClassName()))
@@ -4451,19 +4376,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
 
     // MethodTable WriteableData
 
-#ifdef FEATURE_REMOTING
-    // Store any context static info.
-    if (HasContextStatics())
-    {
-        DataImage::ItemKind kindWriteable = DataImage::ITEM_METHOD_TABLE_DATA_COLD_WRITEABLE;
-        if ((profilingFlags & (1 << WriteMethodTableWriteableData)) != 0)
-            kindWriteable = DataImage::ITEM_METHOD_TABLE_DATA_HOT_WRITEABLE;
-
-        image->StoreStructure(GetContextStaticsBucket(),
-                              sizeof(ContextStaticsBucket),
-                              kindWriteable);
-    }
-#endif // FEATURE_REMOTING
 
     PTR_Const_MethodTableWriteableData pWriteableData = GetWriteableData_NoLogging();
     _ASSERTE(pWriteableData != NULL);
@@ -4927,27 +4839,6 @@ void MethodTable::Fixup(DataImage *image)
     }
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING
-    if (HasRemotableMethodInfo())
-    {
-        CrossDomainOptimizationInfo **pRMI = GetRemotableMethodInfoPtr();
-        if (*pRMI != NULL)
-        {
-            image->FixupPointerField(this, (BYTE *)pRMI - (BYTE *)this);
-        }
-    }
-
-    // Optional VTS (Version Tolerant Serialization) fixups.
-    if (HasRemotingVtsInfo())
-    {
-        RemotingVtsInfo **ppVtsInfo = GetRemotingVtsInfoPtr();
-        image->FixupPointerField(this, (BYTE *)ppVtsInfo - (BYTE *)this);
-
-        RemotingVtsInfo *pVtsInfo = *ppVtsInfo;
-        for (DWORD i = 0; i < RemotingVtsInfo::VTS_NUM_CALLBACK_TYPES; i++)
-            image->FixupMethodDescPointer(pVtsInfo, &pVtsInfo->m_pCallbacks[i]);
-    }
-#endif //FEATURE_REMOTING
 
     //
     // Fix flags
@@ -5174,16 +5065,6 @@ void MethodTable::Fixup(DataImage *image)
         _ASSERTE(!NeedsCrossModuleGenericsStaticsInfo());
     }
 
-#ifdef FEATURE_REMOTING
-    if (HasContextStatics())
-    {
-        ContextStaticsBucket **ppInfo = GetContextStaticsBucketPtr();
-        image->FixupPointerField(this, (BYTE *)ppInfo - (BYTE *)this);
-
-        ContextStaticsBucket *pNewInfo = (ContextStaticsBucket*)image->GetImagePointer(*ppInfo);
-        pNewInfo->m_dwContextStaticsOffset = (DWORD)-1;
-    }
-#endif // FEATURE_REMOTING
 
     LOG((LF_ZAP, LL_INFO10000, "MethodTable::Fixup %s (%p) complete\n", GetDebugClassName(), this));
 
@@ -6253,9 +6134,6 @@ MethodTable* MethodTable::GetComPlusParentMethodTable()
         // Skip over System.__ComObject, expect System.MarshalByRefObject
         pParent=pParent->GetParentMethodTable();
         _ASSERTE(pParent != NULL);
-#ifdef FEATURE_REMOTING
-        _ASSERTE(pParent->IsMarshaledByRef());
-#endif
         _ASSERTE(pParent->GetParentMethodTable() != NULL);
         _ASSERTE(pParent->GetParentMethodTable() == g_pObjectClass);
     }
@@ -9736,44 +9614,6 @@ LPCWSTR MethodTable::GetPathForErrorMessages()
     }
 }
 
-#ifdef FEATURE_REMOTING
-//==========================================================================================
-// context static functions
-void MethodTable::SetupContextStatics(AllocMemTracker *pamTracker, WORD wContextStaticsSize)
-{
-    STANDARD_VM_CONTRACT;
-
-    ContextStaticsBucket* pCSInfo = (ContextStaticsBucket*) pamTracker->Track(GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ContextStaticsBucket))));
-    *(GetContextStaticsBucketPtr()) = pCSInfo;
-
-    pCSInfo->m_dwContextStaticsOffset = (DWORD)-1; // Initialized lazily
-    pCSInfo->m_wContextStaticsSize = wContextStaticsSize;
-}
-
-#ifndef CROSSGEN_COMPILE
-//==========================================================================================
-DWORD MethodTable::AllocateContextStaticsOffset()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableWriteableDataWriteAccess(this);
-
-    BaseDomain* pDomain = IsDomainNeutral() ?  SystemDomain::System() : GetDomain();
-
-    ContextStaticsBucket* pCSInfo = GetContextStaticsBucket();
-    DWORD* pOffsetSlot = &pCSInfo->m_dwContextStaticsOffset;
-
-    return pDomain->AllocateContextStaticsOffset(pOffsetSlot);
-}
-#endif // CROSSGEN_COMPILE
-
-#endif // FEATURE_REMOTING
 
 bool MethodTable::ClassRequiresUnmanagedCodeCheck()
 {

@@ -57,45 +57,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
     }
     
-#if FEATURE_REFLECTION_ONLY_LOAD
-    public class NamespaceResolveEventArgs : EventArgs
-    {
-        private string _NamespaceName;
-        private Assembly _RequestingAssembly;
-        private Collection<Assembly> _ResolvedAssemblies;
-
-        public string NamespaceName
-        {
-            get
-            {
-                return _NamespaceName;
-            }
-        }
-
-        public Assembly RequestingAssembly
-        {
-            get
-            {
-                return _RequestingAssembly;
-            }
-        }
-
-        public Collection<Assembly> ResolvedAssemblies
-        {
-            get
-            {
-                return _ResolvedAssemblies;
-            }
-        }
-        
-        public NamespaceResolveEventArgs(string namespaceName, Assembly requestingAssembly)
-        {
-            _NamespaceName = namespaceName;
-            _RequestingAssembly = requestingAssembly;
-            _ResolvedAssemblies = new Collection<Assembly>();
-        }
-    }
-#endif //FEATURE_REFLECTION_ONLY
 
     internal class DesignerNamespaceResolveEventArgs : EventArgs
     {

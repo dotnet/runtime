@@ -84,10 +84,6 @@ public:
     // setting up a MethodTable
     struct bmtContextStaticInfo
     {
-#ifdef FEATURE_REMOTING        
-        // size of context statics
-        DWORD dwContextStaticsSize;
-#endif
     
         inline bmtContextStaticInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
     };
@@ -225,10 +221,6 @@ private:
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); } 
     BOOL HasLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasLayout(); } 
     BOOL IsDelegate() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsDelegate(); } 
-#ifdef FEATURE_REMOTING
-    BOOL IsMarshaledByRef() { WRAPPER_NO_CONTRACT; return bmtProp->fMarshaledByRef; }
-    BOOL IsContextful() { WRAPPER_NO_CONTRACT; return bmtProp->fIsContextful; } 
-#endif
     BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); } 
     BOOL HasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasFieldsWhichMustBeInited(); } 
     BOOL HasRemotingProxyAttribute() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasRemotingProxyAttribute(); } 
@@ -1328,10 +1320,6 @@ private:
         bool fIsEnum;
         bool fNoSanityChecks;
         bool fSparse;                           // Set to true if a sparse interface is being used.
-#ifdef FEATURE_REMOTING        
-        bool fMarshaledByRef;
-        bool fIsContextful;
-#endif
 
 #ifdef FEATURE_COMINTEROP
         // Com Interop, ComWrapper classes extend from ComObject
@@ -2024,44 +2012,6 @@ private:
         //-----------------------------------------------------------------------------------------
         FieldDesc **ppFieldDescList;        // FieldDesc pointer (or NULL if field not preserved) for each field
 
-#ifdef FEATURE_REMOTING
-        //-----------------------------------------------------------------------------------------
-        // Tracking info for VTS (Version Tolerant Serialization)
-        MethodDesc *pOnSerializingMethod;
-        MethodDesc *pOnSerializedMethod;
-        MethodDesc *pOnDeserializingMethod;
-        MethodDesc *pOnDeserializedMethod;
-        bool *prfNotSerializedFields;
-        bool *prfOptionallySerializedFields;
-        bool fNeedsRemotingVtsInfo;
-
-        //-----------------------------------------------------------------------------------------
-        inline void SetFieldNotSerialized(DWORD dwIndex, DWORD dwNumInstanceFields)
-        {
-            WRAPPER_NO_CONTRACT;
-            if (prfNotSerializedFields == NULL)
-            {
-                DWORD cbSize = sizeof(bool) * dwNumInstanceFields;
-                prfNotSerializedFields = new (&GetThread()->m_MarshalAlloc) bool[dwNumInstanceFields];
-                ZeroMemory(prfNotSerializedFields, cbSize);
-            }
-            prfNotSerializedFields[dwIndex] = true;
-            fNeedsRemotingVtsInfo = true;
-        }
-
-        //-----------------------------------------------------------------------------------------
-        inline void SetFieldOptionallySerialized(DWORD dwIndex, DWORD dwNumInstanceFields)
-        {
-            WRAPPER_NO_CONTRACT;
-            if (prfOptionallySerializedFields == NULL)
-            {
-                prfOptionallySerializedFields = new (&GetThread()->m_MarshalAlloc) bool[dwNumInstanceFields];                
-                ZeroMemory(prfOptionallySerializedFields, sizeof(bool) * dwNumInstanceFields);
-            }
-            prfOptionallySerializedFields[dwIndex] = true;
-            fNeedsRemotingVtsInfo = true;
-        }
-#endif // FEATURE_REMOTING
 
         //-----------------------------------------------------------------------------------------
         inline bmtMethAndFieldDescs() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
@@ -2897,9 +2847,6 @@ private:
         LPCUTF8             szAttrName,
         MethodDesc        **ppMethodDesc);
 
-#ifdef FEATURE_REMOTING // affects only remoting-related info
-    VOID ScanTypeForVtsInfo();
-#endif // FEATURE_REMOTING
 
     VOID
     CheckForSystemTypes();

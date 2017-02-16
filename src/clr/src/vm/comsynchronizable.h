@@ -88,15 +88,7 @@ public:
     static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL0(Object*, GetDomain);
-#ifdef FEATURE_REMOTING
-    static FCDECL1(Object*, GetContextFromContextID,        LPVOID ContextID);
-    static FCDECL6(Object*, InternalCrossContextCallback, ThreadBaseObject* refThis, ContextBaseObject* refContext, LPVOID contextID, INT32 appDomainId, Object* oDelegateUNSAFE, PtrArray* oArgsUNSAFE);
-#endif    
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    static FCDECL4(FC_BOOL_RET, nativeGetSafeCulture, ThreadBaseObject* threadUNSAFE, int appDomainId, CLR_BOOL isUI, OBJECTREF *safeCulture);
-#else
     static void QCALLTYPE nativeInitCultureAccessors();
-#endif
 
     static
     void QCALLTYPE InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
@@ -112,9 +104,6 @@ public:
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(void,    DisableComObjectEagerCleanup,   ThreadBaseObject* pThis);
 #endif //FEATURE_COMINTEROP
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    static FCDECL1(FC_BOOL_RET,SetThreadUILocale,              StringObject* localeNameUNSAFE);
-#endif // FEATURE_LEAK_CULTURE_INFO
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,             ThreadBaseObject* thread);
 
     static FCDECL0(void, FCMemoryBarrier);

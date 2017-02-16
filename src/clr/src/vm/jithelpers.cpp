@@ -34,9 +34,6 @@
 #include "process.h"
 #endif // !FEATURE_PAL
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h" // create context bound and remote class instances
-#endif
 #include "perfcounters.h"
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
@@ -782,14 +779,6 @@ HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
     if (objRef == NULL)
         COMPlusThrow(kNullReferenceException);
 
-#ifdef FEATURE_REMOTING
-    if(objRef->IsTransparentProxy())
-    {
-        objRef = CRemotingServices::GetObjectFromProxy(objRef);
-        if (objRef->IsTransparentProxy())
-            COMPlusThrow(kInvalidOperationException, W("Remoting_InvalidValueTypeFieldAccess"));
-    }
-#endif // FEATURE_REMOTING
 
     fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
 
@@ -1180,17 +1169,6 @@ HCIMPL4(VOID, JIT_GetFieldStruct_Framed, LPVOID retBuff, Object *obj, FieldDesc 
     // the server object.
     BOOL fRemoted = FALSE;
 
-#ifdef FEATURE_REMOTING
-    if (objRef->IsTransparentProxy())
-    {
-        objRef = CRemotingServices::GetObjectFromProxy(objRef);
-        if (objRef->IsTransparentProxy())
-        {
-            CRemotingServices::FieldAccessor(pFD, objRef, retBuff, TRUE);
-            fRemoted = TRUE;
-        }
-    }
-#endif
 
     if (!fRemoted)
     {
@@ -1245,18 +1223,6 @@ HCIMPL4(VOID, JIT_SetFieldStruct_Framed, Object *obj, FieldDesc *pFD, MethodTabl
     // the server object.
     BOOL fRemoted = FALSE;
 
-#ifdef FEATURE_REMOTING
-    if(objRef->IsTransparentProxy())
-    {
-        objRef = CRemotingServices::GetObjectFromProxy(objRef);
-
-        if(objRef->IsTransparentProxy())
-        {
-            CRemotingServices::FieldAccessor(pFD, objRef, valuePtr, FALSE);
-            fRemoted = TRUE;
-        }
-    }
-#endif
 
     if (!fRemoted)
     {
@@ -1295,68 +1261,7 @@ HCIMPLEND
 //
 //========================================================================
 
-#ifdef FEATURE_MIXEDMODE
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-        PRECONDITION(pFD->IsStatic());
-        PRECONDITION(pFD->IsRVA() && pFD->GetModule()->IsRvaFieldTls(pFD->GetOffset()));
-    } CONTRACTL_END;
 
-    void *addr = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    Module* pModule = pFD->GetModule();
-
-    // Get the ThreadLocalStoragePointer in the TEB.
-    LPVOID pTlsPtr     = ClrTeb::GetLegacyThreadLocalStoragePointer();
-
-    // pTlsPtr is pointing at an array of pointers, each of which points to
-    // the TLS block of a dll.  So here, we need to get the TLS index for
-    // the dll, add that to pTlsPtr, and dereference it to get the TLS
-    // block of the dll.
-    DWORD  tlsIndex    = pModule->GetTlsIndex();
-    LPVOID pDllTlsBase = (LPVOID)*((UINT_PTR*)pTlsPtr + tlsIndex);
-
-    // Finally, we need to find the field offset into the TLS block.
-    addr = (LPVOID)((PBYTE)pDllTlsBase + pModule->GetFieldTlsOffset(pFD->GetOffset()));
-
-    HELPER_METHOD_FRAME_END();
-
-    return addr;
-}
-HCIMPLEND
-#endif // FEATURE_MIXEDMODE
-
-#ifdef FEATURE_REMOTING
-HCIMPL1(void*, JIT_GetStaticFieldAddr_Context, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-        PRECONDITION(pFD->IsStatic());
-        PRECONDITION(pFD->IsContextStatic());
-    } CONTRACTL_END;
-
-    void *addr = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    MethodTable *pMT = pFD->GetEnclosingMethodTable();
-    pMT->CheckRestore();
-    pMT->CheckRunClassInitThrowing();
-
-    addr = Context::GetStaticFieldAddress(pFD);
-
-    HELPER_METHOD_FRAME_END();
-
-    return addr;
-}
-HCIMPLEND
-#endif
 
 // Slow helper to tailcall from the fast one
 NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
@@ -2410,13 +2315,6 @@ BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
 
     // If we are trying to cast a proxy we need to delegate to remoting
     // services which will determine whether the proxy and the type are compatible.
-#ifdef FEATURE_REMOTING    
-    if (fromTypeHnd.IsTransparentProxy())
-    {
-        fCast = CRemotingServices::CheckCast(obj, toTypeHnd);
-    }
-    else
-#endif        
     // Start by doing a quick static cast check to see if the type information captured in
     // the metadata indicates that the cast is legal.
     if (fromTypeHnd.CanCastTo(toTypeHnd))
@@ -2928,53 +2826,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 }
 HCIMPLEND
 
-#ifdef FEATURE_REMOTING
-/*************************************************************/
-HCIMPL1(Object*, JIT_NewCrossContext_Portable, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    TypeHandle typeHnd(typeHnd_);
-
-    _ASSERTE(!typeHnd.IsTypeDesc());                                   // we never use this helper for arrays
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    // Don't bother to restore the method table; assume that the prestub of the
-    // constructor will do that check.
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    if (CRemotingServices::RequiresManagedActivation(typeHnd))
-    {
-        if (pMT->IsComObjectType())
-        {
-            newobj = AllocateObject(pMT);
-        }
-        else
-        {
-            // Remoting services determines if the current context is appropriate
-            // for activation. If the current context is OK then it creates an object
-            // else it creates a proxy.
-            newobj = CRemotingServices::CreateProxyOrObject(pMT);
-        }
-    }
-    else
-    {
-        newobj = AllocateObject(pMT);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
-}
-HCIMPLEND
-#endif // FEATURE_REMOTING
 
 
 //========================================================================
