@@ -870,6 +870,8 @@ namespace System.Linq.Expressions
                 throw Error.LambdaTypeMustBeDerivedFromSystemDelegate(paramName);
             }
 
+            TypeUtils.ValidateType(delegateType, nameof(delegateType));
+
             MethodInfo mi;
             CacheDict<Type, MethodInfo> ldc = s_lambdaDelegateCache;
             if (!ldc.TryGetValue(delegateType, out mi))
