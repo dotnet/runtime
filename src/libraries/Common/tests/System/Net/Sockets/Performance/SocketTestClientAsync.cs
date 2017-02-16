@@ -13,6 +13,10 @@ namespace System.Net.Sockets.Performance.Tests
         private SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private SocketAsyncEventArgs _recvEventArgs = new SocketAsyncEventArgs();
 
+        // Random isn't thread safe, so need 2 of these
+        private Random _recvRandom = new Random();
+        private Random _sendRandom = new Random();
+
         public SocketTestClientAsync(
             ITestOutputHelper log,
             EndPoint endpoint,
@@ -50,12 +54,48 @@ namespace System.Net.Sockets.Performance.Tests
             callback(e.SocketError);
         }
 
+        private void RandomizeBufferConfiguration(Random rnd, SocketAsyncEventArgs args, byte[] buffer, int offset, int count)
+        {
+            // Randomize the way that we configure the buffers to the SocketAsyncEventArgs,
+            // so that sometimes we use single-buffer, sometimes we use multi-buffer. 
+            // The actual buffer layout is still contiguous.
+
+            int r = rnd.Next(4);
+
+            // Can't split more ways than we have bytes in the buffer            
+            r = (r > count ? count : r);
+
+            // Need to clear these both, or it will complain if we switch from one to the other
+            args.SetBuffer(null, 0, 0);
+            args.BufferList = null;
+
+            if (r == 0)
+            {
+                args.SetBuffer(buffer, offset, count);
+            }
+            else 
+            {
+                // Note this intentionally includes bufferLists with only a single buffer
+                var bufferList = new ArraySegment<byte>[r];
+                for (int i = 0; i < r; i++)
+                {
+                    var start = offset + ((i * count) / r);
+                    var end = offset + (((i + 1) * count) / r);
+
+                    bufferList[i] = new ArraySegment<byte>(buffer, start, end - start);
+                }
+
+                args.BufferList = bufferList;
+            }
+        }
+
         public override bool Send(out int bytesSent, out SocketError socketError, Action<int, SocketError> onSendCallback)
         {
             bytesSent = 0;
             socketError = SocketError.Success;
 
-            _sendEventArgs.SetBuffer(_sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
+            RandomizeBufferConfiguration(_sendRandom, _sendEventArgs, _sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
+
             _sendEventArgs.UserToken = onSendCallback;
 
             bool pending = _s.SendAsync(_sendEventArgs);
@@ -73,7 +113,8 @@ namespace System.Net.Sockets.Performance.Tests
             bytesReceived = 0;
             socketError = SocketError.Success;
 
-            _recvEventArgs.SetBuffer(_recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
+            RandomizeBufferConfiguration(_recvRandom, _recvEventArgs, _recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
+
             _recvEventArgs.UserToken = onReceiveCallback;
 
             bool pending = _s.ReceiveAsync(_recvEventArgs);
