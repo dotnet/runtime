@@ -59,48 +59,6 @@
 //
 //
 
-#ifdef FEATURE_REMOTING
-FCFuncStart(gMarshalByRefFuncs)
-    FCFuncElement("GetComIUnknown", RemotingNative::GetComIUnknown)
-FCFuncEnd()
-
-FCFuncStart(gRemotingFuncs)
-    FCFuncElement("IsTransparentProxy", RemotingNative::FCIsTransparentProxy)
-    FCFuncElement("GetRealProxy", RemotingNative::FCGetRealProxy)
-    FCFuncElement("Unwrap", RemotingNative::FCUnwrap)
-    FCFuncElement("AlwaysUnwrap", RemotingNative::FCAlwaysUnwrap)
-    FCFuncElement("CheckCast", RemotingNative::NativeCheckCast)
-    FCFuncElement("nSetRemoteActivationConfigured", RemotingNative::SetRemotingConfiguredFlag)
-
-    FCFuncElement("CORProfilerTrackRemoting", ProfilingFCallHelper::FC_TrackRemoting)
-    FCFuncElement("CORProfilerTrackRemotingCookie", ProfilingFCallHelper::FC_TrackRemotingCookie)
-    FCFuncElement("CORProfilerTrackRemotingAsync", ProfilingFCallHelper::FC_TrackRemotingAsync)
-    FCFuncElement("CORProfilerRemotingClientSendingMessage", ProfilingFCallHelper::FC_RemotingClientSendingMessage)
-    FCFuncElement("CORProfilerRemotingClientReceivingReply", ProfilingFCallHelper::FC_RemotingClientReceivingReply)
-    FCFuncElement("CORProfilerRemotingServerReceivingMessage", ProfilingFCallHelper::FC_RemotingServerReceivingMessage)
-    FCFuncElement("CORProfilerRemotingServerSendingReply", ProfilingFCallHelper::FC_RemotingServerSendingReply)
-
-    FCFuncElement("CreateTransparentProxy", RemotingNative::CreateTransparentProxy)
-    FCFuncElement("AllocateUninitializedObject", RemotingNative::AllocateUninitializedObject)
-    FCFuncElement("CallDefaultCtor", RemotingNative::CallDefaultCtor)
-    FCFuncElement("AllocateInitializedObject", RemotingNative::AllocateInitializedObject)
-    FCFuncElement("ResetInterfaceCache", RemotingNative::ResetInterfaceCache)
-FCFuncEnd()
-
-FCFuncStart(gRealProxyFuncs)
-    FCFuncElement("SetStubData", CRealProxy::SetStubData)
-    FCFuncElement("GetStubData", CRealProxy::GetStubData)
-    FCFuncElement("GetStub", CRealProxy::GetStub)
-    FCFuncElement("GetDefaultStub", CRealProxy::GetDefaultStub)
-    FCFuncElement("GetProxiedType", CRealProxy::GetProxiedType)
-FCFuncEnd()
-
-FCFuncStart(gContextFuncs)
-    FCFuncElement("SetupInternalContext", Context::SetupInternalContext)
-    FCFuncElement("CleanupInternalContext", Context::CleanupInternalContext)
-    FCFuncElement("ExecuteCallBackInEE", Context::ExecuteCallBack)
-FCFuncEnd()
-#endif
 
 
 FCFuncStart(gDependentHandleFuncs)
@@ -113,46 +71,8 @@ FCFuncStart(gDependentHandleFuncs)
 FCFuncEnd()
 
 
-#ifdef FEATURE_RWLOCK
-FCFuncStart(gRWLockFuncs)
-    FCFuncElement("AcquireReaderLockInternal",  CRWLock::StaticAcquireReaderLockPublic)
-    FCFuncElement("AcquireWriterLockInternal",  CRWLock::StaticAcquireWriterLockPublic)
-    FCFuncElement("ReleaseReaderLockInternal",  CRWLock::StaticReleaseReaderLockPublic)
-    FCFuncElement("ReleaseWriterLockInternal",  CRWLock::StaticReleaseWriterLockPublic)
-    FCFuncElement("FCallUpgradeToWriterLock",  CRWLock::StaticDoUpgradeToWriterLockPublic)
-    FCFuncElement("DowngradeFromWriterLockInternal",  CRWLock::StaticDowngradeFromWriterLock)
-    FCFuncElement("FCallReleaseLock",  CRWLock::StaticDoReleaseLock)
-    FCFuncElement("RestoreLockInternal",  CRWLock::StaticRestoreLockPublic)
-    FCFuncElement("PrivateGetIsReaderLockHeld",  CRWLock::StaticIsReaderLockHeld)
-    FCFuncElement("PrivateGetIsWriterLockHeld",  CRWLock::StaticIsWriterLockHeld)
-    FCFuncElement("PrivateGetWriterSeqNum",  CRWLock::StaticGetWriterSeqNum)
-    FCFuncElement("AnyWritersSince",  CRWLock::StaticAnyWritersSince)
-    FCFuncElement("PrivateInitialize",  CRWLock::StaticPrivateInitialize)
-    FCFuncElement("PrivateDestruct",  CRWLock::StaticPrivateDestruct)
-FCFuncEnd()
-#endif // FEATURE_RWLOCK
 
-#ifdef FEATURE_REMOTING
-FCFuncStart(gMessageFuncs)
-    FCFuncElement("InternalGetArgCount", CMessage::GetArgCount)
-    FCFuncElement("InternalHasVarArgs", CMessage::HasVarArgs)
-    FCFuncElement("InternalGetArg", CMessage::GetArg)
-    FCFuncElement("InternalGetArgs", CMessage::GetArgs)
-    FCFuncElement("PropagateOutParameters", CMessage::PropagateOutParameters)
-    FCFuncElement("GetReturnValue", CMessage::GetReturnValue)
-    FCFuncElement("GetAsyncBeginInfo", CMessage::GetAsyncBeginInfo)
-    FCFuncElement("GetAsyncResult", CMessage::GetAsyncResult)
-    FCFuncElement("GetThisPtr", CMessage::GetAsyncObject)
-    FCFuncElement("OutToUnmanagedDebugger", CMessage::DebugOut)
-    FCFuncElement("Dispatch", CMessage::Dispatch)
-FCFuncEnd()
-#endif //FEATURE_REMOTING
 
-#ifdef FEATURE_REMOTING
-FCFuncStart(gChannelServicesFuncs)
-    FCFuncElement("GetPrivateContextsPerfCounters", GetPrivateContextsPerfCountersEx)
-FCFuncEnd()
-#endif // FEATURE_REMOTING
 
 FCFuncStart(gEnumFuncs)
     FCFuncElement("InternalGetUnderlyingType",  ReflectionEnum::InternalGetEnumUnderlyingType)
@@ -164,11 +84,6 @@ FCFuncStart(gEnumFuncs)
     FCFuncElement("InternalHasFlag", ReflectionEnum::InternalHasFlag)
 FCFuncEnd()
 
-#ifdef FEATURE_REMOTING
-FCFuncStart(gStackBuilderSinkFuncs)
-    FCFuncElement("_PrivateProcessMessage", CStackBuilderSink::PrivateProcessMessage)
-FCFuncEnd()
-#endif
 
 FCFuncStart(gSymWrapperCodePunkSafeHandleFuncs)
     FCFuncElement("nGetDReleaseTarget", COMPunkSafeHandle::nGetDReleaseTarget)
@@ -389,10 +304,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     QCFuncElement("VerifyInterfaceIsImplemented", RuntimeTypeHandle::VerifyInterfaceIsImplemented)
     QCFuncElement("GetInterfaceMethodImplementationSlot", RuntimeTypeHandle::GetInterfaceMethodImplementationSlot)
     FCFuncElement("IsComObject", RuntimeTypeHandle::IsComObject)
-#ifdef FEATURE_REMOTING        
-    FCFuncElement("HasProxyAttribute", RuntimeTypeHandle::HasProxyAttribute)
-    FCFuncElement("IsContextful", RuntimeTypeHandle::IsContextful)
-#endif    
     FCFuncElement("IsValueType", RuntimeTypeHandle::IsValueType)
     FCFuncElement("IsInterface", RuntimeTypeHandle::IsInterface)
     QCFuncElement("IsSecurityCritical", RuntimeTypeHandle::IsSecurityCritical)
@@ -582,11 +493,6 @@ FCFuncStart(gCOMClassWriter)
     QCFuncElement("DefineCustomAttribute", COMDynamicWrite::DefineCustomAttribute)
 FCFuncEnd()
 
-#ifdef FEATURE_METHOD_RENTAL
-FCFuncStart(gCOMMethodRental)
-    QCFuncElement("SwapMethodBody", COMMethodRental::SwapMethodBody)
-FCFuncEnd()
-#endif // FEATURE_METHOD_RENTAL
 
 FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
@@ -604,15 +510,8 @@ FCFuncEnd()
 
 
 FCFuncStart(gAppDomainFuncs)
-#ifdef FEATURE_REMOTING 
-    FCFuncElement("GetDefaultDomain", AppDomainNative::GetDefaultDomain)
-#endif    
     FCFuncElement("IsStringInterned", AppDomainNative::IsStringInterned)
     FCFuncElement("IsUnloadingForcedFinalize", AppDomainNative::IsUnloadingForcedFinalize)
-#ifdef FEATURE_REMOTING    
-    FCFuncElement("nCreateDomain", AppDomainNative::CreateDomain)
-    FCFuncElement("nCreateInstance", AppDomainNative::CreateInstance)
-#endif    
 #ifdef FEATURE_LOADER_OPTIMIZATION
     FCFuncElement("UpdateLoaderOptimization", AppDomainNative::UpdateLoaderOptimization)
 #endif // FEATURE_LOADER_OPTIMIZATION
@@ -631,18 +530,9 @@ FCFuncStart(gAppDomainFuncs)
     FCFuncElement("nSetDisableInterfaceCache", AppDomainNative::SetDisableInterfaceCache)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("nCreateContext", AppDomainNative::CreateContext)
-#ifdef FEATURE_REMOTING
-    FCFuncElement("nUnload", AppDomainNative::Unload)
-#endif // FEATURE_REMOTING
     FCFuncElement("GetId", AppDomainNative::GetId)
     FCFuncElement("GetOrInternString", AppDomainNative::GetOrInternString)
     QCFuncElement("GetGrantSet", AppDomainNative::GetGrantSet)
-#ifdef FEATURE_REMOTING
-    FCFuncElement("GetDynamicDir", AppDomainNative::GetDynamicDir)
-    FCFuncElement("nChangeSecurityPolicy", AppDomainNative::ChangeSecurityPolicy)
-    FCFuncElement("IsDomainIdValid", AppDomainNative::IsDomainIdValid)
-    FCFuncElement("nApplyPolicy", AppDomainNative::nApplyPolicy)
-#endif // FEATURE_REMOTING
     QCFuncElement("nSetupBindingPaths", AppDomainNative::SetupBindingPaths)
     QCFuncElement("nSetNativeDllSearchDirectories", AppDomainNative::SetNativeDllSearchDirectories)
     FCFuncElement("IsFinalizingForUnload", AppDomainNative::IsFinalizingForUnload)
@@ -867,32 +757,19 @@ FCFuncEnd()
 FCFuncStart(gThreadFuncs)
     FCDynamic("InternalGetCurrentThread", CORINFO_INTRINSIC_Illegal, ECall::InternalGetCurrentThread)
     FCFuncElement("StartInternal", ThreadNative::Start)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    FCFuncElement("nativeGetSafeCulture", ThreadNative::nativeGetSafeCulture)
-#else
     QCFuncElement("nativeInitCultureAccessors", ThreadNative::nativeInitCultureAccessors)
-#endif
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
 #define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("SetStart", ThreadNative::SetStart)
-#ifdef FEATURE_REMOTING         
-    FCFuncElement("GetContextInternal", ThreadNative::GetContextFromContextID)
-#endif    
     FCFuncElement("GetDomainInternal", ThreadNative::GetDomain)
     FCFuncElement("GetFastDomainInternal", ThreadNative::FastGetDomain)
-#ifdef FEATURE_REMOTING         
-    FCFuncElement("InternalCrossContextCallback", ThreadNative::InternalCrossContextCallback)
-#endif    
     QCFuncElement("InformThreadNameChange", ThreadNative::InformThreadNameChange)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     QCFuncElement("YieldInternal", ThreadNative::YieldThread)
     FCIntrinsic("GetCurrentThreadNative", ThreadNative::GetCurrentThread, CORINFO_INTRINSIC_GetCurrentManagedThread)
     FCIntrinsic("get_ManagedThreadId", ThreadNative::GetManagedThreadId, CORINFO_INTRINSIC_GetManagedThreadId)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-    FCFuncElement("nativeSetThreadUILocale", ThreadNative::SetThreadUILocale)
-#endif
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("StartupSetApartmentStateInternal", ThreadNative::StartupSetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1432,11 +1309,6 @@ FCFuncStart(gStreamFuncs)
     FCFuncElement("HasOverriddenBeginEndWrite", StreamNative::HasOverriddenBeginEndWrite)
 FCFuncEnd()
 
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
-FCFuncStart(gWindowsRuntimeMetadata)
-    QCFuncElement("nResolveNamespace", CLRPrivTypeCacheReflectionOnlyWinRT::ResolveNamespace)
-FCFuncEnd()
-#endif //FEATURE_COMINTEROP && FEATURE_REFLECTION_ONLY_LOAD
 
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gWindowsRuntimeBufferHelperFuncs)
@@ -1532,9 +1404,6 @@ FCClassElement("CalendarData", "System.Globalization", gCalendarDataFuncs)
 #endif // !defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("CompareInfo", "System.Globalization", gCompareInfoFuncs)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
-#ifdef FEATURE_REMOTING    
-FCClassElement("Context", "System.Runtime.Remoting.Contexts", gContextFuncs)
-#endif
 FCClassElement("CriticalHandle", "System.Runtime.InteropServices", gCriticalHandleFuncs)
 #if !defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("CultureData", "System.Globalization", gCultureDataFuncs)
@@ -1581,22 +1450,13 @@ FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFunc
 FCClassElement("Log", "System.Diagnostics", gDiagnosticsLog)
 FCClassElement("ManifestBasedResourceGroveler", "System.Resources",  gManifestBasedResourceGrovelerFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
-#ifdef FEATURE_REMOTING
-FCClassElement("MarshalByRefObject", "System", gMarshalByRefFuncs)
-#endif
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 #ifdef MDA_SUPPORTED 
 FCClassElement("Mda", "System", gMda)
 #endif
 FCClassElement("MemoryFailPoint", "System.Runtime", gMemoryFailPointFuncs)
-#ifdef FEATURE_REMOTING    
-FCClassElement("Message", "System.Runtime.Remoting.Messaging", gMessageFuncs)
-#endif    
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
-#ifdef FEATURE_METHOD_RENTAL
-FCClassElement("MethodRental", "System.Reflection.Emit", gCOMMethodRental)
-#endif // FEATURE_METHOD_RENTAL
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("MngdHiddenLengthArrayMarshaler", "System.StubHelpers", gMngdHiddenLengthArrayMarshalerFuncs)
@@ -1625,12 +1485,6 @@ FCClassElement("ParseNumbers", "System", gParseNumbersFuncs)
 
 
 FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSafeHandleFuncs)
-#ifdef FEATURE_RWLOCK
-FCClassElement("ReaderWriterLock", "System.Threading", gRWLockFuncs)
-#endif  // FEATURE_RWLOCK
-#ifdef FEATURE_REMOTING    
-FCClassElement("RealProxy", "System.Runtime.Remoting.Proxies", gRealProxyFuncs)
-#endif    
 FCClassElement("RegisteredWaitHandleSafe", "System.Threading", gRegisteredWaitHandleFuncs)
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_COMINTEROP_MANAGED_ACTIVATION
@@ -1638,9 +1492,6 @@ FCClassElement("RegistrationServices", "System.Runtime.InteropServices", gRegist
 #endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING
-FCClassElement("RemotingServices", "System.Runtime.Remoting", gRemotingFuncs)
-#endif
 FCClassElement("RtFieldInfo", "System.Reflection", gRuntimeFieldInfoFuncs)
 FCClassElement("RuntimeAssembly", "System.Reflection", gAssemblyFuncs)
 #ifdef FEATURE_COMINTEROP    
@@ -1659,9 +1510,6 @@ FCClassElement("SafeHandle", "System.Runtime.InteropServices", gSafeHandleFuncs)
 FCClassElement("SafeTypeNameParserHandle", "System", gSafeTypeNameParserHandle)
 
 FCClassElement("Signature", "System", gSignatureNative)
-#ifdef FEATURE_REMOTING    
-FCClassElement("StackBuilderSink", "System.Runtime.Remoting.Messaging", gStackBuilderSinkFuncs)
-#endif    
 FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
 FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
@@ -1703,9 +1551,6 @@ FCClassElement("WindowsRuntimeBufferHelper", "System.Runtime.InteropServices.Win
 #endif
 
 
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
-FCClassElement("WindowsRuntimeMetadata", "System.Runtime.InteropServices.WindowsRuntime", gWindowsRuntimeMetadata)
-#endif
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)

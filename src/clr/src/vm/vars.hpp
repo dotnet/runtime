@@ -177,9 +177,6 @@ class OBJECTREF {
         class TransparentProxyObject* m_asTP;
 
         class ReflectClassBaseObject* m_asReflectClass;
-#if defined(FEATURE_IMPERSONATION)
-        class SecurityContextObject* m_asSecurityContext;
-#endif // #if defined(FEATURE_IMPERSONATION)
         class ExecutionContextObject* m_asExecutionContext;
         class AppDomainBaseObject* m_asAppDomainBase;
         class PermissionSetObject* m_asPermissionSetObject;

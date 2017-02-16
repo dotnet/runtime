@@ -13,9 +13,6 @@
 #include "typehandle.h"
 #include "field.h"
 #include "security.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "jitinterface.h"
@@ -648,21 +645,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             OBJECTREF o;
             bool remoting = false;
         
-#ifdef FEATURE_REMOTING          
-            if (pVMT->IsTransparentProxy())
-                COMPlusThrow(kMissingMethodException,W("NotSupported_Constructor"));
-
-            if (pVMT->MayRequireManagedActivation())
-            {
-                o = CRemotingServices::CreateProxyOrObject(pVMT);
-                remoting = true;
-            }
-            else
-                o = AllocateObject(pVMT);
-
-#else
             o = AllocateObject(pVMT);
-#endif            
             GCPROTECT_BEGIN(o);
 
             MethodDescCallSite ctor(pMeth, &o);
@@ -731,10 +714,6 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     MethodDescCallSite ctor(pMeth);
 
     // We've got the class, lets allocate it and call the constructor
-#ifdef FEATURE_REMOTING      
-    _ASSERTE(!pVMT->IsTransparentProxy());
-    _ASSERTE(!pVMT->MayRequireManagedActivation());
-#endif     
    
     // Nullables don't take this path, if they do we need special logic to make an instance
     _ASSERTE(!Nullable::IsNullableType(instantiatedType));
@@ -1252,14 +1231,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         MethodTable * pMT = ownerType.AsMethodTable();
 
-#ifdef FEATURE_REMOTING
-        if (pMT->MayRequireManagedActivation())
-        {
-            gc.retVal = CRemotingServices::CreateProxyOrObject(pMT);
-            fForceActivationForRemoting = TRUE;
-        }
-        else
-#endif        
         {
             if (pMT != g_pStringClass)
                 gc.retVal = pMT->Allocate();
@@ -1267,12 +1238,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     }
     else
     {
-#ifdef FEATURE_REMOTING
-        if (gc.target != NULL)
-        {
-            fForceActivationForRemoting = gc.target->IsTransparentProxy();
-        }
-#endif
     }
 
     {
@@ -1602,95 +1567,6 @@ Done:
     return OBJECTREFToObject(gc.retVal);
 }
 FCIMPLEND
-
-#ifdef FEATURE_SERIALIZATION
-FCIMPL4(void, RuntimeMethodHandle::SerializationInvoke, 
-    ReflectMethodObject *pMethodUNSAFE, Object* targetUNSAFE, Object* serializationInfoUNSAFE, struct StreamingContextData * pContext) {
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        OBJECTREF       target;
-        OBJECTREF       serializationInfo;
-        REFLECTMETHODREF refMethod;
-    } gc;
-
-    gc.target               = (OBJECTREF)      targetUNSAFE;
-    gc.serializationInfo    = (OBJECTREF)      serializationInfoUNSAFE;
-    gc.refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-
-    MethodDesc* pMethod = pMethodUNSAFE->GetMethod();
-
-    Assembly *pAssem = pMethod->GetAssembly();
-
-    if (pAssem->IsIntrospectionOnly())
-        FCThrowExVoid(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY, NULL, NULL, NULL);
-
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrowResVoid(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    {
-        ARG_SLOT newArgs[3];
-
-        // Nullable<T> does not support the ISerializable constructor, so we should never get here.  
-        _ASSERTE(!Nullable::IsNullableType(gc.target->GetMethodTable()));
-
-        if (pMethod == MscorlibBinder::GetMethod(METHOD__WINDOWS_IDENTITY__SERIALIZATION_CTOR))
-        {
-            // WindowsIdentity.ctor takes only one argument
-            MethodDescCallSite method(pMethod, &gsig_IM_SerInfo_RetVoid, &gc.target);
-
-            // NO GC AFTER THIS POINT
-            // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
-            if (pMethod->GetMethodTable()->IsValueType() && !pMethod->IsUnboxingStub())
-                newArgs[0] = PtrToArgSlot(gc.target->UnBox());
-            else
-                newArgs[0] = ObjToArgSlot(gc.target);
-
-            newArgs[1] = ObjToArgSlot(gc.serializationInfo);
-
-            TryCallMethod(&method, newArgs);
-        }
-        else
-        {
-            //
-            // Use hardcoded sig for performance
-            //
-            MethodDescCallSite method(pMethod, &gsig_IM_SerInfo_StrContext_RetVoid, &gc.target);
-
-            // NO GC AFTER THIS POINT
-            // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
-            if (pMethod->GetMethodTable()->IsValueType() && !pMethod->IsUnboxingStub())
-                newArgs[0] = PtrToArgSlot(gc.target->UnBox());
-            else
-                newArgs[0] = ObjToArgSlot(gc.target);
-
-            newArgs[1] = ObjToArgSlot(gc.serializationInfo);
-
-#ifdef _WIN64
-            //
-            // on win64 the struct does not fit in an ARG_SLOT, so we pass it by reference
-            //
-            static_assert_no_msg(sizeof(*pContext) > sizeof(ARG_SLOT));
-            newArgs[2] = PtrToArgSlot(pContext);
-#else // _WIN64
-            //
-            // on x86 the struct fits in an ARG_SLOT, so we pass it by value
-            //
-            static_assert_no_msg(sizeof(*pContext) == sizeof(ARG_SLOT));
-            newArgs[2] = *(ARG_SLOT*)pContext;
-#endif // _WIN64
-
-            TryCallMethod(&method, newArgs);
-        }
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
-}
-FCIMPLEND
-#endif // FEATURE_SERIALIZATION
 
 struct SkipStruct {
     StackCrawlMark* pStackMark;
@@ -2913,10 +2789,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetUninitializedObject, ReflectClassBa
     
     // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
     // transparent proxy or the jit will get confused.
-#ifdef FEATURE_REMOTING    
-    if (pMT->IsContextful())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-#endif
 
 #ifdef FEATURE_COMINTEROP
     // Also do not allow allocation of uninitialized RCWs (COM objects).
@@ -2970,10 +2842,6 @@ FCIMPL1(Object*, ReflectionSerialization::GetSafeUninitializedObject, ReflectCla
 
     // Never allow the allocation of an unitialized ContextBoundObject derived type, these must always be created with a paired
     // transparent proxy or the jit will get confused.
-#ifdef FEATURE_REMOTING        
-    if (pMT->IsContextful())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
-#endif    
 
 #ifdef FEATURE_COMINTEROP
     // Also do not allow allocation of uninitialized RCWs (COM objects).

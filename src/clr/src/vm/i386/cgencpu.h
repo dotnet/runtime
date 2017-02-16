@@ -92,9 +92,6 @@ BOOL Runtime_Test_For_SSE2();
 // Needed for PInvoke inlining in ngened images
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
-#ifdef FEATURE_REMOTING
-#define HAS_REMOTING_PRECODE                    1
-#endif
 #ifdef FEATURE_PREJIT
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1

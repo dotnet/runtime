@@ -14,9 +14,6 @@
 #include "eeconfig.h"
 #include "mlinfo.h"
 #include "comdelegate.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "appdomain.hpp"
 #include "prettyprintsig.h"
 #include "util.hpp"

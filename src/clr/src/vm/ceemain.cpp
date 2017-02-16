@@ -158,13 +158,9 @@
 #include "eedbginterfaceimpl.h"
 #include "debugdebugger.h"
 #include "cordbpriv.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "comdelegate.h"
 #include "appdomain.hpp"
 #include "perfcounters.h"
-#include "rwlock.h"
 #ifdef FEATURE_IPCMAN
 #include "ipcmanagerinterface.h"
 #endif // FEATURE_IPCMAN
@@ -242,10 +238,6 @@
 
 #include "../binder/inc/coreclrbindercommon.h"
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-// This is required to register our UEF callback with the UEF chain manager
-#include <mscoruefwrapper.h>
-#endif // FEATURE_UEF_CHAINMANAGER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -270,11 +262,6 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
 HRESULT EEStartup(COINITIEE fFlags);
 
-#ifdef FEATURE_MIXEDMODE
-HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
-                                  DWORD dwReason,
-                                  LPVOID lpReserved);
-#endif // FEATURE_MIXEDMODE
 
 BOOL STDMETHODCALLTYPE ExecuteEXE(HMODULE hMod);
 BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn);
@@ -382,15 +369,6 @@ HRESULT EnsureEEStarted(COINITIEE flags)
         REGUTIL::InitOptionalConfigCache();
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostTaskManager *pHostTaskManager = CorHost2::GetHostTaskManager();
-        if (pHostTaskManager)
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pHostTaskManager->BeginThreadAffinity();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
         BOOL bStarted=FALSE;
 
@@ -421,14 +399,6 @@ HRESULT EnsureEEStarted(COINITIEE flags)
             }
         }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (pHostTaskManager)
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pHostTaskManager->EndThreadAffinity();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 #ifdef FEATURE_TESTHOOKS        
         if(bStarted)
             TESTHOOKCALL(RuntimeStarted(RTS_INITIALIZED));
@@ -891,9 +861,6 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef CROSSGEN_COMPILE
 
         // Initialize remoting
-#ifdef FEATURE_REMOTING
-        CRemotingServices::Initialize();
-#endif // FEATURE_REMOTING
 
         // weak_short, weak_long, strong; no pin
         if (!Ref_Initialize())
@@ -905,15 +872,7 @@ void EEStartupHelper(COINITIEE fFlags)
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
-#ifdef FEATURE_RWLOCK
-        // Initialize RWLocks
-        CRWLock::ProcessInit();
-#endif // FEATURE_RWLOCK
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        // Initialize debugger manager
-        CCLRDebugManager::ProcessInit();
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_IPCMAN
         // Initialize CCLRSecurityAttributeManager
@@ -2435,375 +2394,9 @@ void STDMETHODCALLTYPE CoUninitializeEE(BOOL fIsDllUnloading)
 }
 
 
-#ifdef FEATURE_MIXEDMODE
-//*****************************************************************************
-void STDMETHODCALLTYPE CorDllMainForThunk(HINSTANCE hInst, HINSTANCE hInstShim)
-{
 
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
 
 
-    g_fEEIJWStartup = TRUE;
-
-    {
-
-        // If no managed thread exists, then we need to call the prepare method
-        // to try and startup the runtime and/or create a managed thread object
-        // so that installing an unwind and continue handler below is possible.
-        // If we fail to startup or create a thread, we'll raise the basic
-        // EXCEPTION_COMPLUS exception.
-        if (GetThread() == NULL)
-        {
-            HRESULT hr;
-            // Since this method is only called if a bootstrap thunk is invoked, we
-            // know that passing TRUE for fFromThunk is the correct value.
-            if (FAILED(hr = PrepareExecuteDLLForThunk(hInst, 0, NULL)))
-            {
-                RaiseComPlusException();
-            }
-        }
-
-    }
-
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    // We're actually going to run some managed code and we're inside the loader lock.
-    // There may be a customer debug probe enabled that prevents this.
-    CanRunManagedCode(hInst);
-
-    // Since this method is only called if a bootstrap thunk is invoked, we
-    // know that passing TRUE for fFromThunk is the correct value.
-    ExecuteDLL(hInst, 0, NULL, TRUE);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-}
-#endif // FEATURE_MIXEDMODE
-
-
-
-#ifdef FEATURE_MIXEDMODE
-
-LONG RunDllMainFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL useLastThrownObject = UpdateCurrentThrowable(ep->ExceptionRecord);
-    DefaultCatchHandler(ep, NULL, useLastThrownObject, FALSE);
-
-    DefaultCatchFilterParam param(COMPLUS_EXCEPTION_EXECUTE_HANDLER);
-    return DefaultCatchFilter(ep, &param);
-}
-
-// <TODO>@Todo: For M10, this only runs unmanaged native classic entry points for
-// the IJW mc++ case.</TODO>
-HRESULT RunDllMain(MethodDesc *pMD, HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    _ASSERTE(!GetAppDomain()->IsPassiveDomain());
-
-    if (!pMD) {
-        _ASSERTE(!"Must have a valid function to call!");
-        return E_INVALIDARG;
-    }
-
-    if (pMD->IsIntrospectionOnly())
-        return S_OK;
-
-    struct Param
-    {
-        MethodDesc *pMD;
-        HINSTANCE hInst;
-        DWORD dwReason;
-        LPVOID lpReserved;
-        HRESULT hr;
-    }; Param param;
-    param.pMD = pMD;
-    param.hInst = hInst;
-    param.dwReason = dwReason;
-    param.lpReserved = lpReserved;
-    param.hr = S_OK;
-
-    PAL_TRY(Param *, pParamOuter, &param)
-    {
-        EX_TRY_NOCATCH(Param *, pParam, pParamOuter)
-        {
-            HRESULT hr;
-
-            // This call is inherently unverifiable entry point.
-            if (!Security::CanSkipVerification(pParam->pMD)) {
-                hr = SECURITY_E_UNVERIFIABLE;
-                goto Done;
-            }
-
-            {
-                SigPointer sig(pParam->pMD->GetSigPointer());
-
-                ULONG data = 0;
-                CorElementType eType = ELEMENT_TYPE_END;
-                CorElementType eType2 = ELEMENT_TYPE_END;
-                
-                IfFailGoto(sig.GetData(&data), Done);
-                if (data != IMAGE_CEE_CS_CALLCONV_DEFAULT) {
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-
-                IfFailGoto(sig.GetData(&data), Done);
-                if (data != 3) {
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-
-                IfFailGoto(sig.GetElemType(&eType), Done);
-                if (eType != ELEMENT_TYPE_I4) {                                  // return type = int32
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-
-                IfFailGoto(sig.GetElemType(&eType), Done);
-                if (eType == ELEMENT_TYPE_PTR)
-                    IfFailGoto(sig.GetElemType(&eType2), Done);
-                    
-                if (eType!= ELEMENT_TYPE_PTR || eType2 != ELEMENT_TYPE_VOID) {   // arg1 = void*
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-
-                IfFailGoto(sig.GetElemType(&eType), Done);
-                if (eType != ELEMENT_TYPE_U4) {                                  // arg2 = uint32
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-
-                IfFailGoto(sig.GetElemType(&eType), Done);
-                if (eType == ELEMENT_TYPE_PTR)
-                    IfFailGoto(sig.GetElemType(&eType2), Done);
-
-                if (eType != ELEMENT_TYPE_PTR || eType2 != ELEMENT_TYPE_VOID) {  // arg3 = void*
-                    hr = COR_E_METHODACCESS;
-                    goto Done;
-                }
-            }
-
-            {
-                MethodDescCallSite  dllMain(pParam->pMD);
-
-                // Set up a callstack with the values from the OS in the argument array
-                ARG_SLOT stackVar[3];
-                stackVar[0] = PtrToArgSlot(pParam->hInst);
-                stackVar[1] = (ARG_SLOT) pParam->dwReason;
-                stackVar[2] = PtrToArgSlot(pParam->lpReserved);
-
-                // Call the method in question with the arguments.
-                if((dllMain.Call_RetI4(&stackVar[0]) == 0)
-                    &&(pParam->dwReason==DLL_PROCESS_ATTACH) 
-                    && (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_IgnoreDllMainReturn) != 1))
-                {
-                    hr = COR_E_INVALIDPROGRAM;
-#ifdef MDA_SUPPORTED 
-                    MdaDllMainReturnsFalse* pProbe = MDA_GET_ASSISTANT(DllMainReturnsFalse);
-                    if(pProbe != NULL) pProbe->ReportError();
-#endif
-                }
-            }
-Done:
-            pParam->hr = hr;
-        }
-        EX_END_NOCATCH
-    }
-    //@TODO: Revisit why this is here, and if it's still necessary.
-    PAL_EXCEPT_FILTER(RunDllMainFilter)
-    {
-        // switch to COOPERATIVE
-        GCX_COOP_NO_DTOR();
-        // don't do anything - just want to catch it
-    }
-    PAL_ENDTRY
-
-    return param.hr;
-}
-
-//*****************************************************************************
-// fFromThunk indicates that a dependency is calling through the Import Export table,
-// and calling indirect through the IJW vtfixup slot.
-//
-// fFromThunk=FALSE means that we are running DllMain during LoadLibrary while
-// holding the loader lock.
-//
-HRESULT ExecuteDLLForAttach(HINSTANCE hInst,
-                            DWORD dwReason,
-                            LPVOID lpReserved,
-                            BOOL fFromThunk)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(lpReserved, NULL_OK));
-    } CONTRACTL_END;
-
-    PEDecoder pe(hInst);
-
-    // Note that ILOnly DLLs can have a managed entry point. This will
-    // be called when the assembly is activated by the CLR loader,
-    // and it need not be run here.
-
-    if (pe.IsILOnly())
-    {
-        _ASSERTE(!fFromThunk);
-        return S_OK;
-    }
-
-    if (!pe.HasManagedEntryPoint() && !fFromThunk)
-        return S_OK;
-
-    // We need to prep the managed assembly for execution.
-
-    AppDomain *pDomain = GetAppDomain();
-
-    // First we must find the DomainFile associated with this HMODULE.  There are basically 3
-    // interesting cases:
-    //
-    // 1. The file is being loaded.  In this case we have a DomainFile in existence but
-    //      (very inconveniently) it does not have its HMODULE set yet.  Most likely if we
-    //      were to look at the state of this thread up the stack, we'd see that file is
-    //      currently being loaded right above us.  However, we cannot rely on this because
-    //          A. We may be in case 2 (e.g. a static DLL dependency is being loaded first)
-    //          B. _CorDllMain may have been called on a different thread.
-    //
-    // 2. The file has never been seen before.  In this case we are basically in the dark; we
-    //      simply attempt to load the file as an assembly. (If it is not an assembly we will
-    //      fail.)
-    //
-    // 3. The file has been loaded but we are getting called anyway in a race.  (This should not
-    //      happen in the loader lock case, only when we are getting called from thunks).
-    //
-    // So, we:
-    // A. Use the current thread's LoadingFile as a hint.  We will rely on this only if it has
-    //      the same path as the HMOD.
-    // B. Search the app domain for a DomainFile with a matching base address, or failing that, path.
-    // C. We have no information, so assume it is a new assembly being loaded.
-
-    // A: check the loading file
-
-    StackSString path;
-    PEImage::GetPathFromDll(hInst, path);
-
-    DomainFile *pLoadingFile = GetThread()->GetLoadingFile();
-    GetThread()->ClearLoadingFile();
-
-    if (pLoadingFile != NULL)
-    {
-        if (!PEImage::PathEquals(pLoadingFile->GetFile()->GetPath(), path))
-        {
-            pLoadingFile = NULL;
-        }
-        else
-        {
-            pLoadingFile->GetFile()->SetLoadedHMODULE(hInst);
-        }
-    }
-
-    // B: look for a loading IJW module
-
-    if (pLoadingFile == NULL)
-    {
-        pLoadingFile = pDomain->FindIJWDomainFile(hInst, path);
-    }
-
-    // C: nothing else worked, we require it is an assembly with a manifest in this situation
-    if (pLoadingFile == NULL)
-    {
-        pLoadingFile = pDomain->LoadExplicitAssembly(hInst, FALSE)->GetDomainAssembly();
-    }
-
-    // There are two cases here, loading from thunks emitted from the shim, and being called
-    // inside the loader lock for the legacy IJW dll case.
-
-    if (fFromThunk)
-    {
-        pLoadingFile->EnsureActive();
-        return S_OK;
-    }
-
-    _ASSERTE(!pe.IsILOnly() && pe.HasManagedEntryPoint());
-    // Get the entry point for the IJW module
-    Module *pModule = pLoadingFile->GetCurrentModule();
-    mdMethodDef tkEntry = pModule->GetEntryPointToken();
-
-    BOOL   hasEntryPoint = (TypeFromToken(tkEntry) == mdtMethodDef &&
-                            !IsNilToken(tkEntry));
-
-    if (!hasEntryPoint)
-    {
-        return S_OK;
-    }
-
-    if (pDomain->IsPassiveDomain())
-    {
-        // Running managed code while holding the loader lock can cause deadlocks.
-        // These deadlocks might happen when this assembly gets executed. However,
-        // we should avoid those deadlocks if we are in a passive AppDomain.
-        // Also, managed entry point is now legacy, and has should be replaced
-        // with Module .cctor.
-        //
-        // We also rely on Module::CanExecuteCode() to prevent
-        // any further code from being executed from this assembly.
-        _ASSERTE(pLoadingFile &&  pLoadingFile->GetFile() && pLoadingFile->GetFile()->GetILimage());
-        pLoadingFile->GetFile()->GetILimage()->SetPassiveDomainOnly();
-        return S_OK;
-    }
-
-    // We're actually going to run some managed code and we're inside the loader lock.
-    // There may be a customer debug probe enabled that prevents this.
-    CanRunManagedCode(hInst);
-
-    // If we are not being called from thunks, we are inside the loader lock
-    // & have this single opportunity to run our dll main.
-    // Since we are in deadlock danger anyway (note this is the problematic legacy
-    // case only!) we disable our file loading and type loading reentrancy protection & allow
-    // loads to fully proceed.
-
-    // class level override is needed for the entire operation, not just EnsureActive
-    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-
-    {
-        OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-
-        // Complete the load as necessary
-        pLoadingFile->EnsureActive();
-    }
-
-    MethodDesc *pMD = pModule->FindMethodThrowing(tkEntry);
-    CONSISTENCY_CHECK(CheckPointer(pMD));
-
-    pModule->SetDllEntryPoint(pMD);
-
-    GCX_COOP();
-
-    // pModule may be for a different domain.
-    PEFile *pPEFile = pMD->GetModule()->GetFile();
-    if (!pPEFile->CheckLoaded())
-    {
-        pPEFile->SetLoadedHMODULE(hInst);
-    }
-
-    // Call the managed entry point
-    HRESULT hr = RunDllMain(pMD, hInst, dwReason, lpReserved);
-
-    return hr;
-}
-
-#endif // FEATURE_MIXEDMODE
 
 //*****************************************************************************
 BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
@@ -2825,50 +2418,6 @@ BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
 }
 
 
-#ifdef FEATURE_MIXEDMODE
-//*****************************************************************************
-// This ensure that the runtime is started and an EEThread object is created
-// for the current thread. This functionality is duplicated in ExecuteDLL,
-// except that this code will not throw.
-//*****************************************************************************
-HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
-                                  DWORD dwReason,
-                                  LPVOID lpReserved)
-{
-    CONTRACTL {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        PRECONDITION(CheckPointer(lpReserved, NULL_OK));
-        PRECONDITION(CheckPointer(hInst));
-    } CONTRACTL_END;
-
-
-    HRESULT hr = S_OK;
-    Thread *pThread = GetThread();
-
-    INDEBUG(EnsureManagedThreadExistsForHostedThread();)
-
-    if (pThread == NULL)
-    {
-        // If necessary, start the runtime and create a managed thread object.
-        hr = EnsureEEStarted(COINITEE_DLL);
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-        if ((pThread = SetupThreadNoThrow(&hr)) == NULL)
-        {
-            return hr;
-        }
-    }
-
-    CONSISTENCY_CHECK(CheckPointer(pThread));
-
-    return S_OK;
-}
-
-#endif // FEATURE_MIXEDMODE
 
 
 

@@ -162,91 +162,8 @@ enum ESymbolReadingSetBy
     eSymbolReadingSetBy_COUNT
 };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// Hash table entry to keep track <connection, name> for SQL fiber support
-typedef DPTR(struct ConnectionNameHashEntry) PTR_ConnectionNameHashEntry;
-struct ConnectionNameHashEntry
-{
-    FREEHASHENTRY   entry;
-    CONNID          m_dwConnectionId;
-    PTR_WSTR        m_pwzName;
-    ICLRTask        **m_ppCLRTaskArray;
-    UINT            m_CLRTaskCount;
-};
 
-
-class CCLRDebugManager : public ICLRDebugManager
-{
-public:
-    CCLRDebugManager() {LIMITED_METHOD_CONTRACT;};
-
-    STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);
-    STDMETHODIMP_(ULONG) AddRef(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return 1;
-    }
-    STDMETHODIMP_(ULONG) Release(void);
-
-    // ICLRTDebugManager's interface
-    STDMETHODIMP BeginConnection(
-        CONNID  dwConnectionId,
-        __in_z wchar_t *szConnectionName);
-    STDMETHODIMP SetConnectionTasks(
-        DWORD id,
-        DWORD dwCount,
-        ICLRTask **ppCLRTask);
-    STDMETHODIMP EndConnection(
-        CONNID  dwConnectionId);
-
-    // Set ACL on shared section, events, and process
-    STDMETHODIMP SetDacl(PACL pacl);
-
-    // Returning the current ACL that CLR is using
-    STDMETHODIMP GetDacl(PACL *pacl);
-
-    STDMETHODIMP IsDebuggerAttached(BOOL *pbAttached);
-
-    // symbol reading policy - include file line info when getting a call stack etc.
-    STDMETHODIMP SetSymbolReadingPolicy(ESymbolReadingPolicy policy);
-
-#ifdef DACCESS_COMPILE
-    // Expose iterators for DAC. Debugger can use this on attach to find existing Connections.
-    //
-    // Example usage:
-    //   HASHFIND h;
-    //   ConnectionNameHashEntry * pConnection = FindFirst(&h);
-    //   while(pConnection != NULL) {
-    //       DoSomething(pConnection);
-    //       pConnection = FindNext(&h);
-    //   }
-    static ConnectionNameHashEntry * FindFirst(HASHFIND * pHashfind);
-    static ConnectionNameHashEntry * FindNext(HASHFIND * pHashfind);
-#endif
-
-    static void ProcessInit();
-    static void ProcessCleanup();
-
-    // Get the current symbol reading policy setting
-    static ESymbolReadingPolicy GetSymbolReadingPolicy()
-    {
-        return m_symbolReadingPolicy;
-    }
-
-    // Set the symbol reading policy if the setter has higher precendence than the current setting
-    static void SetSymbolReadingPolicy( ESymbolReadingPolicy policy, ESymbolReadingSetBy setBy );
-    
-private:
-    static CrstStatic m_lockConnectionNameTable;
-    SPTR_DECL(ConnectionNameTable, m_pConnectionNameHash);
-
-    static ESymbolReadingPolicy m_symbolReadingPolicy;
-    static ESymbolReadingSetBy m_symbolReadingSetBy;
-};
-
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 class CCLRErrorReportingManager :
 #ifdef FEATURE_WINDOWSPHONE
     public ICLRErrorReportingManager2
@@ -316,7 +233,7 @@ public:
 };
 
 extern CCLRErrorReportingManager g_CLRErrorReportingManager;
-#endif // defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#endif // defined(FEATURE_WINDOWSPHONE)
 
 #ifdef FEATURE_IPCMAN
 // @TODO:: a-meicht
@@ -478,77 +395,6 @@ public:
         return NULL;
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    static IHostMemoryManager *GetHostMemoryManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostMalloc *GetHostMalloc ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostTaskManager *GetHostTaskManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostThreadpoolManager *GetHostThreadpoolManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostIoCompletionManager *GetHostIoCompletionManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostSyncManager *GetHostSyncManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostAssemblyManager *GetHostAssemblyManager()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostGCManager *GetHostGCManager()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostSecurityManager *GetHostSecurityManager()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-    static IHostPolicyManager *GetHostPolicyManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     static int GetHostOverlappedExtensionSize()
     {
@@ -557,14 +403,6 @@ public:
         return 0;
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    static ICLRAssemblyReferenceList *GetHostDomainNeutralAsms()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 
     static STARTUP_FLAGS GetStartupFlags();
@@ -630,11 +468,7 @@ private:
     SVAL_DECL(STARTUP_FLAGS, m_dwStartupFlags);
 };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-class CorHostProtectionManager : public ICLRHostProtectionManager
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
 class CorHostProtectionManager
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 {
 private:
     EApiCategories m_eProtectedCategories;

@@ -156,21 +156,6 @@ FCIMPL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlappedUNSAFE)
 
     handle = GetAppDomain()->CreateTypedHandle(overlapped, HNDTYPE_ASYNCPINNED);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // CoreCLR does not have IO completion hosted
-    if (CLRIoCompletionHosted()) 
-    {
-        _ASSERTE(CorHost2::GetHostIoCompletionManager());
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = CorHost2::GetHostIoCompletionManager()->InitializeHostOverlapped(&overlapped->Internal);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (FAILED(hr)) 
-        {
-            COMPlusThrowHR(hr);
-        }
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     handle.SuppressRelease();
     overlapped->m_pinSelf = handle;

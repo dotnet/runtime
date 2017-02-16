@@ -2491,16 +2491,6 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
 ThreadLocaleHolder::~ThreadLocaleHolder()
 {
 #ifdef FEATURE_USE_LCID
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        pManager->SetLocale(m_locale);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 #endif // FEATURE_USE_LCID
     {
         SetThreadLocale(m_locale);
@@ -2605,19 +2595,6 @@ CLRMapViewOfFileEx(
 
     LPVOID pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostMemoryManager *memoryManager = CorHost2::GetHostMemoryManager();
-    if (pv == NULL && memoryManager)
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        if (SUCCEEDED(memoryManager->NeedsVirtualAddressSpace(lpBaseAddress, dwNumberOfBytesToMap)))
-        {
-            // after host releases VA, let us try again.
-            pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
-        }
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     if (!pv)
     {
@@ -2645,35 +2622,6 @@ CLRMapViewOfFileEx(
 #endif // _TARGET_X86_
 #endif // _DEBUG
     {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (memoryManager)
-        {
-            SIZE_T dwNumberOfBytesMapped = 0;
-            // Find out the size of the whole region.
-            LPVOID lpAddr = pv;
-            MEMORY_BASIC_INFORMATION mbi;
-            while (TRUE)
-            {
-                memset(&mbi, 0, sizeof(mbi));
-#undef VirtualQuery
-                if (!::VirtualQuery(lpAddr, &mbi, sizeof(mbi)))
-                {
-                    break;
-                }
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) \
-    Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
-                if (mbi.AllocationBase != pv)
-                {
-                    break;
-                }
-                dwNumberOfBytesMapped += mbi.RegionSize;
-                lpAddr = (LPVOID)((BYTE*)lpAddr + mbi.RegionSize);
-            }
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            memoryManager->AcquiredVirtualAddressSpace(pv, dwNumberOfBytesMapped);
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     }
 
     if (!pv && GetLastError()==ERROR_SUCCESS)
@@ -2716,15 +2664,6 @@ CLRUnmapViewOfFile(
         BOOL result = UnmapViewOfFile(lpBaseAddress);
         if (result)
         {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-            IHostMemoryManager *memoryManager = CorHost2::GetHostMemoryManager();
-            if (memoryManager)
-            {
-                BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-                memoryManager->ReleasedVirtualAddressSpace(lpBaseAddress);
-                END_SO_TOLERANT_CODE_CALLING_HOST;
-            }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         }
         return result;
     }

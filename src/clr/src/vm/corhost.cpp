@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "ceemain.h"
-#include "rwlock.h"
 #include "hosting.h"
 #include "eepolicy.h"
 #include "clrex.h"
@@ -69,7 +68,7 @@ SVAL_IMPL_INIT(DWORD, CExecutionEngine, TlsIndex, TLS_OUT_OF_INDEXES);
 #endif
 
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 SVAL_IMPL_INIT(ECustomDumpFlavor, CCLRErrorReportingManager, g_ECustomDumpFlavor, DUMP_FLAVOR_Default);
 #endif
 
@@ -91,13 +90,10 @@ extern BYTE g_rbTestKeyBuffer[];
 
 ULONG CorRuntimeHostBase::m_Version = 0;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-static CCLRDebugManager s_CLRDebugManager;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 CCLRErrorReportingManager g_CLRErrorReportingManager;
-#endif // defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#endif // defined(FEATURE_WINDOWSPHONE)
 
 #ifdef FEATURE_IPCMAN
 static CCLRSecurityAttributeManager s_CLRSecurityAttributeManager;
@@ -107,170 +103,9 @@ static CCLRSecurityAttributeManager s_CLRSecurityAttributeManager;
 
 typedef DPTR(CONNID)   PTR_CONNID;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// Hash table to keep track <connection, name> for SQL fiber support
-class ConnectionNameTable : CHashTableAndData<CNewDataNoThrow>
-{
-    friend class CCLRDebugManager;
-public:
-
-    // Key to match is connection ID.
-    // Returns true if the given HASHENTRY has the same key as the requested key.
-    BOOL Cmp(SIZE_T requestedKey, const HASHENTRY * pEntry)
-    {
-        SUPPORTS_DAC;
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-
-        CONNID keyRequested = (CONNID)requestedKey;
-        CONNID keySearch = dac_cast<PTR_ConnectionNameHashEntry>(pEntry)->m_dwConnectionId;
-        return  keyRequested != keySearch;
-    }
-
-    // Hash function
-    ULONG Hash(CONNID dwConnectionId)
-    {
-        SUPPORTS_DAC;
-        LIMITED_METHOD_CONTRACT;
-
-        return (ULONG)(dwConnectionId);
-    }
-
-#ifndef DACCESS_COMPILE
-    // constructor
-    ConnectionNameTable(
-        ULONG      iBuckets) :         // # of chains we are hashing into.
-        CHashTableAndData<CNewDataNoThrow>(iBuckets)
-    {LIMITED_METHOD_CONTRACT;}
-
-    // destructor
-    ~ConnectionNameTable()
-    {
-        CONTRACTL
-        {
-            if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-            NOTHROW;
-        }
-        CONTRACTL_END;
-        HASHFIND hashFind;
-        ConnectionNameHashEntry *pNameEntry;
-
-        pNameEntry = (ConnectionNameHashEntry *)FindFirstEntry(&hashFind);
-        while (pNameEntry != NULL)
-        {
-            if (pNameEntry->m_pwzName)
-            {
-                delete pNameEntry->m_pwzName;
-                pNameEntry->m_pwzName = NULL;
-            }
-
-            if (pNameEntry->m_CLRTaskCount != 0)
-            {
-                _ASSERTE(pNameEntry->m_ppCLRTaskArray != NULL);
-                for (UINT i = 0; i < pNameEntry->m_CLRTaskCount; i++)
-                {
-                    pNameEntry->m_ppCLRTaskArray[i]->Release();
-                }
-                delete [] pNameEntry->m_ppCLRTaskArray;
-                pNameEntry->m_ppCLRTaskArray = NULL;
-                pNameEntry->m_CLRTaskCount = 0;
-            }
-            pNameEntry = (ConnectionNameHashEntry *)FindNextEntry(&hashFind);
-        }
-    }
-
-    // Add a new connection into hash table.
-    // This function does not throw but return NULL when memory allocation fails.
-    ConnectionNameHashEntry *AddConnection(
-        CONNID  dwConnectionId,
-        __in_z WCHAR   *pwzName)  // We should review this in the future.  This API is
-                                                 // public and callable by a host.  This SAL annotation
-                                                 // is the best we can do now.
-    {
-        CONTRACTL
-        {
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-
-        ULONG iHash = Hash(dwConnectionId);
-
-        size_t len = wcslen(pwzName) + 1;
-        WCHAR *pConnName = new (nothrow) WCHAR[len];
-        if (pConnName == NULL)
-            return NULL;
-
-        ConnectionNameHashEntry *pRecord = (ConnectionNameHashEntry *)Add(iHash);
-        if (pRecord)
-        {
-            pRecord->m_dwConnectionId = dwConnectionId;
-            pRecord->m_pwzName = pConnName;
-            wcsncpy_s(pRecord->m_pwzName, len, pwzName, len);
-            pRecord->m_CLRTaskCount = 0;
-            pRecord->m_ppCLRTaskArray = NULL;
-        }
-        else
-        {
-            if (pConnName)
-                delete [] pConnName;
-        }
-
-        return pRecord;
-    }
-
-    // Delete a hash entry given a connection id
-    void DeleteConnection(CONNID dwConnectionId)
-    {
-        CONTRACTL
-        {
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-
-        ULONG  iHash;
-        iHash = Hash(dwConnectionId);
-        ConnectionNameHashEntry * pRecord = 
-            reinterpret_cast<ConnectionNameHashEntry *>(Find(iHash, (SIZE_T)dwConnectionId));
-        if (pRecord == NULL)
-        {
-            return;
-        }
-
-        _ASSERTE(pRecord->m_CLRTaskCount == 0 && pRecord->m_ppCLRTaskArray == NULL);
-        if (pRecord->m_pwzName)
-        {
-            delete pRecord->m_pwzName;
-            pRecord->m_pwzName = NULL;
-        }
-        Delete(iHash, (HASHENTRY *)pRecord);
-    }
-
-    // return NULL if the given connection id cannot be found.
-    ConnectionNameHashEntry *FindConnection(CONNID dwConnectionId)
-    {
-        CONTRACTL
-        {
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        CONTRACTL_END;
-
-        ULONG  iHash;
-        iHash = Hash(dwConnectionId);
-        return reinterpret_cast<ConnectionNameHashEntry *>(Find(iHash, (SIZE_T)dwConnectionId));
-    }
-#endif // !DAC
-};
-#endif //FEATURE_INCLUDE_ALL_INTERFACES
 
 
 // Keep track connection id and name
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-SPTR_IMPL(ConnectionNameTable, CCLRDebugManager, m_pConnectionNameHash);
-CrstStatic CCLRDebugManager::m_lockConnectionNameTable;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifndef DACCESS_COMPILE
 
@@ -1529,10 +1364,6 @@ ULONG CorHost2::Release()
 
     ULONG cRef = InterlockedDecrement(&m_cRef);
     if (!cRef) {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        // CorHost2 is allocated before host memory interface is set up.
-        if (GetHostMemoryManager() == NULL)
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
             delete this;
     }
 
@@ -1725,19 +1556,11 @@ extern void ValidateHostInterface();
 
 // fusion's global copy of host assembly manager stuff
 BOOL g_bFusionHosted = FALSE;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-ICLRAssemblyReferenceList *g_pHostAsmList = NULL;
-IHostAssemblyStore *g_pHostAssemblyStore = NULL;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 /*static*/ BOOL CorHost2::IsLoadFromBlocked() // LoadFrom, LoadFile and Load(byte[]) are blocked in certain hosting scenarios
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    return (g_bFusionHosted && (g_pHostAsmList != NULL));
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     return FALSE; // as g_pHostAsmList is not defined for CoreCLR; hence above expression will be FALSE.
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 static Volatile<BOOL> fOneOnly = 0;
@@ -2495,476 +2318,19 @@ EInitializeNewDomainFlags CorHost2::GetAppDomainManagerInitializeNewDomainFlags(
     return eInitializeNewDomainFlags_None;
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// We do not implement the Release since our host does not control the lifetime on this object
-ULONG CCLRDebugManager::Release()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (1);
-}
-
-HRESULT CCLRDebugManager::QueryInterface(REFIID riid, void **ppUnk)
-{
-    if (!ppUnk)
-        return E_POINTER;
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (ppUnk == NULL)
-    {
-        return E_POINTER;
-    }
-
-    *ppUnk = 0;
-
-    // Deliberately do NOT hand out ICorConfiguration.  They must explicitly call
-    // GetConfiguration to obtain that interface.
-    if (riid == IID_IUnknown)
-    {
-        *ppUnk = (IUnknown *) this;
-    }
-    else if (riid == IID_ICLRDebugManager)
-    {
-        *ppUnk = (ICLRDebugManager *) this;
-    }
-    else 
-    {
-        hr = E_NOINTERFACE;
-    }
-
-    return hr;
-
-}
-
-/*
-*
-* Called once to when process start up to initialize the lock for connection name hash table
-*
-*/
-void CCLRDebugManager::ProcessInit()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    m_lockConnectionNameTable.Init(CrstConnectionNameTable, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
-}
-
-/*
-* Called once to when process shut down to destroy the lock for connection name hash table
-*
-*/
-void CCLRDebugManager::ProcessCleanup()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    m_lockConnectionNameTable.Destroy();
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #endif // !DAC
 
 
 #ifdef DACCESS_COMPILE
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-
-//---------------------------------------------------------------------------------------
-// Begin an iterating over connections for Debugger
-//
-// Arguments: 
-//     pHashfind - out: initializes cookie to pass to to future calls to code:CCLRDebugManager.FindNext
-//
-// Returns:
-//     NULL if iteration is done. Else a ConnectionNameHashEntry representing the connection.
-//
-ConnectionNameHashEntry * CCLRDebugManager::FindFirst(HASHFIND * pHashfind)
-{
-    SUPPORTS_DAC;
-    if (m_pConnectionNameHash == NULL)
-    {
-        return NULL;
-    }
-
-    ConnectionNameHashEntry * pConnection = dac_cast<PTR_ConnectionNameHashEntry>(m_pConnectionNameHash->FindFirstEntry(pHashfind));
-    return pConnection;
-    }
-
-//---------------------------------------------------------------------------------------
-// Begin an iterating over connections for Debugger
-//
-// Arguments: 
-//     pHashfind - in/out: iterator cookie to pass to future calls to code:CCLRDebugManager.FindNext
-//
-// Returns:
-//     NULL if iteration is done. Else a ConnectionNameHashEntry representing the connection.
-//
-ConnectionNameHashEntry * CCLRDebugManager::FindNext(HASHFIND * pHashfind)
-    {
-    SUPPORTS_DAC;
-    ConnectionNameHashEntry * pConnection = dac_cast<PTR_ConnectionNameHashEntry>(m_pConnectionNameHash->FindNextEntry(pHashfind));
-    return pConnection;
-}
-
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #endif //DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-HRESULT CCLRDebugManager::IsDebuggerAttached(BOOL *pbAttached)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
 
-    if (pbAttached == NULL)
-        return E_INVALIDARG;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-#ifdef DEBUGGING_SUPPORTED
-    *pbAttached = (CORDebuggerAttached() != 0);
-#else
-    *pbAttached = FALSE;
-#endif
-
-    END_ENTRYPOINT_NOTHROW;
-
-
-    return S_OK;
-}
-
-// By default, we permit symbols to be read for full-trust assemblies only
-ESymbolReadingSetBy CCLRDebugManager::m_symbolReadingSetBy = eSymbolReadingSetByDefault;
-ESymbolReadingPolicy CCLRDebugManager::m_symbolReadingPolicy = eSymbolReadingFullTrustOnly;
-
-HRESULT CCLRDebugManager::SetSymbolReadingPolicy(ESymbolReadingPolicy policy)
-{
-    LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    if( policy > eSymbolReadingFullTrustOnly )
-    {
-        return E_INVALIDARG;
-    }
-
-    SetSymbolReadingPolicy( policy, eSymbolReadingSetByHost );    
-
-    return S_OK;
-}
-
-void CCLRDebugManager::SetSymbolReadingPolicy( ESymbolReadingPolicy policy, ESymbolReadingSetBy setBy )
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE( policy <= eSymbolReadingFullTrustOnly );  // don't have _COUNT because it's not in convention for mscoree.idl enums
-    _ASSERTE( setBy < eSymbolReadingSetBy_COUNT );
-
-    // if the setter meets or exceeds the precendence of the existing setting then override the setting
-    if( setBy >= m_symbolReadingSetBy )
-    {
-        m_symbolReadingSetBy = setBy;
-        m_symbolReadingPolicy = policy;
-    }
-}
-
-
-/*
-*   Call by host to set the name of a connection and begin a connection.
-*
-*/
-HRESULT CCLRDebugManager::BeginConnection(
-        CONNID  dwConnectionId,
-        __in_z wchar_t *wzConnectionName) // We should review this in the future.  This API is
-                                                         // public and callable by a host.  This SAL annotation
-                                                         // is the best we can do now.
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;    // I am having problem in putting either GC_TRIGGERS or GC_NOTRIGGER. It is not happy either way when debugger
-                        // call back event needs to enable preemptive GC.
-        ENTRY_POINT;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    ConnectionNameHashEntry *pEntry = NULL;
-
-    // check input parameter
-    if (dwConnectionId == INVALID_CONNECTION_ID || wzConnectionName == NULL || wzConnectionName[0] == W('\0'))
-        IfFailGo(E_INVALIDARG);
-
-    if (wcslen(wzConnectionName) >= MAX_CONNECTION_NAME)
-        IfFailGo(E_INVALIDARG);
-
-    {
-        CrstHolder ch(&m_lockConnectionNameTable);
-
-        if (m_pConnectionNameHash == NULL)
-        {
-            m_pConnectionNameHash = new (nothrow) ConnectionNameTable(50);
-            IfNullGo(m_pConnectionNameHash);
-            IfFailGo(m_pConnectionNameHash->NewInit(50, sizeof(ConnectionNameHashEntry), USHRT_MAX));
-        }
-
-        // error: Should not have an existing connection id already
-        if (m_pConnectionNameHash->FindConnection(dwConnectionId))
-            IfFailGo(E_INVALIDARG);
-
-        // Our implementation of hashtable cannot throw out of memory exception
-        pEntry = m_pConnectionNameHash->AddConnection(dwConnectionId, wzConnectionName);
-        IfNullGo(pEntry);
-    }
-
-    // send notification to debugger
-    if (CORDebuggerAttached())
-    {
-        g_pDebugInterface->CreateConnection(dwConnectionId, wzConnectionName);
-    }
-
-ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-/*
-*   Call by host to end a connection
-*/
-HRESULT CCLRDebugManager::EndConnection(CONNID   dwConnectionId)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    UINT CLRTaskCount = 0;
-    ICLRTask **ppCLRTaskArray = NULL;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    if (dwConnectionId == INVALID_CONNECTION_ID)
-        IfFailGo(E_INVALIDARG);
-
-    // No connection exist at all
-    if (m_pConnectionNameHash == NULL)
-        IfFailGo(E_FAIL);
-
-    {
-        CrstHolder ch(&m_lockConnectionNameTable);
-        ConnectionNameHashEntry *pEntry = NULL;
-
-        if ((pEntry = m_pConnectionNameHash->FindConnection(dwConnectionId)) == NULL)
-            IfFailGo(E_INVALIDARG);
-
-        // Note that the Release on CLRTask chould take a ThreadStoreLock. So we need to finish our
-        // business with ConnectionNameHash before hand and release our name hash lock
-        //
-        CLRTaskCount = pEntry->m_CLRTaskCount;
-        ppCLRTaskArray = pEntry->m_ppCLRTaskArray;
-        pEntry->m_ppCLRTaskArray = NULL;
-        pEntry->m_CLRTaskCount = 0;
-        m_pConnectionNameHash->DeleteConnection(dwConnectionId);
-    }
-
-    if (CLRTaskCount != 0)
-    {
-        _ASSERTE(ppCLRTaskArray != NULL);
-        for (UINT i = 0; i < CLRTaskCount; i++)
-        {
-            ((Thread *)ppCLRTaskArray[i])->SetConnectionId(INVALID_CONNECTION_ID);
-            ppCLRTaskArray[i]->Release();
-        }
-        delete [] ppCLRTaskArray;
-    }
-
-    // send notification to debugger
-    if (CORDebuggerAttached())
-        g_pDebugInterface->DestroyConnection(dwConnectionId);
-
-ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-/*
-*   Call by host to set a set of tasks as a connection.
-*
-*/
-HRESULT CCLRDebugManager::SetConnectionTasks(
-    DWORD id,
-    DWORD dwCount,
-    ICLRTask **ppCLRTask)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    ICLRTask **ppCLRTaskArrayNew = NULL;
-    UINT CLRTaskCountPrevious = 0;
-    ICLRTask **ppCLRTaskArrayPrevious = NULL;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    DWORD       index;
-    Thread      *pThread;
-    ConnectionNameHashEntry *pEntry = NULL;
-
-    if (id == INVALID_CONNECTION_ID || dwCount == 0 || ppCLRTask == NULL)
-        IfFailGo(E_INVALIDARG);
-
-    {
-        CrstHolder ch(&m_lockConnectionNameTable);
-
-        // check the BeginConnectin has been called.
-        if (m_pConnectionNameHash == NULL)
-            // No connection exist
-            IfFailGo(E_INVALIDARG);
-
-        // Host forget to call BeginConnection before calling SetConnectionTask!
-        if ((pEntry = m_pConnectionNameHash->FindConnection(id)) == NULL)
-            IfFailGo(E_INVALIDARG);
-
-        for (index = 0; index < dwCount; index++)
-        {
-            // Check on input parameter
-            pThread = (Thread *) ppCLRTask[index];
-            if (pThread == NULL)
-            {
-                // _ASSERTE(!"Host passed in NULL ICLRTask pointer");
-                IfFailGo(E_INVALIDARG);
-            }
-
-            // Check for Finalizer thread
-            if (GCHeapUtilities::IsGCHeapInitialized() && (pThread == FinalizerThread::GetFinalizerThread()))
-            {
-                // _ASSERTE(!"Host should not try to schedule user code on our Finalizer Thread");
-                IfFailGo(E_INVALIDARG);
-
-            }
-        }
-
-        ppCLRTaskArrayNew = new (nothrow) ICLRTask*[dwCount];
-        IfNullGo(ppCLRTaskArrayNew);
-
-        CLRTaskCountPrevious = pEntry->m_CLRTaskCount;
-        ppCLRTaskArrayPrevious = pEntry->m_ppCLRTaskArray;
-        pEntry->m_ppCLRTaskArray = NULL;
-        pEntry->m_CLRTaskCount = 0;
-
-        if (CLRTaskCountPrevious != 0)
-        {
-            // Clear the old connection set
-            _ASSERTE(ppCLRTaskArrayPrevious != NULL);
-            for (UINT i = 0; i < CLRTaskCountPrevious; i++)
-                ((Thread *)ppCLRTaskArrayPrevious[i])->SetConnectionId(INVALID_CONNECTION_ID);
-        }
-
-        // now remember the new set
-        pEntry->m_ppCLRTaskArray = ppCLRTaskArrayNew;
-
-        for (index = 0; index < dwCount; index++)
-        {
-            pThread = (Thread *) ppCLRTask[index];
-            pThread->SetConnectionId( id );
-            pEntry->m_ppCLRTaskArray[index] = ppCLRTask[index];
-        }
-        pEntry->m_CLRTaskCount = dwCount;
-
-        // AddRef and Release on Thread object can call ThreadStoreLock. So we will release our
-        // lock first of all.
-    }
-
-    // Does the addref on the new set
-    for (index = 0; index < dwCount; index++)
-        ppCLRTaskArrayNew[index]->AddRef();
-
-    // Does the release on the old set
-    if (CLRTaskCountPrevious != 0)
-    {
-        _ASSERTE(ppCLRTaskArrayPrevious != NULL);
-        for (UINT i = 0; i < CLRTaskCountPrevious; i++)
-            ppCLRTaskArrayPrevious[i]->Release();
-        delete ppCLRTaskArrayPrevious;
-    }
-
-    // send notification to debugger
-    if (CORDebuggerAttached())
-    {
-        g_pDebugInterface->ChangeConnection(id);
-    }
-
-ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-}
-
-HRESULT CCLRDebugManager::SetDacl(PACL pacl)
-{
-    LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_ENTRY_POINT;
-    HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = E_NOTIMPL;
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-}   // SetDACL
-
-
-HRESULT CCLRDebugManager::GetDacl(PACL *pacl)
-{
-    LIMITED_METHOD_CONTRACT;
-    STATIC_CONTRACT_ENTRY_POINT;
-    HRESULT hr;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = E_NOTIMPL;
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
-}   // SetDACL
-
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 
 HRESULT CCLRErrorReportingManager::QueryInterface(REFIID riid, void** ppUnk)
 {
@@ -3344,7 +2710,7 @@ CCLRErrorReportingManager::~CCLRErrorReportingManager()
 #endif
 }
 
-#endif // defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#endif // defined(FEATURE_WINDOWSPHONE)
 
 #ifdef FEATURE_IPCMAN
 
@@ -3683,21 +3049,6 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     BOOL fRet = GlobalMemoryStatusEx(pMSEX);
     _ASSERTE (fRet);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    // CoreCLR cannot be memory hosted
-    if (CLRMemoryHosted())
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        DWORD memoryLoad;
-        SIZE_T availableBytes;
-        HRESULT hr = CorHost2::GetHostMemoryManager()->GetMemoryLoad(&memoryLoad, &availableBytes);
-        if (hr == S_OK) {
-            pMSEX->dwMemoryLoad = memoryLoad;
-            pMSEX->ullAvailPhys = availableBytes;
-        }
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     // If the machine has more RAM than virtual address limit, let us cap it.
     // Our GC can never use more than virtual address limit.

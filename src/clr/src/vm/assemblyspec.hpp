@@ -122,9 +122,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName, PEImage* pImageInfo); //[in,out], [in]
 
-#ifdef FEATURE_MIXEDMODE
-    void InitializeSpec(HINSTANCE hMod, BOOL fIntrospectionOnly = FALSE);
-#endif // FEATURE_MIXEDMODE
 
     void SetCodeBase(LPCWSTR szCodeBase)
     {

@@ -47,10 +47,6 @@ ASMCONSTANTS_C_ASSERT(ASM_ELEMENT_TYPE_R4 == ELEMENT_TYPE_R4);
 #define               ASM_ELEMENT_TYPE_R8                 0xD
 ASMCONSTANTS_C_ASSERT(ASM_ELEMENT_TYPE_R8 == ELEMENT_TYPE_R8);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-#define               ASM_CLRTASKHOSTED       0x2
-ASMCONSTANTS_C_ASSERT(ASM_CLRTASKHOSTED   == CLRTASKHOSTED);
-#endif
 
 #define METHODDESC_REGNUM                    10
 #define METHODDESC_REGISTER                 r10
@@ -178,16 +174,6 @@ ASMCONSTANTS_C_ASSERT(THREAD_CATCHATSAFEPOINT_BITS == Thread::TS_CatchAtSafePoin
 #endif // CROSSGEN_COMPILE
 
 
-#ifdef FEATURE_REMOTING
-#define TransparentProxyObject___stubData       0x10
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stubData == offsetof(TransparentProxyObject, _stubData))
-
-#define TransparentProxyObject___stub           0x28
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stub == offsetof(TransparentProxyObject, _stub))
-
-#define TransparentProxyObject___pMT            0x18
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___pMT == offsetof(TransparentProxyObject, _pMT))
-#endif //  FEATURE_REMOTING
 
 #define               OFFSETOF__NDirectMethodDesc__m_pWriteableData DBG_FRE(0x48, 0x20)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__NDirectMethodDesc__m_pWriteableData == offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
@@ -281,7 +267,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable_VtableSlotsPerChunk == VTABLE_SLOTS_PER_CHUNK)
 #define MethodTable_VtableSlotsPerChunkLog2 3
 ASMCONSTANTS_C_ASSERT(MethodTable_VtableSlotsPerChunkLog2 == VTABLE_SLOTS_PER_CHUNK_LOG2)
 
-#if defined(FEATURE_TYPEEQUIVALENCE) || defined(FEATURE_REMOTING)
+#if defined(FEATURE_TYPEEQUIVALENCE)
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x02000000
 ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
                     == MethodTable::enum_flag_HasTypeEquivalence);

@@ -61,7 +61,7 @@ public:
 };  // class CORPATHService
 
 
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
 
 class RegMeta;
 
@@ -114,6 +114,6 @@ public:
 #endif
 };  // class LOADEDMODULES
 
-#endif //FEATURE_METADATA_IN_VM || FEATURE_METADATA_STANDALONE_WINRT
+#endif //FEATURE_METADATA_IN_VM 
 
 #endif // __MDUtil__h__

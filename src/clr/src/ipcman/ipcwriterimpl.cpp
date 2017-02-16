@@ -370,63 +370,7 @@ HRESULT IPCWriterInterface::CreateSxSPublicBlockOnPid(DWORD pid)
 
         BOOL openedExistingBlock = FALSE;
 
-#if defined(FEATURE_PERFMON)
-        DWORD dwFileMapErr = 0;
-        
-        // Retry several times to mitigate a potential race with another
-        // runtime shutting down
-        for (int tries = 0; tries < 3; ++tries)
-        {
-            // Connect the handle
-            m_handleBlockTable = WszCreateFileMapping(INVALID_HANDLE_VALUE,
-                            pSA,
-                            PAGE_READWRITE | SEC_COMMIT,
-                            0,
-                            sizeof(IPCControlBlockTable),
-                            szMemFileName);
-
-            dwFileMapErr = GetLastError();
-
-            LOG((LF_CORDB, LL_INFO10, "IPCWI::CPBOP: CreateFileMapping of %S, handle = 0x%08x, pid = 0x%8.8x GetLastError=%d\n",
-                szMemFileName.GetUnicode(), m_handleBlockTable, pid, GetLastError()));
-
-            // If GetLastError() returns ERROR_ALREADY_EXISTS, then we need to do some extra checks
-            if (m_handleBlockTable != NULL && dwFileMapErr == ERROR_ALREADY_EXISTS)
-            {
-                openedExistingBlock = TRUE;
-            }
-
-            // If CreateFileMapping() failed with ERROR_ACCESS_DENIED, try calling OpenFileMapping()
-            else if (m_handleBlockTable == NULL && dwFileMapErr == ERROR_ACCESS_DENIED)
-            {
-                // If we could not create the IPCBlockTable due to ERROR_ACCESS_DENIED,
-                // then the IPCBlockTable already exists. Next we will try opening the
-                // IPCBlockTable using OpenFileMapping().
-                m_handleBlockTable = WszOpenFileMapping(FILE_MAP_WRITE,
-                                    FALSE,
-                                    szMemFileName);
-                dwFileMapErr = GetLastError();
-
-                // There is a chance for a race where another runtime might close the
-                // IPCBlockTable before we can open it. Thus, if we get ERROR_FILE_NOT_FOUND
-                // we retry calling CreateFileMapping().
-                if (m_handleBlockTable == NULL && dwFileMapErr == ERROR_FILE_NOT_FOUND)
-                {
-                    Sleep(1);
-                    continue;
-                }
-
-                if (m_handleBlockTable != NULL)
-                {
-                    openedExistingBlock = TRUE;
-                }
-            }
-
-            break;
-        }
-#else  // !FEATURE_PERFMON
         m_handleBlockTable = NULL;
-#endif // FEATURE_PERFMON
 
         // If unsuccessful, don't ever bail out.
         if (m_handleBlockTable != NULL)

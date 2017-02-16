@@ -8,9 +8,6 @@
 #include "excep.h"
 #include "interoputil.h"
 #include "interopconverter.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "olevariant.h"
 #include "comcallablewrapper.h"
 
@@ -46,12 +43,6 @@ IUnknown* GetIUnknownForMarshalByRefInServerDomain(OBJECTREF* poref)
     
     Context *pContext = NULL;
 
-#ifdef FEATURE_REMOTING
-    // so this is an proxy type, 
-    // now get it's underlying appdomain which will be null if non-local
-    if ((*poref)->IsTransparentProxy())
-        pContext = CRemotingServices::GetServerContextForProxy(*poref);
-#endif
 
     if (pContext == NULL)
         pContext = GetCurrentContext();
@@ -65,48 +56,6 @@ IUnknown* GetIUnknownForMarshalByRefInServerDomain(OBJECTREF* poref)
     RETURN pUnk;
 }
 
-#ifdef FEATURE_REMOTING
-//+----------------------------------------------------------------------------
-// IUnknown* GetIUnknownForTransparentProxy(OBJECTREF otp)
-//+----------------------------------------------------------------------------
-
-IUnknown* GetIUnknownForTransparentProxy(OBJECTREF* poref, BOOL fIsBeingMarshalled)
-{    
-    CONTRACT (IUnknown*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(poref));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    GCX_COOP();
-
-    IUnknown* pUnk;
-        
-    OBJECTREF realProxy = ObjectToOBJECTREF(CRemotingServices::GetRealProxy(OBJECTREFToObject(*poref)));
-    _ASSERTE(realProxy != NULL);
-
-    GCPROTECT_BEGIN(realProxy);
-
-    MethodDescCallSite getDCOMProxy(METHOD__REAL_PROXY__GETDCOMPROXY, &realProxy);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(realProxy),
-        BoolToArgSlot(fIsBeingMarshalled),
-    };
-
-    ARG_SLOT ret = getDCOMProxy.Call_RetArgSlot(args);
-
-    pUnk = (IUnknown*)ret;
-
-    GCPROTECT_END();
-
-    RETURN pUnk;
-}
-#endif // FEATURE_REMOTING
 
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...)
@@ -133,47 +82,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
     if (*poref == NULL)
         RETURN NULL;
 
-#ifdef FEATURE_REMOTING
-    if ((*poref)->IsTransparentProxy()) 
-    {
-        // Retrieve the IID of the interface to QI for.
-        IID iid;
-        if (pMT->IsInterface())
-        {
-            pMT->GetGuid(&iid, TRUE);
-        }
-        else
-        {
-            ComCallWrapperTemplate *pTemplate = ComCallWrapperTemplate::GetTemplate(TypeHandle(pMT));
-            if (pTemplate->SupportsIClassX())
-            {
-                ComMethodTable *pComMT = pTemplate->GetClassComMT();
-                iid = pComMT->GetIID();
-            }
-            else
-            {
-                // if IClassX is not supported, we try the default interface of the class
-                MethodTable *pDefItfMT = pMT->GetDefaultWinRTInterface();
-                if (pDefItfMT != NULL)
-                {
-                    pDefItfMT->GetGuid(&iid, TRUE);
-                }
-                else
-                {
-                    // else we fail because the class has no IID associated with it
-                    IfFailThrow(E_NOINTERFACE);
-                }
-            }
-        }
-
-        // Retrieve an IUnknown for the TP.
-        SafeComHolder<IUnknown> pProxyUnk = GetIUnknownForTransparentProxy(poref, FALSE);
-
-        // QI for the requested interface.
-        IfFailThrow(SafeQueryInterface(pProxyUnk, iid, &pUnk));
-        goto LExit;
-    }
-#endif // FEATURE_REMOTING
     
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
     
@@ -202,9 +110,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecuri
         RCWPROTECT_END(pRCW);
     }
 
-#ifdef FEATURE_REMOTING
-LExit:
-#endif
     // If we failed to retrieve an IP then throw an exception.
     if (pUnk == NULL)
         COMPlusThrowHR(hr);
@@ -244,47 +149,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         RETURN NULL;
 
     MethodTable *pMT = (*poref)->GetMethodTable();
-#ifdef FEATURE_REMOTING
-    if (pMT->IsTransparentProxy()) 
-    {
-        SafeComHolder<IUnknown> pProxyUnk = GetIUnknownForTransparentProxy(poref, FALSE);
-
-        if (ReqIpType & ComIpType_Dispatch)
-        {
-            hr = SafeQueryInterface(pProxyUnk, IID_IDispatch, &pUnk);
-            if (SUCCEEDED(hr))
-            {
-                // In Whidbey we used to return ComIpType_Unknown here to maintain backward compatibility with
-                // previous releases where we had mistakenly returned ComIpType_None (which was interpreted as
-                // ComIpType_Unknown by the callers of this method).
-                FetchedIpType = ComIpType_Dispatch;
-                goto LExit;
-            }
-        }
-
-        if (ReqIpType & ComIpType_Inspectable)
-        {
-            hr = SafeQueryInterface(pProxyUnk, IID_IInspectable, &pUnk);
-            if (SUCCEEDED(hr))
-            {
-                FetchedIpType = ComIpType_Inspectable;
-                goto LExit;
-            }
-        }
-
-        if (ReqIpType & ComIpType_Unknown)
-        {
-            hr = SafeQueryInterface(pProxyUnk, IID_IUnknown, &pUnk);
-            if (SUCCEEDED(hr))
-            {
-                FetchedIpType = ComIpType_Unknown;
-                goto LExit;
-            }
-        }
-
-        goto LExit;
-    }
-#endif // FEATURE_REMOTING
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
@@ -507,9 +371,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         }
     }
     
-#ifdef FEATURE_REMOTING
-LExit:
-#endif
     // If we failed to retrieve an IP then throw an exception.
     if (pUnk == NULL)
         COMPlusThrowHR(hr);
@@ -553,14 +414,6 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
         RETURN NULL;
 
     MethodTable *pMT = (*poref)->GetMethodTable();
-#ifdef FEATURE_REMOTING
-    if (pMT->IsTransparentProxy()) 
-    {
-        SafeComHolder<IUnknown> pProxyUnk = GetIUnknownForTransparentProxy(poref, FALSE);
-        IfFailThrow(SafeQueryInterface(pProxyUnk, iid, &pUnk));
-        goto LExit;
-    }
-#endif
 
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
@@ -586,47 +439,12 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
         pUnk = pUnkHolder.Extract();
     }
     
-#ifdef FEATURE_REMOTING
-LExit:
-#endif
     if (throwIfNoComIP && pUnk == NULL)
         COMPlusThrowHR(hr);
 
     RETURN pUnk;
 }
 
-#ifdef FEATURE_REMOTING
-OBJECTREF GetObjectRefFromComIP_CrossDomain(ADID objDomainId, ComCallWrapper* pWrap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF oref = NULL;
-
-    EX_TRY
-    {
-        // the CCW belongs to a different domain..
-        // unmarshal the object to the current domain
-        if (!UnMarshalObjectForCurrentDomain(objDomainId, pWrap, &oref))
-            oref = NULL;
-    }
-    EX_CATCH
-    {
-        // fall back to creating an RCW if we were unable to
-        // marshal the object (most commonly because the object
-        // graph is not serializable)
-        oref = NULL;
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-    return oref;
-}
-#endif //#ifdef FEATURE_REMOTING
 
 //+----------------------------------------------------------------------------
 // GetObjectRefFromComIP
@@ -692,15 +510,8 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             _ASSERTE(pWrap != NULL);
             AppDomain* pCurrDomain = pThread->GetDomain();
             ADID pObjDomain = pWrap->GetDomainID();
-#ifdef FEATURE_REMOTING
-            if (pObjDomain == pCurrDomain->GetId())
-                *pObjOut = pWrap->GetObjectRef();  
-            else
-                *pObjOut = GetObjectRefFromComIP_CrossDomain(pObjDomain, pWrap);
-#else
             _ASSERTE(pObjDomain == pCurrDomain->GetId());
             *pObjOut = pWrap->GetObjectRef();
-#endif
         }
 
         if (*pObjOut != NULL)
@@ -812,173 +623,3 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
 #endif // FEATURE_COMINTEROP
 
 
-#ifdef FEATURE_REMOTING
-//--------------------------------------------------------
-// ConvertObjectToBSTR
-// serializes object to a BSTR, caller needs to SysFree the Bstr
-// and GCPROTECT the oref parameter.
-//--------------------------------------------------------------------------------
-BOOL ConvertObjectToBSTR(OBJECTREF* oref, BOOL fCrossRuntime, BSTR* pBStr)
-{    
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pBStr));
-        PRECONDITION(IsProtectedByGCFrame (oref));
-    }
-    CONTRACTL_END;
-
-    *pBStr = NULL;
-
-    MethodTable *pMT = (*oref)->GetMethodTable();
-    if (!pMT->IsTransparentProxy() && !pMT->IsMarshaledByRef() && !pMT->IsSerializable())
-    {
-        // The object is not serializable - don't waste time calling to managed and trying to
-        // serialize it with a formatter. This is an optimization so we don't throw and catch
-        // SerializationException unnecessarily.
-        return FALSE;
-    }
-
-    // We will be using the remoting services so make sure remoting is started up.
-    CRemotingServices::EnsureRemotingStarted();
-
-    MethodDescCallSite marshalToBuffer(METHOD__REMOTING_SERVICES__MARSHAL_TO_BUFFER);
-
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(*oref),
-        BoolToArgSlot(fCrossRuntime)
-    };
-
-    BASEARRAYREF aref = (BASEARRAYREF) marshalToBuffer.Call_RetOBJECTREF(args);
-
-    if (aref != NULL)
-    {
-        _ASSERTE(!aref->IsMultiDimArray());
-        //@todo ASSERTE that the array is a byte array
-
-        ULONG cbSize = aref->GetNumComponents();
-        BYTE* pBuf  = (BYTE *)aref->GetDataPtr();
-
-        BSTR bstr = SysAllocStringByteLen(NULL, cbSize);
-        if (bstr == NULL)
-            COMPlusThrowOM();
-
-        CopyMemory(bstr, pBuf, cbSize);
-        *pBStr = bstr;
-    }
-
-    return TRUE;
-}
-
-//--------------------------------------------------------------------------------
-// ConvertBSTRToObject
-// deserializes a BSTR, created using ConvertObjectToBSTR, this api SysFree's the BSTR
-//--------------------------------------------------------------------------------
-OBJECTREF ConvertBSTRToObject(BSTR bstr, BOOL fCrossRuntime)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    BSTRHolder localBstr(bstr);
-
-    OBJECTREF oref = NULL;
-
-    // We will be using the remoting services so make sure remoting is started up.
-    CRemotingServices::EnsureRemotingStarted();
-
-    MethodDescCallSite unmarshalFromBuffer(METHOD__REMOTING_SERVICES__UNMARSHAL_FROM_BUFFER);
-
-    // convert BSTR to a byte array
-
-    // allocate a byte array
-    INT32 elementCount = SysStringByteLen(bstr);
-    TypeHandle t = OleVariant::GetArrayForVarType(VT_UI1, TypeHandle((MethodTable *)NULL));
-    BASEARRAYREF aref = (BASEARRAYREF) AllocateArrayEx(t, &elementCount, 1);
-    // copy the bstr data into the managed byte array
-    memcpyNoGCRefs(aref->GetDataPtr(), bstr, elementCount);
-
-    ARG_SLOT args[] = 
-    {
-        ObjToArgSlot((OBJECTREF)aref),
-        BoolToArgSlot(fCrossRuntime)
-    };
-
-    oref = unmarshalFromBuffer.Call_RetOBJECTREF(args);
-
-    return oref;
-}
-
-//--------------------------------------------------------------------------------
-// UnMarshalObjectForCurrentDomain
-// unmarshal the managed object for the current domain
-//--------------------------------------------------------------------------------
-struct ConvertObjectToBSTR_Args
-{
-    OBJECTREF* oref;
-    BOOL fCrossRuntime;
-    BSTR *pBStr;
-    BOOL fResult;
-};
-
-void ConvertObjectToBSTR_Wrapper(LPVOID ptr)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    ConvertObjectToBSTR_Args *args = (ConvertObjectToBSTR_Args *)ptr;
-    args->fResult = ConvertObjectToBSTR(args->oref, args->fCrossRuntime, args->pBStr);
-}
-
-
-BOOL UnMarshalObjectForCurrentDomain(ADID pObjDomain, ComCallWrapper* pWrap, OBJECTREF* pResult)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pWrap));
-        PRECONDITION(CheckPointer(pResult));
-    }
-    CONTRACTL_END;
-
-    Thread* pThread = GetThread();
-    _ASSERTE(pThread);
-
-    _ASSERTE(pThread->GetDomain() != NULL);
-    _ASSERTE(pThread->GetDomain()->GetId()!= pObjDomain);
-
-    BSTR bstr = NULL;
-    ConvertObjectToBSTR_Args args;
-    args.fCrossRuntime = FALSE;
-    args.pBStr = &bstr;
-
-    OBJECTREF oref = pWrap->GetObjectRef();
-
-    GCPROTECT_BEGIN(oref);
-    {
-        args.oref = &oref;
-        pThread->DoADCallBack(pObjDomain, ConvertObjectToBSTR_Wrapper, &args);
-    }
-    GCPROTECT_END();
-
-    if (args.fResult)
-    {
-        _ASSERTE(bstr != NULL);
-        *pResult = ConvertBSTRToObject(bstr, FALSE);
-    }
-    else
-    {
-        *pResult = NULL;
-    }
-
-    return args.fResult;
-}
-#endif //FEATURE_REMOTING

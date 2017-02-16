@@ -56,13 +56,6 @@ extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #endif                               
                                            );
 
-#ifdef FEATURE_REMOTING
-// This is used by TransparentProxyWorkerStub to take a stub address (token), and
-// MethodTable and return the target. It will look in the cache first, and if not found
-// will call the resolver and then put the result into the cache.
-extern "C" PCODE STDCALL VSD_GetTargetForTPWorkerQuick(TransparentProxyObject * orTP, size_t token);
-extern "C" PCODE STDCALL VSD_GetTargetForTPWorker(TransitionBlock * pTransitionBlock, size_t token);
-#endif
 
 /////////////////////////////////////////////////////////////////////////////////////
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)

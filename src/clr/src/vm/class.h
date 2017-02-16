@@ -1039,21 +1039,6 @@ public:
         return m_pMethodTable;
     }
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_REMOTING
-    inline void SetMethodTableForTransparentProxy(MethodTable*  pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Transparent proxy class' true method table
-        // is replaced by a global thunk table
-
-        _ASSERTE(pMT->IsTransparentProxy() &&
-                m_pMethodTable->IsTransparentProxy());
-
-        IBCLOG(LogEEClassCOWTableAccess(GetMethodTable()));
-
-        m_pMethodTable = pMT;
-    }
-#endif
 
     inline void SetMethodTable(MethodTable*  pMT)
     {
@@ -1634,23 +1619,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_HAS_FIELDS_WHICH_MUST_BE_INITED;
     }
-#ifdef FEATURE_REMOTING
-    DWORD CannotBeBlittedByObjectCloner()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_CANNOT_BE_BLITTED_BY_OBJECT_CLONER);
-    }
-    void SetCannotBeBlittedByObjectCloner()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_CANNOT_BE_BLITTED_BY_OBJECT_CLONER;
-    }
-#else
     void SetCannotBeBlittedByObjectCloner()
     {
         /* no op */
     }
-#endif
     DWORD HasNonPublicFields()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2112,9 +2084,6 @@ public:
         VMFLAG_FIXED_ADDRESS_VT_STATICS        = 0x00000020, // Value type Statics in this class will be pinned
         VMFLAG_HASLAYOUT                       = 0x00000040,
         VMFLAG_ISNESTED                        = 0x00000080,
-#ifdef FEATURE_REMOTING
-        VMFLAG_CANNOT_BE_BLITTED_BY_OBJECT_CLONER = 0x00000100,  // This class has GC type fields, or implements ISerializable or has non-Serializable fields
-#endif
 
         VMFLAG_IS_EQUIVALENT_TYPE              = 0x00000200,
 

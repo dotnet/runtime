@@ -284,9 +284,6 @@ DEFINE_METASIG(GM(RefT_T, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0)) M(0), v))
 DEFINE_METASIG_T(SM(SafeHandle_RefBool_RetIntPtr, C(SAFE_HANDLE) r(F), I ))
 DEFINE_METASIG_T(SM(SafeHandle_RetVoid, C(SAFE_HANDLE), v ))
 
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(RetContext, _, C(CONTEXT)))
-#endif
 DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
@@ -301,9 +298,6 @@ DEFINE_METASIG(SM(Int_IntPtr_RetObj, i I, j))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetVoid, I I i, v))
 DEFINE_METASIG_T(SM(Exception_RetInt, C(EXCEPTION), i))
 
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(ContextBoundObject_RetObj, C(CONTEXT_BOUND_OBJECT), j))
-#endif
 
 DEFINE_METASIG(SM(IntPtr_RetVoid, I, v))
 DEFINE_METASIG(SM(IntPtr_Bool_RetVoid, I F, v))
@@ -320,9 +314,6 @@ DEFINE_METASIG(SM(Obj_RetIntPtr, j, I))
 DEFINE_METASIG(SM(Obj_RetObj, j, j))
 DEFINE_METASIG(SM(Obj_RetArrByte, j, a(b)))
 DEFINE_METASIG(SM(Obj_Bool_RetArrByte, j F, a(b)))
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(Obj_RefMessageData_RetVoid, j r(g(MESSAGE_DATA)), v))
-#endif
 DEFINE_METASIG(SM(Obj_Obj_RefArrByte_RetArrByte, j j r(a(b)), a(b)))
 
 #ifdef FEATURE_COMINTEROP
@@ -335,14 +326,7 @@ DEFINE_METASIG_T(SM(RefDateTimeOffset_RefDateTimeNative_RetVoid, r(g(DATE_TIME_O
 
 #endif
 
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(RealProxy_Class_RetBool, C(REAL_PROXY) C(CLASS), F))
-#endif
 
-#if defined(FEATURE_IMPERSONATION)
-DEFINE_METASIG_T(SM(SecurityContext_ContextCallback_Object_RetVoid, \
-                 C(SECURITYCONTEXT) C(CONTEXTCALLBACK) j, v))
-#endif // #if defined(FEATURE_IMPERSONATION) 
 DEFINE_METASIG(SM(Str_RetInt, s, i))
 DEFINE_METASIG_T(SM(Str_RetICustomMarshaler, s, C(ICUSTOM_MARSHALER)))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))
@@ -351,9 +335,6 @@ DEFINE_METASIG(SM(Str_IntPtr_RetIntPtr, s I, I))
 DEFINE_METASIG(SM(Str_Bool_Int_RetV, s F i, v))
 
 DEFINE_METASIG_T(SM(Type_RetInt, C(TYPE), i))
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(Class_ArrObject_Bool_RetMarshalByRefObject, C(CLASS) a(j) F, C(MARSHAL_BY_REF_OBJECT)))
-#endif
 DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
@@ -366,9 +347,6 @@ DEFINE_METASIG_T(SM(Void_RetRuntimeTypeHandle, _, g(RT_TYPE_HANDLE)))
 DEFINE_METASIG(SM(Void_RetIntPtr, _, I))
 
 DEFINE_METASIG_T(SM(UInt_UInt_PtrNativeOverlapped_RetVoid, K K P(g(NATIVEOVERLAPPED)), v))
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(SM(CrossContextDelegate_ArrObj_RetObj, C(CROSS_CONTEXT_DELEGATE) a(j), j))
-#endif
 
 DEFINE_METASIG(IM(Long_RetVoid, l, v))
 DEFINE_METASIG(IM(IntPtr_Int_RetVoid, I i, v))
@@ -426,9 +404,6 @@ DEFINE_METASIG(IM(Int_RefIntPtr_RefIntPtr_RefIntPtr_RetVoid, i r(I) r(I) r(I), v
 DEFINE_METASIG(IM(Int_RetStr, i, s))
 DEFINE_METASIG(IM(Int_RetVoid, i, v))
 DEFINE_METASIG(IM(Int_RetBool, i, F))
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(IM(RefMessageData_Int_RetVoid, r(g(MESSAGE_DATA)) i, v))
-#endif // FEATURE_REMOTING
 DEFINE_METASIG(IM(Int_Int_Int_Int_RetVoid, i i i i, v))
 DEFINE_METASIG_T(IM(Obj_EventArgs_RetVoid, j C(EVENT_ARGS), v))
 DEFINE_METASIG_T(IM(Obj_UnhandledExceptionEventArgs_RetVoid, j C(UNHANDLED_EVENTARGS), v))
@@ -457,9 +432,6 @@ DEFINE_METASIG(IM(Obj_Bool_RetVoid, j F, v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Obj_RetStr, j, s))
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_REMOTING
-DEFINE_METASIG_T(IM(Str_BindingFlags_Obj_ArrInt_RefMessageData_RetObj, s g(BINDING_FLAGS) j a(i) r(g(MESSAGE_DATA)), j))
-#endif // FEATURE_REMOTING
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetObj, j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), j))
@@ -554,11 +526,6 @@ DEFINE_METASIG(IM(Str_RetArrStr, s, a(s)))
 #endif //FEATURE_COMINTEROP
 
 // Object Clone 
-#ifdef FEATURE_SERIALIZATION
-DEFINE_METASIG_T(IM(SerInfo_RetVoid, C(SERIALIZATION_INFO), v))
-DEFINE_METASIG_T(IM(SerInfo_StrContext_RetVoid, C(SERIALIZATION_INFO) g(STREAMING_CONTEXT), v))
-DEFINE_METASIG_T(SM(Obj_ArrStr_ArrObj_OutStreamingContext_RetSerializationInfo, j a(s) a(j) r(g(STREAMING_CONTEXT)), C(SERIALIZATION_INFO)))
-#endif // FEATURE_SERIALIZATION
 DEFINE_METASIG(SM(Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj, j r(s) r(s) r(a(s)) r(a(j)), j))
 
 // Execution Context
