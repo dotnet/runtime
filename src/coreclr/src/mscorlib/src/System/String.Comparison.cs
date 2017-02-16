@@ -781,7 +781,7 @@ namespace System
 
         [Pure]
         public bool EndsWith(char value) {
-            int thisLen = this.Length;
+            int thisLen = Length;
             return thisLen != 0 && this[thisLen - 1] == value;
         }
 
