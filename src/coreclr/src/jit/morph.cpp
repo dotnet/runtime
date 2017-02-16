@@ -17096,13 +17096,11 @@ void Compiler::fgPromoteStructs()
 #endif // DEBUG
 
     // The lvaTable might grow as we grab temps. Make a local copy here.
-
     unsigned startLvaCount = lvaCount;
 
     //
     // Loop through the original lvaTable. Looking for struct locals to be promoted.
     //
-
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocals = false;
 
@@ -17112,13 +17110,14 @@ void Compiler::fgPromoteStructs()
         bool       promotedVar = false;
         LclVarDsc* varDsc      = &lvaTable[lclNum];
 
+        // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
+        // its fields.  Instead, we will attempt to enregister the entire struct.
         if (varDsc->lvIsSIMDType() && varDsc->lvIsUsedInSIMDIntrinsic())
         {
-            // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
-            // its fields.  Instead, we will attempt to enregister the entire struct.
             varDsc->lvRegStruct = true;
         }
-        else if (lvaHaveManyLocals()) // Don't promote if we have reached the tracking limit.
+        // Don't promote if we have reached the tracking limit.
+        else if (lvaHaveManyLocals())
         {
             // Print the message first time when we detected this condition
             if (!tooManyLocals)
@@ -17127,159 +17126,56 @@ void Compiler::fgPromoteStructs()
             }
             tooManyLocals = true;
         }
-#if !FEATURE_MULTIREG_STRUCT_PROMOTE
-        else if (varDsc->lvIsMultiRegArg)
-        {
-            JITDUMP("Skipping V%02u: marked lvIsMultiRegArg.\n", lclNum);
-        }
-#endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
-        else if (varDsc->lvIsMultiRegRet)
-        {
-            JITDUMP("Skipping V%02u: marked lvIsMultiRegRet.\n", lclNum);
-        }
         else if (varTypeIsStruct(varDsc))
         {
+            bool shouldPromote;
+
             lvaCanPromoteStructVar(lclNum, &structPromotionInfo);
-            bool canPromote = structPromotionInfo.canPromote;
-
-            // We start off with shouldPromote same as canPromote.
-            // Based on further profitablity checks done below, shouldPromote
-            // could be set to false.
-            bool shouldPromote = canPromote;
-
-            if (canPromote)
+            if (structPromotionInfo.canPromote)
             {
-                // We *can* promote; *should* we promote?
-                // We should only do so if promotion has potential savings.  One source of savings
-                // is if a field of the struct is accessed, since this access will be turned into
-                // an access of the corresponding promoted field variable.  Even if there are no
-                // field accesses, but only block-level operations on the whole struct, if the struct
-                // has only one or two fields, then doing those block operations field-wise is probably faster
-                // than doing a whole-variable block operation (e.g., a hardware "copy loop" on x86).
-                // Struct promotion also provides the following benefits: reduce stack frame size,
-                // reduce the need for zero init of stack frame and fine grained constant/copy prop.
-                // Asm diffs indicate that promoting structs up to 3 fields is a net size win.
-                // So if no fields are accessed independently, and there are four or more fields,
-                // then do not promote.
-                //
-                // TODO: Ideally we would want to consider the impact of whether the struct is
-                // passed as a parameter or assigned the return value of a call. Because once promoted,
-                // struct copying is done by field by field assignment instead of a more efficient
-                // rep.stos or xmm reg based copy.
-                if (structPromotionInfo.fieldCnt > 3 && !varDsc->lvFieldAccessed)
-                {
-                    JITDUMP("Not promoting promotable struct local V%02u: #fields = %d, fieldAccessed = %d.\n", lclNum,
-                            structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
-                    shouldPromote = false;
-                }
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-                // TODO-PERF - Only do this when the LclVar is used in an argument context
-                // TODO-ARM64 - HFA support should also eliminate the need for this.
-                // TODO-LSRA - Currently doesn't support the passing of floating point LCL_VARS in the integer registers
-                //
-                // For now we currently don't promote structs with a single float field
-                // Promoting it can cause us to shuffle it back and forth between the int and
-                //  the float regs when it is used as a argument, which is very expensive for XARCH
-                //
-                else if ((structPromotionInfo.fieldCnt == 1) &&
-                         varTypeIsFloating(structPromotionInfo.fields[0].fldType))
-                {
-                    JITDUMP("Not promoting promotable struct local V%02u: #fields = %d because it is a struct with "
-                            "single float field.\n",
-                            lclNum, structPromotionInfo.fieldCnt);
-                    shouldPromote = false;
-                }
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
-
-#if !FEATURE_MULTIREG_STRUCT_PROMOTE
-#if defined(_TARGET_ARM64_)
-                //
-                // For now we currently don't promote structs that are  passed in registers
-                //
-                else if (lvaIsMultiregStruct(varDsc))
-                {
-                    JITDUMP("Not promoting promotable multireg struct local V%02u (size==%d): ", lclNum,
-                            lvaLclExactSize(lclNum));
-                    shouldPromote = false;
-                }
-#endif // _TARGET_ARM64_
-#endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
-                else if (varDsc->lvIsParam)
-                {
-#if FEATURE_MULTIREG_STRUCT_PROMOTE
-                    if (lvaIsMultiregStruct(
-                            varDsc) && // Is this a variable holding a value that is passed in multiple registers?
-                        (structPromotionInfo.fieldCnt != 2)) // Does it have exactly two fields
-                    {
-                        JITDUMP(
-                            "Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n",
-                            lclNum);
-                        shouldPromote = false;
-                    }
-                    else
-#endif // !FEATURE_MULTIREG_STRUCT_PROMOTE
-
-                        // TODO-PERF - Implement struct promotion for incoming multireg structs
-                        //             Currently it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
-
-                        if (structPromotionInfo.fieldCnt != 1)
-                    {
-                        JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = "
-                                "%d.\n",
-                                lclNum, structPromotionInfo.fieldCnt);
-                        shouldPromote = false;
-                    }
-                }
-
-                //
-                // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
-                // the the incoming register into the stack frame slot.
-                // In that case, we would like to avoid promortion.
-                // However we haven't yet computed the lvRefCnt values so we can't do that.
-                //
-                CLANG_FORMAT_COMMENT_ANCHOR;
+                shouldPromote = lvaShouldPromoteStructVar(lclNum, &structPromotionInfo);
+            }
+            else
+            {
+                shouldPromote = false;
+            }
 
 #if 0
-                // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
-                // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
-                static int structPromoVarNum = 0;
-                structPromoVarNum++;
-                if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
+            // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
+            // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
+            static int structPromoVarNum = 0;
+            structPromoVarNum++;
+            if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
 #endif // 0
 
-                if (shouldPromote)
-                {
-                    assert(canPromote);
-
-                    // Promote the this struct local var.
-                    lvaPromoteStructVar(lclNum, &structPromotionInfo);
-                    promotedVar = true;
+            if (shouldPromote)
+            {
+                // Promote the this struct local var.
+                lvaPromoteStructVar(lclNum, &structPromotionInfo);
+                promotedVar = true;
 
 #ifdef _TARGET_ARM_
-                    if (structPromotionInfo.requiresScratchVar)
+                if (structPromotionInfo.requiresScratchVar)
+                {
+                    // Ensure that the scratch variable is allocated, in case we
+                    // pass a promoted struct as an argument.
+                    if (lvaPromotedStructAssemblyScratchVar == BAD_VAR_NUM)
                     {
-                        // Ensure that the scratch variable is allocated, in case we
-                        // pass a promoted struct as an argument.
-                        if (lvaPromotedStructAssemblyScratchVar == BAD_VAR_NUM)
-                        {
-                            lvaPromotedStructAssemblyScratchVar =
-                                lvaGrabTempWithImplicitUse(false DEBUGARG("promoted struct assembly scratch var."));
-                            lvaTable[lvaPromotedStructAssemblyScratchVar].lvType = TYP_I_IMPL;
-                        }
+                        lvaPromotedStructAssemblyScratchVar =
+                            lvaGrabTempWithImplicitUse(false DEBUGARG("promoted struct assembly scratch var."));
+                        lvaTable[lvaPromotedStructAssemblyScratchVar].lvType = TYP_I_IMPL;
                     }
-#endif // _TARGET_ARM_
                 }
+#endif // _TARGET_ARM_
             }
         }
 
-#ifdef FEATURE_SIMD
-        if (!promotedVar && varDsc->lvSIMDType && !varDsc->lvFieldAccessed)
+        if (!promotedVar && varDsc->lvIsSIMDType() && !varDsc->lvFieldAccessed)
         {
             // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
             // we will treat it as a reg struct.
             varDsc->lvRegStruct = true;
         }
-#endif // FEATURE_SIMD
     }
 
 #ifdef DEBUG
