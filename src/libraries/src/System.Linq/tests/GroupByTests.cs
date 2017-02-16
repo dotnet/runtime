@@ -867,10 +867,10 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
-        public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string expected, TKey dummy1, TElement dummy2)
+        public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString, TKey dummy1, TElement dummy2)
         {
             // The dummy parameters can be removed once https://github.com/dotnet/buildtools/pull/1300 is brought in.
-            Assert.Equal(expected, DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
+            Assert.Equal($"Key = {keyString}", DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));
             
             object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
             
