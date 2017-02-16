@@ -3246,12 +3246,6 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadOrContextStaticAddress(VMPTR_FieldDe
     {
         fieldAddress = pRuntimeThread->GetStaticFieldAddrNoCreate(pFieldDesc, NULL);
     }
-#ifdef FEATURE_REMOTING
-    else if (pFieldDesc->IsContextStatic())
-    {
-        fieldAddress = PTR_TO_TADDR(pRuntimeThread->GetContext()->GetStaticFieldAddrNoCreate(pFieldDesc));
-    }
-#endif
     else
     {
         // In case we have more special cases added later, this will allow us to notice the need to
@@ -4533,29 +4527,6 @@ void DacDbiInterfaceImpl::MarkDebuggerAttached(BOOL fAttached)
 
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// Enumerate all the Connections in the process.
-void DacDbiInterfaceImpl::EnumerateConnections(FP_CONNECTION_CALLBACK fpCallback, void * pUserData)
-{
-    DD_ENTER_MAY_THROW;
-
-    ConnectionNameHashEntry * pConnection;
-    
-    HASHFIND hashfind;
-
-    pConnection = CCLRDebugManager::FindFirst(&hashfind);
-    while (pConnection)
-    {    
-        DWORD id = pConnection->m_dwConnectionId;
-        LPCWSTR pName = pConnection->m_pwzName;
-        
-        fpCallback(id, pName, pUserData);
-
-        // now get the next connection record
-        pConnection = CCLRDebugManager::FindNext(&hashfind);
-    }
-}
-#endif
 
 
 // Enumerate all threads in the process. 

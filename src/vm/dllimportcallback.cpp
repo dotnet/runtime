@@ -378,53 +378,6 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // would deadlock).
     pcpusl->EmitLabel(pDoADCallBackStartLabel);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (NDirect::IsHostHookEnabled())
-    {
-        // We call ReverseEnterRuntimeHelper before we link a frame.
-        // So we know that when exception unwinds through our ReverseEnterRuntimeFrame,
-        // we need call ReverseLeaveRuntime.
-
-        // save registers
-        pcpusl->X86EmitPushReg(kEAXentryThunk);
-        pcpusl->X86EmitPushReg(kECXthread);
-
-        // ecx still has Thread
-        // ReverseEnterRuntimeHelper is a fast call
-        pcpusl->X86EmitCall(pcpusl->NewExternalCodeLabel((LPVOID)ReverseEnterRuntimeHelper), 0);
-
-        // restore registers
-        pcpusl->X86EmitPopReg(kECXthread);
-        pcpusl->X86EmitPopReg(kEAXentryThunk);
-
-        // push reg; leave room for m_next
-        pcpusl->X86EmitPushReg(kDummyPushReg);
-
-        // push IMM32 ; push Frame vptr
-        pcpusl->X86EmitPushImm32((UINT32)(size_t)ReverseEnterRuntimeFrame::GetMethodFrameVPtr());
-
-        // mov edx, esp  ;; set EDX -> new frame
-        pcpusl->X86EmitMovRegSP(kEDX);
-
-        // push IMM32  ; push gsCookie
-        pcpusl->X86EmitPushImmPtr((LPVOID)GetProcessGSCookie());
-
-        // save UMEntryThunk
-        pcpusl->X86EmitPushReg(kEAXentryThunk);
-
-        // mov eax,[ecx + Thread.GetFrame()]  ;; get previous frame
-        pcpusl->X86EmitIndexRegLoad(kEAXentryThunk, kECXthread, Thread::GetOffsetOfCurrentFrame());
-
-        // mov [edx + Frame.m_next], eax
-        pcpusl->X86EmitIndexRegStore(kEDX, Frame::GetOffsetOfNextLink(), kEAX);
-
-        // mov [ecx + Thread.GetFrame()], edx
-        pcpusl->X86EmitIndexRegStore(kECXthread, Thread::GetOffsetOfCurrentFrame(), kEDX);
-
-        // restore EAX
-        pcpusl->X86EmitPopReg(kEAXentryThunk);
-    }
-#endif
 
 #ifdef MDA_SUPPORTED
     if ((pInfo->m_wFlags & umtmlSkipStub) && !(pInfo->m_wFlags & umtmlIsStatic) && 
@@ -624,39 +577,6 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // restore the thread pointer
     pcpusl->X86EmitPopReg(kECXthread);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (NDirect::IsHostHookEnabled())
-    {
-#ifdef _DEBUG
-        // lea edx, [esp + sizeof(GSCookie)] ; edx <- current Frame
-        pcpusl->X86EmitEspOffset(0x8d, kEDX, sizeof(GSCookie));
-        pcpusl->EmitCheckGSCookie(kEDX, ReverseEnterRuntimeFrame::GetOffsetOfGSCookie());
-#endif
-
-        // Remove our frame
-        // Get the previous frame into EDX
-        // mov edx, [esp + GSCookie + Frame.m_next]
-        static const BYTE initArg1[] = { 0x8b, 0x54, 0x24, 0x08 }; // mov edx, [esp+8]
-        _ASSERTE(ReverseEnterRuntimeFrame::GetNegSpaceSize() + Frame::GetOffsetOfNextLink() == 0x8);
-        pcpusl->EmitBytes(initArg1, sizeof(initArg1));
-
-        // mov [ecx + Thread.GetFrame()], edx
-        pcpusl->X86EmitIndexRegStore(kECXthread, Thread::GetOffsetOfCurrentFrame(), kEDX);
-
-        // pop off stack
-        // add esp, 8
-        pcpusl->X86EmitAddEsp(sizeof(GSCookie) + sizeof(ReverseEnterRuntimeFrame));
-
-        // Save pThread
-        pcpusl->X86EmitPushReg(kECXthread);
-
-        // ReverseEnterRuntimeHelper is a fast call
-        pcpusl->X86EmitCall(pcpusl->NewExternalCodeLabel((LPVOID)ReverseLeaveRuntimeHelper), 0);
-
-        // Restore pThread
-        pcpusl->X86EmitPopReg(kECXthread);
-    }
-#endif
 
     // Check whether we got here via the switch AD case. We can tell this by looking at whether the
     // caller's arguments immediately precede our EBP frame (they will for the non-switch case but

@@ -18,13 +18,7 @@
 #include "field.h"
 #include "object.h"
 #include "comsynchronizable.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "eeconfig.h"
-#ifdef FEATURE_REMOTING
-#include "objectclone.h"
-#endif
 #include "mdaassistants.h"
 
 
@@ -212,11 +206,6 @@ NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refType);
 
-#ifdef FEATURE_REMOTING
-    if (objRef->IsTransparentProxy())
-        refType = CRemotingServices::GetClass(objRef);
-    else 
-#endif
         refType = typeHandle.GetManagedClassObject();
 
     HELPER_METHOD_FRAME_END();

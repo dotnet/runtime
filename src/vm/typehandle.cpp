@@ -491,11 +491,7 @@ BOOL TypeHandle::IsAbstract() const
 DWORD TypeHandle::IsTransparentProxy() const
 {
     WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_REMOTING
-    return !IsTypeDesc() && AsMethodTable()->IsTransparentProxy();
-#else
     return FALSE;
-#endif
 }
 
 #ifdef FEATURE_HFA

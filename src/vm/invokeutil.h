@@ -55,9 +55,6 @@ public:
         : m_fCheckedCaller(false),
           m_fCheckedPerm(false),
           m_fCallerHasPerm(false),
-#ifdef FEATURE_REMOTING
-          m_fSkippingRemoting(false),
-#endif
           m_pCaller(NULL),
           m_pCallerDomain(NULL),
           m_accessCheckType(accessCheckType)
@@ -91,9 +88,6 @@ private:
     bool            m_fCheckedPerm;
     bool            m_fCallerHasPerm;
 	
-#ifdef FEATURE_REMOTING
-    bool            m_fSkippingRemoting;
-#endif
     
     // @review GENERICS: 
     // These method descriptors may be shared between compatible instantiations
@@ -271,10 +265,6 @@ public:
         if (pTargetMT == NULL)
             return FALSE;
 
-#ifdef FEATURE_REMOTING
-        if (pTargetMT->IsTransparentProxy())
-            return TRUE;
-#endif
         return FALSE;
     }
 

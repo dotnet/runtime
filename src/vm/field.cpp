@@ -15,9 +15,6 @@
 
 #include "encee.h"
 #include "field.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "generics.h"
 
 #include "peimagelayout.inl"
@@ -60,9 +57,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     m_isStatic = fIsStatic != 0;
     m_isRVA = fIsRVA != 0;
     m_isThreadLocal = fIsThreadLocal != 0;
-#ifdef FEATURE_REMOTING    
-    m_isContextLocal = fIsContextLocal != 0;
-#endif
 
 #ifdef _DEBUG
     m_debugName = (LPUTF8)pszFieldName;
@@ -354,54 +348,6 @@ void    FieldDesc::GetInstanceField(OBJECTREF o, VOID * pOutVal)
   
     // Check whether we are getting a field value on a proxy. If so, then ask
     // remoting services to extract the value from the instance.
-#ifdef FEATURE_REMOTING
-    if (o->IsTransparentProxy())
-    {
-#ifndef DACCESS_COMPILE
-        o = CRemotingServices::GetObjectFromProxy(o);
-
-        if (o->IsTransparentProxy())
-        {
-#ifdef PROFILING_SUPPORTED
-
-            GCPROTECT_BEGIN(o); // protect from RemotingClientInvocationStarted
-
-            // If profiling is active, notify it that remoting stuff is kicking in,
-            // if AlwaysUnwrap returned an identical object pointer which means that
-            // we are definitely going through remoting for this access.
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackRemoting());
-                {
-                    GCX_PREEMP();
-                    g_profControlBlock.pProfInterface->RemotingClientInvocationStarted();
-                }
-                END_PIN_PROFILER();
-            }
-#endif // PROFILING_SUPPORTED
-
-            CRemotingServices::FieldAccessor(this, o, pOutVal, TRUE);
-
-#ifdef PROFILING_SUPPORTED
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackRemoting());
-                {
-                    GCX_PREEMP();
-                    g_profControlBlock.pProfInterface->RemotingClientInvocationFinished();
-                }
-                END_PIN_PROFILER();
-            }
-
-            GCPROTECT_END();           // protect from RemotingClientInvocationStarted
-            
-#endif // PROFILING_SUPPORTED
-
-            return;
-        }
-#else
-        DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
-    }
-#endif //  FEATURE_REMOTING
 
     // Unbox the value class
     TADDR pFieldAddress = (TADDR)GetInstanceAddress(o);
@@ -449,50 +395,6 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     // class. If so, then ask remoting services to set the value on the 
     // instance
 
-#ifdef FEATURE_REMOTING
-    if(o->IsTransparentProxy())
-    {
-        o = CRemotingServices::GetObjectFromProxy(o);
-
-        if (o->IsTransparentProxy())
-        {
-#ifdef PROFILING_SUPPORTED
-
-            GCPROTECT_BEGIN(o);
-
-            // If profiling is active, notify it that remoting stuff is kicking in,
-            // if AlwaysUnwrap returned an identical object pointer which means that
-            // we are definitely going through remoting for this access.
-
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackRemoting());
-                {
-                    GCX_PREEMP();
-                    g_profControlBlock.pProfInterface->RemotingClientInvocationStarted();
-                }
-                END_PIN_PROFILER();
-            }
-#endif // PROFILING_SUPPORTED
-
-            CRemotingServices::FieldAccessor(this, o, (void *)pInVal, FALSE);
-
-#ifdef PROFILING_SUPPORTED
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackRemoting());
-                {
-                    GCX_PREEMP();
-                    g_profControlBlock.pProfInterface->RemotingClientInvocationFinished();
-                }
-                END_PIN_PROFILER();
-            }
-            GCPROTECT_END();
-
-#endif // PROFILING_SUPPORTED
-
-            return;
-        }
-    }
-#endif //  FEATURE_REMOTING
 
 #ifdef _DEBUG
     //

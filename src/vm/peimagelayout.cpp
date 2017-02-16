@@ -409,34 +409,6 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     }
 #endif // _DEBUG
 
-#ifdef FEATURE_MIXEDMODE
-    //
-    // For our preliminary loads, we don't want to take the preferred base address. We want to leave
-    // that open for a LoadLibrary.  So, we first a phony MapViewOfFile to occupy the base
-    // address temporarily. 
-    //
-    // Note that this is bad if we are racing another thread which is doing a LoadLibrary.  We
-    // may want to tweak this logic, but it's pretty difficult to tell MapViewOfFileEx to map
-    // a file NOT at its preferred base address.  Hopefully the ulimate solution here will be
-    // just mapping the file once.
-    //
-    // There are two distinct cases that this code takes care of:
-    //
-    // * NGened IL-only assembly: The IL image will get mapped here and LoadLibrary will be called
-    //   on the NGen image later. If we need to, we can avoid creating the fake view on VISTA in this 
-    //   case. ASLR will map the IL image and NGen image at different addresses for free.
-    //
-    // * Mixed-mode assembly (either NGened or not): The mixed-mode image will get mapped here and
-    //   LoadLibrary will be called on the same image again later. Note that ASLR does not help 
-    //   in this case. The fake view has to be created even on VISTA in this case to avoid relocations.
-    //    
-    CLRMapViewHolder temp;
-
-    // We don't want to map at the prefered address, so have the temporary view take it. 
-    temp.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
-    if (temp == NULL)
-        ThrowLastError();
-#endif // FEATURE_MIXEDMODE
     m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
     if (m_FileView == NULL)
         ThrowLastError();

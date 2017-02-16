@@ -297,9 +297,6 @@ protected:
 
     union {
         CRITICAL_SECTION    m_criticalsection;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        IHostCrst          *m_pHostCrst;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     };
 
     typedef enum

@@ -143,15 +143,10 @@ DEFINE_EXCEPTION(g_SystemNS,       BadImageFormatException,        true,
 
 DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  COR_E_CODECONTRACTFAILED)
 
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_SystemNS,           ContextMarshalException,        false,  COR_E_CONTEXTMARSHAL)
-#endif
 
 DEFINE_EXCEPTION(g_ReflectionNS,       CustomAttributeFormatException, false,  COR_E_CUSTOMATTRIBUTEFORMAT)
 
-#if defined(FEATURE_X509)
 DEFINE_EXCEPTION(g_CryptographyNS,     CryptographicException,         false,  CORSEC_E_CRYPTO)
-#endif // FEATURE_X509
 
 DEFINE_EXCEPTION(g_SystemNS,           DataMisalignedException,        false,  COR_E_DATAMISALIGNED)
 
@@ -256,14 +251,8 @@ DEFINE_EXCEPTION(g_SystemNS,           PlatformNotSupportedException,  false,  C
 
 DEFINE_EXCEPTION(g_SystemNS,           RankException,                  false,  COR_E_RANK)
 DEFINE_EXCEPTION(g_ReflectionNS,       ReflectionTypeLoadException,    false,  COR_E_REFLECTIONTYPELOAD)
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_RemotingNS,         RemotingException,              false,  COR_E_REMOTING)
-#endif // FEATURE_REMOTING
 DEFINE_EXCEPTION(g_CompilerServicesNS, RuntimeWrappedException,        false,  COR_E_RUNTIMEWRAPPED)
 
-#ifdef FEATURE_REMOTING
-DEFINE_EXCEPTION(g_RemotingNS,         ServerException,                false,  COR_E_SERVER)
-#endif // FEATURE_REMOTING
 
 DEFINE_EXCEPTION(g_SecurityNS,         SecurityException,              true,
                  COR_E_SECURITY, CORSEC_E_INVALID_STRONGNAME,
@@ -314,15 +303,6 @@ DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E
 
 DEFINE_EXCEPTION(g_SystemNS,           CrossAppDomainMarshaledException, false, E_FAIL)
 
-#ifdef FEATURE_ISOSTORE
-DEFINE_EXCEPTION(g_IsolatedStorageNS,  IsolatedStorageException,       true,
-                 ISS_E_ISOSTORE, ISS_E_ISOSTORE, ISS_E_OPEN_STORE_FILE, 
-                 ISS_E_OPEN_FILE_MAPPING, ISS_E_MAP_VIEW_OF_FILE, ISS_E_GET_FILE_SIZE, ISS_E_CREATE_MUTEX, ISS_E_LOCK_FAILED,
-                 ISS_E_FILE_WRITE, ISS_E_SET_FILE_POINTER, ISS_E_CREATE_DIR,
-                 ISS_E_CORRUPTED_STORE_FILE, ISS_E_STORE_VERSION, ISS_E_FILE_NOT_MAPPED, ISS_E_BLOCK_SIZE_TOO_SMALL, 
-                 ISS_E_ALLOC_TOO_LARGE, ISS_E_USAGE_WILL_EXCEED_QUOTA, ISS_E_TABLE_ROW_NOT_FOUND, ISS_E_DEPRECATE, ISS_E_CALLER,
-                 ISS_E_PATH_LENGTH, ISS_E_MACHINE, ISS_E_STORE_NOT_OPEN, ISS_E_MACHINE_DACL)
-#endif // FEATURE_ISOSTORE
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E_POINTER)
 
