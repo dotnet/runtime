@@ -5,6 +5,10 @@ It may be valuable to use CoreFX tests to validate your changes to CoreCLR or ms
 
 **NOTE:** The `BUILDTOOLS_OVERRIDE_RUNTIME` property no longer works.
 
+To run CoreFX tests with an updated System.Private.Corelib.dll, [use these instructions](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).
+
+To build CoreFX against the updated System.Private.Corelib.dll - we need to update instructions.
+
 **Replace runtime between build.[cmd|sh] and build-tests.[cmd|sh]**
 
 Use the following instructions to test a change to the dotnet/coreclr repo using dotnet/corefx tests.  Refer to the [CoreFx Developer Guide](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md) for information about CoreFx build scripts.
