@@ -21,6 +21,8 @@ typedef enum {
 	MONO_HASH_KEY_VALUE_GC = MONO_HASH_KEY_GC | MONO_HASH_VALUE_GC,
 } MonoGHashGCType;
 
+extern int mono_g_hash_table_max_chain_length;
+
 typedef struct _MonoGHashTable MonoGHashTable;
 
 MONO_API MonoGHashTable *mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, const char *msg);

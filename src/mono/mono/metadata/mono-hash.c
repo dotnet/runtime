@@ -34,6 +34,8 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-coop.h>
 
+int mono_g_hash_table_max_chain_length;
+
 #ifdef HAVE_BOEHM_GC
 #define mg_new0(type,n)  ((type *) GC_MALLOC(sizeof(type) * (n)))
 #define mg_new(type,n)   ((type *) GC_MALLOC(sizeof(type) * (n)))
@@ -114,7 +116,8 @@ static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot
 /* Returns position of key or of an empty slot for it */
 static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
 {
-	guint i = ((*hash->hash_func) (key)) % hash->table_size;
+	guint start = ((*hash->hash_func) (key)) % hash->table_size;
+	guint i = start;
 
 	if (hash->key_equal_func) {
 		GEqualFunc equal = hash->key_equal_func;
@@ -131,6 +134,11 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 				i = 0;
 		}
 	}
+
+	if (i > start && (i - start) > mono_g_hash_table_max_chain_length)
+		mono_g_hash_table_max_chain_length = i - start;
+	else if (i < start && (hash->table_size - (start - i)) > mono_g_hash_table_max_chain_length)
+		mono_g_hash_table_max_chain_length = hash->table_size - (start - i);
 	return i;
 }
 
