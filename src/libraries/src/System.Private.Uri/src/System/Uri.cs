@@ -3756,7 +3756,7 @@ namespace System
             if (nChars == 2)
             {
                 // This is the only known scheme of length 2
-                if ((((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
+                if ((unchecked((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
                 {
                     syntax = UriParser.WsUri;
                     return true;
