@@ -36,12 +36,12 @@ namespace System.Linq
             /// <summary>
             /// The first source to concatenate.
             /// </summary>
-            private readonly IEnumerable<TSource> _first;
+            internal readonly IEnumerable<TSource> _first;
 
             /// <summary>
             /// The second source to concatenate.
             /// </summary>
-            private readonly IEnumerable<TSource> _second;
+            internal readonly IEnumerable<TSource> _second;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Concat2Iterator{TSource}"/> class.
@@ -61,11 +61,10 @@ namespace System.Linq
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                // Instead of linking directly to this Concat2Iterator, we create 2 new ConcatNIterators
-                // for the first two sources and create a third one to hold the next source.
-                // This simplifies `GetEnumerable` because the nodes are of uniform type and we don't
-                // have to do any typecasting. The cost of two additional allocations is constant.
-                return ConcatNIterator<TSource>.Empty.Concat(_first).Concat(_second).Concat(next);
+                bool hasOnlyCollections = _first is ICollection<TSource> &&
+                                          _second is ICollection<TSource> &&
+                                          next is ICollection<TSource>;
+                return new ConcatNIterator<TSource>(this, next, 2, hasOnlyCollections);
             }
 
             public override int GetCount(bool onlyIfCheap)
@@ -149,7 +148,7 @@ namespace System.Linq
             /// <summary>
             /// The linked list of previous sources.
             /// </summary>
-            private readonly ConcatNIterator<TSource> _tail;
+            private readonly ConcatIterator<TSource> _tail;
             
             /// <summary>
             /// The source associated with this iterator.
@@ -172,20 +171,6 @@ namespace System.Linq
             private readonly bool _hasOnlyCollections;
 
             /// <summary>
-            /// Gets the empty <see cref="ConcatNIterator{TSource}"/> from which all other such iterators are created.
-            /// </summary>
-            internal static ConcatNIterator<TSource> Empty { get; } = new ConcatNIterator<TSource>();
-            
-            /// <summary>
-            /// Creates the empty iterator.
-            /// </summary>
-            private ConcatNIterator()
-            {
-                _headIndex = -1;
-                _hasOnlyCollections = true;
-            }
-
-            /// <summary>
             /// Initializes a new instance of the <see cref="ConcatNIterator{TSource}"/> class.
             /// </summary>
             /// <param name="tail">The linked list of previous sources.</param>
@@ -195,12 +180,11 @@ namespace System.Linq
             /// <c>true</c> if all sources this iterator concatenates implement <see cref="ICollection{TSource}"/>;
             /// otherwise, <c>false</c>.
             /// </param>
-            private ConcatNIterator(ConcatNIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
+            internal ConcatNIterator(ConcatIterator<TSource> tail, IEnumerable<TSource> head, int headIndex, bool hasOnlyCollections)
             {
                 Debug.Assert(tail != null);
                 Debug.Assert(head != null);
-                Debug.Assert(headIndex == tail._headIndex + 1);
-                Debug.Assert(hasOnlyCollections == (tail._hasOnlyCollections && head is ICollection<TSource>));
+                Debug.Assert(headIndex >= 2);
 
                 _tail = tail;
                 _head = head;
@@ -208,21 +192,7 @@ namespace System.Linq
                 _hasOnlyCollections = hasOnlyCollections;
             }
 
-            /// <summary>
-            /// Gets whether this iterator contains no sources.
-            /// </summary>
-            /// <remarks>
-            /// Only one empty iterator should ever exist, so this property is equivalent to a
-            /// reference-equality comparison against <see cref="Empty"/>.
-            /// </remarks>
-            private bool IsEmpty
-            {
-                get
-                {
-                    Debug.Assert(_tail != null || this == Empty);
-                    return _tail == null;
-                }
-            }
+            private ConcatNIterator<TSource> PreviousN => _tail as ConcatNIterator<TSource>;
             
             public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
@@ -248,8 +218,11 @@ namespace System.Linq
                 }
 
                 int count = 0;
-                for (ConcatNIterator<TSource> node = this; !node.IsEmpty; node = node._tail)
+                ConcatNIterator<TSource> node, previousN = this;
+
+                do
                 {
+                    node = previousN;
                     IEnumerable<TSource> source = node._head;
 
                     // Enumerable.Count() handles ICollections in O(1) time, but check for them here anyway
@@ -263,25 +236,35 @@ namespace System.Linq
                         count += sourceCount;
                     }
                 }
+                while ((previousN = node.PreviousN) != null);
 
-                return count;
+                Debug.Assert(node._tail is Concat2Iterator<TSource>);
+                return checked(count + node._tail.GetCount(onlyIfCheap));
             }
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
             {
+                Debug.Assert(index >= 0);
+
                 if (index > _headIndex)
                 {
                     return null;
                 }
 
-                ConcatNIterator<TSource> node = this;
-                for (; index < _headIndex; index++)
+                ConcatNIterator<TSource> node, previousN = this;
+                do
                 {
-                    node = node._tail;
+                    node = previousN;
+                    if (index == node._headIndex)
+                    {
+                        return node._head;
+                    }
                 }
+                while ((previousN = node.PreviousN) != null);
 
-                Debug.Assert(!node.IsEmpty);
-                return node._head;
+                Debug.Assert(index == 0 || index == 1);
+                Debug.Assert(node._tail is Concat2Iterator<TSource>);
+                return node._tail.GetEnumerable(index);
             }
 
             public override TSource[] ToArray() => _hasOnlyCollections ? PreallocatingToArray() : LazyToArray();
@@ -344,8 +327,10 @@ namespace System.Linq
                 var array = new TSource[count];
                 int arrayIndex = array.Length; // We start copying in collection-sized chunks from the end of the array.
 
-                for (ConcatNIterator<TSource> node = this; !node.IsEmpty; node = node._tail)
+                ConcatNIterator<TSource> node, previousN = this;
+                do
                 {
+                    node = previousN;
                     ICollection<TSource> source = (ICollection<TSource>)node._head;
                     int sourceCount = source.Count;
                     if (sourceCount > 0)
@@ -357,8 +342,23 @@ namespace System.Linq
                         source.CopyTo(array, arrayIndex);
                     }
                 }
+                while ((previousN = node.PreviousN) != null);
 
-                Debug.Assert(arrayIndex == 0);
+                var previous2 = (Concat2Iterator<TSource>)node._tail;
+                var second = (ICollection<TSource>)previous2._second;
+                int secondCount = second.Count;
+
+                if (secondCount > 0)
+                {
+                    second.CopyTo(array, checked(arrayIndex - secondCount));
+                }
+
+                if (arrayIndex > secondCount)
+                {
+                    var first = (ICollection<TSource>)previous2._first;
+                    first.CopyTo(array, 0);
+                }
+
                 return array;
             }
         }
