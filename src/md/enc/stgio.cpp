@@ -42,17 +42,10 @@
 #include "pedecoder.inl"
 
 //********** Types. ***********************************************************
-#if !defined(FEATURE_METADATA_STANDALONE_WINRT_RO)
 #define SMALL_ALLOC_MAP_SIZE (64 * 1024) // 64 kb is the minimum size of virtual
                                         // memory you can allocate, so anything
                                         // less is a waste of VM resources.
 
-#else //FEATURE_METADATA_STANDALONE_WINRT_RO
-// RoMetadata.dll is required to call CreateFileMapping on all WinMD files (even small ones) to use 
-// Code Intergrity checks on Win8 - see code:#EnableCodeIntegrity
-#define SMALL_ALLOC_MAP_SIZE 0
-
-#endif //FEATURE_METADATA_STANDALONE_WINRT_RO
 
 #define MIN_WRITE_CACHE_BYTES (16 * 1024) // 16 kb for a write back cache
 
@@ -154,7 +147,6 @@ HRESULT StgIO::Open(                    // Return code.
         m_pData = (void *) pbBuff;
         m_cbData = cbBuff;
 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         // All access to data will be by memory provided.
         if ((fFlags & DBPROP_TMODEF_SHAREDMEM) == DBPROP_TMODEF_SHAREDMEM)
         {
@@ -163,7 +155,6 @@ HRESULT StgIO::Open(                    // Return code.
             m_iType = STGIO_SHAREDMEM;
         }
         else
-#endif //!FEATURE_METADATA_STANDALONE_WINRT_RO
         {
             m_iType = STGIO_MEM;
         }
@@ -359,7 +350,6 @@ void StgIO::Close()
 {
     switch (m_iType)
     {
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         // Free any allocated memory.
         case STGIO_SHAREDMEM:
         if (m_pBaseData != NULL)
@@ -368,7 +358,6 @@ void StgIO::Close()
             m_pBaseData = NULL;
             break;
         }
-#endif //!FEATURE_METADATA_STANDALONE_WINRT_RO
 
         case STGIO_MEM:
         case STGIO_HFILEMEM:
@@ -538,9 +527,7 @@ HRESULT StgIO::Read(                    // Return code.
 
         // Simply copy the data from our data.
         case STGIO_MEM:
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         case STGIO_SHAREDMEM:
-#endif
         case STGIO_HFILEMEM:
         {
             _ASSERTE(m_pData && m_cbData);
@@ -686,9 +673,7 @@ HRESULT StgIO::Seek(                    // New offset.
         break;
 
         case STGIO_MEM:
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         case STGIO_SHAREDMEM:
-#endif
         case STGIO_HFILEMEM:
         case STGIO_HMODULE:
         {
@@ -770,9 +755,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
     if (IsBackingStore() || 
         IsMemoryMapped() || 
         (m_iType == STGIO_MEM) || 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         (m_iType == STGIO_SHAREDMEM) ||
-#endif
         (m_iType == STGIO_HFILEMEM))
     {
         ptr = m_pData;
@@ -854,24 +837,13 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             _ASSERTE(m_hMapping == 0);
 
             DWORD dwProtectionFlags = PAGE_READONLY;
-#ifdef FEATURE_METADATA_STANDALONE_WINRT_RO
-            //#EnableCodeIntegrity
-            // RoMetadata.dll is required to always map (WinMD) files with SEC_IMAGE to enable Code Integrity checkes on Win8
-            // Note: MidlRtMd.dll cannot do the same, because it runs on pre-Win8 OS versions where SEC_IMAGE-mapping will likely 
-            // refuse WinMD files (they are Win8+ only in PE headers)
-            dwProtectionFlags |= SEC_IMAGE;
-#endif
             
             if ((m_hMapping = WszCreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
                 0, 0, nullptr)) == 0)
             {
                 return (MapFileError(GetLastError()));
             }
-#ifdef FEATURE_METADATA_STANDALONE_WINRT_RO
-            m_mtMappedType = MTYPE_IMAGE;
-#else // FEATURE_METADATA_STANDALONE_WINRT_RO
             m_mtMappedType = MTYPE_FLAT;
-#endif // FEATURE_METADATA_STANDALONE_WINRT_RO
             // Check to see if the memory already exists, in which case we have
             // no guarantees it is the right piece of data.
             if (GetLastError() == ERROR_ALREADY_EXISTS)
@@ -958,7 +930,6 @@ ErrExit:
 HRESULT StgIO::ReleaseMappingObject()   // Return code.
 {
     // Check type first.
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
     if (m_iType != STGIO_SHAREDMEM)
     {
         _ASSERTE(FALSE);
@@ -982,7 +953,6 @@ HRESULT StgIO::ReleaseMappingObject()   // Return code.
         VERIFY(CloseHandle(m_hMapping));
         m_hMapping = 0;
     }
-#endif //!FEATURE_METADATA_STANDALONE_WINRT_RO
     return S_OK;
 }
 
@@ -998,7 +968,6 @@ HRESULT StgIO::SetBaseRange(            // Return code.
     void        *pbStart,               // Start of file data.
     ULONG       cbSize)                 // How big is the range.
 {
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
     if (m_iType == STGIO_SHAREDMEM)
     {
         // The base range must be inside of the current range.
@@ -1006,7 +975,6 @@ HRESULT StgIO::SetBaseRange(            // Return code.
         _ASSERTE(((LONG_PTR) pbStart >= (LONG_PTR) m_pBaseData));
         _ASSERTE(((LONG_PTR) pbStart + cbSize <= (LONG_PTR) m_pBaseData + m_cbData));
     }
-#endif //!FEATURE_METADATA_STANDALONE_WINRT_RO
     
     // Save the base range per user request.
     m_pData = pbStart;
@@ -1117,9 +1085,7 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
     // Memory version or memory mapped file work the same way.
     else if (IsMemoryMapped() || 
              (m_iType == STGIO_MEM) || 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
              (m_iType == STGIO_SHAREDMEM) || 
-#endif
              (m_iType == STGIO_HFILEMEM))
     {   
         if (!(cbStart <= m_cbData))
@@ -1245,9 +1211,7 @@ HRESULT StgIO::WriteToDisk(             // Return code.
         // We cannot write to fixed read/only memory or LoadLibrary module.
         case STGIO_HMODULE:
         case STGIO_MEM:
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         case STGIO_SHAREDMEM:
-#endif
         _ASSERTE(0);
         hr = BadError(E_UNEXPECTED);
         break;
@@ -1384,9 +1348,7 @@ int StgIO::IsAlignedPtr(ULONG_PTR Value, int iAlignment)
     void        *ptrStart = NULL;
 
     if ((m_iType == STGIO_STREAM) || 
-#ifndef FEATURE_METADATA_STANDALONE_WINRT_RO
         (m_iType == STGIO_SHAREDMEM) || 
-#endif
         (m_iType == STGIO_MEM))
     {
         return ((Value - (ULONG_PTR) m_pData) % iAlignment == 0);

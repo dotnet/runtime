@@ -48,12 +48,6 @@
 #include <msodw.h>
 #endif // FEATURE_PAL
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-// This is required to register our UEF callback with the UEF chain manager
-#include <mscoruefwrapper.h>
-// The global UEFManager reference for use in the VM
-IUEFManager * g_pUEFManager = NULL;
-#endif // FEATURE_UEF_CHAINMANAGER
 
 // Support for extracting MethodDesc of a delegate.
 #include "comdelegate.h"
@@ -4342,14 +4336,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 result = DoFaultReport(pExceptionInfo, tore);
 
                 //  Set the event to indicate that Watson processing is completed.  Other threads can continue.
-#if defined(FEATURE_UEF_CHAINMANAGER)
-                if (g_pUEFManager)
-                {
-                    g_pUEFManager->GetWastonSxSManagerInstance()->SignalWatsonSxSCompletionEvent();
-                }
-#else
                 UnsafeSetEvent(g_hWatsonCompletionEvent);
-#endif // FEATURE_UEF_CHAINMANAGER
             }
         }
 
@@ -4843,88 +4830,6 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef FEATURE_PAL   
-#ifdef FEATURE_UEF_CHAINMANAGER
-    if (g_pUEFManager == NULL) {
-
-        /*CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;*/
-
-        static HMODULE hMSCorEE;
-
-        if (!hMSCorEE) {
-            hMSCorEE = WszGetModuleHandle(MSCOREE_SHIM_W);
-            if (!hMSCorEE) {
-
-                _ASSERTE(!"InstallUnhandledExceptionFilter failed to get MSCorEE instance!");
-                STRESS_LOG0(LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter failed to get MSCorEE instance!\n");
-
-                // Failure to get instance of mscoree.dll is fatal since that would imply
-                // that we cannot setup our UEF
-                return FALSE;
-            }
-        }
-
-        // Signature of GetCLRUEFManager exported by MSCorEE.dll
-        typedef HRESULT (*pGetCLRUEFManager)(REFIID riid,
-                          IUnknown **ppUnk);
-
-        static pGetCLRUEFManager pFuncGetCLRUEFManager;
-
-        if (!pFuncGetCLRUEFManager) {
-
-            // Try to get function address via ordinal
-            pFuncGetCLRUEFManager = (pGetCLRUEFManager)GetProcAddress(hMSCorEE, MAKEINTRESOURCEA(24));
-            if (!pFuncGetCLRUEFManager) {
-                _ASSERTE(!"InstallUnhandledExceptionFilter failed to get UEFManager!");
-                STRESS_LOG0(LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter failed to find UEFManager!\n");
-                return FALSE;
-            }
-        }
-
-        HRESULT hr = (*pFuncGetCLRUEFManager)((REFIID)IID_IUEFManager, (IUnknown **)&g_pUEFManager);
-        if (FAILED(hr))
-        {
-            _ASSERTE(!"InstallUnhandledExceptionFilter failed to get IUEFManager*!");
-
-            STRESS_LOG0(LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter failed to get IUEFManager*\n");
-
-            // Ensure the reference to chain manager is NULL
-            g_pUEFManager= NULL;
-
-            return FALSE;
-        }
-
-        // Register our UEF callback with the UEF chain manager
-        if (!g_pUEFManager->AddUnhandledExceptionFilter(COMUnhandledExceptionFilter, TRUE))
-        {
-            _ASSERTE(!"InstallUnhandledExceptionFilter failed to register the UEF callback!");
-
-            // Failed to register the UEF callback
-            STRESS_LOG0(LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter failed to register the UEF callback!\n");
-
-            g_pUEFManager->Release();
-
-            // Ensure the reference to chain manager is NULL
-            g_pUEFManager= NULL;
-
-            return FALSE;
-        }
-
-        // Register our exception claiming callback with the UEF chain manager on preWin7
-        if (!RunningOnWin7() && !g_pUEFManager->GetWastonSxSManagerInstance()->RegisterExceptionClaimingCallback(IsExceptionFromManagedCodeCallback))
-        {
-            _ASSERTE(!"RegisterExceptionClaimingCallback failed to register the exception claiming callback!");
-
-            // Failed to register the exception claiming callback
-            STRESS_LOG0(LF_EH, LL_INFO10, "RegisterExceptionClaimingCallback failed to register the exception claiming callback!");
-
-            return FALSE;
-        }
-    }
-#else // !FEATURE_UEF_CHAINMANAGER
     // We will be here only for CoreCLR on WLC since we dont
     // register UEF for SL.
     if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
@@ -4938,7 +4843,6 @@ BOOL InstallUnhandledExceptionFilter() {
         LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
     }
     _ASSERTE(g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED);
-#endif // FEATURE_UEF_CHAINMANAGER
 #endif // !FEATURE_PAL
 
     // All done - successfully!
@@ -4952,19 +4856,6 @@ void UninstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef FEATURE_PAL
-#ifdef FEATURE_UEF_CHAINMANAGER
-    if (g_pUEFManager)
-    {
-        if (!RunningOnWin7())
-        {
-            g_pUEFManager->GetWastonSxSManagerInstance()->UnregisterExceptionClaimingCallback(IsExceptionFromManagedCodeCallback);
-        }
-
-        g_pUEFManager->RemoveUnhandledExceptionFilter(COMUnhandledExceptionFilter);
-        g_pUEFManager->Release();
-        g_pUEFManager = NULL;
-    }
-#else // !FEATURE_UEF_CHAINMANAGER
     // We will be here only for CoreCLR on WLC or on Mac SL.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED) {
 
@@ -4976,7 +4867,6 @@ void UninstallUnhandledExceptionFilter() {
         g_pOriginalUnhandledExceptionFilter = FILTER_NOT_INSTALLED;
         LOG((LF_EH, LL_INFO10, "UninstallUnhandledExceptionFilter unregistered UEF from OS for CoreCLR!\n"));
     }
-#endif // FEATURE_UEF_CHAINMANAGER
 #endif // !FEATURE_PAL
 }
 
@@ -5548,14 +5438,6 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
         pThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
     }
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-    if (g_pUEFManager && (ret == EXCEPTION_CONTINUE_SEARCH))
-    {
-        // Since the "UEF" of this runtime instance didnt handle the exception,
-        // invoke the other registered UEF callbacks as well
-        ret = g_pUEFManager->InvokeUEFCallbacks(pExceptionInfo);
-    }
-#endif // FEATURE_UEF_CHAINMANAGER
 
     END_SO_INTOLERANT_CODE;
     
@@ -7190,6 +7072,11 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
+#else
+#ifdef FEATURE_PAL
+    CHECK_RANGE(JIT_WriteBarrierGroup)
+    CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
+#endif // FEATURE_PAL
 #endif // _TARGET_X86_
 
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
@@ -7215,8 +7102,8 @@ AdjustContextForWriteBarrier(
 #if defined(_TARGET_X86_) && !defined(PLATFORM_UNIX)
     void* f_IP = (void *)GetIP(pContext);
 
-    if (((f_IP >= (void *) JIT_WriteBarrierStart) && (f_IP <= (void *) JIT_WriteBarrierLast)) ||
-        ((f_IP >= (void *) JIT_PatchedWriteBarrierStart) && (f_IP <= (void *) JIT_PatchedWriteBarrierLast)))
+    if (((f_IP >= (void *) JIT_WriteBarrierGroup) && (f_IP <= (void *) JIT_WriteBarrierGroup_End)) ||
+        ((f_IP >= (void *) JIT_PatchedWriteBarrierGroup) && (f_IP <= (void *) JIT_PatchedWriteBarrierGroup_End)))
     {
         // set the exception IP to be the instruction that called the write barrier
         void* callsite = (void *)GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
@@ -13837,13 +13724,6 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
     InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
 
     thCastTo.GetName(strCastToName);
-#ifdef FEATURE_REMOTING
-    if (thCastFrom.IsTransparentProxy())
-    {
-        COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCASTPROXY, strCastToName.GetUnicode());
-    }
-    else
-#endif
     {
         thCastFrom.GetName(strCastFromName);
         // Attempt to catch the A.T != A.T case that causes so much user confusion.

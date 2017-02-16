@@ -87,11 +87,6 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
-ifdef FEATURE_REMOTING
-EXTERN _TransparentProxyStub_CrossContext@0:PROC
-EXTERN _InContextTPQuickDispatchAsmStub@0:PROC
-endif
-
 EXTERN _COMPlusEndCatch@20:PROC
 
 .686P
@@ -439,10 +434,10 @@ ENDM
 ; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
 ; WriteBarrier functions so can determine if got AV in them. 
 ; 
-PUBLIC _JIT_WriteBarrierStart@0
-_JIT_WriteBarrierStart@0 PROC
+PUBLIC _JIT_WriteBarrierGroup@0
+_JIT_WriteBarrierGroup@0 PROC
 ret
-_JIT_WriteBarrierStart@0 ENDP
+_JIT_WriteBarrierGroup@0 ENDP
 
 ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 ; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
@@ -460,16 +455,11 @@ WriteBarrierHelper <EBP>
 
 ByRefWriteBarrierHelper
 
-PUBLIC _JIT_WriteBarrierLast@0
-_JIT_WriteBarrierLast@0 PROC
-ret
-_JIT_WriteBarrierLast@0 ENDP
-
 ; This is the first function outside the "keep together range". Used by BBT scripts.
-PUBLIC _JIT_WriteBarrierEnd@0
-_JIT_WriteBarrierEnd@0 PROC
+PUBLIC _JIT_WriteBarrierGroup_End@0
+_JIT_WriteBarrierGroup_End@0 PROC
 ret
-_JIT_WriteBarrierEnd@0 ENDP
+_JIT_WriteBarrierGroup_End@0 ENDP
 
 ;*********************************************************************/
 ; In cases where we support it we have an optimized GC Poll callback.  Normall (when we're not trying to
@@ -2350,10 +2340,10 @@ endif
 ;**********************************************************************
 ; Write barriers generated at runtime
 
-PUBLIC _JIT_PatchedWriteBarrierStart@0
-_JIT_PatchedWriteBarrierStart@0 PROC
+PUBLIC _JIT_PatchedWriteBarrierGroup@0
+_JIT_PatchedWriteBarrierGroup@0 PROC
 ret
-_JIT_PatchedWriteBarrierStart@0 ENDP
+_JIT_PatchedWriteBarrierGroup@0 ENDP
 
 PatchedWriteBarrierHelper MACRO rg
         ALIGN 8
@@ -2372,54 +2362,10 @@ PatchedWriteBarrierHelper <ESI>
 PatchedWriteBarrierHelper <EDI>
 PatchedWriteBarrierHelper <EBP>
 
-PUBLIC _JIT_PatchedWriteBarrierLast@0
-_JIT_PatchedWriteBarrierLast@0 PROC
+PUBLIC _JIT_PatchedWriteBarrierGroup_End@0
+_JIT_PatchedWriteBarrierGroup_End@0 PROC
 ret
-_JIT_PatchedWriteBarrierLast@0 ENDP
-
-;**********************************************************************
-; PrecodeRemotingThunk is patched at runtime to activate it
-ifdef FEATURE_REMOTING
-        ALIGN 16
-_PrecodeRemotingThunk@0 proc public
-
-        ret                             ; This is going to be patched to "test ecx,ecx"
-        nop
-
-        jz      RemotingDone            ; predicted not taken
-
-        cmp     dword ptr [ecx],11111111h ; This is going to be patched to address of the transparent proxy
-        je      RemotingCheck           ; predicted not taken
-
-RemotingDone:
-        ret
-
-RemotingCheck:
-        push     eax            ; save method desc
-        mov      eax, dword ptr [ecx + TransparentProxyObject___stubData]
-        call     [ecx + TransparentProxyObject___stub]
-        test     eax, eax
-        jnz      RemotingCtxMismatch
-        mov      eax, [esp]
-        mov      ax, [eax + MethodDesc_m_wFlags]
-        and      ax, MethodDesc_mdcClassification
-        cmp      ax, MethodDesc_mcComInterop
-        je       ComPlusCall
-        pop      eax            ; throw away method desc
-        jmp      RemotingDone
-
-RemotingCtxMismatch:
-        pop      eax            ; restore method desc
-        add      esp, 4         ; pop return address into the precode
-        jmp      _TransparentProxyStub_CrossContext@0
-        
-ComPlusCall:
-        pop      eax            ; restore method desc
-        mov      [esp],eax      ; replace return address into the precode with method desc (argument for TP stub)
-        jmp      _InContextTPQuickDispatchAsmStub@0        
-
-_PrecodeRemotingThunk@0 endp
-endif ;  FEATURE_REMOTING
+_JIT_PatchedWriteBarrierGroup_End@0 ENDP
 
 _JIT_PatchedCodeLast@0 proc public
 ret

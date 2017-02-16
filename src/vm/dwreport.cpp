@@ -29,10 +29,6 @@
 
 #include "imagehlp.h"
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-// This is required to register our UEF callback with the UEF chain manager
-#include <mscoruefwrapper.h>
-#endif // FEATURE_UEF_CHAINMANAGER
 
 EFaultRepRetVal DoReportFault(EXCEPTION_POINTERS * pExceptionInfo);
 
@@ -42,9 +38,7 @@ static BOOL g_watsonErrorReportingEnabled = FALSE;
 // Variables to control launching Watson only once, but making all threads wait for that single launch to finish.
 LONG g_watsonAlreadyLaunched = 0; // Used to note that another thread has done Watson.
 
-#if !defined(FEATURE_UEF_CHAINMANAGER)
 HandleHolder g_hWatsonCompletionEvent = NULL; // Used to signal that Watson has finished.
-#endif // FEATURE_UEF_CHAINMANAGER
 
 const WCHAR kErrorReportingPoliciesKey[] = W("SOFTWARE\\Policies\\Microsoft\\PCHealth\\ErrorReporting");
 const WCHAR kErrorReportingKey[] = W("SOFTWARE\\Microsoft\\PCHealth\\ErrorReporting");
@@ -177,14 +171,10 @@ BOOL InitializeWatson(COINITIEE fFlags)
         return TRUE;
     }
 
-#if defined(FEATURE_UEF_CHAINMANAGER)
-    return TRUE;
-#else
     // Create the event that all-but-the-first threads will wait on (the first thread
     // will set the event when Watson is done.)
     g_hWatsonCompletionEvent = WszCreateEvent(NULL, TRUE /*manual reset*/, FALSE /*initial state*/, NULL);
     return (g_hWatsonCompletionEvent != NULL);
-#endif // FEATURE_UEF_CHAINMANAGER
 
 } // BOOL InitializeWatson()
 
@@ -2219,7 +2209,6 @@ FaultReportResult DoFaultReportWorker(      // Was Watson attempted, successful?
         return FaultReportResultQuit;
     }
 
-#if !defined(FEATURE_UEF_CHAINMANAGER)
     // If we've already tried to report a Watson crash once, we don't really
     // want to pester the user about this exception. This can occur in certain
     // pathological programs.
@@ -2235,7 +2224,6 @@ FaultReportResult DoFaultReportWorker(      // Was Watson attempted, successful?
             return FaultReportResultQuit;
         }
     }
-#endif // FEATURE_UEF_CHAINMANAGER
 
     // Assume an unmanaged fault until we determine otherwise.
     BOOL bIsManagedFault = FALSE;
@@ -3109,51 +3097,6 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
         return fri.m_faultReportResult;
     } 
 
-#ifdef FEATURE_UEF_CHAINMANAGER
-    if (g_pUEFManager && !tore.IsUserBreakpoint())
-    {
-        IWatsonSxSManager * pWatsonSxSManager = g_pUEFManager->GetWastonSxSManagerInstance();
-        
-        // Has Watson report been triggered?
-        if (pWatsonSxSManager->HasWatsonBeenTriggered())
-        {
-            LOG((LF_EH, LL_INFO100, "DoFaultReport: Watson has been triggered."));
-            LeaveRuntimeHolderNoThrow holder(reinterpret_cast< size_t >(WaitForSingleObject));
-            pWatsonSxSManager->WaitForWatsonSxSCompletionEvent();
-            return FaultReportResultQuit;
-        }
-        // The unhandled exception is thrown by the current runtime.
-        else if (IsExceptionFromManagedCode(pExceptionInfo->ExceptionRecord))   
-        {
-            // Is the current runtime allowed to report Watson?
-            if (!pWatsonSxSManager->IsCurrentRuntimeAllowedToReportWatson())
-            {
-                LOG((LF_EH, LL_INFO100, "DoFaultReport: Watson is reported by another runtime."));
-                LeaveRuntimeHolderNoThrow holder(reinterpret_cast< size_t >(WaitForSingleObject));
-                pWatsonSxSManager->WaitForWatsonSxSCompletionEvent();
-                return FaultReportResultQuit;
-            }
-        }
-        // The unhandled exception is thrown by another runtime in the process.
-        else if (pWatsonSxSManager->IsExceptionClaimed(pExceptionInfo->ExceptionRecord))
-        {
-            LOG((LF_EH, LL_INFO100, "DoFaultReport: Watson will be reported by another runtime.\n"));
-            return FaultReportResultQuit;
-        }
-        // The unhandled exception is thrown by native code.
-        else
-        {
-            // Is the current runtime allowed to report Watson?
-            if (!pWatsonSxSManager->IsCurrentRuntimeAllowedToReportWatson())
-            {
-                LOG((LF_EH, LL_INFO100, "DoFaultReport: Watson is reported by another runtime."));
-                LeaveRuntimeHolderNoThrow holder(reinterpret_cast< size_t >(WaitForSingleObject));
-                pWatsonSxSManager->WaitForWatsonSxSCompletionEvent();
-                return FaultReportResultQuit;
-            }
-        }
-    }
-#endif // FEATURE_UEF_CHAINMANAGER
 
     // Check if the current thread has the permission to open a process handle of the current process.
     // If not, the current thread may have been impersonated, we have to launch Watson from a new thread as in SO case.

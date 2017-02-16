@@ -49,7 +49,7 @@
 //*****************************************************************************
 HRESULT RegMeta::AddToCache()
 {
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
     HRESULT hr = S_OK;
 
     // The ref count must be > 0 before the module is published, else another
@@ -66,9 +66,9 @@ ErrExit:
         m_bCached = false;
     }
     return hr;
-#else //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#else // FEATURE_METADATA_IN_VM 
     return S_OK;
-#endif //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#endif // FEATURE_METADATA_IN_VM 
 } // RegMeta::AddToCache
 
 
@@ -80,13 +80,13 @@ HRESULT RegMeta::FindCachedReadOnlyEntry(
     DWORD       dwOpenFlags,            // Flags the new file is opened with.
     RegMeta     **ppMeta)               // Put found RegMeta here.
 {
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
     return LOADEDMODULES::FindCachedReadOnlyEntry(szName, dwOpenFlags, ppMeta);
-#else //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#else // FEATURE_METADATA_IN_VM 
     // No cache support in standalone version.
     *ppMeta = NULL;
     return S_FALSE;
-#endif //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#endif // FEATURE_METADATA_IN_VM 
 } // RegMeta::FindCachedReadOnlyEntry
 
 
@@ -379,9 +379,9 @@ ErrExit:
     END_ENTRYPOINT_NOTHROW;
     
     return hr;
-#else //!FEATURE_METADATA_IN_VM
+#else // FEATURE_METADATA_IN_VM
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_IN_VM
+#endif // FEATURE_METADATA_IN_VM
 } // RegMeta::ResolveTypeRef
 
 
@@ -396,11 +396,11 @@ ULONG RegMeta::Release()
     CONTRACT_VIOLATION (SOToleranceViolation);
     BEGIN_CLEANUP_ENTRYPOINT;
 
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
     _ASSERTE(!m_bCached || LOADEDMODULES::IsEntryInList(this));
 #else
     _ASSERTE(!m_bCached);
-#endif //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#endif // FEATURE_METADATA_IN_VM 
     BOOL  bCached = m_bCached;
     ULONG cRef = InterlockedDecrement(&m_cRef);
     // NOTE: 'this' may be unsafe after this point, if the module is cached, and
@@ -415,7 +415,7 @@ ULONG RegMeta::Release()
             //  discovered the module, so this thread can now safely delete it.
             delete this;
         }
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
         else if (LOADEDMODULES::RemoveModuleFromLoadedList(this))
         {   // If the module was cached, RemoveModuleFromLoadedList() will try to
             //  safely un-publish the module, and if it succeeds, no other thread
@@ -423,7 +423,7 @@ ULONG RegMeta::Release()
             m_bCached = false;
             delete this;
         }
-#endif //!FEATURE_METADATA_IN_VM && !FEATURE_METADATA_STANDALONE_WINRT
+#endif // FEATURE_METADATA_IN_VM 
     }
     END_CLEANUP_ENTRYPOINT
     

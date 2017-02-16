@@ -519,7 +519,6 @@ CMiniMdBase::SchemaPopulate(
     {
         // No it's not. Is this an older version that we support?
         
-#ifndef FEATURE_METADATA_STANDALONE_WINRT
         // Is this v1.0?
         if ((m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0) && 
             (m_Schema.m_minor == METAMODEL_MINOR_VER_V1_0))
@@ -535,7 +534,6 @@ CMiniMdBase::SchemaPopulate(
             m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
         }
         else
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
         {   // We don't support this version of the metadata
             Debug_ReportError("Unsupported version of MetaData.");
             return PostError(CLDB_E_FILE_OLDVER, m_Schema.m_major, m_Schema.m_minor);

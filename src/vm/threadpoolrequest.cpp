@@ -25,9 +25,6 @@
 #include "eeconfig.h"
 #include "corhost.h"
 #include "nativeoverlapped.h"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#endif
 #include "appdomain.inl"
 
 BYTE PerAppDomainTPCountList::s_padding[64 - sizeof(LONG)];

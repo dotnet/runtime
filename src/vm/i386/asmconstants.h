@@ -42,16 +42,6 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
-#ifdef FEATURE_REMOTING
-#define TransparentProxyObject___stubData 0x8
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stubData == offsetof(TransparentProxyObject, _stubData))
-
-#define TransparentProxyObject___stub 0x14
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stub == offsetof(TransparentProxyObject, _stub))
-
-#define TransparentProxyObject___pMT 0xc
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___pMT == offsetof(TransparentProxyObject, _pMT))
-#endif // FEATURE_REMOTING
 
 // CONTEXT from rotor_pal.h
 #define CONTEXT_Edi 0x9c
@@ -253,16 +243,6 @@ ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 ASMCONSTANTS_C_ASSERT(AppDomain__m_dwId == offsetof(AppDomain, m_dwId));
 
 // from clr/src/vm/ceeload.cpp
-#ifdef FEATURE_MIXEDMODE
-#define IJWNOADThunk__m_cache 0x1C
-ASMCONSTANTS_C_ASSERT(IJWNOADThunk__m_cache == offsetof(IJWNOADThunk, m_cache))
-
-#define IJWNOADThunk__NextCacheOffset 0x8
-ASMCONSTANTS_C_ASSERT(IJWNOADThunk__NextCacheOffset == sizeof(IJWNOADThunkStubCache))
-
-#define IJWNOADThunk__CodeAddrOffsetFromADID 0x4
-ASMCONSTANTS_C_ASSERT(IJWNOADThunk__CodeAddrOffsetFromADID == offsetof(IJWNOADThunkStubCache, m_CodeAddr))
-#endif //FEATURE_MIXEDMODE
 
 // from clr/src/vm/syncblk.h
 #define SizeOfSyncTableEntry_ASM 8

@@ -21,9 +21,6 @@
 #include "eeconfig.h" // This is here even for retail & free builds...
 #include "../../dlls/mscorrc/resource.h"
 
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 
 #include "context.h"
 #include "vars.hpp"

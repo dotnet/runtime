@@ -24,9 +24,6 @@
 #include "security.h"
 #include "customattribute.h"
 
-#ifdef FEATURE_REMOTING 
-#include "objectclone.h"
-#endif
 
 #ifdef FEATURE_COMINTEROP
 #endif
@@ -1796,16 +1793,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         VerifySelfReferencingStaticValueTypeFields_WithRVA(pByValueClassCache);
     }
     
-#ifdef FEATURE_REMOTING
-    // If the class is serializable we scan it for VTS (Version Tolerant
-    // Serialization) event methods or NotSerialized or OptionalField
-    // fields. Any such info found will be attached to the method as
-    // optional data later.
-    if (IsTdSerializable(GetAttrClass()))
-    {
-        ScanTypeForVtsInfo();
-    }
-#endif // FEATURE_REMOTING
 
     // Now setup the method table
 
@@ -1939,19 +1926,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     //
     // if there are context or thread static set the info in the method table optional members
     //
-#ifdef FEATURE_REMOTING 
-    DWORD contextStaticsSize = bmtCSInfo->dwContextStaticsSize;
-    if (contextStaticsSize != 0)
-    {
-        if (!FitsIn<WORD>(contextStaticsSize))
-        {
-            BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
-        }
-
-        // this is responsible for setting the flag and allocation in the loader heap
-        pMT->SetupContextStatics(GetMemTracker(), (WORD)contextStaticsSize);
-    }
-#endif // !FEATURE_REMOTING
 
     if (!bmtProp->fNoSanityChecks)
     {
@@ -1968,27 +1942,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 
     // Check for the RemotingProxy Attribute
-#ifdef FEATURE_REMOTING 
-    if (IsContextful())
-    {
-        PREFIX_ASSUME(g_pObjectClass != NULL);
-        // Skip mscorlib marshal-by-ref classes since they all
-        // are assumed to have the default proxy attribute
-        if (pModule != g_pObjectClass->GetModule())
-        {
-            CONTRACT_VIOLATION(LoadsTypeViolation); // This api can cause the ProxyAttribute class to be loaded.
-            CheckForRemotingProxyAttrib();
-        }
-    }
-
-    if (IsContextful() || HasRemotingProxyAttribute())
-    {
-        // Contextful and classes that have a remoting proxy attribute
-        // (whether they are MarshalByRef or ContextFul) always take the slow
-        // path of managed activation
-        pMT->SetRequiresManagedActivation();
-    }
-#endif // FEATURE_REMOTING
     // structs with GC poitners MUST be pointer sized aligned because the GC assumes it
     if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % sizeof(void*) != 0))
     {
@@ -2043,11 +1996,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 #endif // _DEBUG
 
-#ifdef FEATURE_REMOTING
-    // Make sure the object cloner won't attempt to blit types that aren't serializable.
-    if (!IsTdSerializable(GetAttrClass()) && !IsEnum())
-        SetCannotBeBlittedByObjectCloner();
-#endif
 
     //If this is a value type, then propagate the UnsafeValueTypeAttribute from
     //its instance members to this type.
@@ -2151,22 +2099,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #pragma warning(pop)
 #endif
 
-#ifdef FEATURE_REMOTING
-BOOL
-IsSerializerRelatedInterface(MethodTable *pItfMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (MscorlibBinder::IsClass(pItfMT, CLASS__ISERIALIZABLE))
-        return TRUE;
-    if (MscorlibBinder::IsClass(pItfMT, CLASS__IOBJECTREFERENCE))
-        return TRUE;
-    if (MscorlibBinder::IsClass(pItfMT, CLASS__IDESERIALIZATIONCB))
-        return TRUE;
-
-    return FALSE;
-}
-#endif
 
 //---------------------------------------------------------------------------------------
 // 
@@ -2190,15 +2122,6 @@ MethodTableBuilder::ResolveInterfaces(
 
     // resolve unresolved interfaces and determine the size of the largest interface (in # slots)
 
-#ifdef FEATURE_REMOTING // code for objectcloner
-    // First look through the interfaces explicitly declared by this class
-    for (DWORD i = 0; i < cBuildingInterfaceList; i++)
-    {
-        MethodTable *pInterface = pBuildingInterfaceList[i].m_pMethodTable;
-        if (IsSerializerRelatedInterface(pInterface))
-            SetCannotBeBlittedByObjectCloner();
-    }
-#endif // FEATURE_REMOTING // code for objectcloner
 
     LoadApproxInterfaceMap();
 
@@ -2216,12 +2139,6 @@ MethodTableBuilder::ResolveInterfaces(
         {
             SetHasFieldsWhichMustBeInited();
         }
-#ifdef FEATURE_REMOTING
-        if (pParentClass->CannotBeBlittedByObjectCloner())
-        {
-            SetCannotBeBlittedByObjectCloner();
-        }
-#endif
 #ifdef FEATURE_READYTORUN
         if (!(IsValueClass() || (pParentClass == g_pObjectClass)))
         {
@@ -2785,12 +2702,6 @@ MethodTableBuilder::EnumerateClassMethods()
             numGenericMethodArgs = hEnumTyPars.EnumGetCount();
 
             // We do not want to support context-bound objects with generic methods.
-#ifdef FEATURE_REMOTING 
-            if (IsContextful() && numGenericMethodArgs > 0)
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_CONTEXT_BOUND_GENERIC_METHOD);
-            }
-#endif // FEATURE_REMOTING
 
             if (numGenericMethodArgs != 0)
             {
@@ -3841,9 +3752,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     DWORD   dwCurrentStaticField   = 0;
     DWORD   dwCurrentThreadStaticField = 0;
 
-#ifdef FEATURE_REMOTING 
-    DWORD   dwContextStaticsOffset  = 0;
-#endif
 
     DWORD   dwR8Fields              = 0;        // Number of R8's the class has
 
@@ -3883,11 +3791,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         MethodTable * pByValueClass = NULL;
         BOOL        fIsByValue = FALSE;
         BOOL        fIsThreadStatic = FALSE;
-#ifdef FEATURE_REMOTING
-        BOOL        fIsContextStatic = FALSE;
-#else
         static const BOOL fIsContextStatic = FALSE;
-#endif
         BOOL        fHasRVA = FALSE;
 
         MetaSig fsig(pMemberSignature,
@@ -3924,16 +3828,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 fIsThreadStatic = TRUE;
             }
 
-#ifdef FEATURE_REMOTING 
-            hr = pInternalImport->GetCustomAttributeByName(bmtMetaData->pFields[i],
-                                                           g_ContextStaticAttributeClassName,
-                                                           NULL, NULL);
-            IfFailThrow(hr);
-            if (hr == S_OK)
-            {
-                fIsContextStatic = TRUE;
-            }
-#endif // FEATURE_REMOTING
 
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
             {
@@ -3950,12 +3844,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             // Do some sanity checks that we are not mixing context and thread
             // relative statics.
-#ifdef FEATURE_REMOTING 
-            if (fIsThreadStatic && fIsContextStatic)
-            {
-                IfFailThrow(COR_E_TYPELOAD);
-            }
-#endif
             if (fHasRVA && (fIsThreadStatic || fIsContextStatic))
             {
                 IfFailThrow(COR_E_TYPELOAD);
@@ -4236,10 +4124,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             SetHasNonPublicFields();
                         if (pFieldClass->HasFieldsWhichMustBeInited())
                             SetHasFieldsWhichMustBeInited();
-#ifdef FEATURE_REMOTING
-                        if (pFieldClass->CannotBeBlittedByObjectCloner())
-                            SetCannotBeBlittedByObjectCloner();
-#endif
 
 #ifdef FEATURE_READYTORUN
                         if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
@@ -4531,18 +4415,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (fIsByValue)
                     bmtFP->NumThreadStaticGCBoxedFields++;
             }
-#ifdef FEATURE_REMOTING 
-            else if (fIsContextStatic)
-            {
-                DWORD size = 1 << dwLog2FieldSize;
-
-                dwContextStaticsOffset = (DWORD)ALIGN_UP(dwContextStaticsOffset, size);
-
-                IfFailThrow(pFD->SetOffset(dwContextStaticsOffset)); // offset is the bucket index
-
-                dwContextStaticsOffset += size;
-            }
-#endif // FEATURE_REMOTING
             else
             {
                 bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
@@ -4623,12 +4495,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     }
 #endif // FEATURE_DOUBLE_ALIGNMENT_HINT
 
-#ifdef FEATURE_REMOTING 
-    if (pbmtCSInfo)
-    {
-        pbmtCSInfo->dwContextStaticsSize = dwContextStaticsOffset;
-    }
-#endif
 
     //========================================================================
     // END:
@@ -6269,14 +6135,6 @@ MethodTableBuilder::InitMethodDesc(
             pNewNMD->ndirect.m_cbStackArgumentSize = 0xFFFF;
 #endif // defined(_TARGET_X86_)
 
-#ifdef FEATURE_MIXEDMODE // IJW
-            if (RVA != 0 && IsMiUnmanaged(dwImplFlags) && IsMiNative(dwImplFlags))
-            {
-                // Note that we cannot initialize the stub directly now in the general case,
-                // as LoadLibrary may not have been performed yet.
-                pNewNMD->SetIsEarlyBound();
-            }
-#endif // FEATURE_MIXEDMODE
 
             pNewNMD->GetWriteableData()->m_pNDirectTarget = pNewNMD->GetNDirectImportThunkGlue()->GetEntrypoint();
         }
@@ -7173,13 +7031,6 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_REMOTING
-    // Approximation of code:MethodDesc::IsRemotingInterceptedViaPrestub
-    if (MayBeRemotingIntercepted(pMDMethod) && !IsMdVirtual(pMDMethod->GetDeclAttrs()))
-    {
-        return TRUE;
-    }
-#endif
 
     return GetModule()->IsEditAndContinueEnabled();
 }
@@ -7190,11 +7041,7 @@ MethodTableBuilder::MayBeRemotingIntercepted(bmtMDMethod * pMDMethod)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_REMOTING
-    return (IsMarshaledByRef() || g_pObjectClass == NULL) && !IsMdStatic(pMDMethod->GetDeclAttrs());
-#else
     return FALSE;
-#endif
 }
 
 //*******************************************************************************
@@ -9912,267 +9759,6 @@ void MethodTableBuilder::InterfaceAmbiguityCheck(bmtInterfaceAmbiguityCheckInfo 
     InterfacesAmbiguityCheck(bmtCheckInfo,pIntf->GetModule(),pIntf->GetCl(),pItfSubstChain);
 }
 
-#ifdef FEATURE_REMOTING // affects only remoting-related info
-//*******************************************************************************
-// Private helper method used by the code below to check whether the given
-// method is annotated to be a VTS event callback.
-BOOL MethodTableBuilder::CheckForVtsEventMethod(IMDInternalImport  *pImport,
-                                                MethodDesc         *pMD,
-                                                DWORD               dwAttrs,
-                                                LPCUTF8             szAttrName,
-                                                MethodDesc        **ppMethodDesc)
-{
-    STANDARD_VM_CONTRACT;
-
-    // For each method with an attriubte we need to check that:
-    //   o  The method is not static, virtual, abstract or generic.
-    //   o  The signature is correct.
-    //   o  No other method on the same type is marked with the same
-    //      attribute.
-
-    if (pImport->GetCustomAttributeByName(pMD->GetMemberDef(),
-                                          szAttrName,
-                                          NULL,
-                                          NULL) == S_OK)
-    {
-        if (IsMdStatic(dwAttrs) ||
-            IsMdVirtual(dwAttrs) ||
-            IsMdAbstract(dwAttrs) ||
-            pMD->IsGenericMethodDefinition())
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_INVALID_VTS_METHOD, pMD->GetMemberDef());
-        }
-
-        // Check whether we've seen one of these methods before.
-        if (*ppMethodDesc != NULL)
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_VTS_METHODS, szAttrName);
-        }
-
-        // Check the signature, it should be "void M(StreamingContext)".
-        DWORD           cbSig;
-        PCCOR_SIGNATURE pSig;
-        if (FAILED(pImport->GetSigOfMethodDef(pMD->GetMemberDef(), &cbSig, &pSig)))
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-        }
-        
-        // Should be an instance method with no generic type parameters.
-        if (CorSigUncompressCallingConv(pSig) != IMAGE_CEE_CS_CALLCONV_HASTHIS)
-            goto BadSignature;
-
-        // Should have one argument.
-        if (CorSigUncompressData(pSig) != 1)
-            goto BadSignature;
-
-        // And a return type of void.
-        if (*pSig++ != (BYTE)ELEMENT_TYPE_VOID)
-            goto BadSignature;
-
-        // The argument should be a value type.
-        if (*pSig++ != (BYTE)ELEMENT_TYPE_VALUETYPE)
-            goto BadSignature;
-
-        // Now the tricky bit: we want to verify the value type is
-        // StreamingContext, but we don't want to simply load the type since it
-        // might be any other arbitrary type and cause recursive loading
-        // problems. SO we manually check the type via the metadata APIs
-        // instead.
-        mdToken tkType = CorSigUncompressToken(pSig);
-        LPCUTF8 szType;
-        LPCUTF8 szNamespace;
-
-        // Compute type name and namespace.
-        if (TypeFromToken(tkType) == mdtTypeDef)
-        {
-            if (FAILED(pImport->GetNameOfTypeDef(tkType, &szType, &szNamespace)))
-            {
-                goto BadSignature;
-            }
-        }
-        else
-        {
-            _ASSERTE(TypeFromToken(tkType) == mdtTypeRef);
-            if (FAILED(pImport->GetNameOfTypeRef(tkType, &szNamespace, &szType)))
-            {
-                goto BadSignature;
-            }
-        }
-
-        // Do the names match?
-        if (strcmp(szType, g_StreamingContextName) != 0 ||
-            strcmp(szNamespace, g_SerializationNS))
-            goto BadSignature;
-
-        // For typedefs we can directly check whether the current module is
-        // part of mscorlib. For refs we have to dig deeper (into the token
-        // resolution scope).
-        if (TypeFromToken(tkType) == mdtTypeDef)
-        {
-            if (bmtError->pModule->GetAssembly()->GetManifestModule() != SystemDomain::SystemAssembly()->GetManifestModule())
-                goto BadSignature;
-        }
-        else
-        {
-            // The scope needs to be an assembly ref.
-            mdToken tkScope;
-            if (FAILED(pImport->GetResolutionScopeOfTypeRef(tkType, &tkScope)))
-            {
-                goto BadSignature;
-            }
-            if (TypeFromToken(tkScope) != mdtAssemblyRef)
-                goto BadSignature;
-
-            // Fetch the name and public key or public key token.
-            BYTE *pbPublicKeyOrToken;
-            DWORD cbPublicKeyOrToken;
-            LPCSTR szAssembly;
-            DWORD dwAssemblyFlags;
-            if (FAILED(pImport->GetAssemblyRefProps(
-                tkScope, 
-                (const void**)&pbPublicKeyOrToken, 
-                &cbPublicKeyOrToken, 
-                &szAssembly, 
-                NULL,               // AssemblyMetaDataInternal: we don't care about version, culture etc.
-                NULL,               // Hash value pointer, obsolete information
-                NULL,               // Byte count for above
-                &dwAssemblyFlags)))
-            {
-                goto BadSignature;
-            }
-            
-            // Validate the name.
-            if (stricmpUTF8(szAssembly, g_psBaseLibraryName) != 0)
-                goto BadSignature;
-
-            // And the public key or token, whichever was burned into the reference by the compiler. For mscorlib this is the ECMA key or
-            // token.
-            if (IsAfPublicKeyToken(dwAssemblyFlags))
-            {
-                if (cbPublicKeyOrToken != sizeof(g_rbNeutralPublicKeyToken) ||
-                    memcmp(pbPublicKeyOrToken, g_rbNeutralPublicKeyToken, cbPublicKeyOrToken) != 0)
-                    goto BadSignature;
-            }
-            else
-            {
-                if (cbPublicKeyOrToken != sizeof(g_rbNeutralPublicKey) ||
-                    memcmp(pbPublicKeyOrToken, g_rbNeutralPublicKey, cbPublicKeyOrToken) != 0)
-                    goto BadSignature;
-            }
-        }
-
-        // We managed to pass all tests; record this method.
-        *ppMethodDesc = pMD;
-
-        return TRUE;
-    }
-
-    return FALSE;
-
- BadSignature:
-    BuildMethodTableThrowException(IDS_CLASSLOAD_INVALID_VTS_SIG, pMD->GetMemberDef());
-}
-
-//*******************************************************************************
-// Names of the various VTS custom attributes
-#define VTS_ON_SERIALIZING_ATTRIBUTE    "System.Runtime.Serialization.OnSerializingAttribute"
-#define VTS_ON_SERIALIZED_ATTRIBUTE     "System.Runtime.Serialization.OnSerializedAttribute"
-#define VTS_ON_DESERIALIZING_ATTRIBUTE  "System.Runtime.Serialization.OnDeserializingAttribute"
-#define VTS_ON_DESERIALIZED_ATTRIBUTE   "System.Runtime.Serialization.OnDeserializedAttribute"
-#define VTS_OPTIONAL_FIELD_ATTRIBUTE    "System.Runtime.Serialization.OptionalFieldAttribute"
-
-//*******************************************************************************
-// Look for VTS event methods or fields with interesting serialization
-// attributes on this type (only called for serializable types).
-
-VOID MethodTableBuilder::ScanTypeForVtsInfo()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(IsTdSerializable(GetAttrClass()));
-    }
-    CONTRACTL_END;
-
-    //
-    // Do not mark System.String as needing vts info. The MethodTable bit used for VtsInfo
-    // is used for other purpose on System.String, and System.String does need VtsInfo anyway
-    // because of it is special-cased by the object cloner.
-    //
-    if (g_pStringClass == NULL)
-    {
-        LPCUTF8 name, nameSpace;
-
-        if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-        }
-
-        if (strcmp(name, g_StringName) == 0 && strcmp(nameSpace, g_SystemNS) == 0)
-        {
-            return;
-        }
-    }    
-
-    DWORD i;
-    // Scan all the non-virtual, non-abstract, non-generic instance methods for
-    // one of the special custom attributes indicating a VTS event method.
-    DeclaredMethodIterator it(*this);
-    while (it.Next())
-    {
-        if (CheckForVtsEventMethod(GetMDImport(),
-                                   it->GetMethodDesc(),
-                                   it.Attrs(),
-                                   VTS_ON_SERIALIZING_ATTRIBUTE,
-                                   &bmtMFDescs->pOnSerializingMethod))
-            bmtMFDescs->fNeedsRemotingVtsInfo = true;
-
-        if (CheckForVtsEventMethod(GetMDImport(),
-                                   it->GetMethodDesc(),
-                                   it.Attrs(),
-                                   VTS_ON_SERIALIZED_ATTRIBUTE,
-                                   &bmtMFDescs->pOnSerializedMethod))
-            bmtMFDescs->fNeedsRemotingVtsInfo = true;
-
-        if (CheckForVtsEventMethod(GetMDImport(),
-                                   it->GetMethodDesc(),
-                                   it.Attrs(),
-                                   VTS_ON_DESERIALIZING_ATTRIBUTE,
-                                   &bmtMFDescs->pOnDeserializingMethod))
-            bmtMFDescs->fNeedsRemotingVtsInfo = true;
-
-        if (CheckForVtsEventMethod(GetMDImport(),
-                                   it->GetMethodDesc(),
-                                   it.Attrs(),
-                                   VTS_ON_DESERIALIZED_ATTRIBUTE,
-                                   &bmtMFDescs->pOnDeserializedMethod))
-            bmtMFDescs->fNeedsRemotingVtsInfo = true;
-    }
-
-    // Scan all the instance fields introduced on this type for NotSerialized or
-    // OptionalField attributes.
-    DWORD dwNumIntroducedInstanceFields = bmtEnumFields->dwNumInstanceFields;
-    FieldDesc *pFieldDescList = GetApproxFieldDescListRaw();
-    for (i = 0; i < dwNumIntroducedInstanceFields; i++)
-    {
-        FieldDesc *pFD = &pFieldDescList[i];
-        DWORD      dwFlags;
-        
-        if (FAILED(GetMDImport()->GetFieldDefProps(pFD->GetMemberDef(), &dwFlags)))
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-        }
-        if (IsFdNotSerialized(dwFlags))
-            bmtMFDescs->SetFieldNotSerialized(i, dwNumIntroducedInstanceFields);
-        
-        if (GetMDImport()->GetCustomAttributeByName(pFD->GetMemberDef(),
-                                                                   VTS_OPTIONAL_FIELD_ATTRIBUTE,
-                                                                   NULL,
-                                                                   NULL) == S_OK)
-            bmtMFDescs->SetFieldOptionallySerialized(i, dwNumIntroducedInstanceFields);
-    }
-}
-#endif // FEATURE_REMOTING
 
 //*******************************************************************************
 void MethodTableBuilder::CheckForSystemTypes()
@@ -10327,15 +9913,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             // we'll set the bit here.
             pMT->SetHasCriticalFinalizer();
         }
-#ifdef FEATURE_REMOTING 
-        else if (strcmp(name, g_TransparentProxyName) == 0 && strcmp(nameSpace, g_ProxiesNS) == 0)
-        {
-            pMT->SetTransparentProxy();
-
-            // This ensures that we take the slow path in JIT_IsInstanceOfClass
-            pMT->SetHasTypeEquivalence();
-        }
-#endif // FEATURE_REMOTING
 #ifdef FEATURE_COMINTEROP 
         else
         {
@@ -10690,15 +10267,9 @@ MethodTableBuilder::SetupMethodTable2(
                    : 0;
 
 
-#ifdef FEATURE_REMOTING 
-    BOOL fHasContextStatics = (bmtCSInfo) ? (bmtCSInfo->dwContextStaticsSize) : FALSE;
-    BOOL fNeedsRemotableMethodInfo = (IsMarshaledByRef() || IsInterface() || g_pObjectClass == NULL);
-    BOOL fNeedsRemotingVtsInfo = bmtMFDescs->fNeedsRemotingVtsInfo;
-#else // !FEATURE_REMOTING
     BOOL fHasContextStatics = FALSE;
     BOOL fNeedsRemotableMethodInfo=FALSE;
     BOOL fNeedsRemotingVtsInfo = FALSE;
-#endif // !FEATURE_REMOTING
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10763,26 +10334,6 @@ MethodTableBuilder::SetupMethodTable2(
         pMT->SetHasRCWPerTypeData();
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING 
-    if (bmtMFDescs->fNeedsRemotingVtsInfo)
-        pMT->SetHasRemotingVtsInfo();
-
-    if (fHasContextStatics)
-        pMT->SetHasContextStatics();
-
-    if (IsMarshaledByRef())
-    {
-        if (IsContextful())
-        {
-            COUNTER_ONLY(GetPerfCounters().m_Context.cClasses++);
-            pMT->SetIsContextful();
-        }
-        else
-        {
-            pMT->SetMarshaledByRef();
-        }
-    }
-#endif // FEATURE_REMOTING
 
     if (IsInterface())
         pMT->SetIsInterface();
@@ -11396,59 +10947,6 @@ MethodTableBuilder::SetupMethodTable2(
     // (event callbacks or OptionalField attributes) we've previously cached the
     // additional information in the bmtMFDescs structure. Now it's time to add
     // this information as an optional extension to the MethodTable.
-#ifdef FEATURE_REMOTING 
-    if (bmtMFDescs->fNeedsRemotingVtsInfo)
-    {
-        DWORD dwNumIntroducedInstanceFields = bmtEnumFields->dwNumInstanceFields;
-        _ASSERTE(bmtAllocator == pMT->GetLoaderAllocator());
-        PTR_RemotingVtsInfo pInfo = pMT->AllocateRemotingVtsInfo(GetMemTracker(), dwNumIntroducedInstanceFields);
-
-        pInfo->m_pCallbacks[RemotingVtsInfo::VTS_CALLBACK_ON_SERIALIZING].SetValue(bmtMFDescs->pOnSerializingMethod);
-        pInfo->m_pCallbacks[RemotingVtsInfo::VTS_CALLBACK_ON_SERIALIZED].SetValue(bmtMFDescs->pOnSerializedMethod);
-        pInfo->m_pCallbacks[RemotingVtsInfo::VTS_CALLBACK_ON_DESERIALIZING].SetValue(bmtMFDescs->pOnDeserializingMethod);
-        pInfo->m_pCallbacks[RemotingVtsInfo::VTS_CALLBACK_ON_DESERIALIZED].SetValue(bmtMFDescs->pOnDeserializedMethod);
-
-        for (i = 0; i < dwNumIntroducedInstanceFields; i++)
-        {
-            if (bmtMFDescs->prfNotSerializedFields && bmtMFDescs->prfNotSerializedFields[i])
-                pInfo->SetIsNotSerialized(i);
-            if (bmtMFDescs->prfOptionallySerializedFields && bmtMFDescs->prfOptionallySerializedFields[i])
-                pInfo->SetIsOptionallySerialized(i);
-        }
-
-#if 0 
-        printf("%s has VTS info:\n", pMT->GetDebugClassName());
-        if (bmtMFDescs->pOnSerializingMethod)
-            printf("  OnSerializing: %s\n", bmtMFDescs->pOnSerializingMethod->m_pszDebugMethodName);
-        if (bmtMFDescs->pOnSerializedMethod)
-            printf("  OnSerialized: %s\n", bmtMFDescs->pOnSerializedMethod->m_pszDebugMethodName);
-        if (bmtMFDescs->pOnDeserializingMethod)
-            printf("  OnDeserializing: %s\n", bmtMFDescs->pOnDeserializingMethod->m_pszDebugMethodName);
-        if (bmtMFDescs->pOnDeserializedMethod)
-            printf("  OnDeserialized: %s\n", bmtMFDescs->pOnDeserializedMethod->m_pszDebugMethodName);
-        for (i = 0; i < dwNumIntroducedInstanceFields; i++)
-        {
-            if (bmtMFDescs->prfNotSerializedFields && bmtMFDescs->prfNotSerializedFields[i])
-            {
-                printf("  [NotSerialized] %s\n", GetApproxFieldDescListRaw()[i].m_debugName);
-                _ASSERTE(pInfo->IsNotSerialized(i));
-            }
-            else
-                _ASSERTE(!pInfo->IsNotSerialized(i));
-            if (bmtMFDescs->prfOptionallySerializedFields && bmtMFDescs->prfOptionallySerializedFields[i])
-            {
-                printf("  [OptionalField] %s\n", GetApproxFieldDescListRaw()[i].m_debugName);
-                _ASSERTE(pInfo->IsOptionallySerialized(i));
-            }
-            else
-                _ASSERTE(!pInfo->IsOptionallySerialized(i));
-        }
-        printf("------------\n\n");
-#endif // 0
-    }
-    if (fNeedsRemotableMethodInfo)
-        pMT->SetupRemotableMethodInfo(GetMemTracker());
-#endif // FEATURE_REMOTING
 }
 #ifdef _PREFAST_ 
 #pragma warning(pop)
@@ -11631,30 +11129,6 @@ VOID MethodTableBuilder::CheckForRemotingProxyAttrib()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_REMOTING 
-    // See if our parent class has a proxy attribute
-    _ASSERTE(g_pObjectClass != NULL);
-
-    if (!GetParentMethodTable()->GetClass()->HasRemotingProxyAttribute())
-    {
-        // Call the metadata api to look for a proxy attribute on this type
-        // Note: the api does not check for inherited attributes
-
-        // Set the flag is the type has a non-default proxy attribute
-        if(IsDefined(
-            GetModule(),
-            bmtInternal->pType->GetTypeDefToken(),
-            TypeHandle(MscorlibBinder::GetClass(CLASS__PROXY_ATTRIBUTE))))
-        {
-            SetHasRemotingProxyAttribute();
-        }
-    }
-    else
-    {
-        // parent has proxyAttribute ... mark this class as having one too!
-        SetHasRemotingProxyAttribute();
-    }
-#endif // FEATURE_REMOTING
 }
 
 
@@ -11909,70 +11383,6 @@ VOID MethodTableBuilder::SetContextfulOrByRef()
 
     }
     CONTRACTL_END;
-#ifdef FEATURE_REMOTING 
-
-    if (GetModule()->IsSystem())
-    {
-        // Check whether these classes are the root classes of contextful
-        // and marshalbyref classes i.e. System.ContextBoundObject and
-        // System.MarshalByRefObject respectively.
-        
-        // Extract the class name
-        LPCUTF8 pszClassName = NULL;
-        LPCUTF8 pszNameSpace = NULL;
-        if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &pszClassName, &pszNameSpace)))
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
-        }
-        
-        StackSString ssFullyQualifiedName;
-        ns::MakePath(ssFullyQualifiedName,
-                     StackSString(SString::Utf8, pszNameSpace),
-                     StackSString(SString::Utf8, pszClassName));
-
-        if(ssFullyQualifiedName.Equals(SL(g_ContextBoundObjectClassName)))
-        {   // Set the contextful and marshalbyref flag
-            bmtProp->fIsContextful = true;
-            bmtProp->fMarshaledByRef = true;
-            return;
-        }
-
-        if(ssFullyQualifiedName.Equals(SL(g_MarshalByRefObjectClassName)))
-        {   // Set the marshalbyref flag
-            bmtProp->fMarshaledByRef = true;
-            return;
-        }
-    }
-
-    // First check whether the parent class is contextful or
-    // marshalbyref
-    if(HasParent())
-    {
-        MethodTable * pParent = GetParentMethodTable();
-        if(pParent->IsContextful())
-        {   // Set the contextful and marshalbyref flag
-            bmtProp->fIsContextful = true;
-            bmtProp->fMarshaledByRef = true;
-
-            if (bmtGenerics->GetNumGenericArgs() > 0)
-            {   // While these could work with a bit of work in the JIT,
-                // we will not support generic context-bound objects in V2.0.
-                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERIC_CONTEXT_BOUND_OBJECT);
-            }
-
-            if (GetAssembly()->IsCollectible())
-            {
-                // Collectible assemblies do not support ContextBoundObject
-                BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLE_CONTEXT_BOUND_OBJECT);
-            }
-        }
-
-        else if (pParent->IsMarshaledByRef())
-        {   // Set the marshalbyref flag
-            bmtProp->fMarshaledByRef = true;
-        }
-    }
-#endif // FEATURE_REMOTING
 
 }
 //*******************************************************************************

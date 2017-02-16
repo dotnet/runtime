@@ -112,11 +112,6 @@ CheckFileFormat(
         }
         else if (strcmp(pStream->GetName(), ENC_MODEL_STREAM_A) == 0)
         {
-#ifdef FEATURE_METADATA_STANDALONE_WINRT
-            Debug_ReportError("ENC model stream #- is not supported.");
-            hr = CLDB_E_FILE_CORRUPT;
-            goto ErrExit;
-#else //!FEATURE_METADATA_STANDALONE_WINRT
             // Validate that only one of compressed/uncompressed is present.
             if (*pFormat != MDFormat_Invalid)
             {   // Already found a good stream.
@@ -126,21 +121,14 @@ CheckFileFormat(
             }
             // Found the ENC meta data stream.
             *pFormat = MDFormat_ReadWrite;
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
         }
         else if (strcmp(pStream->GetName(), SCHEMA_STREAM_A) == 0)
         {
-#ifdef FEATURE_METADATA_STANDALONE_WINRT
-            Debug_ReportError("Schema stream #Schema is not supported.");
-            hr = CLDB_E_FILE_CORRUPT;
-            goto ErrExit;
-#else //!FEATURE_METADATA_STANDALONE_WINRT
             // Found the uncompressed format
             *pFormat = MDFormat_ICR;
             
             // keep going. We may find the compressed format later. 
             // If so, we want to use the compressed format.
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
         }
         
         // Pick off the next stream if there is one.

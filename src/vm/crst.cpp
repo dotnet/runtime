@@ -55,34 +55,10 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
     
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pSyncManager = CorHost2::GetHostSyncManager();
-    if (pSyncManager) {
-        ResetOSCritSec ();
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         SetOSCritSec ();
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSCritSec())
-    {
-        IHostCrst *pHostCrst;
-        PREFIX_ASSUME(pSyncManager != NULL);
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pSyncManager->CreateCrst(&pHostCrst);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE(hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        m_pHostCrst = pHostCrst;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         UnsafeInitializeCriticalSection(&m_criticalsection);
     }
@@ -118,15 +94,6 @@ void CrstBase::Destroy()
     // deadlock detection is finished.
     GCPreemp __gcHolder((m_dwFlags & CRST_HOST_BREAKABLE) == CRST_HOST_BREAKABLE);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSCritSec())
-    {
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        m_pHostCrst->Release();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         UnsafeDeleteCriticalSection(&m_criticalsection);
     }
@@ -361,44 +328,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         }
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSCritSec())
-    {
-        DWORD option;
-        if (m_dwFlags & CRST_HOST_BREAKABLE)
-        {
-            option = 0;
-        }
-        else
-        {
-            option = WAIT_NOTINDEADLOCK;
-        }
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(pThread);
-        
-        // Try entering the critical section once, if we fail we contend
-        // and fire the contention start ETW event
-        hr = m_pHostCrst->TryEnter(option, &fIsCriticalSectionEnteredAfterFailingOnce);
-        
-        if (! fIsCriticalSectionEnteredAfterFailingOnce)
-        {
-            fIsCriticalSectionEnteredAfterFailingOnce = TRUE;
-
-            hr = m_pHostCrst->Enter(option);
-        }
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        
-        PREFIX_ASSUME (hr == S_OK || ((m_dwFlags & CRST_HOST_BREAKABLE) && hr == HOST_E_DEADLOCK));
-        
-        if (hr == HOST_E_DEADLOCK)
-        {
-            RaiseDeadLockException();
-        }
-        
-        INCTHREADLOCKCOUNTTHREAD(pThread);
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         if (CLRTaskHosted()) 
         {
@@ -407,9 +336,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
         UnsafeEnterCriticalSection(&m_criticalsection);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        INCTHREADLOCKCOUNTTHREAD(pThread);
-#endif
     }
 
 
@@ -440,27 +366,13 @@ void CrstBase::Leave()
     PreLeave ();
 #endif //_DEBUG
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(_DEBUG)
+#if defined(_DEBUG)
     Thread * pThread = GetThread();
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSCritSec()) {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(pThread);
-        hr = m_pHostCrst->Leave();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE (hr == S_OK);
-        DECTHREADLOCKCOUNT ();
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         UnsafeLeaveCriticalSection(&m_criticalsection);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        DECTHREADLOCKCOUNTTHREAD(pThread);
-#endif
 
         if (CLRTaskHosted()) {
             Thread::EndThreadAffinity();

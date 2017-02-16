@@ -26,9 +26,6 @@
 #include "array.h"
 #include "jitinterface.h"
 #include "codeman.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "dbginterface.h"
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"

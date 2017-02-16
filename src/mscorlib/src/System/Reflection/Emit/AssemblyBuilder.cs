@@ -242,9 +242,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(name));
 
             if (access != AssemblyBuilderAccess.Run
-#if FEATURE_REFLECTION_ONLY_LOAD
-                && access != AssemblyBuilderAccess.ReflectionOnly
-#endif // FEATURE_REFLECTION_ONLY_LOAD
                 && access != AssemblyBuilderAccess.RunAndCollect
                 )
             {

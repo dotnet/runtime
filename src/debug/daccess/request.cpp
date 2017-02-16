@@ -1580,9 +1580,6 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
         ModuleData->FileReferencesMap = PTR_CDADDR(pModule->m_FileReferencesMap.pTable);
         ModuleData->ManifestModuleReferencesMap = PTR_CDADDR(pModule->m_ManifestModuleReferencesMap.pTable);
 
-#ifdef FEATURE_MIXEDMODE // IJW
-        ModuleData->pThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
-#endif // FEATURE_MIXEDMODE // IJW
     }
     EX_CATCH
     {
@@ -1804,11 +1801,7 @@ ClrDataAccess::GetFieldDescData(CLRDATA_ADDRESS addr, struct DacpFieldDescData *
     FieldDescData->MTOfEnclosingClass = HOST_CDADDR(pFieldDesc->GetApproxEnclosingMethodTable());
     FieldDescData->dwOffset = pFieldDesc->GetOffset();
     FieldDescData->bIsThreadLocal = pFieldDesc->IsThreadStatic();
-#ifdef FEATURE_REMOTING            
-    FieldDescData->bIsContextLocal = pFieldDesc->IsContextStatic();;
-#else
     FieldDescData->bIsContextLocal = FALSE;
-#endif
     FieldDescData->bIsStatic = pFieldDesc->IsStatic();
     FieldDescData->NextField = HOST_CDADDR(PTR_FieldDesc(PTR_HOST_TO_TADDR(pFieldDesc) + sizeof(FieldDesc)));
 
@@ -1838,16 +1831,8 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
 
         data->FirstField = PTR_TO_TADDR(pMT->GetClass()->GetFieldDescList());
 
-#ifdef FEATURE_REMOTING
-        BOOL hasContextStatics = pMT->HasContextStatics();
-    
-        data->wContextStaticsSize = (hasContextStatics) ? pMT->GetContextStaticsSize() : 0;
-        _ASSERTE(!hasContextStatics || FitsIn<WORD>(pMT->GetContextStaticsOffset()));
-        data->wContextStaticOffset = (hasContextStatics) ? static_cast<WORD>(pMT->GetContextStaticsOffset()) : 0;
-#else
         data->wContextStaticsSize = 0;
         data->wContextStaticOffset = 0;
-#endif
     }
 
     SOSDacLeave();
