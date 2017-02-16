@@ -92,11 +92,7 @@ Disp::DefineScope(
     // Figure out what version of the metadata to emit
     if (rclsid == CLSID_CLR_v1_MetaData)
     {
-#ifdef FEATURE_METADATA_STANDALONE_WINRT
-        IfFailGo(E_NOTIMPL);
-#else
         optionForNewScope.m_MetadataVersion = MDVersion1;
-#endif //!FEATURE_METADATA_STANDALONE_WINRT
     }
     else if (rclsid == CLSID_CLR_v2_MetaData)
     {
@@ -197,7 +193,7 @@ static HRESULT DeliverScope(IMDCommon *pMDCommon, REFIID riid, DWORD dwOpenFlags
     HRESULT     hr;
     BEGIN_ENTRYPOINT_NOTHROW;
 
-#if !defined(FEATURE_METADATA_STANDALONE_WINRT) && defined(FEATURE_COMINTEROP)
+#if defined(FEATURE_COMINTEROP)
     IfFailGo((dwOpenFlags & ofNoTransform) ? S_FALSE : CheckIfWinMDAdapterNeeded(pMDCommon));
     if (hr == S_OK)
     {
@@ -886,7 +882,7 @@ ErrExit:
     return hr;
 } // Disp::GetOption
 
-#if defined(FEATURE_METADATA_IN_VM) || defined(FEATURE_METADATA_STANDALONE_WINRT)
+#if defined(FEATURE_METADATA_IN_VM)
 
 //---------------------------------------------------------------------------------------
 // 
@@ -898,7 +894,7 @@ void DeleteMetaData()
     LOADEDMODULES::DeleteStatics();
 }
 
-#endif //FEATURE_METADATA_IN_VM || FEATURE_METADATA_STANDALONE_WINRT
+#endif //FEATURE_METADATA_IN_VM 
 
 // 
 // This is the entrypoint for usages of MetaData that need to start with the dispenser (e.g.

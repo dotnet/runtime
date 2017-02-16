@@ -12,9 +12,6 @@
 
 
 #include "common.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "security.h"
 #include "verifier.hpp"
 #include "excep.h"
@@ -946,29 +943,6 @@ BOOL MethodDesc::IsTightlyBoundToMethodTable()
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_REMOTING) && !defined(HAS_REMOTING_PRECODE)
-//*******************************************************************************
-void MethodDesc::Destruct()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    if (!IsRestored())
-        return;
-
-    MethodTable *pMT = GetMethodTable();
-    if(pMT->IsMarshaledByRef() || (pMT == g_pObjectClass))
-    {
-        // Destroy the thunk generated to intercept calls for remoting
-        CRemotingServices::DestroyThunk(this);
-    }
-}
-#endif // FEATURE_REMOTING && !HAS_REMOTING_PRECODE
 
 //*******************************************************************************
 HRESULT MethodDesc::Verify(COR_ILMETHOD_DECODER* ILHeader,
@@ -2143,13 +2117,6 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
         // where we could end up bypassing the remoting system), but it serves
         // our purpose here (basically pushes our correctly instantiated,
         // resolved method desc on the stack and calls the remoting code).
-#ifdef FEATURE_REMOTING        
-        if (pObjMT->IsTransparentProxy())
-            if (IsInterface())
-                return CRemotingServices::GetStubForInterfaceMethod(pResultMD);
-            else
-                return CRemotingServices::GetNonVirtualEntryPointForVirtualMethod(pResultMD);
-#endif            
 
         return pResultMD->GetSingleCallableAddrOfCode();
     }
@@ -2201,13 +2168,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         // where we could end up bypassing the remoting system), but it serves
         // our purpose here (basically pushes our correctly instantiated,
         // resolved method desc on the stack and calls the remoting code).
-#ifdef FEATURE_REMOTING        
-        if (pObjMT->IsTransparentProxy())
-            if (pStaticMD->IsInterface())
-                RETURN(CRemotingServices::GetStubForInterfaceMethod(pTargetMD));
-            else
-                RETURN(CRemotingServices::GetNonVirtualEntryPointForVirtualMethod(pTargetMD));
-#endif
 
         RETURN(pTargetMD->GetMultiCallableAddrOfCode());
     }
@@ -2218,12 +2178,6 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         RETURN(pTargetMD->GetMultiCallableAddrOfCode());
     }
 
-#ifdef FEATURE_REMOTING
-    if (pObjMT->IsTransparentProxy())
-    {
-        RETURN(pObjMT->GetRestoredSlot(pStaticMD->GetSlot()));
-    }
-#endif // FEATURE_REMOTING
 
     pTargetMD = pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot());
 
@@ -2319,10 +2273,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsWrapperStub() || IsEnCAddedMethod())
         return GetStableEntryPoint();
 
-#ifdef FEATURE_REMOTING
-    if (!(accessFlags & CORINFO_ACCESS_THIS) && IsRemotingInterceptedViaVirtualDispatch())
-        return CRemotingServices::GetNonVirtualEntryPointForVirtualMethod(this);
-#endif    
 
     // For EnC always just return the stable entrypoint so we can update the code
     if (IsEnCMethod())
@@ -2434,19 +2384,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
     if (pMD != NULL)
         RETURN(pMD);
 
-#ifdef FEATURE_REMOTING
-
-#ifndef HAS_REMOTING_PRECODE
-    pMD = CNonVirtualThunkMgr::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-#endif // HAS_REMOTING_PRECODE
-
-    pMD = CVirtualThunkMgr::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-#endif // FEATURE_REMOTING
 
     // Is it an FCALL?
     pMD = ECall::MapTargetBackToMethod(entryPoint);
@@ -2767,31 +2704,6 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     if (IsNDirect() || IsComPlusCall() || IsGenericComPlusCall())
         return TRUE;
 
-#ifdef FEATURE_REMOTING
-    MethodTable * pMT = GetMethodTable();
-
-    if (fEstimateForChunk)
-    {
-        // Make a best guess based on the method table of the chunk.
-        if (pMT->IsInterface())
-            return TRUE;
-    }
-    else
-    {
-        // CRemotingServices::GetDispatchInterfaceHelper that needs method desc
-        if (pMT->IsInterface() && !IsStatic())
-            return TRUE;
-
-        // Asynchronous delegate methods are forwarded to shared TP stub
-        if (IsEEImpl())
-        {
-            DelegateEEClass *pClass = (DelegateEEClass*)(pMT->GetClass());
-
-            if (this != pClass->m_pInvokeMethod)
-                return TRUE;
-        }
-    }
-#endif // FEATURE_REMOTING
 
     return FALSE;
 }
@@ -2877,60 +2789,6 @@ BOOL MethodDesc::IsClassConstructorTriggeredViaPrestub()
 #endif // !DACCESS_COMPILE
 
 
-#ifdef FEATURE_REMOTING
-
-//*******************************************************************************
-BOOL MethodDesc::MayBeRemotingIntercepted()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (IsStatic())
-        return FALSE;
-
-    MethodTable *pMT = GetMethodTable();
-
-    if (pMT->IsMarshaledByRef())
-        return TRUE;
-
-    if (g_pObjectClass == pMT)
-    {
-        if ((this == g_pObjectCtorMD) || (this == g_pObjectFinalizerMD))
-            return FALSE;
-
-        // Make sure that the above check worked well
-        _ASSERTE(this->GetSlot() != g_pObjectCtorMD->GetSlot());
-        _ASSERTE(this->GetSlot() != g_pObjectFinalizerMD->GetSlot());
-
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsRemotingInterceptedViaPrestub()
-{
-    WRAPPER_NO_CONTRACT;
-    // We do not insert a remoting stub around the shared code method descriptor
-    // for instantiated generic methods, i.e. anything which requires a hidden
-    // instantiation argument.  Instead we insert it around the instantiating stubs
-    // and ensure that we call the instantiating stubs directly.
-    return MayBeRemotingIntercepted() && !IsVtableMethod() && !RequiresInstArg();
-}
-
-//*******************************************************************************
-BOOL MethodDesc::IsRemotingInterceptedViaVirtualDispatch()
-{
-    WRAPPER_NO_CONTRACT;
-    return MayBeRemotingIntercepted() && IsVtableMethod();
-}
-
-#endif // FEATURE_REMOTING
 
 //*******************************************************************************
 BOOL MethodDesc::MayHaveNativeCode()
@@ -5259,37 +5117,6 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
 }
 #endif // CROSSGEN_COMPILE
 
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE)
-//*******************************************************************************
-void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    _ASSERTE(IsEarlyBound());
-
-    if (IsClassConstructorTriggeredAtLinkTime())
-    {
-        GetMethodTable()->CheckRunClassInitThrowing();
-    }
-
-    const void *target = GetModule()->GetInternalPInvokeTarget(GetRVA());
-    _ASSERTE(target != 0);
-
-    if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)target))
-        target = (BYTE*) FalseGetLastError;
-
-    // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
-    // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
-    // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
-    SetNDirectTarget((LPVOID)target);
-}
-#endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE
 
 //*******************************************************************************
 void MethodDesc::ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport)

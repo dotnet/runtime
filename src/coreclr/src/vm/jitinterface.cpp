@@ -32,9 +32,6 @@
 #include "jitperf.h" // to track jit perf
 #include "corprof.h"
 #include "eeprofinterfaces.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h" // create context bound and remote class instances
-#endif
 #include "perfcounters.h"
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
@@ -1728,36 +1725,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         }
         else
 #endif // CHECK_APP_DOMAIN_LEAKS
-#ifdef FEATURE_REMOTING    
-        // are we a contextful class? (approxMT is OK to use here)
-        if (pFieldMT->IsContextful())
-        {
-            // Allow the JIT to optimize special cases 
-
-            // If the caller is states that we have a 'this reference'
-            // and he is also willing to unwrap it himself
-            // then we won't require a helper call.
-            if (!(flags & CORINFO_ACCESS_THIS  )  ||
-                !(flags & CORINFO_ACCESS_UNWRAP))
-            {
-                // Normally a helper call is required.
-                fInstanceHelper = TRUE;
-            }
-        }
-        // are we a marshaled by ref class? (approxMT is OK to use here)
-        else if (pFieldMT->IsMarshaledByRef())
-        {
-            // Allow the JIT to optimize special cases 
-
-            // If the caller is states that we have a 'this reference'
-            // then we won't require a helper call.
-            if (!(flags & CORINFO_ACCESS_THIS))
-            {
-                // Normally a helper call is required.
-                fInstanceHelper = TRUE;
-            }
-        }
-#endif // FEATURE_REMOTING
 
         if (fInstanceHelper)
         {
@@ -6007,21 +5974,10 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_REMOTING
-    if (pMT->MayRequireManagedActivation())
-    {
-        return CORINFO_HELP_NEW_CROSSCONTEXT;
-    }
-#endif
 
     // Slow helper is the default
     CorInfoHelpFunc helper = CORINFO_HELP_NEWFAST;
 
-#ifdef FEATURE_REMOTING
-    // We shouldn't get here with a COM object (they're all potentially
-    // remotable, so they're covered by the case above).
-    _ASSERTE(!pMT->IsComObjectType() || pMT->IsWinRTObjectType());
-#endif
 
     if (pMT->IsComObjectType())
     {
@@ -9581,27 +9537,6 @@ void* CEEInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method,
 
     if (pMD->NDirectTargetIsImportThunk())
     {
-#ifdef FEATURE_MIXEDMODE // IJW
-        if (pMD->IsEarlyBound()
-#ifdef FEATURE_MULTICOREJIT
-            // Bug 126723: Calling ClassInit in multicore JIT background thread, return NULL
-            // When multicore JIT is enabled (StartProfile called), calling managed code is not allowed in the background thread
-            && GetAppDomain()->GetMulticoreJitManager().AllowCCtorsToRunDuringJITing()
-#endif
-            )
-        {
-            EX_TRY
-            {
-                pMD->InitEarlyBoundNDirectTarget();
-                _ASSERTE(!pMD->NDirectTargetIsImportThunk());
-                result = pMD->GetNDirectTarget();
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-        }
-#endif // FEATURE_MIXEDMODE
     }
     else
     {

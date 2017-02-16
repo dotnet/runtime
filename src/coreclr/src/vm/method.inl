@@ -152,7 +152,6 @@ inline void MethodDesc::SetupGenericComPlusCall()
 }
 #endif // FEATURE_COMINTEROP
 
-#ifndef FEATURE_REMOTING
 
 inline BOOL MethodDesc::MayBeRemotingIntercepted()
 {
@@ -172,7 +171,6 @@ inline BOOL MethodDesc::IsRemotingInterceptedViaVirtualDispatch()
     return FALSE;
 }
 
-#endif // FEATURE_REMOTING
 
 #ifdef FEATURE_COMINTEROP
 

@@ -115,46 +115,6 @@ static ISymUnmanagedWriter **CreateISymWriterForDynamicModule(ReflectionModule *
     }
 }
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-//****************************************
-// This function creates a dynamic module underneath the current assembly.
-//****************************************
-void QCALLTYPE COMModule::DefineDynamicModule(QCall::AssemblyHandle pContainingAssembly, BOOL emitSymbolInfo, LPCWSTR pModuleName, LPCWSTR pFilename, QCall::StackCrawlMarkHandle stackMark, LPVOID* ppInternalSymWriter, QCall::ObjectHandleOnStack retModule, BOOL fIsTransient, INT32* ptkFile)
-{
-    QCALL_CONTRACT;
-
-    ReflectionModule * mod = NULL;
-
-    BEGIN_QCALL;
-
-    Assembly * pAssembly = pContainingAssembly->GetAssembly();
-    _ASSERTE(pAssembly);
-
-    // always create a dynamic module. Note that the name conflict
-    // checking is done in managed side.
-
-    mod = pAssembly->CreateDynamicModule(pModuleName, pFilename, fIsTransient, ptkFile);
-
-    mod->SetCreatingAssembly( SystemDomain::GetCallersAssembly( stackMark ) );
-
-    // If we need to emit symbol info, we setup the proper symbol
-    // writer for this module now.
-    if (emitSymbolInfo)
-    {
-        ISymUnmanagedWriter **pWriter = CreateISymWriterForDynamicModule(mod, pFilename);
-        if (ppInternalSymWriter)
-        {
-            *ppInternalSymWriter = pWriter;
-        }
-    }
-
-    GCX_COOP();
-    retModule.Set(mod->GetExposedObject());
-    END_QCALL;
-
-    return;
-}
-#endif //FEATURE_MULTIMODULE_ASSEMBLIES
 //===============================================================================================
 // Attaches an unmanaged symwriter to a newly created dynamic module.
 //===============================================================================================
@@ -1086,12 +1046,7 @@ Object* GetTypesInner(Module* pModule)
 
     // Allocate the COM+ array
     bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
-#ifdef FEATURE_REMOTING
-    // we skip the TransparentProxy type if this is mscorlib, so we can make the array one element smaller
-    AllocSize = !bSystemAssembly ? dwNumTypeDefs : dwNumTypeDefs - 1;
-#else
     AllocSize = dwNumTypeDefs;
-#endif
     refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, MscorlibBinder::GetClass(CLASS__CLASS));
 
     int curPos = 0;

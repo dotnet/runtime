@@ -9,9 +9,6 @@
 #include "dllimportcallback.h"
 #include "stubhelpers.h"
 #include "asmconstants.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #ifdef FEATURE_COMINTEROP
 #include "olecontexthelpers.h"
 #endif
@@ -2102,18 +2099,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
 
         Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
 
-#ifdef FEATURE_REMOTING
-        if (pThis != NULL && pThis->IsTransparentProxy())
-        {
-            // We have remoting proxy in the way
-#ifdef DACCESS_COMPILE
-            DacNotImpl();
-#else
-            trace->InitForFramePush(GetEEFuncEntryPoint(TransparentProxyStubPatchLabel));
-#endif
-        }
-        else
-#endif // FEATURE_REMOTING
         {
             if (!pCMD->m_pComPlusCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pComPlusCallInfo->m_pILStub != NULL))
             {

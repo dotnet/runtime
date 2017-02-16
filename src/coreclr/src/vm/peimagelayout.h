@@ -33,9 +33,6 @@ class PEImageLayout : public PEDecoder
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEImageLayout)
     friend class PEModule;
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    friend class CCLRDebugManager;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 public:
     // ------------------------------------------------------------
     // Public constants

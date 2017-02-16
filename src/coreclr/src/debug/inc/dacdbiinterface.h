@@ -979,9 +979,6 @@ public:
     //    V2 Attach would provide faked up CreateConnection, ChangeConnection events on attach. 
     //    This enumeration ability allows V3 to emulate that behavior.
     //    
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    virtual void EnumerateConnections(FP_CONNECTION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0; 
-#endif //FEATURE_INCLUDE_ALL_INTERFACES
 
     //
     // Enumerate all threads in the target.
