@@ -101,14 +101,10 @@ for i in "$@" ; do
     esac
 done
 
-if [[ "$__BuildArch" == "arm" ]]; then
-    __UbuntuPackages+=" ${__LLDB_Package:-}"
-fi
-
-if [ "$__BuildArch" == "armel" ]; then  
+if [ "$__BuildArch" == "armel" ]; then
     __LLDB_Package="lldb-3.5-dev"
-    __UbuntuPackages+=" ${__LLDB_Package:-}"
-fi 
+fi
+__UbuntuPackages+=" ${__LLDB_Package:-}"
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 
@@ -122,7 +118,6 @@ if [ -d "$__RootfsDir" ]; then
     fi
     rm -rf $__RootfsDir
 fi
-
 
 if [[ -n $__LinuxCodeName ]]; then
     qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
