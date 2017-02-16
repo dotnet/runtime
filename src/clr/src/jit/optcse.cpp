@@ -783,7 +783,7 @@ void Compiler::updateCseArrLenMap(GenTreePtr compare)
     VNFuncApp cmpVNFuncApp;
 
     if (!vnStore->GetVNFunc(compareVN, &cmpVNFuncApp) ||
-        (cmpVNFuncApp.m_func != GetVNFuncForOper(compare->OperGet(), (compare->gtFlags & GTF_UNSIGNED) != 0)))
+        (cmpVNFuncApp.m_func != GetVNFuncForOper(compare->OperGet(), compare->IsUnsigned())))
     {
         // Value numbering inferred this compare as something other
         // than its own operator; leave its value number alone.
@@ -809,12 +809,12 @@ void Compiler::updateCseArrLenMap(GenTreePtr compare)
         GenTreePtr op2 = compare->gtGetOp2();
 
         vnStore->GetArrLenArithBoundInfo(compareVN, &info);
-        if (GetVNFuncForOper(op1->OperGet(), (op1->gtFlags & GTF_UNSIGNED) != 0) == info.arrOper)
+        if (GetVNFuncForOper(op1->OperGet(), op1->IsUnsigned()) == (VNFunc)info.arrOper)
         {
             // The arithmetic node is the array length's parent.
             arrLenParent = op1;
         }
-        else if (GetVNFuncForOper(op2->OperGet(), (op2->gtFlags & GTF_UNSIGNED) != 0) == info.arrOper)
+        else if (GetVNFuncForOper(op2->OperGet(), op2->IsUnsigned()) == (VNFunc)info.arrOper)
         {
             // The arithmetic node is the array length's parent.
             arrLenParent = op2;
