@@ -378,11 +378,11 @@ extern "C"
     void STDCALL JIT_WriteBarrierEDI();        // JIThelp.asm/JIThelp.s
     void STDCALL JIT_WriteBarrierEBP();        // JIThelp.asm/JIThelp.s
 
-    void STDCALL JIT_WriteBarrierStart();
-    void STDCALL JIT_WriteBarrierLast();
+    void STDCALL JIT_WriteBarrierGroup();
+    void STDCALL JIT_WriteBarrierGroup_End();
 
-    void STDCALL JIT_PatchedWriteBarrierStart();
-    void STDCALL JIT_PatchedWriteBarrierLast();
+    void STDCALL JIT_PatchedWriteBarrierGroup();
+    void STDCALL JIT_PatchedWriteBarrierGroup_End();
 }
 
 void ValidateWriteBarrierHelpers();

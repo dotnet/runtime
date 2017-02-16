@@ -434,10 +434,10 @@ ENDM
 ; WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
 ; WriteBarrier functions so can determine if got AV in them. 
 ; 
-PUBLIC _JIT_WriteBarrierStart@0
-_JIT_WriteBarrierStart@0 PROC
+PUBLIC _JIT_WriteBarrierGroup@0
+_JIT_WriteBarrierGroup@0 PROC
 ret
-_JIT_WriteBarrierStart@0 ENDP
+_JIT_WriteBarrierGroup@0 ENDP
 
 ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 ; Only define these if we're using the ASM GC write barriers; if this flag is not defined,
@@ -455,16 +455,11 @@ WriteBarrierHelper <EBP>
 
 ByRefWriteBarrierHelper
 
-PUBLIC _JIT_WriteBarrierLast@0
-_JIT_WriteBarrierLast@0 PROC
-ret
-_JIT_WriteBarrierLast@0 ENDP
-
 ; This is the first function outside the "keep together range". Used by BBT scripts.
-PUBLIC _JIT_WriteBarrierEnd@0
-_JIT_WriteBarrierEnd@0 PROC
+PUBLIC _JIT_WriteBarrierGroup_End@0
+_JIT_WriteBarrierGroup_End@0 PROC
 ret
-_JIT_WriteBarrierEnd@0 ENDP
+_JIT_WriteBarrierGroup_End@0 ENDP
 
 ;*********************************************************************/
 ; In cases where we support it we have an optimized GC Poll callback.  Normall (when we're not trying to
@@ -2345,10 +2340,10 @@ endif
 ;**********************************************************************
 ; Write barriers generated at runtime
 
-PUBLIC _JIT_PatchedWriteBarrierStart@0
-_JIT_PatchedWriteBarrierStart@0 PROC
+PUBLIC _JIT_PatchedWriteBarrierGroup@0
+_JIT_PatchedWriteBarrierGroup@0 PROC
 ret
-_JIT_PatchedWriteBarrierStart@0 ENDP
+_JIT_PatchedWriteBarrierGroup@0 ENDP
 
 PatchedWriteBarrierHelper MACRO rg
         ALIGN 8
@@ -2367,10 +2362,10 @@ PatchedWriteBarrierHelper <ESI>
 PatchedWriteBarrierHelper <EDI>
 PatchedWriteBarrierHelper <EBP>
 
-PUBLIC _JIT_PatchedWriteBarrierLast@0
-_JIT_PatchedWriteBarrierLast@0 PROC
+PUBLIC _JIT_PatchedWriteBarrierGroup_End@0
+_JIT_PatchedWriteBarrierGroup_End@0 PROC
 ret
-_JIT_PatchedWriteBarrierLast@0 ENDP
+_JIT_PatchedWriteBarrierGroup_End@0 ENDP
 
 _JIT_PatchedCodeLast@0 proc public
 ret
