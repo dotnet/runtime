@@ -52,6 +52,7 @@
 #define WSAENOTSOCK                10038
 #define WSAEDESTADDRREQ            10039
 #define WSAEMSGSIZE                10040
+#define WSAEPROTOTYPE              10041
 #define WSAENOPROTOOPT             10042
 #define WSAEPROTONOSUPPORT         10043
 #define WSAESOCKTNOSUPPORT         10044
