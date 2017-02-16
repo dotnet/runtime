@@ -37,9 +37,6 @@ SpinLock::SpinLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    m_hostLock = NULL;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     m_Initialized = UnInitialized;
 }
 
@@ -53,12 +50,6 @@ SpinLock::~SpinLock()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted() && m_hostLock) {
-        m_hostLock->Release();
-        m_hostLock = NULL;
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
@@ -115,26 +106,6 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
         }
     }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    _ASSERTE((pManager == NULL && m_lock == 0) ||
-             (pManager && m_hostLock == NULL));
-
-    if (pManager) 
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateCrst(&m_hostLock);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            _ASSERTE (m_Initialized == BeingInitialized);
-            m_Initialized = UnInitialized;
-            ThrowOutOfMemory();
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         m_lock = 0;
     }
@@ -196,19 +167,6 @@ void SpinLock::GetLock(Thread* pThread)
     dbg_PreEnterLock();
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted())
-    {
-        DWORD option = WAIT_NOTINDEADLOCK;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(pThread);
-        hr = m_hostLock->Enter(option);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE(hr == S_OK);
-        EE_LOCK_TAKEN(this);
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         // Not CLR Sync hosted, so we use interlocked operations on
         // m_lock to acquire the lock.  This will automatically cause
@@ -241,25 +199,6 @@ BOOL SpinLock::GetLockNoWait()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted())
-    {
-        BOOL result;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = m_hostLock->TryEnter(WAIT_NOTINDEADLOCK, &result);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE(hr == S_OK);
-
-        if (result)
-        {
-            EE_LOCK_TAKEN(this);
-        }
-
-        return result;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         if (VolatileLoad(&m_lock) == 0 && FastInterlockExchange (&m_lock, 1) == 0)
         {
@@ -292,17 +231,6 @@ void SpinLock::FreeLock(Thread* pThread)
     dbg_LeaveLock();
 #endif
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted())
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(pThread);
-        hr = m_hostLock->Leave();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE (hr == S_OK);
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         VolatileStore(&m_lock, (LONG)0);
     }

@@ -28,8 +28,6 @@
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
-#ifdef FEATURE_REMOTING
-#endif
 #include "stackprobe.h"
 
 #include "appdomainnative.hpp"
@@ -274,18 +272,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
             dwSpecialFlags = pDomainSecDesc->GetSpecialFlags();
         }
 
-#ifdef FEATURE_REMOTING
-        // Caller may be in another appdomain context, in which case we'll need to marshal/unmarshal the grant
-        // and deny sets across.
-        if (pCallersDomain != GetAppDomain())
-        {
-            gc.granted = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.granted));
-            if (gc.denied != NULL)
-            {
-                gc.denied = AppDomainHelper::CrossContextCopyFrom(pCallersDomain->GetId(), &(gc.denied));
-            }
-        }
-#endif // FEATURE_REMOTING
 
         // Instead of resolving policy, the loader should use an inherited grant set
         loadSecurity.m_pGrantSet = &gc.granted;
@@ -313,26 +299,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
     BOOL fIsSameAssembly = (pAssembly->GetManifestFile()->GetILimage() == pFile->GetILimage());
 
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-    if (fForIntrospection)
-    {
-        IAssemblyName * pIAssemblyName = pAssembly->GetFusionAssemblyName();
-
-        AppDomain::AssemblyIterator i = GetAppDomain()->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeIntrospection));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
-        while (i.Next(pDomainAssembly.This()))
-        {
-            Assembly * pCachedAssembly = pDomainAssembly->GetAssembly();
-            IAssemblyName * pCachedAssemblyName = pCachedAssembly->GetFusionAssemblyName();
-            if ((pAssembly != pCachedAssembly) && (S_OK == pCachedAssemblyName->IsEqual(pIAssemblyName, ASM_CMPF_IL_ALL)))
-            {
-                COMPlusThrow(kFileLoadException, IDS_EE_REFLECTIONONLY_LOADFROM, W("")); //@todo: need to fill in assemblyname
-            }
-        }
-    }
-#endif // FEATURE_REFLECTION_ONLY_LOAD    
 
     LOG((LF_CLASSLOADER, 
          LL_INFO100, 
@@ -790,92 +756,6 @@ Assembly* AssemblyNative::GetPostPolicyAssembly(PEAssembly *pFile,
     RETURN GetAppDomain()->LoadAssembly(NULL, pFile, FILE_LOADED, pLoadSecurity);
 }
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-void QCALLTYPE AssemblyNative::LoadModule(QCall::AssemblyHandle pAssembly, 
-                                                         LPCWSTR wszModuleName,
-                                                         LPCBYTE pRawModule, INT32 cbModule,
-                                                         LPCBYTE pRawSymbolStore, INT32 cbSymbolStore,
-                                                         QCall::ObjectHandleOnStack retModule)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    Module * pModule = NULL;
-
-    if(CorHost2::IsLoadFromBlocked())
-        COMPlusThrow(kFileLoadException, FUSION_E_LOADFROM_BLOCKED);
-
-    if (wszModuleName == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_FileName"));
-    
-    if (pRawModule == NULL)
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_Array"));
-
-    if (*wszModuleName == '\0')
-        COMPlusThrow(kArgumentException, W("Argument_EmptyFileName"));
-    
-    CQuickBytes qbLC;
-    
-    MAKE_UTF8PTR_FROMWIDE(pName, wszModuleName);
-    LPCSTR psModuleName = pName;
-
-    // Need to perform case insensitive lookup.
-    {
-        UTF8_TO_LOWER_CASE(psModuleName, qbLC);
-        psModuleName = (LPUTF8) qbLC.Ptr();
-    }
-
-    HashDatum datum;
-    mdFile kFile = NULL;
-    // m_pAllowedFiles only grows - entries are never deleted from it. So we do not take
-    // a lock around GetValue. If the code is modified such that we delete entries from m_pAllowedFiles,
-    // reconsider whether we should take the m_crstAllowedFiles lock here (see the uses of kFile below).
-    if (pAssembly->GetAssembly()->m_pAllowedFiles->GetValue(psModuleName, &datum))
-        kFile = (mdFile)(size_t)datum;
-
-    // If the name doesn't match one of the File def names, don't load this module.
-    // If this name matches the manifest file (datum was NULL), don't load either.
-    if (!kFile)
-        COMPlusThrow(kArgumentException, W("Arg_InvalidFileName"));
-
-
-    PEModuleHolder pFile(PEModule::OpenMemory(pAssembly->GetFile(), kFile,
-                                              pRawModule, cbModule));
-
-    DomainModule *pDomainModule = GetAppDomain()->LoadDomainModule(pAssembly->GetDomainAssembly(),
-                                                                   pFile, FILE_LOADED); 
-    pModule = pDomainModule->GetModule();
-
-    if (!pFile->Equals(pModule->GetFile()))
-        COMPlusThrow(kArgumentException, W("Argument_ModuleAlreadyLoaded"));
-
-    LOG((LF_CLASSLOADER, 
-         LL_INFO100, 
-         "\tLoaded in-memory module\n"));
-
-#ifdef DEBUGGING_SUPPORTED
-    if (!pModule->IsResource())
-    {
-        // If we were given symbols, hold onto a copy 
-        if (pRawSymbolStore != NULL) 
-        {
-            pModule->SetSymbolBytes(pRawSymbolStore, cbSymbolStore);            
-        }
-    }
-#endif // DEBUGGING_SUPPORTED
-
-    if (pModule != NULL)
-    {
-        GCX_COOP();
-        retModule.Set(pModule->GetExposedObject());
-    }
-
-    END_QCALL;
-
-    return;
-}
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
 void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
@@ -1222,33 +1102,6 @@ void QCALLTYPE AssemblyNative::GetModule(QCall::AssemblyHandle pAssembly, LPCWST
 
     MAKE_UTF8PTR_FROMWIDE(szModuleName, wszFileName);
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-    // Need to perform case insensitive lookup.
-    {
-        UTF8_TO_LOWER_CASE(szModuleName, qbLC);
-        szModuleName = (LPUTF8) qbLC.Ptr();
-    }
-
-    HashDatum datum = NULL;
-
-    // m_pAllowedFiles only grows - entries are never deleted from it. So we do not take
-    // a lock around GetValue. If the code is modified such that we delete entries from m_pAllowedFiles,
-    // reconsider whether we should take the m_crstAllowedFiles lock here (see the uses of datum below).
-    if (pAssembly->GetAssembly()->m_pAllowedFiles->GetValue(szModuleName, &datum))
-    {
-        if (datum)
-        { 
-            // internal module
-            mdFile  tokFile = (mdFile)(UINT_PTR)datum;
-                
-            pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), tokFile)->GetModule();
-        }
-        else
-        { // manifest module
-            pModule = pAssembly->GetDomainAssembly()->GetModule();
-        }
-    }
-#else
 
     LPCUTF8 pModuleName = NULL;
 
@@ -1258,7 +1111,6 @@ void QCALLTYPE AssemblyNative::GetModule(QCall::AssemblyHandle pAssembly, LPCWST
             pModule = pAssembly->GetDomainAssembly()->GetModule();
     }
 
-#endif 
 
     if (pModule != NULL)
     {

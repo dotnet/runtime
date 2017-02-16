@@ -9,7 +9,6 @@
 
 #include "corhost.h"
 #include "synch.h"
-#include "rwlock.h"
 
 void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
                                 )
@@ -28,28 +27,6 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
 
     SetAutoEvent();
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager != NULL) {
-        IHostAutoEvent *pEvent;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateAutoEvent(&pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        if (bInitialState) 
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pEvent->Set();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-        m_handle = (HANDLE)pEvent;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         HANDLE h = UnsafeCreateEvent(NULL,FALSE,bInitialState,NULL);
         if (h == NULL) {
@@ -102,22 +79,6 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager != NULL){
-        IHostManualEvent *pEvent;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateManualEvent(bInitialState, &pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        m_handle = (HANDLE)pEvent;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         HANDLE h = UnsafeCreateEvent(NULL,TRUE,bInitialState,NULL);
         if (h == NULL) {
@@ -170,28 +131,6 @@ void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
     // thread-safe SetAutoEvent
     FastInterlockOr(&m_dwFlags, CLREVENT_FLAGS_AUTO_EVENT);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager != NULL){
-        IHostAutoEvent *pEvent;
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateMonitorEvent(Cookie,&pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        if (FastInterlockCompareExchangePointer(&m_handle,
-                                                reinterpret_cast<HANDLE>(pEvent),
-                                                INVALID_HANDLE_VALUE) != INVALID_HANDLE_VALUE)
-        {
-            // We lost the race
-            pEvent->Release();
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         HANDLE h = UnsafeCreateEvent(NULL,FALSE,FALSE,NULL);
         if (h == NULL) {
@@ -271,101 +210,6 @@ void CLREventBase::SetMonitorEvent()
     }
 }
 
-#ifdef FEATURE_RWLOCK
-void CLREventBase::CreateRWLockWriterEvent (BOOL bInitialState,  // If TRUE, initial state is signalled
-                                        CRWLock *pRWLock
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;           
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((g_fEEStarted));        
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
-        PRECONDITION((GetThread() != NULL));        
-        PRECONDITION((!IsOSEvent()));
-    }
-    CONTRACTL_END;
-
-    SetAutoEvent();
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager != NULL){
-        // Need to have a fixed cookie.  Use a weak handle for this purpose.
-        IHostAutoEvent *pEvent;
-        HRESULT hr;
-        SIZE_T cookie = (SIZE_T)pRWLock->GetObjectHandle();
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateRWLockWriterEvent(cookie, &pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        if (bInitialState) 
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            pEvent->Set();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-        m_handle = (HANDLE)pEvent;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-    {
-        HANDLE h = UnsafeCreateEvent(NULL,FALSE,bInitialState,NULL);
-        if (h == NULL) {
-            ThrowOutOfMemory();
-        }
-        m_handle = h;
-    }
-
-    SetInDeadlockDetection();
-}
-
-void CLREventBase::CreateRWLockReaderEvent (BOOL bInitialState,  // If TRUE, initial state is signalled
-                                        CRWLock *pRWLock
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;           
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((g_fEEStarted));        
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));        
-        PRECONDITION((GetThread() != NULL));        
-        PRECONDITION((!IsOSEvent()));
-    }
-    CONTRACTL_END;
-
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager == NULL) {
-        HANDLE h = UnsafeCreateEvent(NULL,TRUE,bInitialState,NULL);
-        if (h == NULL) {
-            ThrowOutOfMemory();
-        }
-        m_handle = h;
-    }
-    else {
-        IHostManualEvent *pEvent;
-        HRESULT hr;
-        SIZE_T cookie = (SIZE_T)pRWLock->GetObjectHandle();
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateRWLockReaderEvent(bInitialState, cookie, &pEvent);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        if (hr != S_OK) {
-            _ASSERTE (hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        m_handle = (HANDLE)pEvent;
-    }
-
-    SetInDeadlockDetection();
-}
-#endif // FEATURE_RWLOCK
 
 
 void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
@@ -480,22 +324,6 @@ void CLREventBase::CloseEvent()
     _ASSERTE(Thread::Debug_AllowCallout());
 
     if (m_handle != INVALID_HANDLE_VALUE) {
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        if (!IsOSEvent() && CLRSyncHosted())
-        {
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-
-            if (IsAutoEvent()) {
-                ((IHostAutoEvent*)m_handle)->Release();
-            }
-            else {
-                ((IHostManualEvent*)m_handle)->Release();
-            }
-
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-        }
-        else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         {
             CloseHandle(m_handle);
         }
@@ -519,26 +347,6 @@ BOOL CLREventBase::Set()
 
     _ASSERTE(Thread::Debug_AllowCallout());
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSEvent() && CLRSyncHosted())
-    {
-        if (IsAutoEvent()) {
-            HRESULT hr;
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            hr = ((IHostAutoEvent*)m_handle)->Set();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-            return hr == S_OK;
-        }
-        else {
-            HRESULT hr;
-            BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-            hr = ((IHostManualEvent*)m_handle)->Set();
-            END_SO_TOLERANT_CODE_CALLING_HOST;
-            return hr == S_OK;
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {    
         return UnsafeSetEvent(m_handle);
     }
@@ -563,163 +371,11 @@ BOOL CLREventBase::Reset()
     _ASSERTE (!IsAutoEvent() ||
               !"Can not call Reset on AutoEvent");
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSEvent() && CLRSyncHosted())
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ((IHostManualEvent*)m_handle)->Reset();
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        return hr == S_OK;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return UnsafeResetEvent(m_handle);
     }
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-static DWORD HostAutoEventWait (void *args, DWORD timeout, DWORD option)
-{
-    BOOL alertable = (option & WAIT_ALERTABLE);
-    CONTRACTL
-    {
-      if (alertable)
-      {
-          THROWS;
-      }
-      else
-      {
-          NOTHROW;
-      }
-      if (GetThread())
-      {
-          if (alertable)
-              GC_TRIGGERS;
-          else 
-              GC_NOTRIGGER;
-      }
-      else
-      {
-          DISABLED(GC_TRIGGERS);        
-      }
-      SO_TOLERANT;
-      PRECONDITION(CheckPointer(args));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr;
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = ((IHostAutoEvent*)args)->Wait(timeout,option);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-#ifdef _DEBUG
-    if (FAILED(hr) && timeout == INFINITE) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-    }
-#endif
-    if (hr == S_OK) {
-        return WAIT_OBJECT_0;
-    }
-    else if (hr == HOST_E_DEADLOCK) {
-        RaiseDeadLockException();
-    }
-    else if (hr == HOST_E_INTERRUPTED) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            Thread::UserInterruptAPC(APC_Code);
-        }
-        return WAIT_IO_COMPLETION;
-    }
-    else if (hr == HOST_E_TIMEOUT) {
-        return WAIT_TIMEOUT;
-    }
-    else if (hr == HOST_E_ABANDONED) {
-        return WAIT_ABANDONED;
-    }
-    else if (hr == E_FAIL) {
-        _ASSERTE (!"Unknown host wait failure");
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-    {
-        _ASSERTE (!"Unknown host wait return");
-    }
-    return 0;
-}
-
-static DWORD HostManualEventWait (void *args, DWORD timeout, DWORD option)
-{
-    CONTRACTL
-    {
-        if (option & WAIT_ALERTABLE)
-        {
-            THROWS;
-        }
-        else
-        {
-            NOTHROW;
-        }
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(args));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr;
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = ((IHostManualEvent*)args)->Wait(timeout,option);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-
-    if (hr == COR_E_STACKOVERFLOW)
-    {
-        Thread *pThread = GetThread();
-        if (pThread && pThread->HasThreadStateNC(Thread::TSNC_WaitUntilGCFinished))
-        {
-            return hr;
-        }
-    }
-#ifdef _DEBUG
-    if (FAILED(hr) && timeout == INFINITE) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-    }
-#endif
-    if (hr == S_OK) {
-        return WAIT_OBJECT_0;
-    }
-    else if (hr == HOST_E_DEADLOCK) {
-        RaiseDeadLockException();
-    }
-    else if (hr == HOST_E_INTERRUPTED) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            Thread::UserInterruptAPC(APC_Code);
-        }
-        return WAIT_IO_COMPLETION;
-    }
-    else if (hr == HOST_E_TIMEOUT) {
-        return WAIT_TIMEOUT;
-    }
-    else if (hr == HOST_E_ABANDONED) {
-        return WAIT_ABANDONED;
-    }
-    else if (hr == E_FAIL) {
-        _ASSERTE (!"Unknown host wait failure");
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-    {
-        _ASSERTE (!"Unknown host wait return");
-    }
-    return 0;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 static DWORD CLREventWaitHelper2(HANDLE handle, DWORD dwMilliseconds, BOOL alertable)
 {
@@ -813,35 +469,6 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syn
 #endif
     _ASSERTE((pThread != NULL) || !g_fEEStarted || dbgOnly_IsSpecialEEThread());
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (!IsOSEvent() && CLRSyncHosted())
-    {
-       if ((pThread != NULL) && alertable) {
-            DWORD dwRet = WAIT_FAILED;
-            BEGIN_SO_INTOLERANT_CODE_NOTHROW (pThread, return WAIT_FAILED;);
-            dwRet = pThread->DoAppropriateWait(IsAutoEvent()?HostAutoEventWait:HostManualEventWait,
-                                              m_handle,dwMilliseconds,
-                                              mode,
-                                              syncState);
-            END_SO_INTOLERANT_CODE;
-            return dwRet;
-        }
-        else {
-            _ASSERTE (syncState == NULL);
-            DWORD option = 0;
-            if (alertable) {
-                option |= WAIT_ALERTABLE;
-            }
-            if (IsAutoEvent()) {
-                return HostAutoEventWait((IHostAutoEvent*)m_handle,dwMilliseconds, option);
-            }
-            else {
-                return HostManualEventWait((IHostManualEvent*)m_handle,dwMilliseconds, option);
-            }
-        }
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         if (pThread && alertable) {
             DWORD dwRet = WAIT_FAILED;
@@ -870,25 +497,6 @@ void CLRSemaphore::Create (DWORD dwInitial, DWORD dwMax)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    IHostSyncManager *pManager = CorHost2::GetHostSyncManager();
-    if (pManager != NULL) {
-        IHostSemaphore *pSemaphore;
-        #undef CreateSemaphore
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CreateSemaphore(dwInitial,dwMax,&pSemaphore);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        #define CreateSemaphore(lpSemaphoreAttributes, lInitialCount, lMaximumCount, lpName) \
-                Dont_Use_CreateSemaphore(lpSemaphoreAttributes, lInitialCount, lMaximumCount, lpName)
-        if (hr != S_OK) {
-            _ASSERTE(hr == E_OUTOFMEMORY);
-            ThrowOutOfMemory();
-        }
-        m_handle = (HANDLE)pSemaphore;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         HANDLE h = UnsafeCreateSemaphore(NULL,dwInitial,dwMax,NULL);
         if (h == NULL) {
@@ -907,11 +515,6 @@ void CLRSemaphore::Close()
         if (!CLRSyncHosted()) {
             CloseHandle(m_handle);
         }
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-        else {
-            ((IHostSemaphore*)m_handle)->Release();
-        }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
         m_handle = INVALID_HANDLE_VALUE;
     }
 }
@@ -927,75 +530,11 @@ BOOL CLRSemaphore::Release(LONG lReleaseCount, LONG *lpPreviousCount)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted())
-    {
-        #undef ReleaseSemaphore
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = ((IHostSemaphore*)m_handle)->ReleaseSemaphore(lReleaseCount,lpPreviousCount);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        #define ReleaseSemaphore(hSemaphore, lReleaseCount, lpPreviousCount) \
-                Dont_Use_ReleaseSemaphore(hSemaphore, lReleaseCount, lpPreviousCount)
-        return hr == S_OK;
-    }
-    else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
     {
         return ::UnsafeReleaseSemaphore(m_handle, lReleaseCount, lpPreviousCount);
     }
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-static DWORD HostSemaphoreWait (void *args, DWORD timeout, DWORD option)
-{
-    CONTRACTL
-    {
-        if ((option & WAIT_ALERTABLE))
-        {
-            THROWS;               // Thread::DoAppropriateWait can throw   
-        }
-        else
-        {
-            NOTHROW;
-        }
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        PRECONDITION(CheckPointer(args));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    HRESULT hr;
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    hr = ((IHostSemaphore*)args)->Wait(timeout,option);
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-    if (hr == S_OK) {
-        return WAIT_OBJECT_0;
-    }
-    else if (hr == HOST_E_INTERRUPTED) {
-        _ASSERTE (option & WAIT_ALERTABLE);
-        Thread *pThread = GetThread();
-        if (pThread)
-        {
-            Thread::UserInterruptAPC(APC_Code);
-        }
-        return WAIT_IO_COMPLETION;
-    }
-    else if (hr == HOST_E_TIMEOUT) {
-        return WAIT_TIMEOUT;
-    }
-    else if (hr == E_FAIL) {
-        _ASSERTE (!"Unknown host wait failure");
-    }
-    else 
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-    {
-        _ASSERTE (!"Unknown host wait return");
-    }
-    return 0;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
 {
@@ -1029,25 +568,6 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
     Thread *pThread = GetThread();
     _ASSERTE (pThread || !g_fEEStarted || dbgOnly_IsSpecialEEThread());
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (CLRSyncHosted())
-    {
-        if (pThread && alertable) {
-            return pThread->DoAppropriateWait(HostSemaphoreWait,
-                                              m_handle,dwMilliseconds,
-                                              alertable?WaitMode_Alertable:WaitMode_None,
-                                              NULL);
-        }
-        else {
-            DWORD option = 0;
-            if (alertable) {
-                option |= WAIT_ALERTABLE;
-            }
-            return HostSemaphoreWait((IHostSemaphore*)m_handle,dwMilliseconds,option);
-        }
-    }
-    else
-#endif // !FEATURE_INCLUDE_ALL_INTERFACES
     {
         // TODO wwl: if alertable is FALSE, do we support a host to break a deadlock?
         // Currently we can not call through DoAppropriateWait because of CannotThrowComplusException.

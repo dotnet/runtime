@@ -17,9 +17,6 @@
 #include "eeconfig.h"
 #include "dllimport.h"
 #include "comdelegate.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "dbginterface.h"
 #include "listlock.inl"
 #include "stubgen.h"
@@ -1296,13 +1293,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     {
         pStub = MakeUnboxingStubWorker(this);
     }
-#ifdef FEATURE_REMOTING
-    else if (pMT->IsInterface() && !IsStatic() && !IsFCall())
-    {
-        pCode = CRemotingServices::GetDispatchInterfaceHelper(this);
-        GetOrCreatePrecode();
-    }
-#endif // FEATURE_REMOTING
 #if defined(FEATURE_SHARE_GENERIC_CODE) 
     else if (IsInstantiatingStub())
     {
@@ -1571,24 +1561,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     // stub that performs declarative checks prior to calling the real stub.
     // record if security needs to intercept this call (also depends on whether we plan to use stubs for declarative security)
 
-#if !defined( HAS_REMOTING_PRECODE) && defined (FEATURE_REMOTING)
-    /**************************   REMOTING   *************************/
-
-    // check for MarshalByRef scenarios ... we need to intercept
-    // Non-virtual calls on MarshalByRef types
-    if (fRemotingIntercepted)
-    {
-        // let us setup a remoting stub to intercept all the calls
-        Stub *pRemotingStub = CRemotingServices::GetStubForNonVirtualMethod(this, 
-            (pStub != NULL) ? (LPVOID)pStub->GetEntryPoint() : (LPVOID)pCode, pStub);
-        
-        if (pRemotingStub != NULL)
-        {
-            pStub = pRemotingStub;
-            pCode = NULL;
-        }
-    }
-#endif // HAS_REMOTING_PRECODE
 
     _ASSERTE((pStub != NULL) ^ (pCode != NULL));
 

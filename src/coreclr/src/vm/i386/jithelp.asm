@@ -87,11 +87,6 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
-ifdef FEATURE_REMOTING
-EXTERN _TransparentProxyStub_CrossContext@0:PROC
-EXTERN _InContextTPQuickDispatchAsmStub@0:PROC
-endif
-
 EXTERN _COMPlusEndCatch@20:PROC
 
 .686P
@@ -2376,50 +2371,6 @@ PUBLIC _JIT_PatchedWriteBarrierLast@0
 _JIT_PatchedWriteBarrierLast@0 PROC
 ret
 _JIT_PatchedWriteBarrierLast@0 ENDP
-
-;**********************************************************************
-; PrecodeRemotingThunk is patched at runtime to activate it
-ifdef FEATURE_REMOTING
-        ALIGN 16
-_PrecodeRemotingThunk@0 proc public
-
-        ret                             ; This is going to be patched to "test ecx,ecx"
-        nop
-
-        jz      RemotingDone            ; predicted not taken
-
-        cmp     dword ptr [ecx],11111111h ; This is going to be patched to address of the transparent proxy
-        je      RemotingCheck           ; predicted not taken
-
-RemotingDone:
-        ret
-
-RemotingCheck:
-        push     eax            ; save method desc
-        mov      eax, dword ptr [ecx + TransparentProxyObject___stubData]
-        call     [ecx + TransparentProxyObject___stub]
-        test     eax, eax
-        jnz      RemotingCtxMismatch
-        mov      eax, [esp]
-        mov      ax, [eax + MethodDesc_m_wFlags]
-        and      ax, MethodDesc_mdcClassification
-        cmp      ax, MethodDesc_mcComInterop
-        je       ComPlusCall
-        pop      eax            ; throw away method desc
-        jmp      RemotingDone
-
-RemotingCtxMismatch:
-        pop      eax            ; restore method desc
-        add      esp, 4         ; pop return address into the precode
-        jmp      _TransparentProxyStub_CrossContext@0
-        
-ComPlusCall:
-        pop      eax            ; restore method desc
-        mov      [esp],eax      ; replace return address into the precode with method desc (argument for TP stub)
-        jmp      _InContextTPQuickDispatchAsmStub@0        
-
-_PrecodeRemotingThunk@0 endp
-endif ;  FEATURE_REMOTING
 
 _JIT_PatchedCodeLast@0 proc public
 ret

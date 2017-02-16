@@ -136,14 +136,6 @@ private:
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
 
-#ifdef FEATURE_MIXEDMODE
-protected:
-    // Returns TRUE if this file references managed CRT (msvcmNN*).
-    BOOL ReferencesManagedCRT();
-    
-    // Checks for unsupported loads of C++/CLI assemblies into multiple runtimes in this process.
-    void CheckForDisallowedInProcSxSLoad();
-#endif // FEATURE_MIXEDMODE
 
 private:
     void CheckForDisallowedInProcSxSLoadWorker();
@@ -879,90 +871,11 @@ class PEAssembly : public PEFile
     }
 };
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-
-class PEModule : public PEFile
-{
-    VPTR_VTABLE_CLASS(PEModule, PEFile)
-    
-  public:
-
-    // ------------------------------------------------------------
-    // Public API
-    // ------------------------------------------------------------
-
-    static PEModule *Open(PEAssembly *assembly, mdFile token,
-                          const SString &fileName);
-
-    static PEModule *OpenMemory(PEAssembly *assembly, mdFile kToken,
-                                const void *flat, COUNT_T size); 
-
-    static PEModule *Create(PEAssembly *assembly, mdFile kToken, IMetaDataEmit *pEmit);
-
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-  private:
-    // Private helpers for crufty exception handling reasons
-    static PEModule *DoOpen(PEAssembly *assembly, mdFile token,
-                            const SString &fileName);
-
-    static PEModule *DoOpenMemory(PEAssembly *assembly, mdFile kToken,
-                                  const void *flat, COUNT_T size); 
-  public:
-
-    // ------------------------------------------------------------
-    // Metadata access
-    // ------------------------------------------------------------
-
-    PEAssembly *GetAssembly();
-    mdFile GetToken();
-    BOOL IsResource();
-    BOOL IsIStream();
-    LPCUTF8 GetSimpleName();
-
-    // ------------------------------------------------------------
-    // Logging
-    // ------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-    void ExternalVLog(DWORD facility, DWORD level, const WCHAR *fmt, va_list args) DAC_EMPTY();
-    void FlushExternalLog() DAC_EMPTY();
-#endif
-private:
-    // ------------------------------------------------------------
-    // Loader access API
-    // ------------------------------------------------------------
-
-    friend class DomainModule;
-#ifdef FEATURE_PREJIT
-    void SetNativeImage(const SString &fullPath);
-#endif  // FEATURE_PREJIT
-
-private:
-
-#ifndef DACCESS_COMPILE
-    PEModule(PEImage *image, PEAssembly *assembly, mdFile token, IMetaDataEmit *pEmit);
-    virtual ~PEModule();
-#endif
-
-    // ------------------------------------------------------------
-    // Instance fields
-    // ------------------------------------------------------------
-
-    PTR_PEAssembly          m_assembly;
-    mdFile                  m_token;
-    BOOL                    m_bIsResource;
-};
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
 typedef ReleaseHolder<PEFile> PEFileHolder;
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
 
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-typedef ReleaseHolder<PEModule> PEModuleHolder;
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
 
 // A small shim around PEAssemblies/IBindResult that allow us to write Fusion/CLR-agnostic

@@ -45,18 +45,11 @@
 #include "decimal.h"
 #include "currency.h"
 #include "comdatetime.h"
-#include "comisolatedstorage.h"
 #include "number.h"
 #include "compatibilityswitch.h"
-#ifdef FEATURE_REMOTING
-#include "remotingnative.h"
-#include "message.h"
-#include "stackbuildersink.h"
-#endif
 #include "debugdebugger.h"
 #include "assemblyname.hpp"
 #include "assemblynative.hpp"
-#include "rwlock.h"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
 #include "nativeoverlapped.h"
@@ -94,10 +87,6 @@
 
 #ifdef FEATURE_MULTICOREJIT
 #include "multicorejit.h"
-#endif
-
-#if defined(FEATURE_COMINTEROP) && defined(FEATURE_REFLECTION_ONLY_LOAD)
-#include "clrprivtypecachereflectiononlywinrt.h"
 #endif
 
 #ifdef FEATURE_COMINTEROP

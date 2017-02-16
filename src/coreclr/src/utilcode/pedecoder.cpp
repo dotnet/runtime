@@ -34,7 +34,7 @@ CHECK PEDecoder::CheckFormat() const
         {
             CHECK(CheckCorHeader());
 
-#if !defined(FEATURE_MIXEDMODE) && !defined(FEATURE_PREJIT)
+#if !defined(FEATURE_PREJIT)
             CHECK(IsILOnly());
 #endif
 

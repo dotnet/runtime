@@ -176,23 +176,6 @@ ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, 
 #define UMThunkMarshInfo__m_cbActualArgSize 0x04
 ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMarshInfo, m_cbActualArgSize))
 
-#ifdef FEATURE_REMOTING
-
-#define TransparentProxyObject___stubData 0x8
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stubData == offsetof(TransparentProxyObject, _stubData))
-
-#define TransparentProxyObject___stub 0x14
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___stub == offsetof(TransparentProxyObject, _stub))
-
-#define TransparentProxyObject___pMT 0xc
-ASMCONSTANTS_C_ASSERT(TransparentProxyObject___pMT == offsetof(TransparentProxyObject, _pMT))
-
-#define RemotingPrecode__m_pMethodDesc 0x10
-ASMCONSTANTS_C_ASSERT(RemotingPrecode__m_pMethodDesc == offsetof(RemotingPrecode, m_pMethodDesc))
-
-#define REMOTING_PRECODE_RET_OFFSET 0x06
-
-#endif // FEATURE_REMOTING
 
 #define MethodDesc__m_wFlags DBG_FRE(0x1A, 0x06)
 ASMCONSTANTS_C_ASSERT(MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags))
