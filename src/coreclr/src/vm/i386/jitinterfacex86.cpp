@@ -1509,8 +1509,8 @@ void InitJITHelpers1()
 
     // All write barrier helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierLast - (BYTE*)JIT_WriteBarrierStart < PAGE_SIZE);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_PatchedWriteBarrierLast - (BYTE*)JIT_PatchedWriteBarrierStart < PAGE_SIZE);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < PAGE_SIZE);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < PAGE_SIZE);
 
     // Copy the write barriers to their final resting place.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
@@ -1690,8 +1690,8 @@ void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
     }
 
     if (flushICache)
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierStart,
-            (BYTE*)JIT_PatchedWriteBarrierLast - (BYTE*)JIT_PatchedWriteBarrierStart);
+        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
+            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
 }
 
 /*********************************************************************/
@@ -1827,8 +1827,8 @@ void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
     }
     else
     {
-        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierStart,
-            (BYTE*)JIT_PatchedWriteBarrierLast - (BYTE*)JIT_PatchedWriteBarrierStart);
+        FlushInstructionCache(GetCurrentProcess(), (void *)JIT_PatchedWriteBarrierGroup,
+            (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
     }
 
     if(bEESuspendedHere)

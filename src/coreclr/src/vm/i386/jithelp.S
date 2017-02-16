@@ -371,12 +371,12 @@ NESTED_END JIT_ByRefWriteBarrier, _TEXT
 
 .endm
 
-// WriteBarrierStart and WriteBarrierEnd are used to determine bounds of
-// WriteBarrier functions so can determine if got AV in them.
+// JIT_WriteBarrierGroup and JIT_WriteBarrierGroup_End are used
+// to determine bounds of WriteBarrier functions so can determine if got AV in them.
 //
-LEAF_ENTRY JIT_WriteBarrierStart, _TEXT
+LEAF_ENTRY JIT_WriteBarrierGroup, _TEXT
     ret
-LEAF_END JIT_WriteBarrierStart, _TEXT
+LEAF_END JIT_WriteBarrierGroup, _TEXT
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 // *******************************************************************************
@@ -408,14 +408,10 @@ WriteBarrierHelper EBP
 
 ByRefWriteBarrierHelper
 
-LEAF_ENTRY JIT_WriteBarrierLast, _TEXT
-    ret
-LEAF_END JIT_WriteBarrierLast, _TEXT
-
 // This is the first function outside the "keep together range". Used by BBT scripts.
-LEAF_ENTRY JIT_WriteBarrierEnd, _TEXT
+LEAF_ENTRY JIT_WriteBarrierGroup_End, _TEXT
     ret
-LEAF_END JIT_WriteBarrierEnd, _TEXT
+LEAF_END JIT_WriteBarrierGroup_End, _TEXT
 
 // *********************************************************************/
 //  In cases where we support it we have an optimized GC Poll callback.
@@ -688,9 +684,9 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 // **********************************************************************
 // Write barriers generated at runtime
 
-LEAF_ENTRY JIT_PatchedWriteBarrierStart, _TEXT
+LEAF_ENTRY JIT_PatchedWriteBarrierGroup, _TEXT
     ret
-LEAF_END JIT_PatchedWriteBarrierStart, _TEXT
+LEAF_END JIT_PatchedWriteBarrierGroup, _TEXT
 
 .macro PatchedWriteBarrierHelper rg
 .align 8
@@ -708,15 +704,11 @@ PatchedWriteBarrierHelper ESI
 PatchedWriteBarrierHelper EDI
 PatchedWriteBarrierHelper EBP
 
-LEAF_ENTRY JIT_PatchedWriteBarrierLast, _TEXT
+// This is the first function outside the "keep together range". Used by BBT scripts.
+LEAF_ENTRY JIT_PatchedWriteBarrierGroup_End, _TEXT
     ret
-LEAF_END JIT_PatchedWriteBarrierLast, _TEXT
+LEAF_END JIT_PatchedWriteBarrierGroup_End, _TEXT
 
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
-
-// This is the first function outside the "keep together range". Used by BBT scripts.
-LEAF_ENTRY JIT_PatchedCodeEnd, _TEXT
-    ret
-LEAF_END JIT_PatchedCodeEnd, _TEXT
