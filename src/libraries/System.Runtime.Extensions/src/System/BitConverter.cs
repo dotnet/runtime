@@ -150,7 +150,7 @@ namespace System
                 ThrowValueArgumentTooSmall();
             Contract.EndContractBlock();
 
-            return (char)ToInt16(value, startIndex);
+            return unchecked((char)ToInt16(value, startIndex));
         }
 
         // Converts an array of bytes into a short.  

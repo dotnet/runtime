@@ -820,9 +820,9 @@ namespace Internal.NativeCrypto
                 // that error does not relate to the padding.  Otherwise just throw a cryptographic exception based on
                 // the error code.
                 if ((uint)((uint)dwFlags & (uint)CryptDecryptFlags.CRYPT_OAEP) == (uint)CryptDecryptFlags.CRYPT_OAEP &&
-                                                                    (uint)ErrCode != (uint)CryptKeyError.NTE_BAD_KEY)
+                                                      unchecked((uint)ErrCode) != (uint)CryptKeyError.NTE_BAD_KEY)
                 {
-                    if ((uint)ErrCode == (uint)CryptKeyError.NTE_BAD_FLAGS)
+                    if (unchecked((uint)ErrCode) == (uint)CryptKeyError.NTE_BAD_FLAGS)
                     {
                         throw new CryptographicException("Cryptography_OAEP_XPPlus_Only");
                     }
