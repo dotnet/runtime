@@ -51,13 +51,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         public static void AssertEqualsWithDescription(object expectedValue, object actualValue, string failMessage)
         {
-            var msg = string.Format("{0}\nExpected: {1}\nActual: {2}", failMessage, expectedValue, actualValue);
             if (expectedValue == null || actualValue == null)
             {
+                var msg = string.Format("{0}\nExpected: {1}\nActual: {2}", failMessage, expectedValue, actualValue);
                 Assert.True(expectedValue == actualValue, msg);
             }
             else
             {
+                var msg = string.Format("{0}\nExpected: {1} ({2})\nActual: {3} ({4})", failMessage, expectedValue, expectedValue.GetType(), actualValue, actualValue.GetType());
                 Assert.True(expectedValue.Equals(actualValue), msg);
             }
         }
