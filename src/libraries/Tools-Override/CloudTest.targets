@@ -176,6 +176,11 @@
     <ItemGroup>
        <ForUpload Include="@(UnfilteredTestArchives)" />
     </ItemGroup>
+    <!-- To work around the removal of the build task, also need to turn the list of test archives to a property 
+         like the previous build task would have output --> 
+    <PropertyGroup>
+      <ForUploadList>@(UnfilteredTestArchives)</ForUploadList>
+    </PropertyGroup>
 
     <Message Condition="'$(FilterToTestTFM)' != ''" Text="Using test archives for TFM: $(FilterToTestTFM)" />
     <Message Text="Using OS-Specific test archives from: $(TestArchivesRoot)" />
