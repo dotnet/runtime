@@ -510,8 +510,8 @@ void Compiler::optValnumCSE_Init()
     optCSECandidateCount = 0;
     optDoCSE             = false; // Stays false until we find duplicate CSE tree
 
-    // cseArrLenMap is unused in most functions, allocated only when used
-    cseArrLenMap = nullptr;
+    // optCseArrLenMap is unused in most functions, allocated only when used
+    optCseArrLenMap = nullptr;
 }
 
 /*****************************************************************************
@@ -711,7 +711,7 @@ unsigned Compiler::optValnumCSE_Locate()
                     // Check if this compare is a function of (one of) the arrary
                     // length candidate(s); we may want to update its value number
                     // if the array length gets CSEd
-                    updateCseArrLenMap(tree);
+                    optCseUpdateArrLenMap(tree);
                 }
 
                 if (!optIsCSEcandidate(tree))
@@ -766,16 +766,16 @@ unsigned Compiler::optValnumCSE_Locate()
 }
 
 //------------------------------------------------------------------------
-// updateCseArrLenMap: Check if this compare is a tractable function of
+// optCseUpdateArrLenMap: Check if this compare is a tractable function of
 //                     an array length that is a CSE candidate, and insert
-//                     an entry in the cseArrLenMap if so.  This facilitates
+//                     an entry in the optCseArrLenMap if so.  This facilitates
 //                     subsequently updating the compare's value number if
 //                     the array length gets CSEd.
 //
 // Arguments:
 //    compare - The compare node to check
 
-void Compiler::updateCseArrLenMap(GenTreePtr compare)
+void Compiler::optCseUpdateArrLenMap(GenTreePtr compare)
 {
     assert(compare->OperIsCompare());
 
@@ -850,13 +850,13 @@ void Compiler::updateCseArrLenMap(GenTreePtr compare)
             // record this in the map so we can update the compare VN if the array length
             // node gets CSEd.
 
-            if (cseArrLenMap == nullptr)
+            if (optCseArrLenMap == nullptr)
             {
                 // Allocate map on first use.
-                cseArrLenMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+                optCseArrLenMap = new (getAllocator()) NodeToNodeMap(getAllocator());
             }
 
-            cseArrLenMap->Set(arrLen, compare);
+            optCseArrLenMap->Set(arrLen, compare);
         }
     }
 }
@@ -2024,8 +2024,8 @@ public:
                     cse->gtVNPair.SetConservative(defConservativeVN);
 
                     GenTreePtr cmp;
-                    if ((exp->OperGet() == GT_ARR_LENGTH) && (m_pCompiler->cseArrLenMap != nullptr) &&
-                        (m_pCompiler->cseArrLenMap->Lookup(exp, &cmp)))
+                    if ((exp->OperGet() == GT_ARR_LENGTH) && (m_pCompiler->optCseArrLenMap != nullptr) &&
+                        (m_pCompiler->optCseArrLenMap->Lookup(exp, &cmp)))
                     {
                         // Propagate the new value number to this compare node as well, since
                         // subsequent range check elimination will try to correlate it with
