@@ -29,11 +29,24 @@
   
   <Target Name="UpdateFromLocalBuild">
     <ItemGroup>
-      <AllPackages Include="$(PackageOutputPath)\*.nupkg" />
+      <AllPackages Include="$(PackageOutputPath)\*.nupkg" Exclude="$(PackageOutputPath)\*Microsoft.Private.*.nupkg" />
+      <FrameworkLayout Include="$(NETCoreAppPackageRefPath)">
+        <TargetFramework>netcoreapp2.0</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(UAPPackageRefPath)">
+        <TargetFramework>uap10.1</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard2.0\ref">
+        <TargetFramework>netstandard2.0</TargetFramework>
+      </FrameworkLayout>
+      <FrameworkLayout Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\net461\ref">
+        <TargetFramework>net461</TargetFramework>
+      </FrameworkLayout>
     </ItemGroup>
-  
+
     <UpdatePackageIndex PackageIndexFile="$(PackageIndexFile)"
-                        Packages="@(AllPackages)" />
+                        Packages="@(AllPackages)"
+                        InboxFrameworkLayoutFolders="@(FrameworkLayout)" />
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
