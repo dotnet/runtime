@@ -16,7 +16,7 @@ __InitialDir=$PWD
 __BuildArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
-__LLDB_Package_Default="lldb-3.6-dev"
+__LLDB_Package="lldb-3.6-dev"
 __SkipUnmount=0
 
 # base development support
