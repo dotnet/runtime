@@ -1852,6 +1852,10 @@ public:
     {
         return (gtFlags & GTF_REVERSE_OPS) ? true : false;
     }
+    bool IsUnsigned() const
+    {
+        return ((gtFlags & GTF_UNSIGNED) != 0);
+    }
 
     inline bool IsCnsIntOrI() const;
 
