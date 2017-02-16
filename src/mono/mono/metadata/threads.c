@@ -642,13 +642,7 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	}
 
 	res = pthread_setschedparam (tid, policy, &param);
-#if defined(__HAIKU__)
-	/* On Haiku, pthread_setschedparam returns a positive number on success,
-           which is the priority, or a negative number, which is the errno. */
-	if (res < 0) {
-#else
 	if (res != 0) {
-#endif
 		if (res == EPERM) {
 			g_warning ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 			return;
