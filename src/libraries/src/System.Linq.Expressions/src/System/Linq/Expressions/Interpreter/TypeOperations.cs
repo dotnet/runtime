@@ -110,25 +110,6 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class NullableTypeEqualsInstruction : Instruction
-    {
-        public static readonly NullableTypeEqualsInstruction Instance = new NullableTypeEqualsInstruction();
-
-        public override int ConsumedStack => 2;
-        public override int ProducedStack => 1;
-        public override string InstructionName => "NullableTypeEquals";
-
-        private NullableTypeEqualsInstruction() { }
-
-        public override int Run(InterpretedFrame frame)
-        {
-            object type = frame.Pop();
-            object obj = frame.Pop();
-            frame.Push((object)obj?.GetType() == type);
-            return 1;
-        }
-    }
-
     internal abstract class NullableMethodCallInstruction : Instruction
     {
         private static NullableMethodCallInstruction s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;

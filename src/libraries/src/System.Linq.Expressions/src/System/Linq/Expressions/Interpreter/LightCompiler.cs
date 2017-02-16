@@ -2885,16 +2885,11 @@ namespace System.Linq.Expressions.Interpreter
             Compile(node.Expression);
             if (node.Expression.Type == typeof(void))
             {
-                _instructions.EmitLoad(node.TypeOperand == node.Expression.Type, typeof(bool));
-            }
-            else if (node.TypeOperand.GetTypeInfo().IsGenericType && node.TypeOperand.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                _instructions.EmitLoad(node.TypeOperand.GenericTypeArguments[0]);
-                _instructions.EmitNullableTypeEquals();
+                _instructions.EmitLoad(node.TypeOperand == typeof(void), typeof(bool));
             }
             else
             {
-                _instructions.EmitLoad(node.TypeOperand);
+                _instructions.EmitLoad(node.TypeOperand.GetNonNullableType());
                 _instructions.EmitTypeEquals();
             }
         }
@@ -2914,28 +2909,38 @@ namespace System.Linq.Expressions.Interpreter
 
             Compile(node.Expression);
 
-            if (result == AnalyzeTypeIsResult.KnownTrue ||
-                result == AnalyzeTypeIsResult.KnownFalse)
+            switch (result)
             {
-                // Result is known statically, so just emit the expression for
-                // its side effects and return the result
-                if (node.Expression.Type != typeof(void))
-                {
-                    _instructions.EmitPop();
-                }
+                case AnalyzeTypeIsResult.KnownTrue:
+                case AnalyzeTypeIsResult.KnownFalse:
 
-                _instructions.EmitLoad(result == AnalyzeTypeIsResult.KnownTrue);
-                return;
-            }
+                    // Result is known statically, so just emit the expression for
+                    // its side effects and return the result
+                    if (node.Expression.Type != typeof(void))
+                    {
+                        _instructions.EmitPop();
+                    }
 
-            if (node.TypeOperand.GetTypeInfo().IsGenericType && node.TypeOperand.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                _instructions.EmitLoad(node.TypeOperand.GenericTypeArguments[0]);
-                _instructions.EmitNullableTypeEquals();
-            }
-            else
-            {
-                _instructions.EmitTypeIs(node.TypeOperand);
+                    _instructions.EmitLoad(result == AnalyzeTypeIsResult.KnownTrue);
+                    break;
+                case AnalyzeTypeIsResult.KnownAssignable:
+
+                    // Either the value is of the type or it is null
+                    // so emit test for not-null.
+                    _instructions.EmitLoad(null);
+                    _instructions.EmitNotEqual(typeof(object));
+                    break;
+                default:
+                    if (node.TypeOperand.GetTypeInfo().IsValueType)
+                    {
+                        _instructions.EmitLoad(node.TypeOperand.GetNonNullableType());
+                        _instructions.EmitTypeEquals();
+                    }
+                    else
+                    {
+                        _instructions.EmitTypeIs(node.TypeOperand);
+                    }
+                    break;
             }
         }
 

@@ -48,12 +48,6 @@
       "values": ["True", "False"],
       "defaultValue": true
     },
-    "RestoreDuringBuild": {
-      "description": "Enables/Disables the restoration of packages.",
-      "valueType": "property",
-      "values": ["True", "False"],
-      "defaultValue": true
-    },
     "BuildPackages": {
       "description": "Enables/Disables building packages.",
       "valueType": "property",
@@ -262,9 +256,14 @@
           "settings": { }
         },
         "tests": {
-          "description": "Builds the tests that are in the repository, doesn't restore packages.",
+          "description": "Builds src and then builds and runs the tests for the given configuration.",
           "settings": {
-            "RestoreDuringBuild": "false",
+            "BuildTests": true
+          }
+        },
+        "testsOnly": {
+          "description": "Builds and runs the tests for the given configuration.",
+          "settings": {
             "Project": "src/tests.builds",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log"
           }
@@ -396,7 +395,11 @@
           "settings": {
             "StripSymbolsAdditionalArg": "stripSymbols"
           }
-        }
+        },
+        "tests": {
+          "description": "No-op for build-native, included just to enable easy combination with build-managed",
+          "settings": { }
+        },
       },
       "defaultValues": {
         "toolName": "terminal",
@@ -489,7 +492,6 @@
         "p": {
           "description": "Restores all NuGet packages for repository.",
           "settings": {
-            "RestoreDuringBuild":  true,
             "Sync": "default"
           }
         },
@@ -502,7 +504,6 @@
         "t": {
           "description": "Deprecated, use sync /p instead.",
           "settings": {
-            "RestoreDuringBuild":  true,
             "Sync": "default"
           }
         },
