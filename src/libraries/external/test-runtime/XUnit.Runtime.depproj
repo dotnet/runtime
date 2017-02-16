@@ -41,14 +41,5 @@
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
-    
-    <WriteLinesToFile
-      File="$(RuntimePath)\xunit.console.exe.config"
-      Lines="$([System.IO.File]::ReadAllText('$(ToolsDir)\XUnitNetFXConfigFileTemplate.txt').Replace('{RuntimePath}', $(RuntimePath)))"
-      Overwrite="true" />
-
-    <ItemGroup>
-      <FileWrites Include="$(RuntimePath)\xunit.console.exe.config" />
-    </ItemGroup>
 </Target>
 </Project>

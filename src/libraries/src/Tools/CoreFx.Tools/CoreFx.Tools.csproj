@@ -26,6 +26,7 @@
     <Compile Include="GenerateDepsJson.cs" />
     <Compile Include="TryGetManagedAssemblyName.cs" />
     <Compile Include="UpdateVSConfigurations.cs" />
+    <Compile Include="GenerateBindingRedirect.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <Compile Include="BuildTask.net45.cs" />
@@ -33,6 +34,7 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Xml" />
+    <TargetingPackReference Include="System.Xml.Linq" />
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
