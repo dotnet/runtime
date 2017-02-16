@@ -262,15 +262,19 @@ namespace Mono.Linker.Steps {
 				}
 
 				var import = scope.Import;
-				if (import != null && import.HasTargets) {
-					var targets = import.Targets;
-					for (int i = 0; i < targets.Count; ++i) {
-						var ttype = targets [i].Type;
-						if (ttype != null && !Annotations.IsMarked (ttype))
-							targets.RemoveAt (i--);
+				while (import != null) {
+					if (import.HasTargets) {
+						var targets = import.Targets;
+						for (int i = 0; i < targets.Count; ++i) {
+							var ttype = targets [i].Type;
+							if (ttype != null && !Annotations.IsMarked (ttype))
+								targets.RemoveAt (i--);
 
-						// TODO: Clear also AssemblyReference and Namespace when not marked
+							// TODO: Clear also AssemblyReference and Namespace when not marked
+						}
 					}
+
+					import = import.Parent;
 				}
 			}
 		}
