@@ -78,6 +78,11 @@ xcopy /s %BENCHDIR%*.txt . >> %RUNLOG%
 
 set CORE_ROOT=%CORECLR_REPO%\sandbox
 
+@rem setup additional environment variables
+if EXIST %TEST_ENV% (
+    call %TEST_ENV%
+)
+
 xunit.performance.run.exe %BENCHNAME%.%TEST_FILE_EXT% -runner xunit.console.netcore.exe -runnerhost corerun.exe -verbose -runid %PERFOUT% > %BENCHNAME%.out
 
 xunit.performance.analysis.exe %PERFOUT%.xml -xml %XMLOUT% > %BENCHNAME%-analysis.out
@@ -122,6 +127,12 @@ goto :ARGLOOP
 )
 IF /I [%1] == [-arch] (
 set TEST_ARCH=%2
+shift
+shift
+goto :ARGLOOP
+)
+IF /I [%1] == [-testEnv] (
+set TEST_ENV=%2
 shift
 shift
 goto :ARGLOOP
