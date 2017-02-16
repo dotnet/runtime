@@ -5,7 +5,7 @@ usage()
     echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
-    echo "lldbx.y - optional, LLDB version, can be: lldb3.6, lldb3.8"
+    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, no-lldb"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
     exit 1
 }
@@ -16,7 +16,7 @@ __InitialDir=$PWD
 __BuildArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
-__LLDB_Package=""
+__LLDB_Package_Default="lldb-3.6-dev"
 __SkipUnmount=0
 
 # base development support
@@ -69,6 +69,9 @@ for i in "$@" ; do
             ;;
         lldb3.8)
             __LLDB_Package="lldb-3.8-dev"
+            ;;
+        no-lldb)
+            unset __LLDB_Package
             ;;
         vivid)
             if [ "$__LinuxCodeName" != "jessie" ]; then
