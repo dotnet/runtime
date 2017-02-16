@@ -212,8 +212,20 @@ namespace System.Data.SqlClient
         public void Close() { }
         void System.IDisposable.Dispose() { }
         public void WriteToServer(System.Data.Common.DbDataReader reader) { }
+        public void WriteToServer(System.Data.IDataReader reader) { }
+        public void WriteToServer(System.Data.DataTable table) { }
+        public void WriteToServer(System.Data.DataTable table, System.Data.DataRowState rowState) { }
+        public void WriteToServer(System.Data.DataRow[] rows) { }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataRow[] rows) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataRow[] rows, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.IDataReader reader) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.IDataReader reader, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WriteToServerAsync(System.Data.Common.DbDataReader reader) { throw null; }
         public System.Threading.Tasks.Task WriteToServerAsync(System.Data.Common.DbDataReader reader, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataTable table) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataTable table, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataTable table, System.Data.DataRowState rowState) { throw null; }
+        public System.Threading.Tasks.Task WriteToServerAsync(System.Data.DataTable table, System.Data.DataRowState rowState, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public sealed partial class SqlBulkCopyColumnMapping
     {
@@ -372,6 +384,44 @@ namespace System.Data.SqlClient
         public override bool ShouldSerialize(string keyword) { throw null; }
         public override bool TryGetValue(string keyword, out object value) { throw null; }
     }
+    public sealed partial class SqlDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
+    {
+        public SqlDataAdapter() { }
+        public SqlDataAdapter(SqlCommand selectCommand) { }
+        public SqlDataAdapter(string selectCommandText, string selectConnectionString) { }
+        public SqlDataAdapter(string selectCommandText, SqlConnection selectConnection) { }
+        new public SqlCommand DeleteCommand { get { throw null; } set { } }
+        new public SqlCommand InsertCommand { get { throw null; } set { } }
+        new public SqlCommand SelectCommand { get { throw null; } set { } }
+        System.Data.IDbCommand System.Data.IDbDataAdapter.DeleteCommand { get { throw null; } set { } }
+        System.Data.IDbCommand System.Data.IDbDataAdapter.InsertCommand { get { throw null; } set { } }
+        System.Data.IDbCommand System.Data.IDbDataAdapter.SelectCommand { get { throw null; } set { } }
+        System.Data.IDbCommand System.Data.IDbDataAdapter.UpdateCommand { get { throw null; } set { } }
+        override public int UpdateBatchSize { get { throw null; } set { } }
+        new public SqlCommand UpdateCommand { get { throw null; } set { } }
+        public event SqlRowUpdatedEventHandler RowUpdated { add { } remove { } }
+        public event SqlRowUpdatingEventHandler RowUpdating { add { } remove { } }
+        protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
+        protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
+        object System.ICloneable.Clone() { throw null; }
+    }
+    public sealed partial class SqlRowUpdatedEventArgs : System.Data.Common.RowUpdatedEventArgs
+    {
+        public SqlRowUpdatedEventArgs(DataRow row, IDbCommand command, StatementType statementType, System.Data.Common.DataTableMapping tableMapping)
+        : base(row, command, statementType, tableMapping) { }
+
+        new public SqlCommand Command { get { throw null; } }
+    }
+    public delegate void SqlRowUpdatedEventHandler(object sender, SqlRowUpdatedEventArgs e);
+    public sealed partial class SqlRowUpdatingEventArgs : System.Data.Common.RowUpdatingEventArgs
+    {
+        public SqlRowUpdatingEventArgs(DataRow row, IDbCommand command, StatementType statementType, System.Data.Common.DataTableMapping tableMapping)
+        : base(row, command, statementType, tableMapping) { }
+
+        new public SqlCommand Command { get { throw null; } set { } }
+        protected override System.Data.IDbCommand BaseCommand { get { throw null; } set { } }
+    }
+    public delegate void SqlRowUpdatingEventHandler(object sender, SqlRowUpdatingEventArgs e);
     public partial class SqlDataReader : System.Data.Common.DbDataReader, System.IDisposable
     {
         internal SqlDataReader() { }
@@ -571,5 +621,12 @@ namespace System.Data.SqlClient
         public override void Rollback() { }
         public void Rollback(string transactionName) { }
         public void Save(string savePointName) { }
+    }
+}
+namespace System.Data
+{
+    public sealed partial class OperationAbortedException : System.SystemException
+    {
+        internal OperationAbortedException() { }
     }
 }

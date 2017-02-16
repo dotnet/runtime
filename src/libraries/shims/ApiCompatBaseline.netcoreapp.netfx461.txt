@@ -1404,7 +1404,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Data.InvalidConstraintException' 
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.InvalidExpressionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.MissingPrimaryKeyException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.NoNullAllowedException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Data.OperationAbortedException' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.OperationAbortedException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Data.PropertyAttributes' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.ReadOnlyException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.RowNotInTableException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -1476,18 +1476,6 @@ TypesMustExist : Type 'System.Data.Sql.SqlDataSourceEnumerator' does not exist i
 TypesMustExist : Type 'System.Data.Sql.SqlNotificationRequest' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.OnChangeEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlAuthenticationMethod' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServer(System.Data.DataRow[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServer(System.Data.DataTable)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServer(System.Data.DataTable, System.Data.DataRowState)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServer(System.Data.IDataReader)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataRow[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataRow[], System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataTable)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataTable, System.Data.DataRowState)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataTable, System.Data.DataRowState, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.DataTable, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.IDataReader)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopy.WriteToServerAsync(System.Data.IDataReader, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlBulkCopyColumnMappingCollection' does not inherit from base type 'System.Collections.CollectionBase' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopyOptions System.Data.SqlClient.SqlBulkCopyOptions.AllowEncryptedValueModifications' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlClientFactory' does not implement interface 'System.IServiceProvider' in the implementation but it does in the contract.
@@ -1552,7 +1540,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.Tran
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlCredential' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlDataAdapter' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.IsCommandBehavior(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SQLDebugging' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlDependency' does not exist in the implementation but it does exist in the contract.
@@ -1570,10 +1557,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.get()'
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.set(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Data.SqlDbType, System.Int32, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlRowUpdatedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlRowUpdatedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlRowUpdatingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlRowUpdatingEventHandler' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlTypes.SqlAlreadyFilledException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Data.SqlTypes.SqlFileStream' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlTypes.SqlNotFilledException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -3269,4 +3252,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3257
+Total Issues: 3272
