@@ -84,8 +84,8 @@
     <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
     <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
 
