@@ -2266,29 +2266,9 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                     EmitLoadStubContext(pcsEmit, dwStubFlags);
                 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-                if (NDirect::IsHostHookEnabled())
-                {
-                    // we need to call to the host hook, real target is passed as the last argument
-                    Stub *pHostStub = NDirect::GenerateStubForHost(
-                        GetStubSigModule(),
-                        (CorUnmanagedCallingConvention)(GetStubTargetCallingConv() & IMAGE_CEE_CS_CALLCONV_MASK),
-                        pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize());
-
-                    pcsEmit->EmitLDC((DWORD_PTR)pHostStub->GetEntryPoint());
-                }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #else // _TARGET_X86_
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
-                if (NDirect::IsHostHookEnabled())
-                {
-                    // the stub for host will get the original target from the secret arg
-                    pcsEmit->EmitLDC((DWORD_PTR)GetEEFuncEntryPoint(PInvokeStubForHost));
-                }
-                else
-#endif // FEATURE_INCLUDE_ALL_INTERFACES 
                 {
                     // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
                     EmitLoadStubContext(pcsEmit, dwStubFlags);
@@ -2929,15 +2909,6 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE) // IJW
-        // The guessing heuristic has been broken with NGen for a long time since we stopped loading
-        // images at NGen time using full LoadLibrary. The DLL references are not resolved correctly
-        // without full LoadLibrary.
-        //
-        // Disable the heuristic consistently during NGen so that it does not kick in by accident.
-        if (!IsCompilationProcess())
-            BestGuessNDirectDefaults(pMD);
-#endif
         InitCallConv((CorPinvokeMap)0, pMD->IsVarArg());
         return;
     }
@@ -3001,235 +2972,6 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
 }
 
 
-#if defined(FEATURE_MIXEDMODE) && !defined(CROSSGEN_COMPILE) // IJW
-
-// This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
-static BOOL HeuristicDoesThisLooksLikeAnApiCallHelper(LPBYTE pTarget)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // This code is not that useful anymore since this functionality is already embedded in the VC linker.
-    // The linker will emit the lasterror flag by default for functions residing in modules that are
-    // a superset of the list below.
-    // Look for bug VSWhidbey 241895.
-
-    static struct SysDllInfo
-    {
-        LPCWSTR pName;
-        LPBYTE pImageBase;
-        DWORD  dwImageSize;
-    } gSysDllInfo[] =  {{WINDOWS_KERNEL32_DLLNAME_W, 0, 0},
-                        {W("GDI32"),           0, 0},
-                        {W("USER32"),          0, 0},
-                        {W("ADVAPI32"),        0, 0}
-                       };
-
-
-    for (int i = 0; i < sizeof(gSysDllInfo)/sizeof(*gSysDllInfo); i++)
-    {
-        if (gSysDllInfo[i].pImageBase == 0)
-        {
-            IMAGE_DOS_HEADER *pDos = (IMAGE_DOS_HEADER*)CLRGetModuleHandle(gSysDllInfo[i].pName);
-            if (pDos)
-            {
-                if (pDos->e_magic == VAL16(IMAGE_DOS_SIGNATURE))
-                {
-                    IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*) (((LPBYTE)pDos) + VAL32(pDos->e_lfanew));
-                    if (pNT->Signature == VAL32(IMAGE_NT_SIGNATURE) &&
-                        pNT->FileHeader.SizeOfOptionalHeader == 
-#ifdef _WIN64
-                            VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))
-#else
-                            VAL16(sizeof(IMAGE_OPTIONAL_HEADER32))
-#endif
-                        && pNT->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC))
-                    {
-                        gSysDllInfo[i].dwImageSize = VAL32(pNT->OptionalHeader.SizeOfImage);
-                    }
-                }
-
-                gSysDllInfo[i].pImageBase = (LPBYTE)pDos;
-            }
-        }
-        if (gSysDllInfo[i].pImageBase != 0 &&
-            pTarget >= gSysDllInfo[i].pImageBase &&
-            pTarget < gSysDllInfo[i].pImageBase + gSysDllInfo[i].dwImageSize)
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-
-LPBYTE FollowIndirect(LPBYTE pTarget)
-{
-    CONTRACT (LPBYTE)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    LPBYTE pRet = NULL;
-
-    EX_TRY
-    {
-        AVInRuntimeImplOkayHolder AVOkay;
-        
-#ifdef _TARGET_X86_
-        if (pTarget != NULL && !(pTarget[0] != 0xff || pTarget[1] != 0x25))
-        {
-            pRet = **(LPBYTE**)(pTarget + 2);
-        }
-#elif defined(_TARGET_AMD64_)
-        if (pTarget != NULL && !(pTarget[0] != 0xff || pTarget[1] != 0x25))
-        {
-            INT64 rva = *(INT32*)(pTarget + 2);
-            pRet = *(LPBYTE*)(pTarget + 6 + rva);
-        }
-#endif
-    }
-    EX_CATCH
-    {
-        // Catch AVs here.
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    RETURN pRet;
-}
-
-// This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
-BOOL HeuristicDoesThisLooksLikeAnApiCall(LPBYTE pTarget)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pTarget == NULL)
-        return FALSE;
-
-    if (HeuristicDoesThisLooksLikeAnApiCallHelper(pTarget))
-        return TRUE;
-
-    LPBYTE pTarget2 = FollowIndirect(pTarget);
-    if (pTarget2)
-    {
-        // jmp [xxxx] - could be an import thunk
-        return HeuristicDoesThisLooksLikeAnApiCallHelper( pTarget2 );
-    }
-
-    return FALSE;
-}
-
-BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static LPBYTE pGetLastError = NULL;
-    if (!pGetLastError)
-    {
-        // No need to use a holder here, since no cleanup is necessary.
-        HMODULE hMod = CLRGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
-        if (hMod)
-        {
-            pGetLastError = (LPBYTE)GetProcAddress(hMod, "GetLastError");
-            if (!pGetLastError)
-            {
-                // This should never happen but better to be cautious.
-                pGetLastError = (LPBYTE)-1;
-            }
-        }
-        else
-        {
-            // We failed to get the module handle for kernel32.dll. This is almost impossible
-            // however better to err on the side of caution.
-            pGetLastError = (LPBYTE)-1;
-        }
-    }
-
-    if (pTarget == pGetLastError)
-        return TRUE;
-
-    if (pTarget == NULL)
-        return FALSE;
-
-    LPBYTE pTarget2 = FollowIndirect(pTarget);
-    if (pTarget2)
-    {
-        // jmp [xxxx] - could be an import thunk
-        return pTarget2 == pGetLastError;
-    }
-
-    return FALSE;
-}
-
-DWORD __stdcall FalseGetLastError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetThread()->m_dwLastError;
-}
-
-void PInvokeStaticSigInfo::BestGuessNDirectDefaults(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pMD->IsNDirect())
-        return;
-
-    NDirectMethodDesc* pMDD = (NDirectMethodDesc*)pMD;
-    
-    if (!pMDD->IsEarlyBound())
-        return;
-
-    LPVOID pTarget = NULL;
-        
-    // NOTE: If we get inside this block, and this is a call to GetLastError, 
-    //  then InitEarlyBoundNDirectTarget has not been run yet.
-    if (pMDD->NDirectTargetIsImportThunk())
-    {
-        // Get the unmanaged callsite.
-        pTarget = (LPVOID)pMDD->GetModule()->GetInternalPInvokeTarget(pMDD->GetRVA());
-
-        // If this is a call to GetLastError, then we haven't overwritten m_pNativeNDirectTarget yet.
-        if (HeuristicDoesThisLookLikeAGetLastErrorCall((LPBYTE)pTarget))
-            pTarget = (BYTE*) FalseGetLastError;
-    }
-    else
-    {
-        pTarget = pMDD->GetNativeNDirectTarget();
-    }
-
-    if (HeuristicDoesThisLooksLikeAnApiCall((LPBYTE) pTarget))
-        SetLinkFlags ((CorNativeLinkFlags)(GetLinkFlags() | nlfLastError));
-}
-
-#endif // FEATURE_MIXEDMODE && !CROSSGEN_COMPILE
 
 
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
@@ -5605,13 +5347,6 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
         pStub = TheVarargNDirectStub(pNMD->HasRetBuffArg());
     }
 
-#ifdef FEATURE_MIXEDMODE // IJW
-    if (pNMD->IsEarlyBound())
-    {
-        pNMD->InitEarlyBoundNDirectTarget();
-    }
-    else
-#endif
     {
         NDirectLink(pNMD);
     }
@@ -5920,12 +5655,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
 #endif // MDA_SUPPORTED
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    if (fHook)
-    {
-        pInterceptStub = GenerateStubForHost(pTarget, pInterceptStub);
-    }
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #endif // _TARGET_X86_
 
@@ -5949,9 +5678,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
         }
 #else
         _ASSERTE(pInterceptStub == NULL); // we don't intercept for anything else than host on !_TARGET_X86_
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
-        pWriteableData->m_pNDirectTarget = (LPVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES 
 #endif
     }
     else
@@ -5961,40 +5687,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
 }
 
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-BOOL NDirect::IsHostHookEnabled()
-{
-    WRAPPER_NO_CONTRACT;
-    //
-    // WARNING: The non-debug portion of this logic is inlined into UMThunkStubAMD64!
-    //
-    return CLRTaskHosted() INDEBUG(|| g_pConfig->ShouldGenerateStubForHost());
-}
-
-EXTERN_C BOOL CallNeedsHostHook(size_t target)
-{
-    BOOL fHook = FALSE;
-    IHostTaskManager *pManager = CorHost2::GetHostTaskManager();
-    if (pManager)
-    {
-        HRESULT hr;
-        BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-        hr = pManager->CallNeedsHostHook(target,&fHook);
-        END_SO_TOLERANT_CODE_CALLING_HOST;
-        _ASSERTE (hr == S_OK);
-    }
-#ifdef _DEBUG
-    else
-    {
-        if (g_pConfig->ShouldGenerateStubForHost())
-        {
-            fHook = TRUE;
-        }
-    }
-#endif
-    return fHook;
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #if defined(_TARGET_X86_) && defined(MDA_SUPPORTED)
 EXTERN_C VOID __stdcall PInvokeStackImbalanceWorker(StackImbalanceCookie *pSICookie, DWORD dwPostESP)
@@ -6761,21 +6453,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
     // any of our internal exceptions into managed exceptions.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-#ifdef FEATURE_MIXEDMODE // IJW
-    if (pMD->IsEarlyBound())
-    {
-        if (!pMD->IsZapped())
-        {
-            // we need the MD to be populated in case we decide to build an intercept
-            // stub to wrap the target in InitEarlyBoundNDirectTarget
-            PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pMD, &sigInfo);
-        }
-
-        pMD->InitEarlyBoundNDirectTarget();
-    }
-    else
-#endif // FEATURE_MIXEDMODE
     {
         //
         // Otherwise we're in an inlined pinvoke late bound MD

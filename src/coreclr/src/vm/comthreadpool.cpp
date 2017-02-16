@@ -28,11 +28,7 @@
 #include "corhost.h"
 #include "nativeoverlapped.h"
 #include "comsynchronizable.h"
-#ifdef FEATURE_REMOTING
-#include "crossdomaincalls.h"
-#else
 #include "callhelpers.h"
-#endif
 #include "appdomain.inl"
 /*****************************************************************************************************/
 #ifdef _DEBUG

@@ -17,7 +17,6 @@
 #include "fcall.h"
 #include "qcall.h"
 #include "cgensys.h"
-#include "rwlock.h"
 
 #define SPFLAGSASSERTION        0x01
 #define SPFLAGSUNMANAGEDCODE    0x02
@@ -72,9 +71,6 @@ namespace SecurityPolicy
     void QCALLTYPE GetGrantedPermissions(QCall::ObjectHandleOnStack retGranted, QCall::ObjectHandleOnStack retDenied, QCall::StackCrawlMarkHandle stackmark);
 
 
-#ifdef FEATURE_IMPERSONATION
-    FCDECL0(DWORD, GetImpersonationFlowMode);
-#endif // #ifdef FEATURE_IMPERSONATION
 
     FCDECL0(FC_BOOL_RET, IsDefaultThreadSecurityInfo);
     void QCALLTYPE _GetLongPathName(LPCWSTR wszPath, QCall::StringHandleOnStack retLongPath);

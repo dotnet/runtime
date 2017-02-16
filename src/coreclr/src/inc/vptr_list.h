@@ -31,15 +31,6 @@ VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 
 VPTR_CLASS(DomainAssembly)
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-VPTR_CLASS(DomainModule)
-#endif
-#ifdef FEATURE_REMOTING
-#ifdef _TARGET_AMD64_ // HAS_REMOTING_PRECODE
-VPTR_CLASS(CNonVirtualThunkMgr)
-#endif
-VPTR_CLASS(CVirtualThunkMgr)
-#endif
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -54,9 +45,6 @@ VPTR_CLASS(DelegateInvokeStubManager)
 VPTR_CLASS(TailCallStubManager)
 VPTR_CLASS(PEFile)
 VPTR_CLASS(PEAssembly)
-#ifdef FEATURE_MULTIMODULE_ASSEMBLIES
-VPTR_CLASS(PEModule)
-#endif
 VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
@@ -71,11 +59,6 @@ VPTR_CLASS(ComPlusMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 VPTR_CLASS(ContextTransitionFrame)
-#ifdef FEATURE_REMOTING
-VPTR_CLASS(GCSafeCollectionFrame)
-VPTR_CLASS(GCSafeObjectTable)
-VPTR_CLASS(GCSafeObjectHashTable)
-#endif
 #ifdef FEATURE_INTERPRETER
 VPTR_CLASS(InterpreterFrame)
 #endif // FEATURE_INTERPRETER
@@ -94,10 +77,6 @@ VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 VPTR_CLASS(HijackFrame)
 #endif
 VPTR_CLASS(InlinedCallFrame)
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) && defined(_TARGET_X86_)
-VPTR_CLASS(LeaveRuntimeFrame)
-VPTR_CLASS(ReverseEnterRuntimeFrame)
-#endif
 VPTR_CLASS(SecureDelegateFrame)
 VPTR_CLASS(SecurityContextFrame)
 VPTR_CLASS(MulticastFrame)
@@ -116,9 +95,6 @@ VPTR_CLASS(DynamicHelperFrame)
 #endif
 #if !defined(_TARGET_X86_)
 VPTR_CLASS(StubHelperFrame)
-#endif
-#ifdef FEATURE_REMOTING
-VPTR_CLASS(TPMethodFrame)
 #endif
 #if defined(_TARGET_X86_)
 VPTR_CLASS(UMThkCallFrame)
