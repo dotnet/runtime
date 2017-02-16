@@ -27,8 +27,21 @@ def static getOSGroup(def os) {
 // Setup perflab tests runs
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
-		['x64', 'x86'].each { architecture ->
-			def newJob = job(Utilities.getFullJobName(project, "perf_perflab_${os}_${architecture}", isPR)) {
+		['x64', 'x86', 'x86jit32'].each { arch ->
+            architecture = arch
+            testEnv = ''
+
+            if (arch == 'x86jit32')
+            {
+                architecture = 'x86'
+                testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\compatjit_x86_testenv.cmd'
+            }
+            else if (arch == 'x86')
+            {
+                testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd'
+            }
+
+			def newJob = job(Utilities.getFullJobName(project, "perf_perflab_${os}_${arch}", isPR)) {
 				// Set the label.
 				label('windows_clr_perf')
 				wrappers {
@@ -59,10 +72,10 @@ def static getOSGroup(def os) {
 					"py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user " + "\"dotnet-bot@microsoft.com\"\n" +
 					"py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
 					batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
-					batchFile("set __TestIntermediateDir=int&&build.cmd release ${architecture}")
-					batchFile("tests\\runtest.cmd release ${architecture} GenerateLayoutOnly")
-					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} -testBinLoc bin\\tests\\Windows_NT.${architecture}.Release\\performance\\perflab\\Perflab -library -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype " + runType)
-					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} -testBinLoc bin\\tests\\Windows_NT.${architecture}.Release\\Jit\\Performance\\CodeQuality -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype " + runType)
+					batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
+					batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
+					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
 				}
 			}
 
@@ -76,9 +89,9 @@ def static getOSGroup(def os) {
 
 			if (isPR) {
 				TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-				builder.setGithubContext("${os} ${architecture} CoreCLR Perf Tests")
+				builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests")
 				builder.triggerOnlyOnComment()
-				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}_${architecture}\\W+perf.*")
+				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}_${arch}\\W+perf.*")
 				builder.triggerForBranch(branch)
 				builder.emitTrigger(newJob)
 			}
