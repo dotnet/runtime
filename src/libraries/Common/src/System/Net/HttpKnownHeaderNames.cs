@@ -37,6 +37,7 @@ namespace System.Net
         public const string ContentType = "Content-Type";
         public const string Cookie = "Cookie";
         public const string Cookie2 = "Cookie2";
+        public const string CorrelationContext = "Correlation-Context";
         public const string Date = "Date";
         public const string ETag = "ETag";
         public const string Expect = "Expect";
@@ -61,6 +62,7 @@ namespace System.Net
         public const string ProxyConnection = "Proxy-Connection";
         public const string PublicKeyPins = "Public-Key-Pins";
         public const string Range = "Range";
+        public const string RequestId = "Request-Id";
         public const string Referer = "Referer"; // NB: The spelling-mistake "Referer" for "Referrer" must be matched.
         public const string RetryAfter = "Retry-After";
         public const string SecWebSocketAccept = "Sec-WebSocket-Accept";
