@@ -18,9 +18,6 @@
 #include "excep.h"
 #include "eeconfig.h"
 #include "gcheaputilities.h"
-#ifdef FEATURE_REMOTING
-#include "remoting.h"
-#endif
 #include "field.h"
 #include "gcscan.h"
 #include "argdestination.h"
@@ -158,13 +155,6 @@ MethodTable *Object::GetTrueMethodTable()
 
     MethodTable *mt = GetMethodTable();
 
-#ifdef FEATURE_REMOTING    
-    if(mt->IsTransparentProxy())
-    {
-        mt = ((TransparentProxyObject *)this)->GetMethodTableBeingProxied();
-    }
-    _ASSERTE(!mt->IsTransparentProxy());
-#endif
 
     RETURN mt;
 }
@@ -1383,9 +1373,6 @@ void Object::ValidateHeap(Object *from, BOOL bDeep)
             //special case:thread object is allowed to hold a context belonging to current domain
             if (from->GetGCSafeMethodTable() == g_pThreadClass && 
                       (
-#ifdef FEATURE_REMOTING                      
-                      this == OBJECTREFToObject(((ThreadBaseObject *)from)->m_ExposedContext) ||
-#endif                      
                         false))
             {  
                 if (((ThreadBaseObject *)from)->m_InternalThread)

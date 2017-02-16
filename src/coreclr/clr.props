@@ -128,11 +128,9 @@
     <PerfcountersSupportedBuild>false</PerfcountersSupportedBuild>
     <FeatureEventTrace>false</FeatureEventTrace>
     <FeatureFusion>false</FeatureFusion>
-    <FeatureIncludeAllInterfaces>false</FeatureIncludeAllInterfaces>
     <FeatureMdaSupported>false</FeatureMdaSupported>
     <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
     <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
-    <FeatureReflectionOnlyLoad>false</FeatureReflectionOnlyLoad>
     <FeatureStackProbe>false</FeatureStackProbe>
     <FeatureReJIT>false</FeatureReJIT>
     <FeatureVersioningLog>false</FeatureVersioningLog>
@@ -238,11 +236,7 @@
     <PogoUpdate>false</PogoUpdate> 
     <PogoExePhase>1</PogoExePhase>
     
-    <ResgenDefines Condition="'$(FeatureImpersonation)' == '1'">$(ResgenDefines) /define:FEATURE_IMPERSONATION</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureIsostore)' == '1'">$(ResgenDefines) /define:FEATURE_ISOSTORE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureMacl)' == '1'">$(ResgenDefines) /define:FEATURE_MACL</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureRemoting)' == '1'">$(ResgenDefines) /define:FEATURE_REMOTING</ResgenDefines> 
-    <ResgenDefines Condition="'$(FeatureIdentityReference)' == '1'">$(ResgenDefines) /define:FEATURE_IDENTITY_REFERENCE</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayCultureInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_CULTURE_INFO</ResgenDefines> 
     <ResgenDefines Condition="'$(FeatureDisplayRegionInfo)' == '1'">$(ResgenDefines) /define:FEATURE_DISPLAY_REGION_INFO</ResgenDefines> 
 

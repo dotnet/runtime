@@ -18,8 +18,6 @@
 #include "perfcounters.h"
 #include "security.h"
 #include "holder.h"
-#ifdef FEATURE_REMOTING
-#endif
 
 class ApplicationSecurityDescriptor;
 class DemandStackWalk;
@@ -39,9 +37,6 @@ protected:
     DWORD m_dwFlags;
 
 public:
-#ifdef FEATURE_REMOTING
-    MarshalCache m_objects;
-#else //!FEATURE_REMOTING
     struct ObjectCache
     {
         struct gc 
@@ -98,7 +93,6 @@ public:
         }
     
     } m_objects;
-#endif //!FEATURE_REMOTING
 
     SecurityStackWalk(SecurityStackWalkType eType, DWORD flags)
     {

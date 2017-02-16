@@ -3486,11 +3486,6 @@ BOOL IsClrHostedLegacyComObject(REFCLSID rclsid)
     // let's simply check for all CLSIDs that are known to be runtime implemented and capped to 2.0
     return (
             rclsid == CLSID_ComCallUnmarshal ||
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-            rclsid == CLSID_CorRuntimeHost ||
-            rclsid == CLSID_CLRRuntimeHost ||
-            rclsid == CLSID_CLRProfiling ||
-#endif
             rclsid == CLSID_CorMetaDataDispenser ||
             rclsid == CLSID_CorMetaDataDispenserRuntime ||
             rclsid == CLSID_TypeNameFactory);

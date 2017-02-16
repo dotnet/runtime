@@ -797,24 +797,6 @@ public:
 
     //================================================================
     // Does it represent a one way method call with no out/return parameters?
-#ifdef FEATURE_REMOTING
-    inline BOOL IsOneWay()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END
-
-        return (S_OK == GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
-                                                                "System.Runtime.Remoting.Messaging.OneWayAttribute",
-                                                                NULL,
-                                                                NULL));
-
-    }
-#endif // FEATURE_REMOTING
 
     //================================================================
     // FCalls.
@@ -2645,19 +2627,6 @@ public:
     // Atomically set specified flags. Only setting of the bits is supported.
     void InterlockedSetNDirectFlags(WORD wFlags);
 
-#ifdef FEATURE_MIXEDMODE // IJW
-    void SetIsEarlyBound()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ndirect.m_wFlags |= kEarlyBound;
-    }
-
-    BOOL IsEarlyBound()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags & kEarlyBound) != 0;
-    }
-#endif // FEATURE_MIXEDMODE
 
     BOOL IsNativeAnsi() const
     {
@@ -2880,9 +2849,6 @@ public:
     }
 #endif // defined(_TARGET_X86_)
 
-#ifdef FEATURE_MIXEDMODE // IJW
-    VOID InitEarlyBoundNDirectTarget();
-#endif
 
     // In AppDomains, we can trigger declarer's cctor when we link the P/Invoke,
     // which takes care of inlined calls as well. See code:NDirect.NDirectLink.
@@ -2946,12 +2912,7 @@ struct ComPlusCallInfo
         kHasCopyCtorArgs                = 0x4,
     };
 
-#if defined(FEATURE_REMOTING) && !defined(HAS_REMOTING_PRECODE)
-    // These two fields cannot overlap in this case because of AMD64 GenericComPlusCallStub uses m_pILStub on the COM event provider path
-    struct
-#else
     union
-#endif
     {
         // IL stub for CLR to COM call
         PCODE m_pILStub; 

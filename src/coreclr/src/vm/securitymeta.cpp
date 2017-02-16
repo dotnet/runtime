@@ -28,9 +28,6 @@
 #include "field.h"
 #include "threads.h"
 #include "eventtrace.h"
-#ifdef FEATURE_REMOTING
-#include "objectclone.h"
-#endif //FEATURE_REMOTING
 #include "typestring.h"
 #include "securitydeclarative.h"
 #include "customattribute.h"

@@ -467,11 +467,7 @@ DWORD Thread::ResumeThread()
 
     _ASSERTE (m_ThreadHandleForResume != INVALID_HANDLE_VALUE);
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    _ASSERTE (m_pHostTask == 0 || GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
-#else // !FEATURE_INCLUDE_ALL_INTERFACES
     _ASSERTE (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     //DWORD res = ::ResumeThread(GetThreadHandle());
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
@@ -3832,11 +3828,6 @@ void NotifyHostOnGCSuspension()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    BEGIN_SO_TOLERANT_CODE_CALLING_HOST(GetThread());
-    CorHost2::GetHostGCManager()->ThreadIsBlockingForSuspension();
-    END_SO_TOLERANT_CODE_CALLING_HOST;
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 }
 
 // This function is called from the assembly functions used to redirect a thread.  It must not cause

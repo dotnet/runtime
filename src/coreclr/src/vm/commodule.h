@@ -18,12 +18,6 @@ public:
     // Attaches an unmanaged symwriter to a newly created dynamic module.
     static FCDECL2(LPVOID, nCreateISymWriterForDynamicModule, ReflectModuleBaseObject* reflectionModuleUNSAFE, StringObject* filenameUNSAFE);
 
-#ifdef  FEATURE_MULTIMODULE_ASSEMBLIES
-    // DefineDynamicModule
-    // This method will create a dynamic module given an assembly
-    static
-    void QCALLTYPE DefineDynamicModule(QCall::AssemblyHandle pContainingAssembly, BOOL emitSymbolInfo, LPCWSTR pModuleName, LPCWSTR pFilename, QCall::StackCrawlMarkHandle stackMark, LPVOID* ppInternalSymWriter, QCall::ObjectHandleOnStack retModule, BOOL fIsTransient, INT32* ptkFile);
-#endif // FEATURE_MULTIMODULE_ASSEMBLIES
 
     // IsTransient
     // Determine if a Module is transient

@@ -21,10 +21,6 @@ class AppDomainNative
 {
 public:
     static AppDomain *ValidateArg(APPDOMAINREF pThis);
-#ifdef FEATURE_REMOTING
-    static FCDECL5(Object*, CreateDomain, StringObject* strFriendlyNameUNSAFE, Object* appdomainSetup, Object* providedEvidenceUNSAFE, Object* creatorsEvidenceUNSAFE, void* parentSecurityDescriptor);
-    static FCDECL5(Object*, CreateInstance, StringObject* strFriendlyNameUNSAFE, Object* appdomainSetup, Object* providedEvidenceUNSAFE, Object* creatorsEvidenceUNSAFE, void* parentSecurityDescriptor);
-#endif
     static FCDECL2(void, SetupFriendlyName, AppDomainBaseObject* refThisUNSAFE, StringObject* strFriendlyNameUNSAFE);
 #if FEATURE_COMINTEROP
     static FCDECL1(void, SetDisableInterfaceCache, AppDomainBaseObject* refThisUNSAFE);
@@ -50,9 +46,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsFinalizingForUnload, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void, ForceToSharedDomain, Object* pObjectUNSAFE);
     static FCDECL1(void, ChangeSecurityPolicy, AppDomainBaseObject* refThisUNSAFE);
-#ifdef FEATURE_REMOTING     
-    static FCDECL0(Object*, GetDefaultDomain);
-#endif
     static FCDECL1(LPVOID,  GetFusionContext, AppDomainBaseObject* refThis);
     static FCDECL2(Object*, IsStringInterned, AppDomainBaseObject* refThis, StringObject* pString);
     static FCDECL1(FC_BOOL_RET, IsUnloadingForcedFinalize, AppDomainBaseObject* refThis);
@@ -76,9 +69,6 @@ private:
     static INT32 ExecuteAssemblyHelper(Assembly* pAssembly,
                                        BOOL bCreatedConsole,
                                        PTRARRAYREF *pStringArgs);
-#ifdef FEATURE_REMOTING    
-    static void CreateDomainHelper (STRINGREF* ppFriendlyName, OBJECTREF* ppAppdomainSetup, OBJECTREF* ppProvidedEvidence, OBJECTREF* ppCreatorsEvidence, void* parentSecurityDescriptor, OBJECTREF* pEntryPointProxy, OBJECTREF* pRetVal);
-#endif
 
 public:
     static

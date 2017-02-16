@@ -14,9 +14,6 @@ namespace System.Reflection.Emit
     public enum AssemblyBuilderAccess
     {
         Run = 1,
-#if FEATURE_REFLECTION_ONLY_LOAD
-        ReflectionOnly = 6, // 4 | Save,
-#endif // FEATURE_REFLECTION_ONLY_LOAD
         RunAndCollect = 8 | Run
     }
 }

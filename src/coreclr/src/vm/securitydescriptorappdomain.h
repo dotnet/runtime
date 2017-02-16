@@ -50,10 +50,6 @@ private:
         HOST_RESOLVE_POLICY         = 0x0010
     };
 
-#ifdef FEATURE_PLS
-    // Intersection of granted/denied permissions of all assemblies in domain
-    LOADERHANDLE m_hDomainPermissionListSet; 
-#endif // FEATURE_PLS
 
     // The bits represent the status of security checks on some specific permissions within this domain
     Volatile<DWORD> m_dwDomainWideSpecialFlags;
@@ -135,10 +131,6 @@ public:
     // Called everytime an AssemblySecurityDescriptor is resolved.
     void AddNewSecDescToPLS(AssemblySecurityDescriptor *pNewSecDescriptor);
 
-#ifdef FEATURE_PLS
-    // Check the demand against the PLS in this AppDomain
-    BOOL CheckPLS (OBJECTREF* orDemand, DWORD dwDemandSpecialFlags, BOOL fDemandSet);
-#endif // FEATURE_PLS
 
     // Checks for one of the special domain wide flags 
     // such as if we are currently in a "fully trusted" environment

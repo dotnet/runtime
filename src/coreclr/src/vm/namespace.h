@@ -43,10 +43,8 @@
 #define g_PermissionsNS     g_SecurityNS ".Permissions"
 #define g_PrincipalNS       g_SecurityNS ".Principal"
 #define g_PolicyNS          g_SecurityNS ".Policy"
-#ifdef FEATURE_X509
 #define g_CryptographyNS    g_SecurityNS ".Cryptography"
 #define g_X509NS            g_CryptographyNS ".X509Certificates"
-#endif // FEATURE_X509
 
 #define g_SerializationNS   g_RuntimeNS ".Serialization"
 #define g_RemotingNS        g_RuntimeNS ".Remoting"

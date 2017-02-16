@@ -1731,11 +1731,7 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
     
     ECustomDumpFlavor eFlavor;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    eFlavor = CCLRErrorReportingManager::g_ECustomDumpFlavor;
-#else
     eFlavor = DUMP_FLAVOR_Default;
-#endif
 
     m_enumMemFlags = CLRDATA_ENUM_MEM_MINI;
 

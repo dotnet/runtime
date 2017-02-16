@@ -19,7 +19,7 @@ cpp_quote("")
 // Interface descriptions
 //
 import "unknwn.idl";
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 import "gchost.idl";
 #endif
 import "ivalidator.idl";
@@ -37,21 +37,10 @@ const char* CLR_ASSEMBLY_MAJOR_VERSION = VER_ASSEMBLYMAJORVERSION;
 const char* CLR_ASSEMBLY_MINOR_VERSION = VER_ASSEMBLYMINORVERSION;
 const char* CLR_ASSEMBLY_BUILD_VERSION = VER_ASSEMBLYBUILD;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// LIBID mscoree
-cpp_quote("EXTERN_GUID(LIBID_mscoree, 0x5477469e,0x83b1,0x11d2,0x8b,0x49,0x00,0xa0,0xc9,0xb7,0xc9,0xc4);")
-
-// CLSID CorRuntimeHost : uuid(CB2F6723-AB3A-11d2-9C40-00C04FA30A3E)
-cpp_quote("EXTERN_GUID(CLSID_CorRuntimeHost, 0xcb2f6723, 0xab3a, 0x11d2, 0x9c, 0x40, 0x00, 0xc0, 0x4f, 0xa3, 0x0a, 0x3e);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 // CLSID TypeNameFactory : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00525}
 cpp_quote("EXTERN_GUID(CLSID_TypeNameFactory, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x25);")
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// CLSID CLRRuntimeHost : uuid(90F1A06E-7712-4762-86B5-7A5EBA6BDB02)
-cpp_quote("EXTERN_GUID(CLSID_CLRRuntimeHost, 0x90F1A06E, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_COMINTEROP
 // CLSID ComCallUnmarshal
@@ -61,83 +50,12 @@ cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshal, 0x3F281000,0xE95A,0x11d2,0x88,0x6
 cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshalV4, 0x45fb4600,0xe6e8,0x4928,0xb2,0x5e,0x50,0x47,0x6f,0xf7,0x94,0x25);")
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// IID IObjectHandle : uuid(C460E2B4-E199-412a-8456-84DC3E4838C3)
-cpp_quote("EXTERN_GUID(IID_IObjectHandle, 0xc460e2b4, 0xe199, 0x412a, 0x84, 0x56, 0x84, 0xdc, 0x3e, 0x48, 0x38, 0xc3);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_COMINTEROP
 // IID IManagedObject : uuid(C3FCC19E-A970-11d2-8B5A-00A0C9B7C9C4)
 cpp_quote("EXTERN_GUID(IID_IManagedObject, 0xc3fcc19e, 0xa970, 0x11d2, 0x8b, 0x5a, 0x00, 0xa0, 0xc9, 0xb7, 0xc9, 0xc4);")
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// IID IApartmentCallback : uuid(178E5337-1528-4591-B1C9-1C6E484686D8)
-cpp_quote("EXTERN_GUID(IID_IApartmentCallback, 0x178e5337, 0x1528, 0x4591, 0xb1, 0xc9, 0x1c, 0x6e, 0x48, 0x46, 0x86, 0xd8);")
-
-// IID ICatalogServices : uuid(04C6BE1E-1DB1-4058-AB7A-700CCCFBF254)
-cpp_quote("EXTERN_GUID(IID_ICatalogServices, 0x04c6be1e, 0x1db1, 0x4058, 0xab, 0x7a, 0x70, 0x0c, 0xcc, 0xfb, 0xf2, 0x54);")
-
-// IID ICorRuntimeHost : uuid(CB2F6722-AB3A-11d2-9C40-00C04FA30A3E)
-cpp_quote("EXTERN_GUID(IID_ICorRuntimeHost, 0xcb2f6722, 0xab3a, 0x11d2, 0x9c, 0x40, 0x00, 0xc0, 0x4f, 0xa3, 0x0a, 0x3e);")
-
-// IID ICorThreadpool : uuid(84680D3A-B2C1-46e8-ACC2-DBC0A359159A)
-cpp_quote("EXTERN_GUID(IID_ICorThreadpool, 0x84680D3A, 0xB2C1, 0x46e8, 0xAC, 0xC2, 0xDB, 0xC0, 0xA3, 0x59, 0x15, 0x9A);")
-
-// IID_ICLRDebugManager : uuid(00DCAEC6-2AC0-43a9-ACF9-1E36C139B10D)
-cpp_quote("EXTERN_GUID(IID_ICLRDebugManager, 0xdcaec6, 0x2ac0, 0x43a9, 0xac, 0xf9, 0x1e, 0x36, 0xc1, 0x39, 0xb1, 0xd);")
-
-// IID IHostMemoryNeededCallback : uuid(47EB8E57-0846-4546-AF76-6F42FCFC2649)
-cpp_quote("EXTERN_GUID(IID_IHostMemoryNeededCallback, 0x47EB8E57, 0x0846, 0x4546, 0xAF, 0x76, 0x6F, 0x42, 0xFC, 0xFC, 0x26, 0x49);")
-
-// IID IHostMalloc : uuid(1831991C-CC53-4A31-B218-04E910446479)
-cpp_quote("EXTERN_GUID(IID_IHostMalloc, 0x1831991C, 0xCC53, 0x4A31, 0xB2, 0x18, 0x04, 0xE9, 0x10, 0x44, 0x64, 0x79);")
-
-// IID IHostMemoryManager : uuid(7BC698D1-F9E3-4460-9CDE-D04248E9FA25)
-cpp_quote("EXTERN_GUID(IID_IHostMemoryManager, 0x7BC698D1, 0xF9E3, 0x4460, 0x9C, 0xDE, 0xD0, 0x42, 0x48, 0xE9, 0xFA, 0x25);")
-
-// IID ICLRTask : uuid(28E66A4A-9906-4225-B231-9187C3EB8611)
-cpp_quote("EXTERN_GUID(IID_ICLRTask, 0x28E66A4A, 0x9906, 0x4225, 0xB2, 0x31, 0x91, 0x87, 0xc3, 0xeb, 0x86, 0x11);")
-
-// IID ICLRTask2 : uuid(28E66A4A-9906-4225-B231-9187C3EB8612)
-cpp_quote("EXTERN_GUID(IID_ICLRTask2, 0x28E66A4A, 0x9906, 0x4225, 0xB2, 0x31, 0x91, 0x87, 0xc3, 0xeb, 0x86, 0x12);")
-
-// IID IHostTask : uuid(C2275828-C4B1-4B55-82C9-92135F74DF1A)
-cpp_quote("EXTERN_GUID(IID_IHostTask, 0xC2275828, 0xC4B1, 0x4B55, 0x82, 0xC9, 0x92, 0x13, 0x5F, 0x74, 0xDF, 0x1A);")
-
-// IID ICLRTaskManager : uuid(4862efbe-3ae5-44f8-8feb-346190ee8a34)
-cpp_quote("EXTERN_GUID(IID_ICLRTaskManager, 0x4862efbe, 0x3ae5, 0x44f8, 0x8F, 0xEB, 0x34, 0x61, 0x90, 0xeE, 0x8A, 0x34);")
-
-// IID IHostTaskManager : uuid(997FF24C-43B7-4352-8667-0DC04FAFD354)
-cpp_quote("EXTERN_GUID(IID_IHostTaskManager, 0x997FF24C, 0x43B7, 0x4352, 0x86, 0x67, 0x0D, 0xC0, 0x4F, 0xAF, 0xD3, 0x54);")
-
-// IID IHostThreadpoolManager : uuid(983D50E2-CB15-466B-80FC-845DC6E8C5FD)
-cpp_quote("EXTERN_GUID(IID_IHostThreadpoolManager, 0x983D50E2, 0xCB15, 0x466B, 0x80, 0xFC, 0x84, 0x5D, 0xC6, 0xE8, 0xC5, 0xFD);")
-
-// IID_ICLRIOCompletionManager : uuid(2D74CE86-B8D6-4C84-B3A7-9768933B3C12)
-cpp_quote("EXTERN_GUID(IID_ICLRIoCompletionManager, 0x2D74CE86, 0xB8D6, 0x4C84, 0xB3, 0xA7, 0x97, 0x68, 0x93, 0x3B, 0x3C, 0x12);")
-
-// IID_IHostIOCompletionManager : uuid(8BDE9D80-EC06-41D6-83E6-22580EFFCC20)
-cpp_quote("EXTERN_GUID(IID_IHostIoCompletionManager, 0x8BDE9D80, 0xEC06, 0x41D6, 0x83, 0xE6, 0x22, 0x58, 0x0E, 0xFF, 0xCC, 0x20);")
-
-// IID IHostSyncManager : uuid(234330c7-5f10-4f20-9615-5122dab7a0ac)
-cpp_quote("EXTERN_GUID(IID_IHostSyncManager, 0x234330c7, 0x5f10, 0x4f20, 0x96, 0x15, 0x51, 0x22, 0xda, 0xb7, 0xa0, 0xac);")
-
-// IID IHostCrst : uuid(6DF710A6-26A4-4a65-8CD5-7237B8BDA8DC)
-cpp_quote("EXTERN_GUID(IID_IHostCrst, 0x6DF710A6, 0x26A4, 0x4a65, 0x8c, 0xd5, 0x72, 0x37, 0xb8, 0xbd, 0xa8, 0xdc);")
-
-// IID IHostAutoEvent : uuid(50B0CFCE-4063-4278-9673-E5CB4ED0BDB8)
-cpp_quote("EXTERN_GUID(IID_IHostAutoEvent, 0x50B0CFCE, 0x4063, 0x4278, 0x96, 0x73, 0xe5, 0xcb, 0x4e, 0xd0, 0xbd, 0xb8);")
-
-// IID IHostManualEvent : uuid(1BF4EC38-AFFE-4fb9-85A6-525268F15B54)
-cpp_quote("EXTERN_GUID(IID_IHostManualEvent, 0x1BF4EC38, 0xAFFE, 0x4fb9, 0x85, 0xa6, 0x52, 0x52, 0x68, 0xf1, 0x5b, 0x54);")
-
-// IID IHostSemaphore : uuid(855efd47-cc09-463a-a97d-16acab882661)
-cpp_quote("EXTERN_GUID(IID_IHostSemaphore, 0x855efd47, 0xcc09, 0x463a, 0xa9, 0x7d, 0x16, 0xac, 0xab, 0x88, 0x26, 0x61);")
-
-// IID ICLRSyncManager : uuid(55FF199D-AD21-48f9-A16C-F24EBBB8727D)
-cpp_quote("EXTERN_GUID(IID_ICLRSyncManager, 0x55FF199D, 0xAD21, 0x48f9, 0xa1, 0x6c, 0xf2, 0x4e, 0xbb, 0xb8, 0x72, 0x7d);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 // IID ICLRAppDomainResourceMonitor: uuid(C62DE18C-2E23-4AEA-8423-B40C1FC59EAE)
@@ -147,33 +65,20 @@ cpp_quote("EXTERN_GUID(IID_ICLRAppDomainResourceMonitor, 0XC62DE18C, 0X2E23, 0X4
 // {7D290010-D781-45da-A6F8-AA5D711A730E}
 cpp_quote("EXTERN_GUID(IID_ICLRPolicyManager, 0x7D290010, 0xD781, 0x45da, 0xA6, 0xF8, 0xAA, 0x5D, 0x71, 0x1A, 0x73, 0x0E);")
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined (FEATURE_WINDOWSPHONE)
+#if defined (FEATURE_WINDOWSPHONE)
 // IID_ICLRGCManager : uuid(54D9007E-A8E2-4885-B7BF-F998DEEE4F2A)
 cpp_quote("EXTERN_GUID(IID_ICLRGCManager, 0x54D9007E, 0xA8E2, 0x4885, 0xB7, 0xBF, 0xF9, 0x98, 0xDE, 0xEE, 0x4F, 0x2A);")
 // IID_ICLRGCManager2 : uuid(0603B793-A97A-4712-9CB4-0CD1C74C0F7C)
 cpp_quote("EXTERN_GUID(IID_ICLRGCManager2, 0x0603B793, 0xA97A, 0x4712, 0x9C, 0xB4, 0x0C, 0xD1, 0xC7, 0x4C, 0x0F, 0x7C);")
 // IID_ICLRErrorReportingManager : uuid(980D2F1A-BF79-4c08-812A-BB9778928F78)
 cpp_quote("EXTERN_GUID(IID_ICLRErrorReportingManager, 0x980d2f1a, 0xbf79, 0x4c08, 0x81, 0x2a, 0xbb, 0x97, 0x78, 0x92, 0x8f, 0x78);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES || FEATURE_WINDOWSPHONE
+#endif // FEATURE_WINDOWSPHONE
 
 #ifdef FEATURE_WINDOWSPHONE
 // IID_ICLRErrorReportingManager2 : uuid(C68F63B1-4D8B-4E0B-9564-9D2EFE2FA18C)
 cpp_quote("EXTERN_GUID(IID_ICLRErrorReportingManager2, 0xc68f63b1, 0x4d8b, 0x4e0b, 0x95, 0x64, 0x9d, 0x2e, 0xfe, 0x2f, 0xa1, 0x8c);")
 #endif // FEATURE_WINDOWSPHONE
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// {7AE49844-B1E3-4683-BA7C-1E8212EA3B79}
-cpp_quote("EXTERN_GUID(IID_IHostPolicyManager, 0x7AE49844, 0xB1E3, 0x4683, 0xBA, 0x7C, 0x1E, 0x82, 0x12, 0xEA, 0x3B, 0x79);")
-
-// IID IHostGCManager : uuid(5D4EC34E-F248-457B-B603-255FAABA0D21)
-cpp_quote("EXTERN_GUID(IID_IHostGCManager, 0x5D4EC34E, 0xF248, 0x457B, 0xB6, 0x03, 0x25, 0x5F, 0xAA, 0xBA, 0x0D, 0x21);")
-
-// {607BE24B-D91B-4E28-A242-61871CE56E35}
-cpp_quote("EXTERN_GUID(IID_IActionOnCLREvent, 0x607BE24B, 0xD91B, 0x4E28, 0xA2, 0x42, 0x61, 0x87, 0x1C, 0xE5, 0x6E, 0x35);")
-
-// {1D0E0132-E64F-493D-9260-025C0E32C175}
-cpp_quote("EXTERN_GUID(IID_ICLROnEventManager, 0x1D0E0132, 0xE64F, 0x493D, 0x92, 0x60, 0x02, 0x5C, 0x0E, 0x32, 0xC1, 0x75);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 // IID ICLRRuntimeHost: uuid(90F1A06C-7712-4762-86B5-7A5EBA6BDB02)
 cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost, 0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02);")
@@ -184,46 +89,10 @@ cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost2, 0x712AB73F, 0x2C22, 0x4807, 0xAD, 0
 // IID IID_ICLRExecutionManager: uuid(1000A3E7-B420-4620-AE30-FB19B587AD1D)
 cpp_quote("EXTERN_GUID(IID_ICLRExecutionManager, 0x1000A3E7, 0xB420, 0x4620, 0xAE, 0x30, 0xFB, 0x19, 0xB5, 0x87, 0xAD, 0x1D);")
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// IID ICLRHostProtectionManager :     uuid{89F25F5C-CEEF-43e1-9CFA-A68CE863AAAC}
-cpp_quote("EXTERN_GUID(IID_ICLRHostProtectionManager, 0x89f25f5c, 0xceef, 0x43e1, 0x9c, 0xfa, 0xa6, 0x8c, 0xe8, 0x63, 0xaa, 0xac);")
-
-// IID IHostAssemblyStore   :      uuid(7B102A88-3F7F-496D-8FA2-C35374E01AF3)
-cpp_quote("EXTERN_GUID(IID_IHostAssemblyStore, 0x7b102a88, 0x3f7f, 0x496d, 0x8f, 0xa2, 0xc3, 0x53, 0x74, 0xe0, 0x1a, 0xf3);")
-
-// IID IHostAssemblyManager :      uuid(613dabd7-62b2-493e-9e65-c1e32a1e0c5e)
-cpp_quote("EXTERN_GUID(IID_IHostAssemblyManager, 0x613dabd7, 0x62b2, 0x493e, 0x9e, 0x65, 0xc1, 0xe3, 0x2a, 0x1e, 0x0c, 0x5e);")
-
-// IID IHostSecurityManager :     uuid{75AD2468-A349-4D02-A764-76A68AEE0C4F}
-cpp_quote("EXTERN_GUID(IID_IHostSecurityManager, 0x75ad2468, 0xa349, 0x4d02, 0xa7, 0x64, 0x76, 0xa6, 0x8a, 0xee, 0x0c, 0x4f);")
-
-// IID IHostSecurityContext :     uuid{7E573CE4-0343-4423-98D7-6318348A1D3C}
-cpp_quote("EXTERN_GUID(IID_IHostSecurityContext, 0x7e573ce4, 0x343, 0x4423, 0x98, 0xd7, 0x63, 0x18, 0x34, 0x8a, 0x1d, 0x3c);")
-
-// IID ICLRAssemblyIdentityManager: uuid(15f0a9da-3ff6-4393-9da9-fdfd284e6972)
-cpp_quote("EXTERN_GUID(IID_ICLRAssemblyIdentityManager, 0x15f0a9da, 0x3ff6, 0x4393, 0x9d, 0xa9, 0xfd, 0xfd, 0x28, 0x4e, 0x69, 0x72);")
-
-// IID ICLRDomainManager: uuid(270D00A2-8E15-4d0b-ADEB-37BC3E47DF77)
-cpp_quote("EXTERN_GUID(IID_ICLRDomainManager, 0x270d00a2, 0x8e15, 0x4d0b, 0xad, 0xeb, 0x37, 0xbc, 0x3e, 0x47, 0xdf, 0x77);")
-
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 // IID ITypeName : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00522}
 cpp_quote("EXTERN_GUID(IID_ITypeName, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x22);")
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// IID ICLRAssemblyReferenceList: uuid(1b2c9750-2e66-4bda-8b44-0a642c5cd733)
-cpp_quote("EXTERN_GUID(IID_ICLRAssemblyReferenceList, 0x1b2c9750, 0x2e66, 0x4bda, 0x8b, 0x44, 0x0a, 0x64, 0x2c, 0x5c, 0xd7, 0x33);")
-
-// IID ICLRReferenceAssemblyEnum: uuid(d509cb5d-cf32-4876-ae61-67770cf91973)
-cpp_quote("EXTERN_GUID(IID_ICLRReferenceAssemblyEnum, 0xd509cb5d, 0xcf32, 0x4876, 0xae, 0x61, 0x67, 0x77, 0x0c, 0xf9, 0x19, 0x73);")
-
-// IID ICLRProbingAssemblyEnum: uuid(d0c5fb1f-416b-4f97-81f4-7ac7dc24dd5d)
-cpp_quote("EXTERN_GUID(IID_ICLRProbingAssemblyEnum, 0xd0c5fb1f, 0x416b, 0x4f97, 0x81, 0xf4, 0x7a, 0xc7, 0xdc, 0x24, 0xdd, 0x5d);")
-
-// IID ICLRHostBindingPolicyManager: uuid(4b3545e7-1856-48c9-a8ba-24b21a753c09)
-cpp_quote("EXTERN_GUID(IID_ICLRHostBindingPolicyManager, 0x4b3545e7, 0x1856, 0x48c9, 0xa8, 0xba, 0x24, 0xb2, 0x1a, 0x75, 0x3c, 0x09);")
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 // IID ITypeNameBuilder : uuid{B81FF171-20F3-11d2-8DCC-00A0C9B00523}
 cpp_quote("EXTERN_GUID(IID_ITypeNameBuilder, 0xB81FF171, 0x20F3, 0x11d2, 0x8d, 0xcc, 0x00, 0xa0, 0xc9, 0xb0, 0x05, 0x23);")
@@ -334,154 +203,6 @@ typedef enum
 
 #pragma midl_echo("STDAPI GetRequestedRuntimeVersionForCLSID(REFCLSID rclsid, _Out_writes_opt_(cchBuffer) LPWSTR pVersion, DWORD cchBuffer, _Out_opt_ DWORD* dwLength, CLSID_RESOLUTION_FLAGS dwResolutionFlags);")
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-//*****************************************************************************
-// Interface for Object Handles
-//*****************************************************************************
-[
-    object,
-    oleautomation,
-    uuid(C460E2B4-E199-412a-8456-84DC3E4838C3),
-    helpstring("Object Handle Interface"),
-    pointer_default(unique)
-]
-interface IObjectHandle : IUnknown
-{
-    HRESULT Unwrap([out, retval] VARIANT *ppv);
-};
-
-//*****************************************************************************
-// Interface for Setting runtime configuration
-//*****************************************************************************
-[
-    uuid(5C2B07A7-1E98-11d3-872F-00C04F79ED0D),
-    version(1.0),
-    helpstring("Application Domain call back"),
-    pointer_default(unique),
-    local
-]
-interface IAppDomainBinding : IUnknown
-{
-    // <TODO>TODO: this should return an AppDomain interface
-    // The event is invoked everytime a domain is created </TODO>
-    HRESULT OnAppDomain([in] IUnknown* pAppdomain);
-}
-
-
-//*****************************************************************************
-// Interface for participating in the scheduling of threads that would
-// otherwise be blocked for a GC
-//*****************************************************************************
-[
-    uuid(F31D1788-C397-4725-87A5-6AF3472C2791),
-    version(1.0),
-    helpstring("Control over threads blocked in GC"),
-    pointer_default(unique),
-    local
-]
-interface IGCThreadControl : IUnknown
-{
-    // Notification that the thread making the call is about to block, perhaps for
-    // a GC or other suspension.  This gives the host an opportunity to re-schedule
-    // the thread for unmanaged tasks.
-    HRESULT ThreadIsBlockingForSuspension();
-
-    // Notification that the runtime is beginning a thread suspension for a GC or
-    // other suspension.  Do not reschedule this thread!
-    HRESULT SuspensionStarting();
-
-    // Notification that the runtime is resuming threads after a GC or other
-    // suspension.      Do not reschedule this thread!
-    HRESULT SuspensionEnding(DWORD Generation);
-}
-
-//*****************************************************************************
-// Interface for GC to request change in virtual memory limit
-//*****************************************************************************
-[
-    uuid(5513D564-8374-4cb9-AED9-0083F4160A1D),
-    version(1.1),
-    helpstring("Request change in virtual memory for GC"),
-    pointer_default(unique),
-    local
-]
-interface IGCHostControl : IUnknown
-{
-    // Request to increase the virtual memeory limit of the runtime (GC heap)
-    HRESULT RequestVirtualMemLimit([in] SIZE_T sztMaxVirtualMemMB,
-                                   [in, out] SIZE_T* psztNewMaxVirtualMemMB);
-}
-
-//*****************************************************************************
-// Interface for accessing threadpool
-//*****************************************************************************
-cpp_quote("#ifdef __midl")
-typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOL);
-cpp_quote("#endif // __midl")
-
-cpp_quote("#ifdef __midl")
-typedef DWORD (__stdcall *LPTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
-typedef VOID (*LPOVERLAPPED_COMPLETION_ROUTINE)(DWORD dwErrorCode,
-                                                DWORD dwNumberOfBytesTransfered,
-                                                LPVOID lpOverlapped);
-cpp_quote("#endif // __midl")
-
-// Callback function for cleaning up TLS
-typedef VOID (__stdcall *PTLS_CALLBACK_FUNCTION)(PVOID);
-
-[
-    uuid(84680D3A-B2C1-46e8-ACC2-DBC0A359159A),
-    version(1.0),
-    helpstring("Threadpool interface"),
-    pointer_default(unique),
-    local
-]
-interface ICorThreadpool : IUnknown
-{
-    HRESULT CorRegisterWaitForSingleObject([in] HANDLE* phNewWaitObject,
-                                           [in] HANDLE hWaitObject,
-                                           [in] WAITORTIMERCALLBACK Callback,
-                                           [in] PVOID Context,
-                                           [in] ULONG timeout,
-                                           [in] BOOL  executeOnlyOnce,
-                                           [out] BOOL* result  );
-
-    HRESULT CorUnregisterWait([in] HANDLE hWaitObject,[in] HANDLE CompletionEvent,[out] BOOL* result);
-
-    HRESULT CorQueueUserWorkItem([in] LPTHREAD_START_ROUTINE Function,
-                                 [in] PVOID Context,
-                                 [in] BOOL executeOnlyOnce,
-                                 [out] BOOL* result );
-
-
-    HRESULT CorCreateTimer([in] HANDLE* phNewTimer,
-                           [in] WAITORTIMERCALLBACK Callback,
-                           [in] PVOID Parameter,
-                           [in] DWORD DueTime,
-                           [in] DWORD Period,
-                           [out] BOOL* result);
-
-    HRESULT CorChangeTimer([in] HANDLE Timer, [in] ULONG DueTime, [in] ULONG Period, [out] BOOL* result);
-
-    HRESULT CorDeleteTimer([in] HANDLE Timer, [in] HANDLE CompletionEvent, [out] BOOL* result);
-
-    HRESULT CorBindIoCompletionCallback([in] HANDLE fileHandle, [in] LPOVERLAPPED_COMPLETION_ROUTINE callback);
-
-    HRESULT CorCallOrQueueUserWorkItem([in] LPTHREAD_START_ROUTINE Function,
-                                       [in] PVOID Context,
-                                       [out] BOOL* result );
-        HRESULT CorSetMaxThreads([in] DWORD MaxWorkerThreads,
-                                 [in] DWORD MaxIOCompletionThreads);
-
-        HRESULT CorGetMaxThreads([out] DWORD *MaxWorkerThreads,
-                                 [out] DWORD *MaxIOCompletionThreads);
-
-        HRESULT CorGetAvailableThreads([out] DWORD *AvailableWorkerThreads,
-                                       [out] DWORD *AvailableIOCompletionThreads);
-
-
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 cpp_quote("EXTERN_GUID(IID_IDebuggerThreadControl, 0x23d86786, 0x0bb5, 0x4774, 0x8f, 0xb5, 0xe3, 0x52, 0x2a, 0xdd, 0x62, 0x46);")
 [
@@ -527,124 +248,12 @@ interface IDebuggerInfo : IUnknown
     HRESULT IsDebuggerAttached([out] BOOL *pbAttached);
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-// {5C2B07A5-1E98-11d3-872F-00C04F79ED0D}
-cpp_quote("EXTERN_GUID(IID_ICorConfiguration, 0x5c2b07a5, 0x1e98, 0x11d3, 0x87, 0x2f, 0x00, 0xc0, 0x4f, 0x79, 0xed, 0x0d);")
-[
-    uuid(5C2B07A5-1E98-11d3-872F-00C04F79ED0D),
-    version(1.0),
-    helpstring("Common Language Runtime Configuration Interface"),
-    pointer_default(unique),
-    local
-]
-interface ICorConfiguration : IUnknown
-{
-    // Set the callback for scheduling threads for non-runtime tasks when they
-    // would otherwise be blocked for a GC.
-    HRESULT SetGCThreadControl([in] IGCThreadControl* pGCThreadControl);
-
-    // Set the callback for gc to request a change in virtual memmory limit
-    HRESULT SetGCHostControl([in] IGCHostControl* pGCHostControl);
-
-    // Set the callback interface that the debugging services will
-    // call as Runtime threads are blocked and un-blocked for
-    // debugging.
-    HRESULT SetDebuggerThreadControl([in] IDebuggerThreadControl* pDebuggerThreadControl);
-
-    // The host may indicate to the debugging services that a
-    // particular thread should be allowed to continue to execute
-    // while the debugger has an application stopped during
-    // managed/unmanaged debugging scenarios. The specified thread
-    // will not be allowed to run managed code, or to enter the
-    // Runtime in any way. An example of such a thread would be an
-    // in-process thread to support legacy script debuggers.
-    HRESULT AddDebuggerSpecialThread([in] DWORD dwSpecialThreadId);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 //*****************************************************************************
 // Interface for hosting mscoree
 //*****************************************************************************
 typedef void* HDOMAINENUM;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(CB2F6722-AB3A-11d2-9C40-00C04FA30A3E),
-    version(1.0),
-    helpstring("Common Language Runtime Hosting Interface"),
-    pointer_default(unique),
-    local
-]
-interface ICorRuntimeHost : IUnknown
-{
-    HRESULT CreateLogicalThreadState();
-    HRESULT DeleteLogicalThreadState();
-    HRESULT SwitchInLogicalThreadState(
-     [in] DWORD *pFiberCookie);                 // [in] Cookie that indicates the fiber to use.
-
-    HRESULT SwitchOutLogicalThreadState(
-     [out] DWORD **pFiberCookie);               // [out] Cookie that indicates the fiber being switched out.
-
-    HRESULT LocksHeldByLogicalThread(           // Return code.
-     [out] DWORD *pCount                        // [out] Number of locks that the current thread holds.
-        );
-
-    HRESULT MapFile(
-     [in]       HANDLE          hFile,          // [in]  HANDLE for file
-     [out]      HMODULE*        hMapAddress);   // [out] HINSTANCE for mapped file
-
-    //=================================================================
-    //
-    // New hosting methods
-    //
-    // Returns an object for configuring the runtime prior to
-    // it starting. If the runtime has been initialized this
-    // routine returns an error. See ICorConfiguration.
-    HRESULT GetConfiguration([out] ICorConfiguration** pConfiguration);
-
-    // Starts the runtime. This is equivalent to CoInitializeCor();
-    HRESULT Start();
-
-    // Terminates the runtime, This is equivalent CoUninitializeCor();
-    HRESULT Stop();
-
-    // Creates a domain in the runtime. The identity array is
-    // a pointer to an array TYPE containing IIdentity objects defining
-    // the security identity.
-    HRESULT CreateDomain([in] LPCWSTR pwzFriendlyName,
-                         [in] IUnknown* pIdentityArray, // Optional
-                         [out] IUnknown** pAppDomain);
-
-    // Returns the default domain.
-    HRESULT GetDefaultDomain([out] IUnknown** pAppDomain);
-
-
-    // Enumerate currently existing domains.
-    HRESULT EnumDomains([out] HDOMAINENUM *hEnum);
-
-    // Returns S_FALSE when there are no more domains. A domain
-    // is passed out only when S_OK is returned.
-    HRESULT NextDomain([in] HDOMAINENUM hEnum,
-                       [out] IUnknown** pAppDomain);
-
-    // Close the enumeration, releasing resources
-    HRESULT CloseEnum([in] HDOMAINENUM hEnum);
-
-    HRESULT CreateDomainEx([in] LPCWSTR pwzFriendlyName, // Optional
-                           [in] IUnknown* pSetup,        // Optional
-                           [in] IUnknown* pEvidence,     // Optional
-                           [out] IUnknown** pAppDomain);
-
-    HRESULT CreateDomainSetup([out] IUnknown** pAppDomainSetup);
-
-    HRESULT CreateEvidence([out] IUnknown** pEvidence);
-
-    HRESULT UnloadDomain([in] IUnknown* pAppDomain);
-
-    // Returns the thread's domain.
-    HRESULT CurrentDomain([out] IUnknown** pAppDomain);
-};
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum
 {
@@ -666,162 +275,10 @@ typedef enum {
     WAIT_NOTINDEADLOCK = 0x4
 }WAIT_OPTION;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-cpp_quote("EXTERN_GUID(IID_ICLRMemoryNotificationCallback, 0x47EB8E57, 0x0846, 0x4546, 0xAF, 0x76, 0x6F, 0x42, 0xFC, 0xFC, 0x26, 0x49);")
-[
-    uuid(47EB8E57-0846-4546-AF76-6F42FCFC2649),
-    version(1.0),
-    helpstring("Callback by Host to notify runtime short of memory"),
-    pointer_default(unique),
-    local
-]
-interface ICLRMemoryNotificationCallback : IUnknown
-{
-    // Callback by Host on out of memory to request runtime to free memory.
-    // Runtime will do a GC and Wait for PendingFinalizer.
-    HRESULT OnMemoryNotification([in] EMemoryAvailable eMemoryAvailable);
-}
-
-[
-    uuid(1831991C-CC53-4A31-B218-04E910446479),
-    version(1.0),
-    helpstring("Host Malloc"),
-    pointer_default(unique),
-    local
-]
-interface IHostMalloc : IUnknown
-{
-    HRESULT Alloc([in] SIZE_T  cbSize,
-                  [in] EMemoryCriticalLevel eCriticalLevel,
-                  [out] void** ppMem);
-
-    HRESULT DebugAlloc([in] SIZE_T      cbSize,
-                      [in] EMemoryCriticalLevel       eCriticalLevel,
-                      [in, annotation("_In_ ")] char*       pszFileName,
-                      [in] int         iLineNo,
-                      [out, annotation("_Outptr_result_maybenull_")] void**     ppMem);
-
-    HRESULT Free([in] void* pMem);
-}
-
-typedef enum
-{
-    MALLOC_THREADSAFE = 0x1,
-    MALLOC_EXECUTABLE = 0x2,
-} MALLOC_TYPE;
-
-[
-    uuid(7BC698D1-F9E3-4460-9CDE-D04248E9FA25),
-    version(1.0),
-    helpstring("Host memory manager"),
-    pointer_default(unique),
-    local
-]
-interface IHostMemoryManager : IUnknown
-{
-    HRESULT CreateMalloc([in] DWORD dwMallocType,
-                         [out] IHostMalloc **ppMalloc);
-
-    HRESULT VirtualAlloc([in] void*       pAddress,
-                         [in] SIZE_T      dwSize,
-                         [in] DWORD       flAllocationType,
-                         [in] DWORD       flProtect,
-                         [in] EMemoryCriticalLevel eCriticalLevel,
-                         [out] void**     ppMem);
-
-    HRESULT VirtualFree([in] LPVOID      lpAddress,
-                        [in] SIZE_T      dwSize,
-                        [in] DWORD       dwFreeType);
-
-    HRESULT VirtualQuery([in] void *     lpAddress,
-                         [out] void*     lpBuffer,
-                         [in] SIZE_T     dwLength,
-                         [out] SIZE_T *  pResult);
-
-    HRESULT VirtualProtect([in] void *       lpAddress,
-                           [in] SIZE_T       dwSize,
-                           [in] DWORD        flNewProtect,
-                           [out] DWORD *     pflOldProtect);
-
-    HRESULT GetMemoryLoad([out] DWORD* pMemoryLoad,
-                          [out] SIZE_T *pAvailableBytes);
-
-    HRESULT RegisterMemoryNotificationCallback([in] ICLRMemoryNotificationCallback * pCallback);
-
-    HRESULT NeedsVirtualAddressSpace(
-        [in] LPVOID startAddress,
-        [in] SIZE_T size
-        );
-
-    HRESULT AcquiredVirtualAddressSpace(
-        [in] LPVOID startAddress,
-        [in] SIZE_T size
-        );
-
-    HRESULT ReleasedVirtualAddressSpace(
-        [in] LPVOID startAddress
-        );
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef UINT64 TASKID;
 typedef DWORD CONNID;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(28E66A4A-9906-4225-B231-9187C3EB8611),
-    version(1.0),
-    helpstring("Callback by Host to collaborate with CLR on HostTask"),
-    pointer_default(unique),
-    local
-]
-interface ICLRTask: IUnknown
-{
-    HRESULT SwitchIn([in] HANDLE threadHandle);
-    HRESULT SwitchOut();
-    HRESULT GetMemStats([out] COR_GC_THREAD_STATS *memUsage);
-    HRESULT Reset(BOOL fFull);
-    HRESULT ExitTask();
-    HRESULT Abort();
-    HRESULT RudeAbort();
-    HRESULT NeedsPriorityScheduling([out] BOOL * pbNeedsPriorityScheduling);
-    HRESULT YieldTask();
-    HRESULT LocksHeld([out] SIZE_T *pLockCount);
-    HRESULT SetTaskIdentifier([in] TASKID asked);
-}
-
-[
-    uuid(28E66A4A-9906-4225-B231-9187C3EB8612),
-    version(1.0),
-    helpstring("Callback by Host to collaborate with CLR on HostTask"),
-    pointer_default(unique),
-    local
-]
-interface ICLRTask2 : ICLRTask
-{
-    HRESULT BeginPreventAsyncAbort();
-    HRESULT EndPreventAsyncAbort();
-}
-
-
-[
-    uuid(C2275828-C4B1-4B55-82C9-92135F74DF1A),
-    version(1.0),
-    helpstring("Called by CLR to operate on a HostTask"),
-    pointer_default(unique),
-    local
-]
-interface IHostTask : IUnknown
-{
-    HRESULT Start();
-    HRESULT Alert();
-    HRESULT Join([in] DWORD dwMilliseconds,
-                             [in] DWORD option);
-    HRESULT SetPriority([in] int newPriority);
-    HRESULT GetPriority([out] int *pPriority);
-    HRESULT SetCLRTask([in] ICLRTask *pCLRTask);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum ETaskType
 {
@@ -839,141 +296,6 @@ typedef enum ETaskType
     TT_UNKNOWN = 0x80000000,
 } ETaskType;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(4862efbe-3ae5-44f8-8feb-346190ee8a34),
-    version(1.0),
-    helpstring("Functions provided by CLR to handle a CLRTask"),
-    pointer_default(unique),
-    local
-]
-interface ICLRTaskManager : IUnknown
-{
-    HRESULT CreateTask ([out] ICLRTask **pTask);
-    HRESULT GetCurrentTask ([out] ICLRTask **pTask);
-    HRESULT SetUILocale([in] LCID lcid);
-    HRESULT SetLocale([in] LCID lcid);
-
-    HRESULT GetCurrentTaskType([out] ETaskType *pTaskType);
-
-}
-
-[
-    uuid(997FF24C-43B7-4352-8667-0DC04FAFD354),
-    version(1.0),
-    helpstring("Functions provided by host to handle a HostTask"),
-    pointer_default(unique),
-    local
-]
-interface IHostTaskManager : IUnknown
-{
-    HRESULT GetCurrentTask ([out] IHostTask **pTask);
-    HRESULT CreateTask ([in] DWORD dwStackSize,
-                        [in] LPTHREAD_START_ROUTINE pStartAddress,
-                        [in] PVOID pParameter,
-                        [out] IHostTask **ppTask);
-    HRESULT Sleep([in] DWORD dwMilliseconds,
-                  [in] DWORD option);
-    HRESULT SwitchToTask([in] DWORD option);
-
-    HRESULT SetUILocale([in] LCID lcid);
-    HRESULT SetLocale([in] LCID  lcid);
-        
-    HRESULT CallNeedsHostHook([in] SIZE_T target,
-                              [out] BOOL *pbCallNeedsHostHook);
-
-    HRESULT LeaveRuntime([in] SIZE_T target);
-    HRESULT EnterRuntime();
-
-    HRESULT ReverseLeaveRuntime();
-    HRESULT ReverseEnterRuntime();
-
-    HRESULT BeginDelayAbort();
-    HRESULT EndDelayAbort();
-    HRESULT BeginThreadAffinity();
-    HRESULT EndThreadAffinity();
-
-    HRESULT SetStackGuarantee([in] ULONG guarantee);
-    HRESULT GetStackGuarantee([out] ULONG *pGuarantee);
-
-    HRESULT SetCLRTaskManager([in] ICLRTaskManager *ppManager);
-
-}
-
-[
-    uuid(983D50E2-CB15-466B-80FC-845DC6E8C5FD),
-    version(1.0),
-    helpstring("Threadpool Functions provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostThreadpoolManager : IUnknown
-{
-    HRESULT QueueUserWorkItem(
-        [in] LPTHREAD_START_ROUTINE Function,
-        [in] PVOID Context,
-        [in] ULONG Flags);
-    HRESULT SetMaxThreads(
-        [in] DWORD dwMaxWorkerThreads);
-    HRESULT GetMaxThreads(
-        [out] DWORD *pdwMaxWorkerThreads);
-    HRESULT GetAvailableThreads(
-        [out] DWORD *pdwAvailableWorkerThreads);
-    HRESULT SetMinThreads(
-        [in] DWORD dwMinIOCompletionThreads);
-    HRESULT GetMinThreads(
-        [out] DWORD *pdwMinIOCompletionThreads);
-}
-
-[
-    uuid(2d74ce86-b8d6-4c84-b3a7-9768933b3c12),
-    version(1.0),
-    helpstring("Asynchronous IO support callback"),
-    pointer_default(unique),
-    local
-]
-interface ICLRIoCompletionManager : IUnknown
-{
-    HRESULT OnComplete(
-        [in] DWORD dwErrorCode,
-        [in] DWORD NumberOfBytesTransferred,
-        [in] void* pvOverlapped);
-}
-
-[
-    uuid(8bde9d80-ec06-41d6-83e6-22580effcc20),
-    version(1.0),
-    helpstring("Asynchronous IO support provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostIoCompletionManager : IUnknown
-{
-    HRESULT CreateIoCompletionPort(
-        [out] HANDLE *phPort);
-    HRESULT CloseIoCompletionPort(
-        [in] HANDLE hPort);
-    HRESULT SetMaxThreads(
-        [in] DWORD dwMaxIOCompletionThreads);
-    HRESULT GetMaxThreads(
-        [out] DWORD *pdwMaxIOCompletionThreads);
-    HRESULT GetAvailableThreads(
-        [out] DWORD *pdwAvailableIOCompletionThreads);
-    HRESULT GetHostOverlappedSize(
-        [out] DWORD * pcbSize);
-    HRESULT SetCLRIoCompletionManager(
-        [in] ICLRIoCompletionManager * pManager);
-    HRESULT InitializeHostOverlapped(
-        [in] void * pvOverlapped);
-    HRESULT Bind(
-        [in] HANDLE hPort,
-        [in] HANDLE hHandle);
-    HRESULT SetMinThreads(
-        [in] DWORD dwMinIOCompletionThreads);
-    HRESULT GetMinThreads(
-        [out] DWORD *pdwMinIOCompletionThreads);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum { 
     eSymbolReadingNever = 0,        // Never read PDBs
@@ -981,41 +303,6 @@ typedef enum {
     eSymbolReadingFullTrustOnly = 2 // Only read PDBs that correspond to full-trust assemblies
 } ESymbolReadingPolicy;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(00DCAEC6-2AC0-43a9-ACF9-1E36C139B10D),
-    version(1.0),
-    helpstring("CLR debugger manager"),
-    pointer_default(unique),
-    local
-]
-interface ICLRDebugManager : IUnknown
-{
-    HRESULT BeginConnection(
-        [in] CONNID dwConnectionId,
-        [in, string, annotation("_In_")] wchar_t *szConnectionName);
-    HRESULT SetConnectionTasks(
-        [in] CONNID id,
-        [in] DWORD dwCount,
-        [in, size_is(dwCount)] ICLRTask **ppCLRTask);
-    HRESULT EndConnection(
-        [in] CONNID dwConnectionId);
-    // Set ACL on shared section, events, and process
-    HRESULT SetDacl([in] PACL pacl);
-
-    // Returning the current ACL that CLR is using
-    // The memory is allocated by runtime using CoTaskmemAlloc. Caller must
-    // free the memory pointed to by pacl using CoTaskMemFree.
-    HRESULT GetDacl([out] PACL *pacl);
-
-    // Indicates whether or not a managed debugger is attached to this process.
-    HRESULT IsDebuggerAttached([out] BOOL *pbAttached);
-
-    // Specify whether the symbol reader should be used.  Affects whether file and line 
-    // info can be included when the CLR captures a call stack.
-    HRESULT SetSymbolReadingPolicy([in] ESymbolReadingPolicy policy);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum {
     // Default to minidump
@@ -1077,7 +364,7 @@ typedef struct _BucketParameters
     WCHAR pszParams[BucketParamsCount][BucketParamLength];    // Parameter strings.
 } BucketParameters;
 
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 [
     uuid(980D2F1A-BF79-4c08-812A-BB9778928F78),
     version(1.0),
@@ -1181,119 +468,8 @@ interface ICLRErrorReportingManager2 : ICLRErrorReportingManager
 }
 #endif // FEATURE_WINDOWSPHONE
 
-#endif // defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#endif // defined(FEATURE_WINDOWSPHONE)
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(6DF710A6-26A4-4a65-8CD5-7237B8BDA8DC),
-    version(1.0),
-    helpstring("CriticalSection provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostCrst : IUnknown
-{
-    HRESULT Enter([in] DWORD option);
-    HRESULT Leave();
-    HRESULT TryEnter([in] DWORD option,
-                     [out] BOOL *pbSucceeded);
-    HRESULT SetSpinCount([in] DWORD dwSpinCount);
-}
-
-[
-    uuid(50B0CFCE-4063-4278-9673-E5CB4ED0BDB8),
-    version(1.0),
-    helpstring("AutoEvent provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostAutoEvent : IUnknown
-{
-    HRESULT Wait([in] DWORD dwMilliseconds,
-                 [in] DWORD option);
-    HRESULT Set();
-}
-
-[
-    uuid(1BF4EC38-AFFE-4fb9-85A6-525268F15B54),
-    version(1.0),
-    helpstring("ManualEvent provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostManualEvent : IUnknown
-{
-    HRESULT Wait([in] DWORD dwMilliseconds,
-                 [in] DWORD option);
-    HRESULT Reset();
-    HRESULT Set();
-}
-
-[
-    uuid(855efd47-cc09-463a-a97d-16acab882661),
-    version(1.0),
-    helpstring("Semaphore provided by host"),
-    pointer_default(unique),
-    local
-]
-interface IHostSemaphore : IUnknown
-{
-    HRESULT Wait([in] DWORD dwMilliseconds,
-                 [in] DWORD option);
-    HRESULT ReleaseSemaphore([in] LONG lReleaseCount,
-                             [out] LONG *lpPreviousCount);
-}
-
-[
-    uuid(55FF199D-AD21-48f9-A16C-F24EBBB8727D),
-    version(1.0),
-    helpstring("Functions provided by CLR to provide infomation on synchronization objects"),
-    pointer_default(unique),
-    local
-]
-interface ICLRSyncManager : IUnknown
-{
-    HRESULT GetMonitorOwner ([in] SIZE_T Cookie,
-                             [out] IHostTask **ppOwnerHostTask);
-
-    HRESULT CreateRWLockOwnerIterator([in] SIZE_T Cookie, [out] SIZE_T *pIterator);
-    HRESULT GetRWLockOwnerNext([in] SIZE_T Iterator, [out] IHostTask **ppOwnerHostTask);
-    HRESULT DeleteRWLockOwnerIterator([in] SIZE_T Iterator);
-}
-
-[
-    uuid(234330c7-5f10-4f20-9615-5122dab7a0ac),
-    version(1.0),
-    helpstring("Functions provided by host to create synchronization objects"),
-    pointer_default(unique),
-    local
-]
-interface IHostSyncManager : IUnknown
-{
-    HRESULT SetCLRSyncManager([in] ICLRSyncManager *pManager);
-
-    HRESULT CreateCrst([out] IHostCrst** ppCrst);
-    HRESULT CreateCrstWithSpinCount ([in] DWORD dwSpinCount,
-                                     [out] IHostCrst** ppCrst);
-
-    HRESULT CreateAutoEvent([out] IHostAutoEvent **ppEvent);
-    HRESULT CreateManualEvent([in] BOOL bInitialState,
-                              [out] IHostManualEvent **ppEvent);
-
-    HRESULT CreateMonitorEvent([in] SIZE_T Cookie,
-                               [out] IHostAutoEvent **ppEvent);
-
-    HRESULT CreateRWLockWriterEvent([in] SIZE_T Cookie,
-                                    [out] IHostAutoEvent **ppEvent);
-    HRESULT CreateRWLockReaderEvent([in] BOOL bInitialState,
-                                    [in] SIZE_T Cookie,
-                                    [out] IHostManualEvent **ppEvent);
-
-    HRESULT CreateSemaphore([in] DWORD dwInitial,
-                            [in] DWORD dwMax,
-                            [out] IHostSemaphore ** ppSemaphore);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum
 {
@@ -1383,29 +559,6 @@ interface ICLRPolicyManager: IUnknown
         [in] EClrUnhandledException policy);
 }
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(7AE49844-B1E3-4683-BA7C-1E8212EA3B79),
-    version(1.0),
-    helpstring("Notify host about how CLR handles abnormal condition"),
-    pointer_default(unique),
-    local
-]
-interface IHostPolicyManager: IUnknown
-{
-    HRESULT OnDefaultAction(
-        [in] EClrOperation operation,
-        [in] EPolicyAction action);
-
-    HRESULT OnTimeout(
-        [in] EClrOperation operation,
-        [in] EPolicyAction action);
-
-    HRESULT OnFailure(
-        [in] EClrFailure failure,
-        [in] EPolicyAction action);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 typedef enum
 {
@@ -1439,250 +592,8 @@ cpp_quote("    StackOverflowType soType;")
 cpp_quote("    EXCEPTION_POINTERS *pExceptionInfo;")
 cpp_quote("} StackOverflowInfo;")
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    uuid(607BE24B-D91B-4E28-A242-61871CE56E35),
-    version(1.0),
-    helpstring("Allow host to register action on domain unload"),
-    pointer_default(unique),
-    local
-]
-interface IActionOnCLREvent: IUnknown
-{
-    HRESULT OnEvent(
-        [in] EClrEvent   event,
-        [in] PVOID       data
-        );
-}
 
-[
-    uuid(1D0E0132-E64F-493D-9260-025C0E32C175),
-    version(1.0),
-    helpstring("Allow host to register action on event"),
-    pointer_default(unique),
-    local
-]
-interface ICLROnEventManager: IUnknown
-{
-    HRESULT RegisterActionOnEvent(
-        [in] EClrEvent          event,
-        [in] IActionOnCLREvent  *pAction
-        );
-    HRESULT UnregisterActionOnEvent(
-        [in] EClrEvent          event,
-        [in] IActionOnCLREvent  *pAction
-        );
-}
-
-[
-    uuid(5D4EC34E-F248-457B-B603-255FAABA0D21),
-    version(1.0),
-    helpstring("Control over threads blocked in GC"),
-    pointer_default(unique),
-    local
-]
-interface IHostGCManager : IUnknown
-{
-    // Notification that the thread making the call is about to block, perhaps for
-    // a GC or other suspension.  This gives the host an opportunity to re-schedule
-    // the thread for unmanaged tasks.
-    HRESULT ThreadIsBlockingForSuspension();
-
-    // Notification that the runtime is beginning a thread suspension for a GC or
-    // other suspension.  Do not reschedule this thread!
-    HRESULT SuspensionStarting();
-
-    // Notification that the runtime is resuming threads after a GC or other
-    // suspension.      Do not reschedule this thread!
-    HRESULT SuspensionEnding(DWORD Generation);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRAssemblyReferenceList
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(1b2c9750-2e66-4bda-8b44-0a642c5cd733),
-        helpstring("Generic Assembly Reference List, created by CLR."),
-        pointer_default(unique),
-        local
-]
-interface ICLRAssemblyReferenceList : IUnknown
-{
-    HRESULT    IsStringAssemblyReferenceInList(
-        [in]    LPCWSTR    pwzAssemblyName
-    );
-
-    HRESULT    IsAssemblyReferenceInList(
-        [in]    IUnknown *pName
-    );
-};
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRReferenceAssemblyEnum
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(d509cb5d-cf32-4876-ae61-67770cf91973),
-        helpstring("Reference Enum of an Assembly."),
-        pointer_default(unique),
-        local
-]
-interface ICLRReferenceAssemblyEnum : IUnknown
-{
-    HRESULT Get(
-        [in]        DWORD   dwIndex,
-        [out, size_is(*pcchBufferSize), annotation("_Out_writes_all_(*pcchBufferSize)")]    
-                    LPWSTR  pwzBuffer,
-        [in, out]   DWORD   *pcchBufferSize
-    );
-};
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRProbingAssemblyEnum
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(d0c5fb1f-416b-4f97-81f4-7ac7dc24dd5d),
-        helpstring("The assemblies CLR will probe for given assembly"),
-        pointer_default(unique),
-        local
-]
-interface ICLRProbingAssemblyEnum:IUnknown
-{
-    HRESULT Get(
-        [in]        DWORD   dwIndex,
-        [out, size_is(*pcchBufferSize), annotation("_Out_writes_all_(*pcchBufferSize)")]    
-                    LPWSTR  pwzBuffer,
-        [in, out]   DWORD   *pcchBufferSize
-    );
-};
-
-typedef enum _CLRAssemblyIdentityFlags
-{
-    CLR_ASSEMBLY_IDENTITY_FLAGS_DEFAULT = 0
-}ECLRAssemblyIdentityFlags;
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRAssemblyIdentityManager
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(15f0a9da-3ff6-4393-9da9-fdfd284e6972),
-        helpstring("CLR Assembly Identity Manager"),
-        pointer_default(unique),
-        local
-]
-interface ICLRAssemblyIdentityManager : IUnknown
-{
-    HRESULT  GetCLRAssemblyReferenceList(
-        [in]    LPCWSTR  *ppwzAssemblyReferences,
-        [in]    DWORD    dwNumOfReferences,
-        [out]   ICLRAssemblyReferenceList    **ppReferenceList
-    );
-
-    HRESULT GetBindingIdentityFromFile(
-        [in]    LPCWSTR     pwzFilePath,
-        [in]    DWORD       dwFlags,
-        [out, size_is(*pcchBufferSize), annotation("_Out_writes_all_(*pcchBufferSize)")]    
-                LPWSTR  pwzBuffer,
-        [in, out]   DWORD   *pcchBufferSize
-    );
-
-    HRESULT GetBindingIdentityFromStream(
-        [in]        IStream         *pStream,
-        [in]        DWORD           dwFlags,
-        [out, size_is(*pcchBufferSize), annotation("_Out_writes_all_(*pcchBufferSize)")]    
-                    LPWSTR  pwzBuffer,
-        [in, out]   DWORD           *pcchBufferSize
-    );
-
-    HRESULT GetReferencedAssembliesFromFile(
-        [in]    LPCWSTR                     pwzFilePath,
-        [in]    DWORD                       dwFlags,
-        [in]    ICLRAssemblyReferenceList   *pExcludeAssembliesList,
-        [out]   ICLRReferenceAssemblyEnum   **ppReferenceEnum
-    );
-
-    HRESULT GetReferencedAssembliesFromStream(
-        [in]    IStream                     *pStream,
-        [in]    DWORD                       dwFlags,
-        [in]    ICLRAssemblyReferenceList   *pExcludeAssembliesList,
-        [out]   ICLRReferenceAssemblyEnum   **ppReferenceEnum
-    );
-
-    HRESULT GetProbingAssembliesFromReference(
-        [in]    DWORD           dwMachineType,
-        [in]    DWORD           dwFlags,
-        [in]    LPCWSTR         pwzReferenceIdentity,
-        [out]   ICLRProbingAssemblyEnum     **ppProbingAssemblyEnum
-    );
-
-    HRESULT IsStronglyNamed(
-        [in]    LPCWSTR pwzAssemblyIdentity,
-        [out]   BOOL    *pbIsStronglyNamed
-    );
-};
-
-typedef enum _hostBiningPolicyModifyFlags
-{
-    HOST_BINDING_POLICY_MODIFY_DEFAULT  = 0,
-    HOST_BINDING_POLICY_MODIFY_CHAIN    = 1,
-    HOST_BINDING_POLICY_MODIFY_REMOVE   = 2,
-    HOST_BINDING_POLICY_MODIFY_MAX      = 3
-}EHostBindingPolicyModifyFlags;
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ICLRHostBindingPolicyManager
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(4b3545e7-1856-48c9-a8ba-24b21a753c09),
-        helpstring("CLR Host Binding Policy Manager, managing binding policy for host."),
-        pointer_default(unique),
-        local
-]
-interface ICLRHostBindingPolicyManager : IUnknown
-{
-    HRESULT     ModifyApplicationPolicy(
-        [in]        LPCWSTR         pwzSourceAssemblyIdentity,
-        [in]        LPCWSTR         pwzTargetAssemblyIdentity,
-        [in]        BYTE            *pbApplicationPolicy,
-        [in]        DWORD           cbAppPolicySize,
-        [in]        DWORD           dwPolicyModifyFlags,
-        [out, size_is(*pcbNewAppPolicySize), annotation("_Out_writes_all_(*pcbNewAppPolicySize)")]
-                    BYTE       *pbNewApplicationPolicy,
-        [in, out]   DWORD      *pcbNewAppPolicySize
-    );
-
-    HRESULT    EvaluatePolicy(
-        [in]      LPCWSTR             pwzReferenceIdentity,
-        [in]      BYTE                *pbApplicationPolicy,
-        [in]      DWORD               cbAppPolicySize,
-        [out, size_is(*pcchPostPolicyReferenceIdentity), annotation("_Out_writes_all_(*pcchPostPolicyReferenceIdentity)")]    
-                  LPWSTR              pwzPostPolicyReferenceIdentity,
-        [in, out] DWORD             *pcchPostPolicyReferenceIdentity,
-        [out]     DWORD              *pdwPoliciesApplied
-    );
-};
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
-
-#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+#if defined(FEATURE_WINDOWSPHONE)
 
 /*
  * This interface is used to get information about the GC system and
@@ -1738,7 +649,7 @@ interface ICLRGCManager2 : ICLRGCManager
 };
 
 
-#endif //FEATURE_INCLUDE_ALL_INTERFACES || FEATURE_WINDOWSPHONE
+#endif // FEATURE_WINDOWSPHONE
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -1787,64 +698,6 @@ typedef enum _HostApplicationPolicy
 }EHostApplicationPolicy;
 
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-///////////////////////////////////////////////////////////////////////////////
-//
-// IHostAssemblyStore
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        local,
-        object,
-        version(1.0),
-        uuid(7b102a88-3f7f-496d-8fa2-c35374e01af3),
-        helpstring("Assembly Store provided by host"),
-        pointer_default(unique)
-]
-interface IHostAssemblyStore: IUnknown
-{
-    HRESULT ProvideAssembly
-            (
-            [in] AssemblyBindInfo *pBindInfo,
-            [out] UINT64          *pAssemblyId,
-            [out] UINT64          *pContext,
-            [out] IStream        **ppStmAssemblyImage,
-            [out] IStream        **ppStmPDB);
-
-    HRESULT ProvideModule
-            (
-            [in] ModuleBindInfo *pBindInfo,
-            [out] DWORD         *pdwModuleId,
-            [out] IStream      **ppStmModuleImage,
-            [out] IStream      **ppStmPDB);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// IHostAssemblyManager
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        local,
-        object,
-        version(1.0),
-        uuid(613dabd7-62b2-493e-9e65-c1e32a1e0c5e),
-        helpstring("Assembly Manager provided by host"),
-        pointer_default(unique)
-]
-interface IHostAssemblyManager: IUnknown
-{
-    HRESULT GetNonHostStoreAssemblies
-            (
-            [out] ICLRAssemblyReferenceList **ppReferenceList
-            );
-
-    HRESULT GetAssemblyStore
-            (
-            [out] IHostAssemblyStore **ppAssemblyStore
-            );
-};
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 // Implemented in mscorwks.dll, use mscoree!GetRealProcAddress to get
 // a function pointer of this API.
@@ -2032,26 +885,6 @@ typedef enum
     eAll                         = 0x1ff
 } EApiCategories;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    object,
-    uuid(89F25F5C-CEEF-43e1-9CFA-A68CE863AAAC),
-    helpstring("Host Protection Interface"),
-    pointer_default(unique)
-]
-interface ICLRHostProtectionManager : IUnknown
-{
-    // These allow the host to specify resources that could cause
-    // instability in order to guarantee protection from them.
-    HRESULT SetProtectedCategories([in] EApiCategories categories);
-
-    // Call once before starting the runtime to sacrifice a little
-    // assembly-loading-performance for a guarantee that a certain
-    // rare race condition that can result in a FatalEE error won't
-    // happen.
-    HRESULT SetEagerSerializeGrantSets();
-};
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 //
 // Interface for configuring the default AppDomain
@@ -2066,24 +899,6 @@ typedef enum
 }
 EInitializeNewDomainFlags;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-[
-    object,
-    uuid(270D00A2-8E15-4d0b-ADEB-37BC3E47DF77),
-    helpstring("Default AppDomain Configuration Interface"),
-    pointer_default(unique)
-]
-interface ICLRDomainManager : IUnknown
-{
-    HRESULT SetAppDomainManagerType([in] LPCWSTR wszAppDomainManagerAssembly,
-                                    [in] LPCWSTR wszAppDomainManagerType,
-                                    [in] EInitializeNewDomainFlags dwInitializeDomainFlags);
-
-    HRESULT SetPropertiesForDefaultAppDomain([in] DWORD nProperties,
-                                             [in] LPCWSTR *pwszPropertyNames,
-                                             [in] LPCWSTR *pwszPropertyValues);
-}
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 //*****************************************************************************
 // mscoree typelib definition
@@ -2166,24 +981,6 @@ library mscoree
         HRESULT GetTypeNameBuilder([out, retval] ITypeNameBuilder** ppTypeBuilder);
     };
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    //*****************************************************************************
-    // Interface for apartment callbacks.
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(178E5337-1528-4591-B1C9-1C6E484686D8),
-        helpstring("Apartment callback interface"),
-        pointer_default(unique)
-    ]
-    interface IApartmentCallback : IUnknown
-    {
-        HRESULT _stdcall DoCallback(
-                        [in] SIZE_T pFunc,
-                        [in] SIZE_T pData);
-    };
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef _WIN64
     #define CCW_PTR __int64 *
@@ -2215,24 +1012,6 @@ library mscoree
     };
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    //*****************************************************************************
-    // Interface for controlling a managed object
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(04C6BE1E-1DB1-4058-AB7A-700CCCFBF254),
-        helpstring("ICatalogServices Interface"),
-        pointer_default(unique)
-    ]
-    interface ICatalogServices : IUnknown
-    {
-        HRESULT Autodone();
-
-        HRESULT NotAutodone();
-    };
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_COMINTEROP
     //*****************************************************************************
@@ -2260,20 +1039,6 @@ library mscoree
     };
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-    [
-        uuid(CB2F6723-AB3A-11d2-9C40-00C04FA30A3E),
-        helpstring("Cor Runtime Hosting Class")
-    ]
-    coclass CorRuntimeHost
-    {
-        [default] interface ICorRuntimeHost;
-        interface IGCHost;
-        interface ICorConfiguration;
-        interface IValidator;
-        interface IDebuggerInfo;
-    };
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
     [
         uuid(90F1A06E-7712-4762-86B5-7A5EBA6BDB02),
@@ -2301,64 +1066,6 @@ typedef enum
         eRestrictedContext=0x01
 } EContextType;
 
-#ifdef FEATURE_INCLUDE_ALL_INTERFACES
-///////////////////////////////////////////////////////////////////////////////
-//
-// IHostSecurityContext
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(7E573CE4-0343-4423-98D7-6318348A1D3C),
-        helpstring("Security Context provided by host"),
-        pointer_default(unique),
-        local
-]
-
-interface IHostSecurityContext : IUnknown
-{
-        HRESULT Capture([out] IHostSecurityContext** ppClonedContext);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// IHostSecurityManager
-//
-///////////////////////////////////////////////////////////////////////////////
-[
-        object,
-        version(1.0),
-        uuid(75ad2468-a349-4d02-a764-76a68aee0c4f),
-        helpstring("Security Manager provided by host"),
-        pointer_default(unique),
-        local
-]
-interface IHostSecurityManager: IUnknown
-{
-    // Impersonation APIs.
-    HRESULT ImpersonateLoggedOnUser(
-            [in] HANDLE hToken);
-
-    HRESULT RevertToSelf();
-
-    HRESULT OpenThreadToken(
-            [in]  DWORD   dwDesiredAccess,
-            [in]  BOOL    bOpenAsSelf,
-            [out] HANDLE  *phThreadToken
-            );
-
-    HRESULT SetThreadToken(
-            [in] HANDLE hToken);
-
-      HRESULT GetSecurityContext([in] EContextType eContextType,
-                        [out] IHostSecurityContext** ppSecurityContext);
-        // May return S_OK, E_FAIL (in what circumstances?)
-        HRESULT SetSecurityContext([in] EContextType eContextType,
-                        [in] IHostSecurityContext* pSecurityContext);
-
-};
-#endif // FEATURE_INCLUDE_ALL_INTERFACES
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 ///////////////////////////////////////////////////////////////////////////////

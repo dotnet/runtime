@@ -76,16 +76,7 @@ DEFINE_FIELD_U(AssemblyLoad,               AppDomainBaseObject, m_pAssemblyEvent
 DEFINE_FIELD_U(_TypeResolve,               AppDomainBaseObject, m_pTypeEventHandler)
 DEFINE_FIELD_U(_ResourceResolve,           AppDomainBaseObject, m_pResourceEventHandler)
 DEFINE_FIELD_U(_AssemblyResolve,           AppDomainBaseObject, m_pAsmResolveEventHandler)
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-DEFINE_FIELD_U(ReflectionOnlyAssemblyResolve,  AppDomainBaseObject, m_pReflectionAsmResolveEventHandler)
-#endif
-#ifdef FEATURE_REMOTING
-DEFINE_FIELD_U(_DefaultContext,            AppDomainBaseObject, m_pDefaultContext)
-#endif
 DEFINE_FIELD_U(_applicationTrust,          AppDomainBaseObject, m_pApplicationTrust)
-#ifdef FEATURE_REMOTING
-DEFINE_FIELD_U(_RemotingData,              AppDomainBaseObject, m_pURITable)
-#endif
 DEFINE_FIELD_U(_processExit,               AppDomainBaseObject, m_pProcessExitEventHandler)
 DEFINE_FIELD_U(_domainUnload,              AppDomainBaseObject, m_pDomainUnloadEventHandler)
 DEFINE_FIELD_U(_unhandledException,        AppDomainBaseObject, m_pUnhandledExceptionEventHandler)
@@ -103,27 +94,10 @@ DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,
 DEFINE_METHOD(APP_DOMAIN,           ON_RESOURCE_RESOLVE,    OnResourceResolveEvent,     IM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(APP_DOMAIN,           ON_TYPE_RESOLVE,        OnTypeResolveEvent,         IM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_RESOLVE,    OnAssemblyResolveEvent,     IM_Assembly_Str_RetAssembly)
-#ifdef FEATURE_REFLECTION_ONLY_LOAD
-DEFINE_METHOD(APP_DOMAIN,           ON_REFLECTION_ONLY_ASSEMBLY_RESOLVE, OnReflectionOnlyAssemblyResolveEvent, IM_Assembly_Str_RetAssembly) 
-#ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(APP_DOMAIN,           ON_REFLECTION_ONLY_NAMESPACE_RESOLVE, OnReflectionOnlyNamespaceResolveEvent, IM_Assembly_Str_RetArrAssembly)
-#endif //FEATURE_COMINTEROP
-DEFINE_METHOD(APP_DOMAIN,           ENABLE_RESOLVE_ASSEMBLIES_FOR_INTROSPECTION, EnableResolveAssembliesForIntrospection, IM_Str_RetVoid)
-#endif //FEATURE_REFLECTION_ONLY_LOAD
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolveEvent, IM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           SETUP_DOMAIN,           SetupDomain,                IM_Bool_Str_Str_ArrStr_ArrStr_RetVoid)
-#ifdef FEATURE_REMOTING
-DEFINE_METHOD(APP_DOMAIN,           CREATE_DOMAIN,          CreateDomain,               SM_Str_Evidence_AppDomainSetup_RetAppDomain)
-DEFINE_METHOD(APP_DOMAIN,           VAL_CREATE_DOMAIN,      InternalCreateDomain,       SM_Str_RetAppDomain)
-#endif
-#ifdef FEATURE_REMOTING
-DEFINE_METHOD(APP_DOMAIN,           MARSHAL_OBJECT,         MarshalObject,              SM_Obj_RetArrByte)
-DEFINE_METHOD(APP_DOMAIN,           MARSHAL_OBJECTS,        MarshalObjects,             SM_Obj_Obj_RefArrByte_RetArrByte)
-DEFINE_METHOD(APP_DOMAIN,           UNMARSHAL_OBJECT,       UnmarshalObject,            SM_ArrByte_RetObj)
-DEFINE_METHOD(APP_DOMAIN,           UNMARSHAL_OBJECTS,      UnmarshalObjects,           SM_ArrByte_ArrByte_RefObj_RetObj)
-#endif
 DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
@@ -234,15 +208,6 @@ DEFINE_FIELD(ASSEMBLY,              HANDLE,                 m_assembly)
 DEFINE_METHOD(ASSEMBLY,             GET_NAME,               GetName,                    IM_RetAssemblyName)
 DEFINE_METHOD(ASSEMBLY,             ON_MODULE_RESOLVE,      OnModuleResolveEvent,       IM_Str_RetModule)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(ACTIVATION_SERVICES,   Activation,             ActivationServices)
-DEFINE_METHOD(ACTIVATION_SERVICES,  IS_CURRENT_CONTEXT_OK,  IsCurrentContextOK,         SM_Class_ArrObject_Bool_RetMarshalByRefObject)
-
-#ifdef FEATURE_CLASSIC_COMINTEROP
-DEFINE_METHOD(ACTIVATION_SERVICES,  CREATE_OBJECT_FOR_COM,  CreateObjectForCom,         SM_Class_ArrObject_Bool_RetMarshalByRefObject)
-
-#endif // FEATURE_CLASSIC_COMINTEROP
-#endif // FEATURE_REMOTING
 
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
@@ -270,9 +235,6 @@ DEFINE_METHOD(CLASS,                GET_PROPERTIES,         GetProperties,      
 DEFINE_METHOD(CLASS,                GET_FIELDS,             GetFields,                  IM_BindingFlags_RetArrFieldInfo)
 DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,                 IM_BindingFlags_RetArrMethodInfo)
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
-#if defined(FEATURE_CLASSIC_COMINTEROP) && defined(FEATURE_REMOTING)
-DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrInt_RefMessageData_RetObj)
-#endif
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
 DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
@@ -342,29 +304,7 @@ DEFINE_FIELD_U(m_encodedEnumType,  CustomAttributeType,            m_enumType)
 DEFINE_FIELD_U(m_encodedArrayType, CustomAttributeType,            m_arrayType)
 DEFINE_FIELD_U(m_padding,          CustomAttributeType,            m_padding)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS_U(Contexts,               Context,        ContextBaseObject)
-DEFINE_FIELD_U(_ctxProps,                  ContextBaseObject, m_ctxProps)
-DEFINE_FIELD_U(_dphCtx,                    ContextBaseObject, m_dphCtx)
-DEFINE_FIELD_U(_localDataStore,            ContextBaseObject, m_localDataStore)
-DEFINE_FIELD_U(_serverContextChain,        ContextBaseObject, m_serverContextChain)
-DEFINE_FIELD_U(_clientContextChain,        ContextBaseObject, m_clientContextChain)
-DEFINE_FIELD_U(_appDomain,                 ContextBaseObject, m_exposedAppDomain)
-DEFINE_FIELD_U(_ctxStatics,                ContextBaseObject, m_ctxStatics)
-DEFINE_FIELD_U(_internalContext,           ContextBaseObject, m_internalContext)
-DEFINE_FIELD_U(_ctxID,                     ContextBaseObject, _ctxID)
-DEFINE_FIELD_U(_ctxFlags,                  ContextBaseObject, _ctxFlags)
-DEFINE_FIELD_U(_numCtxProps,               ContextBaseObject, _numCtxProps)
-DEFINE_FIELD_U(_ctxStaticsCurrentBucket,   ContextBaseObject, _ctxStaticsCurrentBucket)
-DEFINE_FIELD_U(_ctxStaticsFreeIndex,       ContextBaseObject, _ctxStaticsFreeIndex)
-DEFINE_CLASS(CONTEXT,             Contexts,               Context)
-DEFINE_METHOD(CONTEXT,              CALLBACK,               DoCallBackFromEE,           SM_IntPtr_IntPtr_Int_RetVoid)
-DEFINE_METHOD(CONTEXT,              RESERVE_SLOT,           ReserveSlot,                IM_RetInt)
-#endif
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(CONTEXT_BOUND_OBJECT,  System,                 ContextBoundObject)
-#endif
 
 
 #ifndef FEATURE_COREFX_GLOBALIZATION
@@ -472,14 +412,8 @@ DEFINE_FIELD_U(m_name,             CultureInfoBaseObject,  m_name)
 DEFINE_FIELD_U(m_nonSortName,      CultureInfoBaseObject,  m_nonSortName)
 DEFINE_FIELD_U(m_sortName,         CultureInfoBaseObject,  m_sortName)
 DEFINE_FIELD_U(m_parent,           CultureInfoBaseObject,  m_parent)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-DEFINE_FIELD_U(m_createdDomainID,  CultureInfoBaseObject,  m_createdDomainID)
-#endif // FEATURE_LEAK_CULTURE_INFO
 DEFINE_FIELD_U(m_isReadOnly,       CultureInfoBaseObject,  m_isReadOnly)
 DEFINE_FIELD_U(m_isInherited,      CultureInfoBaseObject,  m_isInherited)
-#ifdef FEATURE_LEAK_CULTURE_INFO
-DEFINE_FIELD_U(m_isSafeCrossDomain, CultureInfoBaseObject, m_isSafeCrossDomain)
-#endif // FEATURE_LEAK_CULTURE_INFO
 #ifndef FEATURE_COREFX_GLOBALIZATION
 DEFINE_FIELD_U(m_useUserOverride,  CultureInfoBaseObject,  m_useUserOverride)
 #endif
@@ -573,9 +507,6 @@ DEFINE_FIELD_U(_stackTraceString,  ExceptionObject,    _stackTraceString)
 DEFINE_FIELD_U(_remoteStackTraceString, ExceptionObject, _remoteStackTraceString)
 DEFINE_FIELD_U(_dynamicMethods,    ExceptionObject,    _dynamicMethods)
 DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
-#ifdef FEATURE_SERIALIZATION
-DEFINE_FIELD_U(_safeSerializationManager, ExceptionObject, _safeSerializationManager)
-#endif // FEATURE_SERIALIZATION
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_remoteStackIndex,  ExceptionObject,    _remoteStackIndex)
@@ -687,12 +618,6 @@ DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,       
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
 #endif //FEATURE_COMINTEROP
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(IDENTITY,              Remoting,               Identity)
-DEFINE_FIELD(IDENTITY,              TP_OR_OBJECT,           _tpOrObject)
-DEFINE_FIELD(IDENTITY,              LEASE,                  _lease)
-DEFINE_FIELD(IDENTITY,              OBJURI,                 _ObjURI)
-#endif
 
 DEFINE_CLASS(ISERIALIZABLE,         Serialization,          ISerializable)
 DEFINE_CLASS(IOBJECTREFERENCE,      Serialization,          IObjectReference)
@@ -700,11 +625,6 @@ DEFINE_CLASS(IDESERIALIZATIONCB,    Serialization,          IDeserializationCall
 DEFINE_CLASS(STREAMING_CONTEXT,     Serialization,          StreamingContext)
 DEFINE_CLASS(SERIALIZATION_INFO,    Serialization,          SerializationInfo)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(OBJECTCLONEHELPER,     Serialization,          ObjectCloneHelper)
-DEFINE_METHOD(OBJECTCLONEHELPER,    GET_OBJECT_DATA,        GetObjectData,              SM_Obj_OutStr_OutStr_OutArrStr_OutArrObj_RetObj)
-DEFINE_METHOD(OBJECTCLONEHELPER,    PREPARE_DATA,           PrepareConstructorArgs,     SM_Obj_ArrStr_ArrObj_OutStreamingContext_RetSerializationInfo)
-#endif
 
 
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
@@ -724,13 +644,6 @@ DEFINE_METHOD(IREFLECT,             GET_FIELDS,             GetFields,          
 DEFINE_METHOD(IREFLECT,             GET_METHODS,            GetMethods,                 IM_BindingFlags_RetArrMethodInfo)
 DEFINE_METHOD(IREFLECT,             INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 
-#ifdef FEATURE_ISOSTORE
-#ifndef FEATURE_ISOSTORE_LIGHT
-DEFINE_CLASS(ISS_STORE,             IsolatedStorage,        IsolatedStorage)
-#endif // !FEATURE_ISOSTORE_LIGHT
-DEFINE_CLASS(ISS_STORE_FILE,        IsolatedStorage,        IsolatedStorageFile)
-DEFINE_CLASS(ISS_STORE_FILE_STREAM, IsolatedStorage,        IsolatedStorageFileStream)
-#endif 
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttribute)
@@ -738,16 +651,6 @@ DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttrib
 
 DEFINE_CLASS(LOADER_OPTIMIZATION,   System,                 LoaderOptimization)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS_U(Messaging,            LogicalCallContext,      LogicalCallContextObject)
-DEFINE_FIELD_U(m_Datastore,             LogicalCallContextObject,      m_Datastore)
-DEFINE_FIELD_U(m_RemotingData,          LogicalCallContextObject,      m_RemotingData)
-DEFINE_FIELD_U(m_SecurityData,          LogicalCallContextObject,      m_SecurityData)
-DEFINE_FIELD_U(m_HostContext,           LogicalCallContextObject,      m_HostContext)
-DEFINE_FIELD_U(m_IsCorrelationMgr,      LogicalCallContextObject,      m_IsCorrelationMgr)
-DEFINE_FIELD_U(_sendHeaders,            LogicalCallContextObject,      _sendHeaders)
-DEFINE_FIELD_U(_recvHeaders,            LogicalCallContextObject,      _recvHeaders)
-#endif
 
 DEFINE_CLASS(MARSHAL,               Interop,                Marshal)
 #ifdef FEATURE_COMINTEROP
@@ -761,37 +664,9 @@ DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER, GetDelega
 DEFINE_METHOD(MARSHAL,              ALLOC_CO_TASK_MEM,                 AllocCoTaskMem,                SM_Int_RetIntPtr)
 DEFINE_FIELD(MARSHAL,               SYSTEM_MAX_DBCS_CHAR_SIZE,         SystemMaxDBCSCharSize)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS_U(System,                 MarshalByRefObject,   MarshalByRefObjectBaseObject)
-DEFINE_FIELD_U(__identity,               MarshalByRefObjectBaseObject,   m_ServerIdentity)
-DEFINE_CLASS(MARSHAL_BY_REF_OBJECT, System,                 MarshalByRefObject)
-#endif
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS_U(Messaging,              Message,                    MessageObject)
-DEFINE_FIELD_U(_MethodName,                MessageObject,       pMethodName)
-DEFINE_FIELD_U(_MethodSignature,           MessageObject,       pMethodSig)
-DEFINE_FIELD_U(_MethodBase,                MessageObject,       pMethodBase)
-DEFINE_FIELD_U(_properties,                MessageObject,       pHashTable)
-DEFINE_FIELD_U(_URI,                       MessageObject,       pURI)
-DEFINE_FIELD_U(_typeName,                  MessageObject,       pTypeName)
-DEFINE_FIELD_U(_Fault,                     MessageObject,       pFault)
-DEFINE_FIELD_U(_ID,                        MessageObject,       pID)
-DEFINE_FIELD_U(_srvID,                     MessageObject,       pSrvID)
-DEFINE_FIELD_U(_argMapper,                 MessageObject,       pArgMapper)
-DEFINE_FIELD_U(_callContext,               MessageObject,       pCallCtx)
-DEFINE_FIELD_U(_frame,                     MessageObject,       pFrame)
-DEFINE_FIELD_U(_methodDesc,                MessageObject,       pMethodDesc)
-DEFINE_FIELD_U(_metaSigHolder,             MessageObject,       pMetaSigHolder)
-DEFINE_FIELD_U(_delegateMD,                MessageObject,       pDelegateMD)
-DEFINE_FIELD_U(_governingType,             MessageObject,       thGoverningType)
-DEFINE_FIELD_U(_flags,                     MessageObject,       iFlags)
-DEFINE_FIELD_U(_initDone,                  MessageObject,       initDone)
-
-DEFINE_CLASS(MESSAGE_DATA,          Proxies,              MessageData)
-#endif // FEATURE_REMOTING
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -836,10 +711,6 @@ DEFINE_CLASS(METHOD_HANDLE_INTERNAL,System,                 RuntimeMethodHandleI
 DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
 DEFINE_METHOD(METHOD_HANDLE,        GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeMethodHandle_RetIntPtr)
-
-#ifdef FEATURE_METHOD_RENTAL
-DEFINE_CLASS(METHOD_RENTAL,         ReflectionEmit,         MethodRental)
-#endif // FEATURE_METHOD_RENTAL
 
 DEFINE_CLASS(MISSING,               Reflection,             Missing)
 DEFINE_FIELD(MISSING,               VALUE,                  Value)
@@ -1011,58 +882,6 @@ DEFINE_METHOD(PROPERTY,             GET_GETTER,             GetGetMethod,       
 
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(PROXY_ATTRIBUTE,       Proxies,                ProxyAttribute)
-
-DEFINE_CLASS_U(Proxies,                RealProxy,      RealProxyObject)
-DEFINE_FIELD_U(_tp,                        RealProxyObject,    _tp)
-DEFINE_FIELD_U(_identity,                  RealProxyObject,    _identity)
-DEFINE_FIELD_U(_serverObject,              RealProxyObject,    _serverObject)
-DEFINE_FIELD_U(_flags,                     RealProxyObject,    _flags)
-DEFINE_FIELD_U(_optFlags,                  RealProxyObject,    _optFlags)
-DEFINE_FIELD_U(_domainID,                  RealProxyObject,    _domainID)
-DEFINE_FIELD_U(_srvIdentity,               RealProxyObject,    _srvIdentity)
-DEFINE_CLASS(REAL_PROXY,          Proxies,                RealProxy)
-DEFINE_METHOD(REAL_PROXY,           PRIVATE_INVOKE,         PrivateInvoke,              IM_RefMessageData_Int_RetVoid)
-#ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(REAL_PROXY,           GETDCOMPROXY,           GetCOMIUnknown,             IM_Bool_RetIntPtr)
-DEFINE_METHOD(REAL_PROXY,           SETDCOMPROXY,           SetCOMIUnknown,             IM_IntPtr_RetVoid)
-DEFINE_METHOD(REAL_PROXY,           SUPPORTSINTERFACE,      SupportsInterface,          IM_RefGuid_RetIntPtr)
-
-#endif // FEATURE_COMINTEROP
-#endif // FEATURE_REMOTING
-
-#ifdef FEATURE_RWLOCK
-DEFINE_CLASS_U(Threading,              ReaderWriterLock,           CRWLock)
-DEFINE_FIELD_U(_hWriterEvent,              CRWLock, _hWriterEvent)
-DEFINE_FIELD_U(_hReaderEvent,              CRWLock, _hReaderEvent)
-DEFINE_FIELD_U(_hObjectHandle,             CRWLock, _hObjectHandle)
-DEFINE_FIELD_U(_dwState,                   CRWLock, _dwState)
-DEFINE_FIELD_U(_dwULockID,                 CRWLock, _dwULockID)
-DEFINE_FIELD_U(_dwLLockID,                 CRWLock, _dwLLockID)
-DEFINE_FIELD_U(_dwWriterID,                CRWLock, _dwWriterID)
-DEFINE_FIELD_U(_dwWriterSeqNum,            CRWLock, _dwWriterSeqNum)
-DEFINE_FIELD_U(_wWriterLevel,              CRWLock, _wWriterLevel)
-#endif  // FEATURE_RWLOCK
-
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(LEASE,                 Lifetime,               Lease)
-DEFINE_METHOD(LEASE,                RENEW_ON_CALL,          RenewOnCall,                IM_RetVoid)
-
-DEFINE_CLASS(REMOTING_PROXY,        Proxies,                RemotingProxy)
-DEFINE_METHOD(REMOTING_PROXY,       INVOKE,                 Invoke,                     SM_Obj_RefMessageData_RetVoid)
-
-DEFINE_CLASS(REMOTING_SERVICES,     Remoting,               RemotingServices)
-DEFINE_METHOD(REMOTING_SERVICES,    CHECK_CAST,             CheckCast,                  SM_RealProxy_Class_RetBool)
-DEFINE_METHOD(REMOTING_SERVICES,    GET_TYPE,               GetType,                    SM_Obj_RetObj)
-DEFINE_METHOD(REMOTING_SERVICES,    WRAP,                   Wrap,                       SM_ContextBoundObject_RetObj)
-DEFINE_METHOD(REMOTING_SERVICES,    CREATE_PROXY_FOR_DOMAIN,CreateProxyForDomain,       SM_Int_IntPtr_RetObj)
-DEFINE_METHOD(REMOTING_SERVICES,    GET_SERVER_CONTEXT_FOR_PROXY,GetServerContextForProxy,  SM_Obj_RetIntPtr)        
-DEFINE_METHOD(REMOTING_SERVICES,    GET_SERVER_DOMAIN_ID_FOR_PROXY,GetServerDomainIdForProxy,  SM_Obj_RetInt)        
-DEFINE_METHOD(REMOTING_SERVICES,    MARSHAL_TO_BUFFER,      MarshalToBuffer,            SM_Obj_Bool_RetArrByte)
-DEFINE_METHOD(REMOTING_SERVICES,    UNMARSHAL_FROM_BUFFER,  UnmarshalFromBuffer,        SM_ArrByte_Bool_RetObj)
-DEFINE_METHOD(REMOTING_SERVICES,    DOMAIN_UNLOADED,        DomainUnloaded,             SM_Int_RetVoid)
-#endif // FEATURE_REMOTING
 
 
 DEFINE_CLASS(METADATA_IMPORT,       Reflection,             MetadataImport)
@@ -1143,18 +962,10 @@ DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHa
 
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(SERVER_IDENTITY,       Remoting,               ServerIdentity)
-DEFINE_FIELD(SERVER_IDENTITY,       SERVER_CONTEXT,         _srvCtx)
-#endif // FEATURE_REMOTING
 
 DEFINE_CLASS(SHARED_STATICS,        System,                 SharedStatics)
 DEFINE_FIELD(SHARED_STATICS,        SHARED_STATICS,         _sharedStatics)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS(STACK_BUILDER_SINK,    Messaging,              StackBuilderSink)
-DEFINE_METHOD(STACK_BUILDER_SINK,   PRIVATE_PROCESS_MESSAGE,_PrivateProcessMessage,     IM_IntPtr_ArrObj_Obj_RefArrObj_RetObj)
-#endif
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(targetThread,               StackFrameHelper,   targetThread)
@@ -1238,32 +1049,17 @@ DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 DEFINE_CLASS(CROSS_CONTEXT_DELEGATE, Threading, InternalCrossContextDelegate)
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
-#ifdef FEATURE_REMOTING
-DEFINE_FIELD_U(m_Context,                  ThreadBaseObject,   m_ExposedContext)
-#endif
 DEFINE_FIELD_U(m_Name,                     ThreadBaseObject,   m_Name)
 DEFINE_FIELD_U(m_Delegate,                 ThreadBaseObject,   m_Delegate)
-#ifdef FEATURE_LEAK_CULTURE_INFO 
-DEFINE_FIELD_U(m_CurrentCulture,           ThreadBaseObject,   m_CurrentUserCulture)
-DEFINE_FIELD_U(m_CurrentUICulture,         ThreadBaseObject,   m_CurrentUICulture)
-#endif
 DEFINE_FIELD_U(m_ThreadStartArg,           ThreadBaseObject,   m_ThreadStartArg)
 DEFINE_FIELD_U(DONT_USE_InternalThread,    ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(m_Priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-#ifndef FEATURE_LEAK_CULTURE_INFO 
 DEFINE_FIELD(THREAD,                CULTURE,                m_CurrentCulture)
 DEFINE_FIELD(THREAD,                UI_CULTURE,             m_CurrentUICulture)
-#endif
-#ifdef FEATURE_REMOTING
-DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_CONTEXT,        CurrentContext,             Context)
-#endif
 DEFINE_SET_PROPERTY(THREAD,         CULTURE,                CurrentCulture,             CultureInfo)
 DEFINE_SET_PROPERTY(THREAD,         UI_CULTURE,             CurrentUICulture,           CultureInfo)
 DEFINE_STATIC_PROPERTY(THREAD,      CURRENT_THREAD,         CurrentThread,              Thread)
-#ifdef FEATURE_REMOTING
-DEFINE_METHOD(THREAD,               COMPLETE_CROSSCONTEXTCALLBACK,           CompleteCrossContextCallback,                SM_CrossContextDelegate_ArrObj_RetObj)
-#endif
 DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 
 DEFINE_CLASS(PARAMETERIZEDTHREADSTART,     Threading,                 ParameterizedThreadStart)
@@ -1282,15 +1078,6 @@ DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCall
 
 DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
 
-#ifdef FEATURE_REMOTING
-DEFINE_CLASS_U(Proxies,                __TransparentProxy,         TransparentProxyObject)
-DEFINE_FIELD_U(_rp,                        TransparentProxyObject, _rp)
-DEFINE_FIELD_U(_pMT,                       TransparentProxyObject, _pMT)
-DEFINE_FIELD_U(_pInterfaceMT,              TransparentProxyObject, _pInterfaceMT)
-DEFINE_FIELD_U(_stub,                      TransparentProxyObject, _stub)
-DEFINE_FIELD_U(_stubData,                  TransparentProxyObject, _stubData)
-DEFINE_CLASS(TRANSPARENT_PROXY,   Proxies,                __TransparentProxy)
-#endif
 
 DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
