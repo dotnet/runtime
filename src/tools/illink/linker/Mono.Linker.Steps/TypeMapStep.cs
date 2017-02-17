@@ -70,7 +70,7 @@ namespace Mono.Linker.Steps {
 					if (@base == null)
 						continue;
 
-					Annotations.AddPreservedMethod (type, @base);
+					AnnotateMethods (method, @base);
 				}
 			}
 		}
