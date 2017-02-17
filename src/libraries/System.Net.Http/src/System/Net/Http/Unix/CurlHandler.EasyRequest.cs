@@ -249,8 +249,49 @@ namespace System.Net.Http
                 }
 
                 EventSourceTrace("Url: {0}", requestUri);
-                SetCurlOption(CURLoption.CURLOPT_URL, requestUri.AbsoluteUri);
+                if (requestUri.Host != requestUri.IdnHost)
+                {
+                    SetCurlOption(CURLoption.CURLOPT_URL, ReplaceHostWithIdnHost(requestUri.AbsoluteUri, requestUri.Host, requestUri.IdnHost));
+                }
+                else
+                {
+                    SetCurlOption(CURLoption.CURLOPT_URL, requestUri.AbsoluteUri);
+                }
+
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
+            }
+
+            private unsafe string ReplaceHostWithIdnHost(string absoluteUri, string host, string idnHost)
+            {
+                int start = absoluteUri.IndexOf(host);
+                char[] result = new char[absoluteUri.Length - host.Length + idnHost.Length];
+
+                fixed (char* uPtr = result)
+                {
+                    int i = 0;
+                    int end = start;
+                    while (i < end)
+                    {
+                        uPtr[i] = absoluteUri[i];
+                        i++;
+                    }
+
+                    end += idnHost.Length;
+                    while (i < end)
+                    {
+                        uPtr[i] = idnHost[i - start];
+                        i++;
+                    }
+
+                    end += absoluteUri.Length - host.Length - start;
+                    while (i < end)
+                    {
+                        uPtr[i] = absoluteUri[i - idnHost.Length + host.Length];
+                        i++;
+                    }
+                }
+
+                return new string(result);
             }
 
             private static bool IsLinkLocal(Uri url, out long scopeId)
