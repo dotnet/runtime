@@ -76,6 +76,7 @@ OOPStackUnwinderX86::VirtualUnwind(
 
     FillRegDisplay(&rd, ContextRecord);
 
+    rd.SP = ContextRecord->ResumeEsp;
     rd.PCTAddr = (UINT_PTR)&(ContextRecord->Eip);
 
     if (ContextPointers)
@@ -104,7 +105,8 @@ OOPStackUnwinderX86::VirtualUnwind(
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    ContextRecord->Esp = rd.SP;
+    ContextRecord->Esp = rd.SP - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
+    ContextRecord->ResumeEsp = rd.SP;
     ContextRecord->Eip = rd.ControlPC;
 
     // For x86, the value of Establisher Frame Pointer is Caller SP

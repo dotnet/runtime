@@ -499,11 +499,13 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
     if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         ASSIGN_CONTROL_REGS
-#ifdef _ARM_
+#if defined(_ARM_)
         // WinContext assumes that the least bit of Pc is always 1 (denoting thumb)
         // although the pc value retrived from native context might not have set the least bit.
         // This becomes especially problematic if the context is on the JIT_WRITEBARRIER.
         lpContext->Pc |= 0x1;
+#elif defined(_X86_)
+        lpContext->ResumeEsp = MCREG_Esp(native->uc_mcontext);
 #endif
     }
 
@@ -945,6 +947,7 @@ CONTEXT_GetThreadContextFromThreadState(
                 lpContext->Esi = pState->esi;
                 lpContext->Ebp = pState->ebp;
                 lpContext->Esp = pState->esp;
+                lpContext->ResumeEsp = pState->esp;
                 lpContext->SegSs = pState->ss;
                 lpContext->EFlags = pState->eflags;
                 lpContext->Eip = pState->eip;

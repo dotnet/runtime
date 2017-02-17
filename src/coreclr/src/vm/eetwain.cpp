@@ -3099,7 +3099,8 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
     {
         EnsureCallerContextIsValid(pRD, NULL);
     }
-    return (size_t) (GetSP(pRD->pCallerContext));
+
+    return GetSP(pRD->pCallerContext);
 }
 
 #endif // WIN64EXCEPTIONS && !CROSSGEN_COMPILE
