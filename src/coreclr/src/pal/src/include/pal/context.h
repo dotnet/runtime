@@ -248,8 +248,7 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
 #define MCREG_Sp(mc)      ((mc).sp)
 #define MCREG_Pc(mc)      ((mc).pc)
-#define MCREG_PState(mc)  ((mc).pstate)
-#define MCREG_Cpsr(mc)    ((mc).cpsr)
+#define MCREG_Cpsr(mc)    ((mc).pstate)
 #else
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
