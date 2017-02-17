@@ -1,4 +1,3 @@
-
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 
 set(CMAKE_SYSTEM_NAME Linux)
