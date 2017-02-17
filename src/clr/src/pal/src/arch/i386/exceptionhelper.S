@@ -23,7 +23,7 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         mov   ebx, [esp + 8]  // eax: CONTEXT *
 
         mov   ebp, [ebx + CONTEXT_Ebp]
-        mov   esp, [ebx + CONTEXT_Esp]
+        mov   esp, [ebx + CONTEXT_ResumeEsp]
 
         // The ESP is re-initialized as the target frame's value, so the current function's
         // CFA is now right at the ESP.

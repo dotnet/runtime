@@ -1782,6 +1782,7 @@ typedef struct _CONTEXT {
 
     UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 
+    ULONG   ResumeEsp;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 // To support saving and loading xmm register context we need to know the offset in the ExtendedRegisters
