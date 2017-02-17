@@ -168,8 +168,6 @@ void mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value);
 	mono_gc_wbarrier_set_root (&((s)->fieldname), (MonoObject*)value); \
 } while (0)
 
-void  mono_gc_finalize_threadpool_threads (void);
-
 /* fast allocation support */
 
 typedef enum {

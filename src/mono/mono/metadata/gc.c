@@ -68,7 +68,6 @@ static MonoCoopMutex finalizer_mutex;
 static MonoCoopMutex reference_queue_mutex;
 
 static GSList *domains_to_finalize;
-static MonoMList *threads_to_finalize;
 
 static gboolean finalizer_thread_exited;
 /* Uses finalizer_mutex */
@@ -157,18 +156,6 @@ coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32
 	return res;
 }
 
-static gboolean
-add_thread_to_finalize (MonoInternalThread *thread, MonoError *error)
-{
-	mono_error_init (error);
-	mono_finalizer_lock ();
-	if (!threads_to_finalize)
-		MONO_GC_REGISTER_ROOT_SINGLE (threads_to_finalize, MONO_ROOT_SOURCE_FINALIZER_QUEUE, "finalizable threads list");
-	threads_to_finalize = mono_mlist_append_checked (threads_to_finalize, (MonoObject*)thread, error);
-	mono_finalizer_unlock ();
-	return is_ok (error);
-}
-
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
@@ -241,15 +228,6 @@ mono_gc_run_finalize (void *obj, void *data)
 		if (mono_gc_is_finalizer_internal_thread (t))
 			/* Avoid finalizing ourselves */
 			return;
-
-		if (t->threadpool_thread && finalizing_root_domain) {
-			/* Don't finalize threadpool threads when
-			   shutting down - they're finalized when the
-			   threadpool shuts down. */
-			if (!add_thread_to_finalize (t, &error))
-				goto unhandled_error;
-			return;
-		}
 	}
 
 	if (o->vtable->klass->image == mono_defaults.corlib && !strcmp (o->vtable->klass->name, "DynamicMethod") && finalizing_root_domain) {
@@ -342,22 +320,6 @@ unhandled_error:
 		mono_thread_internal_unhandled_exception (exc);
 
 	mono_domain_set_internal (caller_domain);
-}
-
-void
-mono_gc_finalize_threadpool_threads (void)
-{
-	while (threads_to_finalize) {
-		MonoInternalThread *thread = (MonoInternalThread*) mono_mlist_get_data (threads_to_finalize);
-
-		/* Force finalization of the thread. */
-		thread->threadpool_thread = FALSE;
-		mono_object_register_finalizer ((MonoObject*)thread);
-
-		mono_gc_run_finalize (thread, NULL);
-
-		threads_to_finalize = mono_mlist_next (threads_to_finalize);
-	}
 }
 
 gpointer
@@ -553,11 +515,6 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		}
 
 		goto done;
-	}
-
-	if (domain == mono_get_root_domain ()) {
-		mono_threadpool_cleanup ();
-		mono_gc_finalize_threadpool_threads ();
 	}
 
 done:

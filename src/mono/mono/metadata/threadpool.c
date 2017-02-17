@@ -71,10 +71,6 @@ typedef struct {
 	GPtrArray *domains; // ThreadPoolDomain* []
 	MonoCoopMutex domains_lock;
 
-	GPtrArray *threads; // MonoInternalThread* []
-	MonoCoopMutex threads_lock;
-	MonoCoopCond threads_exit_cond;
-
 	ThreadPoolCounter counters;
 
 	gint32 limit_io_min;
@@ -121,14 +117,8 @@ domains_unlock (void)
 static void
 destroy (gpointer unused)
 {
-#if 0
 	g_ptr_array_free (threadpool.domains, TRUE);
 	mono_coop_mutex_destroy (&threadpool.domains_lock);
-
-	g_ptr_array_free (threadpool.threads, TRUE);
-	mono_coop_mutex_destroy (&threadpool.threads_lock);
-	mono_coop_cond_destroy (&threadpool.threads_exit_cond);
-#endif
 }
 
 static void
@@ -141,10 +131,6 @@ initialize (void)
 	threadpool.domains = g_ptr_array_new ();
 	mono_coop_mutex_init (&threadpool.domains_lock);
 
-	threadpool.threads = g_ptr_array_new ();
-	mono_coop_mutex_init (&threadpool.threads_lock);
-	mono_coop_cond_init (&threadpool.threads_exit_cond);
-
 	threadpool.limit_io_min = mono_cpu_count ();
 	threadpool.limit_io_max = CLAMP (threadpool.limit_io_min * 100, MIN (threadpool.limit_io_min, 200), MAX (threadpool.limit_io_min, 200));
 
@@ -154,47 +140,6 @@ initialize (void)
 static void
 cleanup (void)
 {
-	guint i;
-	MonoInternalThread *current;
-
-	/* we make the assumption along the code that we are
-	 * cleaning up only if the runtime is shutting down */
-	g_assert (mono_runtime_is_shutting_down ());
-
-	current = mono_thread_internal_current ();
-
-	mono_coop_mutex_lock (&threadpool.threads_lock);
-
-	/* stop all threadpool.threads */
-	for (i = 0; i < threadpool.threads->len; ++i) {
-		MonoInternalThread *thread = (MonoInternalThread*) g_ptr_array_index (threadpool.threads, i);
-		if (thread != current)
-			mono_thread_internal_abort (thread);
-	}
-
-	mono_coop_mutex_unlock (&threadpool.threads_lock);
-
-#if 0
-	/* give a chance to the other threads to exit */
-	mono_thread_info_yield ();
-
-	mono_coop_mutex_lock (&threadpool.threads_lock);
-
-	for (;;) {
-		if (threadpool.threads->len == 0)
-			break;
-
-		if (threadpool.threads->len == 1 && g_ptr_array_index (threadpool.threads, 0) == current) {
-			/* We are waiting on ourselves */
-			break;
-		}
-
-		mono_coop_cond_wait (&threadpool.threads_exit_cond, &threadpool.threads_lock);
-	}
-
-	mono_coop_mutex_unlock (&threadpool.threads_lock);
-#endif
-
 	mono_threadpool_worker_cleanup ();
 
 	mono_refcount_dec (&threadpool);
@@ -338,6 +283,9 @@ worker_callback (gpointer unused)
 	ThreadPoolCounter counter;
 	MonoInternalThread *thread;
 
+	if (!mono_refcount_tryinc (&threadpool))
+		return;
+
 	thread = mono_thread_internal_current ();
 
 	COUNTER_ATOMIC (counter, {
@@ -356,10 +304,6 @@ worker_callback (gpointer unused)
 		mono_refcount_dec (&threadpool);
 		return;
 	}
-
-	mono_coop_mutex_lock (&threadpool.threads_lock);
-	g_ptr_array_add (threadpool.threads, thread);
-	mono_coop_mutex_unlock (&threadpool.threads_lock);
 
 	/*
 	 * This is needed so there is always an lmf frame in the runtime invoke call below,
@@ -447,14 +391,6 @@ worker_callback (gpointer unused)
 
 	domains_unlock ();
 
-	mono_coop_mutex_lock (&threadpool.threads_lock);
-
-	g_ptr_array_remove_fast (threadpool.threads, thread);
-
-	mono_coop_cond_signal (&threadpool.threads_exit_cond);
-
-	mono_coop_mutex_unlock (&threadpool.threads_lock);
-
 	COUNTER_ATOMIC (counter, {
 		counter._.working --;
 	});
@@ -483,8 +419,6 @@ mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod
 
 	if (!async_call_klass)
 		async_call_klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
-
-	mono_lazy_initialize (&status, initialize);
 
 	mono_error_init (error);
 
@@ -671,12 +605,18 @@ ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_
 	if (!worker_threads || !completion_port_threads)
 		return;
 
-	mono_lazy_initialize (&status, initialize);
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool)) {
+		*worker_threads = 0;
+		*completion_port_threads = 0;
+		return;
+	}
 
 	counter = COUNTER_READ ();
 
 	*worker_threads = MAX (0, mono_threadpool_worker_get_max () - counter._.working);
 	*completion_port_threads = threadpool.limit_io_max;
+
+	mono_refcount_dec (&threadpool);
 }
 
 void
@@ -685,10 +625,16 @@ ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_thread
 	if (!worker_threads || !completion_port_threads)
 		return;
 
-	mono_lazy_initialize (&status, initialize);
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool)) {
+		*worker_threads = 0;
+		*completion_port_threads = 0;
+		return;
+	}
 
 	*worker_threads = mono_threadpool_worker_get_min ();
 	*completion_port_threads = threadpool.limit_io_min;
+
+	mono_refcount_dec (&threadpool);
 }
 
 void
@@ -697,25 +643,35 @@ ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_thread
 	if (!worker_threads || !completion_port_threads)
 		return;
 
-	mono_lazy_initialize (&status, initialize);
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool)) {
+		*worker_threads = 0;
+		*completion_port_threads = 0;
+		return;
+	}
 
 	*worker_threads = mono_threadpool_worker_get_max ();
 	*completion_port_threads = threadpool.limit_io_max;
+
+	mono_refcount_dec (&threadpool);
 }
 
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
-	mono_lazy_initialize (&status, initialize);
-
 	if (completion_port_threads <= 0 || completion_port_threads > threadpool.limit_io_max)
 		return FALSE;
 
-	if (!mono_threadpool_worker_set_min (worker_threads))
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool))
 		return FALSE;
+
+	if (!mono_threadpool_worker_set_min (worker_threads)) {
+		mono_refcount_dec (&threadpool);
+		return FALSE;
+	}
 
 	threadpool.limit_io_min = completion_port_threads;
 
+	mono_refcount_dec (&threadpool);
 	return TRUE;
 }
 
@@ -724,16 +680,20 @@ ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads
 {
 	gint cpu_count = mono_cpu_count ();
 
-	mono_lazy_initialize (&status, initialize);
-
 	if (completion_port_threads < threadpool.limit_io_min || completion_port_threads < cpu_count)
 		return FALSE;
 
-	if (!mono_threadpool_worker_set_max (worker_threads))
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool))
 		return FALSE;
+
+	if (!mono_threadpool_worker_set_max (worker_threads)) {
+		mono_refcount_dec (&threadpool);
+		return FALSE;
+	}
 
 	threadpool.limit_io_max = completion_port_threads;
 
+	mono_refcount_dec (&threadpool);
 	return TRUE;
 }
 
@@ -783,7 +743,7 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 	if (mono_domain_is_unloading (domain))
 		return FALSE;
 
-	if (!mono_refcount_tryinc (&threadpool)) {
+	if (!mono_lazy_initialize (&status, initialize) || !mono_refcount_tryinc (&threadpool)) {
 		/* threadpool has been destroyed, we are shutting down */
 		return FALSE;
 	}
@@ -820,9 +780,7 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 
 	mono_threadpool_worker_enqueue (worker_callback, NULL);
 
-	/* we do not decrement the threadpool refcount,
-	 * as it's going to be done in the worker_callback */
-
+	mono_refcount_dec (&threadpool);
 	return TRUE;
 }
 

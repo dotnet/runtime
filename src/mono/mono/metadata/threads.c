@@ -3208,22 +3208,21 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	if (wait->num >= MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS)
 		return FALSE;
 
-	/* The finalizer thread is not a background thread */
-	if (!mono_native_thread_id_equals (thread_get_tid (thread), self)
-	     && (thread->state & ThreadState_Background) != 0
-	     && (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE) == 0
-	) {
+	if (mono_native_thread_id_equals (thread_get_tid (thread), self))
+		return FALSE;
+	if (mono_gc_is_finalizer_internal_thread (thread))
+		return FALSE;
+
+	if ((thread->state & ThreadState_Background) && !(thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)) {
 		wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
 		wait->threads[wait->num] = thread;
 		wait->num++;
 
 		THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
 		mono_thread_internal_abort (thread);
-		return TRUE;
 	}
 
-	return !mono_native_thread_id_equals (thread_get_tid (thread), self)
-	        && !mono_gc_is_finalizer_internal_thread (thread);
+	return TRUE;
 }
 
 /** 

@@ -66,6 +66,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 #include <mono/metadata/w32handle.h>
+#include <mono/metadata/threadpool.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -4109,6 +4110,8 @@ mini_cleanup (MonoDomain *domain)
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
 #endif
+
+	mono_threadpool_cleanup ();
 
 	mono_profiler_shutdown ();
 
