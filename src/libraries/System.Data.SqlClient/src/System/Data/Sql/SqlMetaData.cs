@@ -15,8 +15,6 @@ using System.Data.SqlClient;
 
 namespace Microsoft.SqlServer.Server
 {
-    using Res = System.SR;
-
     // class SqlMetaData
     //   Simple immutable implementation of the a metadata-holding class.  Only
     //    complexities are:
@@ -463,49 +461,49 @@ namespace Microsoft.SqlServer.Server
             if (SqlDbType.Char == dbType)
             {
                 if (maxLength > x_lServerMaxANSI || maxLength < 0)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
                 lLocale = Locale.GetCurrentCultureLcid();
             }
             else if (SqlDbType.VarChar == dbType)
             {
                 if ((maxLength > x_lServerMaxANSI || maxLength < 0) && maxLength != Max)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
                 lLocale = Locale.GetCurrentCultureLcid();
             }
             else if (SqlDbType.NChar == dbType)
             {
                 if (maxLength > x_lServerMaxUnicode || maxLength < 0)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
                 lLocale = Locale.GetCurrentCultureLcid();
             }
             else if (SqlDbType.NVarChar == dbType)
             {
                 if ((maxLength > x_lServerMaxUnicode || maxLength < 0) && maxLength != Max)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
                 lLocale = Locale.GetCurrentCultureLcid();
             }
             else if (SqlDbType.NText == dbType || SqlDbType.Text == dbType)
             {
                 // old-style lobs only allowed with Max length
                 if (SqlMetaData.Max != maxLength)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
                 lLocale = Locale.GetCurrentCultureLcid();
             }
             else if (SqlDbType.Binary == dbType)
             {
                 if (maxLength > x_lServerMaxBinary || maxLength < 0)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.VarBinary == dbType)
             {
                 if ((maxLength > x_lServerMaxBinary || maxLength < 0) && maxLength != Max)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.Image == dbType)
             {
                 // old-style lobs only allowed with Max length
                 if (SqlMetaData.Max != maxLength)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else
                 throw SQL.InvalidSqlDbTypeForConstructor(dbType);
@@ -540,28 +538,28 @@ namespace Microsoft.SqlServer.Server
             if (SqlDbType.Char == dbType)
             {
                 if (maxLength > x_lServerMaxANSI || maxLength < 0)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.VarChar == dbType)
             {
                 if ((maxLength > x_lServerMaxANSI || maxLength < 0) && maxLength != Max)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.NChar == dbType)
             {
                 if (maxLength > x_lServerMaxUnicode || maxLength < 0)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.NVarChar == dbType)
             {
                 if ((maxLength > x_lServerMaxUnicode || maxLength < 0) && maxLength != Max)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else if (SqlDbType.NText == dbType || SqlDbType.Text == dbType)
             {
                 // old-style lobs only allowed with Max length
                 if (SqlMetaData.Max != maxLength)
-                    throw ADP.Argument(Res.GetString(Res.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
+                    throw ADP.Argument(SR.GetString(SR.ADP_InvalidDataLength2, maxLength.ToString(CultureInfo.InvariantCulture)), nameof(maxLength));
             }
             else
                 throw SQL.InvalidSqlDbTypeForConstructor(dbType);

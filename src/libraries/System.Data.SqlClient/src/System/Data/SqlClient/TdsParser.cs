@@ -16,7 +16,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using Res = System.SR;
 #if MANAGED_SNI
 using System.Data.SqlClient.SNI;
 #endif
@@ -4121,7 +4120,7 @@ namespace System.Data.SqlClient
                     buffer[map[i]] = data.SqlValue;
                     if (stateObj._longlen != 0)
                     {
-                        throw new SqlTruncateException(Res.GetString(Res.SqlMisc_TruncationMaxDataMessage));
+                        throw new SqlTruncateException(SR.GetString(SR.SqlMisc_TruncationMaxDataMessage));
                     }
                 }
                 data.Clear();
