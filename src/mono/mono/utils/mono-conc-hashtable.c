@@ -114,7 +114,7 @@ mono_conc_hashtable_new (GHashFunc hash_func, GEqualFunc key_equal_func)
 {
 	MonoConcurrentHashTable *res = g_new0 (MonoConcurrentHashTable, 1);
 	res->hash_func = hash_func ? hash_func : g_direct_hash;
-	res->equal_func = key_equal_func ? key_equal_func : g_direct_equal;
+	res->equal_func = key_equal_func;
 	// res->equal_func = g_direct_equal;
 	res->table = conc_table_new (INITIAL_SIZE);
 	res->element_count = 0;
