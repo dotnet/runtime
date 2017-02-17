@@ -107,6 +107,7 @@ LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
     RestoreRegMS 26, X26
     RestoreRegMS 27, X27
     RestoreRegMS 28, X28
+    RestoreRegMS 29, X29
 LOCAL_LABEL(Done):
     // Its imperative that the return value of HelperMethodFrameRestoreState is zero
     // as it is used in the state machine to loop until it becomes zero.
@@ -120,18 +121,18 @@ LEAF_END HelperMethodFrameRestoreState, _TEXT
 // The call in ndirect import precode points to this function.
 NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-144
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 80 
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
 
     mov x0, x12
     bl NDirectImportWorker
     mov x12, x0
 
     // pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 80
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #144
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
 
     // If we got back from NDirectImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
@@ -140,8 +141,14 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 NESTED_END NDirectImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// ARM64TODO: Implement PrecodeFixupThunk when PreCode is Enabled
+// The call in fixup precode initally points to this function.
+// The pupose of this function is to load the MethodDesc and forward the call to prestub.
 NESTED_ENTRY PrecodeFixupThunk, _TEXT, NoHandler
+    // x12 = FixupPrecode *
+    // On Exit
+    // x12 = MethodDesc*
+    // x13, x14 Trashed
+    // Inline computation done by FixupPrecode::GetMethodDesc()
     ldrb    w13, [x12, #Offset_PrecodeChunkIndex]    //m_PrecodeChunkIndex
     ldrb    w14, [x12, #Offset_MethodDescChunkIndex] // m_MethodDescChunkIndex
 
@@ -180,34 +187,6 @@ C_FUNC(ThePreStubPatchLabel):
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
-
-// ------------------------------------------------------------------
-// void ResolveWorkerAsmStub(args in regs x0-x7 & stack, x11:IndirectionCellAndFlags, x12:DispatchToken)
-//
-// The stub dispatch thunk which transfers control to VSD_ResolveWorker.
-NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    and x1, x11, #-4 // Indirection cell
-    mov x2, x12 // DispatchToken
-    and x3, x11, #3 // flag
-    bl C_FUNC(VSD_ResolveWorker)
-    mov x9, x0
-   
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-    EPILOG_BRANCH_REG x9
-
-NESTED_END ResolveWorkerAsmStub, _TEXT
-
-NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
-
-    // ARMSTUB TODO: implement chained lookup
-    b C_FUNC(ResolveWorkerAsmStub)
-
-NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
 //-----------------------------------------------------------------------------
 // The following Macros help in WRITE_BARRIER Implemetations
@@ -288,6 +267,49 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     dmb  ST
     str  x15, [x14]
 
+#ifdef WRITE_BARRIER_CHECK
+    // Update GC Shadow Heap
+
+    // need temporary registers. Save them before using.
+    stp  x12, x13, [sp, #-16]!
+
+    // Compute address of shadow heap location:
+    //   pShadow = g_GCShadow + (x14 - g_lowest_address)
+    PREPARE_EXTERNAL_VAR g_lowest_address, x12
+    ldr  x12, [x12]
+    sub  x12, x14, x12
+    PREPARE_EXTERNAL_VAR g_GCShadow, x13
+    ldr  x13, [x13]
+    add  x12, x13, x12
+
+    // if (pShadow >= g_GCShadowEnd) goto end
+    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x13
+    ldr  x13, [x13]
+    cmp  x12, x13
+    bhs  LOCAL_LABEL(shadowupdateend)
+
+    // *pShadow = x15
+    str  x15, [x12]
+
+    // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+    // conditions are caught by INVALIDGCVALUE.
+    dmb  sy
+
+    // if ([x14] == x15) goto end
+    ldr  x13, [x14]
+    cmp  x13, x15
+    beq LOCAL_LABEL(shadowupdateend)
+
+    // *pShadow = INVALIDGCVALUE (0xcccccccd)
+    mov  x13, #0
+    movk x13, #0xcccd
+    movk x13, #0xcccc, LSL #16
+    str  x13, [x12]
+
+LOCAL_LABEL(shadowupdateend):
+    ldp  x12, x13, [sp],#16
+#endif
+
     // Branch to Exit if the reference is not in the Gen0 heap
     //
     PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
@@ -347,9 +369,9 @@ LEAF_END JIT_PatchedCodeLast, _TEXT
 NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 
     // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-144
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 80 
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
 
     // Refer to ZapImportVirtualThunk::Save
     // for details on this.
@@ -366,8 +388,8 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 
     // pop the stack and restore original register state
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #144
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
 
     PATCH_LABEL VirtualMethodFixupPatchLabel
 
@@ -425,15 +447,161 @@ LOCAL_LABEL(LNullThis):
 
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
+#ifdef FEATURE_COMINTEROP
+
+#define ComCallPreStub_FrameSize (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+#define ComCallPreStub_FirstStackAdjust  (SIZEOF__ArgumentRegisters + 2 * 8) // reg args , fp & lr already pushed
+#define ComCallPreStub_StackAlloc0        (ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust)
+#define ComCallPreStub_StackAlloc1        (ComCallPreStub_StackAlloc0 + SIZEOF__FloatArgumentRegisters + 8)// 8 for ErrorReturn
+#define ComCallPreStub_StackAlloc    (ComCallPreStub_StackAlloc1 + (ComCallPreStub_StackAlloc1 & 8))
+
+#define ComCallPreStub_FrameOffset   (ComCallPreStub_StackAlloc - (SIZEOF__ComMethodFrame - ComCallPreStub_FirstStackAdjust))
+#define ComCallPreStub_ErrorReturnOffset0 SIZEOF__FloatArgumentRegisters
+
+#define ComCallPreStub_FirstStackAdjust (ComCallPreStub_ErrorReturnOffset0 + (ComCallPreStub_ErrorReturnOffset0 & 8))
+
+// ------------------------------------------------------------------
+// COM to CLR stub called the first time a particular method is invoked.//
+//
+// On entry:
+//   x12         : ComCallMethodDesc* provided by prepad thunk
+//   plus user arguments in registers and on the stack
+//
+// On exit:
+//   tail calls to real method
+//
+NESTED_ENTRY ComCallPreStub, _TEXT, NoHandler
+
+    // Save arguments and return address
+    PROLOG_SAVE_REG_PAIR           fp, lr, -ComCallPreStub_FirstStackAdjust!
+    PROLOG_STACK_ALLOC  ComCallPreStub_StackAlloc
+
+    SAVE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
+
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+
+    str x12, [sp, #(ComCallPreStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
+    add x0, sp, #(ComCallPreStub_FrameOffset)
+    add x1, sp, #(ComCallPreStub_ErrorReturnOffset)
+    bl ComPreStubWorker
+
+    cbz x0, ComCallPreStub_ErrorExit
+
+    mov x12, x0
+
+    // pop the stack and restore original register state
+    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+    RESTORE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
+
+    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
+    EPILOG_RESTORE_REG_PAIR           fp, lr, ComCallPreStub_FirstStackAdjust!
+
+    // and tailcall to the actual method
+    EPILOG_BRANCH_REG x12
+
+ComCallPreStub_ErrorExit
+    ldr x0, [sp, #(ComCallPreStub_ErrorReturnOffset)] // ErrorReturn
+
+    // pop the stack
+    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
+    EPILOG_RESTORE_REG_PAIR           fp, lr, ComCallPreStub_FirstStackAdjust!
+
+    EPILOG_RETURN
+
+NESTED_END ComCallPreStub, _TEXT
+
+// ------------------------------------------------------------------
+// COM to CLR stub which sets up a ComMethodFrame and calls COMToCLRWorker.
+//
+// On entry:
+//   x12         : ComCallMethodDesc*  provided by prepad thunk
+//   plus user arguments in registers and on the stack
+//
+// On exit:
+//   Result in x0/d0 as per the real method being called
+//
+    NESTED_ENTRY GenericComCallStub, _TEXT, NoHandler
+
+    // Save arguments and return address
+    PROLOG_SAVE_REG_PAIR           fp, lr, -GenericComCallStub_FirstStackAdjust!
+    PROLOG_STACK_ALLOC  GenericComCallStub_StackAlloc
+
+    SAVE_ARGUMENT_REGISTERS        sp, (16+GenericComCallStub_StackAlloc)
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+
+    str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
+    add x1, sp, #GenericComCallStub_FrameOffset
+    bl COMToCLRWorker
+
+    // pop the stack
+    EPILOG_STACK_FREE GenericComCallStub_StackAlloc
+    EPILOG_RESTORE_REG_PAIR           fp, lr, GenericComCallStub_FirstStackAdjust!
+
+    EPILOG_RETURN
+
+    NESTED_END GenericComCallStub, _TEXT
+
+// ------------------------------------------------------------------
+// COM to CLR stub called from COMToCLRWorker that actually dispatches to the real managed method.
+//
+// On entry:
+//   x0          : dwStackSlots, count of argument stack slots to copy
+//   x1          : pFrame, ComMethodFrame pushed by GenericComCallStub above
+//   x2          : pTarget, address of code to call
+//   x3          : pSecretArg, hidden argument passed to target above in x12
+//   x4          : pDangerousThis, managed 'this' reference
+//
+// On exit:
+//   Result in x0/d0 as per the real method being called
+//
+    NESTED_ENTRY COMToCLRDispatchHelper, _TEXT,CallDescrWorkerUnwindFrameChainHandler
+
+    PROLOG_SAVE_REG_PAIR           fp, lr, -16!
+
+    cbz x0, COMToCLRDispatchHelper_RegSetup
+
+    add x9, x1, #SIZEOF__ComMethodFrame
+    add x9, x9, x0, LSL #3
+COMToCLRDispatchHelper_StackLoop
+    ldr x8, [x9, #-8]!
+    str x8, [sp, #-8]!
+    sub x0, x0, #1
+    cbnz x0, COMToCLRDispatchHelper_StackLoop
+
+COMToCLRDispatchHelper_RegSetup
+
+    RESTORE_FLOAT_ARGUMENT_REGISTERS x1, -1 * GenericComCallStub_FrameOffset
+
+    mov lr, x2
+    mov x12, x3
+
+    mov x0, x4
+
+    ldp x2, x3, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 16)]
+    ldp x4, x5, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 32)]
+    ldp x6, x7, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 48)]
+    ldr x8, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 64)]
+
+    ldr x1, [x1, #(SIZEOF__ComMethodFrame - SIZEOF__ArgumentRegisters + 8)]
+
+    blr lr
+
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR           fp, lr, 16!
+    EPILOG_RETURN
+
+    NESTED_END COMToCLRDispatchHelper, _TEXT
+
+#endif // FEATURE_COMINTEROP
 //
 // x12 = UMEntryThunk*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-144
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -160
     SAVE_ARGUMENT_REGISTERS sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 80 
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 88
 
     mov x0, x12
     bl C_FUNC(TheUMEntryPrestubWorker)
@@ -443,8 +611,8 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // pop the stack and restore original register state
     RESTORE_ARGUMENT_REGISTERS sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 80
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #144
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 88
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 160
 
     // and tailcall to the actual method
     EPILOG_BRANCH_REG x12
@@ -457,14 +625,14 @@ NESTED_END TheUMEntryPrestub, _TEXT
 NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-96 // 64 for regArgs, 8 for x19 & 8 for x12
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -112 // 72 for regArgs, 8 for x19 & 8 for x12
     // save callee saved reg x19. x19 is used in the method to store thread*
-    PROLOG_SAVE_REG x19, #88
+    PROLOG_SAVE_REG x19, 96
 
     SAVE_ARGUMENT_REGISTERS sp, 16
 
-#define UMThunkStub_HiddenArg 80 // offset of saved UMEntryThunk *
-#define UMThunkStub_StackArgs 96 // offset of original stack args (total size of UMThunkStub frame)
+#define UMThunkStub_HiddenArg 88 // offset of saved UMEntryThunk *
+#define UMThunkStub_StackArgs 112 // offset of original stack args (total size of UMThunkStub frame)
 
     // save UMEntryThunk*
     str x12, [sp, #UMThunkStub_HiddenArg]
@@ -542,8 +710,8 @@ LOCAL_LABEL(UMThunkStub_PostCall):
     str w4, [x19, #Thread__m_fPreemptiveGCDisabled]
 
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG x19, #88
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #96
+    EPILOG_RESTORE_REG x19, 96
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 112
 
     EPILOG_RETURN
 
@@ -581,7 +749,7 @@ LOCAL_LABEL(UMThunkStub_WrongAppDomain):
     bl C_FUNC(UM2MDoADCallBack)
 
     // restore integral return value
-    ldr x0, [fp, #16]
+    ldp x0, x1, [fp, #16]
 
     // restore FP or HFA return value
     RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0
@@ -601,8 +769,8 @@ NESTED_END UMThunkStub, _TEXT
 
 NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-32
-    PROLOG_SAVE_REG  x19, #16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    PROLOG_SAVE_REG  x19, 16
 
 
     // save pThunkArgs in non-volatile reg. It is required after return from call to ILStub
@@ -659,13 +827,14 @@ LOCAL_LABEL(UM2MThunk_WrapperHelper_RegArgumentsSetup):
     blr x16
 
     // save integral return value
-    str x0, [x19]
+    stp x0, x1, [x19]
+
     // save FP/HFA return values
     SAVE_FLOAT_ARGUMENT_REGISTERS x19, -1 * (SIZEOF__FloatArgumentRegisters + 16)
 
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG  x19, #16
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #32
+    EPILOG_RESTORE_REG  x19, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 
 NESTED_END UM2MThunk_WrapperHelper, _TEXT
@@ -675,13 +844,13 @@ NESTED_END UM2MThunk_WrapperHelper, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR   fp, lr, #-144
-    // Spill callee saved registers 
-    PROLOG_SAVE_REG_PAIR   x19, x20, #16
-    PROLOG_SAVE_REG_PAIR   x21, x22, #32
-    PROLOG_SAVE_REG_PAIR   x23, x24, #48
-    PROLOG_SAVE_REG_PAIR   x25, x26, #64
-    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -144
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   x19, x20, 16
+    PROLOG_SAVE_REG_PAIR   x21, x22, 32
+    PROLOG_SAVE_REG_PAIR   x23, x24, 48
+    PROLOG_SAVE_REG_PAIR   x25, x26, 64
+    PROLOG_SAVE_REG_PAIR   x27, x28, 80
 
     // save any integral return value(s)
     stp x0, x1, [sp, #96]
@@ -692,7 +861,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     mov x0, sp
     bl OnHijackWorker
-	
+
     // restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
@@ -700,12 +869,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     ldp d0, d1, [sp, #112]
     ldp d2, d3, [sp, #128]
 
-    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
-    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
-    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
-    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
-    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-    EPILOG_RESTORE_REG_PAIR   fp, lr,   #144
+    EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   144
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -732,16 +901,6 @@ GenerateRedirectedHandledJITCaseStub GCStress
 
 // This helper enables us to call into a funclet after restoring Fp register
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
-
-    // Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-16
-    // is intentional. Above statement would also emit instruction to save
-    // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
-    // of method. However, this method needs to be able to change fp before calling funclet.
-    // This is required to access locals in funclet.
-    PROLOG_SAVE_REG_PAIR_INDEXED x19,x20, #-16
-    PROLOG_SAVE_REG   fp, #0
-    PROLOG_SAVE_REG   lr, #8
-
     // On entry:
     //
     // X0 = throwable
@@ -749,16 +908,36 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // X2 = address of X19 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
     // X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
-    // Save the SP of this function
-    str fp, [x3]
 
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -96
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   x19, x20, 16
+    PROLOG_SAVE_REG_PAIR   x21, x22, 32
+    PROLOG_SAVE_REG_PAIR   x23, x24, 48
+    PROLOG_SAVE_REG_PAIR   x25, x26, 64
+    PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+    // Save the SP of this function
+    mov x4, sp
+    str x4, [x3]
+
+    ldp x19, x20, [x2, #0]
+    ldp x21, x22, [x2, #16]
+    ldp x23, x24, [x2, #32]
+    ldp x25, x26, [x2, #48]
+    ldp x27, x28, [x2, #64]
     ldr fp, [x2, #80] // offset of fp in CONTEXT relative to X19
 
     // Invoke the funclet
     blr x1
     nop
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #16
+    EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   96
     EPILOG_RETURN
 
 NESTED_END CallEHFunclet, _TEXT
@@ -767,7 +946,7 @@ NESTED_END CallEHFunclet, _TEXT
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
     // On entry:
     //
@@ -781,7 +960,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     // Invoke the filter funclet
     blr x2
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   #16
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
     EPILOG_RETURN
 
 NESTED_END CallEHFilterFunclet, _TEXT
@@ -800,7 +979,7 @@ NESTED_END CallEHFilterFunclet, _TEXT
         // IN: lr: original IP before redirect
         //
 
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-16
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
         PROLOG_STACK_ALLOC  FaultingExceptionFrame_StackAlloc
 
         // At this point, the stack maybe misaligned if the thread abort was asynchronously
@@ -838,7 +1017,7 @@ NESTED_END CallEHFilterFunclet, _TEXT
 //
 
 NESTED_ENTRY NakedThrowHelper2, _TEXT ,FixContextHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, #-16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, -16
 
     // On entry:
     //
@@ -850,32 +1029,147 @@ NESTED_ENTRY NakedThrowHelper2, _TEXT ,FixContextHandler
 
 NESTED_END NakedThrowHelper2, _TEXT
 
+
 GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
+
+// ------------------------------------------------------------------
+// ResolveWorkerChainLookupAsmStub
+//
+// This method will perform a quick chained lookup of the entry if the
+//  initial cache lookup fails.
+//
+// On Entry:
+//   x9        contains the pointer to the current ResolveCacheElem
+//   x11       contains the address of the indirection (and the flags in the low two bits)
+//   x12       contains our contract the DispatchToken
+// Must be preserved:
+//   x0        contains the instance object ref that we are making an interface call on
+//   x9        Must point to a ResolveCacheElem [For Sanity]
+//  [x1-x7]    contains any additional register arguments for the interface method
+//
+// Loaded from x0
+//   x13       contains our type     the MethodTable  (from object ref in x0)
+//
+// On Exit:
+//   x0, [x1-x7] arguments for the interface implementation target
+//
+// On Exit (to ResolveWorkerAsmStub):
+//   x11       contains the address of the indirection and the flags in the low two bits.
+//   x12       contains our contract (DispatchToken)
+//   x16,x17   will be trashed
+//
+
+#define BACKPATCH_FLAG      1
+#define PROMOTE_CHAIN_FLAG  2
+
+NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
+
+    tst     x11, #BACKPATCH_FLAG    // First we check if x11 has the BACKPATCH_FLAG set
+    bne     LOCAL_LABEL(Fail)       // If the BACKPATCH_FLAGS is set we will go directly to the ResolveWorkerAsmStub
+
+    ldr     x13, [x0]         // retrieve the MethodTable from the object ref in x0
+LOCAL_LABEL(MainLoop):
+    ldr     x9, [x9, #ResolveCacheElem__pNext]     // x9 <= the next entry in the chain
+    cmp     x9, #0
+    beq     LOCAL_LABEL(Fail)
+
+    ldp     x16, x17, [x9]
+    cmp     x16, x13          // compare our MT with the one in the ResolveCacheElem
+    bne     LOCAL_LABEL(MainLoop)
+
+    cmp     x17, x12          // compare our DispatchToken with one in the ResolveCacheElem
+    bne     LOCAL_LABEL(MainLoop)
+
+LOCAL_LABEL(Success):
+    PREPARE_EXTERNAL_VAR g_dispatch_cache_chain_success_counter, x13
+    ldr     x16, [x13]
+    subs    x16, x16, #1
+    str     x16, [x13]
+    blt     LOCAL_LABEL(Promote)
+
+    ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
+    br      x16               // branch to interface implemenation target
+
+LOCAL_LABEL(Promote):
+                              // Move this entry to head postion of the chain
+    mov     x16, #256
+    str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
+    orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
+
+LOCAL_LABEL(Fail):
+    b       ResolveWorkerAsmStub // call the ResolveWorkerAsmStub method to transition into the VM
+
+NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
+
+// ------------------------------------------------------------------
+// void ResolveWorkerAsmStub(args in regs x0-x7 & stack and possibly retbuf arg in x8, x11:IndirectionCellAndFlags, x12:DispatchToken)
+//
+// The stub dispatch thunk which transfers control to VSD_ResolveWorker.
+NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    and x1, x11, #-4 // Indirection cell
+    mov x2, x12 // DispatchToken
+    and x3, x11, #3 // flag
+    bl VSD_ResolveWorker
+    mov x9, x0
+
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+    EPILOG_BRANCH_REG  x9
+
+NESTED_END ResolveWorkerAsmStub, _TEXT
 
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
 DelayLoad_MethodCall:
     .global DelayLoad_MethodCall
+    PROLOG_WITH_TRANSITION_BLOCK
 
-    EMIT_BREAKPOINT
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, x11 // Indirection cell
+    mov x2, x9 // sectionIndex
+    mov x3, x10 // Module*
+    bl ExternalMethodFixupWorker
+    mov x12, x0
+
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    // Share patch label
+    b ExternalMethodFixupPatchLabel
+
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
 
 .macro DynamicHelper frameFlags, suffix
-    NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
+NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
 DelayLoad_Helper\suffix:
-        .global DelayLoad_Helper\suffix
+    .global DelayLoad_Helper\suffix
 
-        EMIT_BREAKPOINT
+    PROLOG_WITH_TRANSITION_BLOCK
 
-    NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
+    add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+    mov x1, x11 // Indirection cell
+    mov x2, x9 // sectionIndex
+    mov x3, x10 // Module*
+    mov x4, \frameFlags
+    bl DynamicHelperWorker
+    cbnz x0, LOCAL_LABEL(FakeProlog\suffix\()_0)
+    ldr x0, [sp, #__PWTB_ArgumentRegisters]
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+LOCAL_LABEL(FakeProlog\suffix\()_0):
+    mov x12, x0
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    EPILOG_BRANCH_REG  x12
+
+NESTED_END DelayLoad_Helper\suffix\()_FakeProlog, _TEXT
 .endm
 
 DynamicHelper DynamicHelperFrameFlags_Default
 DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
 DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
-
 #endif
 
 #ifdef FEATURE_PREJIT
@@ -891,7 +1185,7 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
     and x1, x11, #-4 // Indirection cell
     mov x2, #0 // sectionIndex
     mov x3, #0 // pModule
-    bl StubDispatchFixupWorker
+    bl C_FUNC(StubDispatchFixupWorker)
     mov x9, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
@@ -899,4 +1193,37 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  x9
 
 NESTED_END StubDispatchFixupStub, _TEXT
+#endif
+
+#ifdef FEATURE_COMINTEROP
+
+// Function used by COM interop to get floating point return value (since it's not in the same
+// register(s) as non-floating point values).
+//
+// On entry//
+//   x0          : size of the FP result (4 or 8 bytes)
+//   x1          : pointer to 64-bit buffer to receive result
+//
+// On exit:
+//   buffer pointed to by x1 on entry contains the float or double argument as appropriate
+//
+    LEAF_ENTRY getFPReturn
+    str d0, [x1]
+    LEAF_END
+
+// ------------------------------------------------------------------
+// Function used by COM interop to set floating point return value (since it's not in the same
+// register(s) as non-floating point values).
+//
+// On entry:
+//   x0          : size of the FP result (4 or 8 bytes)
+//   x1          : 32-bit or 64-bit FP result
+//
+// On exit:
+//   s0          : float result if x0 == 4
+//   d0          : double result if x0 == 8
+//
+    LEAF_ENTRY setFPReturn
+    fmov d0, x1
+    LEAF_END
 #endif

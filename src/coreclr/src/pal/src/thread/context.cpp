@@ -127,6 +127,8 @@ typedef int __ptrace_request;
         ASSIGN_REG(R12)
 #elif defined(_ARM64_)
 #define ASSIGN_CONTROL_REGS \
+        ASSIGN_REG(Cpsr)    \
+        ASSIGN_REG(Fp)      \
         ASSIGN_REG(Sp)      \
         ASSIGN_REG(Lr)      \
         ASSIGN_REG(Pc)

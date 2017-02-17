@@ -31,8 +31,8 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-        .global C_FUNC(\Name\()_End)
 C_FUNC(\Name\()_End):
+        .global C_FUNC(\Name\()_End)
         LEAF_END \Name, \Section
 .endm
 
@@ -48,18 +48,23 @@ C_FUNC(\Name\()_End):
 
 .macro EPILOG_STACK_FREE Size
         add sp, sp, \Size
+        .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
         mov sp, fp
+        .cfi_restore sp
 .endm
 
 .macro PROLOG_SAVE_REG reg, ofs
         str \reg, [sp, \ofs]
+        .cfi_rel_offset \reg, \ofs
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
         stp \reg1, \reg2, [sp, \ofs]
+        .cfi_rel_offset \reg1, \ofs
+        .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
         .endif
@@ -67,6 +72,9 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ofs
         stp \reg1, \reg2, [sp, \ofs]!
+        .cfi_adjust_cfa_offset -\ofs
+        .cfi_rel_offset \reg1, 0
+        .cfi_rel_offset \reg2, 8
         .ifc \reg1, fp
         mov fp, sp
         .endif
@@ -74,14 +82,20 @@ C_FUNC(\Name\()_End):
 
 .macro EPILOG_RESTORE_REG reg, ofs
         ldr \reg, [sp, \ofs]
+        .cfi_restore \reg1
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
         ldp \reg1, \reg2, [sp, \ofs]
+        .cfi_restore \reg1
+        .cfi_restore \reg2
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ofs
         ldp \reg1, \reg2, [sp], \ofs
+        .cfi_restore \reg1
+        .cfi_restore \reg2
+        .cfi_adjust_cfa_offset -\ofs
 .endm
 
 .macro EPILOG_RETURN
@@ -94,14 +108,14 @@ C_FUNC(\Name\()_End):
 
 //-----------------------------------------------------------------------------
 // Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
-// comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned 
+// comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
 //
 // Stack layout:
 //
 // (stack parameters)
 // ...
 // fp
-// lr 
+// lr
 // CalleeSavedRegisters::x28
 // CalleeSavedRegisters::x27
 // CalleeSavedRegisters::x26
@@ -133,6 +147,7 @@ C_FUNC(\Name\()_End):
 .macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1
 
         __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_SaveFPArgs = \SaveFPArgs
 
         .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
                 __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
@@ -140,74 +155,114 @@ C_FUNC(\Name\()_End):
 
         __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
 
-        .if \SaveFPArgs > 0
+        .if (__PWTB_SaveFPArgs == 1)
             __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
         .endif
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
-        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 96 
+        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 96
 
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-160
-        // Spill callee saved registers 
-        PROLOG_SAVE_REG_PAIR   x19, x20, #16
-        PROLOG_SAVE_REG_PAIR   x21, x22, #32
-        PROLOG_SAVE_REG_PAIR   x23, x24, #48
-        PROLOG_SAVE_REG_PAIR   x25, x26, #64
-        PROLOG_SAVE_REG_PAIR   x27, x28, #80
-       
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
         // Allocate space for the rest of the frame
         PROLOG_STACK_ALLOC  __PWTB_StackAlloc
-        
+
         // Spill argument registers.
         SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
 
-        .if \SaveFPArgs > 0
+        .if (__PWTB_SaveFPArgs == 1)
                 SAVE_FLOAT_ARGUMENT_REGISTERS sp, \extraLocals
         .endif
 
 .endm
 
 //-----------------------------------------------------------------------------
-// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and 
+// The Following sets of SAVE_*_REGISTERS expect the memory to be reserved and
 // base address to be passed in $reg
 //
 
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
-.macro SAVE_ARGUMENT_REGISTERS reg, ofs 
+.macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
         stp                    x0, x1, [\reg, #(\ofs)]
+       .cfi_rel_offset x0, \ofs
+       .cfi_rel_offset x1, \ofs + 8
         stp                    x2, x3, [\reg, #(\ofs + 16)]
+       .cfi_rel_offset x2, \ofs + 16
+       .cfi_rel_offset x3, \ofs + 24
         stp                    x4, x5, [\reg, #(\ofs + 32)]
+       .cfi_rel_offset x4, \ofs + 32
+       .cfi_rel_offset x5, \ofs + 40
         stp                    x6, x7, [\reg, #(\ofs + 48)]
+       .cfi_rel_offset x6, \ofs + 48
+       .cfi_rel_offset x7, \ofs + 56
+        str                    x8, [\reg, #(\ofs + 64)]
+       .cfi_rel_offset x8, \ofs + 64
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
-.macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs 
+.macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
         stp                    d0, d1, [\reg, #(\ofs)]
+       .cfi_rel_offset d0, \ofs + 0
+       .cfi_rel_offset d1, \ofs + 8
         stp                    d2, d3, [\reg, #(\ofs + 16)]
+       .cfi_rel_offset d2, \ofs + 16
+       .cfi_rel_offset d3, \ofs + 24
         stp                    d4, d5, [\reg, #(\ofs + 32)]
+       .cfi_rel_offset d4, \ofs + 32
+       .cfi_rel_offset d5, \ofs + 40
         stp                    d6, d7, [\reg, #(\ofs + 48)]
+       .cfi_rel_offset d6, \ofs + 48
+       .cfi_rel_offset d7, \ofs + 56
 
 .endm
 
-.macro RESTORE_ARGUMENT_REGISTERS reg, ofs 
+.macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 
         ldp                    x0, x1, [\reg, #(\ofs)]
+        .cfi_restore x0
+        .cfi_restore x1
         ldp                    x2, x3, [\reg, #(\ofs + 16)]
+        .cfi_restore x2
+        .cfi_restore x3
         ldp                    x4, x5, [\reg, #(\ofs + 32)]
+        .cfi_restore x4
+        .cfi_restore x5
         ldp                    x6, x7, [\reg, #(\ofs + 48)]
+        .cfi_restore x6
+        .cfi_restore x7
+        ldr                    x8, [\reg, #(\ofs + 64)]
+        .cfi_restore x8
 
 .endm
 
-.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs 
+.macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
         ldp                    d0, d1, [\reg, #(\ofs)]
+        .cfi_restore d0
+        .cfi_restore d1
         ldp                    d2, d3, [\reg, #(\ofs + 16)]
+        .cfi_restore d2
+        .cfi_restore d3
         ldp                    d4, d5, [\reg, #(\ofs + 32)]
+        .cfi_restore d4
+        .cfi_restore d5
         ldp                    d6, d7, [\reg, #(\ofs + 48)]
+        .cfi_restore d6
+        .cfi_restore d7
 
+.endm
+
+.macro EPILOG_BRANCH Target
+        b \Target
 .endm
 
 .macro EPILOG_BRANCH_REG reg
@@ -216,40 +271,42 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+        ret
+
+.endm
+
+
 //-----------------------------------------------------------------------------
 // Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
 // Since this is a tail call argument registers are restored.
 //
-.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL extraLocals = 0, SaveFPArgs =1
+.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
-
-        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
-                __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
-        .endif
-
-        __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
-
-        .if \SaveFPArgs > 0
-            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
-        .endif
-
-        __PWTB_StackAlloc = __PWTB_TransitionBlock
-        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 96 
-
-        .if \SaveFPArgs > 0
-                RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+        .if (__PWTB_SaveFPArgs == 1)
+            RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
         .endif
 
         RESTORE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
-        
-        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
-        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
-        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
-        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
-        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #160
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
 
 .endm
 
@@ -273,8 +330,8 @@ __RedirectionFuncName SETS "|?RedirectedHandledJITCaseFor":CC:"$reason":CC:"@Thr
         IMPORT $__RedirectionFuncName
 
         NESTED_ENTRY $__RedirectionStubFuncName
-        PROLOG_SAVE_REG_PAIR    fp, lr, #-16
-        sub sp, sp, #16                          // stack slot for CONTEXT * and padding 
+        PROLOG_SAVE_REG_PAIR    fp, lr, -16
+        sub sp, sp, #16                          // stack slot for CONTEXT * and padding
 
         //REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h and is used in GetCONTEXTFromRedirectedStubStackFrame
         //If CONTEXT is not saved at 0 offset from SP it must be changed as well.

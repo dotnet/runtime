@@ -109,16 +109,37 @@ typedef struct _ARM64_VFP_STATE
 
 typedef struct _ARM64_UNWIND_PARAMS
 {
-    ULONG_PTR       ControlPc;
-    PULONG_PTR      LowLimit;
-    PULONG_PTR      HighLimit;
     PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
 } ARM64_UNWIND_PARAMS, *PARM64_UNWIND_PARAMS;
 
 #define UNWIND_PARAMS_SET_TRAP_FRAME(Params, Address, Size)
 
-#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)
-#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)
+#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)                    \
+do {                                                                                \
+    if (ARGUMENT_PRESENT(Params)) {                                                 \
+        PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+        if (ARGUMENT_PRESENT(ContextPointers)) {                                    \
+            if (RegisterNumber >=  19 && RegisterNumber <= 30) {                    \
+                (&ContextPointers->X19)[RegisterNumber - 19] = (PDWORD64)Address;  \
+            }                                                                       \
+        }                                                                           \
+    }                                                                               \
+} while (0)
+
+
+#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)                 \
+do {                                                                                \
+    if (ARGUMENT_PRESENT(Params)) {                                                 \
+        PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+        if (ARGUMENT_PRESENT(ContextPointers) &&                                    \
+            (RegisterNumber >=  8) &&                                               \
+            (RegisterNumber <= 15)) {                                               \
+                                                                                    \
+            (&ContextPointers->D8)[RegisterNumber - 8] = (PDWORD64)Address;         \
+        }                                                                           \
+    }                                                                               \
+} while (0)
+
 #define VALIDATE_STACK_ADDRESS_EX(Params, Context, Address, DataSize, Alignment, OutStatus)
 #define VALIDATE_STACK_ADDRESS(Params, Context, DataSize, Alignment, OutStatus)
 
@@ -215,7 +236,7 @@ Return Value:
         for (RegIndex = 0; RegIndex < 18; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __clang__
-            *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+            *(&ContextRecord->X0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #endif
@@ -295,7 +316,7 @@ Return Value:
         for (RegIndex = 0; RegIndex < 29; RegIndex++) {
             UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
 #ifdef __clang__
-            *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
+            *(&ContextRecord->X0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #else
             ContextRecord->X[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
 #endif
@@ -479,9 +500,9 @@ Return Value:
     //
 
     for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
-        UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, CurAddress);
+        UPDATE_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
 #ifdef __clang__
-        *(&ContextRecord->X0 + (RegIndex * sizeof(void*))) = MEMORY_READ_QWORD(UnwindParams, CurAddress);
+        *(&ContextRecord->X0 + FirstRegister + RegIndex) = MEMORY_READ_QWORD(UnwindParams, CurAddress);
 #else
         ContextRecord->X[FirstRegister + RegIndex] = MEMORY_READ_QWORD(UnwindParams, CurAddress);
 #endif
@@ -555,7 +576,7 @@ Return Value:
     //
 
     for (RegIndex = 0; RegIndex < RegisterCount; RegIndex++) {
-        UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, CurAddress);
+        UPDATE_FP_CONTEXT_POINTERS(UnwindParams, FirstRegister + RegIndex, CurAddress);
         ContextRecord->V[FirstRegister + RegIndex].Low = MEMORY_READ_QWORD(UnwindParams, CurAddress);
         CurAddress += 8;
     }
@@ -1591,7 +1612,6 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 }
 
 #if defined(FEATURE_PAL)
-//TODO: Fix the context pointers
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind(
     IN ULONG HandlerType,
@@ -1615,6 +1635,9 @@ RtlVirtualUnwind(
     rfe.BeginAddress = FunctionEntry->BeginAddress;
     rfe.UnwindData = FunctionEntry->UnwindData;
 
+    ARM64_UNWIND_PARAMS unwindParams;
+    unwindParams.ContextPointers = ContextPointers;
+
     if ((rfe.UnwindData & 3) != 0) 
     {
         hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
@@ -1623,7 +1646,7 @@ RtlVirtualUnwind(
                                         EstablisherFrame,
                                         &handlerRoutine,
                                         HandlerData,
-                                        NULL);
+                                        &unwindParams);
 
     }
     else
@@ -1635,7 +1658,7 @@ RtlVirtualUnwind(
                                     EstablisherFrame,
                                     &handlerRoutine,
                                     HandlerData,
-                                    NULL);
+                                    &unwindParams);
     }
 
     _ASSERTE(SUCCEEDED(hr));
