@@ -2239,7 +2239,6 @@ CLRUnwindStatus ExceptionTracker::HandleFunclets(bool* pfProcessThisFrame, bool 
     }
     CONTRACTL_END;
 
-#ifdef WIN64EXCEPTIONS // funclets
     BOOL fUnwindingToFindResumeFrame = m_ExceptionFlags.UnwindingToFindResumeFrame();
 
     //
@@ -2312,7 +2311,6 @@ CLRUnwindStatus ExceptionTracker::HandleFunclets(bool* pfProcessThisFrame, bool 
             }
         }
     }
-#endif // WIN64EXCEPTIONS
 
     return UnwindPending;
 }
@@ -2352,14 +2350,9 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
     EH_LOG((LL_INFO100, "  [ ProcessManagedCallFrame this=%p, %s PASS ]\n", this, (fIsFirstPass ? "FIRST" : "SECOND")));
     
-#ifdef WIN64EXCEPTIONS // funclets
     EH_LOG((LL_INFO100, "  [ method: %s%s, %s ]\n",
         (fIsFunclet ? "FUNCLET of " : ""),
         pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName));
-#else // !WIN64EXCEPTIONS
-    EH_LOG((LL_INFO100, "  [ method: %s, %s ]\n",
-        pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName));
-#endif // WIN64EXCEPTIONS
 
     Thread *pThread = GetThread();
     _ASSERTE (pThread);
@@ -5071,9 +5064,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
         // Create frame necessary for the exception handling
         FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(WIN64EXCEPTIONS)
         *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // WIN64EXCEPTIONS
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.
             if (IsIPInMarkedJitHelper(controlPc))
@@ -7026,10 +7017,8 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#ifdef WIN64EXCEPTIONS
         PRECONDITION(pCf != NULL);
         PRECONDITION(!sfCurrentStackFrame.IsNull());
-#endif // WIN64EXCEPTIONS
     }
     CONTRACTL_END;
 
