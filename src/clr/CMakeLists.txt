@@ -103,7 +103,7 @@ else (WIN32)
       # Ensure that objcopy is present
       if (DEFINED ENV{CROSSCOMPILE} AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-          find_program(OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
+          find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
           find_program(OBJCOPY objcopy)
         else()

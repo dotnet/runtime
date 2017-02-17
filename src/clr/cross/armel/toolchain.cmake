@@ -4,36 +4,35 @@ set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
 
-## Specify the toolchain
 set(TOOLCHAIN "arm-linux-gnueabi")
-set(TOOLCHAIN_PREFIX ${TOOLCHAIN}-)
-#set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc)
-#set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
-#set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}as)
-#set(CMAKE_AR ${TOOLCHAIN_PREFIX}ar)
-#set(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
-#set(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}objdump)
 
 add_compile_options(-target armv7-linux-gnueabi)
 add_compile_options(-mthumb)
 add_compile_options(-mfpu=vfpv3)
+add_compile_options(-mfloat-abi=softfp)
 add_compile_options(--sysroot=${CROSS_ROOTFS})
 
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -target ${TOOLCHAIN}")
 set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} --sysroot=${CROSS_ROOTFS}")
 
 if("$ENV{__DistroRid}" MATCHES "tizen.*")
-    add_compile_options(-I$ENV{ROOTFS_DIR}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/)
-    add_compile_options(-I$ENV{ROOTFS_DIR}/usr/lib/gcc/armv7l-tizen-linux-gnueabi/4.9.2/include/c++/armv7l-tizen-linux-gnueabi)
-    add_compile_options(-Wno-deprecated-declarations) # compile-time option
-    add_compile_options(-D__extern_always_inline=inline)
     set(TIZEN_TOOLCHAIN "armv7l-tizen-linux-gnueabi/4.9.2")
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/armv7l-tizen-linux-gnueabi)
+    add_compile_options(-Wno-deprecated-declarations) # compile-time option
+    add_compile_options(-D__extern_always_inline=inline) # compile-time option
+
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")
 else()
     # TODO: this setting assumes debian armel rootfs
-    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/c++/4.9 ${CROSS_ROOTFS}/usr/include/${TOOLCHAIN}/c++/4.9 )   
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/c++/4.9)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/include/${TOOLCHAIN}/c++/4.9)
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -B${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/${TOOLCHAIN}")
+    set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/lib/${TOOLCHAIN}")
     set(CROSS_LINK_FLAGS "${CROSS_LINK_FLAGS} -L${CROSS_ROOTFS}/usr/lib/gcc/${TOOLCHAIN}/4.9")
 endif()
 
