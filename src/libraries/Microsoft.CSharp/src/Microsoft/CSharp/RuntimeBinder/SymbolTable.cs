@@ -556,7 +556,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     nextParent = nextParent.GetTypeInfo().GetGenericTypeDefinition();
                 }
 
-                if (nextParent != null && nextParent.GetGenericArguments() != null && nextParent.GetGenericArguments().Length > pos)
+                if (nextParent?.GetGenericArguments()?.Length > pos)
                 {
                     parentType = nextParent;
                 }
@@ -703,7 +703,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     // similarly named types, but we are not going to try to solve that
                     // scenario here.
 
-                    if (next != null && next is AggregateSymbol)
+                    if (next != null)
                     {
                         Type existingType = (next as AggregateSymbol).AssociatedSystemType;
                         Type newType = t.GetTypeInfo().IsGenericType ? t.GetTypeInfo().GetGenericTypeDefinition() : t;
@@ -1322,17 +1322,23 @@ namespace Microsoft.CSharp.RuntimeBinder
             // we mark it as such. This is used for the CSharpIsEventBinder.
             // In the case of a WindowsRuntime event, the field will be of type
             // EventRegistrationTokenTable<delegateType>.
-            Type eventRegistrationTokenTableType;
-            if (addedField != null && addedField.GetType() != null &&
-                (addedField.GetType() == ev.type ||
-                (
-                    addedField.GetType().AssociatedSystemType.IsConstructedGenericType &&
-                    (object)(eventRegistrationTokenTableType = EventRegistrationTokenTableType) != null &&
-                    addedField.GetType().AssociatedSystemType.GetGenericTypeDefinition() == eventRegistrationTokenTableType &&
-                    addedField.GetType().AssociatedSystemType.GenericTypeArguments[0] == ev.type.AssociatedSystemType)
-                ))
+            CType addedFieldType = addedField?.GetType();
+            if (addedFieldType != null)
             {
-                addedField.isEvent = true;
+                if (addedFieldType == ev.type)
+                {
+                    addedField.isEvent = true;
+                }
+                else
+                {
+                    Type associated = addedFieldType.AssociatedSystemType;
+                    if (associated.IsConstructedGenericType
+                        && associated.GetGenericTypeDefinition() == EventRegistrationTokenTableType
+                        && associated.GenericTypeArguments[0] == ev.type.AssociatedSystemType)
+                    {
+                        addedField.isEvent = true;
+                    }
+                }
             }
 
             return ev;

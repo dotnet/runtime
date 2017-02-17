@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Validate our chain.
                 Symbol psym;
                 int count = 400; // Limited the length of chain that we'll run - so debug perf isn't too bad.
-                for (psym = this.firstChild; psym != null && psym.nextChild != null && --count > 0;)
+                for (psym = this.firstChild; psym?.nextChild != null && --count > 0;)
                     psym = psym.nextChild;
                 Debug.Assert(_lastChild == psym || count == 0);
 #endif
