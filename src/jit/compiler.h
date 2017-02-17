@@ -5410,6 +5410,14 @@ protected:
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
 
+    typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, GenTreePtr, JitSimplerHashBehavior> NodeToNodeMap;
+
+    NodeToNodeMap* optCseArrLenMap; // Maps array length nodes to ancestor compares that should be
+                                    // re-numbered with the array length to improve range check elimination
+
+    // Given a compare, look for a cse candidate arrlen feeding it and add a map entry if found.
+    void optCseUpdateArrLenMap(GenTreePtr compare);
+
     void optCSEstop();
 
     CSEdsc* optCSEfindDsc(unsigned index);
