@@ -32173,16 +32173,7 @@ static void spin_lock ()
 inline
 void EnterAllocLock()
 {
-#if defined(_TARGET_X86_)
-    __asm {
-        inc dword ptr m_GCLock
-        jz gotit
-        call spin_lock
-            gotit:
-    }
-#else //_TARGET_X86_
     spin_lock();
-#endif //_TARGET_X86_
 }
 
 inline
