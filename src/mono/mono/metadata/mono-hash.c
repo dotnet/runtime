@@ -115,12 +115,21 @@ static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot
 static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoObject *key)
 {
 	guint i = ((*hash->hash_func) (key)) % hash->table_size;
-	GEqualFunc equal = hash->key_equal_func;
 
-	while (hash->keys [i] && !(*equal) (hash->keys [i], key)) {
-		i++;
-		if (i == hash->table_size)
-			i = 0;
+	if (hash->key_equal_func) {
+		GEqualFunc equal = hash->key_equal_func;
+
+		while (hash->keys [i] && !(*equal) (hash->keys [i], key)) {
+			i++;
+			if (i == hash->table_size)
+				i = 0;
+		}
+	} else {
+		while (hash->keys [i] && hash->keys [i] != key) {
+			i++;
+			if (i == hash->table_size)
+				i = 0;
+		}
 	}
 	return i;
 }
@@ -133,8 +142,6 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 
 	if (!hash_func)
 		hash_func = g_direct_hash;
-	if (!key_equal_func)
-		key_equal_func = g_direct_equal;
 
 #ifdef HAVE_SGEN_GC
 	hash = mg_new0 (MonoGHashTable, 1);
