@@ -370,7 +370,6 @@ echo     alpine.3.4.3-x64: Builds overlay for Alpine 3.4.3
 echo     debian.8-x64: Builds overlay for Debian 8
 echo     fedora.23-x64: Builds overlay for Fedora 23
 echo     fedora.24-x64: Builds overlay for Fedora 23
-echo     opensuse.13.2-x64: Builds overlay for OpenSUSE 13.2
 echo     opensuse.42.1-x64: Builds overlay for OpenSUSE 42.1
 echo     osx.10.10-x64: Builds overlay for OSX 10.10
 echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
