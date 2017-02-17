@@ -215,7 +215,7 @@ namespace System.Security.AccessControl.Tests
 
             });
 
-            //case 9, 1 explict ObjectAce
+            //case 9, 1 explicit ObjectAce
             revision = 127;
             capacity = 1;
             rawAcl = new RawAcl(revision, capacity);

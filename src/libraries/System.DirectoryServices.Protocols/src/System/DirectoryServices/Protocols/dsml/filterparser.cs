@@ -21,7 +21,7 @@ namespace System.DirectoryServices.Protocols
         {
             Debug.Assert(filter != null);
 
-            //perfomr the matthing. On success all info we are interested in 
+            //perform the matching. On success all info we are interested in 
             //will be stored in the named captures.
             try
             {
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.Protocols
                     //we must have a 2 character hex prefix 
                     Debug.Assert(parts[i].Length >= 2,
                         "FilterParser.ProcessStringFilterValue: Unexpected value. " +
-                        "The the value matching regular expression must be incorrect");
+                        "The value matching regular expression must be incorrect");
 
                     string hexPrefix = parts[i].Substring(0, 2);
 
@@ -389,7 +389,7 @@ namespace System.DirectoryServices.Protocols
 
         //In order to allow whitespacing between elements and to avoid more \s* elements 
         //then necessary we always put '\s*' on the RIGHT of any element. The only exception is 
-        //the the filter element which allows for white space on both sides.
+        //the filter element which allows for whitespace on both sides.
 
         private const string mAttrRE = @"(([0-2](\.[0-9]+)+)|([a-zA-Z]+([a-zA-Z0-9]|[-])*))(;([a-zA-Z0-9]|[-])+)*";
         private const string mValueRE = @"(([^\*\(\)\\])|(\\[a-fA-F0-9][a-fA-F0-9]))+?";

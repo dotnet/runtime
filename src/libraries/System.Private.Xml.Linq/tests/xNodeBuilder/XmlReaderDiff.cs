@@ -139,7 +139,7 @@ namespace CoreXml.Test.XLinq
                     }
 
                     // Verify string / string,string indexers consistency
-                    // note: using int approach to be able to verifyt MoveToFirst/NextAttribute consistency
+                    // note: using int approach to be able to verify MoveToFirst/NextAttribute consistency
                     for (int i = 0; i < filteredAttrs.Length; i++)
                     {
                         var n = filteredAttrs[i];
@@ -197,7 +197,7 @@ namespace CoreXml.Test.XLinq
                     }
 
                     // compare non-xmlns attributes
-                    // compae xmlns attributes (those in r2 must be in r1)
+                    // compare xmlns attributes (those in r2 must be in r1)
                     // verify r2 namespace stack
                     Compare(origAttrs, filteredAttrs, nsStack, filteredReader.Depth);
                 }
@@ -215,7 +215,7 @@ namespace CoreXml.Test.XLinq
             TestLog.Compare(filteredReader.MoveToNextAttribute(), shouldNAWork, "Move to next attribute :: " + message);
             TestLog.Compare(SAEqComparer.Instance.Equals(shouldNAWork ? filteredAttrs[attrPosition + 1] : orig, filteredReader.GetSAData()), "MoveToNextAttribute moved to bad position :: " + message);
             // MoveToFirstAttribute works OK
-            TestLog.Compare(filteredReader.MoveToFirstAttribute(), "Move to first attribute should allways work :: " + message);
+            TestLog.Compare(filteredReader.MoveToFirstAttribute(), "Move to first attribute should always work :: " + message);
             TestLog.Compare(SAEqComparer.Instance.Equals(filteredAttrs[0], filteredReader.GetSAData()), "MoveToNextAttribute moved to bad position :: " + message);
         }
 
@@ -283,7 +283,7 @@ namespace CoreXml.Test.XLinq
                     found = r1E.Current.SequenceEqual(r2E.Current, StringComparer.Ordinal);
                     if (!found)
                     {
-                        // Verify the one thown out is a) ns decl: b) the nsTable detect it as duplicate
+                        // Verify the one thrown out is a) ns decl: b) the nsTable detect it as duplicate
                         TestLog.Compare(r1E.Current[2] == XNamespace.Xmlns.NamespaceName || r1E.Current[1] == "xmlns", String.Format("Reader removed the non NS declaration attribute: {0},{1},{2},{3}", r1E.Current[0], r1E.Current[1], r1E.Current[2], r1E.Current[3]));
                         TestLog.Compare(nsTable.IsDuplicate(depth, r1E.Current[1], r1E.Current[3]), "The namespace decl was not duplicate");
                     }

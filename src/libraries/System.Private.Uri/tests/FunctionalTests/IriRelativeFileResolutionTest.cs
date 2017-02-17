@@ -12,7 +12,7 @@ namespace System.PrivateUri.Tests
     /// <summary>
     /// These tests attempt to verify the transitivity of Uri.MakeRelativeUri with new Uri(base, rel).
     /// Specifically these tests address the use of Unicode and Iri with explicit and implicit file Uris.
-    /// Note: Many of the test only partially pass with the currrent Uri implementation.  Known discrepancies
+    /// Note: Many of the test only partially pass with the current Uri implementation.  Known discrepancies
     /// have been marked as expected so that we can still track changes.
     /// </summary>
     public class IriRelativeFileResolutionTest

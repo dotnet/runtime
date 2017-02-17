@@ -46,7 +46,7 @@ namespace System.Data
             bool fEnforce = _dataSet.EnforceConstraints;
             _dataSet.EnforceConstraints = false;
             _IgnoreNSforTableLookup = (_dataSet._namespaceURI != source._namespaceURI); // if two DataSets have different 
-            // Namespaces, ignore NS for table lookups as we wont be able to find the right tables which inherits its NS
+            // Namespaces, ignore NS for table lookups as we won't be able to find the right tables which inherits its NS
 
             List<DataColumn> existingColumns = null;// need to cache existing columns
 
@@ -93,7 +93,7 @@ namespace System.Data
                     }
                     else
                     {
-                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace];// we know that target table wont be null since MissingSchemaAction is Add , we have already added it!
+                        targetTable = _dataSet.Tables[sourceTable.TableName, sourceTable.Namespace];// we know that target table won't be null since MissingSchemaAction is Add , we have already added it!
                     }
 
                     foreach (DataColumn dc in sourceTable.Columns)
@@ -345,7 +345,7 @@ namespace System.Data
                 if (MissingSchemaAction.Add == _missingSchemaAction)
                 {
                     targetTable = table.Clone(table.DataSet); // if we are here mainly we are called from DataSet.Merge at this point we don't set
-                    //expression columns, since it might have refer to other columns via relation, so it wont find the table and we get exception;
+                    //expression columns, since it might have refer to other columns via relation, so it won't find the table and we get exception;
                     // do it after adding relations.
                     _dataSet.Tables.Add(targetTable);
                 }

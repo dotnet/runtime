@@ -23,7 +23,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>
         ///       This tab will be added to the properties window and can
-        ///       only be explictly removed by a component outside the properties window.
+        ///       only be explicitly removed by a component outside the properties window.
         ///    </para>
         /// </summary>
         Global = 1,

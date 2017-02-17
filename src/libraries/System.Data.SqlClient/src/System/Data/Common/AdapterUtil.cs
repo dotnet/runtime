@@ -1098,7 +1098,7 @@ namespace System.Data.Common
                 dataSource = dataSource.Substring(0, i);
             }
 
-            // trim redundant whitespaces
+            // trim redundant whitespace
             dataSource = dataSource.Trim();
 
             // check if servername end with any azure endpoints

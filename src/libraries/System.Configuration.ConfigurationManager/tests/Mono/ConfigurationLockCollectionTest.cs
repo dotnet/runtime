@@ -74,7 +74,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
-        public void NonExistantItem()
+        public void NonExistentItem()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             ConfigurationLockCollection col;

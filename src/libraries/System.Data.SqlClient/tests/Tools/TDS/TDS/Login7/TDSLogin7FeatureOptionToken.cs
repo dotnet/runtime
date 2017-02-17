@@ -11,7 +11,7 @@ using Microsoft.SqlServer.TDS.PreLogin;
 namespace Microsoft.SqlServer.TDS.Login7
 {
     /// <summary>
-    /// Class that defines a a feature option which is delivered in the login packet FeatureExt block
+    /// Class that defines a feature option which is delivered in the login packet FeatureExt block
     /// </summary>
     public abstract class TDSLogin7FeatureOptionToken : IInflatable, IDeflatable
     {

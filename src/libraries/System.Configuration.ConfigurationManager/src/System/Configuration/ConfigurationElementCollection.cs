@@ -547,7 +547,7 @@ namespace System.Configuration
                     iFoundItem = index;
                     if (entry.EntryType == EntryType.Added)
                     {
-                        // this is a special case for defect number 529517 to emulate everett behavior
+                        // this is a special case for defect number 529517 to emulate Everett behavior
                         localAddToEnd = true;
                     }
                     break;

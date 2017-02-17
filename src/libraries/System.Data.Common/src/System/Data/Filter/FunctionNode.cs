@@ -126,7 +126,7 @@ namespace System.Data
                 argumentValues[1] = GetDataType(_arguments[1]);
             }
             else if (s_funcs[_info]._id != FunctionId.Iif)
-            { // We do not want to evaluate arguments of IIF, we =will alread do it in EvalFunction/ second point: we may go to div by 0
+            { // We do not want to evaluate arguments of IIF, we will already do it in EvalFunction/ second point: we may go to div by 0
                 for (int i = 0; i < _argumentCount; i++)
                 {
                     argumentValues[i] = _arguments[i].Eval(row, version);

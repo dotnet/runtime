@@ -157,7 +157,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Simple whitespaces are trimmed in path
+        [PlatformSpecific(TestPlatforms.Windows)]  // Simple whitespace is trimmed in path
         public void WindowsSimpleWhiteSpace()
         {
             // CreateSubdirectory trims all simple whitespace, returning us the parent directory

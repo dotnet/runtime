@@ -331,7 +331,7 @@ namespace System.Net
                 PipelineInstruction result = QueueOrCreateDataConection(entry, response, timeout, ref stream, out isSocketReady);
                 if (!isSocketReady)
                     return result;
-                // otheriwse we have a stream to create
+                // otherwise we have a stream to create
             }
             //
             // This is part of the above case and it's all about giving data stream back
@@ -1217,7 +1217,7 @@ namespace System.Net
 
                 if (responseString.Length > lineStart + 4)
                 {
-                    // If the first three characters of the the response line currently being examined
+                    // If the first three characters of the response line currently being examined
                     // match the status code, then if they are followed by a space, then we
                     // have reached the end of the reply.
                     if (responseString.Substring(lineStart, 3) == response.StatusCodeString)

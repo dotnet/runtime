@@ -156,7 +156,7 @@ Thus the event names only need to be unique within a component.
    Short names make the 'IsEnabled' faster.  
 
  * DO - use the 'Start' and 'Stop' suffixes for events that define an interval of time.  For example   
-   naming one event 'RequestStart' and the another 'ReqeustStop' is good because tools can use the
+   naming one event 'RequestStart' and the another 'RequestStop' is good because tools can use the
    convention to determine that the time interval betweeen them is interesting.  
 
 ### payloads
@@ -410,7 +410,7 @@ call for event name, so consumers must ensure that filter allows events without 
 to pass through.
 
 ----------------------------------------
-## Consuming DiagnosticSource Data with with EventListeners and ETW
+## Consuming DiagnosticSource Data with EventListeners and ETW
 
 The System.Diagnostic.DiagnosticSource Nuget package comes with a built in EventSource 
 called Microsoft-Diagnostics-DiagnosticSource.  This EventSource has the ability to 

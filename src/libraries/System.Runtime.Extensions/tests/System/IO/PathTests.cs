@@ -413,7 +413,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFullPath(path));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests whitespaces in paths on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests whitespace in paths on Unix
         [Fact]
         public static void GetFullPath_Unix_Whitespace()
         {

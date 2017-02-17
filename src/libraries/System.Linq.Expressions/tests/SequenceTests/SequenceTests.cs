@@ -2021,7 +2021,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void NewClassWithMemberIntializer(bool useInterpreter)
+        public static void NewClassWithMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v };
             Func<int, ClassX> d = f.Compile(useInterpreter);
@@ -2048,7 +2048,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void NewClassWithMemberIntializers(bool useInterpreter)
+        public static void NewClassWithMemberInitializers(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v, B = v };
             Func<int, ClassX> d = f.Compile(useInterpreter);
@@ -2058,7 +2058,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void NewStructWithMemberIntializer(bool useInterpreter)
+        public static void NewStructWithMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v };
             Func<int, StructX> d = f.Compile(useInterpreter);
@@ -2067,7 +2067,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void NewStructWithMemberIntializers(bool useInterpreter)
+        public static void NewStructWithMemberInitializers(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v, B = v };
             Func<int, StructX> d = f.Compile(useInterpreter);
@@ -2114,7 +2114,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public void NewClassWithMemberListIntializer(bool useInterpreter)
+        public void NewClassWithMemberListInitializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
@@ -2128,7 +2128,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public void NewClassWithMemberListOfStructIntializer(bool useInterpreter)
+        public void NewClassWithMemberListOfStructInitializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, SYs = { new StructY { B = v + 2 } } };
@@ -2142,7 +2142,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void NewClassWithMemberMemberIntializer(bool useInterpreter)
+        public static void NewClassWithMemberMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Y = { B = v + 2 } };
@@ -2155,7 +2155,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public void NewStructWithMemberListIntializer(bool useInterpreter)
+        public void NewStructWithMemberListInitializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
@@ -2169,7 +2169,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public void NewStructWithStructMemberMemberIntializer(bool useInterpreter)
+        public void NewStructWithStructMemberMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, SY = new StructY { B = v + 2 } };

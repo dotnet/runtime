@@ -232,7 +232,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return await base.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -275,7 +275,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return await base.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -336,7 +336,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return await base.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
@@ -396,7 +396,7 @@ namespace System.Xml
                     _state = State.InReadBinary;
                     return await base.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
                 }
-                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore white spaces
+                // the wrapped reader cannot read chunks or we are on an element where we should check characters or ignore whitespace
                 else
                 {
                     _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);

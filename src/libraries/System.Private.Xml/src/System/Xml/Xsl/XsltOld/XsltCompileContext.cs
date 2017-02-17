@@ -146,7 +146,7 @@ namespace System.Xml.Xsl.XsltOld
             length = free;
             if (length <= 1)
             {
-                // 0 -- not method found. We have to return non-null and let it fail with corect exception on call.
+                // 0 -- not method found. We have to return non-null and let it fail with correct exception on call.
                 // 1 -- no reason to continue search anyway.
                 return methods[0];
             }

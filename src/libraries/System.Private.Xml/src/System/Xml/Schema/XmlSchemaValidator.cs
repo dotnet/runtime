@@ -1814,7 +1814,7 @@ namespace System.Xml.Schema
 
         private void AddXmlNamespaceSchema()
         {
-            XmlSchemaSet localSet = new XmlSchemaSet(); //Avoiding cost of incremental compilation checks by compiling schema in a seperate set and adding compiled set
+            XmlSchemaSet localSet = new XmlSchemaSet(); //Avoiding cost of incremental compilation checks by compiling schema in a separate set and adding compiled set
             localSet.Add(Preprocessor.GetBuildInSchema());
             localSet.Compile();
             _schemaSet.Add(localSet);

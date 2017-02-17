@@ -129,7 +129,7 @@ namespace System.IO.Ports.Tests
                 }
                 else
                 {
-                    throw new Exception("Unkown Win32 Error: " + lastError);
+                    throw new Exception("Unknown Win32 Error: " + lastError);
                 }
             }
             return buffer;

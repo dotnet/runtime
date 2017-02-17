@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
                 null,
                 out state) as ConstructorInfo;
 
-            // Check for ctor we don't like (non-existant, delegate or decorated with declarative linktime demand).
+            // Check for ctor we don't like (non-existent, delegate or decorated with declarative linktime demand).
             if (rci == null || typeof(Delegate).IsAssignableFrom(rci.DeclaringType))
             {
                 return null;

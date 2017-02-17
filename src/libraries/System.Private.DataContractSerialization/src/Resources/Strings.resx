@@ -823,7 +823,7 @@
     <value>Only one root element is permitted per document.</value>
   </data>
   <data name="XmlOnlyWhitespace" xml:space="preserve">
-    <value>Only white space characters can be written with this method.</value>
+    <value>Only whitespace characters can be written with this method.</value>
   </data>
   <data name="XmlOnlySingleValue" xml:space="preserve">
     <value>Only a single typed value may be written inside an attribute or content.</value>
@@ -1030,7 +1030,7 @@
     <value>WriteStartElement can be called at only the start of a document or immediately after calling WriteEndElement.</value>
   </data>
   <data name="JsonOnlyWhitespace" xml:space="preserve">
-    <value>Unexpected character '{0}'. '{1}' can write only white space characters.</value>
+    <value>Unexpected character '{0}'. '{1}' can write only whitespace characters.</value>
   </data>
   <data name="JsonWriterClosed" xml:space="preserve">
     <value>The writer is closed.</value>

@@ -105,7 +105,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void WhereWhere_Array_ExecutionIsDefered()
+        public void WhereWhere_Array_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             Func<bool>[] source = new Func<bool>[] { () => { funcCalled = true; return true; } };
@@ -118,7 +118,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void WhereWhere_List_ExecutionIsDefered()
+        public void WhereWhere_List_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             List<Func<bool>> source = new List<Func<bool>>() { () => { funcCalled = true; return true; } };
@@ -157,7 +157,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void WhereWhere_IEnumerable_ExecutionIsDefered()
+        public void WhereWhere_IEnumerable_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             IEnumerable<Func<bool>> source = Enumerable.Repeat((Func<bool>)(() => { funcCalled = true; return true; }), 1);

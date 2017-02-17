@@ -269,7 +269,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void InitMatch()
         {
-            // Use a hashtable'ed Match object if the capture numbers are sparse
+            // Use a hashtabled Match object if the capture numbers are sparse
 
             if (runmatch == null)
             {

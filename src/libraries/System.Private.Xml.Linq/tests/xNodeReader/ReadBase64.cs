@@ -416,7 +416,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation("ReadBase64 with whitespaces in the mIddle")]
+                //[Variation("ReadBase64 with whitespace in the mIddle")]
                 public void TestTextReadBase64_26()
                 {
                     byte[] buffer = new byte[1];
@@ -879,7 +879,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation("ReadBase64 with whitespaces in the mIddle")]
+                //[Variation("ReadBase64 with whitespace in the mIddle")]
                 public void TestTextReadBase64_26()
                 {
                     byte[] buffer = new byte[1];

@@ -1827,7 +1827,7 @@ namespace System.Collections.Generic
 
                 _siInfo = null;
 
-                Intialize();
+                Initialize();
             }
 
             internal Enumerator(SortedSet<T> set, bool reverse)
@@ -1843,7 +1843,7 @@ namespace System.Collections.Generic
 
                 _siInfo = null;
 
-                Intialize();
+                Initialize();
             }
 
             private Enumerator(SerializationInfo info, StreamingContext context)
@@ -1896,7 +1896,7 @@ namespace System.Collections.Generic
                 if (EnumStarted)
                 {
                     T item = (T)_siInfo.GetValue(NodeValueName, typeof(T));
-                    Intialize();
+                    Initialize();
 
                     // go until it reaches the value we want
                     while (this.MoveNext())
@@ -1907,7 +1907,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            private void Intialize()
+            private void Initialize()
             {
                 _current = null;
                 SortedSet<T>.Node node = _tree._root;
@@ -2009,7 +2009,7 @@ namespace System.Collections.Generic
                 }
 
                 _stack.Clear();
-                Intialize();
+                Initialize();
             }
 
             void IEnumerator.Reset() => Reset();

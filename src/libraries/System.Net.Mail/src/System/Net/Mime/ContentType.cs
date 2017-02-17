@@ -12,7 +12,7 @@ namespace System.Net.Mime
     //
     // We parse the type during construction and set.
     // null and string.empty will throw for construction,set and mediatype/subtype
-    // constructors set isPersisted to false.  isPersisted needs to be tracked seperately
+    // constructors set isPersisted to false.  isPersisted needs to be tracked separately
     // than isChanged because isChanged only determines if the cached value should be used.
     // isPersisted tracks if the object has been persisted. However, obviously if isChanged is true
     // the object isn't  persisted.

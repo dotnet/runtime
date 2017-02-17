@@ -53,7 +53,7 @@ namespace System.Data
     // a tree has an PageTableBitmap to indicate which allocated pages have free nodes
     // a page has a SlotBitmap to indicate which slots are free
 
-    // intial page allocation (assuming no deletes)
+    // initial page allocation (assuming no deletes)
     //          #page  * #slot =     #total, #cumulative
     // (            4) *    32 =        128,           127 (subtract 1 for NIL node)
     // (   32 -     4) *   256 =       7168,         7,295

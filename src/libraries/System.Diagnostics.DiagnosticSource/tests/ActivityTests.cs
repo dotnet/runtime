@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Activity stack: creates a parent activity and child activity
         /// Verifies 
-        ///  - Activity.Parent and ParentId corectness
+        ///  - Activity.Parent and ParentId correctness
         ///  - Baggage propagated from parent
         ///  - Tags are not propagated
         /// Stops child and checks Activity,Current is set to parent

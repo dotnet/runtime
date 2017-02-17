@@ -759,7 +759,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // If we get here, it means we can have two cases: one is that we have 
                 // a delegate. This is because the delegate invoke method is virtual and is 
-                // an override, but we wont have the slots set up correctly, and will 
+                // an override, but we won't have the slots set up correctly, and will 
                 // not find the base type in the inheritance hierarchy. The second is that
                 // we're calling off of the base itself.
                 Debug.Assert(method.parent.IsAggregateSymbol());

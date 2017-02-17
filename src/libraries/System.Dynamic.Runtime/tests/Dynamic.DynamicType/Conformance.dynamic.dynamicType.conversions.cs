@@ -1569,7 +1569,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
     public class ConversionInRuntimeType
     {
-        private static bool NoPredefinedImplicitConversionButExistExplictConversion()
+        private static bool NoPredefinedImplicitConversionButExistExplicitConversion()
         {
             int failcount = 0;
             ulong origin = 100;
@@ -1592,7 +1592,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NoUserdefinedImplicitConversionButExistExplictConversion()
+        private static bool NoUserdefinedImplicitConversionButExistExplicitConversion()
         {
             int failcount = 0;
             C origin = new C(22);
@@ -1624,8 +1624,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         public static int MainMethod()
         {
             int result = 0;
-            result += Verify.Eval(NoPredefinedImplicitConversionButExistExplictConversion);
-            result += Verify.Eval(NoUserdefinedImplicitConversionButExistExplictConversion);
+            result += Verify.Eval(NoPredefinedImplicitConversionButExistExplicitConversion);
+            result += Verify.Eval(NoUserdefinedImplicitConversionButExistExplicitConversion);
             return result;
         }
     }

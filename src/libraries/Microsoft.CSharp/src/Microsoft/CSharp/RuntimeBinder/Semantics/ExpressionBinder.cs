@@ -2042,7 +2042,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             // This is either the error case that the args are of the wrong type, 
                             // or that we have some optional arguments being used. Either way,
-                            // we wont need to expand the param array.
+                            // we won't need to expand the param array.
                             return;
                         }
                     }

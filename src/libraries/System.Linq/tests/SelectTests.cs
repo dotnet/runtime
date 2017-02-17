@@ -240,7 +240,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SelectSelect_SourceIsAnArray_ExecutionIsDefered()
+        public void SelectSelect_SourceIsAnArray_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             Func<int>[] source = new Func<int>[] { () => { funcCalled = true; return 1; } };
@@ -250,7 +250,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SelectSelect_SourceIsAList_ExecutionIsDefered()
+        public void SelectSelect_SourceIsAList_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             List<Func<int>> source = new List<Func<int>>() { () => { funcCalled = true; return 1; } };
@@ -280,7 +280,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void SelectSelect_SourceIsIEnumerable_ExecutionIsDefered()
+        public void SelectSelect_SourceIsIEnumerable_ExecutionIsDeferred()
         {
             bool funcCalled = false;
             IEnumerable<Func<int>> source = Enumerable.Repeat((Func<int>)(() => { funcCalled = true; return 1; }), 1);

@@ -124,7 +124,7 @@
     <value>A node of type {0} cannot be added to content.</value>
   </data>
   <data name="Argument_AddNonWhitespace" xml:space="preserve">
-    <value>Non white space characters cannot be added to content.</value>
+    <value>Non-whitespace characters cannot be added to content.</value>
   </data>
   <data name="Argument_ConvertToString" xml:space="preserve">
     <value>The argument cannot be converted to a string.</value>

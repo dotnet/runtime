@@ -338,7 +338,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespaces in path are removed on Windows
+        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
         public void WindowsTrailingWhiteSpace()
         {
             // Windows will remove all non-significant whitespace in a path
@@ -373,7 +373,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // trailing whitespaces in path treated as significant on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // trailing whitespace in path treated as significant on Unix
         public void UnixNonSignificantTrailingWhiteSpace()
         {
             // Unix treats trailing/prename whitespace as significant and a part of the name.

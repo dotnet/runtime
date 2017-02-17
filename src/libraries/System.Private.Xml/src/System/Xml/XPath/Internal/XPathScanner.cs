@@ -112,7 +112,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         // To parse PathExpr we need a way to distinct name from function. 
-        // THis distinction can't be done without context: "or (1 != 0)" this this a function or 'or' in OrExp 
+        // This distinction can't be done without context: "or (1 != 0)" this is a function or 'or' in OrExp 
         public bool CanBeFunction
         {
             get
@@ -221,7 +221,7 @@ namespace MS.Internal.Xml.XPath
                         _kind = LexKind.Name;
                         _name = ScanName();
                         _prefix = string.Empty;
-                        // "foo:bar" is one lexem not three because it doesn't allow spaces in between
+                        // "foo:bar" is one lexeme not three because it doesn't allow spaces in between
                         // We should distinct it from "foo::" and need process "foo ::" as well
                         if (this.CurrentChar == ':')
                         {

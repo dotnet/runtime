@@ -1782,7 +1782,7 @@ namespace System.DirectoryServices.AccountManagement
                 string principalDN = (string)principalDE.Properties["distinguishedName"].Value;
 
                 // we want to find if a group is "small", meaning that it has less than MaxValRange values (usually 1500)
-                // the property list for the searcher of a a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
+                // the property list for the searcher of a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
                 if (g.IsSmallGroup())
                 {
                     // small groups has special search object that holds the member attribute so we use it for our search (no need to use the DirectoryEntry)

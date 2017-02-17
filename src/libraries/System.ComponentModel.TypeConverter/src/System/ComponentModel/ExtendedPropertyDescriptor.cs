@@ -63,7 +63,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Determines if the the component will allow its value to be reset.
+        ///     Determines if the component will allow its value to be reset.
         /// </summary>
         public override bool CanResetValue(object comp)
         {

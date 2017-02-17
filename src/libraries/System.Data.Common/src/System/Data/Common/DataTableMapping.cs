@@ -38,7 +38,7 @@ namespace System.Data.Common
             }
         }
 
-        // explict ITableMapping implementation
+        // explicit ITableMapping implementation
         IColumnMappingCollection ITableMapping.ColumnMappings
         {
             get { return ColumnMappings; }
