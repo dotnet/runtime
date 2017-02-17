@@ -10,6 +10,7 @@ set CORECLR_REPO=%CD%
 set TEST_FILE_EXT=exe
 set TEST_ARCH=x64
 set TEST_CONFIG=Release
+set TEST_ENV=thisfilewillnotexist
 
 goto :ARGLOOP
 
