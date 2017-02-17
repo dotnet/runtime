@@ -679,7 +679,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodOrPropertySymbol pMethProp,
                     EXPR pObject)
             {
-                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject != null ? pObject.type : null);
+                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject?.type);
             }
 
             /////////////////////////////////////////////////////////////////////////////////
@@ -719,9 +719,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Now get the slot method.
-                if (method.swtSlot != null && method.swtSlot.Meth() != null)
+                var slotMethod = method.swtSlot?.Meth();
+                if (slotMethod != null)
                 {
-                    method = method.swtSlot.Meth();
+                    method = slotMethod;
                 }
 
                 if (!pType.IsAggregateType())
@@ -772,7 +773,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool HasOptionalParameters()
             {
                 MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
-                return methprop != null ? methprop.HasOptionalParameters() : false;
+                return methprop != null && methprop.HasOptionalParameters();
             }
 
             /////////////////////////////////////////////////////////////////////////////////

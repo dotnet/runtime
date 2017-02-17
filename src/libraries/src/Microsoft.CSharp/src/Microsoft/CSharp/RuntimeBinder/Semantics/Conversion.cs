@@ -819,11 +819,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          */
         private bool canConvertInstanceParamForExtension(EXPR exprSrc, CType typeDest)
         {
-            if (exprSrc == null || exprSrc.type == null)
-            {
-                return false;
-            }
-            return canConvertInstanceParamForExtension(exprSrc.type, typeDest);
+            CType typeSrc = exprSrc?.type;
+            return typeSrc != null && canConvertInstanceParamForExtension(typeSrc, typeDest);
         }
 
         private bool canConvertInstanceParamForExtension(CType typeSrc, CType typeDest)

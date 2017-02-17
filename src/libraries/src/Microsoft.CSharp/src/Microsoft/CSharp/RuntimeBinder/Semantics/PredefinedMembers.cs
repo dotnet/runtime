@@ -352,10 +352,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (setter != null)
-            {
-                setter.SetMethKind(MethodKindEnum.PropAccessor);
-            }
+            setter?.SetMethKind(MethodKindEnum.PropAccessor);
 
             PropertySymbol property = null;
             if (getter != null)
