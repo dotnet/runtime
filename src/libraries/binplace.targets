@@ -20,6 +20,8 @@
 
     <BinPlaceStuffDependsOn Condition="'$(BinPlaceRef)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
     <BinPlaceStuffDependsOn Condition="'$(BinPlaceRuntime)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+
+    <BinplaceUseHardlinksIfPossible Condition="'$(BinplaceUseHardlinksIfPossible)' == ''">true</BinplaceUseHardlinksIfPossible>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinplaceConfiguration)' == ''">
@@ -74,13 +76,27 @@
 
   <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
     <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(TargetingPackDir.Identity)" SkipUnchangedFiles="true">
+    <Copy Condition="'@(TargetingPackDir)' != ''"
+          SourceFiles="@(BinplaceItem)"
+          DestinationFolder="%(TargetingPackDir.Identity)" 
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(BinplaceUseHardlinksIfPossible)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
   <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
-    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="@(BinplaceItem)" DestinationFolder="%(RuntimeDir.Identity)" SkipUnchangedFiles="true">
+    <Copy Condition="'@(RuntimeDir)' != ''"
+          SourceFiles="@(BinplaceItem)"
+          DestinationFolder="%(RuntimeDir.Identity)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(BinplaceUseHardlinksIfPossible)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
