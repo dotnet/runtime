@@ -509,6 +509,9 @@ void Compiler::optValnumCSE_Init()
 
     optCSECandidateCount = 0;
     optDoCSE             = false; // Stays false until we find duplicate CSE tree
+
+    // optCseArrLenMap is unused in most functions, allocated only when used
+    optCseArrLenMap = nullptr;
 }
 
 /*****************************************************************************
@@ -700,8 +703,17 @@ unsigned Compiler::optValnumCSE_Locate()
             noway_assert(stmt->gtOper == GT_STMT);
 
             /* We walk the tree in the forwards direction (bottom up) */
+            bool stmtHasArrLenCandidate = false;
             for (tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
+                if (tree->OperIsCompare() && stmtHasArrLenCandidate)
+                {
+                    // Check if this compare is a function of (one of) the arrary
+                    // length candidate(s); we may want to update its value number
+                    // if the array length gets CSEd
+                    optCseUpdateArrLenMap(tree);
+                }
+
                 if (!optIsCSEcandidate(tree))
                 {
                     continue;
@@ -730,6 +742,11 @@ unsigned Compiler::optValnumCSE_Locate()
                 {
                     noway_assert(((unsigned)tree->gtCSEnum) == CSEindex);
                 }
+
+                if (IS_CSE_INDEX(CSEindex) && (tree->OperGet() == GT_ARR_LENGTH))
+                {
+                    stmtHasArrLenCandidate = true;
+                }
             }
         }
     }
@@ -746,6 +763,102 @@ unsigned Compiler::optValnumCSE_Locate()
     optCSEstop();
 
     return 1;
+}
+
+//------------------------------------------------------------------------
+// optCseUpdateArrLenMap: Check if this compare is a tractable function of
+//                     an array length that is a CSE candidate, and insert
+//                     an entry in the optCseArrLenMap if so.  This facilitates
+//                     subsequently updating the compare's value number if
+//                     the array length gets CSEd.
+//
+// Arguments:
+//    compare - The compare node to check
+
+void Compiler::optCseUpdateArrLenMap(GenTreePtr compare)
+{
+    assert(compare->OperIsCompare());
+
+    ValueNum  compareVN = compare->gtVNPair.GetConservative();
+    VNFuncApp cmpVNFuncApp;
+
+    if (!vnStore->GetVNFunc(compareVN, &cmpVNFuncApp) ||
+        (cmpVNFuncApp.m_func != GetVNFuncForOper(compare->OperGet(), compare->IsUnsigned())))
+    {
+        // Value numbering inferred this compare as something other
+        // than its own operator; leave its value number alone.
+        return;
+    }
+
+    // Now look for an array length feeding the compare
+    ValueNumStore::ArrLenArithBoundInfo info;
+    GenTreePtr                          arrLenParent = nullptr;
+
+    if (vnStore->IsVNArrLenBound(compareVN))
+    {
+        // Simple compare of an array legnth against something else.
+
+        vnStore->GetArrLenBoundInfo(compareVN, &info);
+        arrLenParent = compare;
+    }
+    else if (vnStore->IsVNArrLenArithBound(compareVN))
+    {
+        // Compare of an array length +/- some offset to something else.
+
+        GenTreePtr op1 = compare->gtGetOp1();
+        GenTreePtr op2 = compare->gtGetOp2();
+
+        vnStore->GetArrLenArithBoundInfo(compareVN, &info);
+        if (GetVNFuncForOper(op1->OperGet(), op1->IsUnsigned()) == (VNFunc)info.arrOper)
+        {
+            // The arithmetic node is the array length's parent.
+            arrLenParent = op1;
+        }
+        else if (GetVNFuncForOper(op2->OperGet(), op2->IsUnsigned()) == (VNFunc)info.arrOper)
+        {
+            // The arithmetic node is the array length's parent.
+            arrLenParent = op2;
+        }
+    }
+
+    if (arrLenParent != nullptr)
+    {
+        GenTreePtr arrLen = nullptr;
+
+        // Find which child of arrLenParent is the array length.  Abort if its
+        // conservative value number doesn't match the one from the compare VN.
+
+        GenTreePtr child1 = arrLenParent->gtGetOp1();
+        if ((child1->OperGet() == GT_ARR_LENGTH) && IS_CSE_INDEX(child1->gtCSEnum) &&
+            (info.vnArray == child1->AsArrLen()->ArrRef()->gtVNPair.GetConservative()))
+        {
+            arrLen = child1;
+        }
+        else
+        {
+            GenTreePtr child2 = arrLenParent->gtGetOp2();
+            if ((child2->OperGet() == GT_ARR_LENGTH) && IS_CSE_INDEX(child2->gtCSEnum) &&
+                (info.vnArray == child2->AsArrLen()->ArrRef()->gtVNPair.GetConservative()))
+            {
+                arrLen = child2;
+            }
+        }
+
+        if (arrLen != nullptr)
+        {
+            // Found an arrayLen feeding a compare that is a tracatable function of it;
+            // record this in the map so we can update the compare VN if the array length
+            // node gets CSEd.
+
+            if (optCseArrLenMap == nullptr)
+            {
+                // Allocate map on first use.
+                optCseArrLenMap = new (getAllocator()) NodeToNodeMap(getAllocator());
+            }
+
+            optCseArrLenMap->Set(arrLen, compare);
+        }
+    }
 }
 
 /*****************************************************************************
@@ -1909,6 +2022,39 @@ public:
                     // use to fetch the same value with no reload, so we can safely propagate that
                     // conservative VN to this use.  This can help range check elimination later on.
                     cse->gtVNPair.SetConservative(defConservativeVN);
+
+                    GenTreePtr cmp;
+                    if ((exp->OperGet() == GT_ARR_LENGTH) && (m_pCompiler->optCseArrLenMap != nullptr) &&
+                        (m_pCompiler->optCseArrLenMap->Lookup(exp, &cmp)))
+                    {
+                        // Propagate the new value number to this compare node as well, since
+                        // subsequent range check elimination will try to correlate it with
+                        // the other appearances that are getting CSEd.
+
+                        ValueNumStore*                      vnStore  = m_pCompiler->vnStore;
+                        ValueNum                            oldCmpVN = cmp->gtVNPair.GetConservative();
+                        ValueNumStore::ArrLenArithBoundInfo info;
+                        ValueNum                            newCmpArgVN;
+                        if (vnStore->IsVNArrLenBound(oldCmpVN))
+                        {
+                            // Comparison is against the array length directly.
+
+                            newCmpArgVN = defConservativeVN;
+                            vnStore->GetArrLenBoundInfo(oldCmpVN, &info);
+                        }
+                        else
+                        {
+                            // Comparison is against the array length +/- some offset.
+
+                            assert(vnStore->IsVNArrLenArithBound(oldCmpVN));
+                            vnStore->GetArrLenArithBoundInfo(oldCmpVN, &info);
+                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
+                                                             info.arrOp, defConservativeVN);
+                        }
+                        ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
+                                                               info.cmpOp, newCmpArgVN);
+                        cmp->gtVNPair.SetConservative(newCmpVN);
+                    }
                 }
 #ifdef DEBUG
                 cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF;
