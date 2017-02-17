@@ -167,19 +167,6 @@ def nth_dirname(path, n):
 
     return path
 
-
-def dotnet_rid_os(dotnet_path):
-    """ Determine the OS identifier from the RID as reported by dotnet
-    Args:
-        dotnet_path (str): path to folder containing dotnet(.exe)
-    Returns:
-        rid_os (str): OS component of RID as reported by dotnet
-    """
-    dotnet_info = subprocess.check_output([os.path.join(dotnet_path, 'dotnet'), '--info'])
-    m = re.search('^\s*RID:\s+([^-]*)-(\S*)\s*$', dotnet_info, re.MULTILINE)
-    return m.group(1)
-
-
 def log(message):
     """ Print logging information
     Args:
@@ -263,17 +250,9 @@ def main(args):
     # Determine the RID to specify the to corefix build scripts.  This seems to
     # be way harder than it ought to be.
  
-    if testing:
-        rid_os = dotnet_rid_os('')
-    else:
-        if Is_windows:
-            rid_os = "win7"
-        else:
-            rid_os = dotnet_rid_os(os.path.join(clr_root, 'Tools', 'dotnetcli'))
-
     # Gather up some arguments to pass to both build and build-tests.
 
-    config_args = '-Release -RuntimeOS=%s -ArchGroup=%s' % (rid_os, arch)
+    config_args = '-Release -os:%s -buildArch:%s' % (clr_os, arch)
 
     # Run the primary (non-test) corefx build
 
