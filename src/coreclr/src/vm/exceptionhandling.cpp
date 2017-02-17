@@ -7040,5 +7040,5 @@ void ExceptionTracker::ResetThreadAbortStatus(PTR_Thread pThread, CrawlFrame *pC
 }
 #endif //!DACCESS_COMPILE
 
-#endif // _WIN64
+#endif // WIN64EXCEPTIONS
 
