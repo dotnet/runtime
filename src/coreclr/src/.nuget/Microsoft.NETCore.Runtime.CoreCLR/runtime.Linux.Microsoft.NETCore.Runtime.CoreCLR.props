@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportNiFiles>
+    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportNiFiles>
+  </PropertyGroup>
   <ItemGroup>
     <NativeSplittableBinary Include="$(BinDir)libcoreclr.so" />
-    <NativeSplittableBinary Condition="'$(Platform)' != 'armel'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
+    <NativeSplittableBinary Condition="'$(_PlatformDoesNotSupportNiFiles)' != 'true'" Include="$(BinDir)libcoreclrtraceptprovider.so" />
     <NativeSplittableBinary Include="$(BinDir)libdbgshim.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeSplittableBinary Include="$(BinDir)libmscordbi.so" />
@@ -10,8 +14,8 @@
     <NativeSplittableBinary Include="$(BinDir)libsosplugin.so" />
     <NativeSplittableBinary Include="$(BinDir)System.Globalization.Native.so" />
     <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt" />
-    <ArchitectureSpecificNativeFile Condition="'$(Platform)' != 'armel'" Include="$(BinDir)mscorlib.ni.dll" />
-    <ArchitectureSpecificNativeFile Condition="'$(Platform)' != 'armel'" Include="$(BinDir)System.Private.CoreLib.ni.dll" />
+    <ArchitectureSpecificNativeFile Condition="'$(_PlatformDoesNotSupportNiFiles)' != 'true'" Include="$(BinDir)mscorlib.ni.dll" />
+    <ArchitectureSpecificNativeFile Condition="'$(_PlatformDoesNotSupportNiFiles)' != 'true'" Include="$(BinDir)System.Private.CoreLib.ni.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
