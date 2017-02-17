@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -32,11 +34,36 @@ namespace System.Diagnostics
             // Create an instance of the proxy type, and make sure we can access all of the instance properties 
             // on the type without exception
             object proxyInstance = Activator.CreateInstance(proxyType, obj);
-            foreach (var pi in proxyInstance.GetType().GetTypeInfo().DeclaredProperties)
-            {
-                pi.GetValue(proxyInstance, null);
-            }
+            GetDebuggerVisibleProperties(proxyInstance);
         }
+
+        public static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
+        {
+            CustomAttributeData debuggerBrowsableAttribute = info.CustomAttributes
+                .SingleOrDefault(a => a.AttributeType == typeof(DebuggerBrowsableAttribute));
+            // Enums in attribute constructors are boxed as ints, so cast to int? first.
+            return (DebuggerBrowsableState?)(int?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
+        }
+
+        public static IDictionary<string, FieldInfo> GetDebuggerVisibleFields(object obj)
+        {
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
+            IEnumerable<FieldInfo> visibleFields = typeInfo.DeclaredFields
+                // The debugger doesn't evaluate non-public members of type proxies.
+                .Where(fi => fi.IsPublic && GetDebuggerBrowsableState(fi) != DebuggerBrowsableState.Never);
+            return visibleFields.ToDictionary(fi => fi.Name, fi => fi);
+        }
+
+        public static IDictionary<string, PropertyInfo> GetDebuggerVisibleProperties(object obj)
+        {
+            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
+            IEnumerable<PropertyInfo> visibleProperties = typeInfo.DeclaredProperties
+                // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
+                .Where(pi => pi.GetGetMethod() != null && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
+            return visibleProperties.ToDictionary(pi => pi.Name, pi => pi);
+        }
+
+        public static object GetProxyObject(object obj) => Activator.CreateInstance(GetProxyType(obj), obj);
 
         public static Type GetProxyType(object obj) => GetProxyType(obj.GetType());
 
@@ -51,8 +78,7 @@ namespace System.Diagnostics
                 .ToArray();
             if (attrs.Length != 1)
             {
-                throw new InvalidOperationException(
-                    string.Format("Expected one DebuggerTypeProxyAttribute on {0}.", type));
+                throw new InvalidOperationException($"Expected one DebuggerTypeProxyAttribute on {type}.");
             }
             CustomAttributeData cad = attrs[0];
 
@@ -67,65 +93,112 @@ namespace System.Diagnostics
             return proxyType;
         }
 
-        internal static void ValidateDebuggerDisplayReferences(object obj)
+        internal static string ValidateDebuggerDisplayReferences(object obj)
         {
             // Get the DebuggerDisplayAttribute for obj
+            var objType = obj.GetType();
             var attrs =
-                obj.GetType().GetTypeInfo().CustomAttributes
+                objType.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerDisplayAttribute))
                 .ToArray();
             if (attrs.Length != 1)
             {
-                throw new InvalidOperationException(
-                    string.Format("Expected one DebuggerDisplayAttribute on {0}.", obj));
+                throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {objType}.");
             }
             var cad = (CustomAttributeData)attrs[0];
 
             // Get the text of the DebuggerDisplayAttribute
             string attrText = (string)cad.ConstructorArguments[0].Value;
 
-            // Parse the text for all expressions
-            var references = new List<string>();
-            int pos = 0;
-            while (true)
-            {
-                int openBrace = attrText.IndexOf('{', pos);
-                if (openBrace < pos) break;
-                int closeBrace = attrText.IndexOf('}', openBrace);
-                if (closeBrace < openBrace) break;
+            var segments = attrText.Split(new[] { '{', '}' });
 
-                string reference = attrText.Substring(openBrace + 1, closeBrace - openBrace - 1).Replace(",nq", "");
-                pos = closeBrace + 1;
-
-                references.Add(reference);
-            }
-            if (references.Count == 0)
+            if (segments.Length % 2 == 0)
             {
-                throw new InvalidOperationException(
-                    string.Format("The DebuggerDisplayAttribute for {0} doesn't reference any expressions.", obj));
+                throw new InvalidOperationException($"The DebuggerDisplayAttribute for {objType} lacks a closing brace.");
             }
 
-            // Make sure that each referenced expression is a simple field or property name, and that we can
-            // invoke the property's get accessor or read from the field.
-            foreach (var reference in references)
+            if (segments.Length == 1)
             {
-                PropertyInfo pi = GetProperty(obj, reference);
-                if (pi != null)
+                throw new InvalidOperationException($"The DebuggerDisplayAttribute for {objType} doesn't reference any expressions.");
+            }
+
+            var sb = new StringBuilder();
+            
+            for (int i = 0; i < segments.Length; i += 2)
+            {
+                string literal = segments[i];
+                sb.Append(literal);
+
+                if (i + 1 < segments.Length)
                 {
-                    object ignored = pi.GetValue(obj, null);
-                    continue;
-                }
+                    string reference = segments[i + 1];
+                    bool noQuotes = reference.EndsWith(",nq");
 
-                FieldInfo fi = GetField(obj, reference);
-                if (fi != null)
-                {
-                    object ignored = fi.GetValue(obj);
-                    continue;
-                }
+                    reference = reference.Replace(",nq", string.Empty);
 
-                throw new InvalidOperationException(
-                    string.Format("The DebuggerDisplayAttribute for {0} contains the expression \"{1}\".", obj, reference));
+                    // Evaluate the reference.
+                    object member;
+                    if (!TryEvaluateReference(obj, reference, out member))
+                    {
+                        throw new InvalidOperationException($"The DebuggerDisplayAttribute for {objType} contains the expression \"{reference}\".");
+                    }
+
+                    string memberString = GetDebuggerMemberString(member, noQuotes);
+                    
+                    sb.Append(memberString);
+                }
             }
+
+            return sb.ToString();
+        }
+
+        private static string GetDebuggerMemberString(object member, bool noQuotes)
+        {
+            string memberString = "null";
+            if (member != null)
+            {
+                memberString = member.ToString();
+                if (member is string)
+                {
+                    if (!noQuotes)
+                    {
+                        memberString = '"' + memberString + '"';
+                    }
+                }
+                else if (!IsPrimitiveType(member))
+                {
+                    memberString = '{' + memberString + '}';
+                }
+            }
+
+            return memberString;
+        }
+
+        private static bool IsPrimitiveType(object obj) =>
+            obj is byte || obj is sbyte ||
+            obj is short || obj is ushort ||
+            obj is int || obj is uint ||
+            obj is long || obj is ulong ||
+            obj is float || obj is double;
+
+        private static bool TryEvaluateReference(object obj, string reference, out object member)
+        {
+            PropertyInfo pi = GetProperty(obj, reference);
+            if (pi != null)
+            {
+                member = pi.GetValue(obj);
+                return true;
+            }
+
+            FieldInfo fi = GetField(obj, reference);
+            if (fi != null)
+            {
+                member = fi.GetValue(obj);
+                return true;
+            }
+
+            member = null;
+            return false;
         }
 
         private static FieldInfo GetField(object obj, string fieldName)
