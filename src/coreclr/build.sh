@@ -319,9 +319,6 @@ isMSBuildOnNETCoreSupported()
                 "fedora.24-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                "opensuse.13.2-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
                 "opensuse.42.1-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
