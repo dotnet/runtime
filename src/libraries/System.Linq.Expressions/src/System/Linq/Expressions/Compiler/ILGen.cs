@@ -442,18 +442,13 @@ namespace System.Linq.Expressions.Compiler
             }
 
             Type t = value as Type;
-            if (t != null && ShouldLdtoken(t))
+            if (t != null)
             {
-                return true;
+                return ShouldLdtoken(t);
             }
 
             MethodBase mb = value as MethodBase;
-            if (mb != null && ShouldLdtoken(mb))
-            {
-                return true;
-            }
-
-            return false;
+            return mb != null && ShouldLdtoken(mb);
         }
 
         // matches TryEmitILConstant
@@ -477,20 +472,14 @@ namespace System.Linq.Expressions.Compiler
                 case TypeCode.String:
                     return true;
             }
+
             return false;
         }
-
-        internal static void EmitConstant(this ILGenerator il, object value, ILocalCache locals)
-        {
-            Debug.Assert(value != null);
-            EmitConstant(il, value, value.GetType(), locals);
-        }
-
 
         //
         // Note: we support emitting more things as IL constants than
         // Linq does
-        internal static void EmitConstant(this ILGenerator il, object value, Type type, ILocalCache locals)
+        internal static bool TryEmitConstant(this ILGenerator il, object value, Type type, ILocalCache locals)
         {
             if (value == null)
             {
@@ -498,25 +487,31 @@ namespace System.Linq.Expressions.Compiler
                 // pattern for all value types (works, but requires a local and
                 // more IL)
                 il.EmitDefault(type, locals);
-                return;
+                return true;
             }
 
             // Handle the easy cases
             if (il.TryEmitILConstant(value, type))
             {
-                return;
+                return true;
             }
 
             // Check for a few more types that we support emitting as constants
             Type t = value as Type;
-            if (t != null && ShouldLdtoken(t))
+            if (t != null)
             {
-                il.EmitType(t);
-                if (type != typeof(Type))
+                if (ShouldLdtoken(t))
                 {
-                    il.Emit(OpCodes.Castclass, type);
+                    il.EmitType(t);
+                    if (type != typeof(Type))
+                    {
+                        il.Emit(OpCodes.Castclass, type);
+                    }
+
+                    return true;
                 }
-                return;
+
+                return false;
             }
 
             MethodBase mb = value as MethodBase;
@@ -533,14 +528,16 @@ namespace System.Linq.Expressions.Compiler
                 {
                     il.Emit(OpCodes.Call, MethodBase_GetMethodFromHandle_RuntimeMethodHandle);
                 }
+
                 if (type != typeof(MethodBase))
                 {
                     il.Emit(OpCodes.Castclass, type);
                 }
-                return;
+
+                return true;
             }
 
-            throw ContractUtils.Unreachable;
+            return false;
         }
 
         private static bool ShouldLdtoken(Type t)
@@ -561,7 +558,6 @@ namespace System.Linq.Expressions.Compiler
             Type dt = mb.DeclaringType;
             return dt == null || ShouldLdtoken(dt);
         }
-
 
         private static bool TryEmitILConstant(this ILGenerator il, object value, Type type)
         {
