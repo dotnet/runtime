@@ -268,6 +268,12 @@ static BYTE gLoadFromLabelIF[sizeof(LoadFromLabelInstructionFormat)];
 
 #endif
 
+void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
+{
+    for (int i=0; i < 18; i++)
+        pRD->volatileCurrContextPointers.X[i] = NULL;
+}
+
 #ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
@@ -371,6 +377,20 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
     } while (true);
 
+#ifdef FEATURE_PAL
+    unwoundstate->captureX19_X29[0] = context.X19;
+    unwoundstate->captureX19_X29[1] = context.X20;
+    unwoundstate->captureX19_X29[2] = context.X21;
+    unwoundstate->captureX19_X29[3] = context.X22;
+    unwoundstate->captureX19_X29[4] = context.X23;
+    unwoundstate->captureX19_X29[5] = context.X24;
+    unwoundstate->captureX19_X29[6] = context.X25;
+    unwoundstate->captureX19_X29[7] = context.X26;
+    unwoundstate->captureX19_X29[8] = context.X27;
+    unwoundstate->captureX19_X29[9] = context.X28;
+    unwoundstate->captureX19_X29[10] = context.Fp;
+#endif
+
 #ifdef DACCESS_COMPILE
     // For DAC builds, we update the registers directly since we dont have context pointers
     unwoundstate->captureX19_X29[0] = context.X19;
@@ -450,6 +470,20 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
         pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+
+        pRD->pCurrentContextPointers->X19 = pUnwoundState->ptrX19_X29[0];
+        pRD->pCurrentContextPointers->X20 = pUnwoundState->ptrX19_X29[1];
+        pRD->pCurrentContextPointers->X21 = pUnwoundState->ptrX19_X29[2];
+        pRD->pCurrentContextPointers->X22 = pUnwoundState->ptrX19_X29[3];
+        pRD->pCurrentContextPointers->X23 = pUnwoundState->ptrX19_X29[4];
+        pRD->pCurrentContextPointers->X24 = pUnwoundState->ptrX19_X29[5];
+        pRD->pCurrentContextPointers->X25 = pUnwoundState->ptrX19_X29[6];
+        pRD->pCurrentContextPointers->X26 = pUnwoundState->ptrX19_X29[7];
+        pRD->pCurrentContextPointers->X27 = pUnwoundState->ptrX19_X29[8];
+        pRD->pCurrentContextPointers->X28 = pUnwoundState->ptrX19_X29[9];
+        pRD->pCurrentContextPointers->Fp = pUnwoundState->ptrX19_X29[10];
+        pRD->pCurrentContextPointers->Lr = NULL;
+
         return;
     }
 #endif // DACCESS_COMPILE
@@ -462,6 +496,20 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->Pc = pRD->ControlPC;
     pRD->pCurrentContext->Sp = pRD->SP;
 
+#ifdef FEATURE_PAL
+    pRD->pCurrentContext->X19 = m_MachState.ptrX19_X29[0] ? *m_MachState.ptrX19_X29[0] : m_MachState.captureX19_X29[0];
+    pRD->pCurrentContext->X20 = m_MachState.ptrX19_X29[1] ? *m_MachState.ptrX19_X29[1] : m_MachState.captureX19_X29[1];
+    pRD->pCurrentContext->X21 = m_MachState.ptrX19_X29[2] ? *m_MachState.ptrX19_X29[2] : m_MachState.captureX19_X29[2];
+    pRD->pCurrentContext->X22 = m_MachState.ptrX19_X29[3] ? *m_MachState.ptrX19_X29[3] : m_MachState.captureX19_X29[3];
+    pRD->pCurrentContext->X23 = m_MachState.ptrX19_X29[4] ? *m_MachState.ptrX19_X29[4] : m_MachState.captureX19_X29[4];
+    pRD->pCurrentContext->X24 = m_MachState.ptrX19_X29[5] ? *m_MachState.ptrX19_X29[5] : m_MachState.captureX19_X29[5];
+    pRD->pCurrentContext->X25 = m_MachState.ptrX19_X29[6] ? *m_MachState.ptrX19_X29[6] : m_MachState.captureX19_X29[6];
+    pRD->pCurrentContext->X26 = m_MachState.ptrX19_X29[7] ? *m_MachState.ptrX19_X29[7] : m_MachState.captureX19_X29[7];
+    pRD->pCurrentContext->X27 = m_MachState.ptrX19_X29[8] ? *m_MachState.ptrX19_X29[8] : m_MachState.captureX19_X29[8];
+    pRD->pCurrentContext->X28 = m_MachState.ptrX19_X29[9] ? *m_MachState.ptrX19_X29[9] : m_MachState.captureX19_X29[9];
+    pRD->pCurrentContext->Fp = m_MachState.ptrX19_X29[10] ? *m_MachState.ptrX19_X29[10] : m_MachState.captureX19_X29[10];
+    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+#else // FEATURE_PAL
     pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
     pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
     pRD->pCurrentContext->X21 = *m_MachState.ptrX19_X29[2];
@@ -474,6 +522,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
     pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
     pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+#endif
 
 #if !defined(DACCESS_COMPILE)    
     pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
@@ -489,6 +538,8 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
     pRD->pCurrentContextPointers->Lr = NULL; // Unwind again to get Caller's PC
 #endif
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 #endif // CROSSGEN_COMPILE
 
@@ -759,22 +810,14 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
-    
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     
-    // copy the argumetn registers
-    ArgumentRegisters *pArgRegs = GetArgumentRegisters();
-    for (int i = 0; i < ARGUMENTREGISTERS_SIZE; i++)
-#ifdef __clang__
-        *(&pRD->pCurrentContext->X0 + (sizeof(void*)*i)) = pArgRegs->x[i];
-#else
-        pRD->pCurrentContext->X[i] = pArgRegs->x[i];
-#endif
-
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, pCalleeSaved);
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     // copy the control registers
     pRD->pCurrentContext->Fp = pCalleeSaved->x29;
@@ -787,6 +830,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
 
 #endif
 
@@ -832,6 +876,8 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
     pRD->pCurrentContextPointers->Lr = (PDWORD64)&m_ctx.Lr;
 
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -859,20 +905,34 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         return;
     }
 
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;
+
+    pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
+    pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
+    pRD->pCurrentContext->Fp = *(DWORD64 *)&m_pCalleeSavedFP;
+
+    pRD->pCurrentContextPointers->X19 = NULL;
+    pRD->pCurrentContextPointers->X20 = NULL;
+    pRD->pCurrentContextPointers->X21 = NULL;
+    pRD->pCurrentContextPointers->X22 = NULL;
+    pRD->pCurrentContextPointers->X23 = NULL;
+    pRD->pCurrentContextPointers->X24 = NULL;
+    pRD->pCurrentContextPointers->X25 = NULL;
+    pRD->pCurrentContextPointers->X26 = NULL;
+    pRD->pCurrentContextPointers->X27 = NULL;
+    pRD->pCurrentContextPointers->X28 = NULL;
 
     pRD->ControlPC = m_pCallerReturnAddress;
     pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
 
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
+    // reset pContext; it's only valid for active (top-most) frame
+    pRD->pContext = NULL;
 
-    pRD->pCurrentContext->Pc = m_pCallerReturnAddress;
-    pRD->pCurrentContext->Sp = pRD->SP;
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
 
     // Update the frame pointer in the current context.
-    pRD->pCurrentContext->Fp = m_pCalleeSavedFP;
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));

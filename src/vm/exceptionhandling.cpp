@@ -448,14 +448,7 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     UPDATEREG(X26);
     UPDATEREG(X27);
     UPDATEREG(X28);
-    // Obtain value of Fp from CurrentContext instead of from CurrentContextPointers
-    // It should not matter. CurrentContextPointers does not have value of FP as this will 
-    // require changes in MachState to also store pointer of FP which it does not do currently.
-    pContextRecord->Fp = pRegDisplay->pCurrentContext->Fp;
-    if (pAbortContext)
-    {
-        pAbortContext->Fp = pContextRecord->Fp;
-    }
+    UPDATEREG(Fp);
 
 #else
     PORTABILITY_ASSERT("ExceptionTracker::UpdateNonvolatileRegisters");

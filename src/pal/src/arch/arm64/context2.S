@@ -8,87 +8,7 @@
 //
 
 #include "unixasmmacros.inc"
-
-#define CONTEXT_ARM64   0x00400000L
-
-#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
-#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
-#define CONTEXT_FLOATING_POINT  (CONTEXT_ARM64 | 0x4L)
-#define CONTEXT_DEBUG_REGISTERS (CONTEXT_ARM64 | 0x8L)
-
-#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
-
-#define CONTEXT_ContextFlags 0
-#define CONTEXT_Cpsr         CONTEXT_ContextFlags+4
-#define CONTEXT_X0           CONTEXT_Cpsr+4
-#define CONTEXT_X1           CONTEXT_X0+8
-#define CONTEXT_X2           CONTEXT_X1+8
-#define CONTEXT_X3           CONTEXT_X2+8
-#define CONTEXT_X4           CONTEXT_X3+8
-#define CONTEXT_X5           CONTEXT_X4+8
-#define CONTEXT_X6           CONTEXT_X5+8
-#define CONTEXT_X7           CONTEXT_X6+8
-#define CONTEXT_X8           CONTEXT_X7+8
-#define CONTEXT_X9           CONTEXT_X8+8
-#define CONTEXT_X10          CONTEXT_X9+8
-#define CONTEXT_X11          CONTEXT_X10+8
-#define CONTEXT_X12          CONTEXT_X11+8
-#define CONTEXT_X13          CONTEXT_X12+8
-#define CONTEXT_X14          CONTEXT_X13+8
-#define CONTEXT_X15          CONTEXT_X14+8
-#define CONTEXT_X16          CONTEXT_X15+8
-#define CONTEXT_X17          CONTEXT_X16+8
-#define CONTEXT_X18          CONTEXT_X17+8
-#define CONTEXT_X19          CONTEXT_X18+8
-#define CONTEXT_X20          CONTEXT_X19+8
-#define CONTEXT_X21          CONTEXT_X20+8
-#define CONTEXT_X22          CONTEXT_X21+8
-#define CONTEXT_X23          CONTEXT_X22+8
-#define CONTEXT_X24          CONTEXT_X23+8
-#define CONTEXT_X25          CONTEXT_X24+8
-#define CONTEXT_X26          CONTEXT_X25+8
-#define CONTEXT_X27          CONTEXT_X26+8
-#define CONTEXT_X28          CONTEXT_X27+8
-#define CONTEXT_Fp           CONTEXT_X28+8
-#define CONTEXT_Lr           CONTEXT_Fp+8
-#define CONTEXT_Sp           CONTEXT_Lr+8
-#define CONTEXT_Pc           CONTEXT_Sp+8
-#define CONTEXT_NEON_OFFSET  CONTEXT_Pc+8
-#define CONTEXT_V0           0
-#define CONTEXT_V1           CONTEXT_V0+16
-#define CONTEXT_V2           CONTEXT_V1+16
-#define CONTEXT_V3           CONTEXT_V2+16
-#define CONTEXT_V4           CONTEXT_V3+16
-#define CONTEXT_V5           CONTEXT_V4+16
-#define CONTEXT_V6           CONTEXT_V5+16
-#define CONTEXT_V7           CONTEXT_V6+16
-#define CONTEXT_V8           CONTEXT_V7+16
-#define CONTEXT_V9           CONTEXT_V8+16
-#define CONTEXT_V10          CONTEXT_V9+16
-#define CONTEXT_V11          CONTEXT_V10+16
-#define CONTEXT_V12          CONTEXT_V11+16
-#define CONTEXT_V13          CONTEXT_V12+16
-#define CONTEXT_V14          CONTEXT_V13+16
-#define CONTEXT_V15          CONTEXT_V14+16
-#define CONTEXT_V16          CONTEXT_V15+16
-#define CONTEXT_V17          CONTEXT_V16+16
-#define CONTEXT_V18          CONTEXT_V17+16
-#define CONTEXT_V19          CONTEXT_V18+16
-#define CONTEXT_V20          CONTEXT_V19+16
-#define CONTEXT_V21          CONTEXT_V20+16
-#define CONTEXT_V22          CONTEXT_V21+16
-#define CONTEXT_V23          CONTEXT_V22+16
-#define CONTEXT_V24          CONTEXT_V23+16
-#define CONTEXT_V25          CONTEXT_V24+16
-#define CONTEXT_V26          CONTEXT_V25+16
-#define CONTEXT_V27          CONTEXT_V26+16
-#define CONTEXT_V28          CONTEXT_V27+16
-#define CONTEXT_V29          CONTEXT_V28+16
-#define CONTEXT_V30          CONTEXT_V29+16
-#define CONTEXT_V31          CONTEXT_V30+16
-#define CONTEXT_FLOAT_CONTROL_OFFSET  CONTEXT_V31
-#define CONTEXT_Fpcr         0
-#define CONTEXT_Fpsr         CONTEXT_Fpcr+4
+#include "asmconstants.h"
 
 // Incoming:
 //  x0: Context*
@@ -115,10 +35,8 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     ldr x2, [sp, 24]
     str w2, [x0, CONTEXT_Cpsr]
     stp fp, lr, [x0, CONTEXT_Fp]
-    add sp, sp, #32
-    mov x2, sp
+    add x2, sp, #32
     stp x2, lr, [x0, CONTEXT_Sp]
-    sub sp, sp, #32
 
 LOCAL_LABEL(Done_CONTEXT_CONTROL): 
     // we dont clobber x1 in the CONTEXT_CONTROL case
@@ -224,14 +142,8 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     // since we potentially clobber x0 below, we'll bank it in x16
     mov x16, x0
 
-    ldr w2, [x16, CONTEXT_ContextFlags]
-    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
-    movz w3, #0x40, lsl #16
-    movk w3, #0x4
-    mov w4, w3
-    and w3, w2, w3
-    cmp w3, w4
-    b.ne LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
+    ldr w17, [x16, CONTEXT_ContextFlags]
+    tbz w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
     add x16, x16,   CONTEXT_NEON_OFFSET
     ldp q0, q1,   [x16, CONTEXT_V0]
@@ -256,12 +168,7 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     sub x16, x16,   CONTEXT_NEON_OFFSET
 
 LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
-    movz w2, #0x40, lsl #16
-    movk w2, #0x2
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
+    tbz w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
     ldp x0, x1,   [x16, CONTEXT_X0]
     ldp x2, x3,   [x16, CONTEXT_X2]
@@ -279,12 +186,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
     ldr x28,      [x16, CONTEXT_X28]
 
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
-    movz w2, #0x40, lsl #16
-    movk w2, #0x2
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
+    tbz w17, #CONTEXT_CONTROL_BIT, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ldr w17, [x16, CONTEXT_Cpsr]
     msr nzcv, x17
@@ -293,8 +195,8 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     mov sp, x17
     ldr x17, [x16, CONTEXT_Pc]
     br x17
-
+ 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
-    ret
+   ret
 
 LEAF_END RtlRestoreContext, _TEXT

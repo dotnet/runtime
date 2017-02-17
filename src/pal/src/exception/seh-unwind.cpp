@@ -244,6 +244,7 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X26, &contextPointers->X26);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
 #else
 #error unsupported architecture
 #endif
