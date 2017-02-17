@@ -285,16 +285,10 @@
          This allows us to use RecursiveDir as the path to the zip instead of guessing and generating it again.
     -->
     <ItemGroup>
-      <FunctionalTest Include="$(TestArchivesRoot)**/*.zip" >
-        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
-      </FunctionalTest>
-      <FunctionalTest Include="$(AnyOSTestArchivesRoot)**/*.zip" >
-        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
-      </FunctionalTest>
+      <FunctionalTest Include="$(TestArchivesRoot)**/*.zip" />
+      <FunctionalTest Include="$(AnyOSTestArchivesRoot)**/*.zip" />
       <!-- Only include Unix folders if supported by the current target OS -->
-      <FunctionalTest Condition="'$(TargetsUnix)' == 'true'" Include="$(UnixTestArchivesRoot)**/*.zip" >
-        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</RelativeBlobPath>
-      </FunctionalTest>
+      <FunctionalTest Condition="'$(TargetsUnix)' == 'true'" Include="$(UnixTestArchivesRoot)**/*.zip" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -313,6 +307,7 @@
       </FunctionalTest>
     </ItemGroup>
     <WriteItemsToJson JsonFileName="$(FuncTestListFile)" Items="@(FunctionalTest)" />
+          
     <!-- add test lists to the list of items for upload -->
     <ItemGroup>
       <ForUpload Include="$(FuncTestListFile)">
