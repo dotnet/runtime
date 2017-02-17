@@ -74,6 +74,7 @@
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEDirectoriesBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaderBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
@@ -233,6 +234,7 @@
     <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEMemoryBlock.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEReader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEReader.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEStreamOptions.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
     <Compile Include="System\Reflection\Throw.cs" />
