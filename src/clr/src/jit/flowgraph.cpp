@@ -24114,20 +24114,31 @@ void Compiler::fgMergeFinallyChains()
     }
     else
     {
-        assert(didMerge);
-        JITDUMP("Method had try-finallys and some callfinally merges were performed.\n");
+        if (didMerge)
+        {
+            JITDUMP("Method had mergeable try-finallys and some callfinally merges were performed.\n");
 
 #if DEBUG
-
-        if (verbose)
-        {
-            printf("\n*************** After fgMergeFinallyChains()\n");
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-            printf("\n");
-        }
+            if (verbose)
+            {
+                printf("\n*************** After fgMergeFinallyChains()\n");
+                fgDispBasicBlocks();
+                fgDispHandlerTab();
+                printf("\n");
+            }
 
 #endif // DEBUG
+        }
+        else
+        {
+            // We may not end up doing any merges, because we are only
+            // merging continuations for callfinallys that can
+            // actually be invoked, and the importer may leave
+            // unreachable callfinallys around (for instance, if it
+            // is forced to re-import a leave).
+            JITDUMP("Method had mergeable try-finallys but no callfinally merges were performed,\n"
+                    "likely the non-canonical callfinallys were unreachable\n");
+        }
     }
 }
 
@@ -24183,6 +24194,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     // If the block already jumps to the canoncial call finally, no work needed.
     if (block->bbJumpDest == canonicalCallFinally)
     {
+        JITDUMP("BB%02u already canonical\n", block->bbNum);
         return false;
     }
 
