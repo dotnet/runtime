@@ -17,7 +17,7 @@ namespace System.Configuration
         private object _serializedValue = null;
         private bool _changedSinceLastSerialized = false;
 
-        public string Name { get; private set; }
+        public string Name => Property.Name;
         public bool IsDirty { get; set; }
         public SettingsProperty Property { get; private set; }
         public bool UsingDefaultValue { get; private set; }
