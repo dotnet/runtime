@@ -2669,6 +2669,7 @@ public:
                                  lvaStructPromotionInfo* StructPromotionInfo,
                                  bool                    sortFields);
     void lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* StructPromotionInfo);
+    bool lvaShouldPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo);
     void lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* StructPromotionInfo);
 #if !defined(_TARGET_64BIT_)
     void lvaPromoteLongVars();
