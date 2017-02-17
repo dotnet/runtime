@@ -7875,6 +7875,9 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         //    Either a call stmt or
         //    GT_RETURN(GT_CALL(..)) or GT_RETURN(GT_CAST(GT_CALL(..)))
         //    var = GT_CALL(..) or var = (GT_CAST(GT_CALL(..)))
+        //    GT_COMMA(GT_CALL(..), GT_NOP) or GT_COMMA(GT_CAST(GT_CALL(..)), GT_NOP)
+        // In the above,
+        //    GT_CASTS may be nested.
         genTreeOps stmtOper = stmtExpr->gtOper;
         if (stmtOper == GT_CALL)
         {
@@ -7882,10 +7885,16 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         }
         else
         {
-            noway_assert(stmtOper == GT_RETURN || stmtOper == GT_ASG);
+            noway_assert(stmtOper == GT_RETURN || stmtOper == GT_ASG || stmtOper == GT_COMMA);
             GenTreePtr treeWithCall;
             if (stmtOper == GT_RETURN)
             {
+                treeWithCall = stmtExpr->gtGetOp1();
+            }
+            else if (stmtOper == GT_COMMA)
+            {
+                // Second operation must be nop.
+                noway_assert(stmtExpr->gtGetOp2()->IsNothingNode());
                 treeWithCall = stmtExpr->gtGetOp1();
             }
             else
@@ -7920,10 +7929,11 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         //  2) tail.call, nop*, pop, nop*, ret
         //  3) var=tail.call, nop*, ret(var)
         //  4) var=tail.call, nop*, pop, ret
+        //  5) comma(tail.call, nop), nop*, ret
         //
         // See impIsTailCallILPattern() for details on tail call IL patterns
         // that are supported.
-        if ((stmtExpr->gtOper == GT_CALL) || (stmtExpr->gtOper == GT_ASG))
+        if (stmtExpr->gtOper != GT_RETURN)
         {
             // First delete all GT_NOPs after the call
             GenTreeStmt* morphStmtToRemove = nullptr;
