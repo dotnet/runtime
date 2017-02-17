@@ -11,7 +11,6 @@ using System.Globalization;
 using System.Data.SqlClient;
 using System.Text;
 using System.Diagnostics;
-using Res = System.SR;
 
 
 namespace System.Data
@@ -73,7 +72,7 @@ namespace System.Data
                             {
                                 SNINativeMethodWrapper.SNI_Error sniError;
                                 SNINativeMethodWrapper.SNIGetLastError(out sniError);
-                                throw CreateLocalDBException(errorMessage: Res.GetString("LocalDB_FailedGetDLLHandle"), sniError: (int)sniError.sniError);
+                                throw CreateLocalDBException(errorMessage: SR.GetString("LocalDB_FailedGetDLLHandle"), sniError: (int)sniError.sniError);
                             }
                         }
                     }
@@ -110,7 +109,7 @@ namespace System.Data
                             if (functionAddr == IntPtr.Zero)
                             {
                                 int hResult = Marshal.GetLastWin32Error();
-                                throw CreateLocalDBException(errorMessage: Res.GetString("LocalDB_MethodNotFound"));
+                                throw CreateLocalDBException(errorMessage: SR.GetString("LocalDB_MethodNotFound"));
                             }
                             s_localDBFormatMessage = Marshal.GetDelegateForFunctionPointer<LocalDBFormatMessageDelegate>(functionAddr);
                         }
@@ -153,12 +152,12 @@ namespace System.Data
                     if (hResult >= 0)
                         return buffer.ToString();
                     else
-                        return string.Format(CultureInfo.CurrentCulture, "{0} (0x{1:X}).", Res.GetString("LocalDB_UnobtainableMessage"), hResult);
+                        return string.Format(CultureInfo.CurrentCulture, "{0} (0x{1:X}).", SR.GetString("LocalDB_UnobtainableMessage"), hResult);
                 }
             }
             catch (SqlException exc)
             {
-                return string.Format(CultureInfo.CurrentCulture, "{0} ({1}).", Res.GetString("LocalDB_UnobtainableMessage"), exc.Message);
+                return string.Format(CultureInfo.CurrentCulture, "{0} ({1}).", SR.GetString("LocalDB_UnobtainableMessage"), exc.Message);
             }
         }
 
