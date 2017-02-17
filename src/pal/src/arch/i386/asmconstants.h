@@ -28,3 +28,4 @@
 #define CONTEXT_Xmm5 CONTEXT_Xmm4+16
 #define CONTEXT_Xmm6 CONTEXT_Xmm5+16
 #define CONTEXT_Xmm7 CONTEXT_Xmm6+16
+#define CONTEXT_ResumeEsp CONTEXT_ExtendedRegisters+512

@@ -42,6 +42,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mov   [eax + CONTEXT_Ebp], ebp
     lea   ebx, [esp + 12]
     mov   [eax + CONTEXT_Esp], ebx
+    mov   [eax + CONTEXT_ResumeEsp], ebx
     mov   ebx, [esp + 8]
     mov   [eax + CONTEXT_Eip], ebx
 
@@ -114,7 +115,7 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
 LOCAL_LABEL(Done_Restore_CONTEXT_EXTENDED_REGISTERS):
 
     // Restore Stack
-    mov   esp, [eax + CONTEXT_Esp]
+    mov   esp, [eax + CONTEXT_ResumeEsp]
 
     // Create a minimal frame
     push  DWORD PTR [eax + CONTEXT_Eip]
