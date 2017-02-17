@@ -3157,6 +3157,7 @@ namespace System
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public bool EndsWith(System.String value, System.StringComparison comparisonType) { throw null; }
+        public bool EndsWith(System.Char value) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.String value) { throw null; }
         public static bool Equals(System.String a, System.String b) { throw null; }
@@ -3270,6 +3271,7 @@ namespace System
         [System.Runtime.InteropServices.ComVisibleAttribute(false)]
         [System.Security.SecuritySafeCriticalAttribute]
         public bool StartsWith(System.String value, System.StringComparison comparisonType) { throw null; }
+        public bool StartsWith(System.Char value) { throw null; }
         public System.String Substring(int startIndex) { throw null; }
         [System.Security.SecuritySafeCriticalAttribute]
         public System.String Substring(int startIndex, int length) { throw null; }
