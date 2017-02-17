@@ -14,7 +14,7 @@ public class ConsoleEncoding
     {
         yield return new object[] { "This is Ascii string" };
         yield return new object[] { "This is string have surrogates \uD800\uDC00" };
-        yield return new object[] { "This string has non ascii charaters \u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5" };
+        yield return new object[] { "This string has non ascii characters \u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5" };
         yield return new object[] { "This string has invalid surrogates \uD800\uD800\uD800\uD800\uD800\uD800" };
         yield return new object[] { "\uD800" };
     }

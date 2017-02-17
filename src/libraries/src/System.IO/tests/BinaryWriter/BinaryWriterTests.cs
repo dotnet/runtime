@@ -197,7 +197,7 @@ namespace System.IO.Tests
             mstr = new MemoryStream();
             dw2 = new BinaryWriter(mstr);
             dw2.Write("0123456789".ToCharArray());
-            lReturn = dw2.Seek(4, SeekOrigin.End); //This wont throw any exception now.
+            lReturn = dw2.Seek(4, SeekOrigin.End); //This won't throw any exception now.
 
             Assert.Equal(14, mstr.Position);
 
@@ -209,7 +209,7 @@ namespace System.IO.Tests
             mstr = new MemoryStream();
             dw2 = new BinaryWriter(mstr);
             dw2.Write("0123456789".ToCharArray());
-            lReturn = dw2.Seek(11, SeekOrigin.Begin);  //This wont throw any exception now.
+            lReturn = dw2.Seek(11, SeekOrigin.Begin);  //This won't throw any exception now.
 
             Assert.Equal(11, mstr.Position);
 

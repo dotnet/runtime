@@ -392,7 +392,7 @@ namespace System.Threading
         /// </remarks>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="count"/> is
         /// less than 0.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The current instance has alread been disposed.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The current instance has already been disposed.</exception>
         public void Reset(int count)
         {
             ThrowIfDisposed();

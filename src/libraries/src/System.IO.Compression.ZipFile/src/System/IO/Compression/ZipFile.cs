@@ -18,7 +18,7 @@ namespace System.IO.Compression
         /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only white space, or contains one
+        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace, or contains one
         ///                                     or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">archiveFileName is null.</exception>
         /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
@@ -44,7 +44,7 @@ namespace System.IO.Compression
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
         ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">path is null.</exception>
         /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
@@ -86,7 +86,7 @@ namespace System.IO.Compression
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
         ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">path is null.</exception>
         /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
@@ -228,7 +228,7 @@ namespace System.IO.Compression
         /// </summary>
         /// 
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only white space, or contains one or more invalid characters as defined by
+        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
         /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
         /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the specified
@@ -274,7 +274,7 @@ namespace System.IO.Compression
         /// </summary>
         /// 
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only white space, or contains one or more invalid characters as defined by
+        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
         /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
         /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the
@@ -324,7 +324,7 @@ namespace System.IO.Compression
         /// </summary>
         /// 
         /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only white space, or contains one or more invalid characters as defined by
+        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
         ///                                     <code>InvalidPathChars</code>.</exception>
         /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
         /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the
@@ -388,7 +388,7 @@ namespace System.IO.Compression
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
@@ -397,7 +397,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -423,7 +423,7 @@ namespace System.IO.Compression
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
@@ -432,7 +432,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -459,7 +459,7 @@ namespace System.IO.Compression
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
@@ -468,7 +468,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -516,7 +516,7 @@ namespace System.IO.Compression
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
@@ -525,7 +525,7 @@ namespace System.IO.Compression
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
         /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only white space, or contains one or
+        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>

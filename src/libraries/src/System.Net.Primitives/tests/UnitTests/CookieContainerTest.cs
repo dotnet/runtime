@@ -74,10 +74,10 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public void GetCookies_NonExistant_NoResults()
+        public void GetCookies_NonExistent_NoResults()
         {
             CookieContainer cc = CreateCount11Container();
-            Assert.Equal(0, cc.GetCookies(new Uri("http://non.existant.uri.com")).Count);
+            Assert.Equal(0, cc.GetCookies(new Uri("http://non.existent.uri.com")).Count);
         }
 
         public static IEnumerable<object[]> GetCookieHeaderData()

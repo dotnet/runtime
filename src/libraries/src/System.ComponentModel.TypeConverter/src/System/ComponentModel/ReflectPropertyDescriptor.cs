@@ -773,7 +773,7 @@ namespace System.ComponentModel
 
             // NOTE : Must look at method OR property, to handle the case of Extender properties...
             //
-            // Note : Because we are using BindingFlags.DeclaredOnly it is more effcient to re-aquire
+            // Note : Because we are using BindingFlags.DeclaredOnly it is more effcient to re-acquire
             //      : the property info, rather than use the one we have cached.  The one we have cached
             //      : may ave come from a base class, meaning we will request custom metadata for this
             //      : class twice.

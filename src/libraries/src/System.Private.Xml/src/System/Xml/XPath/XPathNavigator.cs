@@ -1011,7 +1011,7 @@ namespace System.Xml.XPath
                 {
                     if (n1.GetType().ToString() != "Microsoft.VisualStudio.Modeling.StoreNavigator")
                     {
-                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns incosistent results");
+                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns inconsistent results");
                     }
                     return CompareSiblings(n1, n2);
                 }

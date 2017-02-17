@@ -305,7 +305,7 @@ namespace System.Threading.Tests
             using (var inbound = Semaphore.OpenExisting(inboundName))
             using (var outbound = Semaphore.OpenExisting(outboundName))
             {
-                // Repeatedly wait for count in one sempahore and then release count into the other
+                // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
                 {
                     Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));

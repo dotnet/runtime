@@ -241,7 +241,7 @@
     <value>Cannot write XML declaration. XML declaration can be only at the beginning of the document.</value>
   </data>
   <data name="Xml_NonWhitespace" xml:space="preserve">
-    <value>Only white space characters should be used.</value>
+    <value>Only whitespace characters should be used.</value>
   </data>
   <data name="Xml_UndefNamespace" xml:space="preserve">
     <value>The '{0}' namespace is not defined.</value>

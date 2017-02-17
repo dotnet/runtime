@@ -63,11 +63,11 @@ namespace CoreXml.Test.XLinq
                 public void EOF_Handling_01()
                 {
                     XmlWriterSettings wSettings = new XmlWriterSettings();
-                    TestLog.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorect default value for XmlWriterSettings.NewLineHandling");
+                    TestLog.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriterSettings.NewLineHandling");
                     XDocument d = new XDocument();
                     XmlWriter w = CreateWriter(d);
                     w.Dispose();
-                    TestLog.Compare(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorect default value for XmlWriter.Settings.NewLineHandling");
+                    TestLog.Compare(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriter.Settings.NewLineHandling");
                 }
 
                 //[Variation(Desc = "XmlWriter creation with NewLineHandling.Entitize", Param = NewLineHandling.Entitize, Id = 2, Priority = 0)]
@@ -223,8 +223,8 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument d = new XDocument();
                     XmlWriter w = CreateWriter(d);
-                    TestLog.Compare(w.Settings.NewLineChars, Environment.NewLine, "Incorect default value for XmlWriter.Settings.NewLineChars");
-                    TestLog.Compare(w.Settings.IndentChars, "  ", "Incorect default value for XmlWriter.Settings.IndentChars");
+                    TestLog.Compare(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value for XmlWriter.Settings.NewLineChars");
+                    TestLog.Compare(w.Settings.IndentChars, "  ", "Incorrect default value for XmlWriter.Settings.IndentChars");
 
                     w.WriteStartElement("root");
                     w.WriteStartElement("foo");
@@ -283,7 +283,7 @@ namespace CoreXml.Test.XLinq
                 }
 
                 //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, Id = 56, Priority = 1)]
-                //[Variation(Desc = "NewLine handling betwwen attributes when NewLineOnAttributes=true; Replace, '\\r\\n'", Params = new object[] { NewLineHandling.Replace, "\r\n" }, Id = 57, Priority = 1)]
+                //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Replace, '\\r\\n'", Params = new object[] { NewLineHandling.Replace, "\r\n" }, Id = 57, Priority = 1)]
                 //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; None, '\\r\\n'", Params = new object[] { NewLineHandling.None, "\r\n" }, Id = 58, Priority = 1)]
                 //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r'", Params = new object[] { NewLineHandling.Entitize, "\r" }, Id = 59, Priority = 2)]
                 //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Replace, '\\r'", Params = new object[] { NewLineHandling.Replace, "\r" }, Id = 60, Priority = 2)]

@@ -698,7 +698,7 @@ namespace System.Transactions.Tests
 
             rm.Check(0, 1, 1, 0, 0, 0, 0, "rm");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.IsType<NotSupportedException>(ex);
         }
@@ -733,7 +733,7 @@ namespace System.Transactions.Tests
 
             rm.Check(0, 0, 0, 1, 0, 0, 0, "rm");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             // MS.NET will relay the exception thrown by RM instead of wrapping it on a TransactionAbortedException.
@@ -915,7 +915,7 @@ namespace System.Transactions.Tests
             rm1.Check(0, 1, 1, 0, 0, 0, 0, "rm1");
             rm2.Check(0, 1, 0, 0, 0, 0, 0, "rm2");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             Assert.Equal(rm1.ThrowThisException, ex);
@@ -958,7 +958,7 @@ namespace System.Transactions.Tests
             rm1.Check(0, 1, 1, 0, 0, 0, 0, "rm1");
             rm2.Check(0, 1, 0, 0, 0, 0, 0, "rm2");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             Assert.Equal(rm1.ThrowThisException, ex);
@@ -1001,7 +1001,7 @@ namespace System.Transactions.Tests
             rm1.Check(0, 0, 0, 1, 0, 0, 0, "rm1");
             rm2.Check(0, 0, 0, 0, 0, 0, 0, "rm2");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             // MS.NET will relay the exception thrown by RM instead of wrapping it on a TransactionAbortedException.
@@ -1140,7 +1140,7 @@ namespace System.Transactions.Tests
             rm1.Check(0, 1, 0, 0, 0, 0, 0, "rm1");
             rm2.Check(0, 0, 0, 1, 0, 0, 0, "rm2");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             Assert.Equal(rm2.ThrowThisException, ex);
@@ -1187,7 +1187,7 @@ namespace System.Transactions.Tests
             rm1.Check(0, 1, 0, 1, 0, 0, 0, "rm1");
             rm2.Check(0, 1, 0, 0, 0, 0, 0, "rm2");
 
-            // MS.NET wont call TransactionCompleted event in this particular case.
+            // MS.NET won't call TransactionCompleted event in this particular case.
             Assert.False(called, "TransactionCompleted event handler _was_ called!?!?!");
             Assert.NotNull(ex);
             Assert.Equal(rm1.ThrowThisException, ex);

@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void OpenNotExistant()
+        public static void OpenNotExistent()
         {
             using (X509Store store = new X509Store(Guid.NewGuid().ToString("N"), StoreLocation.CurrentUser))
             {

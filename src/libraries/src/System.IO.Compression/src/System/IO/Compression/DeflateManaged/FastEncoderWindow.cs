@@ -158,7 +158,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>Insert strings into hashtable.</summary>
-        /// <param name="hash">intial hash value</param>
+        /// <param name="hash">initial hash value</param>
         /// <param name="matchLen">1 + number of strings we need to insert</param>
         private void InsertStrings(ref uint hash, int matchLen)
         {

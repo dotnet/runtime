@@ -601,7 +601,7 @@ namespace Internal.NativeCrypto
 
                     break;
                 default:
-                    Debug.Fail("Unkown param in SetKeyParameter");
+                    Debug.Fail("Unknown param in SetKeyParameter");
                     break;
             }
         }
@@ -626,7 +626,7 @@ namespace Internal.NativeCrypto
 
                     break;
                 default:
-                    Debug.Fail("Unkown param in SetKeyParameter");
+                    Debug.Fail("Unknown param in SetKeyParameter");
                     break;
             }
         }

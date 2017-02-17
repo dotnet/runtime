@@ -194,7 +194,7 @@ namespace System.Data.Odbc
             string quote = connection.QuoteChar(ADP.DeriveParameters);
             string[] parts = MultipartIdentifier.ParseMultipartIdentifier(command.CommandText, quote, quote, '.', 4, true, Res.ODBC_ODBCCommandText, false);
             if (null == parts[3])
-            { // match everett behavior, if the commandtext is nothing but whitespace set the command text to the whitespace
+            { // match Everett behavior, if the commandtext is nothing but whitespace set the command text to the whitespace
                 parts[3] = command.CommandText;
             }
             // note: native odbc appears to ignore all but the procedure name

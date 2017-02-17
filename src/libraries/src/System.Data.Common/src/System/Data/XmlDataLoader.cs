@@ -769,7 +769,7 @@ namespace System.Data
                 // Check all attributes in this node
 
                 c = _nodeToSchemaMap.GetColumnSchema(attr, FIgnoreNamespace(attr)) as DataColumn;
-                // Try to mach attribute to column
+                // Try to match attribute to column
                 if ((c != null) && (c.ColumnMapping == MappingType.Attribute))
                 {
                     // If it's a column with attribute mapping
@@ -966,7 +966,7 @@ namespace System.Data
                             case Keywords.DIFFID:                   // Is it a diffgeam ID ?
                                 diffId = _dataReader.Value;          // Store ID
                                 break;
-                            case Keywords.HASCHANGES:               // Has chages attribute ?
+                            case Keywords.HASCHANGES:               // Has changes attribute ?
                                 hasChanges = _dataReader.Value;      // Store value
                                 break;
                             case Keywords.HASERRORS:                // Has errors attribute ?

@@ -2102,7 +2102,7 @@ namespace System.Data
                             else
                             {
                                 // We have found data IFF the reader.NodeType == Element and reader.depth == currentDepth-1
-                                // if reader.NodeType == whitespace, skip all white spaces.
+                                // if reader.NodeType == whitespace, skip all whitespace.
                                 // skip processing i.e. continue if the first non-whitespace node is not of type element.
                                 while (!reader.EOF && reader.NodeType == XmlNodeType.Whitespace)
                                     reader.Read();
@@ -2367,7 +2367,7 @@ namespace System.Data
                 reader.Read();
                 if (reader.NodeType == XmlNodeType.Whitespace)
                 {
-                    MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespaces.
+                    MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespace.
                 }
 
                 newDs._fInLoadDiffgram = true;
@@ -2382,7 +2382,7 @@ namespace System.Data
                         reader.Read();
                         if (reader.NodeType == XmlNodeType.Whitespace)
                         {
-                            MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespaces.
+                            MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespace.
                         }
                         if (reader.Depth - 1 > d)
                         {
@@ -2393,7 +2393,7 @@ namespace System.Data
                         ReadEndElement(reader);
                         if (reader.NodeType == XmlNodeType.Whitespace)
                         {
-                            MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespaces.
+                            MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespace.
                         }
                     }
                     Debug.Assert(reader.NodeType != XmlNodeType.Whitespace, "Should not be on Whitespace node");

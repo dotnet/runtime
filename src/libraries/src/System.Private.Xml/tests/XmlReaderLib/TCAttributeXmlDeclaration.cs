@@ -80,7 +80,7 @@ namespace System.Xml.Tests
 
             // for function TAXmlDecl_12
             {
-                this.AddChild(new CVariation(TAXmlDecl_12) { Attribute = new Variation("Whitespaces between XmlDecl attributes") });
+                this.AddChild(new CVariation(TAXmlDecl_12) { Attribute = new Variation("Whitespace between XmlDecl attributes") });
             }
 
 

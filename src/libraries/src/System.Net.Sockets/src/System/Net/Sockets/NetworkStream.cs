@@ -1161,7 +1161,7 @@ namespace System.Net.Sockets
         /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
         internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, ICriticalNotifyCompletion
         {
-            /// <summary>Sentinal object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
+            /// <summary>Sentinel object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
             private static readonly Action s_completedSentinel = () => { };
             /// <summary>
             /// null if the operation has not completed, <see cref="s_completedSentinel"/> if it has, and another object

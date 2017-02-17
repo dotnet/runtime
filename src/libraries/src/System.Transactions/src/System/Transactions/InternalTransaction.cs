@@ -434,7 +434,7 @@ namespace System.Transactions
     // object which is finalized and will handle the necessary cleanup.
     internal sealed class FinalizedObject : IDisposable
     {
-        // Keep the identifier separate.  Since it is a struct it wont be finalized out from under
+        // Keep the identifier separate.  Since it is a struct it won't be finalized out from under
         // this object.
         private readonly Guid _identifier;
 

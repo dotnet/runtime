@@ -196,7 +196,7 @@
     <value>'{0}' is an unexpected token. The expected token is '{1}' or '{2}'.</value>
   </data>
   <data name="Xml_ExpectingWhiteSpace" xml:space="preserve">
-    <value>'{0}' is an unexpected token. Expecting white space.</value>
+    <value>'{0}' is an unexpected token. Expecting whitespace.</value>
   </data>
   <data name="Xml_TagMismatch" xml:space="preserve">
     <value>The '{0}' start tag on line {1} does not match the end tag of '{2}'.</value>
@@ -226,7 +226,7 @@
     <value>Data at the root level is invalid.</value>
   </data>
   <data name="Xml_XmlDeclNotFirst" xml:space="preserve">
-    <value>Unexpected XML declaration. The XML declaration must be the first node in the document, and no white space characters are allowed to appear before it.</value>
+    <value>Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it.</value>
   </data>
   <data name="Xml_InvalidXmlDecl" xml:space="preserve">
     <value>Syntax for an XML declaration is invalid.</value>
@@ -400,7 +400,7 @@
     <value>Unexpected node type {0}. {1} method can only be called on elements with simple or empty content.</value>
   </data>
   <data name="Xml_InvalidWhitespaceCharacter" xml:space="preserve">
-    <value>The Whitespace or SignificantWhitespace node can contain only XML white space characters. '{0}' is not an XML white space character.</value>
+    <value>The Whitespace or SignificantWhitespace node can contain only XML whitespace characters. '{0}' is not an XML white space character.</value>
   </data>
   <data name="Xml_IncompatibleConformanceLevel" xml:space="preserve">
     <value>Cannot change conformance checking to {0}. Make sure the ConformanceLevel in XmlReaderSettings is set to Auto for wrapping scenarios.</value>
@@ -484,7 +484,7 @@
     <value>Expecting 'PCDATA'.</value>
   </data>
   <data name="Xml_ExpectNoWhitespace" xml:space="preserve">
-    <value>White space not allowed before '?', '*', or '+'.</value>
+    <value>Whitespace not allowed before '?', '*', or '+'.</value>
   </data>
   <data name="Xml_ExpectOp" xml:space="preserve">
     <value>Expecting '?', '*', or '+'.</value>
@@ -568,7 +568,7 @@
     <value>Prefix '{0}' cannot be mapped to namespace name reserved for "xml" or "xmlns".</value>
   </data>
   <data name="Xml_NonWhitespace" xml:space="preserve">
-    <value>Only white space characters should be used.</value>
+    <value>Only whitespace characters should be used.</value>
   </data>
   <data name="Xml_DupXmlDecl" xml:space="preserve">
     <value>Cannot write XML declaration. WriteStartDocument method has already written it.</value>
@@ -604,7 +604,7 @@
     <value>XmlWriterSettings.{0} can contain only valid XML text content characters when XmlWriterSettings.CheckCharacters is true. {1}</value>
   </data>
   <data name="Xml_IndentCharsNotWhitespace" xml:space="preserve">
-    <value>XmlWriterSettings.{0} can contain only valid XML white space characters when XmlWriterSettings.CheckCharacters and XmlWriterSettings.NewLineOnAttributes are true.</value>
+    <value>XmlWriterSettings.{0} can contain only valid XML whitespace characters when XmlWriterSettings.CheckCharacters and XmlWriterSettings.NewLineOnAttributes are true.</value>
   </data>
   <data name="Xml_ConformanceLevelFragment" xml:space="preserve">
     <value>Make sure that the ConformanceLevel setting is set to ConformanceLevel.Fragment or ConformanceLevel.Auto if you want to write an XML fragment. </value>
@@ -1123,7 +1123,7 @@
     <value>The Enumeration constraining facet is invalid - {0}</value>
   </data>
   <data name="Sch_InvalidWhiteSpace" xml:space="preserve">
-    <value>The white space character, '{0}', is invalid.</value>
+    <value>The whitespace character, '{0}', is invalid.</value>
   </data>
   <data name="Sch_UnknownFacet" xml:space="preserve">
     <value>This is an unknown facet.</value>
@@ -1486,7 +1486,7 @@
     <value>The element cannot contain text. Content model is empty.</value>
   </data>
   <data name="Sch_InvalidWhitespaceInEmpty" xml:space="preserve">
-    <value>The element cannot contain white space. Content model is empty.</value>
+    <value>The element cannot contain whitespace. Content model is empty.</value>
   </data>
   <data name="Sch_InvalidPIComment" xml:space="preserve">
     <value>The element cannot contain comment or processing instruction. Content model is empty.</value>
@@ -2053,7 +2053,7 @@
     <value>'EntityReference' nodes have no support for setting value.</value>
   </data>
   <data name="Xdom_WS_Char" xml:space="preserve">
-    <value>The string for white space contains an invalid character.</value>
+    <value>The string for whitespace contains an invalid character.</value>
   </data>
   <data name="Xdom_Node_SetVal" xml:space="preserve">
     <value>Cannot set a value on node type '{0}'.</value>
@@ -3022,7 +3022,7 @@
     <value>The element '{0}' has invalid content. Expected '{1}'.</value>
   </data>
   <data name="Sch_InvalidTextWhiteSpace" xml:space="preserve">
-    <value>The element cannot contain text or white space. Content model is empty.</value>
+    <value>The element cannot contain text or whitespace. Content model is empty.</value>
   </data>
   <data name="Sch_XSCHEMA" xml:space="preserve">
     <value>x-schema can load only XDR schemas.</value>
@@ -3520,7 +3520,7 @@
     <value>Cannot find a script or an extension object associated with namespace '{0}'.</value>
   </data>
   <data name="XmlIl_CantStripNav" xml:space="preserve">
-    <value>White space cannot be stripped from input documents that have already been loaded. Provide the input document as an XmlReader instead.</value>
+    <value>Whitespace cannot be stripped from input documents that have already been loaded. Provide the input document as an XmlReader instead.</value>
   </data>
   <data name="XmlIl_ExtensionError" xml:space="preserve">
     <value>An error occurred during a call to extension function '{0}'. See InnerException for a complete description of the error.</value>

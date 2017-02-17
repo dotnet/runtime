@@ -370,7 +370,7 @@ namespace System.DirectoryServices.AccountManagement
 
         /// <summary>
         ///  Finds if the group is "small", meaning that it has less than MaxValRange values (usually 1500)
-        ///  The property list for the searcher of a a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
+        ///  The property list for the searcher of a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
         ///  we can cache the result and don't fear from changes through Add/Remove/Save because the completed/pending lists are looked up before the actual values are
         /// </summary>
         internal bool IsSmallGroup()

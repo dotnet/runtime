@@ -68,7 +68,7 @@ namespace System.DirectoryServices.AccountManagement
                 return;
             }
 
-            // Logon user expects the username in UPN or to have the username and domain split to the seperate parameters.
+            // Logon user expects the username in UPN or to have the username and domain split to the separate parameters.
             // It does not work properly with NT4 style name formats.  This function will put the username in the proper format.
             StringBuilder splitUsername = new StringBuilder(UnsafeNativeMethods.CRED_MAX_USERNAME_LENGTH);
             StringBuilder splitDomain = new StringBuilder(UnsafeNativeMethods.CRED_MAX_DOMAIN_TARGET_LENGTH);

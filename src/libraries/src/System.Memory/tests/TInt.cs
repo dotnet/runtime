@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System
 {
-    // A wrapped integer that invokes a custom delegate everytime IEquatable<TInt>.Equals() is invoked.
+    // A wrapped integer that invokes a custom delegate every time IEquatable<TInt>.Equals() is invoked.
     internal struct TInt : IEquatable<TInt>
     {
         public TInt(int value)

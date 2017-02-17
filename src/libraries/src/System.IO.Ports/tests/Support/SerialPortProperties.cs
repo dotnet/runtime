@@ -206,7 +206,7 @@ namespace Legacy.Support
                 }
                 catch (Exception e)
                 {
-                    // An exception was thrown while retrieving the value of the propert in 
+                    // An exception was thrown while retrieving the value of the property in 
                     // the SerialPort object. However this may be the exepected operation of 
                     // SerialPort so the type of the exception must be verified. Reflection
                     // throws it's own exception ontop of SerialPorts so we must use the

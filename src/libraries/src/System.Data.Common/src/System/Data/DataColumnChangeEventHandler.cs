@@ -5,7 +5,7 @@
 namespace System.Data
 {
     /// <summary>
-    /// Represents the method that will handle the the <see cref='System.Data.DataTable.ColumnChanging'/> event.
+    /// Represents the method that will handle the <see cref='System.Data.DataTable.ColumnChanging'/> event.
     /// </summary>
     public delegate void DataColumnChangeEventHandler(object sender, DataColumnChangeEventArgs e);
 }

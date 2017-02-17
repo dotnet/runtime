@@ -650,7 +650,7 @@ namespace System.Xml
                 if (_ignoreWhitespace)
                 {
                     WhitespaceHandling wh = WhitespaceHandling.All;
-                    // special-case our V1 readers to see if whey already filter whitespaces
+                    // special-case our V1 readers to see if whey already filter whitespace
                     if (v1XmlTextReader != null)
                     {
                         wh = v1XmlTextReader.WhitespaceHandling;

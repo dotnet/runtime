@@ -2057,7 +2057,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.LoadInteger(_indexId);
                 _helper.Emit(OpCodes.Ldloc, locIndex);
 
-                // Generate code to iterate over the the nodes which are being indexed ($iterNodes in the pattern)
+                // Generate code to iterate over the nodes which are being indexed ($iterNodes in the pattern)
                 StartNestedIterator(nodes, lblOnEnd);
                 StartBinding(nodes);
 

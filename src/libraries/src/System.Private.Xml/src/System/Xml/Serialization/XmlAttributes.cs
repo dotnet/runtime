@@ -100,7 +100,7 @@ namespace System.Xml.Serialization
         {
             object[] attrs = provider.GetCustomAttributes(false);
 
-            // most generic <any/> matches everithig 
+            // most generic <any/> matches everything 
             XmlAnyElementAttribute wildcard = null;
             for (int i = 0; i < attrs.Length; i++)
             {

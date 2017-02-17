@@ -16,7 +16,7 @@ namespace System.IO.Ports.Tests
         // Maximum time to wait for all of the expected events to be firered
         private static readonly int MAX_TIME_WAIT = 5000;
 
-        // Time to wait inbetween triggering events
+        // Time to wait in-between triggering events
         private static readonly int TRIGERING_EVENTS_WAIT_TIME = 500;
 
         #region Test Cases

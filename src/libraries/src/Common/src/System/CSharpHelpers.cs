@@ -225,7 +225,7 @@ namespace System
 
         // This can be a special character like a separator that shows up in a type name
         // This is an odd set of characters.  Some come from characters that are allowed by C++, like < and >.
-        // Others are characters that are specified in the type and assembly name grammer.
+        // Others are characters that are specified in the type and assembly name grammar.
         internal static bool IsSpecialTypeChar(char ch, ref bool nextMustBeStartChar)
         {
             switch (ch)

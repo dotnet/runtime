@@ -1163,7 +1163,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             Type[] interfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            // We wont be able to find the difference between Ifaces and 
+            // We won't be able to find the difference between Ifaces and 
             // IfacesAll anymore - at runtime, the class implements all of its
             // Ifaces and IfacesAll, so theres no way to differentiate.
             //

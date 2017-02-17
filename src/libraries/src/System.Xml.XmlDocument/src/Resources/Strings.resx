@@ -202,7 +202,7 @@
     <value>'EntityReference' nodes have no support for setting value.</value>
   </data>
   <data name="Xdom_WS_Char" xml:space="preserve">
-    <value>The string for white space contains an invalid character.</value>
+    <value>The string for whitespace contains an invalid character.</value>
   </data>
   <data name="Xdom_Node_SetVal" xml:space="preserve">
     <value>Cannot set a value on node type '{0}'.</value>
@@ -328,7 +328,7 @@
     <value>Cannot write XML declaration. WriteStartDocument method has already written it.</value>
   </data>
   <data name="Xml_NonWhitespace" xml:space="preserve">
-    <value>Only white space characters should be used.</value>
+    <value>Only whitespace characters should be used.</value>
   </data>
   <data name="Xml_UndefNamespace" xml:space="preserve">
     <value>The '{0}' namespace is not defined.</value>

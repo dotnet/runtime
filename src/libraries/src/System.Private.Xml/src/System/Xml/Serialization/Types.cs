@@ -1140,7 +1140,7 @@ namespace System.Xml.Serialization
             }
 
             // The scenario here is that user has one base class A and one derived class B and wants to serialize/deserialize an object of B.
-            // There's one virtual property defined in A and overrided by B. Without the replacing logic below, the code generated will always
+            // There's one virtual property defined in A and overridden by B. Without the replacing logic below, the code generated will always
             // try to access the property defined in A, rather than B.
             // The logic here is to:
             // 1) Check current members inside memberInfos dictionary and figure out whether there's any override or new properties defined in the derived class.

@@ -904,7 +904,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            // We tried all the members in the group and didnt' get a match on any
+            // We tried all the members in the group and didn't get a match on any
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "SamMatcher: Matches: no match, group={0}", groupDE.Path);
             return false;
         }

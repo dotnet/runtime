@@ -201,7 +201,7 @@ namespace System.IO.Ports.Tests
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
-                // the code calling the the callback has finished it's processing
+                // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
                 // No we have to wait for the callbackHandler to complete
@@ -248,7 +248,7 @@ namespace System.IO.Ports.Tests
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
-                // the code calling the the callback has finished it's processing
+                // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
                 // No we have to wait for the callbackHandler to complete
@@ -294,7 +294,7 @@ namespace System.IO.Ports.Tests
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
-                // the code calling the the callback has finished it's processing
+                // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
                 // No we have to wait for the callbackHandler to complete

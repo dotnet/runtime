@@ -151,7 +151,7 @@
     <value>The specified object cannot be converted to a System.IO.Stream instance because it is not a Windows Runtime stream. In order to convert an object to a Stream instance it must implement at least one of the following 3 Windows Runtime stream interfaces: IInputStream, IOutputStream, IRandomAccessStream.</value>
   </data>
   <data name="Argument_RelativePathMayNotBeWhitespaceOnly" xml:space="preserve">
-    <value>The specified relative path may not consist of white spaces only</value>
+    <value>The specified relative path may not consist of whitespace only</value>
   </data>
   <data name="Argument_StreamPositionBeyondEOS" xml:space="preserve">
     <value>The specified stream position is beyond the end of the stream.</value>

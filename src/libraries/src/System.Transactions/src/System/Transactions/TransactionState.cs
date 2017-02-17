@@ -2915,7 +2915,7 @@ namespace System.Transactions
         internal virtual void PromoteEnlistmentsAndOutcome(InternalTransaction tx)
         {
             // Failures from this point on will simply abort the two types of transaction
-            // seperately.  Note that this may cause duplicate internal aborted events to
+            // separately.  Note that this may cause duplicate internal aborted events to
             // be sent to some of the enlistments however the enlistment state machines 
             // can handle the duplicate notification.
 
@@ -5049,7 +5049,7 @@ namespace System.Transactions
             }
         }
 
-        // This method will call the intialize method on IPromotableSinglePhaseNotification.
+        // This method will call the initialize method on IPromotableSinglePhaseNotification.
         // The tx state will be set to TransactionStatePhase0 to receive and process further
         // enlistments during Phase0. 
 

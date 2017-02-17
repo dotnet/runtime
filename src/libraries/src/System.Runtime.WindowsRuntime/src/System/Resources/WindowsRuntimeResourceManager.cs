@@ -345,7 +345,7 @@ namespace System.Resources
                     {
                         if (packageSimpleName.EndsWith(".resources.dll", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            // Pretend we didnt get a package name. When an attempt is made to get resource string, GetString implementation
+                            // Pretend we didn't get a package name. When an attempt is made to get resource string, GetString implementation
                             // will see that we are going to use modern resource manager but we don't have PRI and will thrown an exception indicating
                             // so. This will force the developer to have a valid PRI based resource.
                             packageSimpleName = null;

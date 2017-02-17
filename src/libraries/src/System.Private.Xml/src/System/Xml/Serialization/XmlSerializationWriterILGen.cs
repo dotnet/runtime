@@ -745,7 +745,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (methodName == null) throw new InvalidOperationException("deriaved from " + mapping.TypeDesc.FullName + ", " + SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
+                if (methodName == null) throw new InvalidOperationException("derived from " + mapping.TypeDesc.FullName + ", " + SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name));
 #endif
 
                 List<Type> argTypes = new List<Type>();
@@ -2554,7 +2554,7 @@ namespace System.Xml.Serialization
         {
             Debug.Assert(typeName == arrayTypeDesc.CSharpName || typeName == arrayTypeDesc.CSharpName + "[]");
             Type localType = (typeName == arrayTypeDesc.CSharpName) ? arrayTypeDesc.Type : arrayTypeDesc.Type.MakeArrayType();
-            // This may need reused varialble to get code compat?
+            // This may need reused variable to get code compat?
             LocalBuilder local = initValue.ILG.DeclareOrGetLocal(localType, variableName);
             if (initValue != null)
             {

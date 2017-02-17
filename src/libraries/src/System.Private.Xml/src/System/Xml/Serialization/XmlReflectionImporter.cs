@@ -754,7 +754,7 @@ namespace System.Xml.Serialization
                     if (InitializeStructMembers(item.Mapping, item.Model, openModel, typeName, limiter))
                     {
                         //
-                        // if InitializeStructMembers returns true, then there were *no* chages to the DeferredWorkItems
+                        // if InitializeStructMembers returns true, then there were *no* changes to the DeferredWorkItems
                         //
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
@@ -786,7 +786,7 @@ namespace System.Xml.Serialization
                     throw new NotSupportedException(SR.Format(SR.XmlUnsupportedInheritance, model.Type.GetTypeInfo().BaseType.FullName));
                 }
                 StructMapping baseMapping = ImportStructLikeMapping((StructModel)baseModel, mapping.Namespace, openModel, null, limiter);
-                // check to see if the import of the baseMapping was deffered
+                // check to see if the import of the baseMapping was deferred
                 int baseIndex = limiter.DeferredWorkItems.IndexOf(baseMapping);
                 if (baseIndex < 0)
                 {
@@ -808,7 +808,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    // the import of the baseMapping was deffered, make sure that the derived mappings is deffered as well
+                    // the import of the baseMapping was deferred, make sure that the derived mappings is deferred as well
                     if (!limiter.DeferredWorkItems.Contains(mapping))
                     {
                         limiter.DeferredWorkItems.Add(new ImportStructWorkItem(model, mapping));
@@ -846,7 +846,7 @@ namespace System.Xml.Serialization
                         if (mapping.BaseMapping.Declares(member, mapping.TypeName)) continue;
                     }
                     isSequence |= member.IsSequence;
-                    // add All memeber accessors to the scope accessors
+                    // add All member accessors to the scope accessors
                     AddUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
 
                     if (member.Text != null)
@@ -1260,7 +1260,7 @@ namespace System.Xml.Serialization
                     isSequence |= mapping.IsSequence;
                     if (!xmlReflectionMembers[i].XmlAttributes.XmlIgnore)
                     {
-                        // add All memeber accessors to the scope accessors
+                        // add All member accessors to the scope accessors
                         AddUniqueAccessor(mapping, elements, attributes, isSequence);
                     }
 
@@ -1443,7 +1443,7 @@ namespace System.Xml.Serialization
             MemberInfo[] infos = structModel.Type.GetMember(choice.MemberName, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             if (infos == null || infos.Length == 0)
             {
-                // if we can not find the choice identifier between fields, check proerties
+                // if we can not find the choice identifier between fields, check properties
                 PropertyInfo info = structModel.Type.GetProperty(choice.MemberName, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 
                 if (info == null)
@@ -1455,7 +1455,7 @@ namespace System.Xml.Serialization
             }
             else if (infos.Length > 1)
             {
-                // Ambiguous choice identifer: there are several members named '{0}'.
+                // Ambiguous choice identifier: there are several members named '{0}'.
                 throw new InvalidOperationException(SR.Format(SR.XmlChoiceIdentiferAmbiguous, choice.MemberName));
             }
 

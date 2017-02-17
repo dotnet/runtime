@@ -33,7 +33,7 @@
         /// 
         /// Producers may pass additional details to the consumer in the payload.
         /// </summary>
-        /// <param name="activity">Activity to be stoped</param>
+        /// <param name="activity">Activity to be stopped</param>
         /// <param name="args">An object that represent the value being passed as a payload for the event.</param>
         /// <seealso cref="Activity"/>
         public void StopActivity(Activity activity, object args)

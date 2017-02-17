@@ -244,7 +244,7 @@ namespace System.IO.Ports.Tests
                 com2.RtsEnable = true;
 
                 // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that 
-                // the code calling the the callback has finished it's processing
+                // the code calling the callback has finished it's processing
                 IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
 
                 // No we have to wait for the callbackHandler to complete
@@ -287,7 +287,7 @@ namespace System.IO.Ports.Tests
                 com2.RtsEnable = true;
 
                 // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that 
-                // the code calling the the callback has finished it's processing
+                // the code calling the callback has finished it's processing
                 IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
 
                 // No we have to wait for the callbackHandler to complete

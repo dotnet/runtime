@@ -56,7 +56,7 @@ namespace System.Linq.Expressions
             {
                 if (cType.IsNullableType())
                 {
-                    // If the expression type is a a nullable type, it will match if
+                    // If the expression type is a nullable type, it will match if
                     // the value is not null and the type operand
                     // either matches or is its type argument (T to its T?).
                     if (cType.GetNonNullableType() != TypeOperand.GetNonNullableType())
