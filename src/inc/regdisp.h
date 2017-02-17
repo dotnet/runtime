@@ -275,28 +275,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display) {
 }
 
 #else // none of the above processors
-
-PORTABILITY_WARNING("RegDisplay functions are not implemented on this platform.")
-
-struct REGDISPLAY : public REGDISPLAY_BASE {
-    size_t * FramePtr;
-    SLOT   * pPC;
-};
-
-inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
-    LIMITED_METHOD_CONTRACT;
-    return (TADDR)*(display->FramePtr);
-}
-
-inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-inline LPVOID GetRegdisplayStackMark(REGDISPLAY *display) {
-    LIMITED_METHOD_CONTRACT;
-    return (LPVOID)display->SP;
-}
-
+#error "RegDisplay functions are not implemented on this platform."
 #endif
 
 #if defined(_WIN64) || defined(_TARGET_ARM_) || (defined(_TARGET_X86_) && defined(WIN64EXCEPTIONS))
