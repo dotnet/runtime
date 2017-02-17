@@ -136,13 +136,13 @@ namespace Mono.Linker.Steps {
 
 		static MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodDefinition method)
 		{
-			TypeDefinition @base = GetBaseType (type);
+			TypeReference @base = type.GetInflatedBaseType ();
 			while (@base != null) {
 				MethodDefinition base_method = TryMatchMethod (@base, method);
 				if (base_method != null)
 					return base_method;
 
-				@base = GetBaseType (@base);
+				@base = @base.GetInflatedBaseType ();
 			}
 
 			return null;
@@ -153,16 +153,9 @@ namespace Mono.Linker.Steps {
 			return GetBaseMethodsInInterfaceHierarchy (method.DeclaringType, method);
 		}
 
-		static IEnumerable<MethodDefinition> GetBaseMethodsInInterfaceHierarchy (TypeDefinition type, MethodDefinition method)
+		static IEnumerable<MethodDefinition> GetBaseMethodsInInterfaceHierarchy (TypeReference type, MethodDefinition method)
 		{
-			if (!type.HasInterfaces)
-				yield break;
-
-			foreach (var interface_ref in type.Interfaces) {
-				TypeDefinition @interface = interface_ref.InterfaceType.Resolve ();
-				if (@interface == null)
-					continue;
-
+			foreach (TypeReference @interface in type.GetInflatedInterfaces ()) {
 				MethodDefinition base_method = TryMatchMethod (@interface, method);
 				if (base_method != null)
 					yield return base_method;
@@ -172,25 +165,21 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static MethodDefinition TryMatchMethod (TypeDefinition type, MethodDefinition method)
+		static MethodDefinition TryMatchMethod (TypeReference type, MethodDefinition method)
 		{
-			if (!type.HasMethods)
-				return null;
-
-			Dictionary<string,string> gp = null;
-			foreach (MethodDefinition candidate in type.Methods) {
-				if (MethodMatch (candidate, method, ref gp))
-					return candidate;
-				if (gp != null)
-					gp.Clear ();
+			foreach (var candidate in type.GetMethods ()) {
+				if (MethodMatch (candidate, method))
+					return candidate.Resolve ();
 			}
 
 			return null;
 		}
 
-		static bool MethodMatch (MethodDefinition candidate, MethodDefinition method, ref Dictionary<string,string> genericParameters)
+		static bool MethodMatch (MethodReference candidate, MethodDefinition method)
 		{
-			if (!candidate.IsVirtual)
+			var candidateDef = candidate.Resolve ();
+
+			if (!candidateDef.IsVirtual)
 				return false;
 
 			if (candidate.HasParameters != method.HasParameters)
@@ -204,7 +193,7 @@ namespace Mono.Linker.Steps {
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (!TypeMatch (candidate.ReturnType, method.ReturnType, ref genericParameters))
+			if (!TypeMatch (candidate.GetReturnType (), method.GetReturnType ()))
 				return false;
 
 			if (!candidate.HasParameters)
@@ -219,37 +208,37 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (!TypeMatch (cp [i].ParameterType, mp [i].ParameterType, ref genericParameters))
+				if (!TypeMatch (candidate.GetParameterType (i), method.GetParameterType (i)))
 					return false;
 			}
 
 			return true;
 		}
 
-		static bool TypeMatch (IModifierType a, IModifierType b, ref Dictionary<string,string> gp)
+		static bool TypeMatch (IModifierType a, IModifierType b)
 		{
-			if (!TypeMatch (a.ModifierType, b.ModifierType, ref gp))
+			if (!TypeMatch (a.ModifierType, b.ModifierType))
 				return false;
 
-			return TypeMatch (a.ElementType, b.ElementType, ref gp);
+			return TypeMatch (a.ElementType, b.ElementType);
 		}
 
-		static bool TypeMatch (TypeSpecification a, TypeSpecification b, ref Dictionary<string,string> gp)
+		static bool TypeMatch (TypeSpecification a, TypeSpecification b)
 		{
 			var gita = a as GenericInstanceType;
 			if (gita != null)
-				return TypeMatch (gita, (GenericInstanceType) b, ref gp);
+				return TypeMatch (gita, (GenericInstanceType) b);
 
 			var mta = a as IModifierType;
 			if (mta != null)
-				return TypeMatch (mta, (IModifierType) b, ref gp);
+				return TypeMatch (mta, (IModifierType) b);
 
-			return TypeMatch (a.ElementType, b.ElementType, ref gp);
+			return TypeMatch (a.ElementType, b.ElementType);
 		}
 
-		static bool TypeMatch (GenericInstanceType a, GenericInstanceType b, ref Dictionary<string,string> gp)
+		static bool TypeMatch (GenericInstanceType a, GenericInstanceType b)
 		{
-			if (!TypeMatch (a.ElementType, b.ElementType, ref gp))
+			if (!TypeMatch (a.ElementType, b.ElementType))
 				return false;
 
 			if (a.HasGenericArguments != b.HasGenericArguments)
@@ -264,45 +253,37 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			for (int i = 0; i < gaa.Count; i++) {
-				if (!TypeMatch (gaa [i], gab [i], ref gp))
+				if (!TypeMatch (gaa [i], gab [i]))
 					return false;
 			}
 
 			return true;
 		}
 
-		static bool TypeMatch (TypeReference a, TypeReference b, ref Dictionary<string,string> gp)
+		static bool TypeMatch (GenericParameter a, GenericParameter b)
 		{
-			var gpa = a as GenericParameter;
-			if (gpa != null) {
-				if (gp == null)
-					gp = new Dictionary<string, string> ();
-				string match;
-				if (!gp.TryGetValue (gpa.FullName, out match)) {
-					// first use, we assume it will always be used this way
-					gp.Add (gpa.FullName, b.ToString ());
-					return true;
-				}
-				// re-use, it should match the previous usage
-				return match == b.ToString ();
-			}
+			if (a.Position != b.Position)
+				return false;
 
+			if (a.Type != b.Type)
+				return false;
+
+			return true;
+		}
+
+		static bool TypeMatch (TypeReference a, TypeReference b)
+		{
 			if (a is TypeSpecification || b is TypeSpecification) {
 				if (a.GetType () != b.GetType ())
 					return false;
 
-				return TypeMatch ((TypeSpecification) a, (TypeSpecification) b, ref gp);
+				return TypeMatch ((TypeSpecification) a, (TypeSpecification) b);
 			}
 
+			if (a is GenericParameter && b is GenericParameter)
+				return TypeMatch ((GenericParameter)a, (GenericParameter)b);
+
 			return a.FullName == b.FullName;
-		}
-
-		static TypeDefinition GetBaseType (TypeDefinition type)
-		{
-			if (type == null || type.BaseType == null)
-				return null;
-
-			return type.BaseType.Resolve ();
 		}
 	}
 }
