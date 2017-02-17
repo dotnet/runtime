@@ -34,7 +34,7 @@ namespace System.Runtime.CompilerServices
         {
             // limit search to MaxSearch elements.
             // Rule should not get too far unless it has been already moved up.
-            // need a lock to make sure we are moving the right rule and not loosing any.
+            // need a lock to make sure we are moving the right rule and not losing any.
             lock (_cacheLock)
             {
                 const int MaxSearch = 8;
@@ -67,7 +67,7 @@ namespace System.Runtime.CompilerServices
 
         internal void AddRule(T newRule)
         {
-            // need a lock to make sure we are not loosing rules.
+            // need a lock to make sure we are not losing rules.
             lock (_cacheLock)
             {
                 _rules = AddOrInsert(_rules, newRule);
