@@ -162,7 +162,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
-            "ConfigurationGroup": "Release"
+            "ConfigurationGroup": "Release",
+            "SubType": "Crossbuild"
           }
         },
         {
@@ -175,7 +176,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
             "Type": "build/product/",
-            "ConfigurationGroup": "Release"
+            "ConfigurationGroup": "Release",
+            "SubType": "Crossbuild"
           }
         }
       ]
@@ -543,7 +545,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
-            "ConfigurationGroup": "Debug"
+            "ConfigurationGroup": "Debug",
+            "SubType": "Crossbuild"
           }
         },
         {
@@ -556,7 +559,8 @@
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
             "Type": "build/product/",
-            "ConfigurationGroup": "Debug"
+            "ConfigurationGroup": "Debug",
+            "SubType": "Crossbuild"
           }
         }
       ]
