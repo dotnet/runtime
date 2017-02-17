@@ -4,12 +4,33 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
     public static class ConstantTests
     {
+        private static TypeBuilder GetTypeBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            return module.DefineType("Type");
+        }
+
+        private static MethodInfo GlobalMethod(params Type[] parameterTypes)
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), parameterTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            return module.GetMethod(globalMethod.Name);
+        }
+
+        private class PrivateGenericClass<T>
+        {
+        }
+
         #region Test methods
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -276,7 +297,17 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckTypeConstantTest(bool useInterpreter)
         {
-            foreach (Type value in new Type[] { null, typeof(int), typeof(Func<string>) })
+            foreach (Type value in new[]
+            {
+                null,
+                typeof(int),
+                typeof(Func<string>),
+                typeof(List<>).GetGenericArguments()[0],
+                GetTypeBuilder(),
+                typeof(PrivateGenericClass<>).GetGenericArguments()[0],
+                typeof(PrivateGenericClass<>),
+                typeof(PrivateGenericClass<int>)
+            })
             {
                 VerifyTypeConstant(value, useInterpreter);
             }
@@ -293,9 +324,26 @@ namespace System.Linq.Expressions.Tests
                 typeof(SomePublicMethodsForLdToken).GetMethod(nameof(SomePublicMethodsForLdToken.Qux), BindingFlags.Public | BindingFlags.Static).MakeGenericMethod(typeof(int)),
                 typeof(List<>).GetMethod(nameof(List<int>.Add)),
                 typeof(List<int>).GetMethod(nameof(List<int>.Add)),
+                GlobalMethod(Type.EmptyTypes),
+                GlobalMethod(typeof(PrivateGenericClass<int>)),
+                GlobalMethod(typeof(PrivateGenericClass<>))
             })
             {
                 VerifyMethodInfoConstant(value, useInterpreter);
+            }
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckConstructorInfoConstantTest(bool useInterpreter)
+        {
+            foreach (
+                ConstructorInfo value in
+                typeof(SomePublicMethodsForLdToken).GetConstructors()
+                    .Concat(typeof(string).GetConstructors())
+                    .Concat(typeof(List<>).GetConstructors())
+                    .Append(null))
+            {
+                VerifyConstructorInfoConstant(value, useInterpreter);
             }
         }
 
@@ -823,6 +871,14 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(value, typeof(MethodInfo)),
                     Enumerable.Empty<ParameterExpression>());
             Func<MethodInfo> f = e.Compile(useInterpreter);
+            Assert.Equal(value, f());
+        }
+
+        private static void VerifyConstructorInfoConstant(ConstructorInfo value, bool useInterpreter)
+        {
+            Expression<Func<ConstructorInfo>> e =
+                Expression.Lambda<Func<ConstructorInfo>>(Expression.Constant(value, typeof(ConstructorInfo)));
+            Func<ConstructorInfo> f = e.Compile(useInterpreter);
             Assert.Equal(value, f());
         }
 

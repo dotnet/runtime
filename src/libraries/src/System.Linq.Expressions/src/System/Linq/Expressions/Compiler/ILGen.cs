@@ -543,9 +543,11 @@ namespace System.Linq.Expressions.Compiler
             throw ContractUtils.Unreachable;
         }
 
-        internal static bool ShouldLdtoken(Type t)
+        private static bool ShouldLdtoken(Type t)
         {
-            return t is TypeBuilder || t.IsGenericParameter || t.GetTypeInfo().IsVisible;
+            // If CompileToMethod is re-enabled, t is TypeBuilder should also return
+            // true when not compiling to a DynamicMethod
+            return t.IsGenericParameter || t.GetTypeInfo().IsVisible;
         }
 
         internal static bool ShouldLdtoken(MethodBase mb)
