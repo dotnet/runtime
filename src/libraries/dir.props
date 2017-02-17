@@ -59,6 +59,12 @@
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
   </PropertyGroup>
 
+  <!-- Default properties for CI builds -->
+  <PropertyGroup Condition="'$(IsCIBuild)' == 'true'">
+    <WithoutCategories>IgnoreForCI</WithoutCategories>
+    <EnableDumpling Condition="'$(RunningOnUnix)' == 'true'">true</EnableDumpling>
+  </PropertyGroup>
+
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
