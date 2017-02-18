@@ -1,64 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -198,15 +139,6 @@
   <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
     <value>Only 'http' and 'https' schemes are allowed.</value>
   </data>
-  <data name="net_http_client_send_error" xml:space="preserve">
-    <value>An error occurred while sending {0}. {1}</value>
-  </data>
-  <data name="net_http_client_send_canceled" xml:space="preserve">
-    <value>Request for {0} was canceled.</value>
-  </data>
-  <data name="event_ClientSendCompleted" xml:space="preserve">
-    <value>Request for {0} completed successfully. Returning response {1}: {2}</value>
-  </data>
   <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
     <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
   </data>
@@ -222,9 +154,6 @@
   <data name="net_http_content_field_too_long" xml:space="preserve">
     <value>The field cannot be longer than {0} characters.</value>
   </data>
-  <data name="event_HeadersInvalidValue" xml:space="preserve">
-    <value>Value for header '{0}' has invalid format. Value: '{1}'.</value>
-  </data>
   <data name="net_http_log_headers_no_newlines" xml:space="preserve">
     <value>Value for header '{0}' contains invalid new-line characters. Value: '{1}'.</value>
   </data>
@@ -233,12 +162,6 @@
   </data>
   <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
     <value>Value '{0}' is not a valid email address. Error: {1}</value>
-  </data>
-  <data name="net_http_log_content_no_task_returned_copytoasync" xml:space="preserve">
-    <value>Type '{0}.CopyToAsync()' did not return a System.Threading.Tasks.Task object.</value>
-  </data>
-  <data name="event_ContentNull" xml:space="preserve">
-    <value>Content set to '&lt;null&gt;'.</value>
   </data>
   <data name="net_http_handler_not_assigned" xml:space="preserve">
     <value>The inner handler has not been assigned.</value>
@@ -263,9 +186,6 @@
   </data>
   <data name="net_http_chunked_not_allowed_with_empty_content" xml:space="preserve">
     <value>'Transfer-Encoding: chunked' header can not be used when content object is not specified.</value>
-  </data>
-  <data name="net_http_chunked_not_allowed_with_content_length" xml:space="preserve">
-    <value>Both 'Content-Length' and 'Transfer-Encoding: chunked' headers can not be specified at the same time.</value>
   </data>
   <data name="net_http_invalid_cookiecontainer" xml:space="preserve">
     <value>When using CookieUsePolicy.UseSpecifiedCookieContainer, the CookieContainer property must not be null.</value>
@@ -296,9 +216,6 @@
   </data>
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
-  </data>
-  <data name="net_http_invalid_cookiecontainer_unix" xml:space="preserve">
-    <value>CookieContainer property must not be null.</value>
   </data>
   <data name="net_http_unix_invalid_certcallback_option" xml:space="preserve">
     <value>The libcurl library in use ({0}) and its SSL backend ("{1}") do not support custom handling of certificates. A libcurl built with OpenSSL is required.</value>
