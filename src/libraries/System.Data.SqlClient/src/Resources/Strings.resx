@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -660,23 +601,8 @@
   <data name="SqlMisc_FormatMessage" xml:space="preserve">
     <value>The input wasn't in a correct format.</value>
   </data>
-  <data name="SqlMisc_SqlTypeMessage" xml:space="preserve">
-    <value>SqlType error.</value>
-  </data>
   <data name="SqlMisc_StreamErrorMessage" xml:space="preserve">
     <value>An error occurred while reading.</value>
-  </data>
-  <data name="SqlMisc_NoBufferMessage" xml:space="preserve">
-    <value>There is no buffer. Read or write operation failed.</value>
-  </data>
-  <data name="SqlMisc_BufferInsufficientMessage" xml:space="preserve">
-    <value>The buffer is insufficient. Read or write operation failed.</value>
-  </data>
-  <data name="SqlMisc_WriteNonZeroOffsetOnNullMessage" xml:space="preserve">
-    <value>Cannot write to non-zero offset, because current value is Null.</value>
-  </data>
-  <data name="SqlMisc_WriteOffsetLargerThanLenMessage" xml:space="preserve">
-    <value>Cannot write from an offset that is larger than current length. It would leave uninitialized data in the buffer.</value>
   </data>
   <data name="SqlMisc_TruncationMaxDataMessage" xml:space="preserve">
     <value>Data returned is larger than 2Gb in size. Use SequentialAccess command behavior in order to get all of the data.</value>
@@ -915,44 +841,8 @@
   <data name="SNI_ERROR_57" xml:space="preserve">
     <value>Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
   </data>
-  <data name="Snix_Connect" xml:space="preserve">
-    <value>A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections.</value>
-  </data>
-  <data name="Snix_PreLoginBeforeSuccessfullWrite" xml:space="preserve">
-    <value>The client was unable to establish a connection because of an error during connection initialization process before login. Possible causes include the following:  the client tried to connect to an unsupported version of SQL Server; the server was too busy to accept new connections; or there was a resource limitation (insufficient memory or maximum allowed connections) on the server.</value>
-  </data>
   <data name="Snix_PreLogin" xml:space="preserve">
     <value>A connection was successfully established with the server, but then an error occurred during the pre-login handshake.</value>
-  </data>
-  <data name="Snix_LoginSspi" xml:space="preserve">
-    <value>A connection was successfully established with the server, but then an error occurred when obtaining the security/SSPI context information for integrated security login.</value>
-  </data>
-  <data name="Snix_Login" xml:space="preserve">
-    <value>A connection was successfully established with the server, but then an error occurred during the login process.</value>
-  </data>
-  <data name="Snix_EnableMars" xml:space="preserve">
-    <value>Connection open and login was successful, but then an error occurred while enabling MARS for this connection.</value>
-  </data>
-  <data name="Snix_AutoEnlist" xml:space="preserve">
-    <value>Connection open and login was successful, but then an error occurred while enlisting the connection into the current distributed transaction.</value>
-  </data>
-  <data name="Snix_GetMarsSession" xml:space="preserve">
-    <value>Failed to establish a MARS session in preparation to send the request to the server.</value>
-  </data>
-  <data name="Snix_Execute" xml:space="preserve">
-    <value>A transport-level error has occurred when sending the request to the server.</value>
-  </data>
-  <data name="Snix_Read" xml:space="preserve">
-    <value>A transport-level error has occurred when receiving results from the server.</value>
-  </data>
-  <data name="Snix_Close" xml:space="preserve">
-    <value>A transport-level error has occurred during connection clean-up.</value>
-  </data>
-  <data name="Snix_SendRows" xml:space="preserve">
-    <value>A transport-level error has occurred while sending information to the server.</value>
-  </data>
-  <data name="Snix_ProcessSspi" xml:space="preserve">
-    <value>A transport-level error has occurred during SSPI handshake.</value>
   </data>
   <data name="LocalDB_FailedGetDLLHandle" xml:space="preserve">
     <value>Local Database Runtime: Cannot load SQLUserInstance.dll.</value>
