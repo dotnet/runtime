@@ -229,6 +229,12 @@ def buildArchConfiguration = ['Debug': 'x86',
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
                         shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
                     }
+                    else if (osName == 'CentOS7.1') {
+                        // On Centos7.1, the cmake toolset is currently installed in /usr/local/bin (it was built manually).  When
+                        // running sudo, that will be typically eliminated from the PATH, so let's add it back in.
+                        shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
+                        shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
+                    }
                     else {
                         def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
