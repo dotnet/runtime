@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
+                .Execute(fExpectedToFail:true)
                 .ExitCode;
 
             if (CurrentPlatform.IsWindows)
