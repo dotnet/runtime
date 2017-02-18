@@ -162,6 +162,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public CommandResult Execute()
         {
+            return Execute(false);
+        }
+
+        public CommandResult Execute(bool fExpectedToFail)
+        {
             ThrowIfRunning();
             _running = true;
 
@@ -202,7 +207,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             var exitCode = _process.ExitCode;
 
-            ReportExecEnd(exitCode);
+            ReportExecEnd(exitCode, fExpectedToFail);
 
             return new CommandResult(
                 _process.StartInfo,
@@ -315,13 +320,19 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
-        private void ReportExecEnd(int exitCode)
+        private void ReportExecEnd(int exitCode, bool fExpectedToFail)
         {
             if (!_quietBuildReporter)
             {
                 bool success = exitCode == 0;
+                string msgExpectedToFail = "";
 
-                var message = $"{FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: !success)} exited with {exitCode}";
+                if (fExpectedToFail) {
+                    success = !success;
+                    msgExpectedToFail = "failed as expected and ";
+                }
+
+                var message = $"{FormatProcessInfo(_process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
 
                 BuildReporter.EndSection(
                     "EXEC",
