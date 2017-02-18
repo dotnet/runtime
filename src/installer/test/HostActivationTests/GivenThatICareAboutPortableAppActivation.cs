@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
+                .Execute(fExpectedToFail:true)
                 .Should()
                 .Fail();
         }
@@ -195,7 +195,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             dotnet.Exec("exec", "--depsfile", depsJson, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
+                .Execute(fExpectedToFail:true)
                 .Should()
                 .Fail();
         }
