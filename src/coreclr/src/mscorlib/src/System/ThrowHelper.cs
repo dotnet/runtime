@@ -76,6 +76,11 @@ namespace System {
                                                     ExceptionResource.ArgumentOutOfRange_Index);
         }
 
+        internal static void ThrowCountArgumentOutOfRange_NeedNonNegNumException() {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.count,
+                                                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException() {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
@@ -122,10 +127,6 @@ namespace System {
 
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument) {
             throw GetArgumentException(resource, argument);
-        }
-
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument) {
-            return new ArgumentNullException(GetArgumentName(argument));
         }
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument) {
@@ -206,6 +207,18 @@ namespace System {
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion() {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
+        }
+
+        internal static ArgumentNullException GetArgumentNullException(ExceptionArgument argument) {
+            return new ArgumentNullException(GetArgumentName(argument));
+        }
+
+        internal static ArgumentNullException GetArgumentNullException(ExceptionArgument argument, ExceptionResource resource) {
+            throw new ArgumentNullException(GetArgumentName(argument), GetResourceString(resource));
+        }
+
+        internal static void ThrowArgumentNullException(ExceptionArgument argument, ExceptionResource resource) {
+            throw GetArgumentNullException(argument, resource);
         }
 
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen() {
@@ -363,6 +376,14 @@ namespace System {
         callBack,
         type,
         stateMachine,
+        s,
+        chars,
+        bytes,
+        byteIndex,
+        charIndex,
+        byteCount,
+        charCount,
+
     }
 
     //
@@ -469,6 +490,10 @@ namespace System {
         ArgumentOutOfRange_Enum,
         InvalidOperation_HandleIsNotInitialized,
         AsyncMethodBuilder_InstanceNotInitialized,
+        ArgumentNull_Array,
+        ArgumentOutOfRange_IndexCountBuffer,
+        ArgumentNull_String,
+
     }
 }
 
