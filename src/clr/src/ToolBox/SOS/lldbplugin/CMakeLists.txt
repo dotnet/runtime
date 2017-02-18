@@ -15,6 +15,13 @@ endif (CORECLR_SET_RPATH)
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 
+set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
+set(REQUIRE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_LINUX} CACHE BOOL "Require building the SOS plugin for LLDB.")
+
+if(SKIP_LLDBPLUGIN)
+    SET(REQUIRE_LLDBPLUGIN false)
+endif()
+
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-D_TARGET_AMD64_=1)
     add_definitions(-DDBG_TARGET_64BIT=1)
@@ -38,12 +45,7 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     SET(REQUIRE_LLDBPLUGIN false)
 endif()
 
-set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
-set(REQUIRE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_LINUX} CACHE BOOL "Require building the SOS plugin for LLDB.")
 
-if(SKIP_LLDBPLUGIN)
-    SET(REQUIRE_LLDBPLUGIN false)
-endif()
 set(LLVM_HOST_DIR "$ENV{LLVM_HOME}")
 set(WITH_LLDB_LIBS "${LLVM_HOST_DIR}/lib" CACHE PATH "Path to LLDB libraries")
 set(WITH_LLDB_INCLUDES "${LLVM_HOST_DIR}/include" CACHE PATH "Path to LLDB headers")
