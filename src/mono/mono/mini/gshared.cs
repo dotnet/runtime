@@ -1026,7 +1026,7 @@ public class Tests
 		return t.ToString ();
 	}
 
-	enum AnEnum {
+	public enum AnEnum {
 		One,
 		Two
 	};
@@ -1106,10 +1106,12 @@ public class Tests
 
 	interface IConstrainedCalls {
 		Pair<int, int> vtype_ret<T, T2>(T t, T2 t2) where T: IReturnVType;
+		AnEnum enum_ret<T, T2>(T t, T2 t2) where T: IReturnVType;
 	}
 
 	public interface IReturnVType {
 		Pair<int, int> return_vtype ();
+		AnEnum return_enum ();
 	}
 
 	public class CConstrainedCalls : IConstrainedCalls {
@@ -1117,11 +1119,19 @@ public class Tests
 		public Pair<int, int> vtype_ret<T, T2>(T t, T2 t2) where T : IReturnVType {
 			return t.return_vtype ();
 		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public AnEnum enum_ret<T, T2>(T t, T2 t2) where T : IReturnVType {
+			return t.return_enum ();
+		}
 	}
 
 	class ReturnVType : IReturnVType {
 		public Pair<int, int> return_vtype () {
 			return new Pair<int, int> () { First = 1, Second = 2 };
+		}
+		public AnEnum return_enum () {
+			return AnEnum.Two;
 		}
 	}
 
@@ -1129,6 +1139,14 @@ public class Tests
 		IConstrainedCalls c = new CConstrainedCalls ();
 		var r = c.vtype_ret<ReturnVType, int> (new ReturnVType (), 1);
 		if (r.First != 1 || r.Second != 2)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_constrained_enum_ret () {
+		IConstrainedCalls c = new CConstrainedCalls ();
+		var r = c.enum_ret<ReturnVType, int> (new ReturnVType (), 1);
+		if (r != AnEnum.Two)
 			return 1;
 		return 0;
 	}
