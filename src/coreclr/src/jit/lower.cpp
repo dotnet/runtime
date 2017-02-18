@@ -971,42 +971,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                 assert(!varTypeIsSIMD(arg));
                 numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
                 putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
-
-#ifdef _TARGET_X86_
-                // On x86 VM lies about the type of a struct containing a pointer sized
-                // integer field by returning the type of its field as the type of struct.
-                // Such struct can be passed in a register depending its position in
-                // parameter list.  VM does this unwrapping only one level and therefore
-                // a type like Struct Foo { Struct Bar { int f}} awlays needs to be
-                // passed on stack.  Also, VM doesn't lie about type of such a struct
-                // when it is a field of another struct.  That is VM doesn't lie about
-                // the type of Foo.Bar
-                //
-                // Promotion of structs containing structs of single field can promote
-                // such a struct.  Say Foo.Bar field is getting passed as a parameter
-                // to a call, Since it is a TYP_STRUCT, as per x86 ABI it should always
-                // be passed on stack.  Therefore GenTree node under a PUTARG_STK could
-                // be GT_OBJ(GT_LCL_VAR_ADDR(v1)), where local v1 could be a promoted
-                // field standing for Foo.Bar.  Note that the type of v1 will be the
-                // type of field of Foo.Bar.f when Foo is promoted.  That is v1
-                // will be a scalar type.  In this case we need to pass v1 on stack
-                // instead of in a register.
-                //
-                // TODO-PERF: replace GT_OBJ(GT_LCL_VAR_ADDR(v1)) with v1 if v1 is
-                // a scalar type and the width of GT_OBJ matches the type size of v1.
-                // Note that this cannot be done till call node arguments are morphed
-                // because we should not lose the fact that the type of argument is
-                // a struct so that the arg gets correctly marked to be passed on stack.
-                GenTree* objOp1 = arg->gtGetOp1();
-                if (objOp1->OperGet() == GT_LCL_VAR_ADDR)
-                {
-                    unsigned lclNum = objOp1->AsLclVarCommon()->GetLclNum();
-                    if (comp->lvaTable[lclNum].lvType != TYP_STRUCT)
-                    {
-                        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_VMNeedsStackAddr));
-                    }
-                }
-#endif // _TARGET_X86_
             }
         }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
