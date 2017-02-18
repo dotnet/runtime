@@ -1009,17 +1009,17 @@ namespace System.Linq.Expressions.Compiler
         /// Emits an array of constant values provided in the given array.
         /// The array is strongly typed.
         /// </summary>
-        internal static void EmitArray<T>(this ILGenerator il, T[] items)
+        internal static void EmitArray<T>(this ILGenerator il, T[] items, ILocalCache locals)
         {
             Debug.Assert(items != null);
 
-            il.EmitInt(items.Length);
+            il.EmitPrimitive(items.Length);
             il.Emit(OpCodes.Newarr, typeof(T));
             for (int i = 0; i < items.Length; i++)
             {
                 il.Emit(OpCodes.Dup);
-                il.EmitInt(i);
-                il.EmitConstant(items[i], typeof(T));
+                il.EmitPrimitive(i);
+                il.TryEmitConstant(items[i], typeof(T), locals);
                 il.EmitStoreElement(typeof(T));
             }
         }
