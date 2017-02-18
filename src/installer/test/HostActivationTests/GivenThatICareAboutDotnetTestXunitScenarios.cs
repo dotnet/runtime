@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
                     appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
+                .Execute(fExpectedToFail:true)
                 .Should()
                 .Fail()
                 .And
