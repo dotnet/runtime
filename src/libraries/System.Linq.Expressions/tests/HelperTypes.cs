@@ -277,6 +277,10 @@ namespace System.Linq.Expressions.Tests
     public class GenericClass<T>
     {
         public void Method() { }
+
+        public static T Field;
+
+        public static T Property => Field;
     }
 
     public class NonGenericClass
@@ -287,6 +291,10 @@ namespace System.Linq.Expressions.Tests
 
         public void GenericMethod<T>() { }
         public static void StaticMethod() { }
+
+        public static readonly NonGenericClass NonGenericField = new NonGenericClass();
+
+        public static NonGenericClass NonGenericProperty => NonGenericField;
     }
 
     public class InvalidTypesData : IEnumerable<object[]>

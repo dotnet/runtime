@@ -281,6 +281,8 @@ namespace System.Linq.Expressions
                 }
             }
 
+            ValidateMethodInfo(mi, nameof(property));
+
             return MemberExpression.Make(expression, property);
         }
 
