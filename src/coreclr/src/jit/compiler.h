@@ -2435,7 +2435,7 @@ public:
     unsigned lvaCallEspCheck;   // confirms ESP not corrupted after a call
 #endif
 
-    bool lvaGenericsContextUsed;
+    unsigned lvaGenericsContextUseCount;
 
     bool lvaKeepAliveAndReportThis(); // Synchronized instance method of a reference type, or
                                       // CORINFO_GENERICS_CTXT_FROM_THIS?
@@ -3322,7 +3322,10 @@ private:
                                                             GenTreePtr  variableBeingDereferenced,
                                                             InlArgInfo* inlArgInfo);
 
-    void impMarkInlineCandidate(GenTreePtr call, CORINFO_CONTEXT_HANDLE exactContextHnd, CORINFO_CALL_INFO* callInfo);
+    void impMarkInlineCandidate(GenTreePtr             call,
+                                CORINFO_CONTEXT_HANDLE exactContextHnd,
+                                bool                   exactContextNeedsRuntimeLookup,
+                                CORINFO_CALL_INFO*     callInfo);
 
     bool impTailCallRetTypeCompatible(var_types            callerRetType,
                                       CORINFO_CLASS_HANDLE callerRetTypeClass,
