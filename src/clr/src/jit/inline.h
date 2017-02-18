@@ -506,6 +506,7 @@ struct InlineCandidateInfo
     var_types              fncRetType;
     CORINFO_METHOD_HANDLE  ilCallerHandle; // the logical IL caller of this inlinee.
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    bool                   exactContextNeedsRuntimeLookup;
     CorInfoInitClassResult initClassResult;
 };
 
@@ -570,7 +571,8 @@ struct InlineInfo
         return numberOfGcRefLocals > 0;
     }
 
-    bool thisDereferencedFirst;
+    bool     thisDereferencedFirst;
+    unsigned typeContextArg;
 
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;
