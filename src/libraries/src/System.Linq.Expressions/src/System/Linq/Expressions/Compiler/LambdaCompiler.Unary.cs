@@ -272,7 +272,8 @@ namespace System.Linq.Expressions.Compiler
                     break;
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
-                    _ilg.Emit(OpCodes.Ldc_I8, (long)1);
+                    _ilg.Emit(OpCodes.Ldc_I4_1);
+                    _ilg.Emit(OpCodes.Conv_I8);
                     break;
                 case TypeCode.Single:
                     _ilg.Emit(OpCodes.Ldc_R4, 1.0f);
