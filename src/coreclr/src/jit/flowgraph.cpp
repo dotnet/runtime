@@ -7479,7 +7479,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
         // Collectible types requires that for shared generic code, if we use the generic context paramter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
-        lvaGenericsContextUsed = true;
+        lvaGenericsContextUseCount++;
 
         switch (kind.runtimeLookupKind)
         {
@@ -22445,6 +22445,28 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, GenTreePtr stmtAfter)
 {
+    // If this inlinee was passed a generic context but didn't look at
+    // it, we can decrement the "generic context was used" ref count.
+    if ((inlineInfo->inlineCandidateInfo->methInfo.args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    {
+        // Did the context require the caller to perform a runtime lookup?
+        if (inlineInfo->inlineCandidateInfo->exactContextNeedsRuntimeLookup)
+        {
+            // Fetch the temp for the generic context
+            const unsigned typeCtxtArg = inlineInfo->typeContextArg;
+            const unsigned tmpNum      = inlineInfo->lclTmpNum[typeCtxtArg];
+
+            // Was it used in the inline body?
+            if (tmpNum == BAD_VAR_NUM)
+            {
+                // No, so the runtime lookup is not needed.
+                JITDUMP("Inlinee ignores runtime lookup generics context\n");
+                assert(lvaGenericsContextUseCount > 0);
+                lvaGenericsContextUseCount--;
+            }
+        }
+    }
+
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
     {
