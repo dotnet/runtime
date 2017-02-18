@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         protected UnprotectedXmlDsigBase64Transform transform;
 
-        protected XmlDsigBase64TransformTest()
+        public XmlDsigBase64TransformTest()
         {
             transform = new UnprotectedXmlDsigBase64Transform();
             Type t = typeof(XmlDsigBase64Transform);

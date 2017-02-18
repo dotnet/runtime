@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         protected Signature signature;
 
-        protected SignatureTest()
+        public SignatureTest()
         {
             signature = new Signature();
         }
