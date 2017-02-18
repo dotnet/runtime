@@ -91,16 +91,7 @@ namespace System.Linq
             public TSource[] ToArray()
             {
                 TSource[] array = _source.ToArray();
-
-                // Array.Reverse() involves boxing for non-primitive value types, but
-                // checking that has its own cost, so just use this approach for all types.
-                for (int i = 0, j = array.Length - 1; i < j; ++i, --j)
-                {
-                    TSource temp = array[i];
-                    array[i] = array[j];
-                    array[j] = temp;
-                }
-
+                Array.Reverse<TSource>(array);
                 return array;
             }
 
