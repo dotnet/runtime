@@ -841,8 +841,44 @@
   <data name="SNI_ERROR_57" xml:space="preserve">
     <value>Invalid SQLUserInstance.dll found at the location specified in the registry. Verify that the Local Database Runtime feature of SQL Server Express is properly installed.</value>
   </data>
+  <data name="Snix_Connect" xml:space="preserve">
+    <value>A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections.</value>
+  </data>
+  <data name="Snix_PreLoginBeforeSuccessfullWrite" xml:space="preserve">
+    <value>The client was unable to establish a connection because of an error during connection initialization process before login. Possible causes include the following:  the client tried to connect to an unsupported version of SQL Server; the server was too busy to accept new connections; or there was a resource limitation (insufficient memory or maximum allowed connections) on the server.</value>
+  </data>
   <data name="Snix_PreLogin" xml:space="preserve">
     <value>A connection was successfully established with the server, but then an error occurred during the pre-login handshake.</value>
+  </data>
+  <data name="Snix_LoginSspi" xml:space="preserve">
+    <value>A connection was successfully established with the server, but then an error occurred when obtaining the security/SSPI context information for integrated security login.</value>
+  </data>
+  <data name="Snix_Login" xml:space="preserve">
+    <value>A connection was successfully established with the server, but then an error occurred during the login process.</value>
+  </data>
+  <data name="Snix_EnableMars" xml:space="preserve">
+    <value>Connection open and login was successful, but then an error occurred while enabling MARS for this connection.</value>
+  </data>
+  <data name="Snix_AutoEnlist" xml:space="preserve">
+    <value>Connection open and login was successful, but then an error occurred while enlisting the connection into the current distributed transaction.</value>
+  </data>
+  <data name="Snix_GetMarsSession" xml:space="preserve">
+    <value>Failed to establish a MARS session in preparation to send the request to the server.</value>
+  </data>
+  <data name="Snix_Execute" xml:space="preserve">
+    <value>A transport-level error has occurred when sending the request to the server.</value>
+  </data>
+  <data name="Snix_Read" xml:space="preserve">
+    <value>A transport-level error has occurred when receiving results from the server.</value>
+  </data>
+  <data name="Snix_Close" xml:space="preserve">
+    <value>A transport-level error has occurred during connection clean-up.</value>
+  </data>
+  <data name="Snix_SendRows" xml:space="preserve">
+    <value>A transport-level error has occurred while sending information to the server.</value>
+  </data>
+  <data name="Snix_ProcessSspi" xml:space="preserve">
+    <value>A transport-level error has occurred during SSPI handshake.</value>
   </data>
   <data name="LocalDB_FailedGetDLLHandle" xml:space="preserve">
     <value>Local Database Runtime: Cannot load SQLUserInstance.dll.</value>
