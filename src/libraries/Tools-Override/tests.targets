@@ -11,7 +11,6 @@
     <TestDisabled>false</TestDisabled>
     <TestDisabled Condition="'$(IsTestProject)'!='true' Or '$(SkipTests)'=='true' Or '$(RunTestsForProject)'=='false'">true</TestDisabled>
     <TestsSuccessfulSemaphore>tests.passed</TestsSuccessfulSemaphore>
-    <RunningOnNetFx Condition="'$(_bc_TargetGroup)' == 'netfx'">true</RunningOnNetFx>
   </PropertyGroup>
 
   <!-- In case that TestPath is not yet set, default it here -->
@@ -27,7 +26,7 @@
     <UnsupportedPlatformsItems Include="$(UnsupportedPlatforms)"/>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(RunningOnNetFx)' != 'true'">
+  <PropertyGroup Condition="'$(BuildingNETFxVertical)' != 'true'">
     <XunitRuntimeConfig>$(ToolsDir)\xunit.console.netcore.runtimeconfig.json</XunitRuntimeConfig>
     <TestRuntimeEnvVar Condition="'$(OS)' == 'Windows_NT'">%RUNTIME_PATH%\</TestRuntimeEnvVar>
     <TestRuntimeEnvVar Condition="'$(OS)' != 'Windows_NT'">$RUNTIME_PATH/</TestRuntimeEnvVar>
@@ -39,7 +38,7 @@
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RunningOnNetFx)' == 'true'">
+  <PropertyGroup Condition="'$(BuildingNETFxVertical)' == 'true'">
     <XunitExecutable Condition="'$(XunitExecutable)' == ''">xunit.console.exe</XunitExecutable>
   </PropertyGroup>
 
@@ -47,7 +46,7 @@
   <PropertyGroup>
     <XunitResultsFileName>testResults.xml</XunitResultsFileName>
 
-    <XunitOptions Condition="'$(RunningOnNetFx)' == 'true'">$(XunitOptions) -noshadow -noappdomain </XunitOptions>
+    <XunitOptions Condition="'$(BuildingNETFxVertical)' == 'true'">$(XunitOptions) -noshadow -noappdomain </XunitOptions>
     <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
     <XunitOptions Condition="'$(Performance)'!='true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
@@ -55,7 +54,7 @@
     <XunitOptions Condition="'$(UseDotNetNativeToolchain)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
     <!-- Temporary till we fix the whole filtering with  TargetGroup -->
-    <XunitOptions Condition="'$(RunningOnNetFx)' != 'true'">$(XunitOptions) -notrait category=nonnetcoreapp1.1tests</XunitOptions>
+    <XunitOptions Condition="'$(BuildingNETFxVertical)' != 'true'">$(XunitOptions) -notrait category=nonnetcoreapp1.1tests</XunitOptions>
 
     <XunitOptions Condition="'$(XunitMaxThreads)'!=''">$(XunitOptions) -maxthreads $(XunitMaxThreads)</XunitOptions>
     <XunitTestAssembly Condition="'$(XunitTestAssembly)' == ''">$(TargetFileName)</XunitTestAssembly>
@@ -89,11 +88,11 @@
       <RunTestsForProjectInputs Include="@(_DebugSymbolsIntermediatePath)" />
       <RunTestsForProjectInputs Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(RunningOnNetFx)' != 'true'">
+    <ItemGroup Condition="'$(BuildingNETFxVertical)' != 'true'">
       <SupplementalTestData Include="$(XunitRuntimeConfig)" />
       <SupplementalTestData Include="$(RuntimePath)xunit.console.netcore.exe" />
     </ItemGroup>
-    <ItemGroup Condition="'$(RunningOnNetFx)' == 'true'">
+    <ItemGroup Condition="'$(BuildingNETFxVertical)' == 'true'">
       <SupplementalTestData Include="$(RuntimePath)xunit.console.exe" />
       <SupplementalTestData Include="$(RuntimePath)xunit.console.exe.config" />
       <SupplementalTestData Include="$(RuntimePath)xunit.execution.desktop.dll" />
@@ -117,6 +116,16 @@
 
       <DefaultReference Include="%(TargetingPackItems.Filename)" Exclude="@(TargetingPackExclusions)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="CopyRemoteExecutionConfigFile" 
+          BeforeTargets="GenerateTestExecutionScripts" 
+          Condition="'$(BuildingNETFxVertical)' == 'true' And Exists('$(TestPath)\RemoteExecutorConsoleApp.exe')">
+
+    <Copy SourceFiles="$(RuntimePath)\xunit.console.exe.config"
+          DestinationFiles="$(TestPath)\RemoteExecutorConsoleApp.exe.config" 
+          SkipUnchangedFiles="true"
+          />
   </Target>
 
   <!-- Generate the script to run the tests.  The script performs two high-level steps:
