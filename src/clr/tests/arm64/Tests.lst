@@ -865,7 +865,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\UnmanagedToManaged\Un
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\UnmanagedToManaged
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL
 HostStyle=0
 
 [UserException.cmd_108]
