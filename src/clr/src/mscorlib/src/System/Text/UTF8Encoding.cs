@@ -134,139 +134,10 @@ namespace System.Text
             return EncodingForwarder.GetByteCount(this, chars, count);
         }
 
-        public unsafe override byte[] GetBytes(String s)
+        public override int GetBytes(String s, int charIndex, int charCount,
+                                              byte[] bytes, int byteIndex)
         {
-            // Fast path for pure ASCII data for ASCII and UTF8 encoding
-            if (s == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s, ExceptionResource.ArgumentNull_String);
-            Contract.EndContractBlock();
-
-            int charCount = s.Length;
-
-            byte[] bytes;
-            if (charCount > 0) 
-            {
-                fixed (char* input = s)
-                    bytes = GetBytesValidated(input, charCount);
-            } 
-            else 
-            {
-                bytes = Array.Empty<byte>();
-            }
-
-            return bytes;
-        }
-
-        public unsafe override int GetBytes(String s, int charIndex, int charCount, byte[] bytes, int byteIndex)
-        {
-            if ((s == null) ||
-                (bytes == null) ||
-                (charIndex < 0) ||
-                (charCount < 0) ||
-                (s.Length - charIndex < charCount) ||
-                (byteIndex < 0 || byteIndex > bytes.Length))
-            {
-                EncodingForwarder.ThrowValidationFailed(this, s, charIndex, charCount, bytes);
-            }
-            Contract.EndContractBlock();
-
-            // Note that byteCount is the # of bytes to decode, not the size of the array
-            int byteCount = bytes.Length - byteIndex;
-            int bytesWritten;
-            if (charCount > 0) 
-            {
-                if (byteCount == 0)
-                {
-                    // Definitely not enough space, early bail
-                    EncodingForwarder.ThrowBytesOverflow(this);
-                }
-                fixed (char* pInput = s)
-                fixed (byte* pOutput = &bytes[0]) 
-                {
-                    char* input = pInput + charIndex;
-                    byte* output = pOutput + byteIndex;
-                    int charactersConsumed;
-                    // TODO: Replace with call to System.Text.Primitives/System/Text/Encoding/Utf8/Utf8Encoder
-                    // TryEncode(ReadOnlySpan<char> utf16, Span<byte> utf8, out int charactersConsumed, out int bytesWritten)
-                    if (!EncodingForwarder.TryEncode(input, charCount, output, byteCount, out charactersConsumed, out bytesWritten)) 
-                    {
-                        // Not all converted, use GetBytesFallback for remaining conversion
-                        bytesWritten += GetBytesFallback(input + charactersConsumed, charCount - charactersConsumed, output + bytesWritten, byteCount - bytesWritten, null);
-                    }
-                }
-            } 
-            else 
-            {
-                // Nothing to encode
-                bytesWritten = 0;
-            }
-
-            return bytesWritten;
-        }
-
-        public override byte[] GetBytes(char[] chars) {
-            if (chars == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars, ExceptionResource.ArgumentNull_Array);
-            Contract.EndContractBlock();
-            
-            return GetBytesValidated(chars, 0, chars.Length);
-        }
-
-        public override byte[] GetBytes(char[] chars, int index, int count) {
-            if ((chars == null) ||
-                (index < 0) ||
-                (count < 0) ||
-                (chars.Length - index < count))
-            {
-                EncodingForwarder.ThrowValidationFailedException(chars, index, count);
-            }
-            Contract.EndContractBlock();
-            
-            return GetBytesValidated(chars, index, count);
-        }
-
-        private unsafe byte[] GetBytesValidated(char[] chars, int index, int count)
-        {
-            byte[] bytes;
-            if (count > 0)
-            {
-                fixed (char* input = chars)
-                {
-                    bytes = GetBytesValidated(input + index, count);
-                }
-            }
-            else
-            {
-                bytes = Array.Empty<byte>();
-            }
-
-            return bytes;
-        }
-
-        private unsafe byte[] GetBytesValidated(char* input, int charCount)
-        {
-            int byteCount = GetByteCount(input, charCount, null);
-            byte[] bytes = new byte[byteCount];
-
-            fixed (byte* output = &bytes[0]) 
-            {
-                int bytesWritten;
-                int charactersConsumed;
-                // TODO: Replace with call to System.Text.Primitives/System/Text/Encoding/Utf8/Utf8Encoder
-                // TryEncode(ReadOnlySpan<char> utf16, Span<byte> utf8, out int charactersConsumed, out int bytesWritten)
-                if (!EncodingForwarder.TryEncode(input, charCount, output, charCount, out charactersConsumed, out bytesWritten)) 
-                {
-                    // Not all converted, use GetBytesFallback for remaining conversion
-                    bytesWritten += GetBytesFallback(input + charactersConsumed, charCount - charactersConsumed, output + bytesWritten, byteCount - bytesWritten, null);
-                }
-                else
-                {
-                    Debug.Assert(charactersConsumed == charCount);
-                }
-                Debug.Assert(bytesWritten == byteCount);
-            }
-
-            return bytes;
+            return EncodingForwarder.GetBytes(this, s, charIndex, charCount, bytes, byteIndex);
         }
 
         // Encodes a range of characters in a character array into a range of bytes
@@ -277,137 +148,17 @@ namespace System.Text
         // Alternatively, the GetMaxByteCount method can be used to
         // determine the maximum number of bytes that will be produced for a given
         // number of characters, regardless of the actual character values.
-        public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+
+        public override int GetBytes(char[] chars, int charIndex, int charCount,
+                                               byte[] bytes, int byteIndex)
         {
-            if ((chars == null) ||
-                (bytes == null) ||
-                (charIndex < 0) ||
-                (charCount < 0) ||
-                (chars.Length - charIndex < charCount) ||
-                (byteIndex < 0 || byteIndex > bytes.Length))
-            {
-                EncodingForwarder.ThrowValidationFailedException(chars, charIndex, charCount, bytes);
-            }
-            Contract.EndContractBlock();
-
-            // Note that byteCount is the # of bytes to decode, not the size of the array
-            int byteCount = bytes.Length - byteIndex;
-            int bytesWritten;
-            if (charCount > 0) 
-            {
-                if (byteCount == 0)
-                {
-                    // Definitely not enough space, early bail
-                    EncodingForwarder.ThrowBytesOverflow(this);
-                }
-
-                fixed (char* pInput = &chars[0])
-                fixed (byte* pOutput = &bytes[0]) 
-                {
-                    char* input = pInput + charIndex;
-                    byte* output = pOutput + byteIndex;
-                    int charactersConsumed;
-                    // TODO: Replace with call to System.Text.Primitives/System/Text/Encoding/Utf8/Utf8Encoder
-                    // TryEncode(ReadOnlySpan<char> utf16, Span<byte> utf8, out int charactersConsumed, out int bytesWritten)
-                    if (!EncodingForwarder.TryEncode(input, charCount, output, byteCount, out charactersConsumed, out bytesWritten)) 
-                    {
-                        // Not all converted, use GetBytesFallback for remaining conversion
-                        bytesWritten += GetBytesFallback(input + charactersConsumed, charCount - charactersConsumed, output + bytesWritten, byteCount - bytesWritten, null);
-                    }
-                }
-            } 
-            else 
-            {
-                // Nothing to encode
-                bytesWritten = 0;
-            }
-
-            return bytesWritten;
+            return EncodingForwarder.GetBytes(this, chars, charIndex, charCount, bytes, byteIndex);
         }
 
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
-            if ((bytes == null) || 
-                (chars == null) ||
-                (charCount < 0) ||
-                (byteCount < 0))
-            {
-                EncodingForwarder.ThrowValidationFailedException(chars, charCount, bytes);
-            }
-            Contract.EndContractBlock();
-
-            int bytesWritten;
-            if (charCount > 0)
-            {
-                if (byteCount == 0)
-                {
-                    // Definitely not enough space, early bail
-                    EncodingForwarder.ThrowBytesOverflow(this);
-                }
-                int charactersConsumed;
-                // TODO: Replace with call to System.Text.Primitives/System/Text/Encoding/Utf8/Utf8Encoder
-                // TryEncode(ReadOnlySpan<char> utf16, Span<byte> utf8, out int charactersConsumed, out int bytesWritten)
-                if (!EncodingForwarder.TryEncode(chars, charCount, bytes, byteCount, out charactersConsumed, out bytesWritten))
-                {
-                    // Not all converted, use GetBytesFallback for remaining conversion
-                    bytesWritten += GetBytesFallback(chars + charactersConsumed, charCount - charactersConsumed, bytes + bytesWritten, byteCount - bytesWritten, null);
-                }
-            }
-            else
-            {
-                // Nothing to encode
-                bytesWritten = 0;
-            }
-
-            return bytesWritten;
-        }
-
-        internal override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS encoder)
-        {
-            // Just need to Assert, this is called by internal EncoderNLS and parameters should already be checked
-            Debug.Assert(this != null);
-            Debug.Assert(bytes != null);
-            Debug.Assert(chars != null);
-            Debug.Assert(charCount >= 0);
-            Debug.Assert(byteCount >= 0);
-
-            int bytesWritten;
-            int charactersConsumed = 0;
-            if (((encoder?.InternalHasFallbackBuffer ?? false) && 
-                 (encoder.FallbackBuffer.Remaining > 0)) ||
-                (charCount > byteCount))
-            {
-                // Data already in Fallback buffer, so straight to GetBytesFallback
-                bytesWritten = GetBytesFallback(chars, charCount, bytes, byteCount, encoder);
-            } 
-            else if (charCount > 0)
-            {
-                if (byteCount == 0)
-                {
-                    // Definitely not enough space, early bail
-                    EncodingForwarder.ThrowBytesOverflow(this);
-                }
-                // TODO: Replace with call to System.Text.Primitives/System/Text/Encoding/Utf8/Utf8Encoder
-                // TryEncode(ReadOnlySpan<char> utf16, Span<byte> utf8, out int charactersConsumed, out int bytesWritten)
-                if (!EncodingForwarder.TryEncode(chars, charCount, bytes, byteCount, out charactersConsumed, out bytesWritten))
-                {
-                    // Not all converted, use GetBytesFallback for remaining conversion
-                    bytesWritten += GetBytesFallback(chars + charactersConsumed, charCount - charactersConsumed, bytes + bytesWritten, byteCount - bytesWritten, encoder);
-                }
-            }
-            else
-            {
-                // Nothing to encode
-                bytesWritten = 0;
-            }
-
-            if (encoder != null)
-            {
-                encoder.m_charsUsed += charactersConsumed;
-            }
-            
-            return bytesWritten;
+            return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
         }
 
         // Returns the number of characters produced by decoding a range of bytes
@@ -822,7 +573,7 @@ namespace System.Text
 
         // Our workhorse
         // Note:  We ignore mismatched surrogates, unless the exception flag is set in which case we throw
-        private unsafe int GetBytesFallback(char* chars, int charCount,
+        internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             Debug.Assert(chars!=null, "[UTF8Encoding.GetBytes]chars!=null");
