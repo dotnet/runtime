@@ -73,8 +73,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (DSA key = DSA.Create())
             {
-                DSAParameters dsaParameters = new DSAParameters
-                {
+                key.ImportParameters(new DSAParameters {
                     P = Convert.FromBase64String(dsaP),
                     Q = Convert.FromBase64String(dsaQ),
                     G = Convert.FromBase64String(dsaG),
@@ -82,8 +81,7 @@ namespace System.Security.Cryptography.Xml.Tests
                     //J = Convert.FromBase64String(dsaJ),
                     //Seed = Convert.FromBase64String(dsaSeed),
                     //Counter = BitConverter.ToUInt16(Convert.FromBase64String(dsaPgenCounter), 0)
-                };
-                key.ImportParameters(dsaParameters);
+                });
                 DSAKeyValue dsa = new DSAKeyValue(key);
                 info.AddClause(dsa);
                 AssertCrypto.AssertXmlEquals("dsa",
@@ -136,45 +134,65 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void X509Data()
         {
-            X509Certificate x509 = new X509Certificate(cert);
-            KeyInfoX509Data x509data = new KeyInfoX509Data(x509);
-            info.AddClause(x509data);
-            AssertCrypto.AssertXmlEquals("X509Data", "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><X509Certificate>MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=</X509Certificate></X509Data></KeyInfo>", (info.GetXml().OuterXml));
-            Assert.Equal(1, info.Count);
+            using (X509Certificate x509 = new X509Certificate(cert))
+            {
+                KeyInfoX509Data x509data = new KeyInfoX509Data(x509);
+                info.AddClause(x509data);
+                AssertCrypto.AssertXmlEquals("X509Data",
+                    "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><X509Certificate>MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=</X509Certificate></X509Data></KeyInfo>",
+                    (info.GetXml().OuterXml));
+                Assert.Equal(1, info.Count);
+            }
         }
 
         [Fact]
         public void Complex()
         {
             KeyInfoName name = new KeyInfoName();
-            name.Value = "Mono::";
+            name.Value = "CoreFx::";
             info.AddClause(name);
 
-            DSA keyDSA = DSA.Create();
-            keyDSA.FromXmlString(xmlDSA);
-            DSAKeyValue dsa = new DSAKeyValue(keyDSA);
-            info.AddClause(dsa);
+            using (DSA keyDSA = DSA.Create())
+            {
+                keyDSA.ImportParameters(new DSAParameters
+                {
+                    P = Convert.FromBase64String(dsaP),
+                    Q = Convert.FromBase64String(dsaQ),
+                    G = Convert.FromBase64String(dsaG),
+                    Y = Convert.FromBase64String(dsaY),
+                });
+                DSAKeyValue dsa = new DSAKeyValue(keyDSA);
+                info.AddClause(dsa);
 
-            RSA keyRSA = RSA.Create();
-            keyRSA.FromXmlString(xmlRSA);
-            RSAKeyValue rsa = new RSAKeyValue(keyRSA);
-            info.AddClause(rsa);
+                using (RSA keyRSA = RSA.Create())
+                {
+                    keyRSA.ImportParameters(new RSAParameters()
+                    {
+                        Modulus = Convert.FromBase64String(rsaModulus),
+                        Exponent = Convert.FromBase64String(rsaExponent)
+                    });
+                    RSAKeyValue rsa = new RSAKeyValue(keyRSA);
+                    info.AddClause(rsa);
 
-            KeyInfoRetrievalMethod retrieval = new KeyInfoRetrievalMethod();
-            retrieval.Uri = "http://www.go-mono.org/";
-            info.AddClause(retrieval);
+                    KeyInfoRetrievalMethod retrieval = new KeyInfoRetrievalMethod();
+                    retrieval.Uri = "https://github.com/dotnet/corefx";
+                    info.AddClause(retrieval);
 
-            X509Certificate x509 = new X509Certificate(cert);
-            KeyInfoX509Data x509data = new KeyInfoX509Data(x509);
-            info.AddClause(x509data);
+                    using (X509Certificate x509 = new X509Certificate(cert))
+                    {
+                        KeyInfoX509Data x509data = new KeyInfoX509Data(x509);
+                        info.AddClause(x509data);
 
-            string s = "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyName>Mono::</KeyName><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=</P><Q>tf0K9rMyvUrU4cIkwbCrDRhQAJk=</Q><G>S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=</G><Y>LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=</Y><J>9RhE5TycDtdEIXxS3HfxFyXYgpy81zY5lVjwD6E9JP37MWEi80BlX6ab1YPm6xYSEoqReMPP9RgGiW6DuACpgI7+8vgCr4i/7VhzModJAA56PwvTu6UMt9xxKU/fT672v8ucREkMWoc7lEey</J><Seed>HxW3N4RHWVgqDQKuGg7iJTUTiCs=</Seed><PgenCounter>Asw=</PgenCounter></DSAKeyValue></KeyValue>";
-            s += "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><RSAKeyValue><Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue>";
-            s += "<RetrievalMethod URI=\"http://www.go-mono.org/\" />";
-            s += "<X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\">";
-            s += "<X509Certificate>MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=</X509Certificate></X509Data></KeyInfo>";
-            AssertCrypto.AssertXmlEquals("Complex", s, (info.GetXml().OuterXml));
-            Assert.Equal(5, info.Count);
+                        string s = "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyName>CoreFx::</KeyName><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=</P><Q>tf0K9rMyvUrU4cIkwbCrDRhQAJk=</Q><G>S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=</G><Y>LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=</Y></DSAKeyValue></KeyValue>";
+                        s += "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><RSAKeyValue><Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue>";
+                        s += "<RetrievalMethod URI=\"https://github.com/dotnet/corefx\" />";
+                        s += "<X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\">";
+                        s += "<X509Certificate>MIICHTCCAYYCARQwDQYJKoZIhvcNAQEEBQAwWDELMAkGA1UEBhMCQ0ExHzAdBgNVBAMTFktleXdpdG5lc3MgQ2FuYWRhIEluYy4xKDAmBgorBgEEASoCCwIBExhrZXl3aXRuZXNzQGtleXdpdG5lc3MuY2EwHhcNOTYwNTA3MDAwMDAwWhcNOTkwNTA3MDAwMDAwWjBYMQswCQYDVQQGEwJDQTEfMB0GA1UEAxMWS2V5d2l0bmVzcyBDYW5hZGEgSW5jLjEoMCYGCisGAQQBKgILAgETGGtleXdpdG5lc3NAa2V5d2l0bmVzcy5jYTCBnTANBgkqhkiG9w0BAQEFAAOBiwAwgYcCgYEAzSP6KuHtmPTp0JM+13qAAkzMwQKvXLYff/pXQm8w0SDFtSEHQCyphsLzZISuPYUu7YW9VLAYKO9q+BvnCxYfkyVPx/iOw7nKmIQOVdAv73h3xXIoX2C/GSvRcqK32D/glzRaAb0EnMh4Rc2TjRXydhARq7hbLp5S3YE+nGTIKZMCAQMwDQYJKoZIhvcNAQEEBQADgYEAMho1ur9DJ9a01Lh25eObTWzAhsl3NbprFi0TRkqwMlOhW1rpmeIMhogXTg3+gqxOR+/7/zms7jXI+lI3CkmtWa3iiqkcxl8f+G9zfs2gMegMvvVN2bKrihK2MHhoEXwN8UlNo/2y6f8d8JH6VIX/M5Dowb+km6RiRr1hElmYQYk=</X509Certificate></X509Data></KeyInfo>";
+                        AssertCrypto.AssertXmlEquals("Complex", s, (info.GetXml().OuterXml));
+                        Assert.Equal(5, info.Count);
+                    }
+                }
+            }
         }
 
         [Fact]
