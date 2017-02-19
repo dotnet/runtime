@@ -10,6 +10,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Xunit;
@@ -57,22 +58,44 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, info.Count);
         }
 
-        string xmlDSA = "<DSAKeyValue><P>rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=</P><Q>tf0K9rMyvUrU4cIkwbCrDRhQAJk=</Q><G>S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=</G><Y>LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=</Y><J>9RhE5TycDtdEIXxS3HfxFyXYgpy81zY5lVjwD6E9JP37MWEi80BlX6ab1YPm6xYSEoqReMPP9RgGiW6DuACpgI7+8vgCr4i/7VhzModJAA56PwvTu6UMt9xxKU/fT672v8ucREkMWoc7lEey</J><Seed>HxW3N4RHWVgqDQKuGg7iJTUTiCs=</Seed><PgenCounter>Asw=</PgenCounter></DSAKeyValue>";
+        private static string dsaP = "rjxsMU368YOCTQejWkiuO9e/vUVwkLtq1jKiU3TtJ53hBJqjFRuTa228vZe+BH2su9RPn/vYFWfQDv6zgBYe3eNdu4Afw+Ny0FatX6dl3E77Ra6Tsd3MmLXBiGSQ1mMNd5G2XQGpbt9zsGlUaexXekeMLxIufgfZLwYp67M+2WM=";
+        private static string dsaQ = "tf0K9rMyvUrU4cIkwbCrDRhQAJk=";
+        private static string dsaG = "S8Z+1pGCed00w6DtVcqZLKjfqlCJ7JsugEFIgSy/Vxtu9YGCMclV4ijGEbPo/jU8YOSMuD7E9M7UaopMRcmKQjoKZzoJjkgVFP48Ohxl1f08lERnButsxanx3+OstFwUGQ8XNaGg3KrIoZt1FUnfxN3RHHTvVhjzNSHxMGULGaU=";
+        private static string dsaY = "LnrxxRGLYeV2XLtK3SYz8RQHlHFZYrtznDZyMotuRfO5uC5YODhSFyLXvb1qB3WeGtF4h3Eo4KzHgMgfN2ZMlffxFRhJgTtH3ctbL8lfQoDkjeiPPnYGhspdJxr0tyZmiy0gkjJG3vwHYrLnvZWx9Wm/unqiOlGBPNuxJ+hOeP8=";
+        //private static string dsaJ = "9RhE5TycDtdEIXxS3HfxFyXYgpy81zY5lVjwD6E9JP37MWEi80BlX6ab1YPm6xYSEoqReMPP9RgGiW6DuACpgI7+8vgCr4i/7VhzModJAA56PwvTu6UMt9xxKU/fT672v8ucREkMWoc7lEey";
+        //private static string dsaSeed = "HxW3N4RHWVgqDQKuGg7iJTUTiCs=";
+        //private static string dsaPgenCounter = "Asw=";
+        // private static string xmlDSA = "<DSAKeyValue><P>" + dsaP + "</P><Q>" + dsaQ + "</Q><G>" + dsaG + "</G><Y>" + dsaY + "</Y><J>" + dsaJ + "</J><Seed>" + dsaSeed + "</Seed><PgenCounter>" + dsaPgenCounter + "</PgenCounter></DSAKeyValue>";
+        private static string xmlDSA = "<DSAKeyValue><P>" + dsaP + "</P><Q>" + dsaQ + "</Q><G>" + dsaG + "</G><Y>" + dsaY + "</Y></DSAKeyValue>";
 
         [Fact]
         public void DSAKeyValue()
         {
-            DSA key = DSA.Create();
-            key.FromXmlString(xmlDSA);
-            DSAKeyValue dsa = new DSAKeyValue(key);
-            info.AddClause(dsa);
-            AssertCrypto.AssertXmlEquals("dsa", "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\">" + xmlDSA + "</KeyValue></KeyInfo>", (info.GetXml().OuterXml));
-            Assert.Equal(1, info.Count);
+            using (DSA key = DSA.Create())
+            {
+                DSAParameters dsaParameters = new DSAParameters
+                {
+                    P = Convert.FromBase64String(dsaP),
+                    Q = Convert.FromBase64String(dsaQ),
+                    G = Convert.FromBase64String(dsaG),
+                    Y = Convert.FromBase64String(dsaY),
+                    //J = Convert.FromBase64String(dsaJ),
+                    //Seed = Convert.FromBase64String(dsaSeed),
+                    //Counter = BitConverter.ToUInt16(Convert.FromBase64String(dsaPgenCounter), 0)
+                };
+                key.ImportParameters(dsaParameters);
+                DSAKeyValue dsa = new DSAKeyValue(key);
+                info.AddClause(dsa);
+                AssertCrypto.AssertXmlEquals("dsa",
+                    "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\">" +
+                    xmlDSA + "</KeyValue></KeyInfo>", (info.GetXml().OuterXml));
+                Assert.Equal(1, info.Count);
+            }
         }
 
-        static string rsaModulus = "9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=";
-        static string rsaExponent = "AQAB";
-        static string xmlRSA = "<RSAKeyValue><Modulus>" + rsaModulus + "</Modulus><Exponent>" + rsaExponent + "</Exponent></RSAKeyValue>";
+        private static string rsaModulus = "9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=";
+        private static string rsaExponent = "AQAB";
+        private static string xmlRSA = "<RSAKeyValue><Modulus>" + rsaModulus + "</Modulus><Exponent>" + rsaExponent + "</Exponent></RSAKeyValue>";
 
         [Fact]
         public void RSAKeyValue()
