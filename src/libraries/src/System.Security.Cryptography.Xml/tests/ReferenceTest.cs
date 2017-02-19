@@ -10,6 +10,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Xml;
 using Xunit;
 
@@ -19,33 +22,101 @@ namespace System.Security.Cryptography.Xml.Tests
     public class ReferenceTest
     {
 
-        protected Reference reference;
-
-        public ReferenceTest()
-        {
-            reference = new Reference();
-        }
-
         [Fact]
-        public void Properties()
+        public void Ctor()
         {
+            Reference reference = new Reference();
             Assert.Null(reference.Uri);
             Assert.NotNull(reference.TransformChain);
-            Assert.Equal("System.Security.Cryptography.Xml.Reference", reference.ToString());
-            // test uri constructor
-            string uri = "uri";
-            reference = new Reference(uri);
+            Assert.Null(reference.Id);
+            Assert.Null(reference.Type);
+            Assert.Null(reference.Uri);
+            Assert.Throws<NullReferenceException>(() => reference.GetXml());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("uri")]
+        [InlineData("http://mysite.com/")]
+        public void Ctor_Uri(string uri)
+        {
+            Reference reference = new Reference(uri);
             Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
             Assert.Null(reference.DigestValue);
             Assert.Null(reference.Id);
             Assert.Null(reference.Type);
             Assert.Equal(uri, reference.Uri);
+            Assert.Throws<NullReferenceException>(() => reference.GetXml());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("abcdefghijklmnopqrstuvwxyz")]
+        [InlineData("01234567890")]
+        public void Ctor_Stream(string data)
+        {
+            using (MemoryStream memoryStream = data != null ? new MemoryStream(Encoding.UTF8.GetBytes(data)) : null)
+            {
+                Reference reference = new Reference(memoryStream);
+                Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", reference.DigestMethod);
+                Assert.Null(reference.DigestValue);
+                Assert.Null(reference.Id);
+                Assert.Null(reference.Type);
+                Assert.Null(reference.Uri);
+                Assert.Throws<NullReferenceException>(() => reference.GetXml());
+            }
+        }
+
+        public static IEnumerable<object[]> Ctor_Stream_Source()
+        {
+            return new object[][]
+            {
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2000/09/xmldsig#sha1", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#sha256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#sha512", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#des-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#tripledes-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-tripledes", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes128", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes192-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes192", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes256-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2000/09/xmldsig#hmac-sha1", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#md5", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#sha384", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-md5", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
+                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object")
+            };
+        }
+
+        public static object[] BuildStreamTestCase(string uri, string digestMethod, string digestValue, string id, string type)
+        {
+            return new object[]
+            {
+                $@"<Reference Id=""{ id }"" Type=""{ type }"" URI = ""{ uri }"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                    <DigestMethod Algorithm=""{ digestMethod }"" />
+                    <DigestValue>{ digestValue }</DigestValue>
+                </Reference>", 
+                uri,
+                digestMethod,
+                Encoding.UTF8.GetBytes(digestValue),
+                id,
+                type
+            };
         }
 
         [Fact]
         public void LoadNoTransform()
         {
-            string test = "<Reference URI=\"#MyObjectId\" xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference>";
+            Reference reference = new Reference();
+            string test = "<Reference URI=''#MyObjectId'' xmlns=''http://www.w3.org/2000/09/xmldsig#''><DigestMethod Algorithm=''http://www.w3.org/2000/09/xmldsig#sha1'' /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference>";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test);
             reference.LoadXml(doc.DocumentElement);
@@ -57,107 +128,9 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void LoadBase64Transform()
-        {
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test);
-            reference.LoadXml(doc.DocumentElement);
-            Assert.Equal(test, (reference.GetXml().OuterXml));
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadC14NTransform()
-        {
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test);
-            reference.LoadXml(doc.DocumentElement);
-            Assert.Equal(test, (reference.GetXml().OuterXml));
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadC14NWithCommentsTransforms()
-        {
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test);
-            reference.LoadXml(doc.DocumentElement);
-            Assert.Equal(test, (reference.GetXml().OuterXml));
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadEnvelopedSignatureTransforms()
-        {
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test);
-            reference.LoadXml(doc.DocumentElement);
-            Assert.Equal(test, (reference.GetXml().OuterXml));
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadXPathTransforms()
-        {
-            // test1 (MS) is an XML equivalent to test2 (Mono)
-            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            string test2 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath /></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test1);
-            reference.LoadXml(doc.DocumentElement);
-            string result = (reference.GetXml().OuterXml);
-            Assert.True(((test1 == result) || (test2 == result)), result);
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadXsltTransforms()
-        {
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms>";
-            test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
-            test += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
-            test += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
-            test += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
-            test += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
-            test += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
-            test += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
-            test += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test);
-            reference.LoadXml(doc.DocumentElement);
-            string result = reference.GetXml().OuterXml;
-            Assert.Equal(test, result);
-            Assert.Equal(1, reference.TransformChain.Count);
-        }
-
-        [Fact]
-        public void LoadAllTransforms()
-        {
-            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform>";
-            test1 += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
-            test1 += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
-            test1 += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
-            test1 += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
-            test1 += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
-            test1 += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
-            test1 += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
-            test1 += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            string test2 = test1.Replace("<XPath></XPath>", "<XPath />"); // Mono
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test1);
-            reference.LoadXml(doc.DocumentElement);
-            string result = reference.GetXml().OuterXml;
-            Assert.True(((result == test1) || (result == test2)));
-            Assert.Equal(6, reference.TransformChain.Count);
-        }
-
-        [Fact]
         public void AddAllTransforms()
         {
+            Reference reference = new Reference();
             // adding an empty hash value
             byte[] hash = new byte[20];
             reference.DigestValue = hash;
@@ -173,9 +146,9 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.AddTransform(new XmlDsigXsltTransform());
 
             // MS's results
-            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
+            string test1 = "<Reference xmlns=''http://www.w3.org/2000/09/xmldsig#''><Transforms><Transform Algorithm=''http://www.w3.org/2000/09/xmldsig#base64'' /><Transform Algorithm=''http://www.w3.org/TR/2001/REC-xml-c14n-20010315'' /><Transform Algorithm=''http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments'' /><Transform Algorithm=''http://www.w3.org/2000/09/xmldsig#enveloped-signature'' /><Transform Algorithm=''http://www.w3.org/TR/1999/REC-xpath-19991116''><XPath></XPath></Transform><Transform Algorithm=''http://www.w3.org/TR/1999/REC-xslt-19991116'' /></Transforms><DigestMethod Algorithm=''http://www.w3.org/2000/09/xmldsig#sha1'' /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             // Mono's result (xml is equivalent but not identical)
-            string test2 = test1.Replace("<XPath></XPath>", "<XPath xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />");
+            string test2 = test1.Replace("<XPath></XPath>", "<XPath xmlns=''http://www.w3.org/2000/09/xmldsig#'' />");
             string result = reference.GetXml().OuterXml;
             Assert.True(((result == test1) || (result == test2)));
             // however this value cannot be loaded as it's missing some transform (xslt) parameters
@@ -195,6 +168,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Null()
         {
+            Reference reference = new Reference();
             // null DigestMethod -> "" DigestMethod !!!
             reference.DigestMethod = null;
             Assert.Null(reference.DigestMethod);
@@ -203,6 +177,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Bad1()
         {
+            Reference reference = new Reference();
             reference.Uri = "#MyObjectId";
             // not enough info
             Assert.Throws< NullReferenceException>(()=> reference.GetXml());
@@ -211,6 +186,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Bad2()
         {
+            Reference reference = new Reference();
             // bad hash - there's no validation!
             reference.DigestMethod = "http://www.w3.org/2000/09/xmldsig#mono";
         }
