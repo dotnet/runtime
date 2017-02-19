@@ -147,14 +147,14 @@ namespace System.Security.Cryptography.Xml.Tests
         public void AddIssuerSerial_Null_Serial()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
-            Assert.Throws<ArgumentException>(() => data.AddIssuerSerial(null, "serial"));
+            Assert.Throws<FormatException>(() => data.AddIssuerSerial(null, "serial"));
         }
 
         [Fact]
         public void AddIssuerSerial_Issuer_Null()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
-            Assert.Throws<NullReferenceException>(() => data.AddIssuerSerial("issuer", null));
+            Assert.Throws<ArgumentNullException>(() => data.AddIssuerSerial("issuer", null));
         }
 
         [Fact]
@@ -167,7 +167,12 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(data.IssuerSerials);
             Assert.Equal(1, data.SubjectKeyIds.Count);
             Assert.Null(data.SubjectNames);
-            Assert.Equal("<X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", data.GetXml ().OuterXml); // May throw an exception
+            
+            //Comment from https://github.com/peterwurzinger
+            //TODO: This is senseless, since GetXml() will call Convert.ToBase64String(null), what will throw an exception not related to the Crypto-XML-API
+            //Assert.Equal("<X509Data xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", data.GetXml ().OuterXml); // May throw an exception
+
+            Assert.Throws<ArgumentNullException>(() => data.GetXml().OuterXml);
         }
 
         [Fact]
