@@ -2,7 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Threading;
+using System.Reflection;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Tests
@@ -103,17 +108,278 @@ namespace System.Tests
             Assert.Equal("1", lazy.ToString());
         }
 
+        private static void Value_Invalid_Impl<T>(ref Lazy<T> x, Lazy<T> lazy)
+        {
+            x = lazy;
+            Assert.Throws<InvalidOperationException>(() => lazy.Value);
+        }
+
         [Fact]
         public static void Value_Invalid()
         {
-            string lazilyAllocatedValue = "abc";
+            Lazy<int> x = null;
+            Func<int> f = () => x.Value;
 
-            int x = 0;
-            Lazy<string> lazy = null;
-            lazy = new Lazy<string>(() =>  x++ < 5 ? lazy.Value : "Test", true);
+            Value_Invalid_Impl(ref x, new Lazy<int>(f));
+            Value_Invalid_Impl(ref x, new Lazy<int>(f, true));
+            Value_Invalid_Impl(ref x, new Lazy<int>(f, false));
+            Value_Invalid_Impl(ref x, new Lazy<int>(f, LazyThreadSafetyMode.ExecutionAndPublication));
+            Value_Invalid_Impl(ref x, new Lazy<int>(f, LazyThreadSafetyMode.None));
 
-            Assert.Throws<InvalidOperationException>(() => lazilyAllocatedValue = lazy.Value);
-            Assert.Equal("abc", lazilyAllocatedValue);
+            // When used with LazyThreadSafetyMode.PublicationOnly this causes a stack overflow
+            // Value_Invalid_Impl(ref x, new Lazy<int>(f, LazyThreadSafetyMode.PublicationOnly));
+        }
+        
+        public class InitiallyExceptionThrowingCtor
+        {
+            public static int counter = 0;
+            public static int getValue()
+            {
+                if (++counter < 5)
+                    throw new Exception();
+                else
+                    return counter;
+            }
+
+            public int Value { get; }
+
+            public InitiallyExceptionThrowingCtor()
+            {
+                Value = getValue();
+            }
+        }
+
+        public static IEnumerable<object[]> Ctor_ExceptionRecovery_MemberData()
+        {
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(), 5 };
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(true), 5 };
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(false), 5 };
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.ExecutionAndPublication), 5 };
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.None), 5 };
+            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.PublicationOnly), 5 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ExceptionRecovery_MemberData))]
+        public static void Ctor_ExceptionRecovery(Lazy<InitiallyExceptionThrowingCtor> lazy, int expected)
+        {
+            InitiallyExceptionThrowingCtor.counter = 0;
+            InitiallyExceptionThrowingCtor result = null;
+            for (var i = 0; i < 10; ++i)
+            {
+                try { result = lazy.Value; } catch (Exception) { }
+            }
+            Assert.Equal(result.Value, expected);
+        }
+
+        private static void Value_ExceptionRecovery_IntImpl(Lazy<int> lazy, ref int counter, int expected)
+        {
+            counter = 0;
+            int result = 0;
+            for (var i = 0; i < 10; ++i)
+            {
+                try { result = lazy.Value; } catch (Exception) { }
+            }
+            Assert.Equal(result, expected);
+        }
+
+        private static void Value_ExceptionRecovery_StringImpl(Lazy<string> lazy, ref int counter, string expected)
+        {
+            counter = 0;
+            var result = default(string);
+            for (var i = 0; i < 10; ++i)
+            {
+                try { result = lazy.Value; } catch (Exception) { }
+            }
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public static void Value_ExceptionRecovery()
+        {
+            int counter = 0; // set in test function
+
+            var fint = new Func<int>   (() => { if (++counter < 5) throw new Exception(); else return counter; });
+            var fobj = new Func<string>(() => { if (++counter < 5) throw new Exception(); else return counter.ToString(); });
+
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint), ref counter, 0);
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint, true), ref counter, 0);
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint, false), ref counter, 0);
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint, LazyThreadSafetyMode.ExecutionAndPublication), ref counter, 0);
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint, LazyThreadSafetyMode.None), ref counter, 0);
+            Value_ExceptionRecovery_IntImpl(new Lazy<int>(fint, LazyThreadSafetyMode.PublicationOnly), ref counter, 5);
+
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj), ref counter, null);
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj, true), ref counter, null);
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj, false), ref counter, null);
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj, LazyThreadSafetyMode.ExecutionAndPublication), ref counter, null);
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj, LazyThreadSafetyMode.None), ref counter, null);
+            Value_ExceptionRecovery_StringImpl(new Lazy<string>(fobj, LazyThreadSafetyMode.PublicationOnly), ref counter, 5.ToString());
+        }
+
+        class MyException
+            : Exception
+        {
+            public int Value { get; }
+
+            public MyException(int value)
+            {
+                Value = value;
+            }
+        }
+
+        public class ExceptionInCtor
+        {
+            public ExceptionInCtor() : this(99) { }
+
+            public ExceptionInCtor(int value)
+            {
+                throw new MyException(value);
+            }
+        }
+
+        public static IEnumerable<object[]> Value_Func_Exception_MemberData()
+        {
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, true) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, false) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.None) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.PublicationOnly) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Value_Func_Exception_MemberData))]
+        public static void Value_Func_Exception(Lazy<int> lazy)
+        {
+            Assert.Throws<MyException>(() => lazy.Value);
+        }
+
+        public static IEnumerable<object[]> Value_FuncCtor_Exception_MemberData()
+        { 
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99)) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), true) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), false) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.None) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.PublicationOnly) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Value_FuncCtor_Exception_MemberData))]
+        public static void Value_FuncCtor_Exception(Lazy<ExceptionInCtor> lazy)
+        {
+            Assert.Throws<MyException>(() => lazy.Value);
+        }
+
+        public static IEnumerable<object[]> Value_TargetInvocationException_MemberData()
+        {
+            yield return new object[] { new Lazy<ExceptionInCtor>() };
+            yield return new object[] { new Lazy<ExceptionInCtor>(true) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(false) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.None) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.PublicationOnly) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Value_TargetInvocationException_MemberData))]
+        public static void Value_TargetInvocationException(Lazy<ExceptionInCtor> lazy)
+        {
+            Assert.Throws<TargetInvocationException>(() => lazy.Value);
+        }
+
+        public static IEnumerable<object[]> Exceptions_Func_Idempotent_MemberData()
+        {
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, true) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, false) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.None) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exceptions_Func_Idempotent_MemberData))]
+        public static void Exceptions_Func_Idempotent(Lazy<int> x)
+        {
+            var e = Assert.ThrowsAny<Exception>(() => x.Value);
+            Assert.Same(e, Assert.ThrowsAny<Exception>(() => x.Value));
+        }
+
+        public static IEnumerable<object[]> Exceptions_Ctor_Idempotent_MemberData()
+        {
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99)) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), true) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), false) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.None) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exceptions_Ctor_Idempotent_MemberData))]
+        public static void Exceptions_Ctor_Idempotent(Lazy<ExceptionInCtor> x)
+        {
+            var e = Assert.ThrowsAny<Exception>(() => x.Value);
+            Assert.Same(e, Assert.ThrowsAny<Exception>(() => x.Value));
+        }
+
+        public static IEnumerable<object[]> Exceptions_Func_NotIdempotent_MemberData()
+        {
+            yield return new object[] { new Lazy<int>(() => { throw new MyException(99); }, LazyThreadSafetyMode.PublicationOnly) };
+        }
+
+        public static IEnumerable<object[]> Exceptions_Ctor_NotIdempotent_MemberData()
+        {
+            yield return new object[] { new Lazy<ExceptionInCtor>() };
+            yield return new object[] { new Lazy<ExceptionInCtor>(true) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(false) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.ExecutionAndPublication) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.None) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(LazyThreadSafetyMode.PublicationOnly) };
+            yield return new object[] { new Lazy<ExceptionInCtor>(() => new ExceptionInCtor(99), LazyThreadSafetyMode.PublicationOnly) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exceptions_Func_NotIdempotent_MemberData))]
+        public static void Exceptions_Func_NotIdempotent(Lazy<int> x)
+        {
+            var e = Assert.ThrowsAny<Exception>(() => x.Value);
+            Assert.NotSame(e, Assert.ThrowsAny<Exception>(() => x.Value));
+        }
+
+        [Theory]
+        [MemberData(nameof(Exceptions_Ctor_NotIdempotent_MemberData))]
+        public static void Exceptions_Ctor_NotIdempotent(Lazy<ExceptionInCtor> x)
+        {
+            var e = Assert.ThrowsAny<Exception>(() => x.Value);
+            Assert.NotSame(e, Assert.ThrowsAny<Exception>(() => x.Value));
+        }
+
+        [Fact]
+        public static void Serialization_ValueType()
+        {
+            var stream = new MemoryStream();
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(stream, new Lazy<int>(() => 42));
+            stream.Seek(0, SeekOrigin.Begin);
+
+            var fortytwo = (Lazy<int>)formatter.Deserialize(stream);
+            Assert.True(fortytwo.IsValueCreated);
+            Assert.Equal(fortytwo.Value, 42);
+        }
+
+        [Fact]
+        public static void Serialization_RefType()
+        {
+            var stream = new MemoryStream();
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(stream, new Lazy<string>(() => "42"));
+            stream.Seek(0, SeekOrigin.Begin);
+
+            var x = BinaryFormatterHelpers.Clone(new object());
+            var fortytwo = (Lazy<string>)formatter.Deserialize(stream);
+            Assert.True(fortytwo.IsValueCreated);
+            Assert.Equal(fortytwo.Value, "42");
         }
 
         [Theory]
