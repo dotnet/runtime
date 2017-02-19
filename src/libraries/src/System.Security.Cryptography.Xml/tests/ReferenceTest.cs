@@ -116,10 +116,11 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void LoadC14NTransform()
         { 
-            Reference reference = new Reference();
-            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-2010315\" /></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
+            string test =
+                @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#""><Transforms><Transform Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test);
+            Reference reference = new Reference();
             reference.LoadXml(doc.DocumentElement);
             Assert.Equal(test, (reference.GetXml().OuterXml));
             Assert.Equal(1, reference.TransformChain.Count);
@@ -155,8 +156,8 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             Reference reference = new Reference();
             // test1 (MS) is an XML equivalent to test2 (Mono)
-            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org / 2000 / 09 / xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue ></ Reference > ";
-            string test2 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath /></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org / 2000 / 09 / xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue ></ Reference > ";
+            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
+            string test2 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath /></Transform></Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference> ";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test1);
             reference.LoadXml(doc.DocumentElement);
@@ -172,11 +173,11 @@ namespace System.Security.Cryptography.Xml.Tests
             test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
             test += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
             test += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
-            test += "<xsl:template match=\"/\"><html><head><title>Notaries</title > ";
+            test += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
             test += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
-            test += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for - each > ";
-            test += "</table></body></html></xsl:template></xsl:stylesheet></Transform > ";
-            test += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000 / 09 / xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></ Reference > ";
+            test += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
+            test += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
+            test += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             Reference reference = new Reference();
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test);
@@ -189,22 +190,21 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void LoadAllTransforms()
         {
-            string test1 = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath></XPath></Transform>";
-            test1 += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
-            test1 += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
-            test1 += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
-            test1 += "<xsl:template match=\"/\"><html><head><title>Notaries</title > ";
-            test1 += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
-            test1 += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:" + "for-each > ";
-            test1 += "</table></body></html></xsl:template></xsl:stylesheet></Transform > ";
-            test1 += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference > ";
-            string test2 = test1.Replace("<XPath></XPath>", "<XPath />"); // Mono
+            string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath /></Transform>";
+            test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
+            test += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
+            test += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
+            test += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
+            test += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
+            test += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
+            test += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
+            test += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             Reference reference = new Reference();
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(test1);
+            doc.LoadXml(test);
             reference.LoadXml(doc.DocumentElement);
             string result = reference.GetXml().OuterXml;
-            Assert.True(((result == test1) || (result == test2)));
+            Assert.Equal(test, result);
             Assert.Equal(6, reference.TransformChain.Count);
         }
 
