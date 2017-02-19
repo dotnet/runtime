@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void ImportKey()
+        public void LoadXml_PlatformNotSupport()
         {
             string rsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><RSAKeyValue><Modulus>ogZ1/O7iks9ncETqNxLDKoPvgrT4nFx1a3lOmpywEmgbc5+8vI5dSzReH4v0YrflY75rIJx13CYWMsaHfQ78GtXvaeshHlQ3lLTuSdYEJceKll/URlBoKQtOj5qYIVSFOIVGHv4Y/0lnLftOzIydem29KKH6lJQlJawBBssR12s=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue>";
             XmlDocument doc = new XmlDocument();
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void LoadXml()
+        public void LoadXml_Null()
         {
             RSAKeyValue rsa1 = new RSAKeyValue();
             Assert.Throws<PlatformNotSupportedException>(() => rsa1.LoadXml(null));

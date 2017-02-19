@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void ImportKey()
+        public void LoadXml_PlatformNotSupported()
         {
             string dsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>xc+QZRWTgr390gzwNXF+WzoepZkvAQvCzfCm+YyXj0KPoeHHeSc5ORzXQw81V+7XJR3gupvlI4F7lW9YC538l+3eqGm8IQlCIS+U+7ICTDOFFKevqsYX0BnjO0vvE4aAtDyxfSOTCOAo1cJ+6G6xgcC1JGIBEYCtg1tH8wUewDE=</P><Q>yyfZb0S/rimXl9ScJ3zIba2oGl8=</Q><G>crLazMg+vgI7u6+Idgi9iTLdRa4fptat3gdY97zcc857+OVdmT+lVRpK3okWpmBbw2wSffU8QltwFf42BVs+/HGUOUo2hNqSSXgzl1i+1frO7/cqooHVcy5WX0xxaIPsKcREPI5pNPj/3g8apTgErLMGsHkFdngwbMed9DArTks=</G><Y>FlAozo17wV/LCMRrtnmMKxVQNpidJVkZNM1/0eR65x8giwPs6yXzJmFT8f2tmPJY2FIOAtp5JYin4xUhwIHF452Gg50wUrjV6WTGkiC+gzLC2fVIyGlVsFecLj6ue7J+MACG+b3NQnxFuT5maQnPnEeuGgjLXfwYsAR1vfU0Gas=</Y><J>+UPMvUPq9Fo6Q1fr2oEYDxfGMMtfdoQmVBxI+TkUYQsReodRzBbnvGV1uPLWTpKKd/uJNUHO/QGb05Cvc6u49/AToDJIyi4e01hTLNCzeQk/Hj19gowb5wkTIjyaH04VyPE5zYoTYfuu3Y3Q</J><Seed>+cvoO7bzdpAwAjnDDApPzBCl6zg=</Seed><PgenCounter>ATM=</PgenCounter></DSAKeyValue></KeyValue>";
             XmlDocument doc = new XmlDocument();
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void LoadXml()
+        public void LoadXml_Null()
         {
             DSAKeyValue dsa1 = new DSAKeyValue();
             Assert.Throws<PlatformNotSupportedException>(() => dsa1.LoadXml(null));
