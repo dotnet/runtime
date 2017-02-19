@@ -9,6 +9,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Xml;
 using Xunit;
 
@@ -17,23 +18,52 @@ namespace System.Security.Cryptography.Xml.Tests
 
     public class RSAKeyValueTest
     {
+        [Fact]
+        public void Ctor_Empty()
+        {
+            RSAKeyValue rsaKeyValue = new RSAKeyValue();
+            Assert.NotNull(rsaKeyValue.Key);
+        }
 
         [Fact]
-        public void GeneratedKey()
+        public void Ctor_Rsa()
         {
-            RSAKeyValue rsa1 = new RSAKeyValue();
-            Assert.NotNull(rsa1.Key);
-            XmlElement xmlkey = rsa1.GetXml();
+            using (RSA rsa = RSA.Create())
+            {
+                RSAKeyValue rsaKeyValue = new RSAKeyValue(rsa);
+                Assert.Equal(rsa, rsaKeyValue.Key);
+            }
+        }
 
-            RSAKeyValue rsa2 = new RSAKeyValue();
-            rsa2.LoadXml(xmlkey);
+        [Fact]
+        public void Ctor_Rsa_Null()
+        {
+            RSAKeyValue rsaKeyValue = new RSAKeyValue(null);
+            Assert.Null(rsaKeyValue.Key);
+        }
 
-            Assert.True((rsa1.GetXml().OuterXml) == (rsa2.GetXml().OuterXml), "rsa1==rsa2");
 
-            RSA key = rsa1.Key;
-            RSAKeyValue rsa3 = new RSAKeyValue(key);
-            Assert.True((rsa3.GetXml().OuterXml) == (rsa1.GetXml().OuterXml), "rsa3==rsa1");
-            Assert.True((rsa3.GetXml().OuterXml) == (rsa2.GetXml().OuterXml), "rsa3==rsa2");
+        [Fact]
+        public void GetXml()
+        {
+            RSAKeyValue rsa = new RSAKeyValue();
+            XmlElement xmlkey = rsa.GetXml();
+
+            // Schema check. Should not throw.
+            const string schema = "http://www.w3.org/2000/09/xmldsig#";
+            new[] { "Exponent", "Modulus" }
+                .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[name()=RSAKeyValue & namespace-uri()='{schema}']/*[name()='{elementName}' & namespace-uri()='{schema}']").InnerText));
+        }
+
+        [Fact]
+        public void GetXml_SameRsa()
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                RSAKeyValue rsaKeyValue1 = new RSAKeyValue(rsa);
+                RSAKeyValue rsaKeyValue2 = new RSAKeyValue(rsa);
+                Assert.Equal(rsaKeyValue1.GetXml(), rsaKeyValue2.GetXml());
+            }
         }
 
         [Fact]
@@ -44,28 +74,17 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(rsaKey);
 
             RSAKeyValue rsa1 = new RSAKeyValue();
-            rsa1.LoadXml(doc.DocumentElement);
+            Assert.Throws<PlatformNotSupportedException>(() => rsa1.LoadXml(doc.DocumentElement));
 
-            string s = (rsa1.GetXml().OuterXml);
-            Assert.Equal(rsaKey, s);
+            //string s = (rsa1.GetXml().OuterXml);
+            //Assert.Equal(rsaKey, s);
         }
 
         [Fact]
-        public void InvalidValue1()
+        public void LoadXml()
         {
-            RSAKeyValue rsa = new RSAKeyValue();
-            Assert.Throws<ArgumentNullException>(() => rsa.LoadXml(null));
-        }
-
-        [Fact]
-        public void InvalidValue2()
-        {
-            string badKey = "<Test></Test>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(badKey);
-
-            RSAKeyValue rsa = new RSAKeyValue();
-            Assert.Throws<CryptographicException>(() => rsa.LoadXml(doc.DocumentElement));
+            RSAKeyValue rsa1 = new RSAKeyValue();
+            Assert.Throws<PlatformNotSupportedException>(() => rsa1.LoadXml(null));
         }
     }
 }
