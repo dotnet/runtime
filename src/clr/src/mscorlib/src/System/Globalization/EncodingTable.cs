@@ -49,10 +49,6 @@ namespace System.Globalization
         //
         private static Hashtable hashByCodePage = Hashtable.Synchronized(new Hashtable());
 
-        static EncodingTable()
-        { 
-        }
-
         // Find the data item by binary searching the table that we have in native.
         // nativeCompareOrdinalWC is an internal-only function.
         unsafe private static int internalGetCodePageFromName(String name) {

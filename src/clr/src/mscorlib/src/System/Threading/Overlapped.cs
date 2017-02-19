@@ -65,10 +65,6 @@ namespace System.Threading
         uint _numBytes; // No. of bytes transferred 
         NativeOverlapped* _pOVERLAP;
 
-        static _IOCompletionCallback()
-        {
-        }
-
         internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback)
         {
             _ioCompletionCallback = ioCompletionCallback;
