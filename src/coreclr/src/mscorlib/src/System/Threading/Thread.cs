@@ -33,8 +33,6 @@ namespace System.Threading {
 
     internal class ThreadHelper
     {
-        static ThreadHelper() {}
-
         Delegate _start;
         Object _startArg = null;
         ExecutionContext _executionContext = null;
