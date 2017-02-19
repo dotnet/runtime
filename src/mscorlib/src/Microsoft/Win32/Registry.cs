@@ -16,9 +16,6 @@ namespace Microsoft.Win32 {
      */
     //This class contains only static members and does not need to be serializable.
     internal static class Registry {
-        static Registry()
-        { 
-        }
 
         /**
          * Current User Key.
