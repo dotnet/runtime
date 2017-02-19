@@ -70,17 +70,27 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, info.Count);
         }
 
-        static string xmlRSA = "<RSAKeyValue><Modulus>9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+        static string rsaModulus = "9DC4XNdQJwMRnz5pP2a6U51MHCODRilaIoVXqUPhCUb0lJdGroeqVYT84ZyIVrcarzD7Tqs3aEOIa3rKox0N1bxQpZPqayVQeLAkjLLtzJW/ScRJx3uEDJdgT1JnM1FH0GZTinmEdCUXdLc7+Y/c/qqIkTfbwHbRZjW0bBJyExM=";
+        static string rsaExponent = "AQAB";
+        static string xmlRSA = "<RSAKeyValue><Modulus>" + rsaModulus + "</Modulus><Exponent>" + rsaExponent + "</Exponent></RSAKeyValue>";
 
         [Fact]
         public void RSAKeyValue()
         {
-            RSA key = RSA.Create();
-            key.FromXmlString(xmlRSA);
-            RSAKeyValue rsa = new RSAKeyValue(key);
-            info.AddClause(rsa);
-            AssertCrypto.AssertXmlEquals("rsa", "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\">" + xmlRSA + "</KeyValue></KeyInfo>", (info.GetXml().OuterXml));
-            Assert.Equal(1, info.Count);
+            using (RSA key = RSA.Create())
+            {
+                key.ImportParameters(new RSAParameters()
+                {
+                    Modulus = Convert.FromBase64String(rsaModulus),
+                    Exponent = Convert.FromBase64String(rsaExponent)
+                });
+                RSAKeyValue rsa = new RSAKeyValue(key);
+                info.AddClause(rsa);
+                AssertCrypto.AssertXmlEquals("rsa",
+                    "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\">" +
+                    xmlRSA + "</KeyValue></KeyInfo>", (info.GetXml().OuterXml));
+                Assert.Equal(1, info.Count);
+            }
         }
 
         [Fact]
@@ -166,7 +176,7 @@ namespace System.Security.Cryptography.Xml.Tests
             info.AddClause(null);
             Assert.Equal(1, info.Count);
             // but can't get XML out if it!
-            Assert.Throws< NullReferenceException>(() => info.GetXml());
+            Assert.Throws<NullReferenceException>(() => info.GetXml());
         }
 
         [Fact]
