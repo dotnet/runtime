@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Xml.Tests
             UTF8Encoding utf8 = new UTF8Encoding();
             byte[] data = utf8.GetBytes(InputXml.ToString());
             Stream stream = new MemoryStream(data);
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings {ValidationType = ValidationType.None}))
+            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings {ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse}))
             {
                 doc.Load(reader);
                 if (resolver)
