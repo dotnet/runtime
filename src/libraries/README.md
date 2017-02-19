@@ -1,8 +1,6 @@
 # .NET Core Libraries (CoreFX)
 
-The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml, and many other components. You can see more information in [Documentation](Documentation/README.md). The corresponding [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, and many other components. Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime.
-
-[mscorlib]: https://github.com/dotnet/coreclr/tree/master/src/mscorlib
+The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml, and many other components. You can see more information in [Documentation](Documentation/README.md). The corresponding [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, and many other components. Runtime-specific library code - namely [System.Private.Corelib](https://github.com/dotnet/coreclr/tree/master/src/mscorlib) - lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime.
 
 ## Source Index
 
@@ -75,8 +73,8 @@ including the MSRC PGP key, can be found in the
 The repo contains the source for each of the assemblies that comprises .NET Core.  Each ```Microsoft.*``` or ```System.*``` folder under
 [src](https://github.com/dotnet/corefx/tree/master/src) represents an individual library.  Each such folder may contain a ```ref``` folder,
 which contains the source representing the "contract" or "reference assembly" for that library.  It may also contain a ```src``` folder,
-which contains the source for some or all of the implementation for that library (some implementation may live in mscorlib in the 
-[coreclr repo](https://github.com/dotnet/coreclr), with the build tooling generating type forwards from the library assembly to mscorlib.)  
+which contains the source for some or all of the implementation for that library (some implementation may live in System.Private.Corelib in the 
+[coreclr repo](https://github.com/dotnet/coreclr), with the build tooling generating type forwards from the library assembly to System.Private.Corelib.)  
 It may also contain a ```test``` folder containing the tests associated with that library, whether the implementation source lives in corefx 
 or in coreclr.
 
