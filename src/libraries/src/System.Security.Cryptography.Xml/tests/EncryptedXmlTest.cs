@@ -225,9 +225,13 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetDecryptionIV_StringNull()
         {
+            // Added EncryptionMethod and CipherData to avoid a CryptographicException
+
             EncryptedXml ex = new EncryptedXml();
-            Assert.Null(ex.GetDecryptionIV(new EncryptedData(), null));
-            // Might be a CryptographicException
+            EncryptedData encryptedData = new EncryptedData();
+            encryptedData.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
+            encryptedData.CipherData = new CipherData(new byte[16]);
+            Assert.Null(ex.GetDecryptionIV(encryptedData, null));
         }
 
         [Fact]
