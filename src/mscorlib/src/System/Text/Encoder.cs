@@ -9,7 +9,6 @@ namespace System.Text
     using System;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
-    using System.Runtime.CompilerServices;
     // An Encoder is used to encode a sequence of blocks of characters into
     // a sequence of blocks of bytes. Following instantiation of an encoder,
     // sequential blocks of characters are converted into blocks of bytes through
@@ -68,31 +67,16 @@ namespace System.Text
         {
             get
             {
-                return m_fallbackBuffer ?? FallbackBufferInitialize();
-            }
-        }
+                if (m_fallbackBuffer == null)
+                {
+                    if (m_fallback != null)
+                        m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
+                    else
+                        m_fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
+                }
 
-        private EncoderFallbackBuffer FallbackBufferInitialize()
-        {
-            // This is indirected through a second NoInlining function it has a special meaning
-            // in System.Private.CoreLib of indicatating it takes a StackMark which cause 
-            // the caller to also be not inlined; so we can't mark it directly.
-            return FallbackBufferInitializeInner();
-        }
-
-        // Second function in chain so as to not propergate the non-inlining to outside caller
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private EncoderFallbackBuffer FallbackBufferInitializeInner()
-        {
-            if (m_fallback != null)
-            {
-                m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
+                return m_fallbackBuffer;
             }
-            else
-            {
-                m_fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
-            }
-            return m_fallbackBuffer;
         }
 
         internal bool InternalHasFallbackBuffer
