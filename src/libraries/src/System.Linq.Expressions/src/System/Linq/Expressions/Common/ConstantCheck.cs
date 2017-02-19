@@ -61,7 +61,7 @@ namespace System.Linq.Expressions
                 return testType == typeof(void) ? AnalyzeTypeIsResult.KnownTrue : AnalyzeTypeIsResult.KnownFalse;
             }
 
-            if (testType == typeof(void))
+            if (testType == typeof(void) || testType.IsPointer)
             {
                 return AnalyzeTypeIsResult.KnownFalse;
             }
