@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
+    <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
     <Compile Include="DSAKeyValueTest.cs" />
@@ -41,6 +42,14 @@
     <Compile Include="XmlDsigXPathTransformTest.cs" />
     <Compile Include="XmlDsigXsltTransformTest.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample3.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample2.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample1.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="sample.pfx" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
