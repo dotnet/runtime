@@ -96,60 +96,66 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void RoundtripSample1()
         {
-            StringWriter sw = new StringWriter();
-
-            // Encryption
+            using (StringWriter sw = new StringWriter())
             {
-                XmlDocument doc = new XmlDocument();
-                doc.PreserveWhitespace = true;
-                doc.LoadXml("<root>  <child>sample</child>   </root>");
 
-                XmlElement body = doc.DocumentElement;
+                // Encryption
+                {
+                    XmlDocument doc = new XmlDocument();
+                    doc.PreserveWhitespace = true;
+                    doc.LoadXml("<root>  <child>sample</child>   </root>");
 
-                RijndaelManaged aes = new RijndaelManaged();
-                aes.Mode = CipherMode.CBC;
-                aes.KeySize = 256;
-                aes.IV = Convert.FromBase64String("pBUM5P03rZ6AE4ZK5EyBrw==");
-                aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
-                aes.Padding = PaddingMode.Zeros;
+                    XmlElement body = doc.DocumentElement;
 
-                EncryptedXml exml = new EncryptedXml();
-                byte[] encrypted = exml.EncryptData(body, aes, false);
-                EncryptedData edata = new EncryptedData();
-                edata.Type = EncryptedXml.XmlEncElementUrl;
-                edata.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
-                EncryptedKey ekey = new EncryptedKey();
-                // omit key encryption, here for testing
-                byte[] encKeyBytes = aes.Key;
-                ekey.CipherData = new CipherData(encKeyBytes);
-                ekey.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url);
-                DataReference dr = new DataReference();
-                dr.Uri = "_0";
-                ekey.AddReference(dr);
-                edata.KeyInfo.AddClause(new KeyInfoEncryptedKey(ekey));
-                edata.KeyInfo = new KeyInfo();
-                ekey.KeyInfo.AddClause(new RSAKeyValue(RSA.Create()));
-                edata.CipherData.CipherValue = encrypted;
-                EncryptedXml.ReplaceElement(doc.DocumentElement, edata, false);
-                doc.Save(new XmlTextWriter(sw));
-            }
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.Mode = CipherMode.CBC;
+                        aes.KeySize = 256;
+                        aes.IV = Convert.FromBase64String("pBUM5P03rZ6AE4ZK5EyBrw==");
+                        aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
+                        aes.Padding = PaddingMode.Zeros;
 
-            // Decryption
-            {
-                RijndaelManaged aes = new RijndaelManaged();
-                aes.Mode = CipherMode.CBC;
-                aes.KeySize = 256;
-                aes.Key = Convert.FromBase64String(
-                        "o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
-                aes.Padding = PaddingMode.Zeros;
+                        EncryptedXml exml = new EncryptedXml();
+                        byte[] encrypted = exml.EncryptData(body, aes, false);
+                        EncryptedData edata = new EncryptedData();
+                        edata.Type = EncryptedXml.XmlEncElementUrl;
+                        edata.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
+                        EncryptedKey ekey = new EncryptedKey();
+                        // omit key encryption, here for testing
+                        byte[] encKeyBytes = aes.Key;
+                        ekey.CipherData = new CipherData(encKeyBytes);
+                        ekey.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url);
+                        DataReference dr = new DataReference();
+                        dr.Uri = "_0";
+                        ekey.AddReference(dr);
+                        edata.KeyInfo.AddClause(new KeyInfoEncryptedKey(ekey));
+                        edata.KeyInfo = new KeyInfo();
+                        ekey.KeyInfo.AddClause(new RSAKeyValue(RSA.Create()));
+                        edata.CipherData.CipherValue = encrypted;
+                        EncryptedXml.ReplaceElement(doc.DocumentElement, edata, false);
+                        doc.Save(new XmlTextWriter(sw));
+                    }
+                }
 
-                XmlDocument doc = new XmlDocument();
-                doc.PreserveWhitespace = true;
-                doc.LoadXml(sw.ToString());
-                EncryptedXml encxml = new EncryptedXml(doc);
-                EncryptedData edata = new EncryptedData();
-                edata.LoadXml(doc.DocumentElement);
-                encxml.ReplaceData(doc.DocumentElement, encxml.DecryptData(edata, aes));
+                // Decryption
+                {
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.Mode = CipherMode.CBC;
+                        aes.KeySize = 256;
+                        aes.Key = Convert.FromBase64String(
+                            "o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
+                        aes.Padding = PaddingMode.Zeros;
+
+                        XmlDocument doc = new XmlDocument();
+                        doc.PreserveWhitespace = true;
+                        doc.LoadXml(sw.ToString());
+                        EncryptedXml encxml = new EncryptedXml(doc);
+                        EncryptedData edata = new EncryptedData();
+                        edata.LoadXml(doc.DocumentElement);
+                        encxml.ReplaceData(doc.DocumentElement, encxml.DecryptData(edata, aes));
+                    }
+                }
             }
         }
 
