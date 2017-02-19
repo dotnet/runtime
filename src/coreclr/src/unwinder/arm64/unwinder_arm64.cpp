@@ -109,35 +109,35 @@ typedef struct _ARM64_VFP_STATE
 
 typedef struct _ARM64_UNWIND_PARAMS
 {
-    PKNONVOLATILE_CONTEXT_POINTERS ContextPointers;
+    PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers;
 } ARM64_UNWIND_PARAMS, *PARM64_UNWIND_PARAMS;
 
 #define UNWIND_PARAMS_SET_TRAP_FRAME(Params, Address, Size)
 
-#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)                    \
-do {                                                                                \
-    if (ARGUMENT_PRESENT(Params)) {                                                 \
-        PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
-        if (ARGUMENT_PRESENT(ContextPointers)) {                                    \
-            if (RegisterNumber >=  19 && RegisterNumber <= 30) {                    \
-                (&ContextPointers->X19)[RegisterNumber - 19] = (PDWORD64)Address;  \
-            }                                                                       \
-        }                                                                           \
-    }                                                                               \
+#define UPDATE_CONTEXT_POINTERS(Params, RegisterNumber, Address)                      \
+do {                                                                                  \
+    if (ARGUMENT_PRESENT(Params)) {                                                   \
+        PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+        if (ARGUMENT_PRESENT(ContextPointers)) {                                      \
+            if (RegisterNumber >=  19 && RegisterNumber <= 30) {                      \
+                (&ContextPointers->X19)[RegisterNumber - 19] = (PDWORD64)Address;     \
+            }                                                                         \
+        }                                                                             \
+    }                                                                                 \
 } while (0)
 
 
-#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)                 \
-do {                                                                                \
-    if (ARGUMENT_PRESENT(Params)) {                                                 \
-        PKNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
-        if (ARGUMENT_PRESENT(ContextPointers) &&                                    \
-            (RegisterNumber >=  8) &&                                               \
-            (RegisterNumber <= 15)) {                                               \
-                                                                                    \
-            (&ContextPointers->D8)[RegisterNumber - 8] = (PDWORD64)Address;         \
-        }                                                                           \
-    }                                                                               \
+#define UPDATE_FP_CONTEXT_POINTERS(Params, RegisterNumber, Address)                   \
+do {                                                                                  \
+    if (ARGUMENT_PRESENT(Params)) {                                                   \
+        PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
+        if (ARGUMENT_PRESENT(ContextPointers) &&                                      \
+            (RegisterNumber >=  8) &&                                                 \
+            (RegisterNumber <= 15)) {                                                 \
+                                                                                      \
+            (&ContextPointers->D8)[RegisterNumber - 8] = (PDWORD64)Address;           \
+        }                                                                             \
+    }                                                                                 \
 } while (0)
 
 #define VALIDATE_STACK_ADDRESS_EX(Params, Context, Address, DataSize, Alignment, OutStatus)
@@ -1621,7 +1621,7 @@ RtlVirtualUnwind(
     IN OUT PCONTEXT ContextRecord,
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
-    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    IN OUT PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     )
 {
     PEXCEPTION_ROUTINE handlerRoutine;
