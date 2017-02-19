@@ -116,14 +116,15 @@ namespace System.Security.Cryptography.Xml.Tests
         public void LoadNoTransform()
         {
             Reference reference = new Reference();
-            string test = "<Reference URI=''#MyObjectId'' xmlns=''http://www.w3.org/2000/09/xmldsig#''><DigestMethod Algorithm=''http://www.w3.org/2000/09/xmldsig#sha1'' /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference>";
+            const string uri = "urn:1";
+            string test = 
+                $@"<Reference URI=""{ uri }"" xmlns=""http://www.w3.org/2000/09/xmldsig#""><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference>";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(test);
             reference.LoadXml(doc.DocumentElement);
-            Assert.Equal(test, (reference.GetXml().OuterXml));
-            Assert.Equal("#MyObjectId", reference.Uri);
-            byte[] hash = { 0xFD, 0x5B, 0xEA, 0xEA, 0xC5, 0xC4, 0x55, 0xBB, 0x59, 0x0B, 0xC1, 0xB0, 0x36, 0xD2, 0xD0, 0x9C, 0x63, 0xB2, 0xFD, 0x52 };
-            AssertCrypto.AssertEquals("Load-Digest", hash, reference.DigestValue);
+            Assert.Equal(test, reference.GetXml().OuterXml);
+            Assert.Equal(uri, reference.Uri);
+            Assert.Equal(new byte[]{ 0xFD, 0x5B, 0xEA, 0xEA, 0xC5, 0xC4, 0x55, 0xBB, 0x59, 0x0B, 0xC1, 0xB0, 0x36, 0xD2, 0xD0, 0x9C, 0x63, 0xB2, 0xFD, 0x52 }, reference.DigestValue);
             Assert.Equal(0, reference.TransformChain.Count);
         }
 
@@ -145,12 +146,9 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.AddTransform(new XmlDsigXPathTransform());
             reference.AddTransform(new XmlDsigXsltTransform());
 
-            // MS's results
-            string test1 = "<Reference xmlns=''http://www.w3.org/2000/09/xmldsig#''><Transforms><Transform Algorithm=''http://www.w3.org/2000/09/xmldsig#base64'' /><Transform Algorithm=''http://www.w3.org/TR/2001/REC-xml-c14n-20010315'' /><Transform Algorithm=''http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments'' /><Transform Algorithm=''http://www.w3.org/2000/09/xmldsig#enveloped-signature'' /><Transform Algorithm=''http://www.w3.org/TR/1999/REC-xpath-19991116''><XPath></XPath></Transform><Transform Algorithm=''http://www.w3.org/TR/1999/REC-xslt-19991116'' /></Transforms><DigestMethod Algorithm=''http://www.w3.org/2000/09/xmldsig#sha1'' /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
-            // Mono's result (xml is equivalent but not identical)
-            string test2 = test1.Replace("<XPath></XPath>", "<XPath xmlns=''http://www.w3.org/2000/09/xmldsig#'' />");
+            string test1 = @"<Reference xmlns=""http://www.w3.org/2000/09/xmldsig#""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#base64"" /><Transform Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><Transform Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"" /><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /><Transform Algorithm=""http://www.w3.org/TR/1999/REC-xpath-19991116""><XPath /></Transform><Transform Algorithm=""http://www.w3.org/TR/1999/REC-xslt-19991116"" /></Transforms><DigestMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#sha1"" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             string result = reference.GetXml().OuterXml;
-            Assert.True(((result == test1) || (result == test2)));
+            Assert.Equal(test1, result);
             // however this value cannot be loaded as it's missing some transform (xslt) parameters
 
             // can we add them again ?
