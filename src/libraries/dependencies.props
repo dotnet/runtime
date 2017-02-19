@@ -17,21 +17,21 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>a96b46a6ea52965b20667fff5295a13ad73d5d7a</CoreFxCurrentRef>
-    <CoreClrCurrentRef>1d54f6522364b58e726733e16cd9b716a62d9195</CoreClrCurrentRef>
-    <ExternalCurrentRef>6ebb1923d44306ebc37fe819f95f54e547a38c46</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>416a914559799747bf1e81bf0fe4da46d366e3ed</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</CoreFxCurrentRef>
+    <CoreClrCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</CoreClrCurrentRef>
+    <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
-    <StandardCurrentRef>046c4e62ab9d0b59c717e14107248978f8ca9eef</StandardCurrentRef>
+    <StandardCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-25014-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-25014-04</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25014-00</ProjectNTfsExpectedPrerelease>
-    <NETStandardPackageVersion>2.0.0-beta-25016-01</NETStandardPackageVersion>
+    <CoreFxExpectedPrerelease>beta-25018-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-25019-02</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-25017-00</ProjectNTfsExpectedPrerelease>
+    <NETStandardPackageVersion>2.0.0-beta-25017-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
