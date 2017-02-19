@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Sample3()
         {
-            AssertDecryption1("Test/System.Security.Cryptography.Xml/EncryptedXmlSample3.xml");
+            AssertDecryption1("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample3.xml");
         }
 
         [Fact]
