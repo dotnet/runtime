@@ -70,49 +70,6 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        public static IEnumerable<object[]> Ctor_Stream_Source()
-        {
-            return new object[][]
-            {
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2000/09/xmldsig#sha1", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#sha256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#sha512", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#des-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#tripledes-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-tripledes", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes128-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes128", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes192-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes192", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#aes256-cbc", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmlenc#kw-aes256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2000/09/xmldsig#hmac-sha1", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#md5", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#sha384", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-md5", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object"),
-                BuildStreamTestCase("urn:test:1", "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", "abcdefg", "id", "http://www.w3.org/2000/09/xmldsig#Object")
-            };
-        }
-
-
-        public static object[] BuildStreamTestCase(string uri, string digestMethod, string digestValue, string id, string type)
-        {
-            return new object[]
-            {
-                $@"<Reference Id=""{ id }"" Type=""{ type }"" URI = ""{ uri }"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
-                    <DigestMethod Algorithm=""{ digestMethod }"" />
-                    <DigestValue>{ digestValue }</DigestValue>
-                </Reference>", 
-                uri,
-                digestMethod,
-                Encoding.UTF8.GetBytes(digestValue),
-                id,
-                type
-            };
-        }
-
         [Fact]
         public void LoadC14NTransform()
         { 
