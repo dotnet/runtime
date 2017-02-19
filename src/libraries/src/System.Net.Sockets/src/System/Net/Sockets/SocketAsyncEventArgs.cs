@@ -27,7 +27,8 @@ namespace System.Net.Sockets
         internal int _offset;
 
         // BufferList property variables.
-        internal IList<ArraySegment<byte>> _bufferList;
+        private IList<ArraySegment<byte>> _bufferList;
+        private List<ArraySegment<byte>> _bufferListInternal;
 
         // BytesTransferred property variables.
         private int _bytesTransferred;
@@ -137,11 +138,41 @@ namespace System.Net.Sockets
                 StartConfiguring();
                 try
                 {
-                    if (value != null && _buffer != null)
+                    if (value != null)
                     {
-                        throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, "Buffer"));
+                        if (_buffer != null)
+                        {
+                            // Can't have both set
+                            throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, "Buffer"));
+                        }
+
+                        // Copy the user-provided list into our internal buffer list,
+                        // so that we are not affected by subsequent changes to the list.
+                        // We reuse the existing list so that we can avoid reallocation when possible.
+                        if (_bufferListInternal == null)
+                        {
+                            _bufferListInternal = new List<ArraySegment<byte>>(value.Count);
+                        }
+                        else
+                        {
+                            _bufferListInternal.Clear();
+                        }
+
+                        for (int i = 0; i < value.Count; i++)
+                        {
+                            _bufferListInternal.Add(value[i]);
+                        }
                     }
+                    else
+                    {
+                        if (_bufferListInternal != null)
+                        {
+                            _bufferListInternal.Clear();
+                        }
+                    }
+                    
                     _bufferList = value;
+
                     SetupMultipleBuffers();
                 }
                 finally
@@ -257,6 +288,11 @@ namespace System.Net.Sockets
         public void SetBuffer(int offset, int count)
         {
             SetBufferInternal(_buffer, offset, count);
+        }
+
+        internal bool HasMultipleBuffers
+        {
+            get { return _bufferList != null; }
         }
 
         private void SetBufferInternal(byte[] buffer, int offset, int count)
