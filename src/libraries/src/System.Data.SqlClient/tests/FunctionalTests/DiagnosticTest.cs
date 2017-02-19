@@ -13,6 +13,7 @@ using Microsoft.SqlServer.TDS;
 using Microsoft.SqlServer.TDS.EndPoint;
 using Microsoft.SqlServer.TDS.SQLBatch;
 using Microsoft.SqlServer.TDS.Error;
+using Microsoft.SqlServer.TDS.Done;
 
 namespace System.Data.SqlClient.Tests
 {
@@ -792,8 +793,9 @@ namespace System.Data.SqlClient.Tests
             
             if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0 
             {
-                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 11, "Divide by zero error encountered.");
-                TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken);
+                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 16, "Divide by zero error encountered.");
+                TDSDoneToken doneToken = new TDSDoneToken(TDSDoneTokenStatusType.Final | TDSDoneTokenStatusType.Count, TDSDoneTokenCommandType.Select, 1);
+                TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken, doneToken);
                 return new TDSMessageCollection(responseMessage);
             }
             else
