@@ -48,13 +48,13 @@ namespace System.Globalization
         internal bool bUseUserOverrides; // True if we want user overrides.
 
         // Static invariant for the invariant locale
-        internal static CalendarData Invariant;
+        internal static readonly CalendarData Invariant = CreateInvariant();
 
         // Private constructor
         private CalendarData() { }
 
-        // Invariant constructor
-        static CalendarData()
+        // Invariant factory
+        private static CalendarData CreateInvariant()
         {
             // Set our default/gregorian US calendar data
             // Calendar IDs are 1-based, arrays are 0 based.
@@ -91,8 +91,7 @@ namespace System.Globalization
 
             invariant.bUseUserOverrides = false;
 
-            // Calendar was built, go ahead and assign it...            
-            Invariant = invariant;
+            return invariant;
         }
 
         //
