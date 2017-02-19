@@ -44,10 +44,10 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(dsaKey);
 
             DSAKeyValue dsa1 = new DSAKeyValue();
-            dsa1.LoadXml(doc.DocumentElement);
+            Assert.Throws<PlatformNotSupportedException>(() => dsa1.LoadXml(doc.DocumentElement));
 
-            string s = (dsa1.GetXml().OuterXml);
-            Assert.Equal(dsaKey, s);
+            //string s = (dsa1.GetXml().OuterXml);
+            //Assert.Equal(dsaKey, s);
         }
 
         [Fact]
