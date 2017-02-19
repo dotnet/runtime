@@ -15,7 +15,6 @@
     <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
     <Compile Include="DSAKeyValueTest.cs" />
-    <Compile Include="DsaKeyValueTests.cs" />
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
     <Compile Include="EncryptedXmlTest.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
