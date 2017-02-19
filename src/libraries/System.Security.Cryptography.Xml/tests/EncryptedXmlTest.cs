@@ -13,11 +13,13 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
+using Windows.Security.Cryptography.Core;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -27,54 +29,62 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Sample1()
         {
-            AssertDecryption1("Test/System.Security.Cryptography.Xml/EncryptedXmlSample1.xml");
+            AssertDecryption1("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample1.xml");
         }
 
-        void AssertDecryption1(string filename)
+        void AssertDecryption1(string resourceName)
         {
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
-            doc.Load(filename);
+            doc.Load(LoadResourceStream(resourceName));
             EncryptedXml encxml = new EncryptedXml(doc);
-            RSACryptoServiceProvider rsa = new X509Certificate2("Test/System.Security.Cryptography.Xml/sample.pfx", "mono").PrivateKey as RSACryptoServiceProvider;
-            XmlNamespaceManager nm = new XmlNamespaceManager(doc.NameTable);
-            nm.AddNamespace("s", "http://www.w3.org/2003/05/soap-envelope");
-            nm.AddNamespace("o", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-            nm.AddNamespace("e", EncryptedXml.XmlEncNamespaceUrl);
-            XmlElement el = doc.SelectSingleNode("/s:Envelope/s:Header/o:Security/e:EncryptedKey", nm) as XmlElement;
-            EncryptedKey ekey = new EncryptedKey();
-            ekey.LoadXml(el);
-            byte[] key = rsa.Decrypt(ekey.CipherData.CipherValue, true);
-            Rijndael aes = new RijndaelManaged();
-            aes.Key = key;
-            aes.Mode = CipherMode.CBC;
-            ArrayList al = new ArrayList();
-            foreach (XmlElement ed in doc.SelectNodes("//e:EncryptedData", nm))
-                al.Add(ed);
-            foreach (XmlElement ed in al)
+            using (RSA rsa = new X509Certificate2(LoadResource("System.Security.Cryptography.Xml.Tests.sample.pfx"), "mono").PrivateKey as RSA)
             {
-                EncryptedData edata = new EncryptedData();
-                edata.LoadXml(ed);
-                encxml.ReplaceData(ed, encxml.DecryptData(edata, aes));
+                Assert.NotNull(rsa);
+
+                XmlNamespaceManager nm = new XmlNamespaceManager(doc.NameTable);
+                nm.AddNamespace("s", "http://www.w3.org/2003/05/soap-envelope");
+                nm.AddNamespace("o", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+                nm.AddNamespace("e", EncryptedXml.XmlEncNamespaceUrl);
+                XmlElement el = doc.SelectSingleNode("/s:Envelope/s:Header/o:Security/e:EncryptedKey", nm) as XmlElement;
+                EncryptedKey ekey = new EncryptedKey();
+                ekey.LoadXml(el);
+                byte[] key = rsa.Decrypt(ekey.CipherData.CipherValue, RSAEncryptionPadding.OaepSHA1);
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Key = key;
+                    aes.Mode = CipherMode.CBC;
+                    ArrayList al = new ArrayList();
+                    foreach (XmlElement ed in doc.SelectNodes("//e:EncryptedData", nm))
+                        al.Add(ed);
+                    foreach (XmlElement ed in al)
+                    {
+                        EncryptedData edata = new EncryptedData();
+                        edata.LoadXml(ed);
+                        encxml.ReplaceData(ed, encxml.DecryptData(edata, aes));
+                    }
+                }
             }
         }
 
         [Fact]
         public void Sample2()
         {
-            RijndaelManaged aes = new RijndaelManaged();
-            aes.Mode = CipherMode.CBC;
-            aes.KeySize = 256;
-            aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
-            aes.Padding = PaddingMode.Zeros;
+            using (Aes aes = Aes.Create())
+            {
+                aes.Mode = CipherMode.CBC;
+                aes.KeySize = 256;
+                aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
+                aes.Padding = PaddingMode.Zeros;
 
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-            doc.Load("Test/System.Security.Cryptography.Xml/EncryptedXmlSample2.xml");
-            EncryptedXml encxml = new EncryptedXml(doc);
-            EncryptedData edata = new EncryptedData();
-            edata.LoadXml(doc.DocumentElement);
-            encxml.ReplaceData(doc.DocumentElement, encxml.DecryptData(edata, aes));
+                XmlDocument doc = new XmlDocument();
+                doc.PreserveWhitespace = true;
+                doc.Load(LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample2.xml"));
+                EncryptedXml encxml = new EncryptedXml(doc);
+                EncryptedData edata = new EncryptedData();
+                edata.LoadXml(doc.DocumentElement);
+                encxml.ReplaceData(doc.DocumentElement, encxml.DecryptData(edata, aes));
+            }
         }
 
         [Fact]
@@ -279,5 +289,22 @@ namespace System.Security.Cryptography.Xml.Tests
             EncryptedXml ex = new EncryptedXml();
             Assert.Throws<ArgumentNullException>(() => ex.DecryptEncryptedKey(null));
         }
+
+        private Stream LoadResourceStream(string resourceName)
+        {
+            return Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName);
+        }
+
+        private byte[] LoadResource(string resourceName)
+        {
+            using (Stream stream = Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName))
+            {
+                long length = stream.Length;
+                byte[] buffer = new byte[length];
+                stream.Read(buffer, 0, (int)length);
+                return buffer;
+            }
+        }
+
     }
 }
