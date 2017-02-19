@@ -198,7 +198,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetIdElement_StringNull()
         {
             EncryptedXml ex = new EncryptedXml();
-            Assert.Null(ex.GetIdElement(new XmlDocument(), null));
+            Assert.Throws<ArgumentNullException>(() => ex.GetIdElement(new XmlDocument(), null));
         }
 
         [Fact]
