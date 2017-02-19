@@ -9,7 +9,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Xml;
+using Windows.Globalization.DateTimeFormatting;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -17,23 +19,51 @@ namespace System.Security.Cryptography.Xml.Tests
 
     public class DSAKeyValueTest
     {
+        [Fact]
+        public void Ctor_Empty()
+        {
+            DSAKeyValue dsaKeyValue = new DSAKeyValue();
+            Assert.NotNull(dsaKeyValue.Key);
+        }
 
         [Fact]
-        public void GenerateKey()
+        public void Ctor_Dsa()
         {
-            DSAKeyValue dsa1 = new DSAKeyValue();
-            Assert.NotNull(dsa1.Key);
-            XmlElement xmlkey = dsa1.GetXml();
+            using (DSA dsa = DSA.Create())
+            {
+                DSAKeyValue dsaKeyValue = new DSAKeyValue(dsa);
+                Assert.Equal(dsa, dsaKeyValue.Key);
+            }
+        }
 
-            DSAKeyValue dsa2 = new DSAKeyValue();
-            dsa2.LoadXml(xmlkey);
+        [Fact]
+        public void Ctor_Dsa_Null()
+        {
+            DSAKeyValue dsaKeyValue = new DSAKeyValue(null);
+            Assert.NotNull(dsaKeyValue.Key);
+        }
 
-            Assert.True((dsa1.GetXml().OuterXml) == (dsa2.GetXml().OuterXml));
+        [Fact]
+        public void GetXml()
+        {
+            DSAKeyValue dsa = new DSAKeyValue();
+            XmlElement xmlkey = dsa.GetXml();
 
-            DSA key = dsa1.Key;
-            DSAKeyValue dsa3 = new DSAKeyValue(key);
-            Assert.True((dsa3.GetXml().OuterXml) == (dsa1.GetXml().OuterXml));
-            Assert.True((dsa3.GetXml().OuterXml) == (dsa2.GetXml().OuterXml));
+            // Schema check. Should not throw.
+            const string schema = "http://www.w3.org/2000/09/xmldsig#";
+            new [] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter"}
+                .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[name()=DSAKeyValue & namespace-uri()='{schema}']/*[name()='{elementName}' & namespace-uri()='{schema}']").InnerText));
+        }
+
+        [Fact]
+        public void GetXml_SameDsa()
+        {
+            using (DSA dsa = DSA.Create())
+            {
+                DSAKeyValue dsaKeyValue1 = new DSAKeyValue(dsa);
+                DSAKeyValue dsaKeyValue2 = new DSAKeyValue(dsa);
+                Assert.Equal(dsaKeyValue1.GetXml(), dsaKeyValue2.GetXml());
+            }
         }
 
         [Fact]
@@ -51,25 +81,10 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void InvalidValue1()
+        public void LoadXml()
         {
-            string badKey = "<Test></Test>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(badKey);
-
             DSAKeyValue dsa1 = new DSAKeyValue();
-            Assert.Throws<ArgumentNullException>(() => dsa1.LoadXml(null));
-        }
-
-        [Fact]
-        public void InvalidValue2()
-        {
-            string badKey = "<Test></Test>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(badKey);
-
-            DSAKeyValue dsa1 = new DSAKeyValue();
-            Assert.Throws<CryptographicException>(() => dsa1.LoadXml(doc.DocumentElement));
+            Assert.Throws<PlatformNotSupportedException>(() => dsa1.LoadXml(null));
         }
     }
 }
