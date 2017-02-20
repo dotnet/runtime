@@ -767,8 +767,6 @@ AC_ARG_ENABLE(system-aot, [  --enable-system-aot  Enable the Ahead-Of-Time compi
 
 DISABLED_FEATURES=none
 csc_compiler=default
-endian=unknown
-AC_C_BIGENDIAN([endian=big],[endian=little],[endian=unknown])
 AC_MSG_CHECKING([CSharp compiler to use])
 AC_ARG_WITH(csc, [  --with-csc=mcs,roslyn,default      Configures the CSharp compiler to use],[
    if test x$withval = xmcs; then
@@ -782,15 +780,6 @@ AC_ARG_WITH(csc, [  --with-csc=mcs,roslyn,default      Configures the CSharp com
    fi
 ],[csc_compiler=default])
 
-if test $csc_compiler = default; then
-   if test $endian = big; then
-      csc_compiler=mcs
-   elif test $endian = little; then
-      csc_compiler=roslyn
-   else
-      csc_compiler=mcs
-   fi
-fi
 AC_MSG_RESULT($csc_compiler)
 
 #
