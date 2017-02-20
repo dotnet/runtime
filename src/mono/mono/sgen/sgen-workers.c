@@ -330,7 +330,9 @@ marker_idle_func (void *data_untyped)
 		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < active_workers_num) {
 			/* We bound the number of worker awakenings just to be sure */
 			worker_awakenings++;
+			mono_os_mutex_lock (&finished_lock);
 			sgen_workers_ensure_awake ();
+			mono_os_mutex_unlock (&finished_lock);
 		}
 	} else {
 		worker_try_finish (data);
@@ -424,7 +426,13 @@ sgen_workers_start_all_workers (SgenObjectOperations *object_ops_nopar, SgenObje
 	worker_awakenings = 0;
 	mono_memory_write_barrier ();
 
+	/*
+	 * We expect workers to start finishing only after all of them were awaken.
+	 * Otherwise we might think that we have fewer workers and use wrong context.
+	 */
+	mono_os_mutex_lock (&finished_lock);
 	sgen_workers_ensure_awake ();
+	mono_os_mutex_unlock (&finished_lock);
 }
 
 void
