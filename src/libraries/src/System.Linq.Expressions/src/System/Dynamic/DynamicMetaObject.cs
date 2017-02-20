@@ -79,7 +79,7 @@ namespace System.Dynamic
                 {
                     Type ct = Expression.Type;
                     // valuetype at compile time, type cannot change.
-                    if (ct.GetTypeInfo().IsValueType)
+                    if (ct.IsValueType)
                     {
                         return ct;
                     }

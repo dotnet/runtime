@@ -233,7 +233,7 @@ namespace System.Linq.Expressions.Compiler
                         // (integer NegateChecked was rewritten to 0 - operand and doesn't hit here).
                         return;
                     case ExpressionType.TypeAs:
-                        if (operandType.GetTypeInfo().IsValueType)
+                        if (operandType.IsValueType)
                         {
                             _ilg.Emit(OpCodes.Box, operandType);
                         }
@@ -291,7 +291,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitUnboxUnaryExpression(Expression expr)
         {
             var node = (UnaryExpression)expr;
-            Debug.Assert(node.Type.GetTypeInfo().IsValueType);
+            Debug.Assert(node.Type.IsValueType);
 
             // Unbox_Any leaves the value on the stack
             EmitExpression(node.Operand);
@@ -323,7 +323,7 @@ namespace System.Linq.Expressions.Compiler
                 // an expression tree and then compiling it.  We can live with this
                 // discrepancy however.
 
-                if (node.IsLifted && (!node.Type.GetTypeInfo().IsValueType || !node.Operand.Type.GetTypeInfo().IsValueType))
+                if (node.IsLifted && (!node.Type.IsValueType || !node.Operand.Type.IsValueType))
                 {
                     ParameterInfo[] pis = node.Method.GetParametersCached();
                     Debug.Assert(pis != null && pis.Length == 1);

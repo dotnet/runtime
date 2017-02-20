@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Compiler
         private void AddressOf(UnaryExpression node, Type type)
         {
             Debug.Assert(node.NodeType == ExpressionType.Unbox);
-            Debug.Assert(type.GetTypeInfo().IsValueType);
+            Debug.Assert(type.IsValueType);
 
             // Unbox leaves a pointer to the boxed value on the stack
             EmitExpression(node.Operand);
@@ -391,7 +391,7 @@ namespace System.Linq.Expressions.Compiler
 
         private LocalBuilder GetInstanceLocal(Type type)
         {
-            Type instanceLocalType = type.GetTypeInfo().IsValueType ? type.MakeByRefType() : type;
+            Type instanceLocalType = type.IsValueType ? type.MakeByRefType() : type;
             return GetLocal(instanceLocalType);
         }
     }

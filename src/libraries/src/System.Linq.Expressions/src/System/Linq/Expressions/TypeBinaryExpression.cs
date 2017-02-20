@@ -52,7 +52,7 @@ namespace System.Linq.Expressions
         {
             Type cType = Expression.Type;
 
-            if (cType.GetTypeInfo().IsValueType || TypeOperand.IsPointer)
+            if (cType.IsValueType || TypeOperand.IsPointer)
             {
                 if (cType.IsNullableType())
                 {
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions
             // causing it to always return false.
             // We workaround this optimization by generating different, less optimal IL
             // if TypeOperand is an interface.
-            if (TypeOperand.GetTypeInfo().IsInterface)
+            if (TypeOperand.IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(

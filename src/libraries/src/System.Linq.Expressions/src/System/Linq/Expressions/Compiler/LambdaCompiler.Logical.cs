@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 EmitNullableCoalesce(b);
             }
-            else if (b.Left.Type.GetTypeInfo().IsValueType)
+            else if (b.Left.Type.IsValueType)
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }
@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Right);
             if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type))
             {
-                if (b.Right.Type.GetTypeInfo().IsValueType)
+                if (b.Right.Type.IsValueType)
                 {
                     _ilg.Emit(OpCodes.Box, b.Right.Type);
                 }
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.MarkLabel(labCast);
             if (!TypeUtils.AreEquivalent(b.Left.Type, b.Type))
             {
-                Debug.Assert(!b.Left.Type.GetTypeInfo().IsValueType);
+                Debug.Assert(!b.Left.Type.IsValueType);
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }
             _ilg.MarkLabel(labEnd);
@@ -578,7 +578,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    Debug.Assert(!node.Right.Type.GetTypeInfo().IsValueType);
+                    Debug.Assert(!node.Right.Type.IsValueType);
                     EmitExpression(GetEqualityOperand(node.Right));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
@@ -592,7 +592,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    Debug.Assert(!node.Left.Type.GetTypeInfo().IsValueType);
+                    Debug.Assert(!node.Left.Type.IsValueType);
                     EmitExpression(GetEqualityOperand(node.Left));
                 }
                 EmitBranchOp(!branchWhenEqual, label);

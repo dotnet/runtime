@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Tests
 
         internal static bool IsNullableType(Type type)
         {
-            return type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
         internal static Type GetNonNullableType(Type type)
         {
@@ -389,20 +389,20 @@ namespace System.Linq.Expressions.Tests
         {
             // 1 type arg Func
             Type type = Expression.GetFuncType(new Type[] { typeof(int) });
-            Assert.True(type.GetTypeInfo().IsGenericType);
+            Assert.True(type.IsGenericType);
             Assert.Equal(1, type.GetGenericArguments().Length);
             Assert.Equal(typeof(int), type.GetGenericArguments()[0]);
 
             // 2 type arg Func
             type = Expression.GetFuncType(new Type[] { typeof(int), typeof(string) });
-            Assert.True(type.GetTypeInfo().IsGenericType);
+            Assert.True(type.IsGenericType);
             Assert.Equal(typeof(Func<,>), type.GetGenericTypeDefinition());
             Assert.Equal(typeof(int), type.GetGenericArguments()[0]);
             Assert.Equal(typeof(string), type.GetGenericArguments()[1]);
 
             // 3 type arg Func
             type = Expression.GetFuncType(new Type[] { typeof(string), typeof(int), typeof(decimal) });
-            Assert.True(type.GetTypeInfo().IsGenericType);
+            Assert.True(type.IsGenericType);
             Assert.Equal(typeof(Func<,,>), type.GetGenericTypeDefinition());
             Assert.Equal(typeof(string), type.GetGenericArguments()[0]);
             Assert.Equal(typeof(int), type.GetGenericArguments()[1]);
@@ -410,7 +410,7 @@ namespace System.Linq.Expressions.Tests
 
             // 4 type arg Func
             type = Expression.GetFuncType(new Type[] { typeof(string), typeof(int), typeof(decimal), typeof(float) });
-            Assert.True(type.GetTypeInfo().IsGenericType);
+            Assert.True(type.IsGenericType);
             Assert.Equal(typeof(Func<,,,>), type.GetGenericTypeDefinition());
             Assert.Equal(typeof(string), type.GetGenericArguments()[0]);
             Assert.Equal(typeof(int), type.GetGenericArguments()[1]);
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions.Tests
 
             // 5 type arg Func
             type = Expression.GetFuncType(new Type[] { typeof(NWindProxy.Customer), typeof(string), typeof(int), typeof(decimal), typeof(float) });
-            Assert.True(type.GetTypeInfo().IsGenericType);
+            Assert.True(type.IsGenericType);
             Assert.Equal(typeof(Func<,,,,>), type.GetGenericTypeDefinition());
             Assert.Equal(typeof(NWindProxy.Customer), type.GetGenericArguments()[0]);
             Assert.Equal(typeof(string), type.GetGenericArguments()[1]);
