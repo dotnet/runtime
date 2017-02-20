@@ -1404,6 +1404,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         // For ARM a call target can not be a contained indirection
         assert(!target->isContainedIndir());
 
+        genConsumeReg(target);
+
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
         //
