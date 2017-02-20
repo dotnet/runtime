@@ -267,7 +267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // class. This is so that if we have a base type that's generic, we'll be
                 // getting the correctly instantiated base type.
 
-                var baseType = pAggregate.AssociatedSystemType?.GetTypeInfo().BaseType;
+                var baseType = pAggregate.AssociatedSystemType?.BaseType;
                 if (baseType != null)
                 {
                     // Store the old base class.

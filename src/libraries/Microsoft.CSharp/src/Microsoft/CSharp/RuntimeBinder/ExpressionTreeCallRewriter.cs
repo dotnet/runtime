@@ -405,13 +405,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             // This is to ensure that for embedded nopia types, we have the
             // appropriate local type from the member itself; this is possible
             // because nopia types are not generic or nested.
-            if (!t.GetTypeInfo().IsGenericType && !t.GetTypeInfo().IsNested)
+            if (!t.IsGenericType && !t.IsNested)
             {
                 t = f.DeclaringType;
             }
 
             // Now find the generic'ed one if we're generic.
-            if (t.GetTypeInfo().IsGenericType)
+            if (t.IsGenericType)
             {
                 f = t.GetField(f.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             }
@@ -999,7 +999,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // This is to ensure that for embedded nopia types, we have the
             // appropriate local type from the member itself; this is possible
             // because nopia types are not generic or nested.
-            if (!type.GetTypeInfo().IsGenericType && !type.IsNested)
+            if (!type.IsGenericType && !type.IsNested)
             {
                 type = methodInfo.DeclaringType;
             }
@@ -1071,7 +1071,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // This is to ensure that for embedded nopia types, we have the
             // appropriate local type from the member itself; this is possible
             // because nopia types are not generic or nested.
-            if (!type.GetTypeInfo().IsGenericType && !type.IsNested)
+            if (!type.IsGenericType && !type.IsNested)
             {
                 type = ctorInfo.DeclaringType;
             }
@@ -1127,7 +1127,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // This is to ensure that for embedded nopia types, we have the
             // appropriate local type from the member itself; this is possible
             // because nopia types are not generic or nested.
-            if (!type.GetTypeInfo().IsGenericType && !type.IsNested)
+            if (!type.IsGenericType && !type.IsNested)
             {
                 type = propertyInfo.DeclaringType;
             }

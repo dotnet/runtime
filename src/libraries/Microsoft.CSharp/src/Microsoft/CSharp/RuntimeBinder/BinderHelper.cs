@@ -173,8 +173,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type curType = obj?.RuntimeType;
             while (curType != null)
             {
-                TypeInfo curTypeInfo = curType.GetTypeInfo();
-                TypeAttributes attributes = curTypeInfo.Attributes;
+                TypeAttributes attributes = curType.Attributes;
                 if ((attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
                 {
                     // Found a WinRT COM object
@@ -186,7 +185,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     // this is definitely a non-WinRT COM object
                     return false;
                 }
-                curType = curTypeInfo.BaseType;
+                curType = curType.BaseType;
             }
 
             return false;
@@ -294,7 +293,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
             }
 
-            if (binding.Type.GetTypeInfo().IsValueType && !action.ReturnType.GetTypeInfo().IsValueType)
+            if (binding.Type.IsValueType && !action.ReturnType.IsValueType)
             {
                 Debug.Assert(action.ReturnType == typeof(object));
                 return Expression.Convert(binding, action.ReturnType);
