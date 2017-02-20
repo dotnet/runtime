@@ -918,9 +918,51 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ARR_BOUNDS_CHECK:
-            // Consumes arrLen and index. Has no result.
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+        {
+            // Consumes arrLen & index - has no result
             info->srcCount = 2;
             info->dstCount = 0;
+        }
+        break;
+
+        case GT_ARR_ELEM:
+            // These must have been lowered to GT_ARR_INDEX
+            noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
+            info->srcCount = 0;
+            info->dstCount = 0;
+            break;
+
+        case GT_ARR_INDEX:
+            info->srcCount = 2;
+            info->dstCount = 1;
+
+            // We need one internal register when generating code for GT_ARR_INDEX, however the
+            // register allocator always may just give us the same one as it gives us for the 'dst'
+            // as a workaround we will just ask for two internal registers.
+            //
+            info->internalIntCount = 2;
+
+            // For GT_ARR_INDEX, the lifetime of the arrObj must be extended because it is actually used multiple
+            // times while the result is being computed.
+            tree->AsArrIndex()->ArrObj()->gtLsraInfo.isDelayFree = true;
+            info->hasDelayFreeSrc                                = true;
+            break;
+
+        case GT_ARR_OFFSET:
+            // This consumes the offset, if any, the arrObj and the effective index,
+            // and produces the flattened offset for this dimension.
+            info->srcCount         = 3;
+            info->dstCount         = 1;
+            info->internalIntCount = 1;
+
+            // we don't want to generate code for this
+            if (tree->gtArrOffs.gtOffset->IsIntegralConst(0))
+            {
+                MakeSrcContained(tree, tree->gtArrOffs.gtOffset);
+            }
             break;
 
         case GT_LEA:
