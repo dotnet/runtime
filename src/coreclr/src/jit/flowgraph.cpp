@@ -23286,7 +23286,7 @@ void Compiler::fgCloneFinally()
         BasicBlock* const firstTryBlock = HBtab->ebdTryBeg;
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
-        assert(lastTryBlock->getTryIndex() == XTnum);
+        assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
         BasicBlock* normalCallFinallyBlock   = nullptr;
