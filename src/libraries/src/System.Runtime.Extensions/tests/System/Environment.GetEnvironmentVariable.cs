@@ -180,6 +180,7 @@ namespace System.Tests
             }
         }
 
+        [ActiveIssue(16156)]
         [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
