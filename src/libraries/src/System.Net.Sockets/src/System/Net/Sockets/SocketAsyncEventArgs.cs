@@ -165,10 +165,7 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        if (_bufferListInternal != null)
-                        {
-                            _bufferListInternal.Clear();
-                        }
+                        _bufferListInternal?.Clear();
                     }
                     
                     _bufferList = value;
