@@ -10,6 +10,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" /> 
+    <AdditionalCodeCoverageAssemblies Include="System.Linq.Expressions" /> 
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="CallInfoTests.cs" />
     <Compile Include="Dynamic.Context\Common.cs" />
     <Compile Include="Dynamic.Context\Conformance.dynamic.context.attribute.cs" />
