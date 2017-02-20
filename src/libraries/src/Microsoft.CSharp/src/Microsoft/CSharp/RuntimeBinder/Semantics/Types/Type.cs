@@ -44,19 +44,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsWindowsRuntimeType()
         {
-            return (AssociatedSystemType.GetTypeInfo().Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime;
+            return (AssociatedSystemType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime;
         }
 
         public bool IsCollectionType()
         {
-            if ((AssociatedSystemType.GetTypeInfo().IsGenericType &&
-                 (AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IList<>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IEnumerable<>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
-                  AssociatedSystemType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))) ||
+            if ((AssociatedSystemType.IsGenericType &&
+                 (AssociatedSystemType.GetGenericTypeDefinition() == typeof(IList<>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(IEnumerable<>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                  AssociatedSystemType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))) ||
                 AssociatedSystemType == typeof(System.Collections.IList) ||
                 AssociatedSystemType == typeof(System.Collections.ICollection) ||
                 AssociatedSystemType == typeof(System.Collections.IEnumerable) ||
@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     else
                     {
                         Type parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
-                        result = parentType.GetTypeInfo().GenericTypeParameters[t.GetIndexInOwnParameters()];
+                        result = parentType.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
                     break;
 
@@ -182,7 +182,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Type[] systemTypeArgs = list.ToArray();
             Type uninstantiatedType = agg.AssociatedSystemType;
 
-            if (uninstantiatedType.GetTypeInfo().IsGenericType)
+            if (uninstantiatedType.IsGenericType)
             {
                 try
                 {
