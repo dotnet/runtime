@@ -2,7 +2,7 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "2.0.0-beta-25018-01",
+        "Microsoft.NETCore.Platforms": "2.0.0-beta-25020-01",
         "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25020-02",
         "Microsoft.NETCore.TestHost": "2.0.0-beta-25020-02",
         "runtime.native.System.Data.SqlClient.sni": "4.4.0-beta-24913-02",
