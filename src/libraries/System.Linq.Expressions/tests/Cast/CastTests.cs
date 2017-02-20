@@ -1110,7 +1110,7 @@ namespace System.Linq.Expressions.Tests
 
         private static bool CanBeNull(Type type)
         {
-            return !type.GetTypeInfo().IsValueType || (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+            return !type.IsValueType || (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 
         private static void VerifyCustomCastCustom2(C value, bool useInterpreter)

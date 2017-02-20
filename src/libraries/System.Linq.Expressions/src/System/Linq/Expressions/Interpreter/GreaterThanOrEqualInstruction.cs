@@ -278,7 +278,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type, bool liftedToNull = false)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             if (liftedToNull)
             {
                 switch (type.GetNonNullableType().GetTypeCode())

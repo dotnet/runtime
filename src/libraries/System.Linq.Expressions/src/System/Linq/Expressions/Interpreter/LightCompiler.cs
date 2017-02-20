@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (type != typeof(void))
             {
-                if (type.GetTypeInfo().IsValueType)
+                if (type.IsValueType)
                 {
                     object value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
                     if (value != null)
@@ -453,7 +453,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private bool MaybeMutableValueType(Type type)
         {
-            return type.GetTypeInfo().IsValueType && !type.GetTypeInfo().IsEnum && !type.GetTypeInfo().IsPrimitive;
+            return type.IsValueType && !type.IsEnum && !type.IsPrimitive;
         }
 
         private void CompileGetBoxedVariable(ParameterExpression variable)
@@ -985,7 +985,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileEqual(Expression left, Expression right, bool liftedToNull)
         {
 #if DEBUG
-            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.IsValueType && !right.Type.IsValueType);
 #endif
             Compile(left);
             Compile(right);
@@ -995,7 +995,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileNotEqual(Expression left, Expression right, bool liftedToNull)
         {
 #if DEBUG
-            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.GetTypeInfo().IsValueType && !right.Type.GetTypeInfo().IsValueType);
+            Debug.Assert(IsNullComparison(left, right) || left.Type == right.Type || !left.Type.IsValueType && !right.Type.IsValueType);
 #endif
             Compile(left);
             Compile(right);
@@ -1052,7 +1052,7 @@ namespace System.Linq.Expressions.Interpreter
                 Compile(node.Operand);
                 _instructions.EmitStoreLocal(opTemp.Index);
 
-                if (!node.Operand.Type.GetTypeInfo().IsValueType ||
+                if (!node.Operand.Type.IsValueType ||
                     (node.Operand.Type.IsNullableType() && node.IsLiftedToNull))
                 {
                     _instructions.EmitLoadLocal(opTemp.Index);
@@ -1099,7 +1099,7 @@ namespace System.Linq.Expressions.Interpreter
                 return;
             }
 
-            if (typeFrom.GetTypeInfo().IsValueType &&
+            if (typeFrom.IsValueType &&
                 typeTo.IsNullableType() &&
                 typeTo.GetNonNullableType().Equals(typeFrom))
             {
@@ -1107,7 +1107,7 @@ namespace System.Linq.Expressions.Interpreter
                 return;
             }
 
-            if (typeTo.GetTypeInfo().IsValueType &&
+            if (typeTo.IsValueType &&
                 typeFrom.IsNullableType() &&
                 typeFrom.GetNonNullableType().Equals(typeTo))
             {
@@ -1120,16 +1120,16 @@ namespace System.Linq.Expressions.Interpreter
             Type nonNullableTo = typeTo.GetNonNullableType();
 
             // use numeric conversions for both numeric types and enums
-            if ((nonNullableFrom.IsNumericOrBool() || nonNullableFrom.GetTypeInfo().IsEnum)
-                 && (nonNullableTo.IsNumericOrBool() || nonNullableTo.GetTypeInfo().IsEnum || nonNullableTo == typeof(decimal)))
+            if ((nonNullableFrom.IsNumericOrBool() || nonNullableFrom.IsEnum)
+                 && (nonNullableTo.IsNumericOrBool() || nonNullableTo.IsEnum || nonNullableTo == typeof(decimal)))
             {
                 Type enumTypeTo = null;
 
-                if (nonNullableFrom.GetTypeInfo().IsEnum)
+                if (nonNullableFrom.IsEnum)
                 {
                     nonNullableFrom = Enum.GetUnderlyingType(nonNullableFrom);
                 }
-                if (nonNullableTo.GetTypeInfo().IsEnum)
+                if (nonNullableTo.IsEnum)
                 {
                     enumTypeTo = nonNullableTo;
                     nonNullableTo = Enum.GetUnderlyingType(nonNullableTo);
@@ -1179,7 +1179,7 @@ namespace System.Linq.Expressions.Interpreter
                 return;
             }
 
-            if (typeTo.GetTypeInfo().IsEnum)
+            if (typeTo.IsEnum)
             {
                 _instructions.Emit(NullCheckInstruction.Instance);
                 _instructions.EmitCastReferenceToEnum(typeTo);
@@ -2217,7 +2217,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private static bool ShouldWritebackNode(Expression node)
         {
-            if (node.Type.GetTypeInfo().IsValueType)
+            if (node.Type.IsValueType)
             {
                 switch (node.NodeType)
                 {
@@ -2380,7 +2380,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (node.Constructor != null)
             {
-                if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
+                if (node.Constructor.DeclaringType.IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
 
                 ParameterInfo[] parameters = node.Constructor.GetParametersCached();
@@ -2419,7 +2419,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                Debug.Assert(node.Type.GetTypeInfo().IsValueType);
+                Debug.Assert(node.Type.IsValueType);
                 _instructions.EmitDefaultValue(node.Type);
             }
         }
@@ -2718,7 +2718,7 @@ namespace System.Linq.Expressions.Interpreter
                         var memberMember = (MemberMemberBinding)binding;
                         _instructions.EmitDup();
                         Type type = GetMemberType(memberMember.Member);
-                        if (memberMember.Member is PropertyInfo && type.GetTypeInfo().IsValueType)
+                        if (memberMember.Member is PropertyInfo && type.IsValueType)
                         {
                             throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(memberMember.Bindings);
                         }
@@ -2864,7 +2864,7 @@ namespace System.Linq.Expressions.Interpreter
 
             Compile(node.Operand);
 
-            if (node.Type.GetTypeInfo().IsValueType && !node.Type.IsNullableType())
+            if (node.Type.IsValueType && !node.Type.IsNullableType())
             {
                 _instructions.Emit(NullCheckInstruction.Instance);
             }
@@ -2924,7 +2924,7 @@ namespace System.Linq.Expressions.Interpreter
                     _instructions.EmitNotEqual(typeof(object));
                     break;
                 default:
-                    if (node.TypeOperand.GetTypeInfo().IsValueType)
+                    if (node.TypeOperand.IsValueType)
                     {
                         _instructions.EmitLoad(node.TypeOperand.GetNonNullableType());
                         _instructions.EmitTypeEquals();

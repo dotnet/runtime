@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitUnliftedEquality(op, leftType);
                 return;
             }
-            if (!leftType.GetTypeInfo().IsPrimitive)
+            if (!leftType.IsPrimitive)
             {
                 throw Error.OperatorNotImplementedForType(op, leftType);
             }
@@ -338,7 +338,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitUnliftedEquality(ExpressionType op, Type type)
         {
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
-            if (!type.GetTypeInfo().IsPrimitive && type.GetTypeInfo().IsValueType && !type.GetTypeInfo().IsEnum)
+            if (!type.IsPrimitive && type.IsValueType && !type.IsEnum)
             {
                 throw Error.OperatorNotImplementedForType(op, type);
             }

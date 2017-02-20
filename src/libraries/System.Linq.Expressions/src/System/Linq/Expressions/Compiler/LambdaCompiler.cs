@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Compiler
 
             _tree = tree;
             _lambda = lambda;
-            _typeBuilder = (TypeBuilder)method.DeclaringType.GetTypeInfo();
+            _typeBuilder = (TypeBuilder)method.DeclaringType;
             _method = method;
             _hasClosureArgument = hasClosureArgument;
 
