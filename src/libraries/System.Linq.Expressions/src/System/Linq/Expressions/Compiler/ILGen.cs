@@ -708,173 +708,202 @@ namespace System.Linq.Expressions.Compiler
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void EmitNumericConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
         {
-            bool isFromUnsigned = typeFrom.IsUnsigned();
-            bool isFromFloatingPoint = typeFrom.IsFloatingPoint();
-            if (typeTo == typeof(float))
+            TypeCode tc = typeTo.GetTypeCode();
+            TypeCode tf = typeFrom.GetTypeCode();
+
+            if (tc == tf)
             {
-                if (isFromUnsigned)
-                    il.Emit(OpCodes.Conv_R_Un);
-                il.Emit(OpCodes.Conv_R4);
+                // Between enums of same underlying type, or between such an enum and the underlying type itself.
+                // Includes bool-backed enums, which is the only valid conversion to or from bool.
+                // Just leave the value on the stack, and treat it as the wanted type.
+                return;
             }
-            else if (typeTo == typeof(double))
+
+            bool isFromUnsigned = tf.IsUnsigned();
+            OpCode convCode;
+            switch (tc)
             {
-                if (isFromUnsigned)
-                    il.Emit(OpCodes.Conv_R_Un);
-                il.Emit(OpCodes.Conv_R8);
-            }
-            else if (typeTo == typeof(decimal))
-            {
-                // NB: TypeUtils.IsImplicitNumericConversion makes the promise that implicit conversions
-                //     from various integral types and char to decimal are possible. Coalesce allows the
-                //     conversion lambda to be omitted in these cases, so we have to handle this case in
-                //     here as well, by using the op_Implicit operator implementation on System.Decimal
-                //     because there are no opcodes for System.Decimal.
-
-                Debug.Assert(typeFrom != typeTo);
-
-                TypeCode tc = typeFrom.GetTypeCode();
-
-                MethodInfo method;
-
-                switch (tc)
-                {
-                    case TypeCode.Byte:   method = Decimal_op_Implicit_Byte;   break;
-                    case TypeCode.SByte:  method = Decimal_op_Implicit_SByte;  break;
-                    case TypeCode.Int16:  method = Decimal_op_Implicit_Int16;  break;
-                    case TypeCode.UInt16: method = Decimal_op_Implicit_UInt16; break;
-                    case TypeCode.Int32:  method = Decimal_op_Implicit_Int32;  break;
-                    case TypeCode.UInt32: method = Decimal_op_Implicit_UInt32; break;
-                    case TypeCode.Int64:  method = Decimal_op_Implicit_Int64;  break;
-                    case TypeCode.UInt64: method = Decimal_op_Implicit_UInt64; break;
-                    case TypeCode.Char:   method = Decimal_op_Implicit_Char;   break;
-                    default:
-                        throw Error.UnhandledConvert(typeTo);
-                }
-
-                il.Emit(OpCodes.Call, method);
-            }
-            else
-            {
-                TypeCode tc = typeTo.GetTypeCode();
-                if (tc == typeFrom.GetTypeCode())
-                {
-                    // Between enums of same underlying type, or between such an enum and the underlying type itself.
-                    // Includes bool-backed enums, which is the only valid conversion to or from bool.
-                    // Just leave the value on the stack, and treat it as the wanted type.
-                    return;
-                }
-
-                if (isChecked)
-                {
-                    // Overflow checking needs to know if the source value on the IL stack is unsigned or not.
+                case TypeCode.Single:
                     if (isFromUnsigned)
+                        il.Emit(OpCodes.Conv_R_Un);
+                    convCode = OpCodes.Conv_R4;
+                    break;
+                case TypeCode.Double:
+                    if (isFromUnsigned)
+                        il.Emit(OpCodes.Conv_R_Un);
+                    convCode = OpCodes.Conv_R8;
+                    break;
+                case TypeCode.Decimal:
+
+                    // NB: TypeUtils.IsImplicitNumericConversion makes the promise that implicit conversions
+                    //     from various integral types and char to decimal are possible. Coalesce allows the
+                    //     conversion lambda to be omitted in these cases, so we have to handle this case in
+                    //     here as well, by using the op_Implicit operator implementation on System.Decimal
+                    //     because there are no opcodes for System.Decimal.
+
+                    Debug.Assert(typeFrom != typeTo);
+
+                    MethodInfo method;
+
+                    switch (tf)
                     {
-                        switch (tc)
-                        {
-                            case TypeCode.SByte:
-                                il.Emit(OpCodes.Conv_Ovf_I1_Un);
-                                break;
-                            case TypeCode.Int16:
-                                il.Emit(OpCodes.Conv_Ovf_I2_Un);
-                                break;
-                            case TypeCode.Int32:
-                                il.Emit(OpCodes.Conv_Ovf_I4_Un);
-                                break;
-                            case TypeCode.Int64:
-                                il.Emit(OpCodes.Conv_Ovf_I8_Un);
-                                break;
-                            case TypeCode.Byte:
-                                il.Emit(OpCodes.Conv_Ovf_U1_Un);
-                                break;
-                            case TypeCode.UInt16:
-                            case TypeCode.Char:
-                                il.Emit(OpCodes.Conv_Ovf_U2_Un);
-                                break;
-                            case TypeCode.UInt32:
-                                il.Emit(OpCodes.Conv_Ovf_U4_Un);
-                                break;
-                            case TypeCode.UInt64:
-                                il.Emit(OpCodes.Conv_Ovf_U8_Un);
-                                break;
-                            default:
-                                throw Error.UnhandledConvert(typeTo);
-                        }
-                    }
-                    else
-                    {
-                        switch (tc)
-                        {
-                            case TypeCode.SByte:
-                                il.Emit(OpCodes.Conv_Ovf_I1);
-                                break;
-                            case TypeCode.Int16:
-                                il.Emit(OpCodes.Conv_Ovf_I2);
-                                break;
-                            case TypeCode.Int32:
-                                il.Emit(OpCodes.Conv_Ovf_I4);
-                                break;
-                            case TypeCode.Int64:
-                                il.Emit(OpCodes.Conv_Ovf_I8);
-                                break;
-                            case TypeCode.Byte:
-                                il.Emit(OpCodes.Conv_Ovf_U1);
-                                break;
-                            case TypeCode.UInt16:
-                            case TypeCode.Char:
-                                il.Emit(OpCodes.Conv_Ovf_U2);
-                                break;
-                            case TypeCode.UInt32:
-                                il.Emit(OpCodes.Conv_Ovf_U4);
-                                break;
-                            case TypeCode.UInt64:
-                                il.Emit(OpCodes.Conv_Ovf_U8);
-                                break;
-                            default:
-                                throw Error.UnhandledConvert(typeTo);
-                        }
-                    }
-                }
-                else
-                {
-                    switch (tc)
-                    {
-                        case TypeCode.SByte:
-                            il.Emit(OpCodes.Conv_I1);
-                            break;
-                        case TypeCode.Byte:
-                            il.Emit(OpCodes.Conv_U1);
-                            break;
-                        case TypeCode.Int16:
-                            il.Emit(OpCodes.Conv_I2);
-                            break;
-                        case TypeCode.UInt16:
-                        case TypeCode.Char:
-                            il.Emit(OpCodes.Conv_U2);
-                            break;
-                        case TypeCode.Int32:
-                            il.Emit(OpCodes.Conv_I4);
-                            break;
-                        case TypeCode.UInt32:
-                            il.Emit(OpCodes.Conv_U4);
-                            break;
-                        case TypeCode.Int64:
-                            il.Emit(isFromUnsigned ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
-                            break;
-                        case TypeCode.UInt64:
-                            if (isFromUnsigned || isFromFloatingPoint)
-                            {
-                                il.Emit(OpCodes.Conv_U8);
-                            }
-                            else
-                            {
-                                il.Emit(OpCodes.Conv_I8);
-                            }
-                            break;
+                        case TypeCode.Byte:   method = Decimal_op_Implicit_Byte;   break;
+                        case TypeCode.SByte:  method = Decimal_op_Implicit_SByte;  break;
+                        case TypeCode.Int16:  method = Decimal_op_Implicit_Int16;  break;
+                        case TypeCode.UInt16: method = Decimal_op_Implicit_UInt16; break;
+                        case TypeCode.Int32:  method = Decimal_op_Implicit_Int32;  break;
+                        case TypeCode.UInt32: method = Decimal_op_Implicit_UInt32; break;
+                        case TypeCode.Int64:  method = Decimal_op_Implicit_Int64;  break;
+                        case TypeCode.UInt64: method = Decimal_op_Implicit_UInt64; break;
+                        case TypeCode.Char:   method = Decimal_op_Implicit_Char;   break;
                         default:
                             throw Error.UnhandledConvert(typeTo);
                     }
-                }
+
+                    il.Emit(OpCodes.Call, method);
+                    return;
+                case TypeCode.SByte:
+                    if (isChecked)
+                    {
+                        convCode = isFromUnsigned ? OpCodes.Conv_Ovf_I1_Un : OpCodes.Conv_Ovf_I1;
+                    }
+                    else
+                    {
+                        if (tf == TypeCode.Byte)
+                        {
+                            return;
+                        }
+
+                        convCode = OpCodes.Conv_I1;
+                    }
+
+                    break;
+                case TypeCode.Byte:
+                    if (isChecked)
+                    {
+                        convCode = isFromUnsigned ? OpCodes.Conv_Ovf_U1_Un : OpCodes.Conv_Ovf_U1;
+                    }
+                    else
+                    {
+                        if (tf == TypeCode.SByte)
+                        {
+                            return;
+                        }
+
+                        convCode = OpCodes.Conv_U1;
+                    }
+
+                    break;
+                case TypeCode.Int16:
+                    switch (tf)
+                    {
+                        case TypeCode.SByte:
+                        case TypeCode.Byte:
+                            return;
+                        case TypeCode.Char:
+                        case TypeCode.UInt16:
+                            if (!isChecked)
+                            {
+                                return;
+                            }
+
+                            break;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned ? OpCodes.Conv_Ovf_I2_Un : OpCodes.Conv_Ovf_I2)
+                        : OpCodes.Conv_I2;
+                    break;
+                case TypeCode.Char:
+                case TypeCode.UInt16:
+                    switch (tf)
+                    {
+                        case TypeCode.Byte:
+                        case TypeCode.Char:
+                        case TypeCode.UInt16:
+                            return;
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                            if (!isChecked)
+                            {
+                                return;
+                            }
+
+                            break;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned ? OpCodes.Conv_Ovf_U2_Un : OpCodes.Conv_Ovf_U2)
+                        : OpCodes.Conv_U2;
+                    break;
+                case TypeCode.Int32:
+                    switch (tf)
+                    {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                            return;
+                        case TypeCode.UInt32:
+                            if (!isChecked)
+                            {
+                                return;
+                            }
+
+                            break;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned ? OpCodes.Conv_Ovf_I4_Un : OpCodes.Conv_Ovf_I4)
+                        : OpCodes.Conv_I4;
+                    break;
+                case TypeCode.UInt32:
+                    switch (tf)
+                    {
+                        case TypeCode.Byte:
+                        case TypeCode.Char:
+                        case TypeCode.UInt16:
+                            return;
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.Int32:
+                            if (!isChecked)
+                            {
+                                return;
+                            }
+
+                            break;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned ? OpCodes.Conv_Ovf_U4_Un : OpCodes.Conv_Ovf_U4)
+                        : OpCodes.Conv_U4;
+                    break;
+                case TypeCode.Int64:
+                    if (!isChecked && tf == TypeCode.UInt64)
+                    {
+                        return;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned ? OpCodes.Conv_Ovf_I8_Un : OpCodes.Conv_Ovf_I8)
+                        : (isFromUnsigned ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
+                    break;
+                case TypeCode.UInt64:
+                    if (!isChecked && tf == TypeCode.Int64)
+                    {
+                        return;
+                    }
+
+                    convCode = isChecked
+                        ? (isFromUnsigned || tf.IsFloatingPoint() ? OpCodes.Conv_Ovf_U8_Un : OpCodes.Conv_Ovf_U8)
+                        : (isFromUnsigned || tf.IsFloatingPoint() ? OpCodes.Conv_U8 : OpCodes.Conv_I8);
+                    break;
+                default:
+                    throw ContractUtils.Unreachable;
             }
+
+            il.Emit(convCode);
         }
 
         private static void EmitNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
