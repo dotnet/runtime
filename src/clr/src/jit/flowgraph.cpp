@@ -23287,7 +23287,7 @@ void Compiler::fgCloneFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
         // TODO: rewrite the following assert to support nested try blocks
-        //assert(lastTryBlock->getTryIndex() == XTnum);
+        // assert(lastTryBlock->getTryIndex() == XTnum);
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
         BasicBlock* normalCallFinallyBlock   = nullptr;
