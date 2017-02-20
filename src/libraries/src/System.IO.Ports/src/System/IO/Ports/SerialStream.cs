@@ -1041,12 +1041,12 @@ namespace System.IO.Ports
 
         // Blocking read operation, returning the number of bytes read from the stream.
 
-        public override int Read([In, Out] byte[] array, int offset, int count)
+        public override int Read(byte[] array, int offset, int count)
         {
             return Read(array, offset, count, ReadTimeout);
         }
 
-        internal unsafe int Read([In, Out] byte[] array, int offset, int count, int timeout)
+        internal unsafe int Read(byte[] array, int offset, int count, int timeout)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
