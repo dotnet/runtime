@@ -97,7 +97,7 @@ namespace System.Net
             throw new NotSupportedException(SR.net_noseek);
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int size)
+        public override int Read(byte[] buffer, int offset, int size)
         {
             throw new InvalidOperationException(SR.net_writeonlystream);
         }
