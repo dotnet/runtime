@@ -28,7 +28,6 @@ namespace System.Net.Sockets
 
         // BufferList property variables.
         private WSABuffer[] _wsaBufferArray;
-        private bool _bufferListChanged;
 
         // Internal buffers for WSARecvMsg
         private byte[] _wsaMessageBuffer;
@@ -107,7 +106,6 @@ namespace System.Net.Sockets
 
         private void SetupMultipleBuffers()
         {
-            _bufferListChanged = true;
             CheckPinMultipleBuffers();
         }
 
@@ -759,7 +757,7 @@ namespace System.Net.Sockets
         // Ensures Overlapped object exists with appropriate multiple buffers pinned.
         private void CheckPinMultipleBuffers()
         {
-            if (_bufferList == null)
+            if (_bufferListInternal == null || _bufferListInternal.Count == 0)
             {
                 // No buffer list is set so unpin any existing multiple buffer pinning.
                 if (_pinState == PinState.MultipleBuffer)
@@ -769,20 +767,16 @@ namespace System.Net.Sockets
             }
             else
             {
-                if (!(_pinState == PinState.MultipleBuffer) || _bufferListChanged)
+                // Need to setup a new Overlapped.
+                FreeOverlapped(false);
+                try
                 {
-                    // Need to setup a new Overlapped.
-                    _bufferListChanged = false;
+                    SetupOverlappedMultiple();
+                }
+                catch (Exception)
+                {
                     FreeOverlapped(false);
-                    try
-                    {
-                        SetupOverlappedMultiple();
-                    }
-                    catch (Exception)
-                    {
-                        FreeOverlapped(false);
-                        throw;
-                    }
+                    throw;
                 }
             }
         }
@@ -923,34 +917,33 @@ namespace System.Net.Sockets
         // Sets up an Overlapped object with multiple buffers pinned.
         private unsafe void SetupOverlappedMultiple()
         {
-            ArraySegment<byte>[] tempList = new ArraySegment<byte>[_bufferList.Count];
-            _bufferList.CopyTo(tempList, 0);
+            int bufferCount = _bufferListInternal.Count;
 
             // Number of things to pin is number of buffers.
             // Ensure we have properly sized object array.
-            if (_objectsToPin == null || (_objectsToPin.Length != tempList.Length))
+            if (_objectsToPin == null || (_objectsToPin.Length != bufferCount))
             {
-                _objectsToPin = new object[tempList.Length];
+                _objectsToPin = new object[bufferCount];
             }
 
             // Fill in object array.
-            for (int i = 0; i < (tempList.Length); i++)
+            for (int i = 0; i < bufferCount; i++)
             {
-                _objectsToPin[i] = tempList[i].Array;
+                _objectsToPin[i] = _bufferListInternal[i].Array;
             }
 
-            if (_wsaBufferArray == null || _wsaBufferArray.Length != tempList.Length)
+            if (_wsaBufferArray == null || _wsaBufferArray.Length != bufferCount)
             {
-                _wsaBufferArray = new WSABuffer[tempList.Length];
+                _wsaBufferArray = new WSABuffer[bufferCount];
             }
 
             // Pin buffers and fill in WSABuffer descriptor pointers and lengths.
             _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _objectsToPin);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped.{_preAllocatedOverlapped}");
 
-            for (int i = 0; i < tempList.Length; i++)
+            for (int i = 0; i < bufferCount; i++)
             {
-                ArraySegment<byte> localCopy = tempList[i];
+                ArraySegment<byte> localCopy = _bufferListInternal[i];
                 RangeValidationHelpers.ValidateSegment(localCopy);
                 _wsaBufferArray[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(localCopy.Array, localCopy.Offset);
                 _wsaBufferArray[i].Length = localCopy.Count;

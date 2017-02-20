@@ -4028,7 +4028,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(e));
             }
-            if (e._bufferList != null)
+            if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
             }
@@ -4083,7 +4083,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(e));
             }
-            if (e._bufferList != null)
+            if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
             }
@@ -4183,7 +4183,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(e));
             }
-            if (e._bufferList != null)
+            if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, "BufferList");
             }
