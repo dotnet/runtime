@@ -24,6 +24,7 @@ Therefore code which creates activity also writes corresponding event to `Diagno
 - CONSIDER - keeping [Baggage](#baggage) as small as possible.
 - DO NOT - add sensitive information to baggage, since it may be propagated out of the process boundaries.
 - DO - write activity [Id](#id) with every telemetry event. [ParentId](#parentid), [Tags](#tags) and [Baggage](#baggage) should be written at least once per operation and could be found by Id. Note that Tags and Baggage could be changed through the lifetime of activity, and it makes sense to write them when the activity stops. [Duration](#duration) should be logged only when the activity stops.
+- CONSIDER - writing activity [RootId](#root-id) with every telemetry event *if* filtering by Id prefix is not supported by you logging backend or too expensive.
 
 The current activity is exposed as static variable, `Activity.Current`, and flows with call context, including async calls, so that it is available in every Start/Stop event callback.
 
@@ -187,8 +188,57 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
 
 It's crucial that Activity Id is logged along with every event. ParentId, Tags and Baggage must be logged at least once for every activity and may be logged with every telemetry event to simplify querying and aggregation. Duration is only available after SetEndTime is called and should be logged when Activity Stop event is received.
 
+## Activity Id
+The main goal of Activity is to ensure telemetry events could be correlated in order to trace user requests and Activity.Id is the key part of this functionality.
+
+Applications start Activity to represent logical piece of work to be done; one Activity may be started as a child of another Activity. 
+The whole operation may be represented as a tree of Activities. All operations done by the distributed system may be represented as a forest of Activities trees.
+Id uniquely identifies Activity in the forest. It has an hierarchical structure to efficiently describe the operation as Activity tree.
+
+Activity.Id serves as hierarchical Request-Id in terms of [HTTP standard proposal for correlation](https://github.com/lmolkova/correlation/blob/master/http_protocol_proposal_v1.md) 
+
+### Id Format
+
+`/root-id.id1.id2.id3...`
+
+It starts with '/' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.'. 
+
+[Root-id](#root-id) identifies the whole operation and 'Id' identifies particular Actvity involved in operation processing.
+
+'/' indicates Id has hierarchcal structure, which is useful information for logging system. 
+
+* Id is 128 bytes or shorter
+* Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (dash), '.' (dot) and '#' (pound) characters.
+
+### Root Id
+When you start the first Activity for the operation, you may provide root-id through `Activity.SetParentId(string)` API. When Activity is actually started, it will generate own Id by appending relatively small suffix (preceeded with '.') to root-id. E.g. `/<root-id>.2341`
+
+Root-Id:
+* MUST be sufficiently large to identify single operation: use 64-bit random number or Guid
+* MUST be 64 bytes or shorter.
+* MUST contain [Base64 characters](https://en.wikipedia.org/wiki/Base64) and '-' (dash)
+
+If you don't provide it, Activity will generate root-id: e.g. `<root-id>` without suffix.
+
+If provided ParentId does not start with '/', Activity will prepend it's own Id with '/' and will keep ParentId intact.
+To get root id, use `Activity.RootId` property after providing ParentId or after starting Activity. 
+
+### Child Avtivities and Parent Id
+Any child Activity started in the same process as it's parent, will take Parent.Id and generate own Id by appending integer suffix to Parent.Id: e.g. `<Parent.Id>.1`. Suffix is an integer number of child activity started from the same parent.
+
+Activities which parent is external to the process, should be assigned with Parent-Id (before start) with `Activity.SetParentId(string)` API. Activity would use another suffix for Id, as described in [Root Id](#root-id) section.
+
+If ParentId does not start with '/', Activity will add prepend it's own Id with '/' and will keep ParentId intact.
+
+So the Activity generates Id in following format `parent-id.local-id`, where `parent-id` may have similar hierarchical structure.
+
+### Id overflow
+Appending local-id to Parent.Id may cause Id to exceed length limit.
+In case of overflow, last bytes of Parent.Id are trimmed to make a room for 32-bit random lower-hex encoded integer preceeded with '#': `<Beginning-Of-Parent-Id>#local-id`
+
 # Reference
-## Activity
+
+## Activity 
 ### Tags
 `IEnumerable<KeyValuePair<string, string>> Tags { get; }` - Represents information to be logged along with the activity. Good examples of tags are instance/machine name, incoming request HTTP method, path, user/user-agent, etc. Tags are **not passed** to child of activities.
 Typical tag usage includes adding a few custom tags and enumeration through them to fill log event payload. Retrieving a tag by its key is not supported.
@@ -214,6 +264,9 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 ### ParentId
 `string ParentId { get; private set; }` - Activity may have either an in-process [Parent](#parent) or an external Parent if it was deserialized from request. ParentId together with Id represent the parent-child relationship in logs and allows you to correlate outgoing and incoming requests.
 
+### RootId
+`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '/' to first '.' occurence.
+
 ### Current
 `static Activity Current { get; }` - Returns current Activity which flows across async calls.
 
@@ -238,10 +291,10 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 ### SetParentId()
 `Activity SetParentId(string parentId)` - sets the parent Id. See [ParentId](#parentid).
 
-### SetStartTime
+### SetStartTime()
 `Activity SetStartTime(DateTime startTimeUtc)` - sets the start time. See [StartTimeUtc](#starttimeutc).
 
-### SetEndTime
+### SetEndTime()
 `Activity SetEndTime(DateTime endTimeUtc)` - sets [Duration](#duration) as a difference between endTimeUtc and [StartTimeUtc](#starttimeutc).
 
 ##DiagnosticSource
