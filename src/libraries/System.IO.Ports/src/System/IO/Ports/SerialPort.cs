@@ -287,9 +287,9 @@ namespace System.IO.Ports
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException();
+                    throw new ArgumentNullException(nameof(NewLine));
                 if (value.Length == 0)
-                    throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)));
+                    throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)), nameof(NewLine));
 
                 _newLine = value;
             }
@@ -630,11 +630,11 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             int bytesReadToBuffer = 0;
@@ -771,11 +771,11 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1016,7 +1016,7 @@ namespace System.IO.Ports
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (value.Length == 0)
-                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(value)));
+                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
 
             int startTicks = Environment.TickCount;
             int numCharsRead;
@@ -1173,7 +1173,7 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
