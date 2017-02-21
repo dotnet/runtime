@@ -133,6 +133,48 @@ namespace System
             }
         }
 
+        private unsafe static bool EqualsIgnoreCaseAsciiHelper(String strA, String strB)
+        {
+            Contract.Requires(strA != null);
+            Contract.Requires(strB != null);
+            Contract.Requires(strA.Length == strB.Length);
+            Contract.EndContractBlock();
+            int length = strA.Length;
+
+            fixed (char* ap = &strA.m_firstChar) fixed (char* bp = &strB.m_firstChar)
+            {
+                char* a = ap;
+                char* b = bp;
+
+                while (length != 0)
+                {
+                    int charA = *a;
+                    int charB = *b;
+
+                    Debug.Assert((charA | charB) <= 0x7F, "strings have to be ASCII");
+
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range 
+                    if (charA == charB ||
+                       ((charA | 0x20) == (charB | 0x20) &&
+                          (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    {
+                        a++;
+                        b++;
+                        length--;
+                    }
+                    else
+                    {
+                        goto ReturnFalse;
+                    }
+                }
+
+                return true;
+
+                ReturnFalse:
+                return false;
+            }
+        }
+
         private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
         {
             Contract.Requires(str != null);
@@ -865,7 +907,7 @@ namespace System
 
                     // If both strings are ASCII strings, we can take the fast path.
                     if (this.IsAscii() && value.IsAscii()) {
-                        return (CompareOrdinalIgnoreCaseHelper(this, value) == 0);
+                        return EqualsIgnoreCaseAsciiHelper(this, value);
                     }
 
 #if FEATURE_COREFX_GLOBALIZATION
@@ -934,7 +976,7 @@ namespace System
                     else {
                         // If both strings are ASCII strings, we can take the fast path.
                         if (a.IsAscii() && b.IsAscii()) {
-                            return (CompareOrdinalIgnoreCaseHelper(a, b) == 0);
+                            return EqualsIgnoreCaseAsciiHelper(a, b);
                         }
                         // Take the slow path.
 
