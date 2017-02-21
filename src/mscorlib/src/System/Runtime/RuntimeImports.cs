@@ -27,6 +27,6 @@ namespace System.Runtime
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        extern internal unsafe static void RhZeroMemory(byte* b, nuint byteLength);
+        extern private unsafe static void RhZeroMemory(byte* b, nuint byteLength);
     }
 }
