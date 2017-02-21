@@ -112,7 +112,11 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException($"Root element must be {KeyValueElementName} element in namepsace {SignedXml.XmlDsigNamespaceUrl}");
             }
 
-            XmlNode rsaKeyValueElement = value.SelectSingleNode($"*[local-name()='{RSAKeyValueElementName}' and namespace-uri()='{SignedXml.XmlDsigNamespaceUrl}']");
+            const string xmlDsigNamespacePrefix = "dsig";
+            XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(value.OwnerDocument.NameTable);
+            xmlNamespaceManager.AddNamespace(xmlDsigNamespacePrefix, SignedXml.XmlDsigNamespaceUrl);
+
+            XmlNode rsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{RSAKeyValueElementName}", xmlNamespaceManager);
             if (rsaKeyValueElement == null)
             {
                 throw new CryptographicException($"{KeyValueElementName} must contain child element {RSAKeyValueElementName}");
@@ -122,8 +126,8 @@ namespace System.Security.Cryptography.Xml
             {
                 Key.ImportParameters(new RSAParameters
                 {
-                    Modulus = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"*[local-name() = '{ModulusElementName}' and namespace-uri()='{SignedXml.XmlDsigNamespaceUrl}']").InnerText),
-                    Exponent = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"*[local-name() = '{ExponentElementName}' and namespace-uri()='{SignedXml.XmlDsigNamespaceUrl}']").InnerText)
+                    Modulus = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ModulusElementName}", xmlNamespaceManager).InnerText),
+                    Exponent = Convert.FromBase64String(rsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{ExponentElementName}", xmlNamespaceManager).InnerText)
                 });
             }
             catch (Exception ex)
