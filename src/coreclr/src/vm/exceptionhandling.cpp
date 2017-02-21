@@ -17,6 +17,10 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#define ADJUST_PC_UNWOUND_TO_CALL
+#endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
+
 #ifndef DACCESS_COMPILE
 
 // o Functions and funclets are tightly associated.  In fact, they are laid out in contiguous memory.
@@ -1428,7 +1432,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
 #endif
 #endif // _TARGET_ARM_ || _TARGET_ARM64_
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#ifdef ADJUST_PC_UNWOUND_TO_CALL
     // If the OS indicated that the IP is a callsite, then adjust the ControlPC by decrementing it
     // by two. This is done because unwinding at callsite will make ControlPC point to the
     // instruction post the callsite. If a protected region ends "at" the callsite, then
@@ -1451,7 +1455,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
             pcfThisFrame->isIPadjusted = true;
         }
     }
-#endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
+#endif // ADJUST_PC_UNWOUND_TO_CALL
 
     pcfThisFrame->codeInfo.Init(ControlPCForEHSearch);
     
@@ -4317,7 +4321,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#ifdef ADJUST_PC_UNWOUND_TO_CALL
         dispatcherContext.ControlPcIsUnwound = !!(currentFrameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
         // Check whether we have a function table entry for the current controlPC.
@@ -4468,7 +4472,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#ifdef ADJUST_PC_UNWOUND_TO_CALL
         dispatcherContext.ControlPcIsUnwound = !!(frameContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL);
 #endif
 
