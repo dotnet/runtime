@@ -5267,6 +5267,7 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     FastInterlockExchangePointer(&(pTracker->m_pThread), NULL);
 }
 
+#ifndef FEATURE_PAL
 // This is Windows specific implementation as it is based upon the notion of collided unwind that is specific
 // to Windows 64bit.
 //
@@ -5291,7 +5292,6 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
 // nt\base\ntos\rtl\{ia64|amd64}\exdsptch.c for RtlUnwindEx().
 void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pContext, LPVOID originalControlPC, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine)
 {
-#ifndef FEATURE_PAL
     if (pContext)
     {
         STRESS_LOG1(LF_EH, LL_INFO10, "FDC: pContext: %p\n", pContext);
@@ -5412,9 +5412,6 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
     
     _ASSERTE(pDispatcherContext->LanguageHandler != NULL);
-#else // !FEATURE_PAL
-    PORTABILITY_ASSERT("UNIXTODO: Implement the fixup for PAL");
-#endif // !FEATURE_PAL
 }
 
 
@@ -5560,6 +5557,7 @@ FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
     // (which was broken when we whacked the IP to get control over the thread)
     return ExceptionCollidedUnwind;
 }
+#endif // !FEATURE_PAL
 
 #ifdef _DEBUG
 // IsSafeToUnwindFrameChain:
@@ -5880,6 +5878,7 @@ ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
 }
 #endif // FEATURE_COMINTEROP
 
+#ifndef FEATURE_PAL
 EXTERN_C EXCEPTION_DISPOSITION
 FixRedirectContextHandler(
                   IN     PEXCEPTION_RECORD   pExceptionRecord
@@ -5916,7 +5915,7 @@ FixRedirectContextHandler(
     // (which was broken when we whacked the IP to get control over the thread)
     return ExceptionCollidedUnwind;
 }
-
+#endif // !FEATURE_PAL
 #endif // DACCESS_COMPILE
 
 void ExceptionTracker::StackRange::Reset()
