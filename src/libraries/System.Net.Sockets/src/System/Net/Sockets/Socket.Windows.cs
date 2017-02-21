@@ -14,6 +14,8 @@ namespace System.Net.Sockets
     {
         private DynamicWinsockMethods _dynamicWinsockMethods;
 
+        internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+
         private void EnsureDynamicWinsockMethods()
         {
             if (_dynamicWinsockMethods == null)

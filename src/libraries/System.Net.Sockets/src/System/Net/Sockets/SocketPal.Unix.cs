@@ -747,8 +747,6 @@ namespace System.Net.Sockets
                 return handle.AsyncContext.Connect(socketAddress, socketAddressLen, -1);
             }
 
-            handle.AsyncContext.CheckForPriorConnectFailure();
-
             SocketError errorCode;
             bool completed = TryStartConnect(handle, socketAddress, socketAddressLen, out errorCode);
             if (completed)
@@ -898,6 +896,16 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
+        private static SocketError GetErrorAndTrackSetting(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, Interop.Error err)
+        {
+            if (err == Interop.Error.SUCCESS)
+            {
+                handle.TrackOption(optionLevel, optionName);
+                return SocketError.Success;
+            }
+            return GetSocketErrorForErrorCode(err);
+        }
+
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             Interop.Error err;
@@ -908,13 +916,13 @@ namespace System.Net.Sockets
                 {
                     handle.ReceiveTimeout = optionValue == 0 ? -1 : optionValue;
                     err = Interop.Sys.SetReceiveTimeout(handle, optionValue);
-                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
                 else if (optionName == SocketOptionName.SendTimeout)
                 {
                     handle.SendTimeout = optionValue == 0 ? -1 : optionValue;
                     err = Interop.Sys.SetSendTimeout(handle, optionValue);
-                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
             }
             else if (optionLevel == SocketOptionLevel.IP)
@@ -926,38 +934,44 @@ namespace System.Net.Sockets
                     int interfaceIndex = IPAddress.NetworkToHostOrder(optionValue);
                     if ((interfaceIndex & 0xff000000) == 0)
                     {
-                        var opt = new Interop.Sys.IPv4MulticastOption {
+                        var opt = new Interop.Sys.IPv4MulticastOption
+                        {
                             MulticastAddress = 0,
                             LocalAddress = 0,
                             InterfaceIndex = interfaceIndex
                         };
 
                         err = Interop.Sys.SetIPv4MulticastOption(handle, Interop.Sys.MulticastOption.MULTICAST_IF, &opt);
-                        return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                        return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                     }
                 }
             }
 
             err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+
+            if (err == Interop.Error.SUCCESS)
+            {
+                if (optionLevel == SocketOptionLevel.IPv6 && optionName == SocketOptionName.IPv6Only)
+                {
+                    // Unix stacks may set IPv6Only to true once bound to an address.  This causes problems
+                    // for Socket.DualMode, and anything that depends on it, like CanTryAddressFamily.
+                    // To aid in connecting to multiple addresses (e.g. a DNS endpoint), we need to remember
+                    // whether DualMode / !IPv6Only was set, so that we can restore that value to a subsequent
+                    // handle after a failed connect.
+                    handle.DualMode = optionValue == 0;
+                }
+            }
+
+            return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
         }
 
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            Interop.Error err;
-            if (optionValue == null || optionValue.Length == 0)
+            fixed (byte* pinnedValue = optionValue)
             {
-                err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, null, 0);
+                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
+                return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
-            else
-            {
-                fixed (byte* pinnedValue = &optionValue[0])
-                {
-                    err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
-                }
-            }
-
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
@@ -977,7 +991,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetIPv4MulticastOption(handle, optName, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.IP, optionName, err);
         }
 
         public static unsafe SocketError SetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, IPv6MulticastOption optionValue)
@@ -994,7 +1008,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetIPv6MulticastOption(handle, optName, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.IPv6, optionName, err);
         }
 
         public static unsafe SocketError SetLingerOption(SafeCloseSocket handle, LingerOption optionValue)
@@ -1005,7 +1019,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetLingerOption(handle, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.Socket, SocketOptionName.Linger, err);
         }
 
         public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)

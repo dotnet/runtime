@@ -19,45 +19,53 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void DualModeConstructor_InterNetworkV6Default()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            Assert.Equal(AddressFamily.InterNetworkV6, socket.AddressFamily);
-            Assert.True(socket.DualMode);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Equal(AddressFamily.InterNetworkV6, socket.AddressFamily);
+                Assert.True(socket.DualMode);
+            }
         }
 
         [Fact]
         public void DualModeUdpConstructor_DualModeConfgiured()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            Assert.Equal(AddressFamily.InterNetworkV6, socket.AddressFamily);
-            Assert.True(socket.DualMode);
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                Assert.Equal(AddressFamily.InterNetworkV6, socket.AddressFamily);
+                Assert.True(socket.DualMode);
+            }
         }
 
         [Fact]
         public void NormalConstructor_DualModeConfgiureable()
         {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            Assert.False(socket.DualMode);
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.False(socket.DualMode);
 
-            socket.DualMode = true;
-            Assert.True(socket.DualMode);
+                socket.DualMode = true;
+                Assert.True(socket.DualMode);
 
-            socket.DualMode = false;
-            Assert.False(socket.DualMode);
+                socket.DualMode = false;
+                Assert.False(socket.DualMode);
+            }
         }
 
         [Fact]
         public void IPv4Constructor_DualModeThrows()
         {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.Throws<NotSupportedException>(() =>
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.False(socket.DualMode);
-            });
+                Assert.Throws<NotSupportedException>(() =>
+                {
+                    Assert.False(socket.DualMode);
+                });
 
-            Assert.Throws<NotSupportedException>(() =>
-            {
-                socket.DualMode = true;
-            });
+                Assert.Throws<NotSupportedException>(() =>
+                {
+                    socket.DualMode = true;
+                });
+            }
         }
     }
 
@@ -68,13 +76,15 @@ namespace System.Net.Sockets.Tests
         [Fact] // Base case
         public void Socket_ConnectV4IPAddressToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = false;
-
-            Assert.Throws<NotSupportedException>(() =>
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                socket.Connect(IPAddress.Loopback, UnusedPort);
-            });
+                socket.DualMode = false;
+
+                Assert.Throws<NotSupportedException>(() =>
+                {
+                    socket.Connect(IPAddress.Loopback, UnusedPort);
+                });
+            }
         }
 
         [Fact] // Base Case
@@ -128,7 +138,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeConnect_IPAddressToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 socket.Connect(connectTo, port);
@@ -158,13 +168,15 @@ namespace System.Net.Sockets.Tests
         [Fact] // Base case
         public void Socket_ConnectV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = false;
-
-            Assert.ThrowsAny<SocketException>(() =>
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                socket.Connect(new IPEndPoint(IPAddress.Loopback, UnusedPort));
-            });
+                socket.DualMode = false;
+
+                Assert.ThrowsAny<SocketException>(() =>
+                {
+                    socket.Connect(new IPEndPoint(IPAddress.Loopback, UnusedPort));
+                });
+            }
         }
 
         [Fact] // Base case
@@ -218,7 +230,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeConnect_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 socket.Connect(new IPEndPoint(connectTo, port));
@@ -246,26 +258,26 @@ namespace System.Net.Sockets.Tests
     public class DualModeConnectToIPAddressArray : DualModeBase
     {
         [Fact] // Base Case
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
         // "None of the discovered or specified addresses match the socket address family."
         public void Socket_ConnectV4IPAddressListToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = false;
-
-            int port;
-            using (SocketServer server = new SocketServer(_log, IPAddress.Loopback, false, out port))
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<ArgumentException>(() =>
+                socket.DualMode = false;
+
+                int port;
+                using (SocketServer server = new SocketServer(_log, IPAddress.Loopback, false, out port))
                 {
-                    socket.Connect(new IPAddress[] { IPAddress.Loopback }, port);
-                });
+                    Assert.Throws<ArgumentException>(() =>
+                    {
+                        socket.Connect(new IPAddress[] { IPAddress.Loopback }, port);
+                    });
+                }
             }
         }
 
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             Assert.ThrowsAny<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
@@ -273,7 +285,6 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Success_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
         public void DualModeConnect_IPAddressListToHost_Success(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -292,11 +303,11 @@ namespace System.Net.Sockets.Tests
     {
         [Theory]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
+        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 socket.Connect("localhost", port);
@@ -311,11 +322,11 @@ namespace System.Net.Sockets.Tests
     {
         [Theory]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
-        private void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
+        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
+        public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 socket.Connect(new DnsEndPoint("localhost", port, AddressFamily.Unspecified));
@@ -331,13 +342,15 @@ namespace System.Net.Sockets.Tests
         [Fact] // Base case
         public void Socket_BeginConnectV4IPAddressToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = false;
-
-            Assert.Throws<NotSupportedException>(() =>
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                socket.BeginConnect(IPAddress.Loopback, UnusedPort, null, null);
-            });
+                socket.DualMode = false;
+
+                Assert.Throws<NotSupportedException>(() =>
+                {
+                    socket.BeginConnect(IPAddress.Loopback, UnusedPort, null, null);
+                });
+            }
         }
 
         [Fact]
@@ -379,7 +392,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeBeginConnect_IPAddressToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 IAsyncResult async = socket.BeginConnect(connectTo, port, null, null);
@@ -411,12 +424,14 @@ namespace System.Net.Sockets.Tests
         // "The system detected an invalid pointer address in attempting to use a pointer argument in a call"
         public void Socket_BeginConnectV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = false;
-            Assert.Throws<SocketException>(() =>
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
-            });
+                socket.DualMode = false;
+                Assert.Throws<SocketException>(() =>
+                {
+                    socket.BeginConnect(new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
+                });
+            }
         }
 
         [Fact]
@@ -446,7 +461,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeBeginConnect_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 IAsyncResult async = socket.BeginConnect(new IPEndPoint(connectTo, port), null, null);
@@ -466,7 +481,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 IAsyncResult async = socket.BeginConnect(connectTo, port, null, null);
@@ -481,7 +496,7 @@ namespace System.Net.Sockets.Tests
         public void DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 IAsyncResult async = socket.BeginConnect("localhost", port, null, null);
@@ -496,7 +511,7 @@ namespace System.Net.Sockets.Tests
         public void DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 IAsyncResult async = socket.BeginConnect(new DnsEndPoint("localhost", port), null, null);
@@ -513,13 +528,15 @@ namespace System.Net.Sockets.Tests
         [Fact] // Base case
         public void Socket_ConnectAsyncV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            Assert.Throws<NotSupportedException>(() =>
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
             {
-                socket.ConnectAsync(args);
-            });
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                Assert.Throws<NotSupportedException>(() =>
+                {
+                    socket.ConnectAsync(args);
+                });
+            }
         }
 
         [Fact]
@@ -561,7 +578,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out port))
             {
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
@@ -597,7 +614,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods not supported on Unix
+        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -722,7 +739,6 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeAccept : DualModeBase
     {
-
         [Fact]
         public void AcceptV4BoundToSpecificV4_Success()
         {
@@ -1045,23 +1061,27 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_SendToV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-            Assert.Throws<SocketException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, UnusedPort));
-            });
+                socket.DualMode = false;
+                Assert.Throws<SocketException>(() =>
+                {
+                    socket.SendTo(new byte[1], new IPEndPoint(IPAddress.Loopback, UnusedPort));
+                });
+            }
         }
 
         [Fact] // Base case
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_SendToDnsEndPoint_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.SendTo(new byte[1], new DnsEndPoint("localhost", UnusedPort));
-            });
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.SendTo(new byte[1], new DnsEndPoint("localhost", UnusedPort));
+                });
+            }
         }
 
         [Fact]
@@ -1109,7 +1129,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeSendTo_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
         {
             int port;
-            Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
@@ -1139,25 +1159,28 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_BeginSendToV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            Assert.Throws<SocketException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
-            });
+                socket.DualMode = false;
+
+                Assert.Throws<SocketException>(() =>
+                {
+                    socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
+                });
+            }
         }
 
         [Fact] // Base case
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginSendToDnsEndPoint_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new DnsEndPoint("localhost", UnusedPort), null, null);
-            });
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new DnsEndPoint("localhost", UnusedPort), null, null);
+                });
+            }
         }
 
         [Fact]
@@ -1205,7 +1228,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeBeginSendTo_EndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
         {
             int port;
-            Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
@@ -1237,28 +1260,30 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/982
         public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
         {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            args.SetBuffer(new byte[1], 0, 1);
-            bool async = socket.SendToAsync(args);
-            Assert.False(async);
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                args.SetBuffer(new byte[1], 0, 1);
+                bool async = socket.SendToAsync(args);
+                Assert.False(async);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Assert.Equal(SocketError.Fault, args.SocketError);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                // NOTE: on Linux, this API returns ENETUNREACH instead of EFAULT: this platform
-                //       checks the family of the provided socket address before checking its size
-                //       (as long as the socket address is large enough to store an address family).
-                Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
-            }
-            else
-            {
-                // NOTE: on other Unix platforms, this API returns EINVAL instead of EFAULT.
-                Assert.Equal(SocketError.InvalidArgument, args.SocketError);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(SocketError.Fault, args.SocketError);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // NOTE: on Linux, this API returns ENETUNREACH instead of EFAULT: this platform
+                    //       checks the family of the provided socket address before checking its size
+                    //       (as long as the socket address is large enough to store an address family).
+                    Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
+                }
+                else
+                {
+                    // NOTE: on other Unix platforms, this API returns EINVAL instead of EFAULT.
+                    Assert.Equal(SocketError.InvalidArgument, args.SocketError);
+                }
             }
         }
 
@@ -1266,14 +1291,16 @@ namespace System.Net.Sockets.Tests
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_SendToAsyncDnsEndPoint_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", UnusedPort);
-            args.SetBuffer(new byte[1], 0, 1);
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.SendToAsync(args);
-            });
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = new DnsEndPoint("localhost", UnusedPort);
+                args.SetBuffer(new byte[1], 0, 1);
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.SendToAsync(args);
+                });
+            }
         }
 
         [Fact]
@@ -1321,7 +1348,7 @@ namespace System.Net.Sockets.Tests
         private void DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
         {
             int port;
-            Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
                 // Send a few packets, in case they aren't delivered reliably.
@@ -1370,14 +1397,16 @@ namespace System.Net.Sockets.Tests
         public void Socket_ReceiveFromV4IPEndPointFromV4Client_Throws()
         {
             // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                int received = socket.ReceiveFrom(new byte[1], ref receivedFrom);
-            });
+                socket.DualMode = false;
+
+                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    int received = socket.ReceiveFrom(new byte[1], ref receivedFrom);
+                });
+            }
         }
 
         [Fact] // Base case
@@ -1509,14 +1538,16 @@ namespace System.Net.Sockets.Tests
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_BeginReceiveFromV4IPEndPointFromV4Client_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
-            });
+                socket.DualMode = false;
+
+                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
+                });
+            }
         }
 
         [Fact] // Base case
@@ -1666,15 +1697,17 @@ namespace System.Net.Sockets.Tests
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_ReceiveFromAsyncV4IPEndPointFromV4Client_Throws()
         {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            args.SetBuffer(new byte[1], 0, 1);
-
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.ReceiveFromAsync(args);
-            });
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                args.SetBuffer(new byte[1], 0, 1);
+
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.ReceiveFromAsync(args);
+                });
+            }
         }
 
         [Fact] // Base case
@@ -1859,16 +1892,18 @@ namespace System.Net.Sockets.Tests
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_ReceiveMessageFromV4IPEndPointFromV4Client_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            SocketFlags socketFlags = SocketFlags.None;
-            IPPacketInformation ipPacketInformation;
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                int received = socket.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref receivedFrom, out ipPacketInformation);
-            });
+                socket.DualMode = false;
+
+                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                SocketFlags socketFlags = SocketFlags.None;
+                IPPacketInformation ipPacketInformation;
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    int received = socket.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref receivedFrom, out ipPacketInformation);
+                });
+            }
         }
 
         [Fact] // Base case
@@ -2049,16 +2084,18 @@ namespace System.Net.Sockets.Tests
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_BeginReceiveMessageFromV4IPEndPointFromV4Client_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            SocketFlags socketFlags = SocketFlags.None;
-
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.BeginReceiveMessageFrom(new byte[1], 0, 1, socketFlags, ref receivedFrom, null, null);
-            });
+                socket.DualMode = false;
+
+                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                SocketFlags socketFlags = SocketFlags.None;
+
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.BeginReceiveMessageFrom(new byte[1], 0, 1, socketFlags, ref receivedFrom, null, null);
+                });
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
@@ -2219,17 +2256,19 @@ namespace System.Net.Sockets.Tests
         // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
         public void Socket_ReceiveMessageFromAsyncV4IPEndPointFromV4Client_Throws()
         {
-            Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = false;
-
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            args.SetBuffer(new byte[1], 0, 1);
-
-            Assert.Throws<ArgumentException>(() =>
+            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.ReceiveMessageFromAsync(args);
-            });
+                socket.DualMode = false;
+
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+                args.SetBuffer(new byte[1], 0, 1);
+
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    socket.ReceiveMessageFromAsync(args);
+                });
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987

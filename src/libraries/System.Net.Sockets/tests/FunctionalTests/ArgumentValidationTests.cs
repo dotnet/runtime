@@ -699,10 +699,11 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_DnsEndPoint_NotSupported()
+        public void Socket_Connect_DnsEndPoint_ExposedHandle_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                IntPtr ignored = s.Handle;
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new DnsEndPoint("localhost", 12345)));
             }
         }
@@ -727,10 +728,11 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_StringHost_NotSupported()
+        public void Socket_Connect_StringHost_ExposedHandle_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                IntPtr ignored = s.Handle;
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect("localhost", 12345));
             }
         }
@@ -773,20 +775,22 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_Connect_MultipleAddresses_NotSupported()
+        public void Socket_Connect_MultipleAddresses_ExposedHandle_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                IntPtr ignored = s.Handle;
                 Assert.Throws<PlatformNotSupportedException>(() => s.Connect(new[] { IPAddress.Loopback }, 12345));
             }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_ConnectAsync_DnsEndPoint_NotSupported()
+        public void Socket_ConnectAsync_DnsEndPoint_ExposedHandle_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                IntPtr ignored = s.Handle;
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new DnsEndPoint("localhost", 12345)); });
             }
         }
@@ -810,10 +814,11 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_ConnectAsync_StringHost_NotSupported()
+        public void Socket_ConnectAsync_StringHost_ExposedHandle_NotSupported()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                IntPtr ignored = s.Handle;
                 Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync("localhost", 12345); });
             }
         }
@@ -852,22 +857,24 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Socket_ConnectAsync_MultipleAddresses_NotSupported()
-        {
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => { s.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void Connect_ConnectTwice_NotSupported()
+        [InlineData(0)]
+        [InlineData(1)]
+        public void Connect_ConnectTwice_NotSupported(int invalidatingAction)
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                switch (invalidatingAction)
+                {
+                    case 0:
+                        IntPtr handle = client.Handle; // exposing the underlying handle
+                        break;
+                    case 1:
+                        client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.Debug, 1); // untracked socket option
+                        break;
+                }
+
                 //
                 // Connect once, to an invalid address, expecting failure
                 //
@@ -881,14 +888,26 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void ConnectAsync_ConnectTwice_NotSupported()
+        [InlineData(0)]
+        [InlineData(1)]
+        public void ConnectAsync_ConnectTwice_NotSupported(int invalidatingAction)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                switch (invalidatingAction)
+                {
+                    case 0:
+                        IntPtr handle = client.Handle; // exposing the underlying handle
+                        break;
+                    case 1:
+                        client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.Debug, 1); // untracked socket option
+                        break;
+                }
+
                 //
                 // Connect once, to an invalid address, expecting failure
                 //
