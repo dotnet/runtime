@@ -19,6 +19,7 @@ namespace System.Diagnostics.Tests
             var activity = new Activity(activityName);
             Assert.Equal(activityName, activity.OperationName);
             Assert.Null(activity.Id);
+            Assert.Null(activity.RootId);
             Assert.Equal(TimeSpan.Zero, activity.Duration);            
             Assert.Null(activity.Parent);
             Assert.Null(activity.ParentId);
@@ -71,6 +72,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("1", parent.ParentId);
             Assert.Throws<InvalidOperationException>(() => parent.SetParentId("2"));
 
+            Assert.Equal(parent.ParentId, parent.RootId);
             parent.Start();
             var child = new Activity("child");
             child.Start();
@@ -127,6 +129,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(activity, Activity.Current);
             Assert.Null(activity.Parent);
             Assert.NotNull(activity.Id);
+            Assert.NotNull(activity.RootId);
             Assert.NotEqual(default(DateTime), activity.StartTimeUtc);
 
             activity.Stop();
@@ -147,18 +150,20 @@ namespace System.Diagnostics.Tests
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child1.OperationName}_1", child1.Id);
-            Assert.Equal($"{parent.Id}.{child2.OperationName}_2", child2.Id);
+            Assert.Equal($"{parent.Id}.{child1.OperationName}-1", child1.Id);
+            Assert.Equal($"{parent.Id}.{child2.OperationName}-2", child2.Id);
 #else
             Assert.Equal(parent.Id + ".1", child1.Id);
             Assert.Equal(parent.Id + ".2", child2.Id);
 #endif
+            Assert.Equal(parent.RootId, child1.RootId);
+            Assert.Equal(parent.RootId, child2.RootId);
             child1.Stop();
             child2.Stop();
             var child3 = new Activity("child3");
             child3.Start();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child3.OperationName}_3", child3.Id);
+            Assert.Equal($"{parent.Id}.{child3.OperationName}-3", child3.Id);
 #else
             Assert.Equal(parent.Id + ".3", child3.Id);
 #endif
@@ -173,11 +178,36 @@ namespace System.Diagnostics.Tests
             var child1 = new Activity("child1");
             child1.SetParentId("123");
             child1.Start();
+            Assert.Equal("123", child1.RootId);
+            Assert.True(child1.Id[0] == '/');
             child1.Stop();
+
             var child2 = new Activity("child2");
             child2.SetParentId("123");
             child2.Start();
             Assert.NotEqual(child2.Id, child1.Id);
+            Assert.Equal("123", child2.RootId);
+        }
+
+        /// <summary>
+        /// Tests Id generation
+        /// </summary>
+        [Fact]
+        public void RootId()
+        {
+
+            var parentIds = new []{
+                "123",   //Parent does not start with '/' and does not contain '.'
+                "123.1", //Parent does not start with '/' but contains '.'
+                "/123",  //Parent starts with '/' and does not contain '.'
+                "/123.1.1" //Parent starts with '/' and contains '.'
+            };
+            foreach (var parentId in parentIds)
+            {
+                var activity = new Activity("activity");
+                activity.SetParentId(parentId);
+                Assert.Equal("123", activity.RootId);
+            }
         }
 
         /// <summary>
