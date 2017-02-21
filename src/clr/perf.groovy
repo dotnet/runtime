@@ -74,8 +74,8 @@ def static getOSGroup(def os) {
 					batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
 					batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
 					batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
-					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
-					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${architecture} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
+					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
+					batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} ${testEnv} -testBinLoc bin\\tests\\Windows_NT.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -uploadToBenchview \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -runtype ${runType}")
 				}
 			}
 
