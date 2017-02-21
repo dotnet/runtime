@@ -1644,7 +1644,7 @@ namespace System.Numerics.Tests
             Vector<<#=targetType.Name#>> targetVec = Vector.ConvertTo<#=targetType.Name#>(sourceVec);
             for (int i = 0; i < Vector<<#=targetType.Name#>>.Count; i++)
             {
-                Assert.Equal((<#=targetType.Name#>)source[i], targetVec[i]);
+                Assert.Equal(unchecked((<#=targetType.Name#>)source[i]), targetVec[i]);
             }
         }
 
@@ -1690,11 +1690,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
             {
-                Assert.Equal((<#=narrowTarget.Name#>)source1[i], dest[i]);
+                Assert.Equal(unchecked((<#=narrowTarget.Name#>)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
             {
-                Assert.Equal((<#=narrowTarget.Name#>)source2[i], dest[i + Vector<<#=narrowSource.Name#>>.Count]);
+                Assert.Equal(unchecked((<#=narrowTarget.Name#>)source2[i]), dest[i + Vector<<#=narrowSource.Name#>>.Count]);
             }
         }
 
