@@ -1763,7 +1763,8 @@ UNHANDLED_EXCEPTION_255_TESTS =	\
 	unhandled-exception-4.exe	\
 	unhandled-exception-5.exe	\
 	unhandled-exception-6.exe	\
-	unhandled-exception-7.exe
+	unhandled-exception-7.exe	\
+	unhandled-exception-8.exe
 
 test-unhandled-exception-2: $(UNHANDLED_EXCEPTION_1_TESTS) $(UNHANDLED_EXCEPTION_255_TESTS)
 	$(MAKE) test-unhandled-exception-2-1-with-managed-handler
