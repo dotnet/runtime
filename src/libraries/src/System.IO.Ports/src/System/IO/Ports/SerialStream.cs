@@ -499,7 +499,7 @@ namespace System.IO.Ports
             set
             {
                 if (value <= 0 && value != SerialPort.InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException("WriteTimeout", SR.ArgumentOutOfRange_WriteTimeout);
+                    throw new ArgumentOutOfRangeException(nameof(WriteTimeout), SR.ArgumentOutOfRange_WriteTimeout);
                 if (_handle == null) InternalResources.FileNotOpen();
 
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
@@ -1049,7 +1049,7 @@ namespace System.IO.Ports
         internal unsafe int Read(byte[] array, int offset, int count, int timeout)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
@@ -1145,14 +1145,14 @@ namespace System.IO.Ports
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);
             if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(array));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedPosNum);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedPosNum);
             if (count == 0) return; // no need to expend overhead in creating asyncResult, etc.
             if (array.Length - offset < count)
-                throw new ArgumentException(nameof(count), SR.ArgumentOutOfRange_OffsetOut);
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Write - write timeout is " + timeout);
 
             // check for open handle, though the port is always supposed to be open
