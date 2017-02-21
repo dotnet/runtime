@@ -2,11 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp;
-      uap;
-      netstandard;
-      netstandard1.0;
-      portable_net40+sl4+win8+wp8;
+      package;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

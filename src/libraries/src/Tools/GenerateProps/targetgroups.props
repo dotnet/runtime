@@ -140,9 +140,11 @@
       <CompatibleWith>netstandard1.2</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="portable_net45+win8+sl5">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.Portable.v4.0.Profile47</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile47</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="portable_net40+sl4+win8+wp8">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.Portable.v4.0.Profile36</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETPortable,Version=v0.0,Profile=Profile36</NuGetTargetMoniker>
     </TargetGroups>
     <TargetGroups Include="package">
