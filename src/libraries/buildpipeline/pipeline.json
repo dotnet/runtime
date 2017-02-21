@@ -150,7 +150,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_ConfigurationGroup": "Release"
+        "PB_ConfigurationGroup": "Release",
+        "PB_BuildArguments": "-stripSymbols"
      },
       "Definitions": [
         {
