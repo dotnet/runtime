@@ -369,12 +369,12 @@ namespace System.Diagnostics.Tests
             Activity activity1 = new Activity("activity1").Start();
             Assert.Same(activity1, Activity.Current);
 
-            SemaphoreSlim semaphore = new SemaphoreSlim(initialCount: 1);
+            SemaphoreSlim semaphore = new SemaphoreSlim(initialCount: 0);
             Task task = Task.Run(async () =>
             {
                 // Wait until the semaphore is signaled.
                 await semaphore.WaitAsync();
-                Assert.Equal(activity1, Activity.Current);
+                Assert.Same(activity1, Activity.Current);
             });
 
             Activity activity2 = new Activity("activity2").Start();
