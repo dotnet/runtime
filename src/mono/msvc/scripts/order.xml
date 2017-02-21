@@ -2345,7 +2345,7 @@
     </project>
     <project dir="class/Microsoft.CSharp" library="Microsoft.CSharp-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/Mono.CSharp.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Core.dll -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>Microsoft.CSharp.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/Microsoft.CSharp.dll</library_output>
