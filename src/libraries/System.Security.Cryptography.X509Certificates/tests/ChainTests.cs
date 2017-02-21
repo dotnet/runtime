@@ -15,6 +15,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         internal static bool IsReliableInCI { get; } =
             !PlatformDetection.IsFedora23 &&
             !PlatformDetection.IsFedora24 &&
+            !PlatformDetection.IsFedora25 &&
+            !PlatformDetection.IsFedora26 &&
             !PlatformDetection.IsUbuntu1604 &&
             !PlatformDetection.IsUbuntu1610;
 
