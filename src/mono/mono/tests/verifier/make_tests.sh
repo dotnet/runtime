@@ -3414,7 +3414,7 @@ done
 
 ./make_exception_overlap_test.sh exception_entry_overlap_try_over_filter invalid ".try TRY_BLOCK_1 to FILTER_BLOCK_3_A filter FILTER_BLOCK_3 handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" "yes"
 
-#blocks start in the middle of an intruction
+#blocks start in the middle of an instruction
 ./make_exception_overlap_test.sh try_block_start_in_the_middle_of_a_instruction invalid ".try AFTER_PREFIX_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
 
 ./make_exception_overlap_test.sh catch_block_start_in_the_middle_of_a_instruction invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler AFTER_PREFIX_2 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"

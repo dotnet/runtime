@@ -5945,7 +5945,7 @@ mono_method_verify (MonoMethod *method, int level)
 	for (i = 0; i < ctx.code_size && i < ip_offset; ++i) {
 		if (ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) {
 			if (!(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of instruction at 0x%04x", i));
 
 			if (ctx.code [i].flags & IL_CODE_DELEGATE_SEQUENCE)
 				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Branch to delegate code sequence at 0x%04x", i));
