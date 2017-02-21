@@ -383,7 +383,7 @@ namespace System.Data.SqlClient.Tests
             }, s_tcpConnStr).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ExecuteXmlReaderAsyncErrorTest()
         {
             RemoteInvoke(cs =>
