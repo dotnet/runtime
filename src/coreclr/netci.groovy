@@ -2025,6 +2025,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     break
                 case 'arm64':
                     assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
+                   
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
 
@@ -2033,8 +2034,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                     }
                     else {
-                       // Up the timeout for arm64 testing.
-                       Utilities.setJobTimeout(newJob, 240)
+                       if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
+                       {
+                           // Up the timeout for arm64 checked testing only.
+                           // Keep the longer timeout for gcstress.
+                           Utilities.setJobTimeout(newJob, 240)
+                       }
 
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd skiptests ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
                        // Test build and run are launched together.
