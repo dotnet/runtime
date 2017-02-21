@@ -497,6 +497,20 @@
             "#import": [ "fedora.24", "fedora-x64" ]
         },
 
+        "fedora.25": {
+            "#import": [ "fedora" ]
+        },
+        "fedora.25-x64": {
+            "#import": [ "fedora.25", "fedora-x64" ]
+        },
+
+        "fedora.26": {
+            "#import": [ "fedora" ]
+        },
+        "fedora.26-x64": {
+            "#import": [ "fedora.26", "fedora-x64" ]
+        },
+
         "opensuse": {
             "#import": [ "linux" ]
         },
