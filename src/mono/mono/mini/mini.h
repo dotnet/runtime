@@ -2085,12 +2085,6 @@ typedef struct {
 	int type;
 } StackSlot;
 
-#if HAVE_ARRAY_ELEM_INIT
-extern const guint8 mono_burg_arity [];
-#else
-extern guint8 mono_burg_arity [];
-#endif
-
 extern const char MONO_ARCH_CPU_SPEC [];
 #define MONO_ARCH_CPU_SPEC_IDX_COMBINE(a) a ## _idx
 #define MONO_ARCH_CPU_SPEC_IDX(a) MONO_ARCH_CPU_SPEC_IDX_COMBINE(a)
