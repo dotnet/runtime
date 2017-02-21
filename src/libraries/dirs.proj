@@ -10,6 +10,7 @@
     <Project Include="ref.builds" />
     <Project Include="shims\shims.proj" />
     <Project Include="src.builds" />
+    <Project Include="shims\ApiCompat.proj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
