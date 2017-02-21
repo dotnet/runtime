@@ -4,17 +4,25 @@
 
 @setlocal
 @echo off
+Setlocal EnableDelayedExpansion
 
 rem Set defaults for the file extension, architecture and configuration
 set CORECLR_REPO=%CD%
 set TEST_FILE_EXT=exe
 set TEST_ARCH=x64
+set TEST_ARCHITECTURE=x64
 set TEST_CONFIG=Release
-set TEST_ENV=thisfilewillnotexist
 
 goto :ARGLOOP
 
+
 :SETUP
+
+IF /I [%TEST_ARCHITECTURE%] == [x86jit32] (
+    set TEST_ARCH=x86
+) ELSE (
+    set TEST_ARCH=%TEST_ARCHITECTURE%
+)
 
 set CORECLR_OVERLAY=%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root
 set RUNLOG=%CORECLR_REPO%\bin\Logs\perfrun.log
@@ -57,7 +65,7 @@ if not [%BENCHVIEW_PATH%] == [] (
                                     --config-name "%TEST_CONFIG%" ^
                                     --config Configuration "%TEST_CONFIG%" ^
                                     --config OS "Windows_NT" ^
-                                    --arch "%TEST_ARCH%" ^
+                                    --arch "%TEST_ARCHITECTURE%" ^
                                     --machinepool "PerfSnake"
   py "%BENCHVIEW_PATH%\upload.py" submission.json --container coreclr
 )
@@ -80,8 +88,10 @@ xcopy /s %BENCHDIR%*.txt . >> %RUNLOG%
 set CORE_ROOT=%CORECLR_REPO%\sandbox
 
 @rem setup additional environment variables
-if EXIST %TEST_ENV% (
-    call %TEST_ENV%
+if DEFINED TEST_ENV (
+    if EXIST !TEST_ENV! (
+        call %TEST_ENV%
+    )
 )
 
 xunit.performance.run.exe %BENCHNAME%.%TEST_FILE_EXT% -runner xunit.console.netcore.exe -runnerhost corerun.exe -verbose -runid %PERFOUT% > %BENCHNAME%.out
@@ -127,7 +137,7 @@ shift
 goto :ARGLOOP
 )
 IF /I [%1] == [-arch] (
-set TEST_ARCH=%2
+set TEST_ARCHITECTURE=%2
 shift
 shift
 goto :ARGLOOP
