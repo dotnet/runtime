@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Internals;
 using System.Net;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
@@ -306,6 +307,7 @@ namespace System.Net.Sockets
         {
             get
             {
+                _handle.SetExposed();
                 return _handle.DangerousGetHandle();
             }
         }
@@ -836,6 +838,7 @@ namespace System.Net.Sockets
             }
 
             ValidateBlockingMode();
+
             if (NetEventSource.IsEnabled)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"DST:{remoteEP}");
@@ -844,6 +847,8 @@ namespace System.Net.Sockets
             DnsEndPoint dnsEP = remoteEP as DnsEndPoint;
             if (dnsEP != null)
             {
+                ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
+
                 if (dnsEP.AddressFamily != AddressFamily.Unspecified && !CanTryAddressFamily(dnsEP.AddressFamily))
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
@@ -852,6 +857,8 @@ namespace System.Net.Sockets
                 Connect(dnsEP.Host, dnsEP.Port);
                 return;
             }
+
+            ValidateForMultiConnect(isMultiEndpoint: false);
 
             // This will check the permissions for connect
             EndPoint endPointSnapshot = remoteEP;
@@ -883,6 +890,9 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
+
+            ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
+
             if (!CanTryAddressFamily(address.AddressFamily))
             {
                 throw new NotSupportedException(SR.net_invalidversion);
@@ -913,6 +923,9 @@ namespace System.Net.Sockets
             {
                 throw new NotSupportedException(SR.net_invalidversion);
             }
+
+            // No need to call ValidateForMultiConnect(), as the validation
+            // will be handled by the delegated Connect overloads.
 
             IPAddress parsedAddress;
             if (IPAddress.TryParse(host, out parsedAddress))
@@ -952,9 +965,10 @@ namespace System.Net.Sockets
             {
                 throw new NotSupportedException(SR.net_invalidversion);
             }
-            ThrowIfNotSupportsMultipleConnectAttempts();
 
-            Exception lastex = null;
+            ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
+
+            ExceptionDispatchInfo lastex = null;
             foreach (IPAddress address in addresses)
             {
                 if (CanTryAddressFamily(address.AddressFamily))
@@ -965,21 +979,14 @@ namespace System.Net.Sockets
                         lastex = null;
                         break;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (!ExceptionCheck.IsFatal(ex))
                     {
-                        if (ExceptionCheck.IsFatal(ex))
-                        {
-                            throw;
-                        }
-                        lastex = ex;
+                        lastex = ExceptionDispatchInfo.Capture(ex);
                     }
                 }
             }
 
-            if (lastex != null)
-            {
-                throw lastex;
-            }
+            lastex?.Throw();
 
             // If we're not connected, then we didn't get a valid ipaddress in the list.
             if (!Connected)
@@ -1868,7 +1875,6 @@ namespace System.Net.Sockets
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
-            CheckSetOptionPermissions(optionLevel, optionName);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
             SetSocketOption(optionLevel, optionName, optionValue, false);
@@ -1880,8 +1886,6 @@ namespace System.Net.Sockets
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
-
-            CheckSetOptionPermissions(optionLevel, optionName);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
@@ -1920,8 +1924,6 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException(nameof(optionValue));
             }
-
-            CheckSetOptionPermissions(optionLevel, optionName);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"optionLevel:{optionLevel} optionName:{optionName} optionValue:{optionValue}");
 
@@ -2192,9 +2194,12 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+
             DnsEndPoint dnsEP = remoteEP as DnsEndPoint;
             if (dnsEP != null)
             {
+                ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
+
                 if (dnsEP.AddressFamily != AddressFamily.Unspecified && !CanTryAddressFamily(dnsEP.AddressFamily))
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
@@ -2203,6 +2208,7 @@ namespace System.Net.Sockets
                 return BeginConnect(dnsEP.Host, dnsEP.Port, callback, state);
             }
 
+            ValidateForMultiConnect(isMultiEndpoint: false);
             return UnsafeBeginConnect(remoteEP, callback, state, flowContext:true);
         }
 
@@ -2276,7 +2282,7 @@ namespace System.Net.Sockets
                 return r;
             }
 
-            ThrowIfNotSupportsMultipleConnectAttempts();
+            ValidateForMultiConnect(isMultiEndpoint: true);
 
             // Here, want to flow the context.  No need to lock.
             MultipleAddressConnectAsyncResult result = new MultipleAddressConnectAsyncResult(null, port, this, state, requestCallback);
@@ -2298,14 +2304,6 @@ namespace System.Net.Sockets
             return result;
         }
 
-        private static void ThrowIfNotSupportsMultipleConnectAttempts()
-        {
-            if (!SocketPal.SupportsMultipleConnectAttempts)
-            {
-                throw new PlatformNotSupportedException(SR.net_sockets_connect_multiaddress_notsupported);
-            }
-        }
-
         public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
@@ -2322,6 +2320,9 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
+
+            ValidateForMultiConnect(isMultiEndpoint: false); // needs to be called before CanTryAddressFamily
+
             if (!CanTryAddressFamily(address.AddressFamily))
             {
                 throw new NotSupportedException(SR.net_invalidversion);
@@ -2361,7 +2362,8 @@ namespace System.Net.Sockets
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
-            ThrowIfNotSupportsMultipleConnectAttempts();
+
+            ValidateForMultiConnect(isMultiEndpoint: true);
 
             // Set up the result to capture the context.  No need for a lock.
             MultipleAddressConnectAsyncResult result = new MultipleAddressConnectAsyncResult(addresses, port, this, state, requestCallback);
@@ -2525,19 +2527,21 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
 
-            if (castedAsyncResult.Result is Exception)
+            Exception ex = castedAsyncResult.Result as Exception;
+            if (ex != null || (SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, castedAsyncResult.Result);
-                throw (Exception)castedAsyncResult.Result;
+                if (ex == null)
+                {
+                    // Update the internal state of this socket according to the error before throwing.
+                    SocketException se = SocketExceptionFactory.CreateSocketException(castedAsyncResult.ErrorCode, remoteEndPoint);
+                    UpdateStatusAfterSocketError(se);
+                    ex = se;
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
+                ExceptionDispatchInfo.Capture(ex).Throw();
             }
-            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
-            {
-                // Update the internal state of this socket according to the error before throwing.
-                SocketException socketException = SocketExceptionFactory.CreateSocketException(castedAsyncResult.ErrorCode, remoteEndPoint);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
-            }
+
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
@@ -4104,12 +4108,12 @@ namespace System.Net.Sockets
             {
                 if (NetEventSource.IsEnabled) NetEventSource.ConnectedAsyncDns(this);
 
+                ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
+
                 if (dnsEP.AddressFamily != AddressFamily.Unspecified && !CanTryAddressFamily(dnsEP.AddressFamily))
                 {
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
-
-                ThrowIfNotSupportsMultipleConnectAttempts();
 
                 MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, true);
 
@@ -4120,6 +4124,8 @@ namespace System.Net.Sockets
             }
             else
             {
+                ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
+
                 // Throw if remote address family doesn't match socket.
                 if (!CanTryAddressFamily(e.RemoteEndPoint.AddressFamily))
                 {
@@ -4201,15 +4207,13 @@ namespace System.Net.Sockets
                 MultipleConnectAsync multipleConnectAsync = null;
                 if (dnsEP.AddressFamily == AddressFamily.Unspecified)
                 {
-                    // Disable CS0162 and CS0429: Unreachable code detected
-                    //
-                    // SupportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162 or CS0429.
-                    //
-                    // This is the only *Connect* API that actually supports multiple endpoint attempts, as it's responsible 
-                    // for creating each Socket instance and can create one per attempt (with the instance methods, once a 
-                    // connect fails, on unix systems that socket can't be used for subsequent connect attempts).
-#pragma warning disable 162, 429
+                    // This is the only *Connect* API that fully supports multiple endpoint attempts, as it's responsible 
+                    // for creating each Socket instance and can create one per attempt. With the instance methods, once a 
+                    // connect fails, on unix systems that socket can't be used for subsequent connect attempts: we work
+                    // around that in a limited set of circumstances (namely if the Socket.Handle hasn't been exposed and
+                    // if only a limited set of options we track have been used), but in all other cases we throw.
                     multipleConnectAsync = SocketPal.SupportsMultipleConnectAttempts ?
+#pragma warning disable CS0162 // compiler complains about dead code due to SupportsMultipleConnectAttempts being a const
                         (MultipleConnectAsync)(new DualSocketMultipleConnectAsync(socketType, protocolType)) :
                         (MultipleConnectAsync)(new MultipleSocketMultipleConnectAsync(socketType, protocolType));
 #pragma warning restore
@@ -4631,34 +4635,6 @@ namespace System.Net.Sockets
             isIPv6 = addressFamily == AddressFamily.InterNetworkV6;
         }
 
-        private void CheckSetOptionPermissions(SocketOptionLevel optionLevel, SocketOptionName optionName)
-        {
-            // Freely allow only the options listed below.
-            if (!(optionLevel == SocketOptionLevel.Tcp &&
-                  (optionName == SocketOptionName.NoDelay ||
-                   optionName == SocketOptionName.BsdUrgent ||
-                   optionName == SocketOptionName.Expedited))
-                  &&
-                  !(optionLevel == SocketOptionLevel.Udp &&
-                    (optionName == SocketOptionName.NoChecksum ||
-                     optionName == SocketOptionName.ChecksumCoverage))
-                  &&
-                  !(optionLevel == SocketOptionLevel.Socket &&
-                  (optionName == SocketOptionName.KeepAlive ||
-                   optionName == SocketOptionName.Linger ||
-                   optionName == SocketOptionName.DontLinger ||
-                   optionName == SocketOptionName.SendBuffer ||
-                   optionName == SocketOptionName.ReceiveBuffer ||
-                   optionName == SocketOptionName.SendTimeout ||
-                   optionName == SocketOptionName.ExclusiveAddressUse ||
-                   optionName == SocketOptionName.ReceiveTimeout))
-                  &&
-                  !(optionLevel == SocketOptionLevel.IPv6 &&
-                    optionName == (SocketOptionName)23)) // IPv6 protection level.
-            {
-            }
-        }
-
         private Internals.SocketAddress SnapshotAndSerialize(ref EndPoint remoteEP)
         {
             IPEndPoint ipSnapshot = remoteEP as IPEndPoint;
@@ -4743,13 +4719,6 @@ namespace System.Net.Sockets
                     }
                 }
             }
-        }
-
-        internal void InternalConnect(EndPoint remoteEP)
-        {
-            EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
-            DoConnect(endPointSnapshot, socketAddress);
         }
 
         private void DoConnect(EndPoint endPointSnapshot, Internals.SocketAddress socketAddress)
@@ -5332,8 +5301,6 @@ namespace System.Net.Sockets
             internal IPAddress[] _addresses;
             internal int _index;
             internal int _port;
-            internal bool _isUserConnectAttempt;
-            internal Socket _lastAttemptSocket;
             internal Exception _lastException;
 
             internal EndPoint RemoteEndPoint
@@ -5365,13 +5332,11 @@ namespace System.Net.Sockets
             }
         }
 
-        // Disable CS0162: Unreachable code detected
-        //
-        // SupportsMultipleConnectAttempts is a constant; when false, the following lines will trigger CS0162.
-#pragma warning disable 162, 429
         private static object PostOneBeginConnect(MultipleAddressConnectAsyncResult context)
         {
             IPAddress currentAddressSnapshot = context._addresses[context._index];
+
+            context._socket.ReplaceHandleIfNecessaryAfterFailedConnect();
 
             if (!context._socket.CanTryAddressFamily(currentAddressSnapshot.AddressFamily))
             {
@@ -5385,31 +5350,14 @@ namespace System.Net.Sockets
                 // Do the necessary security demand.
                 context._socket.CheckCacheRemote(ref endPoint, true);
 
-                Socket connectSocket = context._socket;
-                if (!SocketPal.SupportsMultipleConnectAttempts && !context._isUserConnectAttempt)
-                {
-                    context._lastAttemptSocket = new Socket(context._socket._addressFamily, context._socket._socketType, context._socket._protocolType);
-                    if (context._socket.IsDualMode)
-                    {
-                        context._lastAttemptSocket.DualMode = true;
-                    }
-
-                    connectSocket = context._lastAttemptSocket;
-                }
-
-                IAsyncResult connectResult = connectSocket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
+                IAsyncResult connectResult = context._socket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
                 if (connectResult.CompletedSynchronously)
                 {
                     return connectResult;
                 }
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
-                if (exception is OutOfMemoryException)
-                {
-                    throw;
-                }
-
                 return exception;
             }
 
@@ -5453,15 +5401,7 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        if (SocketPal.SupportsMultipleConnectAttempts || context._isUserConnectAttempt)
-                        {
-                            context._socket.EndConnect((IAsyncResult)result);
-                        }
-                        else
-                        {
-                            Debug.Assert(context._lastAttemptSocket != null);
-                            context._lastAttemptSocket.EndConnect((IAsyncResult)result);
-                        }
+                        context._socket.EndConnect((IAsyncResult)result);
                     }
                     catch (Exception exception)
                     {
@@ -5469,31 +5409,18 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if (!SocketPal.SupportsMultipleConnectAttempts && !context._isUserConnectAttempt && context._lastAttemptSocket != null)
-                {
-                    context._lastAttemptSocket.Dispose();
-                }
-
                 if (ex == null)
                 {
-                    if (!SocketPal.SupportsMultipleConnectAttempts && !context._isUserConnectAttempt)
-                    {
-                        context._isUserConnectAttempt = true;
-                        result = PostOneBeginConnect(context);
-                    }
-                    else
-                    {
-                        // Don't invoke the callback from here, because we're probably inside
-                        // a catch-all block that would eat exceptions from the callback.
-                        // Instead tell our caller to invoke the callback outside of its catchall.
-                        return true;
-                    }
+                    // Don't invoke the callback from here, because we're probably inside
+                    // a catch-all block that would eat exceptions from the callback.
+                    // Instead tell our caller to invoke the callback outside of its catchall.
+                    return true;
                 }
                 else
                 {
-                    if (++context._index >= context._addresses.Length || context._isUserConnectAttempt)
+                    if (++context._index >= context._addresses.Length)
                     {
-                        throw ex;
+                        ExceptionDispatchInfo.Capture(ex).Throw();
                     }
 
                     context._lastException = ex;
@@ -5504,7 +5431,6 @@ namespace System.Net.Sockets
             // Don't invoke the callback at all, because we've posted another async connection attempt.
             return false;
         }
-#pragma warning restore
 
         // CreateAcceptSocket - pulls unmanaged results and assembles them into a new Socket object.
         internal Socket CreateAcceptSocket(SafeCloseSocket fd, EndPoint remoteEP)
@@ -5629,6 +5555,12 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_invasync);
             }
         }
+
+        // Validates that the Socket can be used to try another Connect call, in case
+        // a previous call failed and the platform does not support that.  In some cases,
+        // the call may also be able to "fix" the Socket to continue working, even if the
+        // platform wouldn't otherwise support it.  Windows always supports this.
+        partial void ValidateForMultiConnect(bool isMultiEndpoint);
 
         // Helper for SendFile implementations
         private static FileStream OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);

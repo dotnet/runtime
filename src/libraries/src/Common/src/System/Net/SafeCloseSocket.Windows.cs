@@ -20,6 +20,8 @@ namespace System.Net.Sockets
         private bool _skipCompletionPortOnSuccess;
         private object _iocpBindingLock = new object();
 
+        public void SetExposed() { /* nop */ }
+
         public ThreadPoolBoundHandle IOCPBoundHandle
         {
             get
