@@ -1753,18 +1753,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<<#=narrowTarget.Name#>> Narrow(Vector<<#=narrowSource.Name#>> low, Vector<<#=narrowSource.Name#>> high)
         {
-            int elements = Vector<<#=narrowTarget.Name#>>.Count;
-            <#=narrowTarget.Name#>* retPtr = stackalloc <#=narrowTarget.Name#>[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (<#=narrowTarget.Name#>)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (<#=narrowTarget.Name#>)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<<#=narrowTarget.Name#>>.Count;
+				<#=narrowTarget.Name#>* retPtr = stackalloc <#=narrowTarget.Name#>[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (<#=narrowTarget.Name#>)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (<#=narrowTarget.Name#>)high[i];
+				}
 
-            return new Vector<<#=narrowTarget.Name#>>(retPtr);
+				return new Vector<<#=narrowTarget.Name#>>(retPtr);
+		    }
         }
 
 <#
@@ -1792,14 +1795,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<<#=pair.Value.Name#>> ConvertTo<#=pair.Value.Name#>(Vector<<#=pair.Key.Name#>> value)
         {
-            int elements = Vector<<#=pair.Value.Name#>>.Count;
-            <#=pair.Value.Name#>* retPtr = stackalloc <#=pair.Value.Name#>[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (<#=pair.Value.Name#>)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<<#=pair.Value.Name#>>.Count;
+				<#=pair.Value.Name#>* retPtr = stackalloc <#=pair.Value.Name#>[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (<#=pair.Value.Name#>)value[i];
+				}
 
-            return new Vector<<#=pair.Value.Name#>>(retPtr);
+				return new Vector<<#=pair.Value.Name#>>(retPtr);
+			}
         }
 
 <# } #>

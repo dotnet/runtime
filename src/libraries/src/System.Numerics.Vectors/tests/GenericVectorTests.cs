@@ -2249,7 +2249,7 @@ namespace System.Numerics.Tests
             Vector<Single> targetVec = Vector.ConvertToSingle(sourceVec);
             for (int i = 0; i < Vector<Single>.Count; i++)
             {
-                Assert.Equal((Single)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Single)source[i]), targetVec[i]);
             }
         }
 
@@ -2261,7 +2261,7 @@ namespace System.Numerics.Tests
             Vector<Single> targetVec = Vector.ConvertToSingle(sourceVec);
             for (int i = 0; i < Vector<Single>.Count; i++)
             {
-                Assert.Equal((Single)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Single)source[i]), targetVec[i]);
             }
         }
 
@@ -2273,7 +2273,7 @@ namespace System.Numerics.Tests
             Vector<Double> targetVec = Vector.ConvertToDouble(sourceVec);
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                Assert.Equal((Double)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Double)source[i]), targetVec[i]);
             }
         }
 
@@ -2285,7 +2285,7 @@ namespace System.Numerics.Tests
             Vector<Double> targetVec = Vector.ConvertToDouble(sourceVec);
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                Assert.Equal((Double)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Double)source[i]), targetVec[i]);
             }
         }
 
@@ -2297,7 +2297,7 @@ namespace System.Numerics.Tests
             Vector<Int32> targetVec = Vector.ConvertToInt32(sourceVec);
             for (int i = 0; i < Vector<Int32>.Count; i++)
             {
-                Assert.Equal((Int32)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Int32)source[i]), targetVec[i]);
             }
         }
 
@@ -2309,7 +2309,7 @@ namespace System.Numerics.Tests
             Vector<UInt32> targetVec = Vector.ConvertToUInt32(sourceVec);
             for (int i = 0; i < Vector<UInt32>.Count; i++)
             {
-                Assert.Equal((UInt32)source[i], targetVec[i]);
+                Assert.Equal(unchecked((UInt32)source[i]), targetVec[i]);
             }
         }
 
@@ -2321,7 +2321,7 @@ namespace System.Numerics.Tests
             Vector<Int64> targetVec = Vector.ConvertToInt64(sourceVec);
             for (int i = 0; i < Vector<Int64>.Count; i++)
             {
-                Assert.Equal((Int64)source[i], targetVec[i]);
+                Assert.Equal(unchecked((Int64)source[i]), targetVec[i]);
             }
         }
 
@@ -2333,7 +2333,7 @@ namespace System.Numerics.Tests
             Vector<UInt64> targetVec = Vector.ConvertToUInt64(sourceVec);
             for (int i = 0; i < Vector<UInt64>.Count; i++)
             {
-                Assert.Equal((UInt64)source[i], targetVec[i]);
+                Assert.Equal(unchecked((UInt64)source[i]), targetVec[i]);
             }
         }
 
@@ -2485,11 +2485,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<UInt16>.Count; i++)
             {
-                Assert.Equal((Byte)source1[i], dest[i]);
+                Assert.Equal(unchecked((Byte)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<UInt16>.Count; i++)
             {
-                Assert.Equal((Byte)source2[i], dest[i + Vector<UInt16>.Count]);
+                Assert.Equal(unchecked((Byte)source2[i]), dest[i + Vector<UInt16>.Count]);
             }
         }
 
@@ -2504,11 +2504,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<UInt32>.Count; i++)
             {
-                Assert.Equal((UInt16)source1[i], dest[i]);
+                Assert.Equal(unchecked((UInt16)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<UInt32>.Count; i++)
             {
-                Assert.Equal((UInt16)source2[i], dest[i + Vector<UInt32>.Count]);
+                Assert.Equal(unchecked((UInt16)source2[i]), dest[i + Vector<UInt32>.Count]);
             }
         }
 
@@ -2523,11 +2523,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<UInt64>.Count; i++)
             {
-                Assert.Equal((UInt32)source1[i], dest[i]);
+                Assert.Equal(unchecked((UInt32)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<UInt64>.Count; i++)
             {
-                Assert.Equal((UInt32)source2[i], dest[i + Vector<UInt64>.Count]);
+                Assert.Equal(unchecked((UInt32)source2[i]), dest[i + Vector<UInt64>.Count]);
             }
         }
 
@@ -2542,11 +2542,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<Int16>.Count; i++)
             {
-                Assert.Equal((SByte)source1[i], dest[i]);
+                Assert.Equal(unchecked((SByte)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<Int16>.Count; i++)
             {
-                Assert.Equal((SByte)source2[i], dest[i + Vector<Int16>.Count]);
+                Assert.Equal(unchecked((SByte)source2[i]), dest[i + Vector<Int16>.Count]);
             }
         }
 
@@ -2561,11 +2561,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<Int32>.Count; i++)
             {
-                Assert.Equal((Int16)source1[i], dest[i]);
+                Assert.Equal(unchecked((Int16)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<Int32>.Count; i++)
             {
-                Assert.Equal((Int16)source2[i], dest[i + Vector<Int32>.Count]);
+                Assert.Equal(unchecked((Int16)source2[i]), dest[i + Vector<Int32>.Count]);
             }
         }
 
@@ -2580,11 +2580,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<Int64>.Count; i++)
             {
-                Assert.Equal((Int32)source1[i], dest[i]);
+                Assert.Equal(unchecked((Int32)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<Int64>.Count; i++)
             {
-                Assert.Equal((Int32)source2[i], dest[i + Vector<Int64>.Count]);
+                Assert.Equal(unchecked((Int32)source2[i]), dest[i + Vector<Int64>.Count]);
             }
         }
 
@@ -2599,11 +2599,11 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                Assert.Equal((Single)source1[i], dest[i]);
+                Assert.Equal(unchecked((Single)source1[i]), dest[i]);
             }
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                Assert.Equal((Single)source2[i], dest[i + Vector<Double>.Count]);
+                Assert.Equal(unchecked((Single)source2[i]), dest[i + Vector<Double>.Count]);
             }
         }
 

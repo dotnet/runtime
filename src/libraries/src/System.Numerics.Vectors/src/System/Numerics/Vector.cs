@@ -5192,18 +5192,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Byte> Narrow(Vector<UInt16> low, Vector<UInt16> high)
         {
-            int elements = Vector<Byte>.Count;
-            Byte* retPtr = stackalloc Byte[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (Byte)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (Byte)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<Byte>.Count;
+				Byte* retPtr = stackalloc Byte[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (Byte)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (Byte)high[i];
+				}
 
-            return new Vector<Byte>(retPtr);
+				return new Vector<Byte>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5216,18 +5219,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<UInt16> Narrow(Vector<UInt32> low, Vector<UInt32> high)
         {
-            int elements = Vector<UInt16>.Count;
-            UInt16* retPtr = stackalloc UInt16[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (UInt16)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (UInt16)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<UInt16>.Count;
+				UInt16* retPtr = stackalloc UInt16[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (UInt16)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (UInt16)high[i];
+				}
 
-            return new Vector<UInt16>(retPtr);
+				return new Vector<UInt16>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5240,18 +5246,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<UInt32> Narrow(Vector<UInt64> low, Vector<UInt64> high)
         {
-            int elements = Vector<UInt32>.Count;
-            UInt32* retPtr = stackalloc UInt32[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (UInt32)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (UInt32)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<UInt32>.Count;
+				UInt32* retPtr = stackalloc UInt32[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (UInt32)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (UInt32)high[i];
+				}
 
-            return new Vector<UInt32>(retPtr);
+				return new Vector<UInt32>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5264,18 +5273,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<SByte> Narrow(Vector<Int16> low, Vector<Int16> high)
         {
-            int elements = Vector<SByte>.Count;
-            SByte* retPtr = stackalloc SByte[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (SByte)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (SByte)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<SByte>.Count;
+				SByte* retPtr = stackalloc SByte[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (SByte)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (SByte)high[i];
+				}
 
-            return new Vector<SByte>(retPtr);
+				return new Vector<SByte>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5287,18 +5299,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Int16> Narrow(Vector<Int32> low, Vector<Int32> high)
         {
-            int elements = Vector<Int16>.Count;
-            Int16* retPtr = stackalloc Int16[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (Int16)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (Int16)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<Int16>.Count;
+				Int16* retPtr = stackalloc Int16[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (Int16)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (Int16)high[i];
+				}
 
-            return new Vector<Int16>(retPtr);
+				return new Vector<Int16>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5310,18 +5325,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Int32> Narrow(Vector<Int64> low, Vector<Int64> high)
         {
-            int elements = Vector<Int32>.Count;
-            Int32* retPtr = stackalloc Int32[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (Int32)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (Int32)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<Int32>.Count;
+				Int32* retPtr = stackalloc Int32[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (Int32)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (Int32)high[i];
+				}
 
-            return new Vector<Int32>(retPtr);
+				return new Vector<Int32>(retPtr);
+		    }
         }
 
         /// <summary>
@@ -5333,18 +5351,21 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Single> Narrow(Vector<Double> low, Vector<Double> high)
         {
-            int elements = Vector<Single>.Count;
-            Single* retPtr = stackalloc Single[elements];
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i] = (Single)low[i];
-            }
-            for (int i = 0; i < elements / 2; i++)
-            {
-                retPtr[i + (elements / 2)] = (Single)high[i];
-            }
+		    unchecked
+		    {
+				int elements = Vector<Single>.Count;
+				Single* retPtr = stackalloc Single[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (Single)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (Single)high[i];
+				}
 
-            return new Vector<Single>(retPtr);
+				return new Vector<Single>(retPtr);
+		    }
         }
 
         #endregion Widen/Narrow
@@ -5358,14 +5379,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Single> ConvertToSingle(Vector<Int32> value)
         {
-            int elements = Vector<Single>.Count;
-            Single* retPtr = stackalloc Single[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Single)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Single>.Count;
+				Single* retPtr = stackalloc Single[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Single)value[i];
+				}
 
-            return new Vector<Single>(retPtr);
+				return new Vector<Single>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5377,14 +5401,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Single> ConvertToSingle(Vector<UInt32> value)
         {
-            int elements = Vector<Single>.Count;
-            Single* retPtr = stackalloc Single[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Single)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Single>.Count;
+				Single* retPtr = stackalloc Single[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Single)value[i];
+				}
 
-            return new Vector<Single>(retPtr);
+				return new Vector<Single>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5395,14 +5422,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Double> ConvertToDouble(Vector<Int64> value)
         {
-            int elements = Vector<Double>.Count;
-            Double* retPtr = stackalloc Double[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Double)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Double>.Count;
+				Double* retPtr = stackalloc Double[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Double)value[i];
+				}
 
-            return new Vector<Double>(retPtr);
+				return new Vector<Double>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5414,14 +5444,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Double> ConvertToDouble(Vector<UInt64> value)
         {
-            int elements = Vector<Double>.Count;
-            Double* retPtr = stackalloc Double[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Double)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Double>.Count;
+				Double* retPtr = stackalloc Double[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Double)value[i];
+				}
 
-            return new Vector<Double>(retPtr);
+				return new Vector<Double>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5432,14 +5465,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Int32> ConvertToInt32(Vector<Single> value)
         {
-            int elements = Vector<Int32>.Count;
-            Int32* retPtr = stackalloc Int32[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Int32)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Int32>.Count;
+				Int32* retPtr = stackalloc Int32[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Int32)value[i];
+				}
 
-            return new Vector<Int32>(retPtr);
+				return new Vector<Int32>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5451,14 +5487,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<UInt32> ConvertToUInt32(Vector<Single> value)
         {
-            int elements = Vector<UInt32>.Count;
-            UInt32* retPtr = stackalloc UInt32[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (UInt32)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<UInt32>.Count;
+				UInt32* retPtr = stackalloc UInt32[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (UInt32)value[i];
+				}
 
-            return new Vector<UInt32>(retPtr);
+				return new Vector<UInt32>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5469,14 +5508,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<Int64> ConvertToInt64(Vector<Double> value)
         {
-            int elements = Vector<Int64>.Count;
-            Int64* retPtr = stackalloc Int64[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (Int64)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<Int64>.Count;
+				Int64* retPtr = stackalloc Int64[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (Int64)value[i];
+				}
 
-            return new Vector<Int64>(retPtr);
+				return new Vector<Int64>(retPtr);
+			}
         }
 
         /// <summary>
@@ -5488,14 +5530,17 @@ namespace System.Numerics
         [JitIntrinsic]
         public static unsafe Vector<UInt64> ConvertToUInt64(Vector<Double> value)
         {
-            int elements = Vector<UInt64>.Count;
-            UInt64* retPtr = stackalloc UInt64[elements];
-            for (int i = 0; i < elements; i++)
-            {
-                retPtr[i] = (UInt64)value[i];
-            }
+			unchecked
+			{
+				int elements = Vector<UInt64>.Count;
+				UInt64* retPtr = stackalloc UInt64[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (UInt64)value[i];
+				}
 
-            return new Vector<UInt64>(retPtr);
+				return new Vector<UInt64>(retPtr);
+			}
         }
 
         #endregion Same-Size Conversion
