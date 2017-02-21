@@ -42,6 +42,28 @@ namespace System.Collections.Concurrent.Tests
         protected override string CreateTValue(int seed) => CreateTKey(seed);
     }
 
+    public class ConcurrentDictionary_Generic_Tests_ulong_ulong : ConcurrentDictionary_Generic_Tests<ulong, ulong>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override KeyValuePair<ulong, ulong> CreateT(int seed)
+        {
+            ulong key = CreateTKey(seed);
+            ulong value = CreateTKey(~seed);
+            return new KeyValuePair<ulong, ulong>(key, value);
+        }
+
+        protected override ulong CreateTKey(int seed)
+        {
+            Random rand = new Random(seed);
+            ulong hi = unchecked((ulong)rand.Next());
+            ulong lo = unchecked((ulong)rand.Next());
+            return (hi << 32) | lo;
+        }
+
+        protected override ulong CreateTValue(int seed) => CreateTKey(seed);
+    }
+
     public class ConcurrentDictionary_Generic_Tests_int_int : ConcurrentDictionary_Generic_Tests<int, int>
     {
         protected override bool DefaultValueAllowed => true;
