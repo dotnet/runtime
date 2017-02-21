@@ -390,14 +390,14 @@ if %__BuildNativeCoreLib% EQU 1 (
         echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         :: Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
-        exit /b 1
+        goto CrossgenFailure
     )
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.ni.dll" >> "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         :: Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
-        exit /b 1
+        goto CrossgenFailure
     )
 
     echo %__MsgPrefix%Generating native image of MScorlib facade for %__BuildOS%.%__BuildArch%.%__BuildType%
@@ -422,7 +422,7 @@ if %__BuildNativeCoreLib% EQU 1 (
         echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to !__CrossGenCoreLibLog!
         :: Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%        
-        exit /b 1
+        goto CrossgenFailure
     )
 )
 
@@ -560,6 +560,9 @@ REM ===
 REM === Helper routines
 REM ===
 REM =========================================================================================
+
+:CrossgenFailure
+exit /b 1
 
 :Usage
 echo.
