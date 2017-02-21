@@ -18,10 +18,13 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' And '$(TargetGroup)' != 'uap'">
     <Compile Include="System.ValueTuple.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
     <!-- Those files only serve to unblock the compilation given that this profile didn't have those attributes -->
     <Compile Include="System.Security.AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="System.Runtime.CompilerServices.ReferenceAssemblyAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+      <Link>Common\System\Reflection\AssemblyMetadataAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">
     <Compile Include="System.ValueTuple.TypeForwards.cs" />
@@ -29,7 +32,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
