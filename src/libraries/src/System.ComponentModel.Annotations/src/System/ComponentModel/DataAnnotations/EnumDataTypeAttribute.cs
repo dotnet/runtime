@@ -28,7 +28,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 throw new InvalidOperationException(SR.EnumDataTypeAttribute_TypeCannotBeNull);
             }
-            if (!EnumType.GetTypeInfo().IsEnum)
+            if (!EnumType.IsEnum)
             {
                 throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
                     SR.EnumDataTypeAttribute_TypeNeedsToBeAnEnum, EnumType.FullName));
@@ -45,13 +45,13 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             Type valueType = value.GetType();
-            if (valueType.GetTypeInfo().IsEnum && EnumType != valueType)
+            if (valueType.IsEnum && EnumType != valueType)
             {
                 // don't match a different enum that might map to the same underlying integer
                 return false;
             }
 
-            if (!valueType.GetTypeInfo().IsValueType && valueType != typeof(string))
+            if (!valueType.IsValueType && valueType != typeof(string))
             {
                 // non-value types cannot be converted
                 return false;
@@ -68,7 +68,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             object convertedValue;
-            if (valueType.GetTypeInfo().IsEnum)
+            if (valueType.IsEnum)
             {
                 Debug.Assert(valueType == value.GetType(), "The valueType should equal the Type of the value");
                 convertedValue = value;
@@ -109,7 +109,7 @@ namespace System.ComponentModel.DataAnnotations
 
         private static bool IsEnumTypeInFlagsMode(Type enumType)
         {
-            return enumType.GetTypeInfo().GetCustomAttributes(typeof(FlagsAttribute), false).Any();
+            return enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
         }
 
 
