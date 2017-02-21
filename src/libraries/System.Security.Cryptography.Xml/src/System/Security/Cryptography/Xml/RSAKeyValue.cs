@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
         /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue. 
         /// </remarks>
         /// <returns>
-        /// An <see cref="XmlElement"/> containin the XML representation.
+        /// An <see cref="XmlElement"/> containing the XML representation.
         /// </returns>
         public override XmlElement GetXml()
         {
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Xml
         /// Based upon https://www.w3.org/TR/xmldsig-core/#sec-RSAKeyValue. 
         /// </remarks>
         /// <param name="value">
-        /// An <see cref="XmlElement"/> containin the XML representation. This cannot be null.
+        /// An <see cref="XmlElement"/> containing the XML representation. This cannot be null.
         /// </param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="value"/> cannot be null.
