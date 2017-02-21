@@ -305,7 +305,7 @@ nameof(binaryForm),
 
             binaryForm[offset + 0] = Revision;
             binaryForm[offset + 1] = rmControl;
-            binaryForm[offset + 2] = (byte)((int)materializedControlFlags >> 0);
+            binaryForm[offset + 2] = unchecked((byte)((int)materializedControlFlags >> 0));
             binaryForm[offset + 3] = (byte)((int)materializedControlFlags >> 8);
 
             //
