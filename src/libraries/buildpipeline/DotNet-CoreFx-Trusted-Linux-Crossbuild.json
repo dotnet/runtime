@@ -209,7 +209,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -buildArch=$(PB_Architecture) -$(PB_ConfigurationGroup)",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -buildArch=$(PB_Architecture) -$(PB_ConfigurationGroup) $(PB_BuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -419,6 +419,9 @@
     },
     "PB_Architecture": {
       "value": "arm"
+    },
+    "PB_BuildArguments": {
+      "value": ""
     },
     "SourceVersion": {
       "value": "HEAD",
