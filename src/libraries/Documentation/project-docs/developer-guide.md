@@ -71,9 +71,9 @@ build -tests
 
 - Building for different target frameworks
 ```
-build -framework netcoreapp
-build -framework netfx
-build -framework uap
+build -framework=netcoreapp
+build -framework=netfx
+build -framework=uap
 ```
 
 ###Build Native
@@ -128,7 +128,7 @@ build-tests -skiptests
 
 - The following builds and runs all tests for netcoreapp in release configuration.
 ```
-build-tests -release -framework netcoreapp
+build-tests -release -framework=netcoreapp
 ```
 
 - The following example shows the argument `--`. Everything that is after it is not going to be processed and it is going to be passed as it is.
