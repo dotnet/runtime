@@ -52,7 +52,8 @@ namespace System.Security.Cryptography.Xml.Tests
             // Schema check. Should not throw.
             const string schema = "http://www.w3.org/2000/09/xmldsig#";
             new [] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter"}
-                .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[name()=DSAKeyValue & namespace-uri()='{schema}']/*[name()='{elementName}' & namespace-uri()='{schema}']").InnerText));
+                .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[local-name()=DSAKeyValue and namespace-uri()='{schema}']/*[local-name()='{elementName}' and namespace-uri()='{schema}']").InnerText))
+                .ToArray();
         }
 
         [Fact]
