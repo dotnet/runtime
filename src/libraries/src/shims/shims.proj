@@ -1,46 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      uap;
-      uapaot;
-    </BuildConfigurations>
-  </PropertyGroup>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
-  <PropertyGroup>
-    <NetCoreAppRefPath>$(RefPath)</NetCoreAppRefPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <NetFxReference Include="mscorlib" />
-    <NetFxReference Include="System" />
-    <NetFxReference Include="System.Core" />
-    <NetFxReference Include="System.ComponentModel.Composition" />
-    <NetFxReference Include="System.Data" />
-    <NetFxReference Include="System.Drawing" />
-    <NetFxReference Include="System.IO.Compression.FileSystem" />
-    <NetFxReference Include="System.Numerics" />
-    <NetFxReference Include="System.Runtime.Serialization" />
-    <NetFxReference Include="System.Web" />
-    <NetFxReference Include="System.Xml" />
-    <NetFxReference Include="System.Xml.Linq" />
-  </ItemGroup>
+  <Import Project="dir.props" />
 
   <Target Name="GetGenFacadesInputs">
     <ItemGroup>
       <NetFxContracts Include="@(NetFxReference->'$(NetFxRefPath)%(Identity).dll')" />
       <NETStandardContracts Include="$(NetStandardRefPath)netstandard.dll" />
       <GenFacadesContracts Include="@(NetFxContracts);@(NETStandardContracts)" />
-      <GenFacadesSeeds Include="$(NetCoreAppRefPath)*.dll" Exclude="$(NetCoreAppRefPath)System.Private.CoreLib.dll" />
+      <GenFacadesSeeds Include="$(RefPath)*.dll" Exclude="$(RefPath)System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
 
   <PropertyGroup>
     <GenFacadesInputPath>$(IntermediateOutputPath)PreGenFacades/</GenFacadesInputPath>
-    <GenFacadesOutputPath>$(IntermediateOutputPath)facades/</GenFacadesOutputPath>
     <GenFacadesResponseFile>$(GenFacadesInputPath)genfacades.rsp</GenFacadesResponseFile>
     <GenFacadesSemaphoreFile>$(GenFacadesInputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
   </PropertyGroup>
@@ -91,46 +63,7 @@
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
-  <PropertyGroup>
-    <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
-    <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
-    <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
-  </PropertyGroup>
-
-  <!-- Run ApiCompat -->
-  <Target Name="RunApiCompat"
-          Inputs="$(ApiCompatResponseFile);@(GenFacadesContracts)"
-          Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)"
-  >
-    <PropertyGroup>
-      <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(NetCoreAppRefPath),$(GenFacadesOutputPath)"</ApiCompatArgs>
-      <ApiCompatExitCode>0</ApiCompatExitCode>
-
-      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(IntermediateOutputPath)" />
-    <WriteLinesToFile File="$(ApiCompatResponseFile)" Lines="$(ApiCompatArgs)" Overwrite="true" />
-
-    <Exec Command="$(ApiCompatCmd) &quot;@(NetFxContracts)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatBaselineFile)"
-          CustomErrorRegularExpression="^[a-zA-Z]+ :"
-          StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
-      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
-    </Exec>
-
-    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSBaselineFile)"
-          CustomErrorRegularExpression="^[a-zA-Z]+ :"
-          StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-    >
-      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
-    </Exec>
-
-  </Target>
-
-  <Target Name="Build" DependsOnTargets="RunGenFacades;RunApiCompat" />
+  <Target Name="Build" DependsOnTargets="RunGenFacades" />
   <Target Name="Clean">
     <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
   </Target>
