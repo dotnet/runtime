@@ -60,6 +60,7 @@ function print_usage {
     echo '  --build-overlay-only             : Exit after overlay directory is populated'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
+    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -1074,6 +1075,9 @@ do
             ;;
         --limitedDumpGeneration)
             limitedCoreDumps=ON
+            ;;
+        --xunitOutputPath=*)
+            xunitOutputPath=${i#*=}
             ;;
         *)
             echo "Unknown switch: $i"
