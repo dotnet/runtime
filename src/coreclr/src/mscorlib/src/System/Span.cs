@@ -849,12 +849,12 @@ namespace System
             {
                 if ((Unsafe.As<byte, int>(ref b) & 1) != 0)
                 {
-                    Unsafe.AddNative<byte>(ref b, i) = 0;
+                    Unsafe.AddByteOffset<byte>(ref b, i) = 0;
                     i += 1;
                     if ((Unsafe.As<byte, int>(ref b) & 2) != 0)
                         goto IntAligned;
                 }
-                Unsafe.As<byte, short>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, short>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 2;
             }
 
@@ -870,7 +870,7 @@ namespace System
 
             if (((Unsafe.As<byte, int>(ref b) - 1) & 4) == 0)
             {
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 4;
             }
 
@@ -899,13 +899,13 @@ namespace System
                 // we save on writes to b.
 
 #if BIT64
-                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
-                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i + 8)) = 0;
+                Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i + 8)) = 0;
 #else
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 4)) = 0;
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 8)) = 0;
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 12)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i + 4)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i + 8)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i + 12)) = 0;
 #endif
 
                 i = counter;
@@ -918,26 +918,26 @@ namespace System
             if ((byteLength & 8) != 0)
             {
 #if BIT64
-                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, long>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
 #else
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 4)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i + 4)) = 0;
 #endif
                 i += 8;
             }
             if ((byteLength & 4) != 0)
             {
-                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 4;
             }
             if ((byteLength & 2) != 0)
             {
-                Unsafe.As<byte, short>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, short>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 2;
             }
             if ((byteLength & 1) != 0)
             {
-                Unsafe.AddNative<byte>(ref b, i) = 0;
+                Unsafe.AddByteOffset<byte>(ref b, i) = 0;
                 // We're not using i after this, so not needed
                 // i += 1;
             }
@@ -959,33 +959,33 @@ namespace System
             nuint n = 0;
             while ((n = i + 8) <= (pointerSizeLength))
             {
-                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 2) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 3) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 4) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 5) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 6) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 7) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 2) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 3) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 4) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 5) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 6) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 7) * (nuint)sizeof(IntPtr)) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 4) <= (pointerSizeLength))
             {
-                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 2) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 3) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 2) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 3) * (nuint)sizeof(IntPtr)) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 2) <= (pointerSizeLength))
             {
-                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
-                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
                 i = n;
             }
             if ((i + 1) <= (pointerSizeLength))
             {
-                Unsafe.AddNative<IntPtr>(ref ip, i) = default(IntPtr);
+                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
             }
         }
     }
