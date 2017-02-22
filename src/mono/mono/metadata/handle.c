@@ -138,6 +138,31 @@ handle_to_chunk_element (MonoObjectHandle o)
 	return (HandleChunkElem*)o;
 }
 
+/* Given a HandleChunkElem* search through the current handle stack to find its chunk and offset. */
+static HandleChunk*
+chunk_element_to_chunk_idx (HandleStack *stack, HandleChunkElem *elem, int *out_idx)
+{
+	HandleChunk *top = stack->top;
+	HandleChunk *cur = stack->bottom;
+
+	*out_idx = 0;
+
+	while (cur != NULL) {
+		HandleChunkElem *front = &cur->elems [0];
+		HandleChunkElem *back = &cur->elems [cur->size];
+
+		if (front <= elem && elem < back) {
+			*out_idx = (int)(elem - front);
+			return cur;
+		}
+
+		if (cur == top)
+			break; /* didn't find it. */
+		cur = cur->next;
+	}
+	return NULL;
+}
+
 #ifdef MONO_HANDLE_TRACK_OWNER
 #define SET_OWNER(chunk,idx) do { (chunk)->elems[(idx)].owner = owner; } while (0)
 #else
@@ -370,9 +395,16 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
-	/* FIXME: Want to assert that handle isn't an interior pointer,
-	 * gchandle can't deal with interior pointers.  But it's expensive to
-	 * convert from a handle to its chunk and index. */
+	/* FIXME: chunk_element_to_chunk_idx does a linear search through the
+	 * chunks and we only need it for the assert */
+	MonoThreadInfo *info = mono_thread_info_current ();
+	HandleStack *stack = (HandleStack*) info->handle_stack;
+	HandleChunkElem* elem = handle_to_chunk_element (handle);
+	int elem_idx = 0;
+	HandleChunk *chunk = chunk_element_to_chunk_idx (stack, elem, &elem_idx);
+	/* gchandles cannot deal with interior pointers */
+	g_assert (chunk != NULL);
+	g_assert (chunk_element_kind (chunk, elem_idx) != HANDLE_CHUNK_PTR_INTERIOR);
 	return mono_gchandle_new (MONO_HANDLE_RAW (handle), pinned);
 }
 
