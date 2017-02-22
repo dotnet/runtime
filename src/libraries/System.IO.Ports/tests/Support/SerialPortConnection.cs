@@ -71,6 +71,8 @@ namespace Legacy.Support
             {
                 com1.ReadTimeout = 1000;
                 com2.ReadTimeout = 1000;
+                com1.WriteTimeout = 1000;
+                com2.WriteTimeout = 1000;
 
                 com1.WriteLine("Ping");
 
