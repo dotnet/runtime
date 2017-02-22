@@ -101,7 +101,7 @@
       "value": "PassedViaPipeBuild"
     },
     "CLI_NUGET_FEED_URL": {
-      "value": "https://www.myget.org/F/core-setup-testing"
+      "value": "https://dotnet.myget.org/F/cli-deps"
     },
     "CLI_NUGET_API_KEY": {
       "value": "PassedViaPipeBuild"
