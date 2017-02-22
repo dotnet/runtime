@@ -8,6 +8,7 @@
 //
 // Managed event source for things that can version with MSCORLIB.  
 //
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,8 +16,8 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 
-namespace System.Diagnostics.Tracing {
-
+namespace System.Diagnostics.Tracing
+{
     // To use the framework provider
     // 
     //     \\clrmain\tools\Perfmonitor /nokernel /noclr /provider:8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1 start
@@ -28,7 +29,8 @@ namespace System.Diagnostics.Tracing {
     //
     [FriendAccessAllowed]
     [EventSource(Guid = "8E9F5090-2D75-4d03-8A81-E5AFBF85DAF1", Name = "System.Diagnostics.Eventing.FrameworkEventSource")]
-    sealed internal class FrameworkEventSource : EventSource {
+    sealed internal class FrameworkEventSource : EventSource
+    {
         // Defines the singleton instance for the Resources ETW provider
         public static readonly FrameworkEventSource Log = new FrameworkEventSource();
 
@@ -36,16 +38,17 @@ namespace System.Diagnostics.Tracing {
         // Often each task has a keyword, but where tasks are determined by subsystem, keywords are determined by
         // usefulness to end users to filter.  Generally users don't mind extra events if they are not high volume
         // so grouping low volume events together in a single keywords is OK (users can post-filter by task if desired)
-        public static class Keywords {
-            public const EventKeywords Loader     = (EventKeywords)0x0001; // This is bit 0
-            public const EventKeywords ThreadPool = (EventKeywords)0x0002; 
-            public const EventKeywords NetClient  = (EventKeywords)0x0004;
+        public static class Keywords
+        {
+            public const EventKeywords Loader = (EventKeywords)0x0001; // This is bit 0
+            public const EventKeywords ThreadPool = (EventKeywords)0x0002;
+            public const EventKeywords NetClient = (EventKeywords)0x0004;
             //
             // This is a private event we do not want to expose to customers.  It is to be used for profiling
             // uses of dynamic type loading by ProjectN applications running on the desktop CLR
             //
             public const EventKeywords DynamicTypeUsage = (EventKeywords)0x0008;
-            public const EventKeywords ThreadTransfer   = (EventKeywords)0x0010;
+            public const EventKeywords ThreadTransfer = (EventKeywords)0x0010;
         }
 
         /// <summary>ETW tasks that have start/stop events.</summary>
@@ -53,7 +56,7 @@ namespace System.Diagnostics.Tracing {
         public static class Tasks // this name is important for EventSource
         {
             /// <summary>Begin / End - GetResponse.</summary>
-            public const EventTask GetResponse      = (EventTask)1;
+            public const EventTask GetResponse = (EventTask)1;
             /// <summary>Begin / End - GetRequestStream</summary>
             public const EventTask GetRequestStream = (EventTask)2;
             /// <summary>Send / Receive - begin transfer/end transfer</summary>
@@ -211,18 +214,21 @@ namespace System.Diagnostics.Tracing {
         // ResourceManager Event Definitions 
 
         [Event(1, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookupStarted(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerLookupStarted(String baseName, String mainAssemblyName, String cultureName)
+        {
             WriteEvent(1, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(2, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookingForResourceSet(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerLookingForResourceSet(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(2, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(3, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerFoundResourceSetInCache(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerFoundResourceSetInCache(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(3, baseName, mainAssemblyName, cultureName);
         }
@@ -231,119 +237,138 @@ namespace System.Diagnostics.Tracing {
         // the cache. This can happen if you have an assembly load callback that called into this
         // instance of the ResourceManager.
         [Event(4, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(4, baseName, mainAssemblyName, cultureName);
         }
 
         // manifest resource stream lookup succeeded
         [Event(5, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerStreamFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName) {
+        public void ResourceManagerStreamFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 WriteEvent(5, baseName, mainAssemblyName, cultureName, loadedAssemblyName, resourceFileName);
         }
 
         // manifest resource stream lookup failed
         [Event(6, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerStreamNotFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName) {
+        public void ResourceManagerStreamNotFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 WriteEvent(6, baseName, mainAssemblyName, cultureName, loadedAssemblyName, resourceFileName);
         }
 
         [Event(7, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, String mainAssemblyName, String cultureName, String assemblyName) {
+        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, String mainAssemblyName, String cultureName, String assemblyName)
+        {
             if (IsEnabled())
                 WriteEvent(7, baseName, mainAssemblyName, cultureName, assemblyName);
         }
 
         [Event(8, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, String mainAssemblyName, String cultureName, String assemblyName) {
+        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, String mainAssemblyName, String cultureName, String assemblyName)
+        {
             if (IsEnabled())
                 WriteEvent(8, baseName, mainAssemblyName, cultureName, assemblyName);
         }
 
         [Event(9, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName) {
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 WriteEvent(9, baseName, mainAssemblyName, assemblyName, resourceFileName);
         }
 
         [Event(10, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName) {
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 WriteEvent(10, baseName, mainAssemblyName, assemblyName, resourceFileName);
         }
 
         // Could not access the manifest resource the assembly
         [Event(11, Level = EventLevel.Error, Keywords = Keywords.Loader)]
-        public void ResourceManagerManifestResourceAccessDenied(String baseName, String mainAssemblyName, String assemblyName, String canonicalName) {
+        public void ResourceManagerManifestResourceAccessDenied(String baseName, String mainAssemblyName, String assemblyName, String canonicalName)
+        {
             if (IsEnabled())
                 WriteEvent(11, baseName, mainAssemblyName, assemblyName, canonicalName);
         }
 
         // Neutral resources are sufficient for this culture. Skipping satellites
         [Event(12, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesSufficient(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerNeutralResourcesSufficient(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(12, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(13, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourceAttributeMissing(String mainAssemblyName) {
+        public void ResourceManagerNeutralResourceAttributeMissing(String mainAssemblyName)
+        {
             if (IsEnabled())
                 WriteEvent(13, mainAssemblyName);
         }
 
         [Event(14, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName, String fileName) {
+        public void ResourceManagerCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName, String fileName)
+        {
             if (IsEnabled())
                 WriteEvent(14, baseName, mainAssemblyName, cultureName, fileName);
         }
 
         [Event(15, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNotCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerNotCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(15, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(16, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookupFailed(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerLookupFailed(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(16, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(17, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerReleasingResources(String baseName, String mainAssemblyName) {
+        public void ResourceManagerReleasingResources(String baseName, String mainAssemblyName)
+        {
             if (IsEnabled())
                 WriteEvent(17, baseName, mainAssemblyName);
         }
 
         [Event(18, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesNotFound(String baseName, String mainAssemblyName, String resName) {
+        public void ResourceManagerNeutralResourcesNotFound(String baseName, String mainAssemblyName, String resName)
+        {
             if (IsEnabled())
                 WriteEvent(18, baseName, mainAssemblyName, resName);
         }
 
         [Event(19, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesFound(String baseName, String mainAssemblyName, String resName) {
+        public void ResourceManagerNeutralResourcesFound(String baseName, String mainAssemblyName, String resName)
+        {
             if (IsEnabled())
                 WriteEvent(19, baseName, mainAssemblyName, resName);
         }
 
         [Event(20, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerAddingCultureFromConfigFile(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerAddingCultureFromConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(20, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(21, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(21, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(22, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCultureFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName) {
+        public void ResourceManagerCultureFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        {
             if (IsEnabled())
                 WriteEvent(22, baseName, mainAssemblyName, cultureName);
         }
@@ -352,159 +377,185 @@ namespace System.Diagnostics.Tracing {
         // ResourceManager Event Wrappers
 
         [NonEvent]
-        public void ResourceManagerLookupStarted(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerLookupStarted(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerLookupStarted(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerLookingForResourceSet(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerLookingForResourceSet(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerLookingForResourceSet(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerFoundResourceSetInCache(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerFoundResourceSetInCache(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerFoundResourceSetInCache(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerFoundResourceSetInCacheUnexpected(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerStreamFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName) {
+        public void ResourceManagerStreamFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName)
+        {
             if (IsEnabled())
                 ResourceManagerStreamFound(baseName, GetName(mainAssembly), cultureName, GetName(loadedAssembly), resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerStreamNotFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName) {
+        public void ResourceManagerStreamNotFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName)
+        {
             if (IsEnabled())
                 ResourceManagerStreamNotFound(baseName, GetName(mainAssembly), cultureName, GetName(loadedAssembly), resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, Assembly mainAssembly, String cultureName, String assemblyName) {
+        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, Assembly mainAssembly, String cultureName, String assemblyName)
+        {
             if (IsEnabled())
                 ResourceManagerGetSatelliteAssemblySucceeded(baseName, GetName(mainAssembly), cultureName, assemblyName);
         }
 
         [NonEvent]
-        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, Assembly mainAssembly, String cultureName, String assemblyName) {
+        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, Assembly mainAssembly, String cultureName, String assemblyName)
+        {
             if (IsEnabled())
                 ResourceManagerGetSatelliteAssemblyFailed(baseName, GetName(mainAssembly), cultureName, assemblyName);
         }
 
         [NonEvent]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName) {
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(baseName, GetName(mainAssembly), assemblyName, resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName) {
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName)
+        {
             if (IsEnabled())
                 ResourceManagerCaseInsensitiveResourceStreamLookupFailed(baseName, GetName(mainAssembly), assemblyName, resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerManifestResourceAccessDenied(String baseName, Assembly mainAssembly, String assemblyName, String canonicalName) {
+        public void ResourceManagerManifestResourceAccessDenied(String baseName, Assembly mainAssembly, String assemblyName, String canonicalName)
+        {
             if (IsEnabled())
                 ResourceManagerManifestResourceAccessDenied(baseName, GetName(mainAssembly), assemblyName, canonicalName);
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesSufficient(String baseName, Assembly mainAssembly, String cultureName) {
-            if (IsEnabled()) 
+        public void ResourceManagerNeutralResourcesSufficient(String baseName, Assembly mainAssembly, String cultureName)
+        {
+            if (IsEnabled())
                 ResourceManagerNeutralResourcesSufficient(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourceAttributeMissing(Assembly mainAssembly) {
+        public void ResourceManagerNeutralResourceAttributeMissing(Assembly mainAssembly)
+        {
             if (IsEnabled())
                 ResourceManagerNeutralResourceAttributeMissing(GetName(mainAssembly));
         }
 
         [NonEvent]
-        public void ResourceManagerCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName, String fileName) {
+        public void ResourceManagerCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName, String fileName)
+        {
             if (IsEnabled())
                 ResourceManagerCreatingResourceSet(baseName, GetName(mainAssembly), cultureName, fileName);
         }
 
         [NonEvent]
-        public void ResourceManagerNotCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerNotCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerNotCreatingResourceSet(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerLookupFailed(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerLookupFailed(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerLookupFailed(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerReleasingResources(String baseName, Assembly mainAssembly) {
+        public void ResourceManagerReleasingResources(String baseName, Assembly mainAssembly)
+        {
             if (IsEnabled())
                 ResourceManagerReleasingResources(baseName, GetName(mainAssembly));
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesNotFound(String baseName, Assembly mainAssembly, String resName) {
+        public void ResourceManagerNeutralResourcesNotFound(String baseName, Assembly mainAssembly, String resName)
+        {
             if (IsEnabled())
                 ResourceManagerNeutralResourcesNotFound(baseName, GetName(mainAssembly), resName);
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesFound(String baseName, Assembly mainAssembly, String resName) {
+        public void ResourceManagerNeutralResourcesFound(String baseName, Assembly mainAssembly, String resName)
+        {
             if (IsEnabled())
                 ResourceManagerNeutralResourcesFound(baseName, GetName(mainAssembly), resName);
         }
 
         [NonEvent]
-        public void ResourceManagerAddingCultureFromConfigFile(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerAddingCultureFromConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerAddingCultureFromConfigFile(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerCultureNotFoundInConfigFile(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerCultureFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName) {
+        public void ResourceManagerCultureFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        {
             if (IsEnabled())
                 ResourceManagerCultureFoundInConfigFile(baseName, GetName(mainAssembly), cultureName);
         }
 
-        private static string GetName(Assembly assembly) {
+        private static string GetName(Assembly assembly)
+        {
             if (assembly == null)
                 return "<<NULL>>";
             else
                 return assembly.FullName;
         }
 
-        [Event(30, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool|Keywords.ThreadTransfer)]
-        public void ThreadPoolEnqueueWork(long workID) {
+        [Event(30, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool | Keywords.ThreadTransfer)]
+        public void ThreadPoolEnqueueWork(long workID)
+        {
             WriteEvent(30, workID);
         }
         [NonEvent]
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadPoolEnqueueWorkObject(object workID) {
+        public unsafe void ThreadPoolEnqueueWorkObject(object workID)
+        {
             // convert the Object Id to a long
-            ThreadPoolEnqueueWork((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref workID)));
+            ThreadPoolEnqueueWork((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref workID)));
         }
 
-        [Event(31, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool|Keywords.ThreadTransfer)]
-        public void ThreadPoolDequeueWork(long workID) {
+        [Event(31, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool | Keywords.ThreadTransfer)]
+        public void ThreadPoolDequeueWork(long workID)
+        {
             WriteEvent(31, workID);
         }
 
@@ -512,36 +563,41 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadPoolDequeueWorkObject(object workID) {
+        public unsafe void ThreadPoolDequeueWorkObject(object workID)
+        {
             // convert the Object Id to a long
-            ThreadPoolDequeueWork((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref workID)));
+            ThreadPoolDequeueWork((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref workID)));
         }
 
         // In the desktop runtime they don't use Tasks for the point at which the response happens, which means that the
         // Activity ID created by start using implicit activity IDs does not match.   Thus disable implicit activities (until we fix that)
-        [Event(140, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
+        [Event(140, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions = EventActivityOptions.Disable,
          Task = Tasks.GetResponse, Opcode = EventOpcode.Start, Version = 1)]
-        private void GetResponseStart(long id, string uri, bool success, bool synchronous) {
+        private void GetResponseStart(long id, string uri, bool success, bool synchronous)
+        {
             WriteEvent(140, id, uri, success, synchronous);
         }
 
-        [Event(141, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable, 
+        [Event(141, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions = EventActivityOptions.Disable,
          Task = Tasks.GetResponse, Opcode = EventOpcode.Stop, Version = 1)]
-        private void GetResponseStop(long id, bool success, bool synchronous, int statusCode) {
+        private void GetResponseStop(long id, bool success, bool synchronous, int statusCode)
+        {
             WriteEvent(141, id, success, synchronous, statusCode);
         }
 
         // In the desktop runtime they don't use Tasks for the point at which the response happens, which means that the
         // Activity ID created by start using implicit activity IDs does not match.   Thus disable implicit activities (until we fix that)
-        [Event(142, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
+        [Event(142, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions = EventActivityOptions.Disable,
          Task = Tasks.GetRequestStream, Opcode = EventOpcode.Start, Version = 1)]
-        private void GetRequestStreamStart(long id, string uri, bool success, bool synchronous) {
+        private void GetRequestStreamStart(long id, string uri, bool success, bool synchronous)
+        {
             WriteEvent(142, id, uri, success, synchronous);
         }
 
-        [Event(143, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
+        [Event(143, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions = EventActivityOptions.Disable,
          Task = Tasks.GetRequestStream, Opcode = EventOpcode.Stop, Version = 1)]
-        private void GetRequestStreamStop(long id, bool success, bool synchronous) {
+        private void GetRequestStreamStop(long id, bool success, bool synchronous)
+        {
             WriteEvent(143, id, success, synchronous);
         }
 
@@ -549,16 +605,18 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void BeginGetResponse(object id, string uri, bool success, bool synchronous) {
+        public unsafe void BeginGetResponse(object id, string uri, bool success, bool synchronous)
+        {
             if (IsEnabled())
                 GetResponseStart(IdForObject(id), uri, success, synchronous);
         }
-            
+
         [NonEvent]
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void EndGetResponse(object id, bool success, bool synchronous, int statusCode) {
+        public unsafe void EndGetResponse(object id, bool success, bool synchronous, int statusCode)
+        {
             if (IsEnabled())
                 GetResponseStop(IdForObject(id), success, synchronous, statusCode);
         }
@@ -567,7 +625,8 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void BeginGetRequestStream(object id, string uri, bool success, bool synchronous) {
+        public unsafe void BeginGetRequestStream(object id, string uri, bool success, bool synchronous)
+        {
             if (IsEnabled())
                 GetRequestStreamStart(IdForObject(id), uri, success, synchronous);
         }
@@ -576,7 +635,8 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void EndGetRequestStream(object id, bool success, bool synchronous) {
+        public unsafe void EndGetRequestStream(object id, bool success, bool synchronous)
+        {
             if (IsEnabled())
                 GetRequestStreamStop(IdForObject(id), success, synchronous);
         }
@@ -589,7 +649,8 @@ namespace System.Diagnostics.Tracing {
         //        3 - WinRT dispatch operations
         // info - any additional information user code might consider interesting
         [Event(150, Level = EventLevel.Informational, Keywords = Keywords.ThreadTransfer, Task = Tasks.ThreadTransfer, Opcode = EventOpcode.Send)]
-        public void ThreadTransferSend(long id, int kind, string info, bool multiDequeues) {
+        public void ThreadTransferSend(long id, int kind, string info, bool multiDequeues)
+        {
             if (IsEnabled())
                 WriteEvent(150, id, kind, info, multiDequeues);
         }
@@ -600,8 +661,9 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues) {
-            ThreadTransferSend((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues);
+        public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues)
+        {
+            ThreadTransferSend((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
@@ -612,7 +674,8 @@ namespace System.Diagnostics.Tracing {
         //        3 - WinRT dispatch operations
         // info - any additional information user code might consider interesting
         [Event(151, Level = EventLevel.Informational, Keywords = Keywords.ThreadTransfer, Task = Tasks.ThreadTransfer, Opcode = EventOpcode.Receive)]
-        public void ThreadTransferReceive(long id, int kind, string info) {
+        public void ThreadTransferReceive(long id, int kind, string info)
+        {
             if (IsEnabled())
                 WriteEvent(151, id, kind, info);
         }
@@ -623,8 +686,9 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadTransferReceiveObj(object id, int kind, string info) {
-            ThreadTransferReceive((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
+        public unsafe void ThreadTransferReceiveObj(object id, int kind, string info)
+        {
+            ThreadTransferReceive((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
@@ -635,7 +699,8 @@ namespace System.Diagnostics.Tracing {
         //        3 - WinRT dispatch operations
         // info - any additional information user code might consider interesting
         [Event(152, Level = EventLevel.Informational, Keywords = Keywords.ThreadTransfer, Task = Tasks.ThreadTransfer, Opcode = Opcodes.ReceiveHandled)]
-        public void ThreadTransferReceiveHandled(long id, int kind, string info) {
+        public void ThreadTransferReceiveHandled(long id, int kind, string info)
+        {
             if (IsEnabled())
                 WriteEvent(152, id, kind, info);
         }
@@ -646,15 +711,17 @@ namespace System.Diagnostics.Tracing {
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadTransferReceiveHandledObj(object id, int kind, string info) {
-            ThreadTransferReceive((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
+        public unsafe void ThreadTransferReceiveHandledObj(object id, int kind, string info)
+        {
+            ThreadTransferReceive((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
         }
 
         // return a stable ID for a an object.  We use the hash code which is not truely unique but is 
         // close enough for now at least. we add to it 0x7FFFFFFF00000000 to make it distinguishable
         // from the style of ID that simply casts the object reference to a long (since old versions of the 
         // runtime will emit IDs of that form).  
-        private static long IdForObject(object obj) {
+        private static long IdForObject(object obj)
+        {
             return obj.GetHashCode() + 0x7FFFFFFF00000000;
         }
     }

@@ -6,14 +6,13 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
+using System;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
-
     [Serializable]
     public class UTF7Encoding : Encoding
     {
@@ -46,9 +45,9 @@ namespace System.Text
         private bool[] directEncode;
 
         [OptionalField(VersionAdded = 2)]
-        private bool   m_allowOptionals;
+        private bool m_allowOptionals;
 
-        private const int UTF7_CODEPAGE=65000;
+        private const int UTF7_CODEPAGE = 65000;
 
 
         public UTF7Encoding()
@@ -60,7 +59,7 @@ namespace System.Text
             : base(UTF7_CODEPAGE) //Set the data item.
         {
             // Allowing optionals?
-            this.m_allowOptionals = allowOptionals;
+            m_allowOptionals = allowOptionals;
 
             // Make our tables
             MakeTables();
@@ -81,7 +80,7 @@ namespace System.Text
                 directEncode[directChars[i]] = true;
             }
 
-            if (this.m_allowOptionals)
+            if (m_allowOptionals)
             {
                 count = optionalChars.Length;
                 for (int i = 0; i < count; i++)
@@ -237,13 +236,13 @@ namespace System.Text
         {
             return EncodingForwarder.GetString(this, bytes, index, count);
         }
-        
+
         // End of overridden methods which use EncodingForwarder
 
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
-            Debug.Assert(chars!=null, "[UTF7Encoding.GetByteCount]chars!=null");
-            Debug.Assert(count >=0, "[UTF7Encoding.GetByteCount]count >=0");
+            Debug.Assert(chars != null, "[UTF7Encoding.GetByteCount]chars!=null");
+            Debug.Assert(count >= 0, "[UTF7Encoding.GetByteCount]count >=0");
 
             // Just call GetBytes with bytes == null
             return GetBytes(chars, count, null, 0, baseEncoder);
@@ -252,9 +251,9 @@ namespace System.Text
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
-            Debug.Assert(byteCount >=0, "[UTF7Encoding.GetBytes]byteCount >=0");
-            Debug.Assert(chars!=null, "[UTF7Encoding.GetBytes]chars!=null");
-            Debug.Assert(charCount >=0, "[UTF7Encoding.GetBytes]charCount >=0");
+            Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetBytes]byteCount >=0");
+            Debug.Assert(chars != null, "[UTF7Encoding.GetBytes]chars!=null");
+            Debug.Assert(charCount >= 0, "[UTF7Encoding.GetBytes]charCount >=0");
 
             // Get encoder info
             UTF7Encoding.Encoder encoder = (UTF7Encoding.Encoder)baseEncoder;
@@ -339,7 +338,7 @@ namespace System.Text
                         {
                             bitCount += 6;                              // We didn't use these bits
                             currentChar = buffer.GetNextChar();              // We're processing this char still, but AddByte
-                                                                        // --'d it when we ran out of space
+                                                                             // --'d it when we ran out of space
                             break;                                      // Stop here, not enough room for bytes
                         }
                     }
@@ -391,8 +390,8 @@ namespace System.Text
 
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
-            Debug.Assert(count >=0, "[UTF7Encoding.GetCharCount]count >=0");
-            Debug.Assert(bytes!=null, "[UTF7Encoding.GetCharCount]bytes!=null");
+            Debug.Assert(count >= 0, "[UTF7Encoding.GetCharCount]count >=0");
+            Debug.Assert(bytes != null, "[UTF7Encoding.GetCharCount]bytes!=null");
 
             // Just call GetChars with null char* to do counting
             return GetChars(bytes, count, null, 0, baseDecoder);
@@ -401,12 +400,12 @@ namespace System.Text
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
-            Debug.Assert(byteCount >=0, "[UTF7Encoding.GetChars]byteCount >=0");
-            Debug.Assert(bytes!=null, "[UTF7Encoding.GetChars]bytes!=null");
-            Debug.Assert(charCount >=0, "[UTF7Encoding.GetChars]charCount >=0");
+            Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetChars]byteCount >=0");
+            Debug.Assert(bytes != null, "[UTF7Encoding.GetChars]bytes!=null");
+            Debug.Assert(charCount >= 0, "[UTF7Encoding.GetChars]charCount >=0");
 
             // Might use a decoder
-            UTF7Encoding.Decoder decoder = (UTF7Encoding.Decoder) baseDecoder;
+            UTF7Encoding.Decoder decoder = (UTF7Encoding.Decoder)baseDecoder;
 
             // Get our output buffer info.
             Encoding.EncodingCharBuffer buffer = new Encoding.EncodingCharBuffer(
@@ -449,7 +448,7 @@ namespace System.Text
                     // Modified base 64 encoding.
                     //
                     sbyte v;
-                    if (currentByte < 0x80 && ((v = base64Values[currentByte]) >=0))
+                    if (currentByte < 0x80 && ((v = base64Values[currentByte]) >= 0))
                     {
                         firstByte = false;
                         bits = (bits << 6) | ((byte)v);
@@ -581,8 +580,8 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(charCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(charCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Suppose that every char can not be direct-encoded, we know that
@@ -614,8 +613,8 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(byteCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Worst case is 1 char per byte.  Minimum 1 for left over bits in case decoder is being flushed
@@ -633,10 +632,12 @@ namespace System.Text
         {
             /*private*/
             internal int bits;
-            /*private*/ internal int bitCount;
-            /*private*/ internal bool firstByte;
+            /*private*/
+            internal int bitCount;
+            /*private*/
+            internal bool firstByte;
 
-            public Decoder(UTF7Encoding encoding) : base (encoding)
+            public Decoder(UTF7Encoding encoding) : base(encoding)
             {
                 // base calls reset
             }
@@ -645,7 +646,7 @@ namespace System.Text
             internal Decoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException(nameof(info));
+                if (info == null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Get common info
@@ -659,7 +660,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException(nameof(info));
+                if (info == null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Save Whidbey data
@@ -697,7 +698,8 @@ namespace System.Text
         {
             /*private*/
             internal int bits;
-            /*private*/ internal int bitCount;
+            /*private*/
+            internal int bitCount;
 
             public Encoder(UTF7Encoding encoding) : base(encoding)
             {
@@ -708,7 +710,7 @@ namespace System.Text
             internal Encoder(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException(nameof(info));
+                if (info == null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Get common info
@@ -721,7 +723,7 @@ namespace System.Text
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 // Any info?
-                if (info==null) throw new ArgumentNullException(nameof(info));
+                if (info == null) throw new ArgumentNullException(nameof(info));
                 Contract.EndContractBlock();
 
                 // Save Whidbey data
@@ -735,7 +737,7 @@ namespace System.Text
                 this.bitCount = -1;
                 this.bits = 0;
                 if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();         
+                    m_fallbackBuffer.Reset();
             }
 
             // Anything left in our encoder?
@@ -773,7 +775,7 @@ namespace System.Text
                 }
             }
 
-             public override bool Equals(Object value)
+            public override bool Equals(Object value)
             {
                 DecoderUTF7Fallback that = value as DecoderUTF7Fallback;
                 if (that != null)
@@ -792,9 +794,9 @@ namespace System.Text
         internal sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
         {
             // Store our default string
-            char cFallback = (char)0;
-            int  iCount = -1;
-            int  iSize;
+            private char cFallback = (char)0;
+            private int iCount = -1;
+            private int iSize;
 
             // Construction
             public DecoderUTF7FallbackBuffer(DecoderUTF7Fallback fallback)
@@ -855,7 +857,7 @@ namespace System.Text
             public override unsafe void Reset()
             {
                 iCount = -1;
-                byteStart = null; 
+                byteStart = null;
             }
 
             // This version just counts the fallback and doesn't actually copy anything.
@@ -874,6 +876,5 @@ namespace System.Text
                 return bytes[0] == 0 ? 0 : 1;
             }
         }
-
     }
 }

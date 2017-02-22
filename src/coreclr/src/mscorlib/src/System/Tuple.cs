@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Text;
 using System.Collections;
@@ -15,7 +16,6 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
-
     /// <summary>
     /// Helper so we can call some tuple methods recursively without knowing the underlying types.
     /// </summary>
@@ -107,7 +107,6 @@ namespace System
     [Serializable]
     public class Tuple<T1> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
 
         public T1 Item1 { get { return m_Item1; } }
@@ -207,7 +206,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
 
@@ -322,7 +320,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;
@@ -448,7 +445,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3, T4> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;
@@ -585,7 +581,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3, T4, T5> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;
@@ -733,7 +728,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3, T4, T5, T6> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;
@@ -892,7 +886,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3, T4, T5, T6, T7> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;
@@ -1062,7 +1055,6 @@ namespace System
     [Serializable]
     public class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
-
         private readonly T1 m_Item1;
         private readonly T2 m_Item2;
         private readonly T3 m_Item3;

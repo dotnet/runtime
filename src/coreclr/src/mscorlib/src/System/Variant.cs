@@ -10,22 +10,23 @@
 **
 **
 ===========================================================*/
-namespace System {
 
-    using System;
-    using System.Reflection;
-    using System.Threading;
-    using System.Runtime.InteropServices;
-    using System.Globalization;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Reflection;
+using System.Threading;
+using System.Runtime.InteropServices;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
+namespace System
+{
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct Variant {
-
+    internal struct Variant
+    {
         //Do Not change the order of these fields.
         //They are mapped to the native VariantData * data structure.
         private Object m_objref;
@@ -45,48 +46,48 @@ namespace System {
         // If you update this, update the corresponding stuff in OAVariantLib.cs,
         // COMOAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
         ///////////////////////////////////////////////////////////////////////
-        internal const int CV_EMPTY=0x0;
-        internal const int CV_VOID=0x1;
-        internal const int CV_BOOLEAN=0x2;
-        internal const int CV_CHAR=0x3;
-        internal const int CV_I1=0x4;
-        internal const int CV_U1=0x5;
-        internal const int CV_I2=0x6;
-        internal const int CV_U2=0x7;
-        internal const int CV_I4=0x8;
-        internal const int CV_U4=0x9;
-        internal const int CV_I8=0xa;
-        internal const int CV_U8=0xb;
-        internal const int CV_R4=0xc;
-        internal const int CV_R8=0xd;
-        internal const int CV_STRING=0xe;
-        internal const int CV_PTR=0xf;
+        internal const int CV_EMPTY = 0x0;
+        internal const int CV_VOID = 0x1;
+        internal const int CV_BOOLEAN = 0x2;
+        internal const int CV_CHAR = 0x3;
+        internal const int CV_I1 = 0x4;
+        internal const int CV_U1 = 0x5;
+        internal const int CV_I2 = 0x6;
+        internal const int CV_U2 = 0x7;
+        internal const int CV_I4 = 0x8;
+        internal const int CV_U4 = 0x9;
+        internal const int CV_I8 = 0xa;
+        internal const int CV_U8 = 0xb;
+        internal const int CV_R4 = 0xc;
+        internal const int CV_R8 = 0xd;
+        internal const int CV_STRING = 0xe;
+        internal const int CV_PTR = 0xf;
         internal const int CV_DATETIME = 0x10;
         internal const int CV_TIMESPAN = 0x11;
-        internal const int CV_OBJECT=0x12;
+        internal const int CV_OBJECT = 0x12;
         internal const int CV_DECIMAL = 0x13;
-        internal const int CV_ENUM=0x15;
-        internal const int CV_MISSING=0x16;
-        internal const int CV_NULL=0x17;
-        internal const int CV_LAST=0x18;
+        internal const int CV_ENUM = 0x15;
+        internal const int CV_MISSING = 0x16;
+        internal const int CV_NULL = 0x17;
+        internal const int CV_LAST = 0x18;
 
-        internal const int TypeCodeBitMask=0xffff;
-        internal const int VTBitMask=unchecked((int)0xff000000);
-        internal const int VTBitShift=24;
-        internal const int ArrayBitMask =0x10000;
+        internal const int TypeCodeBitMask = 0xffff;
+        internal const int VTBitMask = unchecked((int)0xff000000);
+        internal const int VTBitShift = 24;
+        internal const int ArrayBitMask = 0x10000;
 
         // Enum enum and Mask
-        internal const int EnumI1           =0x100000;
-        internal const int EnumU1           =0x200000;
-        internal const int EnumI2           =0x300000;
-        internal const int EnumU2           =0x400000;
-        internal const int EnumI4           =0x500000;
-        internal const int EnumU4           =0x600000;
-        internal const int EnumI8           =0x700000;
-        internal const int EnumU8           =0x800000;
-        internal const int EnumMask     =0xF00000;
+        internal const int EnumI1 = 0x100000;
+        internal const int EnumU1 = 0x200000;
+        internal const int EnumI2 = 0x300000;
+        internal const int EnumU2 = 0x400000;
+        internal const int EnumI4 = 0x500000;
+        internal const int EnumU4 = 0x600000;
+        internal const int EnumI8 = 0x700000;
+        internal const int EnumU8 = 0x800000;
+        internal const int EnumMask = 0xF00000;
 
-        internal static readonly Type [] ClassTypes = {
+        internal static readonly Type[] ClassTypes = {
             typeof(System.Empty),
             typeof(void),
             typeof(Boolean),
@@ -122,11 +123,11 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern double GetR8FromVar();
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern float  GetR4FromVar();
+        internal extern float GetR4FromVar();
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void   SetFieldsR4(float val);
+        internal extern void SetFieldsR4(float val);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void   SetFieldsR8(double val);
+        internal extern void SetFieldsR8(double val);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void SetFieldsObject(Object val);
 
@@ -135,159 +136,181 @@ namespace System {
         // Ends up only taking about 1/8 the time of the ECALL version.
         internal long GetI8FromVar()
         {
-            return ((long)m_data2<<32 | ((long)m_data1 & 0xFFFFFFFFL));
+            return ((long)m_data2 << 32 | ((long)m_data1 & 0xFFFFFFFFL));
         }
 
         //
         // Constructors
         //
 
-        internal Variant(int flags, Object or, int data1, int data2) {
+        internal Variant(int flags, Object or, int data1, int data2)
+        {
             m_flags = flags;
-            m_objref=or;
-            m_data1=data1;
-            m_data2=data2;
+            m_objref = or;
+            m_data1 = data1;
+            m_data2 = data2;
         }
 
-        public Variant(bool val) {
-            m_objref= null;
+        public Variant(bool val)
+        {
+            m_objref = null;
             m_flags = CV_BOOLEAN;
-            m_data1 = (val)?Boolean.True:Boolean.False;
+            m_data1 = (val) ? Boolean.True : Boolean.False;
             m_data2 = 0;
         }
 
-        public Variant(sbyte val) {
-            m_objref=null;
-            m_flags=CV_I1;
-            m_data1=(int)val;
-            m_data2=(int)(((long)val)>>32);
+        public Variant(sbyte val)
+        {
+            m_objref = null;
+            m_flags = CV_I1;
+            m_data1 = (int)val;
+            m_data2 = (int)(((long)val) >> 32);
         }
 
 
-        public Variant(byte val) {
-            m_objref=null;
-            m_flags=CV_U1;
-            m_data1=(int)val;
-            m_data2=0;
+        public Variant(byte val)
+        {
+            m_objref = null;
+            m_flags = CV_U1;
+            m_data1 = (int)val;
+            m_data2 = 0;
         }
 
-        public Variant(short val) {
-            m_objref=null;
-            m_flags=CV_I2;
-            m_data1=(int)val;
-            m_data2=(int)(((long)val)>>32);
+        public Variant(short val)
+        {
+            m_objref = null;
+            m_flags = CV_I2;
+            m_data1 = (int)val;
+            m_data2 = (int)(((long)val) >> 32);
         }
 
-        public Variant(ushort val) {
-            m_objref=null;
-            m_flags=CV_U2;
-            m_data1=(int)val;
-            m_data2=0;
+        public Variant(ushort val)
+        {
+            m_objref = null;
+            m_flags = CV_U2;
+            m_data1 = (int)val;
+            m_data2 = 0;
         }
 
-        public Variant(char val) {
-            m_objref=null;
-            m_flags=CV_CHAR;
-            m_data1=(int)val;
-            m_data2=0;
+        public Variant(char val)
+        {
+            m_objref = null;
+            m_flags = CV_CHAR;
+            m_data1 = (int)val;
+            m_data2 = 0;
         }
 
-        public Variant(int val) {
-            m_objref=null;
-            m_flags=CV_I4;
-            m_data1=val;
-            m_data2=val >> 31;
+        public Variant(int val)
+        {
+            m_objref = null;
+            m_flags = CV_I4;
+            m_data1 = val;
+            m_data2 = val >> 31;
         }
 
-        public Variant(uint val) {
-            m_objref=null;
-            m_flags=CV_U4;
-            m_data1=(int)val;
-            m_data2=0;
+        public Variant(uint val)
+        {
+            m_objref = null;
+            m_flags = CV_U4;
+            m_data1 = (int)val;
+            m_data2 = 0;
         }
 
-        public Variant(long val) {
-            m_objref=null;
-            m_flags=CV_I8;
+        public Variant(long val)
+        {
+            m_objref = null;
+            m_flags = CV_I8;
             m_data1 = (int)val;
             m_data2 = (int)(val >> 32);
         }
 
-        public Variant(ulong val) {
-            m_objref=null;
-            m_flags=CV_U8;
+        public Variant(ulong val)
+        {
+            m_objref = null;
+            m_flags = CV_U8;
             m_data1 = (int)val;
             m_data2 = (int)(val >> 32);
         }
 
-        public Variant(float val) {
-            m_objref=null;
-            m_flags=CV_R4;
-            m_data1=0;
-            m_data2=0;
+        public Variant(float val)
+        {
+            m_objref = null;
+            m_flags = CV_R4;
+            m_data1 = 0;
+            m_data2 = 0;
             SetFieldsR4(val);
         }
 
-        public Variant(double val) {
-            m_objref=null;
-            m_flags=CV_R8;
-            m_data1=0;
-            m_data2=0;
+        public Variant(double val)
+        {
+            m_objref = null;
+            m_flags = CV_R8;
+            m_data1 = 0;
+            m_data2 = 0;
             SetFieldsR8(val);
         }
 
-        public Variant(DateTime val) {
-            m_objref=null;
-            m_flags=CV_DATETIME;
+        public Variant(DateTime val)
+        {
+            m_objref = null;
+            m_flags = CV_DATETIME;
             ulong ticks = (ulong)val.Ticks;
             m_data1 = (int)ticks;
-            m_data2 = (int)(ticks>>32);
+            m_data2 = (int)(ticks >> 32);
         }
 
-        public Variant(Decimal val) {
+        public Variant(Decimal val)
+        {
             m_objref = (Object)val;
             m_flags = CV_DECIMAL;
-            m_data1=0;
-            m_data2=0;
+            m_data1 = 0;
+            m_data2 = 0;
         }
 
-        public Variant(Object obj) {
-            m_data1=0;
-            m_data2=0;
+        public Variant(Object obj)
+        {
+            m_data1 = 0;
+            m_data2 = 0;
 
             VarEnum vt = VarEnum.VT_EMPTY;
 
-            if (obj is DateTime) {
-                m_objref=null;
-                m_flags=CV_DATETIME;
+            if (obj is DateTime)
+            {
+                m_objref = null;
+                m_flags = CV_DATETIME;
                 ulong ticks = (ulong)((DateTime)obj).Ticks;
                 m_data1 = (int)ticks;
-                m_data2 = (int)(ticks>>32);
+                m_data2 = (int)(ticks >> 32);
                 return;
             }
 
-            if (obj is String) {
-                m_flags=CV_STRING;
-                m_objref=obj;
+            if (obj is String)
+            {
+                m_flags = CV_STRING;
+                m_objref = obj;
                 return;
             }
 
-            if (obj == null) {
+            if (obj == null)
+            {
                 this = Empty;
                 return;
             }
-            if (obj == System.DBNull.Value) {
+            if (obj == System.DBNull.Value)
+            {
                 this = DBNull;
                 return;
             }
-            if (obj == Type.Missing) {
+            if (obj == Type.Missing)
+            {
                 this = Missing;
                 return;
             }
 
-            if (obj is Array) {
-                m_flags=CV_OBJECT | ArrayBitMask;
-                m_objref=obj;
+            if (obj is Array)
+            {
+                m_flags = CV_OBJECT | ArrayBitMask;
+                m_objref = obj;
                 return;
             }
 
@@ -336,55 +359,59 @@ namespace System {
 
         //This is a family-only accessor for the CVType.
         //This is never to be exposed externally.
-        internal int CVType {
-            get {
-                return (m_flags&TypeCodeBitMask);
+        internal int CVType
+        {
+            get
+            {
+                return (m_flags & TypeCodeBitMask);
             }
         }
 
-        public Object ToObject() {
-            switch (CVType) {
-            case CV_EMPTY:
-                return null;
-            case CV_BOOLEAN:
-                return (Object)(m_data1!=0);
-            case CV_I1:
-                return (Object)((sbyte)m_data1);
-            case CV_U1:
-                return (Object)((byte)m_data1);
-            case CV_CHAR:
-                return (Object)((char)m_data1);
-            case CV_I2:
-                return (Object)((short)m_data1);
-            case CV_U2:
-                return (Object)((ushort)m_data1);
-            case CV_I4:
-                return (Object)(m_data1);
-            case CV_U4:
-                return (Object)((uint)m_data1);
-            case CV_I8:
-                return (Object)(GetI8FromVar());
-            case CV_U8:
-                return (Object)((ulong)GetI8FromVar());
-            case CV_R4:
-                return (Object)(GetR4FromVar());
-            case CV_R8:
-                return (Object)(GetR8FromVar());
-            case CV_DATETIME:
-                return new DateTime(GetI8FromVar());
-            case CV_TIMESPAN:
-                return new TimeSpan(GetI8FromVar());
-            case CV_ENUM:
-                return BoxEnum();
-            case CV_MISSING:
-                return Type.Missing;
-            case CV_NULL:
-                return System.DBNull.Value;
-            case CV_DECIMAL:
-            case CV_STRING:
-            case CV_OBJECT:
-            default:
-                return m_objref;
+        public Object ToObject()
+        {
+            switch (CVType)
+            {
+                case CV_EMPTY:
+                    return null;
+                case CV_BOOLEAN:
+                    return (Object)(m_data1 != 0);
+                case CV_I1:
+                    return (Object)((sbyte)m_data1);
+                case CV_U1:
+                    return (Object)((byte)m_data1);
+                case CV_CHAR:
+                    return (Object)((char)m_data1);
+                case CV_I2:
+                    return (Object)((short)m_data1);
+                case CV_U2:
+                    return (Object)((ushort)m_data1);
+                case CV_I4:
+                    return (Object)(m_data1);
+                case CV_U4:
+                    return (Object)((uint)m_data1);
+                case CV_I8:
+                    return (Object)(GetI8FromVar());
+                case CV_U8:
+                    return (Object)((ulong)GetI8FromVar());
+                case CV_R4:
+                    return (Object)(GetR4FromVar());
+                case CV_R8:
+                    return (Object)(GetR8FromVar());
+                case CV_DATETIME:
+                    return new DateTime(GetI8FromVar());
+                case CV_TIMESPAN:
+                    return new TimeSpan(GetI8FromVar());
+                case CV_ENUM:
+                    return BoxEnum();
+                case CV_MISSING:
+                    return Type.Missing;
+                case CV_NULL:
+                    return System.DBNull.Value;
+                case CV_DECIMAL:
+                case CV_STRING:
+                case CV_OBJECT:
+                default:
+                    return m_objref;
             }
         }
 

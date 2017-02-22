@@ -12,16 +12,17 @@
 **
 ** 
 ===========================================================*/
+
+using System;
+using System.Collections;
+using System.Threading;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.CompilerServices;
+using System.Reflection;
+
 namespace System
 {
-    using System;
-    using System.Collections;
-    using System.Threading;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Runtime.CompilerServices;
-    using System.Reflection;
-
     internal class __ComObject : MarshalByRefObject
     {
         private Hashtable m_ObjectToDataMap;
@@ -30,7 +31,7 @@ namespace System
         ** default constructor
         ** can't instantiate this directly
         =============================================================*/
-        protected __ComObject ()
+        protected __ComObject()
         {
         }
 
@@ -52,9 +53,9 @@ namespace System
                 if (stringableType != null)
                 {
                     return stringableType.ToString();
-                }                   
+                }
             }
-                
+
             return base.ToString();
         }
 
@@ -67,7 +68,7 @@ namespace System
             Object data = null;
 
             // Synchronize access to the map.
-            lock(this)
+            lock (this)
             {
                 // If the map hasn't been allocated, then there can be no data for the specified key.
                 if (m_ObjectToDataMap != null)
@@ -79,7 +80,7 @@ namespace System
 
             return data;
         }
-        
+
         //====================================================================
         // This method sets the data for the specified key on the current 
         // __ComObject.
@@ -89,7 +90,7 @@ namespace System
             bool bAdded = false;
 
             // Synchronize access to the map.
-            lock(this)
+            lock (this)
             {
                 // If the map hasn't been allocated yet, allocate it.
                 if (m_ObjectToDataMap == null)
@@ -113,9 +114,8 @@ namespace System
         internal void ReleaseAllData()
         {
             // Synchronize access to the map.
-            lock(this)
+            lock (this)
             {
-
                 // If the map hasn't been allocated, then there is nothing to do.
                 if (m_ObjectToDataMap != null)
                 {
@@ -123,7 +123,7 @@ namespace System
                     {
                         // Note: the value could be an object[]
                         // We are fine for now as object[] doesn't implement IDisposable nor derive from __ComObject
-                        
+
                         // If the object implements IDisposable, then call Dispose on it.
                         IDisposable DisposableObj = o as IDisposable;
                         if (DisposableObj != null)
@@ -170,7 +170,7 @@ namespace System
         private Object CreateEventProvider(RuntimeType t)
         {
             // Create the event provider for the specified type.
-            Object EvProvider = Activator.CreateInstance(t, Activator.ConstructorDefault | BindingFlags.NonPublic, null, new Object[]{this}, null);
+            Object EvProvider = Activator.CreateInstance(t, Activator.ConstructorDefault | BindingFlags.NonPublic, null, new Object[] { this }, null);
 
             // Attempt to cache the wrapper on the object.
             if (!SetData(t, EvProvider))

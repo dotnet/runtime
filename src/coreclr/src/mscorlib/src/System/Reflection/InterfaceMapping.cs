@@ -10,13 +10,16 @@
 //    that implement that interface.
 //
 //
-namespace System.Reflection {
-    using System;
 
-    public struct InterfaceMapping {
-        public Type                TargetType;            // The type implementing the interface
-        public Type                InterfaceType;        // The type representing the interface
-        public MethodInfo[]        TargetMethods;        // The methods implementing the interface
-        public MethodInfo[]        InterfaceMethods;    // The methods defined on the interface
+using System;
+
+namespace System.Reflection
+{
+    public struct InterfaceMapping
+    {
+        public Type TargetType;            // The type implementing the interface
+        public Type InterfaceType;        // The type representing the interface
+        public MethodInfo[] TargetMethods;        // The methods implementing the interface
+        public MethodInfo[] InterfaceMethods;    // The methods defined on the interface
     }
 }

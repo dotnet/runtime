@@ -60,9 +60,9 @@ namespace System.Reflection
             Type declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
                 throw new ArgumentException(String.Format(
-                    CultureInfo.CurrentCulture, Environment.GetResourceString("Argument_MethodDeclaringTypeGeneric"), 
+                    CultureInfo.CurrentCulture, Environment.GetResourceString("Argument_MethodDeclaringTypeGeneric"),
                     m, declaringType.GetGenericTypeDefinition()));
- 
+
             return m;
         }
 
@@ -129,7 +129,7 @@ namespace System.Reflection
         #endregion
 
         #region Public Abstract\Virtual Members
-        internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters (); }
+        internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters(); }
 
         [System.Diagnostics.Contracts.Pure]
         public abstract ParameterInfo[] GetParameters();
@@ -144,16 +144,16 @@ namespace System.Reflection
 
         public abstract MethodImplAttributes GetMethodImplementationFlags();
 
-        public abstract RuntimeMethodHandle MethodHandle { get; }   
+        public abstract RuntimeMethodHandle MethodHandle { get; }
 
-        public abstract MethodAttributes Attributes  { get; }    
+        public abstract MethodAttributes Attributes { get; }
 
         public abstract Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture);
 
         public virtual CallingConventions CallingConvention { get { return CallingConventions.Standard; } }
 
         public virtual Type[] GetGenericArguments() { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride")); }
-        
+
         public virtual bool IsGenericMethodDefinition { get { return false; } }
 
         public virtual bool ContainsGenericParameters { get { return false; } }
@@ -182,33 +182,37 @@ namespace System.Reflection
             return Invoke(obj, BindingFlags.Default, null, parameters, null);
         }
 
-        public bool IsPublic  { get { return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public; } }
+        public bool IsPublic { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public; } }
 
-        public bool IsPrivate { get { return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private; } }
+        public bool IsPrivate { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private; } }
 
-        public bool IsFamily { get { return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family; } }
+        public bool IsFamily { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family; } }
 
-        public bool IsAssembly { get { return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Assembly; } }
+        public bool IsAssembly { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Assembly; } }
 
-        public bool IsFamilyAndAssembly { get { return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamANDAssem; } }
+        public bool IsFamilyAndAssembly { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamANDAssem; } }
 
-        public bool IsFamilyOrAssembly { get {return(Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamORAssem; } }
+        public bool IsFamilyOrAssembly { get { return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamORAssem; } }
 
-        public bool IsStatic { get { return(Attributes & MethodAttributes.Static) != 0; } }
+        public bool IsStatic { get { return (Attributes & MethodAttributes.Static) != 0; } }
 
-        public bool IsFinal { get { return(Attributes & MethodAttributes.Final) != 0; }
-        }
-        public bool IsVirtual { get { return(Attributes & MethodAttributes.Virtual) != 0; }
-        }   
-        public bool IsHideBySig { get { return(Attributes & MethodAttributes.HideBySig) != 0; } }  
-
-        public bool IsAbstract { get { return(Attributes & MethodAttributes.Abstract) != 0; } }
-
-        public bool IsSpecialName { get { return(Attributes & MethodAttributes.SpecialName) != 0; } }
-
-        public bool IsConstructor 
+        public bool IsFinal
         {
-            get 
+            get { return (Attributes & MethodAttributes.Final) != 0; }
+        }
+        public bool IsVirtual
+        {
+            get { return (Attributes & MethodAttributes.Virtual) != 0; }
+        }
+        public bool IsHideBySig { get { return (Attributes & MethodAttributes.HideBySig) != 0; } }
+
+        public bool IsAbstract { get { return (Attributes & MethodAttributes.Abstract) != 0; } }
+
+        public bool IsSpecialName { get { return (Attributes & MethodAttributes.SpecialName) != 0; } }
+
+        public bool IsConstructor
+        {
+            get
             {
                 // To be backward compatible we only return true for instance RTSpecialName ctors.
                 return (this is ConstructorInfo &&
@@ -220,9 +224,9 @@ namespace System.Reflection
         public virtual MethodBody GetMethodBody()
         {
             throw new InvalidOperationException();
-        }        
+        }
         #endregion
-        
+
         #region Internal Methods
         // helper method to construct the string representation of the parameter list
 
@@ -299,24 +303,24 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        internal Object[] CheckArguments(Object[] parameters, Binder binder, 
+        internal Object[] CheckArguments(Object[] parameters, Binder binder,
             BindingFlags invokeAttr, CultureInfo culture, Signature sig)
         {
             // copy the arguments in a different array so we detach from any user changes 
             Object[] copyOfParameters = new Object[parameters.Length];
-            
+
             ParameterInfo[] p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
                 Object arg = parameters[i];
                 RuntimeType argRT = sig.Arguments[i];
-                
+
                 if (arg == Type.Missing)
                 {
-                    if (p == null) 
+                    if (p == null)
                         p = GetParametersNoCopy();
                     if (p[i].DefaultValue == System.DBNull.Value)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"),nameof(parameters));
+                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"), nameof(parameters));
                     arg = p[i].DefaultValue;
                 }
                 copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);

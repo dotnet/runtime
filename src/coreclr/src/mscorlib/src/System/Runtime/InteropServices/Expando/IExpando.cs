@@ -11,11 +11,12 @@
 //
 //
 // The IExpando Interface.
-namespace System.Runtime.InteropServices.Expando {
-    
-    using System;
-    using System.Reflection;
 
+using System;
+using System.Reflection;
+
+namespace System.Runtime.InteropServices.Expando
+{
     [Guid("AFBF15E6-C37C-11d2-B88E-00A0C9B471B8")]
     internal interface IExpando : IReflect
     {

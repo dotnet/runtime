@@ -135,8 +135,8 @@ namespace System.IO
                 // overlapped was already in use by another operation).
                 object state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 FileStream fs = state as FileStream;
-                FileStreamCompletionSource completionSource = fs != null ? 
-                    fs._currentOverlappedOwner : 
+                FileStreamCompletionSource completionSource = fs != null ?
+                    fs._currentOverlappedOwner :
                     (FileStreamCompletionSource)state;
                 Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");
 
@@ -169,7 +169,8 @@ namespace System.IO
                 // else: Some other thread is registering a cancellation, so it *must* finish the callback
             }
 
-            private void CompleteCallback(ulong packedResult) {
+            private void CompleteCallback(ulong packedResult)
+            {
                 // Free up the native resource and cancellation registration
                 ReleaseNativeResource();
 
@@ -203,7 +204,7 @@ namespace System.IO
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO
-                if (!completionSource._stream._fileHandle.IsInvalid && 
+                if (!completionSource._stream._fileHandle.IsInvalid &&
                     !Interop.Kernel32.CancelIoEx(completionSource._stream._fileHandle, completionSource._overlapped))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
@@ -216,6 +217,6 @@ namespace System.IO
                     }
                 }
             }
-        } 
+        }
     }
 }

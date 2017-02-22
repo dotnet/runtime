@@ -11,10 +11,10 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
-
     [Guid("0000010b-0000-0000-C000-000000000046")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.ComTypes
     {
         // IPersist portion
         void GetClassID(out Guid pClassID);
-        
+
         // IPersistFile portion
         [PreserveSig]
         int IsDirty();

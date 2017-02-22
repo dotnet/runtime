@@ -190,7 +190,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
-            this.enumeration = dictionary.GetEnumerator();
+            enumeration = dictionary.GetEnumerator();
         }
 
         void IDisposable.Dispose()
@@ -203,11 +203,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        Object IEnumerator.Current {
+        Object IEnumerator.Current
+        {
             get { return ((IEnumerator<TKey>)this).Current; }
         }
 
-        public TKey Current {
+        public TKey Current
+        {
             get { return enumeration.Current.Key; }
         }
 
@@ -289,7 +291,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
-            this.enumeration = dictionary.GetEnumerator();
+            enumeration = dictionary.GetEnumerator();
         }
 
         void IDisposable.Dispose()
@@ -302,11 +304,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        Object IEnumerator.Current {
+        Object IEnumerator.Current
+        {
             get { return ((IEnumerator<TValue>)this).Current; }
         }
 
-        public TValue Current {
+        public TValue Current
+        {
             get { return enumeration.Current.Value; }
         }
 
@@ -315,5 +319,4 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             enumeration = dictionary.GetEnumerator();
         }
     }  // class ReadOnlyDictionaryValueEnumerator<TKey, TValue>
-
 }

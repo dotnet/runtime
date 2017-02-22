@@ -23,7 +23,6 @@ using System.Threading;
 
 namespace System
 {
-
     /// <summary>Represents one or more errors that occur during application execution.</summary>
     /// <remarks>
     /// <see cref="AggregateException"/> is used to consolidate multiple failures into a single, throwable
@@ -33,7 +32,6 @@ namespace System
     [DebuggerDisplay("Count = {InnerExceptionCount}")]
     public class AggregateException : Exception
     {
-
         private ReadOnlyCollection<Exception> m_innerExceptions; // Complete set of exceptions.
 
         /// <summary>
@@ -202,9 +200,9 @@ namespace System
         internal AggregateException(string message, IEnumerable<ExceptionDispatchInfo> innerExceptionInfos)
             // If it's already an IList, pass that along (a defensive copy will be made in the delegated ctor).  If it's null, just pass along
             // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
-            : this(message, innerExceptionInfos as IList<ExceptionDispatchInfo> ?? 
-                                (innerExceptionInfos == null ? 
-                                    (List<ExceptionDispatchInfo>)null : 
+            : this(message, innerExceptionInfos as IList<ExceptionDispatchInfo> ??
+                                (innerExceptionInfos == null ?
+                                    (List<ExceptionDispatchInfo>)null :
                                     new List<ExceptionDispatchInfo>(innerExceptionInfos)))
         {
         }
@@ -492,5 +490,4 @@ namespace System
             }
         }
     }
-
 }

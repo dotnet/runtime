@@ -130,122 +130,124 @@ using System.IO;
 
 namespace System.Runtime.InteropServices
 {
-
-// This class should not be serializable - it's a handle.  We require unmanaged
-// code permission to subclass CriticalHandle to prevent people from writing a 
-// subclass and suddenly being able to run arbitrary native code with the
-// same signature as CloseHandle.  This is technically a little redundant, but
-// we'll do this to ensure we've cut off all attack vectors.  Similarly, all
-// methods have a link demand to ensure untrusted code cannot directly edit
-// or alter a handle.
-public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
-{
-    // ! Do not add or rearrange fields as the EE depends on this layout.
-    //------------------------------------------------------------------
+    // This class should not be serializable - it's a handle.  We require unmanaged
+    // code permission to subclass CriticalHandle to prevent people from writing a 
+    // subclass and suddenly being able to run arbitrary native code with the
+    // same signature as CloseHandle.  This is technically a little redundant, but
+    // we'll do this to ensure we've cut off all attack vectors.  Similarly, all
+    // methods have a link demand to ensure untrusted code cannot directly edit
+    // or alter a handle.
+    public abstract class CriticalHandle : CriticalFinalizerObject, IDisposable
+    {
+        // ! Do not add or rearrange fields as the EE depends on this layout.
+        //------------------------------------------------------------------
 #if DEBUG
-    private String _stackTrace; // Where we allocated this CriticalHandle.
+        private String _stackTrace; // Where we allocated this CriticalHandle.
 #endif
-    protected IntPtr handle;    // This must be protected so derived classes can use out params. 
-    private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
+        protected IntPtr handle;    // This must be protected so derived classes can use out params. 
+        private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
-    // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.
-    protected CriticalHandle(IntPtr invalidHandleValue)
-    {
-        handle = invalidHandleValue;
-        _isClosed = false;
+        // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.
+        protected CriticalHandle(IntPtr invalidHandleValue)
+        {
+            handle = invalidHandleValue;
+            _isClosed = false;
 
 #if DEBUG
-        if (BCLDebug.SafeHandleStackTracesEnabled)
-            _stackTrace = Environment.GetStackTrace(null, false);
-        else
-            _stackTrace = "For a stack trace showing who allocated this CriticalHandle, set SafeHandleStackTraces to 1 and rerun your app.";
+            if (BCLDebug.SafeHandleStackTracesEnabled)
+                _stackTrace = Environment.GetStackTrace(null, false);
+            else
+                _stackTrace = "For a stack trace showing who allocated this CriticalHandle, set SafeHandleStackTraces to 1 and rerun your app.";
 #endif
+        }
+
+        // Adding an empty default constructor for annotation purposes
+        private CriticalHandle() { }
+
+        ~CriticalHandle()
+        {
+            Dispose(false);
+        }
+
+        private void Cleanup()
+        {
+            if (IsClosed)
+                return;
+            _isClosed = true;
+
+            if (IsInvalid)
+                return;
+
+            // Save last error from P/Invoke in case the implementation of
+            // ReleaseHandle trashes it (important because this ReleaseHandle could
+            // occur implicitly as part of unmarshaling another P/Invoke).
+            int lastError = Marshal.GetLastWin32Error();
+
+            if (!ReleaseHandle())
+                FireCustomerDebugProbe();
+
+            Marshal.SetLastWin32Error(lastError);
+
+            GC.SuppressFinalize(this);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private extern void FireCustomerDebugProbe();
+
+        protected void SetHandle(IntPtr handle)
+        {
+            this.handle = handle;
+        }
+
+        // Returns whether the handle has been explicitly marked as closed
+        // (Close/Dispose) or invalid (SetHandleAsInvalid).
+        public bool IsClosed
+        {
+            get { return _isClosed; }
+        }
+
+        // Returns whether the handle looks like an invalid value (i.e. matches one
+        // of the handle's designated illegal values). CriticalHandle itself doesn't
+        // know what an invalid handle looks like, so this method is abstract and
+        // must be provided by a derived type.
+        public abstract bool IsInvalid
+        {
+            get;
+        }
+
+        public void Close()
+        {
+            Dispose(true);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            Cleanup();
+        }
+
+        // This should only be called for cases when you know for a fact that
+        // your handle is invalid and you want to record that information.
+        // An example is calling a syscall and getting back ERROR_INVALID_HANDLE.
+        // This method will normally leak handles!
+        public void SetHandleAsInvalid()
+        {
+            _isClosed = true;
+            GC.SuppressFinalize(this);
+        }
+
+        // Implement this abstract method in your derived class to specify how to
+        // free the handle. Be careful not write any code that's subject to faults
+        // in this method (the runtime will prepare the infrastructure for you so
+        // that no jit allocations etc. will occur, but don't allocate memory unless
+        // you can deal with the failure and still free the handle).
+        // The boolean returned should be true for success and false if a
+        // catastrophic error occurred and you wish to trigger a diagnostic for
+        // debugging purposes (the SafeHandleCriticalFailure MDA).
+        protected abstract bool ReleaseHandle();
     }
-
-    // Adding an empty default constructor for annotation purposes
-    private CriticalHandle(){} 
-
-    ~CriticalHandle()
-    {
-        Dispose(false);
-    }
-
-    private void Cleanup()
-    {
-        if (IsClosed)
-            return;
-        _isClosed = true;
-
-        if (IsInvalid)
-            return;
-
-        // Save last error from P/Invoke in case the implementation of
-        // ReleaseHandle trashes it (important because this ReleaseHandle could
-        // occur implicitly as part of unmarshaling another P/Invoke).
-        int lastError = Marshal.GetLastWin32Error();
-
-        if (!ReleaseHandle())
-            FireCustomerDebugProbe();
-
-        Marshal.SetLastWin32Error(lastError);
-
-        GC.SuppressFinalize(this);
-    }
-
-    [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    private extern void FireCustomerDebugProbe();
-
-    protected void SetHandle(IntPtr handle) {
-        this.handle = handle;
-    }
-
-    // Returns whether the handle has been explicitly marked as closed
-    // (Close/Dispose) or invalid (SetHandleAsInvalid).
-    public bool IsClosed {
-        get { return _isClosed; }
-    }
-
-    // Returns whether the handle looks like an invalid value (i.e. matches one
-    // of the handle's designated illegal values). CriticalHandle itself doesn't
-    // know what an invalid handle looks like, so this method is abstract and
-    // must be provided by a derived type.
-    public abstract bool IsInvalid {
-        get;
-    }
-
-    public void Close() {
-        Dispose(true);
-    }
-    
-    public void Dispose()
-    {
-        Dispose(true);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        Cleanup();
-    }
-
-    // This should only be called for cases when you know for a fact that
-    // your handle is invalid and you want to record that information.
-    // An example is calling a syscall and getting back ERROR_INVALID_HANDLE.
-    // This method will normally leak handles!
-    public void SetHandleAsInvalid()
-    {
-        _isClosed = true;
-        GC.SuppressFinalize(this);
-    }
-
-    // Implement this abstract method in your derived class to specify how to
-    // free the handle. Be careful not write any code that's subject to faults
-    // in this method (the runtime will prepare the infrastructure for you so
-    // that no jit allocations etc. will occur, but don't allocate memory unless
-    // you can deal with the failure and still free the handle).
-    // The boolean returned should be true for success and false if a
-    // catastrophic error occurred and you wish to trigger a diagnostic for
-    // debugging purposes (the SafeHandleCriticalFailure MDA).
-    protected abstract bool ReleaseHandle();
-}
-
 }

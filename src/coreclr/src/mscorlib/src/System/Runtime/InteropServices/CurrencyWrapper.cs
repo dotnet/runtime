@@ -11,10 +11,11 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-   
-    using System;
 
+using System;
+
+namespace System.Runtime.InteropServices
+{
     [Serializable]
     public sealed class CurrencyWrapper
     {
@@ -24,15 +25,15 @@ namespace System.Runtime.InteropServices {
         }
 
         public CurrencyWrapper(Object obj)
-        {            
+        {
             if (!(obj is Decimal))
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDecimal"), nameof(obj));
             m_WrappedObject = (Decimal)obj;
         }
 
-        public Decimal WrappedObject 
+        public Decimal WrappedObject
         {
-            get 
+            get
             {
                 return m_WrappedObject;
             }

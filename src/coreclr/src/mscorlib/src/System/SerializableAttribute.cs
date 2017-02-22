@@ -10,24 +10,26 @@
 **
 **
 ============================================================*/
-namespace System {
 
-    using System;
-    using System.Reflection;
+using System;
+using System.Reflection;
 
+namespace System
+{
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
-    public sealed class SerializableAttribute : Attribute 
+    public sealed class SerializableAttribute : Attribute
     {
-        internal static Attribute GetCustomAttribute(RuntimeType type) 
-        { 
-            return (type.Attributes & TypeAttributes.Serializable) == TypeAttributes.Serializable ? new SerializableAttribute() : null; 
+        internal static Attribute GetCustomAttribute(RuntimeType type)
+        {
+            return (type.Attributes & TypeAttributes.Serializable) == TypeAttributes.Serializable ? new SerializableAttribute() : null;
         }
-        internal static bool IsDefined(RuntimeType type) 
-        { 
-            return type.IsSerializable; 
+        internal static bool IsDefined(RuntimeType type)
+        {
+            return type.IsSerializable;
         }
 
-        public SerializableAttribute() {
+        public SerializableAttribute()
+        {
         }
     }
 }

@@ -14,13 +14,16 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections {
-    
-    using System;
+
+using System;
+
+namespace System.Collections
+{
     // An IEqualityComparer is a mechanism to consume custom performant comparison infrastructure
     // that can be consumed by some of the common collections.
-    public interface IEqualityComparer {
+    public interface IEqualityComparer
+    {
         bool Equals(Object x, Object y);
-        int GetHashCode(Object obj);        
+        int GetHashCode(Object obj);
     }
 }

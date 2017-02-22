@@ -11,6 +11,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -23,7 +24,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
- 
     /// <summary>
     /// Represents an abstract scheduler for tasks.
     /// </summary>
@@ -46,7 +46,7 @@ namespace System.Threading.Tasks
         //
         // User Provided Methods and Properties
         //
-        
+
         /// <summary>
         /// Queues a <see cref="T:System.Threading.Tasks.Task">Task</see> to the scheduler.
         /// </summary>
@@ -168,7 +168,7 @@ namespace System.Threading.Tasks
         //
         // Internal overridable methods
         //
-        
+
 
         /// <summary>
         /// Attempts to execute the target task synchronously.
@@ -183,14 +183,14 @@ namespace System.Threading.Tasks
             // Do not inline TaskCompletionSource-style (a.k.a. "promise") tasks.
             // No need to attempt inlining if the task body was already run (i.e. either TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bits set)
             TaskScheduler ets = task.ExecutingTaskScheduler;
-            
+
             // Delegate cross-scheduler inlining requests to target scheduler
-            if(ets != this && ets !=null) return ets.TryRunInline(task, taskWasPreviouslyQueued);
+            if (ets != this && ets != null) return ets.TryRunInline(task, taskWasPreviouslyQueued);
 
             StackGuard currentStackGuard;
-            if( (ets == null) ||
+            if ((ets == null) ||
                 (task.m_action == null) ||
-                task.IsDelegateInvoked || 
+                task.IsDelegateInvoked ||
                 task.IsCanceled ||
                 (currentStackGuard = Task.CurrentStackGuard).TryBeginInliningScope() == false)
             {
@@ -216,7 +216,7 @@ namespace System.Threading.Tasks
 
             // If the custom scheduler returned true, we should either have the TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bit set
             // Otherwise the scheduler is buggy
-            if (bInlined && !(task.IsDelegateInvoked || task.IsCanceled)) 
+            if (bInlined && !(task.IsDelegateInvoked || task.IsCanceled))
             {
                 throw new InvalidOperationException(Environment.GetResourceString("TaskScheduler_InconsistentStateAfterTryExecuteTaskInline"));
             }
@@ -240,7 +240,7 @@ namespace System.Threading.Tasks
         /// Notifies the scheduler that a work item has made progress.
         /// </summary>
         internal virtual void NotifyWorkItemProgress()
-        { 
+        {
         }
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace System.Threading.Tasks
 
         // The global container that keeps track of TaskScheduler instances for debugging purposes.
         private static ConditionalWeakTable<TaskScheduler, object> s_activeTaskSchedulers;
-        
+
         // An AppDomain-wide default manager.
         private static readonly TaskScheduler s_defaultTaskScheduler = new ThreadPoolTaskScheduler();
 
@@ -322,7 +322,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets the default <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instance.
         /// </summary>
-        public static TaskScheduler Default 
+        public static TaskScheduler Default
         {
             get
             {
@@ -337,7 +337,7 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// When not called from within a task, <see cref="Current"/> will return the <see cref="Default"/> scheduler.
         /// </remarks>
-        public static TaskScheduler Current 
+        public static TaskScheduler Current
         {
             get
             {
@@ -358,7 +358,7 @@ namespace System.Threading.Tasks
             get
             {
                 Task currentTask = Task.InternalCurrent;
-                return ( (currentTask != null) 
+                return ((currentTask != null)
                     && ((currentTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
                     ) ? currentTask.ExecutingTaskScheduler : null;
             }
@@ -404,7 +404,7 @@ namespace System.Threading.Tasks
                     {
                         newId = Interlocked.Increment(ref s_taskSchedulerIdCounter);
                     } while (newId == 0);
-                    
+
                     Interlocked.CompareExchange(ref m_taskSchedulerId, newId, 0);
                 }
 
@@ -483,12 +483,12 @@ namespace System.Threading.Tasks
                 lock (_unobservedTaskExceptionLockObject) _unobservedTaskException -= value;
             }
         }
-                    
 
 
 
 
-        
+
+
         ////////////////////////////////////////////////////////////
         //
         // Internal methods
@@ -596,17 +596,16 @@ namespace System.Threading.Tasks
 
             // returns the scheduler’s Id
             public Int32 Id
-            { 
-                get { return m_taskScheduler.Id; } 
+            {
+                get { return m_taskScheduler.Id; }
             }
 
             // returns the scheduler’s GetScheduledTasks
-            public IEnumerable<Task> ScheduledTasks 
+            public IEnumerable<Task> ScheduledTasks
             {
                 get { return m_taskScheduler.GetScheduledTasks(); }
             }
         }
-
     }
 
 
@@ -636,7 +635,6 @@ namespace System.Threading.Tasks
             }
 
             m_synchronizationContext = synContext;
-
         }
 
         /// <summary>
@@ -725,7 +723,7 @@ namespace System.Threading.Tasks
         /// Gets whether this exception has been marked as "observed."
         /// </summary>
         public bool Observed { get { return m_observed; } }
-        
+
         /// <summary>
         /// The Exception that went unobserved.
         /// </summary>

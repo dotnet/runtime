@@ -130,10 +130,10 @@ namespace System.Diagnostics.Tracing
         {
             return Environment.GetResourceString(key, args);
         }
-        
+
         private static readonly bool m_EventSourcePreventRecursion = false;
     }
-    
+
     internal partial class ManifestBuilder
     {
         private string GetTypeNameHelper(Type type)
@@ -174,13 +174,13 @@ namespace System.Diagnostics.Tracing
                         return "win:Pointer";
                     else if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
                         return "win:Binary";
-                        
+
                     ManifestError(Resources.GetResourceString("EventSource_UnsupportedEventTypeInManifest", type.Name), true);
                     return string.Empty;
             }
         }
     }
-    
+
     internal partial class EventProvider
     {
         internal unsafe int SetInformation(
@@ -197,7 +197,7 @@ namespace System.Diagnostics.Tracing
                     status = UnsafeNativeMethods.ManifestEtw.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void *)data,
+                        (void*)data,
                         (int)dataSize);
                 }
                 catch (TypeLoadException)
@@ -209,7 +209,7 @@ namespace System.Diagnostics.Tracing
             return status;
         }
     }
-    
+
     internal static class Resources
     {
         internal static string GetResourceString(string key, params object[] args)

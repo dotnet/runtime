@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // with at least one ActivatableAttribute or StaticAttribute.
             if (!(type is RuntimeType) || !type.IsExportedToWindowsRuntime)
                 throw new ArgumentException(Environment.GetResourceString("Argument_TypeNotActivatableViaWindowsRuntime", type), nameof(type));
-            
+
             m_type = type;
         }
 

@@ -6,16 +6,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // 
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Versioning;
+
 namespace System.Reflection.Emit
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
-    using System.IO;
-    using System.Reflection;
-    using System.Runtime.Versioning;
-
     // This is a package private class. This class hold all of the managed
     // data member for ModuleBuilder. Note that what ever data members added to
     // this class cannot be accessed from the EE.
@@ -52,19 +52,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal String        m_strModuleName;     // scope name (can be different from file name)
-        internal String        m_strFileName;
-        internal bool          m_fGlobalBeenCreated;
-        internal bool          m_fHasGlobal;   
+        internal String m_strModuleName;     // scope name (can be different from file name)
+        internal String m_strFileName;
+        internal bool m_fGlobalBeenCreated;
+        internal bool m_fHasGlobal;
         [NonSerialized]
-        internal TypeBuilder   m_globalTypeBuilder;
+        internal TypeBuilder m_globalTypeBuilder;
         [NonSerialized]
         internal ModuleBuilder m_module;
 
-        private int            m_tkFile;
-        internal bool          m_isSaved;
+        private int m_tkFile;
+        internal bool m_isSaved;
         internal const String MULTI_BYTE_VALUE_CLASS = "$ArrayType$";
-        internal String        m_strResourceFileName;
-        internal byte[]        m_resourceBytes;
+        internal String m_strResourceFileName;
+        internal byte[] m_resourceBytes;
     } // class ModuleBuilderData
 }

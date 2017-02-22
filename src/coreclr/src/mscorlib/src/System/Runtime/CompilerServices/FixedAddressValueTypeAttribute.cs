@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Runtime.CompilerServices 
-{    
-    using System;
-    
-[Serializable]
-[AttributeUsage(AttributeTargets.Field)]  
-    sealed public class FixedAddressValueTypeAttribute : Attribute 
-    {        
+using System;
+
+namespace System.Runtime.CompilerServices
+{
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Field)]
+    sealed public class FixedAddressValueTypeAttribute : Attribute
+    {
     }
 }

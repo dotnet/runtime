@@ -13,9 +13,10 @@
 **
 =============================================================================*/
 
-namespace System.Threading {
-    using System.Threading;
+using System.Threading;
 
+namespace System.Threading
+{
     // Define the delegate
     // NOTE: If you change the signature here, there is code in COMSynchronization
     //  that invokes this delegate in native.

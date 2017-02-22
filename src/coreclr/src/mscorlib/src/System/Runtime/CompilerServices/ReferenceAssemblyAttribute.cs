@@ -12,12 +12,13 @@
 **    should be loadable for introspection, but not execution.
 **
 ============================================================*/
-namespace System.Runtime.CompilerServices 
-{    
-    using System;
-    
+
+using System;
+
+namespace System.Runtime.CompilerServices
+{
     [Serializable]
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed class ReferenceAssemblyAttribute : Attribute
     {
         private String _description;  // Maybe ".NET FX v4.0 SP1, partial trust"?

@@ -4,8 +4,8 @@
 
 // 
 
-namespace System.Reflection.Emit 
-{    
+namespace System.Reflection.Emit
+{
     using System;
     using System.Reflection;
     using CultureInfo = System.Globalization.CultureInfo;
@@ -14,9 +14,9 @@ namespace System.Reflection.Emit
     using System.Security;
     using System.Runtime.InteropServices;
     using System.Diagnostics.Contracts;
-    
+
     public sealed class ConstructorBuilder : ConstructorInfo
-    { 
+    {
         private readonly MethodBuilder m_methodBuilder;
         internal bool m_isDefaultConstructor;
 
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit
         private ConstructorBuilder()
         {
         }
-        
+
         internal ConstructorBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
         {
@@ -33,18 +33,18 @@ namespace System.Reflection.Emit
             byte[] sigBytes;
             MethodToken token;
 
-            m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null, 
+            m_methodBuilder = new MethodBuilder(name, attributes, callingConvention, null, null, null,
                 parameterTypes, requiredCustomModifiers, optionalCustomModifiers, mod, type, false);
 
             type.m_listMethods.Add(m_methodBuilder);
-            
+
             sigBytes = m_methodBuilder.GetMethodSignature().InternalGetSignature(out sigLength);
-    
+
             token = m_methodBuilder.GetToken();
         }
 
         internal ConstructorBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type[] parameterTypes, ModuleBuilder mod, TypeBuilder type) : 
+            Type[] parameterTypes, ModuleBuilder mod, TypeBuilder type) :
             this(name, attributes, callingConvention, parameterTypes, null, null, mod, type)
         {
         }
@@ -68,7 +68,7 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.ToString();
         }
-        
+
         #endregion
 
         #region MemberInfo Overrides
@@ -76,12 +76,12 @@ namespace System.Reflection.Emit
         {
             get { return m_methodBuilder.MetadataTokenInternal; }
         }
-        
+
         public override Module Module
         {
             get { return m_methodBuilder.Module; }
         }
-        
+
         public override Type ReflectedType
         {
             get { return m_methodBuilder.ReflectedType; }
@@ -91,8 +91,8 @@ namespace System.Reflection.Emit
         {
             get { return m_methodBuilder.DeclaringType; }
         }
-    
-        public override String Name 
+
+        public override String Name
         {
             get { return m_methodBuilder.Name; }
         }
@@ -100,9 +100,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Overrides
-        public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture) 
+        public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); 
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
         }
 
         [Pure]
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit
             ConstructorInfo rci = GetTypeBuilder().GetConstructor(m_methodBuilder.m_parameterTypes);
             return rci.GetParameters();
         }
-                    
+
         public override MethodAttributes Attributes
         {
             get { return m_methodBuilder.Attributes; }
@@ -121,20 +121,20 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.GetMethodImplementationFlags();
         }
-        
-        public override RuntimeMethodHandle MethodHandle 
+
+        public override RuntimeMethodHandle MethodHandle
         {
             get { return m_methodBuilder.MethodHandle; }
         }
-        
+
         #endregion
 
         #region ConstructorInfo Overrides
         public override Object Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); 
+            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
         }
-    
+
         #endregion
 
         #region ICustomAttributeProvider Implementation
@@ -147,8 +147,8 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.GetCustomAttributes(attributeType, inherit);
         }
-        
-        public override bool IsDefined (Type attributeType, bool inherit)
+
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
             return m_methodBuilder.IsDefined(attributeType, inherit);
         }
@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
         {
             return m_methodBuilder.GetToken();
         }
-    
+
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, String strParamName)
         {
             // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have 
@@ -171,15 +171,15 @@ namespace System.Reflection.Emit
             attributes = attributes & ~ParameterAttributes.ReservedMask;
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
-    
-        public ILGenerator GetILGenerator() 
+
+        public ILGenerator GetILGenerator()
         {
             if (m_isDefaultConstructor)
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_DefaultConstructorILGen"));
 
             return m_methodBuilder.GetILGenerator();
         }
-        
+
         public ILGenerator GetILGenerator(int streamSize)
         {
             if (m_isDefaultConstructor)
@@ -188,33 +188,33 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetILGenerator(streamSize);
         }
 
-        public override CallingConventions CallingConvention 
-        { 
-            get 
-            { 
+        public override CallingConventions CallingConvention
+        {
+            get
+            {
                 if (DeclaringType.IsGenericType)
                     return CallingConventions.HasThis;
-                    
-                return CallingConventions.Standard; 
-            } 
+
+                return CallingConventions.Standard;
+            }
         }
-    
+
         public Module GetModule()
         {
             return m_methodBuilder.GetModule();
         }
-        
+
         // This always returns null. Is that what we want?
-        internal override Type GetReturnType() 
+        internal override Type GetReturnType()
         {
             return m_methodBuilder.ReturnType;
         }
-                                
-        public String Signature 
+
+        public String Signature
         {
             get { return m_methodBuilder.Signature; }
         }
-    
+
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_methodBuilder.SetCustomAttribute(con, binaryAttribute);
@@ -225,12 +225,12 @@ namespace System.Reflection.Emit
             m_methodBuilder.SetCustomAttribute(customBuilder);
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes) 
+        public void SetImplementationFlags(MethodImplAttributes attributes)
         {
             m_methodBuilder.SetImplementationFlags(attributes);
         }
-                
-        public bool InitLocals 
+
+        public bool InitLocals
         {
             get { return m_methodBuilder.InitLocals; }
             set { m_methodBuilder.InitLocals = value; }

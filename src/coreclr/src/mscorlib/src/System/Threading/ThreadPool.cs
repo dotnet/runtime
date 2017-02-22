@@ -33,7 +33,7 @@ namespace System.Threading
 
         public static readonly int processorCount = Environment.ProcessorCount;
 
-        public static readonly bool tpHosted = ThreadPool.IsThreadPoolHosted(); 
+        public static readonly bool tpHosted = ThreadPool.IsThreadPoolHosted();
 
         public static volatile bool vmTpInitialized;
         public static bool enableWorkerTracking;
@@ -124,7 +124,7 @@ namespace System.Threading
             private volatile int m_headIndex = START_INDEX;
             private volatile int m_tailIndex = START_INDEX;
 
-            private SpinLock m_foreignLock = new SpinLock(enableThreadOwnerTracking:false);
+            private SpinLock m_foreignLock = new SpinLock(enableThreadOwnerTracking: false);
 
             public void LocalPush(IThreadPoolWorkItem obj)
             {
@@ -158,7 +158,7 @@ namespace System.Threading
                     finally
                     {
                         if (lockTaken)
-                            m_foreignLock.Exit(useMemoryBarrier:true);
+                            m_foreignLock.Exit(useMemoryBarrier: true);
                     }
                 }
 
@@ -200,7 +200,7 @@ namespace System.Threading
                     finally
                     {
                         if (lockTaken)
-                            m_foreignLock.Exit(useMemoryBarrier:false);
+                            m_foreignLock.Exit(useMemoryBarrier: false);
                     }
                 }
             }
@@ -254,7 +254,7 @@ namespace System.Threading
                         finally
                         {
                             if (lockTaken)
-                                m_foreignLock.Exit(useMemoryBarrier:false);
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
                     }
                 }
@@ -321,7 +321,7 @@ namespace System.Threading
                         finally
                         {
                             if (lockTaken)
-                                m_foreignLock.Exit(useMemoryBarrier:false);
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
                     }
                 }
@@ -366,7 +366,7 @@ namespace System.Threading
                         finally
                         {
                             if (taken)
-                                m_foreignLock.Exit(useMemoryBarrier:false);
+                                m_foreignLock.Exit(useMemoryBarrier: false);
                         }
 
                         missedSteal = true;
@@ -381,10 +381,10 @@ namespace System.Threading
         internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
 
         private volatile int numOutstandingThreadRequests = 0;
-      
+
         public ThreadPoolWorkQueue()
         {
-            loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool|FrameworkEventSource.Keywords.ThreadTransfer);
+            loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
         }
 
         public ThreadPoolWorkQueueThreadLocals EnsureCurrentThreadHasQueue() =>
@@ -401,7 +401,7 @@ namespace System.Threading
             int count = numOutstandingThreadRequests;
             while (count < ThreadPoolGlobals.processorCount)
             {
-                int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count+1, count);
+                int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
                 {
                     ThreadPool.RequestWorkerThread();
@@ -439,7 +439,7 @@ namespace System.Threading
             ThreadPoolWorkQueueThreadLocals tl = null;
             if (!forceGlobal)
                 tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
-            
+
             if (null != tl)
             {
                 tl.workStealingQueue.LocalPush(callback);
@@ -511,7 +511,7 @@ namespace System.Threading
             workQueue.MarkThreadRequestSatisfied();
 
             // Has the desire for logging changed since the last time we entered?
-            workQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool|FrameworkEventSource.Keywords.ThreadTransfer);
+            workQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
 
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
@@ -603,7 +603,7 @@ namespace System.Threading
                 // who waits for the task to complete.
                 //
                 workItem?.MarkAborted(tae);
-                
+
                 //
                 // In this case, the VM is going to request another thread on our behalf.  No need to do it twice.
                 //
@@ -707,7 +707,7 @@ namespace System.Threading
         private volatile int m_lock = 0;
 
         internal IntPtr GetHandle() => registeredWaitHandle;
-    
+
         internal void SetHandle(IntPtr handle)
         {
             registeredWaitHandle = handle;
@@ -731,7 +731,7 @@ namespace System.Threading
         }
 
         internal bool Unregister(
-             WaitHandle     waitObject          // object to be notified when all callbacks to delegates have completed
+             WaitHandle waitObject          // object to be notified when all callbacks to delegates have completed
              )
         {
             bool result = false;
@@ -745,7 +745,7 @@ namespace System.Threading
                 // lock(this) cannot be used reliably in Cer since thin lock could be
                 // promoted to syncblock and that is not a guaranteed operation
                 bool bLockTaken = false;
-                do 
+                do
                 {
                     if (Interlocked.CompareExchange(ref m_lock, 1, 0) == 0)
                     {
@@ -841,9 +841,10 @@ namespace System.Threading
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle waitObject);
     }
 
-    public sealed class RegisteredWaitHandle : MarshalByRefObject {
+    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    {
         private readonly RegisteredWaitHandleSafe internalRegisteredWait;
-    
+
         internal RegisteredWaitHandle()
         {
             internalRegisteredWait = new RegisteredWaitHandleSafe();
@@ -851,23 +852,23 @@ namespace System.Threading
 
         internal void SetHandle(IntPtr handle)
         {
-           internalRegisteredWait.SetHandle(handle);
+            internalRegisteredWait.SetHandle(handle);
         }
 
         internal void SetWaitObject(WaitHandle waitObject)
         {
-           internalRegisteredWait.SetWaitObject(waitObject);
+            internalRegisteredWait.SetWaitObject(waitObject);
         }
 
         // This is the only public method on this class
         public bool Unregister(
-             WaitHandle     waitObject          // object to be notified when all callbacks to delegates have completed
+             WaitHandle waitObject          // object to be notified when all callbacks to delegates have completed
              )
         {
             return internalRegisteredWait.Unregister(waitObject);
         }
     }
-    
+
     public delegate void WaitCallback(Object state);
 
     public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
@@ -905,16 +906,16 @@ namespace System.Threading
         private readonly Object state;
 
 #if DEBUG
-        volatile int executed;
+        private volatile int executed;
 
         ~QueueUserWorkItemCallback()
         {
             Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(), 
+                executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(),
                 "A QueueUserWorkItemCallback was never called!");
         }
 
-        void MarkExecuted(bool aborted)
+        private void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -933,7 +934,7 @@ namespace System.Threading
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
 #if DEBUG
-            MarkExecuted(aborted:false);
+            MarkExecuted(aborted: false);
 #endif
             // call directly if it is an unsafe call OR EC flow is suppressed
             if (context == null)
@@ -953,7 +954,7 @@ namespace System.Threading
 #if DEBUG
             // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
             // This counts as being executed for our purposes.
-            MarkExecuted(aborted:true);
+            MarkExecuted(aborted: true);
 #endif
         }
 
@@ -983,7 +984,7 @@ namespace System.Threading
                 "A QueueUserWorkItemCallbackDefaultContext was never called!");
         }
 
-        void MarkExecuted(bool aborted)
+        private void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -1001,7 +1002,7 @@ namespace System.Threading
         void IThreadPoolWorkItem.ExecuteWorkItem()
         {
 #if DEBUG
-            MarkExecuted(aborted:false);
+            MarkExecuted(aborted: false);
 #endif
             ExecutionContext.Run(ExecutionContext.Default, ccb, this);
         }
@@ -1011,7 +1012,7 @@ namespace System.Threading
 #if DEBUG
             // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
             // This counts as being executed for our purposes.
-            MarkExecuted(aborted:true);
+            MarkExecuted(aborted: true);
 #endif
         }
 
@@ -1029,9 +1030,9 @@ namespace System.Threading
 
     internal class _ThreadPoolWaitOrTimerCallback
     {
-        WaitOrTimerCallback _waitOrTimerCallback;
-        ExecutionContext _executionContext;
-        Object _state;
+        private WaitOrTimerCallback _waitOrTimerCallback;
+        private ExecutionContext _executionContext;
+        private Object _state;
         private static readonly ContextCallback _ccbt = new ContextCallback(WaitOrTimerCallback_Context_t);
         private static readonly ContextCallback _ccbf = new ContextCallback(WaitOrTimerCallback_Context_f);
 
@@ -1046,23 +1047,23 @@ namespace System.Threading
                 _executionContext = ExecutionContext.Capture();
             }
         }
-        
+
         private static void WaitOrTimerCallback_Context_t(Object state) =>
-            WaitOrTimerCallback_Context(state, timedOut:true);
+            WaitOrTimerCallback_Context(state, timedOut: true);
 
         private static void WaitOrTimerCallback_Context_f(Object state) =>
-            WaitOrTimerCallback_Context(state, timedOut:false);
+            WaitOrTimerCallback_Context(state, timedOut: false);
 
         private static void WaitOrTimerCallback_Context(Object state, bool timedOut)
         {
             _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             helper._waitOrTimerCallback(helper._state, timedOut);
         }
-            
+
         // call back helper
         internal static void PerformWaitOrTimerCallback(Object state, bool timedOut)
         {
-            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state; 
+            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
             if (helper._executionContext == null)
@@ -1074,15 +1075,14 @@ namespace System.Threading
             {
                 ExecutionContext.Run(helper._executionContext, timedOut ? _ccbt : _ccbf, helper);
             }
-        }    
-
+        }
     }
 
     [CLSCompliant(false)]
     unsafe public delegate void IOCompletionCallback(uint errorCode, // Error code
                                        uint numBytes, // No. of bytes transferred 
                                        NativeOverlapped* pOVERLAP // ptr to OVERLAP structure
-                                       );   
+                                       );
 
     public static class ThreadPool
     {
@@ -1114,40 +1114,40 @@ namespace System.Threading
         [CLSCompliant(false)]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod            
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
-             WaitHandle             waitObject,
-             WaitOrTimerCallback    callBack,
-             Object                 state,
-             uint               millisecondsTimeOutInterval,
-             bool               executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
         }
 
         [CLSCompliant(false)]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
-             WaitHandle             waitObject,
-             WaitOrTimerCallback    callBack,
-             Object                 state,
-             uint               millisecondsTimeOutInterval,
-             bool               executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
         }
 
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
-             WaitHandle             waitObject,
-             WaitOrTimerCallback    callBack,
-             Object                 state,
-             uint               millisecondsTimeOutInterval,
-             bool               executeOnlyOnce,   // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,   // NOTE: we do not allow other options that allow the callback to be queued as an APC
              ref StackCrawlMark stackMark,
-             bool               compressStack
+             bool compressStack
              )
         {
             RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle();
@@ -1160,7 +1160,7 @@ namespace System.Threading
                 // this could occur if callback were to fire before SetWaitObject does its addref
                 registeredWaitHandle.SetWaitObject(waitObject);
                 IntPtr nativeRegisteredWaitHandle = RegisterWaitForSingleObjectNative(waitObject,
-                                                                               state, 
+                                                                               state,
                                                                                millisecondsTimeOutInterval,
                                                                                executeOnlyOnce,
                                                                                registeredWaitHandle,
@@ -1178,102 +1178,102 @@ namespace System.Threading
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
-             WaitHandle             waitObject,
-             WaitOrTimerCallback    callBack,
-             Object                 state,
-             int                    millisecondsTimeOutInterval,
-             bool               executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             int millisecondsTimeOutInterval,
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod            
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
-             WaitHandle             waitObject,
-             WaitOrTimerCallback    callBack,
-             Object                 state,
-             int                    millisecondsTimeOutInterval,
-             bool               executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             Object state,
+             int millisecondsTimeOutInterval,
+             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
-            WaitHandle          waitObject,
+            WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object                  state,
-            long                    millisecondsTimeOutInterval,
-            bool                executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+            Object state,
+            long millisecondsTimeOutInterval,
+            bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
-            WaitHandle          waitObject,
+            WaitHandle waitObject,
             WaitOrTimerCallback callBack,
-            Object                  state,
-            long                    millisecondsTimeOutInterval,
-            bool                executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
+            Object state,
+            long millisecondsTimeOutInterval,
+            bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)millisecondsTimeOutInterval,executeOnlyOnce,ref stackMark,false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
-                          WaitHandle            waitObject,
-                          WaitOrTimerCallback   callBack,
-                          Object                state,
-                          TimeSpan              timeout,
-                          bool                  executeOnlyOnce
+                          WaitHandle waitObject,
+                          WaitOrTimerCallback callBack,
+                          Object state,
+                          TimeSpan timeout,
+                          bool executeOnlyOnce
                           )
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1)
                 throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-            if (tm > (long) Int32.MaxValue)
+            if (tm > (long)Int32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, ref stackMark, true);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
-                          WaitHandle            waitObject,
-                          WaitOrTimerCallback   callBack,
-                          Object                state,
-                          TimeSpan              timeout,
-                          bool                  executeOnlyOnce
+                          WaitHandle waitObject,
+                          WaitOrTimerCallback callBack,
+                          Object state,
+                          TimeSpan timeout,
+                          bool executeOnlyOnce
                           )
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1)
                 throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-            if (tm > (long) Int32.MaxValue)
+            if (tm > (long)Int32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_LessEqualToIntegerMaxVal"));
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject,callBack,state,(UInt32)tm,executeOnlyOnce,ref stackMark,false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, ref stackMark, false);
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
@@ -1428,7 +1428,7 @@ namespace System.Threading
                 EnsureVMInitializedCore(); // separate out to help with inlining
             }
         }
-        
+
         private static void EnsureVMInitializedCore()
         {
             ThreadPool.InitializeVMTp(ref ThreadPoolGlobals.enableWorkerTracking);
@@ -1436,7 +1436,7 @@ namespace System.Threading
         }
 
         // Native methods: 
-    
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SetMinThreadsNative(int workerThreads, int completionPortThreads);
 
@@ -1476,14 +1476,14 @@ namespace System.Threading
         private static extern void InitializeVMTp(ref bool enableWorkerTracking);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr RegisterWaitForSingleObjectNative(  
-             WaitHandle             waitHandle,
-             Object                 state,
-             uint                   timeOutInterval,
-             bool                   executeOnlyOnce,
-             RegisteredWaitHandle   registeredWaitHandle,
-             ref StackCrawlMark     stackMark,
-             bool                   compressStack   
+        private static extern IntPtr RegisterWaitForSingleObjectNative(
+             WaitHandle waitHandle,
+             Object state,
+             uint timeOutInterval,
+             bool executeOnlyOnce,
+             RegisteredWaitHandle registeredWaitHandle,
+             ref StackCrawlMark stackMark,
+             bool compressStack
              );
 
 
@@ -1497,15 +1497,17 @@ namespace System.Threading
         {
             if (osHandle == null)
                 throw new ArgumentNullException(nameof(osHandle));
-            
+
             bool ret = false;
             bool mustReleaseSafeHandle = false;
             RuntimeHelpers.PrepareConstrainedRegions();
-            try {
+            try
+            {
                 osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
                 ret = BindIOCompletionCallbackNative(osHandle.DangerousGetHandle());
             }
-            finally {
+            finally
+            {
                 if (mustReleaseSafeHandle)
                     osHandle.DangerousRelease();
             }

@@ -9,8 +9,9 @@
 //    This class defines a set of static methods that provide support for compilers.
 //
 //
-namespace System.Runtime.CompilerServices {
 
+namespace System.Runtime.CompilerServices
+{
     using System;
     using System.Security;
     using System.Runtime;
@@ -32,7 +33,7 @@ namespace System.Runtime.CompilerServices {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void InitializeArray(Array array,RuntimeFieldHandle fldHandle);
+        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
@@ -61,7 +62,7 @@ namespace System.Runtime.CompilerServices {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void _RunClassConstructor(RuntimeType type);
 
-        public static void RunClassConstructor(RuntimeTypeHandle type) 
+        public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             _RunClassConstructor(type.GetRuntimeType());
         }
@@ -77,24 +78,24 @@ namespace System.Runtime.CompilerServices {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void _RunModuleConstructor(System.Reflection.RuntimeModule module);
 
-        public static void RunModuleConstructor(ModuleHandle module) 
+        public static void RunModuleConstructor(ModuleHandle module)
         {
-           _RunModuleConstructor(module.GetRuntimeModule());
+            _RunModuleConstructor(module.GetRuntimeModule());
         }
 
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         internal static extern void _CompileMethod(IRuntimeMethodInfo method);
 
-        public static void PrepareMethod(RuntimeMethodHandle method){}
-        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation){}
-        public static void PrepareContractedDelegate(Delegate d){}
-        
+        public static void PrepareMethod(RuntimeMethodHandle method) { }
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation) { }
+        public static void PrepareContractedDelegate(Delegate d) { }
+
         public static void PrepareDelegate(Delegate d)
         {
             if (d == null)
             {
-                throw new ArgumentNullException ("d");
+                throw new ArgumentNullException("d");
             }
         }
 
@@ -108,8 +109,9 @@ namespace System.Runtime.CompilerServices {
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm
             // in getting it baked in here as well.
-            [System.Runtime.Versioning.NonVersionable] 
-            get {
+            [System.Runtime.Versioning.NonVersionable]
+            get
+            {
                 // Number of bytes from the address pointed to by a reference to
                 // a String to the first 16-bit character in the String.  Skip 
                 // over the MethodTable pointer, & String 
