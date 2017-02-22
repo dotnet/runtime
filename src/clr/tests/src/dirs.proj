@@ -22,6 +22,8 @@
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
       <DisabledProjects Include="Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj" />
       <DisabledProjects Include="Common\targeting_pack_ref\targeting_pack_ref.csproj" />
+      <DisabledProjects Include="Common\external\external.csproj" />
+      <DisabledProjects Include="Common\external\external.depproj" />
       <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
       <DisabledProjects Include="JIT\superpmi\superpmicollect.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'" />
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />

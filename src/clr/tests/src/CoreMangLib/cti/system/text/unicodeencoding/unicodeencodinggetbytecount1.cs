@@ -189,7 +189,7 @@ public class UnicodeEncodingGetByteCount
         TestLibrary.TestFramework.BeginScenario("NegTest1:Invoke the method with null");
         try
         {
-            actualValue = uEncoding.GetByteCount(null,0,0);
+            actualValue = uEncoding.GetByteCount((char[])null, 0, 0);
 
             TestLibrary.TestFramework.LogError("007", "No ArgumentNullException throw out expected.");
             retVal = false;
