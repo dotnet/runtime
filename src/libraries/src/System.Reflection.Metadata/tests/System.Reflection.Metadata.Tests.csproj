@@ -89,6 +89,7 @@
     <Compile Include="Utilities\CompressedIntegerTests.cs" />
     <Compile Include="Utilities\ImmutableByteArrayInteropTest.cs" />
     <Compile Include="Utilities\MemoryBlockTests.cs" />
+    <Compile Include="Utilities\OrderByTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
