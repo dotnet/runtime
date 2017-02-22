@@ -79,12 +79,6 @@ static void DoEHLog(DWORD lvl, __in_z const char *fmt, ...);
 
 TrackerAllocator    g_theTrackerAllocator;
 
-void __declspec(noinline)
-ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
-                 UINT_PTR ReturnValue,
-                 UINT_PTR TargetIP,
-                 UINT_PTR TargetFrameSp);
-
 bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
                              Thread*   pThread,
                              CONTEXT*  pContextRecord,
@@ -4112,6 +4106,7 @@ void ExceptionTracker::MakeCallbacksRelatedToHandler(
     }
 }
 
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
 // This function is called by DefaultCatchHandler() to intercept an exception and start an unwind.
@@ -4148,6 +4143,7 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
 
     UNREACHABLE();
 }
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef _DEBUG
@@ -5116,9 +5112,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 #endif // FEATURE_PAL
 
+#ifndef FEATURE_PAL
 void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_PTR TargetIP, UINT_PTR TargetFrameSp)
 {
-#ifndef FEATURE_PAL
     PVOID TargetFrame = (PVOID)TargetFrameSp;
 
     CONTEXT ctx;
@@ -5129,13 +5125,10 @@ void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_
                 &ctx,
                 NULL);      // HistoryTable
 
-#else // !FEATURE_PAL
-    PORTABILITY_ASSERT("UNIXTODO: Implement unwinding for PAL");
-#endif // !FEATURE_PAL
-                
     // doesn't return
     UNREACHABLE();
 }
+#endif // !FEATURE_PAL
 
 void TrackerAllocator::Init()
 {

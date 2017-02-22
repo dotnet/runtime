@@ -4003,6 +4003,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
 
     UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     EX_TRY
     {
         // if the debugger wants to intercept the unhandled exception then we immediately unwind without returning
@@ -4022,6 +4023,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     {
     }
     EX_END_CATCH(SwallowAllExceptions);
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     return retval;
 }
