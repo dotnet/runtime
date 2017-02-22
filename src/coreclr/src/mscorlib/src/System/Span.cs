@@ -849,19 +849,19 @@ namespace System
             {
                 if ((Unsafe.As<byte, int>(ref b) & 1) != 0)
                 {
-                    Unsafe.Add<byte>(ref b, (int)i) = 0;
+                    Unsafe.AddNative<byte>(ref b, i) = 0;
                     i += 1;
                     if ((Unsafe.As<byte, int>(ref b) & 2) != 0)
                         goto IntAligned;
                 }
-                Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                Unsafe.As<byte, short>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
                 i += 2;
             }
 
             IntAligned:
 
             // On 64-bit IntPtr.Size == 8, so we want to advance to the next 8-aligned address. If
-            // (int)bytePointer % 8 is 0, 5, 6, or 7, we will already have advanced by 0, 3, 2, or 1
+            // (int)b % 8 is 0, 5, 6, or 7, we will already have advanced by 0, 3, 2, or 1
             // bytes to the next aligned address (respectively), so do nothing. On the other hand,
             // if it is 1, 2, 3, or 4 we will want to copy-and-advance another 4 bytes until
             // we're aligned.
@@ -870,7 +870,7 @@ namespace System
 
             if (((Unsafe.As<byte, int>(ref b) - 1) & 4) == 0)
             {
-                Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
                 i += 4;
             }
 
@@ -896,10 +896,17 @@ namespace System
                 // these to use memory addressing operands.
 
                 // So the only cost is a bit of code size, which is made up for by the fact that
-                // we save on writes to bytePointer.
+                // we save on writes to b.
 
-                Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
-                Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, (int)i + 8)) = 0;
+#if BIT64
+                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i + 8)) = 0;
+#else
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 4)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 8)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 12)) = 0;
+#endif
 
                 i = counter;
 
@@ -910,22 +917,27 @@ namespace System
 
             if ((byteLength & 8) != 0)
             {
-                Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+#if BIT64
+                Unsafe.As<byte, long>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+#else
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i + 4)) = 0;
+#endif
                 i += 8;
             }
             if ((byteLength & 4) != 0)
             {
-                Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                Unsafe.As<byte, int>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
                 i += 4;
             }
             if ((byteLength & 2) != 0)
             {
-                Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, (int)i)) = 0;
+                Unsafe.As<byte, short>(ref Unsafe.AddNative<byte>(ref b, i)) = 0;
                 i += 2;
             }
             if ((byteLength & 1) != 0)
             {
-                Unsafe.Add<byte>(ref b, (int)i) = 0;
+                Unsafe.AddNative<byte>(ref b, i) = 0;
                 // We're not using i after this, so not needed
                 // i += 1;
             }
