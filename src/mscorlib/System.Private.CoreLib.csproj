@@ -1085,6 +1085,7 @@
   <ItemGroup>
     <MscorlibSources Include="$(BclSourcesRoot)\System\Nullable.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\Dictionary.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />

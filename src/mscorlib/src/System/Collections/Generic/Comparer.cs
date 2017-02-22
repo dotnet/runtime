@@ -20,14 +20,9 @@ namespace System.Collections.Generic
     [TypeDependencyAttribute("System.Collections.Generic.ObjectComparer`1")] 
     public abstract class Comparer<T> : IComparer, IComparer<T>
     {
-        static readonly Comparer<T> defaultComparer = CreateComparer();
-
-        public static Comparer<T> Default {
-            get {
-                Contract.Ensures(Contract.Result<Comparer<T>>() != null);
-                return defaultComparer;
-            }
-        }
+        // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
+        // as possible and define most of the creation logic in a non-generic class.
+        public static Comparer<T> Default { get; } = (Comparer<T>)ComparerHelpers.CreateDefaultComparer(typeof(T));
 
         public static Comparer<T> Create(Comparison<T> comparison)
         {
@@ -37,66 +32,6 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(comparison));
 
             return new ComparisonComparer<T>(comparison);
-        }
-
-        //
-        // Note that logic in this method is replicated in vm\compile.cpp to ensure that NGen
-        // saves the right instantiations
-        //
-        private static Comparer<T> CreateComparer()
-        {
-            object result = null;
-            RuntimeType t = (RuntimeType)typeof(T);
-
-            // If T implements IComparable<T> return a GenericComparer<T>
-            if (typeof(IComparable<T>).IsAssignableFrom(t))
-            {
-                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
-            }
-            else if (default(T) == null)
-            {
-                // If T is a Nullable<U> where U implements IComparable<U> return a NullableComparer<U>
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                    if (typeof(IComparable<>).MakeGenericType(u).IsAssignableFrom(u)) {
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), u);
-                    }
-                }
-            }
-            else if (t.IsEnum)
-            {
-                // Explicitly call Enum.GetUnderlyingType here. Although GetTypeCode
-                // ends up doing this anyway, we end up avoiding an unnecessary P/Invoke
-                // and virtual method call.
-                TypeCode underlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(t));
-                
-                // Depending on the enum type, we need to special case the comparers so that we avoid boxing
-                // Specialize differently for signed/unsigned types so we avoid problems with large numbers
-                switch (underlyingTypeCode)
-                {
-                    case TypeCode.SByte:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(Int32EnumComparer<int>), t);
-                        break;
-                    case TypeCode.Byte:
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(UInt32EnumComparer<uint>), t);
-                        break;
-                    // 64-bit enums: use UnsafeEnumCastLong
-                    case TypeCode.Int64:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(Int64EnumComparer<long>), t);
-                        break;
-                    case TypeCode.UInt64:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(UInt64EnumComparer<ulong>), t);
-                        break;
-                }
-            }
-            
-            return result != null ?
-                (Comparer<T>)result :
-                new ObjectComparer<T>(); // Fallback to ObjectComparer, which uses boxing
         }
 
         public abstract int Compare(T x, T y);
@@ -196,7 +131,7 @@ namespace System.Collections.Generic
     {
         public Int32EnumComparer()
         {
-            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum);
         }
         
         // Used by the serialization engine.
@@ -231,7 +166,7 @@ namespace System.Collections.Generic
     {
         public UInt32EnumComparer()
         {
-            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum);
         }
         
         // Used by the serialization engine.
@@ -262,7 +197,7 @@ namespace System.Collections.Generic
     {
         public Int64EnumComparer()
         {
-            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum);
         }
         
         public override int Compare(T x, T y)
@@ -290,7 +225,7 @@ namespace System.Collections.Generic
     {
         public UInt64EnumComparer()
         {
-            Debug.Assert(typeof(T).IsEnum, "This type is only intended to be used to compare enums!");
+            Debug.Assert(typeof(T).IsEnum);
         }
         
         // Used by the serialization engine.
