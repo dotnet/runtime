@@ -211,10 +211,10 @@ mono_bitset_count (const MonoBitSet *set) {
 	for (i = 0; i < set->size / BITS_PER_CHUNK; ++i) {
 		d = set->data [i];
 #ifdef __GNUC__
-		if (sizeof (gsize) == sizeof (unsigned long))
-			count += __builtin_popcountl (d);
-		else
+		if (sizeof (gsize) == sizeof (unsigned int))
 			count += __builtin_popcount (d);
+		else
+			count += __builtin_popcountll (d);
 #else
 		while (d) {
 			count ++;
