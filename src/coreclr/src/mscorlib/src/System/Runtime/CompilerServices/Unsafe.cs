@@ -76,11 +76,10 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AddNative<T>(ref T source, nuint elementOffset)
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.
-            typeof(T).ToString(); // Type used by the actual method body
             throw new InvalidOperationException();
         }
 
