@@ -310,7 +310,6 @@ INST3(LAST_SSE2_INSTRUCTION, "LAST_SSE2_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE
 
 #ifndef LEGACY_BACKEND
 INST3(FIRST_SSE4_INSTRUCTION, "FIRST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
-// Most of the following instructions should be included in the method Is4ByteAVXInstruction()
 //    enum           name           FP updmode rf wf    MR            MI        RM
 INST3( dpps,         "dpps"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x40))   // Packed bit-wise AND NOT of two xmm regs
 INST3( dppd,         "dppd"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x41))   // Packed bit-wise AND NOT of two xmm regs
