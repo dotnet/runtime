@@ -571,7 +571,7 @@ namespace System.Xml.Serialization
             ilg.GotoMethodEnd();
             ilg.EndIf();
 
-            if (!mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.GetTypeInfo().IsPrimitive)
+            if (!mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.IsPrimitive)
             {
                 MethodInfo XmlSerializationWriter_TopLevelElement = typeof(XmlSerializationWriter).GetMethod(
                       "TopLevelElement",
@@ -2129,7 +2129,7 @@ namespace System.Xml.Serialization
                     ilg.Load(null);
                     ilg.Cne();
                 }
-                else if (value.GetType().GetTypeInfo().IsPrimitive)
+                else if (value.GetType().IsPrimitive)
                 {
                     source.Load(null);
                     ilg.Ldc(Convert.ChangeType(value, source.Type, CultureInfo.InvariantCulture));
@@ -2187,7 +2187,7 @@ namespace System.Xml.Serialization
         private void WriteNullCheckBegin(string source, ElementAccessor element)
         {
             LocalBuilder local = ilg.GetLocal(source);
-            Debug.Assert(!local.LocalType.GetTypeInfo().IsValueType);
+            Debug.Assert(!local.LocalType.IsValueType);
             ilg.Load(local);
             ilg.Load(null);
             ilg.If(Cmp.EqualTo);
@@ -2373,7 +2373,7 @@ namespace System.Xml.Serialization
                     ilg.New(ctor);
                 else
                 {
-                    Debug.Assert(type.GetTypeInfo().IsValueType);
+                    Debug.Assert(type.IsValueType);
                     LocalBuilder tmpLoc = ilg.GetTempLocal(type);
                     ilg.Ldloca(tmpLoc);
                     ilg.InitObj(type);
@@ -2398,7 +2398,7 @@ namespace System.Xml.Serialization
             // codegen the same as 'internal XElement : this("default") { }'
             if (type.FullName == "System.Xml.Linq.XElement")
             {
-                Type xName = type.GetTypeInfo().Assembly.GetType("System.Xml.Linq.XName");
+                Type xName = type.Assembly.GetType("System.Xml.Linq.XName");
                 if (xName != null)
                 {
                     MethodInfo XName_op_Implicit = xName.GetMethod(

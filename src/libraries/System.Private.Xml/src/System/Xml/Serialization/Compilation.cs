@@ -164,7 +164,7 @@ namespace System.Xml.Serialization
             if (attrs.Length == 0)
             {
                 // Guess serializer name: if parent assembly signed use strong name 
-                AssemblyName name = type.GetTypeInfo().Assembly.GetName();
+                AssemblyName name = type.Assembly.GetName();
                 serializerName = Compiler.GetTempAssemblyName(name, defaultNamespace);
                 // use strong name 
                 name.Name = serializerName;
@@ -216,8 +216,8 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    serializerName = type.GetTypeInfo().Assembly.FullName;
-                    serializer = type.GetTypeInfo().Assembly;
+                    serializerName = type.Assembly.FullName;
+                    serializer = type.Assembly;
                 }
                 if (serializer == null)
                 {
@@ -250,7 +250,7 @@ namespace System.Xml.Serialization
                 ConstructorInfo AssemblyVersionAttribute_ctor = typeof(AssemblyVersionAttribute).GetConstructor(
                     new Type[] { typeof(String) }
                     );
-                string assemblyVersion = types[0].GetTypeInfo().Assembly.GetName().Version.ToString();
+                string assemblyVersion = types[0].Assembly.GetName().Version.ToString();
                 assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(AssemblyVersionAttribute_ctor, new Object[] { assemblyVersion }));
             }
             CodeIdentifiers classes = new CodeIdentifiers();
@@ -308,7 +308,7 @@ namespace System.Xml.Serialization
             }
             readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
 
-            return writerType.GetTypeInfo().Assembly;
+            return writerType.Assembly;
         }
 #endif
 
