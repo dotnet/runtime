@@ -52,7 +52,7 @@
       "description": "Enables/Disables building packages.",
       "valueType": "property",
       "values": ["True", "False"],
-      "defaultValue": true
+      "defaultValue": false
     },
     "BuildPackageLibraryReferences": {
       "description": "Enables/Disables building libraries referenced by packages.",
@@ -236,6 +236,7 @@
           "description": "Builds the NuGet packages.",
           "settings": {
             "Project": "src/packages.builds",
+            "BuildPackages": "true",
             "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
           }
         },
@@ -327,6 +328,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
+          "BuildPackages": "default",
           "ConfigurationGroup": "default",
           "MsBuildLogging":"default",
           "MsBuildWarning":"default",
