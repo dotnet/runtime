@@ -695,6 +695,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	if (shutting_down && !force_attach) {
 		mono_threads_unlock ();
+		mono_thread_pop_appdomain_ref ();
 		return FALSE;
 	}
 
