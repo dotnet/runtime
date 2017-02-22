@@ -752,11 +752,7 @@ namespace System
             }
 
             // P/Invoke into the native version for large lengths
-            if (byteLength >= 512)
-            {
-                RuntimeImports.RhZeroMemory(ref b, byteLength);
-                return;
-            }
+            if (byteLength >= 512) goto PInvoke;
 
             nuint i = 0; // byte offset at which we're copying
 
@@ -844,6 +840,11 @@ namespace System
                 // We're not using i after this, so not needed
                 // i += 1;
             }
+
+            return;
+            
+            PInvoke:
+            RuntimeImports.RhZeroMemory(ref b, byteLength);
         }
 
         internal static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
@@ -857,41 +858,34 @@ namespace System
             nuint n = 0;
             while ((n = i + 8) <= (pointerSizeLength))
             {
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 2) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 3) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 4) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 5) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 6) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 7) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 2) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 3) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 4) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 5) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 6) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 7) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 4) <= (pointerSizeLength))
             {
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 2) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 3) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 2) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 3) = default(IntPtr);
                 i = n;
             }
             if ((n = i + 2) <= (pointerSizeLength))
             {
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 0) = default(IntPtr);
-                Unsafe.Add<IntPtr>(ref ip, (int)i + 1) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 0) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i + 1) = default(IntPtr);
                 i = n;
             }
             if ((i + 1) <= (pointerSizeLength))
             {
-                Unsafe.Add<IntPtr>(ref ip, (int)i) = default(IntPtr);
+                Unsafe.AddNative<IntPtr>(ref ip, i) = default(IntPtr);
             }
         }
-
-        [StructLayout(LayoutKind.Sequential, Size = 64)]
-        private struct Reg64 { }
-        [StructLayout(LayoutKind.Sequential, Size = 32)]
-        private struct Reg32 { }
-        [StructLayout(LayoutKind.Sequential, Size = 16)]
-        private struct Reg16 { }
     }
 }
