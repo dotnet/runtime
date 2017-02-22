@@ -3710,7 +3710,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Call(XmlILMethods.ChangeTypeXsltResult);
                 _helper.TreatAs(typeof(object), clrTypeRetDst);
             }
-            else if (ndName.NamespaceUri.Length != 0 && !clrTypeRetSrc.GetTypeInfo().IsValueType)
+            else if (ndName.NamespaceUri.Length != 0 && !clrTypeRetSrc.IsValueType)
             {
                 // Check for null if a user-defined extension function returns a reference type
                 Label lblSkip = _helper.DefineLabel();

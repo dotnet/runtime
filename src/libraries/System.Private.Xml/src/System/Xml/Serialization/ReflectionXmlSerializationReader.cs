@@ -904,7 +904,7 @@ namespace System.Xml.Serialization
 
         private ConstructorInfo GetDefaultConstructor(Type type)
         {
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
                 return null;
 
             ConstructorInfo ctor = FindDefaultConstructor(type.GetTypeInfo());
