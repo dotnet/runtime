@@ -7,16 +7,18 @@
 ** Purpose: Some single-precision floating-point math operations
 **
 ===========================================================*/
-namespace System {
 
-    //This class contains only static members and doesn't require serialization.
-    using System;
-    using System.Runtime;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
+//This class contains only static members and doesn't require serialization.
 
+using System;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.Versioning;
+using System.Diagnostics.Contracts;
+
+namespace System
+{
     public static class MathF
     {
         private static float singleRoundLimit = 1e8f;
@@ -77,7 +79,7 @@ namespace System {
 
             if (float.IsNaN(regularMod))
             {
-              return float.NaN;
+                return float.NaN;
             }
 
             if ((regularMod == 0) && float.IsNegative(x))
@@ -157,7 +159,7 @@ namespace System {
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
             {
-               throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
+                throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
             }
             Contract.EndContractBlock();
 
@@ -170,7 +172,7 @@ namespace System {
             {
                 throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
             }
-            
+
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumx", mode, nameof(MidpointRounding)), nameof(mode));
@@ -187,7 +189,7 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumx", mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
-            
+
             return InternalRound(x, 0, mode);
         }
 
@@ -215,13 +217,13 @@ namespace System {
             if (Abs(x) < singleRoundLimit)
             {
                 var power10 = roundPower10Single[digits];
-                
+
                 x *= power10;
-                
+
                 if (mode == MidpointRounding.AwayFromZero)
                 {
                     var fraction = SplitFractionSingle(&x);
-                    
+
                     if (Abs(fraction) >= 0.5f)
                     {
                         x += Sign(fraction);

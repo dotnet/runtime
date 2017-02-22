@@ -40,7 +40,7 @@ namespace System.IO
             if (HasIllegalCharacters(path))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
         }
-        
+
         /// <summary>
         /// Returns the start index of the filename
         /// in the given path, or 0 if no directory
@@ -140,7 +140,7 @@ namespace System.IO
             return firstRootLength == secondRootLength
                 && string.Compare(
                     strA: first,
-                    indexA: 0, 
+                    indexA: 0,
                     strB: second,
                     indexB: 0,
                     length: firstRootLength,
@@ -166,7 +166,6 @@ namespace System.IO
 
                 searchPattern = searchPattern.Substring(index + 2);
             }
-
         }
     }
 }

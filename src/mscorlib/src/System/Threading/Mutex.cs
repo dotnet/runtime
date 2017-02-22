@@ -11,8 +11,9 @@
 **
 **
 =============================================================================*/
-namespace System.Threading 
-{  
+
+namespace System.Threading
+{
     using System;
     using System.Threading;
     using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System.Threading
 
     public sealed class Mutex : WaitHandle
     {
-        static bool dummyBool;
+        private static bool dummyBool;
 
         internal class MutexSecurity
         {
@@ -67,20 +68,20 @@ namespace System.Threading
             RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(
                 tryCode,
                 cleanupCode,
-                cleanupInfo);             
+                cleanupInfo);
             createdNew = tryCodeHelper.m_newMutex;
         }
 
-        internal class MutexTryCodeHelper 
+        internal class MutexTryCodeHelper
         {
-            bool m_initiallyOwned;
-            MutexCleanupInfo m_cleanupInfo;
+            private bool m_initiallyOwned;
+            private MutexCleanupInfo m_cleanupInfo;
             internal bool m_newMutex;
-            String m_name;
-            Win32Native.SECURITY_ATTRIBUTES m_secAttrs;
-            Mutex m_mutex;
+            private String m_name;
+            private Win32Native.SECURITY_ATTRIBUTES m_secAttrs;
+            private Mutex m_mutex;
 
-            internal MutexTryCodeHelper(bool initiallyOwned,MutexCleanupInfo cleanupInfo, String name, Win32Native.SECURITY_ATTRIBUTES secAttrs, Mutex mutex)
+            internal MutexTryCodeHelper(bool initiallyOwned, MutexCleanupInfo cleanupInfo, String name, Win32Native.SECURITY_ATTRIBUTES secAttrs, Mutex mutex)
             {
                 Debug.Assert(name == null || name.Length != 0);
 
@@ -92,16 +93,16 @@ namespace System.Threading
             }
 
             internal void MutexTryCode(object userData)
-            {  
+            {
                 SafeWaitHandle mutexHandle = null;
                 // try block                
                 RuntimeHelpers.PrepareConstrainedRegions();
-                try 
+                try
                 {
                 }
-                finally 
+                finally
                 {
-                    if (m_initiallyOwned) 
+                    if (m_initiallyOwned)
                     {
                         m_cleanupInfo.inCriticalRegion = true;
                     }
@@ -109,15 +110,15 @@ namespace System.Threading
 
                 int errorCode = 0;
                 RuntimeHelpers.PrepareConstrainedRegions();
-                try 
+                try
                 {
                 }
-                finally 
+                finally
                 {
                     errorCode = CreateMutexHandle(m_initiallyOwned, m_name, m_secAttrs, out mutexHandle);
-                }                    
+                }
 
-                if (mutexHandle.IsInvalid) 
+                if (mutexHandle.IsInvalid)
                 {
                     mutexHandle.SetHandleAsInvalid();
                     if (m_name != null)
@@ -140,19 +141,21 @@ namespace System.Threading
                 m_mutex.SetHandleInternal(mutexHandle);
 
                 m_mutex.hasThreadAffinity = true;
-
             }
         }
 
         private void MutexCleanupCode(Object userData, bool exceptionThrown)
         {
-            MutexCleanupInfo cleanupInfo = (MutexCleanupInfo) userData;
-            
+            MutexCleanupInfo cleanupInfo = (MutexCleanupInfo)userData;
+
             // If hasThreadAffinity isn't true, we've thrown an exception in the above try, and we must free the mutex 
             // on this OS thread before ending our thread affninity.
-            if(!hasThreadAffinity) {
-                if (cleanupInfo.mutexHandle != null && !cleanupInfo.mutexHandle.IsInvalid) {
-                    if( cleanupInfo.inCriticalRegion) {
+            if (!hasThreadAffinity)
+            {
+                if (cleanupInfo.mutexHandle != null && !cleanupInfo.mutexHandle.IsInvalid)
+                {
+                    if (cleanupInfo.inCriticalRegion)
+                    {
                         Win32Native.ReleaseMutex(cleanupInfo.mutexHandle);
                     }
                     cleanupInfo.mutexHandle.Dispose();
@@ -171,7 +174,8 @@ namespace System.Threading
             }
         }
 
-        public Mutex(bool initiallyOwned, String name) : this(initiallyOwned, name, out dummyBool) {
+        public Mutex(bool initiallyOwned, String name) : this(initiallyOwned, name, out dummyBool)
+        {
         }
 
         public Mutex(bool initiallyOwned) : this(initiallyOwned, null, out dummyBool)
@@ -181,7 +185,7 @@ namespace System.Threading
         public Mutex() : this(false, null, out dummyBool)
         {
         }
-        
+
         private Mutex(SafeWaitHandle handle)
         {
             SetHandleInternal(handle);
@@ -190,7 +194,7 @@ namespace System.Threading
 
         public static Mutex OpenExisting(string name)
         {
-            return OpenExisting(name, (MutexRights) 0);
+            return OpenExisting(name, (MutexRights)0);
         }
 
         internal enum MutexRights
@@ -229,12 +233,12 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
             }
 
-            if(name.Length  == 0)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
             }
 #if !PLATFORM_UNIX
-            if(System.IO.Path.MaxPath < name.Length)
+            if (System.IO.Path.MaxPath < name.Length)
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
             }
@@ -262,7 +266,7 @@ namespace System.Threading
                 }
 #endif
 
-                if(Win32Native.ERROR_FILE_NOT_FOUND == errorCode || Win32Native.ERROR_INVALID_NAME == errorCode)
+                if (Win32Native.ERROR_FILE_NOT_FOUND == errorCode || Win32Native.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
                 if (Win32Native.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
@@ -270,7 +274,7 @@ namespace System.Threading
                     return OpenExistingResult.NameInvalid;
 
                 // this is for passed through Win32Native Errors
-                __Error.WinIOError(errorCode,name);
+                __Error.WinIOError(errorCode, name);
             }
 
             result = new Mutex(myHandle);
@@ -291,7 +295,7 @@ namespace System.Threading
             }
         }
 
-        static int CreateMutexHandle(bool initiallyOwned, String name, Win32Native.SECURITY_ATTRIBUTES securityAttribute, out SafeWaitHandle mutexHandle)
+        private static int CreateMutexHandle(bool initiallyOwned, String name, Win32Native.SECURITY_ATTRIBUTES securityAttribute, out SafeWaitHandle mutexHandle)
         {
             int errorCode;
 

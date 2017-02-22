@@ -18,10 +18,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using Microsoft.Win32;
 
-namespace Microsoft.Win32.SafeHandles {
+namespace Microsoft.Win32.SafeHandles
+{
     internal sealed class SafeFindHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeFindHandle() : base(true) {}
+        internal SafeFindHandle() : base(true) { }
 
         override protected bool ReleaseHandle()
         {

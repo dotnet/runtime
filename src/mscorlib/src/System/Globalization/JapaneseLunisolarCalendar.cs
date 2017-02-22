@@ -2,26 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Globalization {
-    using System;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Diagnostics.Contracts;
 
+namespace System.Globalization
+{
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Notes about JapaneseLunisolarCalendar
     //
     ////////////////////////////////////////////////////////////////////////////
-     /*
-     **  Calendar support range:
-     **      Calendar               Minimum             Maximum
-     **      ==========             ==========          ==========
-     **      Gregorian              1960/01/28          2050/01/22
-     **      JapaneseLunisolar      1960/01/01          2049/12/29
-     */
+    /*
+    **  Calendar support range:
+    **      Calendar               Minimum             Maximum
+    **      ==========             ==========          ==========
+    **      Gregorian              1960/01/28          2050/01/22
+    **      JapaneseLunisolar      1960/01/01          2049/12/29
+    */
 
     [Serializable]
-    public class JapaneseLunisolarCalendar : EastAsianLunisolarCalendar {
-
+    public class JapaneseLunisolarCalendar : EastAsianLunisolarCalendar
+    {
         //
         // The era value for the current era.
         //
@@ -69,7 +70,7 @@ namespace System.Globalization {
             }
         }
 
-        static readonly int  [,] yinfo =
+        private static readonly int[,] yinfo =
         {
 /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
 1960    */{    6    ,    1    ,    28    ,    44368    },/*    30    29    30    29    30    30    29    30    29    30    29    30    29    384
@@ -164,61 +165,70 @@ namespace System.Globalization {
 2049    */{    0    ,    2    ,    2     ,    44448    },/*    30    29    30    29    30    30    29    30    30    29    30    29    0    355
      */ };
 
-        internal override int MinCalendarYear {
+        internal override int MinCalendarYear
+        {
             get
             {
                 return (MIN_LUNISOLAR_YEAR);
             }
         }
 
-        internal override int MaxCalendarYear {
+        internal override int MaxCalendarYear
+        {
             get
             {
                 return (MAX_LUNISOLAR_YEAR);
             }
         }
 
-        internal override DateTime MinDate {
+        internal override DateTime MinDate
+        {
             get
             {
                 return (minDate);
             }
         }
 
-        internal override DateTime MaxDate {
+        internal override DateTime MaxDate
+        {
             get
             {
                 return (maxDate);
             }
         }
 
-        internal override EraInfo[] CalEraInfo {
+        internal override EraInfo[] CalEraInfo
+        {
             get
             {
                 return (JapaneseCalendar.GetEraInfo());
             }
         }
 
-        internal override int  GetYearInfo(int LunarYear, int Index) {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR)) {
+        internal override int GetYearInfo(int LunarYear, int Index)
+        {
+            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            {
                 throw new ArgumentOutOfRangeException(
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
                                 MIN_LUNISOLAR_YEAR,
-                                MAX_LUNISOLAR_YEAR ));
+                                MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
             return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
         }
 
-        internal override int GetYear(int year, DateTime time) {
+        internal override int GetYear(int year, DateTime time)
+        {
             return helper.GetYear(year, time);
         }
 
-        internal override int GetGregorianYear(int year, int era) {
+        internal override int GetGregorianYear(int year, int era)
+        {
             return helper.GetGregorianYear(year, era);
         }
 
@@ -258,34 +268,41 @@ namespace System.Globalization {
             Array.Resize(ref newEras, newIndex);
             return newEras;
         }
-        
+
 
         // Construct an instance of JapaneseLunisolar calendar.
         public JapaneseLunisolarCalendar()
-        {            
+        {
             helper = new GregorianCalendarHelper(this, TrimEras(JapaneseCalendar.GetEraInfo()));
         }
 
 
-        public override int GetEra(DateTime time) {
+        public override int GetEra(DateTime time)
+        {
             return (helper.GetEra(time));
         }
 
-        internal override int BaseCalendarID {
-            get {
+        internal override int BaseCalendarID
+        {
+            get
+            {
                 return (CAL_JAPAN);
             }
         }
 
-        internal override int ID {
-            get {
+        internal override int ID
+        {
+            get
+            {
                 return (CAL_JAPANESELUNISOLAR);
             }
         }
 
 
-        public override int[] Eras {
-            get {
+        public override int[] Eras
+        {
+            get
+            {
                 return (helper.Eras);
             }
         }

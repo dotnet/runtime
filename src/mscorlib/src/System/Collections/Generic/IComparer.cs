@@ -13,9 +13,11 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections.Generic {
-    
-    using System;
+
+using System;
+
+namespace System.Collections.Generic
+{
     // The generic IComparer interface implements a method that compares 
     // two objects. It is used in conjunction with the Sort and 
     // BinarySearch methods on the Array, List, and SortedList classes.

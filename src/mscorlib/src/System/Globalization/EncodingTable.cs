@@ -2,44 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Text;
+using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Threading;
+using System.Diagnostics.Contracts;
+
 namespace System.Globalization
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Security;
-    using System.Threading;
-    using System.Diagnostics.Contracts;
     //
     // Data table for encoding classes.  Used by System.Text.Encoding.
     // This class contains two hashtables to allow System.Text.Encoding
     // to retrieve the data item either by codepage value or by webName.
     //
-    
+
     // Only statics, does not need to be marked with the serializable attribute
     internal static class EncodingTable
     {
-
         //This number is the size of the table in native.  The value is retrieved by
         //calling the native GetNumEncodingItems().
         private static int lastEncodingItem = GetNumEncodingItems() - 1;
 
         //This number is the size of the code page table.  Its generated when we walk the table the first time.
         private static volatile int lastCodePageItem;
-        
+
         //
         // This points to a native data table which maps an encoding name to the correct code page.        
         //
-        unsafe internal static InternalEncodingDataItem *encodingDataPtr = GetEncodingData();
+        unsafe internal static InternalEncodingDataItem* encodingDataPtr = GetEncodingData();
         //
         // This points to a native data table which stores the properties for the code page, and
         // the table is indexed by code page.
         //
-        unsafe internal static InternalCodePageDataItem *codePageDataPtr = GetCodePageData();
+        unsafe internal static InternalCodePageDataItem* codePageDataPtr = GetCodePageData();
         //
         // This caches the mapping of an encoding name to a code page.
         //
@@ -51,34 +51,43 @@ namespace System.Globalization
 
         // Find the data item by binary searching the table that we have in native.
         // nativeCompareOrdinalWC is an internal-only function.
-        unsafe private static int internalGetCodePageFromName(String name) {
-            int left  = 0;
+        unsafe private static int internalGetCodePageFromName(String name)
+        {
+            int left = 0;
             int right = lastEncodingItem;
             int index;
             int result;
-    
+
             //Binary search the array until we have only a couple of elements left and then
             //just walk those elements.
-            while ((right - left)>3) {
-                index = ((right - left)/2) + left;
-                
+            while ((right - left) > 3)
+            {
+                index = ((right - left) / 2) + left;
+
                 result = String.nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[index].webName);
-    
-                if (result == 0) {
+
+                if (result == 0)
+                {
                     //We found the item, return the associated codepage.
                     return (encodingDataPtr[index].codePage);
-                } else if (result<0) {
+                }
+                else if (result < 0)
+                {
                     //The name that we're looking for is less than our current index.
                     right = index;
-                } else {
+                }
+                else
+                {
                     //The name that we're looking for is greater than our current index
                     left = index;
                 }
             }
-    
+
             //Walk the remaining elements (it'll be 3 or fewer).
-            for (; left<=right; left++) {
-                if (String.nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[left].webName) == 0) {
+            for (; left <= right; left++)
+            {
+                if (String.nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[left].webName) == 0)
+                {
                     return (encodingDataPtr[left].codePage);
                 }
             }
@@ -110,10 +119,10 @@ namespace System.Globalization
                 arrayEncodingInfo[i] = new EncodingInfo(codePageDataPtr[i].codePage, CodePageDataItem.CreateString(codePageDataPtr[i].Names, 0),
                     Environment.GetResourceString("Globalization.cp_" + codePageDataPtr[i].codePage));
             }
-            
+
             return arrayEncodingInfo;
-        }        
-    
+        }
+
         /*=================================GetCodePageFromName==========================
         **Action: Given a encoding name, return the correct code page number for this encoding.
         **Returns: The code page for the encoding.
@@ -123,10 +132,11 @@ namespace System.Globalization
         **  ArgumentNullException if name is null.
         **  internalGetCodePageFromName will throw ArgumentException if name is not a valid encoding name.
         ============================================================================*/
-        
+
         internal static int GetCodePageFromName(String name)
-        {   
-            if (name==null) {
+        {
+            if (name == null)
+            {
                 throw new ArgumentNullException(nameof(name));
             }
             Contract.EndContractBlock();
@@ -139,7 +149,8 @@ namespace System.Globalization
             //
             codePageObj = hashByName[name];
 
-            if (codePageObj!=null) {
+            if (codePageObj != null)
+            {
                 return ((int)codePageObj);
             }
 
@@ -151,8 +162,9 @@ namespace System.Globalization
 
             return codePage;
         }
-    
-        unsafe internal static CodePageDataItem GetCodePageDataItem(int codepage) {
+
+        unsafe internal static CodePageDataItem GetCodePageDataItem(int codepage)
+        {
             CodePageDataItem dataItem;
 
             // We synchronize around dictionary gets/sets. There's still a possibility that two threads
@@ -162,9 +174,10 @@ namespace System.Globalization
 
             //Look up the item in the hashtable.
             dataItem = (CodePageDataItem)hashByCodePage[codepage];
-            
+
             //If we found it, return it.
-            if (dataItem!=null) {
+            if (dataItem != null)
+            {
                 return dataItem;
             }
 
@@ -175,22 +188,24 @@ namespace System.Globalization
             //
             int i = 0;
             int data;
-            while ((data = codePageDataPtr[i].codePage) != 0) {
-                if (data == codepage) {
+            while ((data = codePageDataPtr[i].codePage) != 0)
+            {
+                if (data == codepage)
+                {
                     dataItem = new CodePageDataItem(i);
                     hashByCodePage[codepage] = dataItem;
                     return (dataItem);
                 }
                 i++;
             }
-        
+
             //Nope, we didn't find it.
             return null;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe static extern InternalEncodingDataItem *GetEncodingData();
-        
+        private unsafe static extern InternalEncodingDataItem* GetEncodingData();
+
         //
         // Return the number of encoding data items.
         //
@@ -200,18 +215,19 @@ namespace System.Globalization
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private unsafe static extern InternalCodePageDataItem* GetCodePageData();
     }
-    
+
     /*=================================InternalEncodingDataItem==========================
     **Action: This is used to map a encoding name to a correct code page number. By doing this,
     ** we can get the properties of this encoding via the InternalCodePageDataItem.
     **
     ** We use this structure to access native data exposed by the native side.
     ============================================================================*/
-    
+
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct InternalEncodingDataItem {
-        internal sbyte  * webName;
-        internal UInt16   codePage;
+    internal unsafe struct InternalEncodingDataItem
+    {
+        internal sbyte* webName;
+        internal UInt16 codePage;
     }
 
     /*=================================InternalCodePageDataItem==========================
@@ -220,11 +236,11 @@ namespace System.Globalization
     ============================================================================*/
 
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct InternalCodePageDataItem {
-        internal UInt16   codePage;
-        internal UInt16   uiFamilyCodePage;
-        internal uint     flags;
-        internal sbyte  * Names;
+    internal unsafe struct InternalCodePageDataItem
+    {
+        internal UInt16 codePage;
+        internal UInt16 uiFamilyCodePage;
+        internal uint flags;
+        internal sbyte* Names;
     }
-
 }

@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format)
         {
             collector.BeginBufferedArray();
-            this.elementInfo.WriteMetadata(collector, name, format);
+            elementInfo.WriteMetadata(collector, name, format);
             collector.EndBufferedArray();
         }
 
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
                 count = array.Length;
                 for (int i = 0; i < array.Length; i++)
                 {
-                    this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(array.GetValue(i)));
+                    elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(array.GetValue(i)));
                 }
             }
 
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
             var serializedArray = new object[array.Length];
             for (int i = 0; i < array.Length; i++)
             {
-                serializedArray[i] = this.elementInfo.GetData(array.GetValue(i));
+                serializedArray[i] = elementInfo.GetData(array.GetValue(i));
             }
             return serializedArray;
         }

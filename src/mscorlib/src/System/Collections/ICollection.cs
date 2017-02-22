@@ -13,10 +13,12 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections {
-    using System;
-    using System.Diagnostics.Contracts;
 
+using System;
+using System.Diagnostics.Contracts;
+
+namespace System.Collections
+{
     // Base interface for all collections, defining enumerators, size, and 
     // synchronization methods.
     public interface ICollection : IEnumerable
@@ -26,12 +28,12 @@ namespace System.Collections {
         // index into the array.
         // 
         void CopyTo(Array array, int index);
-        
+
         // Number of items in the collections.
         int Count
         { get; }
-        
-        
+
+
         // SyncRoot will return an Object to use for synchronization 
         // (thread safety).  You can use this object in your code to take a
         // lock on the collection, even if this collection is a wrapper around
@@ -67,7 +69,7 @@ namespace System.Collections {
         // collection's SyncRoot property.
         Object SyncRoot
         { get; }
-            
+
         // Is this collection synchronized (i.e., thread-safe)?  If you want a 
         // thread-safe collection, you can use SyncRoot as an object to 
         // synchronize your collection with.  If you're using one of the 

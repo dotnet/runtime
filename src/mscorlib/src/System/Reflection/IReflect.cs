@@ -13,11 +13,13 @@
 //    the interop layer. 
 //
 //
-namespace System.Reflection {
+
+namespace System.Reflection
+{
     using System;
     using System.Runtime.InteropServices;
     using CultureInfo = System.Globalization.CultureInfo;
-    
+
     // Interface does not need to be marked with the serializable attribute
     [Guid("AFBF15E5-C37C-11d2-B88E-00A0C9B471B8")]
     public interface IReflect
@@ -25,16 +27,16 @@ namespace System.Reflection {
         // Return the requested method if it is implemented by the Reflection object.  The
         // match is based upon the name and DescriptorInfo which describes the signature
         // of the method. 
-        MethodInfo GetMethod(String name,BindingFlags bindingAttr,Binder binder,
-                Type[] types,ParameterModifier[] modifiers);
+        MethodInfo GetMethod(String name, BindingFlags bindingAttr, Binder binder,
+                Type[] types, ParameterModifier[] modifiers);
 
         // Return the requested method if it is implemented by the Reflection object.  The
         // match is based upon the name of the method.  If the object implementes multiple methods
         // with the same name an AmbiguousMatchException is thrown.
-        MethodInfo GetMethod(String name,BindingFlags bindingAttr);
+        MethodInfo GetMethod(String name, BindingFlags bindingAttr);
 
         MethodInfo[] GetMethods(BindingFlags bindingAttr);
-        
+
         // Return the requestion field if it is implemented by the Reflection object.  The
         // match is based upon a name.  There cannot be more than a single field with
         // a name.
@@ -51,17 +53,17 @@ namespace System.Reflection {
         PropertyInfo GetProperty(
                 String name,
                 BindingFlags bindingAttr);
-        
+
         // Return the property based upon the name and Descriptor info describing the property
         // indexing.  Return null if no property is found.
         PropertyInfo GetProperty(
                 String name,
                 BindingFlags bindingAttr,
-                Binder binder,                
+                Binder binder,
                 Type returnType,
                 Type[] types,
                 ParameterModifier[] modifiers);
-        
+
         // Returns an array of PropertyInfos for all the properties defined on 
         // the Reflection object.
         PropertyInfo[] GetProperties(
@@ -75,7 +77,7 @@ namespace System.Reflection {
         // Return an array of all of the members defined for this object.
         MemberInfo[] GetMembers(
                 BindingFlags bindingAttr);
-        
+
         // Description of the Binding Process.
         // We must invoke a method that is accessable and for which the provided
         // parameters have the most specific match.  A method may be called if
@@ -109,8 +111,9 @@ namespace System.Reflection {
 
         // Return the underlying Type that represents the IReflect Object.  For expando object,
         // this is the (Object) IReflectInstance.GetType().  For Type object it is this.
-        Type UnderlyingSystemType {
+        Type UnderlyingSystemType
+        {
             get;
-        }    
+        }
     }
 }

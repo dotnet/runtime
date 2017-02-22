@@ -16,14 +16,12 @@ using System.Runtime.Serialization;
 
 namespace System.Threading.Tasks
 {
-
     /// <summary>
     /// Represents an exception used to communicate task cancellation.
     /// </summary>
     [Serializable]
     public class TaskCanceledException : OperationCanceledException
     {
-
         [NonSerialized]
         private Task m_canceledTask; // The task which has been canceled.
 
@@ -60,7 +58,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="task">A task that has been canceled.</param>
         public TaskCanceledException(Task task) :
-            base(Environment.GetResourceString("TaskCanceledException_ctor_DefaultMessage"), task!=null ? task.CancellationToken:new CancellationToken())
+            base(Environment.GetResourceString("TaskCanceledException_ctor_DefaultMessage"), task != null ? task.CancellationToken : new CancellationToken())
         {
             m_canceledTask = task;
         }
@@ -87,7 +85,5 @@ namespace System.Threading.Tasks
         {
             get { return m_canceledTask; }
         }
-
     }
-
 }

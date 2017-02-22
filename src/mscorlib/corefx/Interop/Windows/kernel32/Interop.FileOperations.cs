@@ -6,7 +6,6 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-
         internal const uint SEM_FAILCRITICALERRORS = 1;
     }
 }

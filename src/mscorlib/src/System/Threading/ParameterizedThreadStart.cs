@@ -14,10 +14,11 @@
 =============================================================================*/
 
 
-namespace System.Threading {
-    using System.Threading;
-    using System.Runtime.InteropServices;
+using System.Threading;
+using System.Runtime.InteropServices;
 
+namespace System.Threading
+{
     [ComVisibleAttribute(false)]
     public delegate void ParameterizedThreadStart(object obj);
 }

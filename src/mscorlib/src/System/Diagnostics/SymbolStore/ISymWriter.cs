@@ -11,18 +11,18 @@
 **
 ** 
 ===========================================================*/
-namespace System.Diagnostics.SymbolStore {
-    
-    using System;
-    using System.Text;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
 
+using System;
+using System.Text;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+namespace System.Diagnostics.SymbolStore
+{
     // Interface does not need to be marked with the serializable attribute
     internal interface ISymbolWriter
     {
-        
         // Define a source document. Guid's will be provided for the
         // languages, vendors, and document types that we currently know
         // about.
@@ -30,7 +30,7 @@ namespace System.Diagnostics.SymbolStore {
                                           Guid language,
                                           Guid languageVendor,
                                           Guid documentType);
-    
+
         // Open a method to emit symbol information into. The given method
         // becomes the current method for calls do define sequence points,
         // parameters and lexical scopes. There is an implicit lexical
@@ -40,11 +40,11 @@ namespace System.Diagnostics.SymbolStore {
         //
         // There can be only one open method at a time.
         void OpenMethod(SymbolToken method);
-    
+
         // Close the current method. Once a method is closed, no more
         // symbols can be defined within it.
         void CloseMethod();
-    
+
         // Define a group of sequence points within the current method.
         // Each line/column defines the start of a statement within a
         // method. The arrays should be sorted by offset. The offset is
@@ -55,7 +55,7 @@ namespace System.Diagnostics.SymbolStore {
                                   int[] columns,
                                   int[] endLines,
                                   int[] endColumns);
-    
+
         // Open a new lexical scope in the current method. The scope
         // becomes the new current scope and is effectivley pushed onto a
         // stack of scopes. startOffset is the offset, in bytes from the
@@ -72,12 +72,12 @@ namespace System.Diagnostics.SymbolStore {
         //
 
         int OpenScope(int startOffset);
-    
+
         // Close the current lexical scope. Once a scope is closed no more
         // variables can be defined within it. endOffset points past the
         // last instruction in the scope.
         void CloseScope(int endOffset);
-    
+
         // Define a single variable in the current lexical
         // scope. startOffset and endOffset are optional. If 0, then they
         // are ignored and the variable is defined over the entire
@@ -95,12 +95,12 @@ namespace System.Diagnostics.SymbolStore {
                                         int addr3,
                                         int startOffset,
                                         int endOffset);
-    
+
         // Defines a custom attribute based upon its name. Not to be
         // confused with Metadata custom attributes, these attributes are
         // held in the symbol store.
         void SetSymAttribute(SymbolToken parent, String name, byte[] data);
-    
+
         // Specifies that the given, fully qualified namespace name is
         // being used within the currently open lexical scope. Closing the
         // current scope will also stop using the namespace, and the
@@ -108,5 +108,4 @@ namespace System.Diagnostics.SymbolStore {
         // currently open scope.
         void UsingNamespace(String fullName);
     }
-
 }

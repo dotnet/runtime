@@ -10,11 +10,14 @@
 **
 **
 ===========================================================*/
+
 using System.Runtime.InteropServices;
 
-namespace System.Configuration.Assemblies {
-    
-    using System;
+
+using System;
+
+namespace System.Configuration.Assemblies
+{
     [Serializable]
     public enum AssemblyHashAlgorithm
     {

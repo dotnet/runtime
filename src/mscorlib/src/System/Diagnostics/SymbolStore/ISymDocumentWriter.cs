@@ -12,10 +12,11 @@
 **
 ** 
 ===========================================================*/
-namespace System.Diagnostics.SymbolStore {
-    
-    using System;
-    
+
+using System;
+
+namespace System.Diagnostics.SymbolStore
+{
     // Interface does not need to be marked with the serializable attribute
     public interface ISymbolDocumentWriter
     {
@@ -23,7 +24,7 @@ namespace System.Diagnostics.SymbolStore {
         // symbol store. An array of unsigned bytes is used instead of
         // character data to accommodate a wider variety of "source".
         void SetSource(byte[] source);
-    
+
         // Check sum support.
         void SetCheckSum(Guid algorithmId, byte[] checkSum);
     }

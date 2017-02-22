@@ -11,6 +11,7 @@
 ** Purpose: Base interface for read-only generic dictionaries.
 ** 
 ===========================================================*/
+
 using System;
 using System.Diagnostics.Contracts;
 

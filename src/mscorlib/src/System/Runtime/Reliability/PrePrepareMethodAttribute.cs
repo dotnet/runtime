@@ -16,11 +16,12 @@
 **
 **
 ===========================================================*/
+
+using System;
+using System.Runtime.InteropServices;
+
 namespace System.Runtime.ConstrainedExecution
 {
-    using System;
-    using System.Runtime.InteropServices;
-
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method, Inherited = false)]
 
     internal sealed class PrePrepareMethodAttribute : Attribute

@@ -7,8 +7,8 @@ using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace System {
-
+namespace System
+{
 }  // namespace System
 
 // file CLRConfig

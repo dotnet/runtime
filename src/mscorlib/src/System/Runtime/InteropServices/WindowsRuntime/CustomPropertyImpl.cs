@@ -21,8 +21,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // ICustomProperty implementation - basically a wrapper of PropertyInfo
     //
     internal sealed class CustomPropertyImpl : ICustomProperty
-    {     
-        private PropertyInfo  m_property;
+    {
+        private PropertyInfo m_property;
 
         //
         // Constructor
@@ -46,11 +46,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return m_property.Name;
             }
         }
-        
+
         public bool CanRead
         {
-            get 
-            { 
+            get
+            {
                 // Return false if the getter is not public
                 return m_property.GetGetMethod() != null;
             }
@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public bool CanWrite
         {
-            get 
+            get
             {
                 // Return false if the setter is not public
                 return m_property.GetSetMethod() != null;
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // We get non-public accessors just so that we can throw the correct exception.
             MethodInfo accessor = getValue ? m_property.GetGetMethod(true) : m_property.GetSetMethod(true);
-            
+
             if (accessor == null)
                 throw new ArgumentException(System.Environment.GetResourceString(getValue ? "Arg_GetMethNotFnd" : "Arg_SetMethNotFnd"));
 

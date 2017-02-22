@@ -5,10 +5,10 @@
 
 using System.Runtime.InteropServices;
 
-namespace System.Runtime.CompilerServices 
+namespace System.Runtime.CompilerServices
 {
-    [AttributeUsage(AttributeTargets.Class | 
-                    AttributeTargets.Constructor | 
+    [AttributeUsage(AttributeTargets.Class |
+                    AttributeTargets.Constructor |
                     AttributeTargets.Method |
                     AttributeTargets.Field |
                     AttributeTargets.Event |
@@ -16,8 +16,8 @@ namespace System.Runtime.CompilerServices
 
     internal sealed class SuppressMergeCheckAttribute : Attribute
     {
-        public SuppressMergeCheckAttribute() 
-        {}  
+        public SuppressMergeCheckAttribute()
+        { }
     }
 }
 

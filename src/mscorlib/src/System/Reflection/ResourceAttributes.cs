@@ -10,14 +10,16 @@
 //  with a manifest resource.  The values here are defined in Corhdr.h.
 //
 //
-namespace System.Reflection {
-    
-    using System;
-[Serializable]
-[Flags]  
+
+using System;
+
+namespace System.Reflection
+{
+    [Serializable]
+    [Flags]
     public enum ResourceAttributes
     {
-        Public          =   0x0001,
-        Private         =   0x0002,
+        Public = 0x0001,
+        Private = 0x0002,
     }
 }

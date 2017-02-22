@@ -8,7 +8,7 @@ using System.Diagnostics.Contracts;
 namespace System.Runtime.CompilerServices
 {
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed class DateTimeConstantAttribute : CustomConstantAttribute
     {
         public DateTimeConstantAttribute(long ticks)

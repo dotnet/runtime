@@ -12,55 +12,63 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-    using System;
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System.Security;
-    using Microsoft.Win32;
+using System;
+using System.Runtime.Serialization;
+using System.Globalization;
+using System.Security;
+using Microsoft.Win32;
 
+namespace System.Runtime.InteropServices
+{
     // Exception for COM Interop errors where we don't recognize the HResult.
     // 
     [Serializable]
-    public class COMException : ExternalException {
-        public COMException() 
+    public class COMException : ExternalException
+    {
+        public COMException()
             : base(Environment.GetResourceString("Arg_COMException"))
         {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        public COMException(String message) 
+
+        public COMException(String message)
             : base(message)
         {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        public COMException(String message, Exception inner) 
-            : base(message, inner) {
+
+        public COMException(String message, Exception inner)
+            : base(message, inner)
+        {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        public COMException(String message,int errorCode) 
-            : base(message) {
+
+        public COMException(String message, int errorCode)
+            : base(message)
+        {
             SetErrorCode(errorCode);
         }
 
-        protected COMException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
-        public override String ToString() {
+        public override String ToString()
+        {
             String message = Message;
             String s;
             String _className = GetType().ToString();
             s = _className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
 
-            if (!(message == null || message.Length <= 0)) {
+            if (!(message == null || message.Length <= 0))
+            {
                 s = s + ": " + message;
             }
 
             Exception _innerException = InnerException;
 
-            if (_innerException!=null) {
+            if (_innerException != null)
+            {
                 s = s + " ---> " + _innerException.ToString();
             }
 
@@ -70,7 +78,5 @@ namespace System.Runtime.InteropServices {
 
             return s;
         }
-
-
     }
 }

@@ -16,8 +16,8 @@ using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace System.Runtime.CompilerServices {
-
+namespace System.Runtime.CompilerServices
+{
     // Wrapper for address of a string variable on stack
     internal struct StringHandleOnStack
     {
@@ -114,14 +114,14 @@ namespace System.Runtime.CompilerServices {
 
         static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
-            Debug.Assert(typeof(T).IsEnum 
-                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(int) 
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(uint) 
+            Debug.Assert(typeof(T).IsEnum
+                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(int)
+                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(uint)
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(short)
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(ushort)
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(byte)
                                   || Enum.GetUnderlyingType(typeof(T)) == typeof(sbyte)),
-                "Error, T must be an 4 byte (or less) enum JitHelpers.UnsafeEnumCast!");            
+                "Error, T must be an 4 byte (or less) enum JitHelpers.UnsafeEnumCast!");
             return UnsafeEnumCastInternal<T>(val);
         }
 
@@ -134,9 +134,9 @@ namespace System.Runtime.CompilerServices {
 
         static internal long UnsafeEnumCastLong<T>(T val) where T : struct		// Actually T must be 8 byte enum
         {
-            Debug.Assert(typeof(T).IsEnum 
-                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(long) 
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(ulong)), 
+            Debug.Assert(typeof(T).IsEnum
+                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(long)
+                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(ulong)),
                 "Error, T must be an 8 byte enum JitHelpers.UnsafeEnumCastLong!");
             return UnsafeEnumCastLongInternal<T>(val);
         }
@@ -213,7 +213,7 @@ namespace System.Runtime.CompilerServices {
 
 #if _DEBUG
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        extern static bool IsAddressInStack(IntPtr ptr);
+        private extern static bool IsAddressInStack(IntPtr ptr);
 #endif
 
         static internal bool ByRefLessThan<T>(ref T refA, ref T refB)

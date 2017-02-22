@@ -12,30 +12,34 @@
 **
 ** 
 ===========================================================*/
-namespace System.Reflection.Emit {
-    
-    using System;
-    using System.Reflection;
+
+using System;
+using System.Reflection;
+
+namespace System.Reflection.Emit
+{
     [Serializable]
     public struct EventToken
     {
         public static readonly EventToken Empty = new EventToken();
-    
+
         internal int m_event;
 
-        internal EventToken(int str) {
-            m_event=str;
+        internal EventToken(int str)
+        {
+            m_event = str;
         }
-        
-        public int Token {
+
+        public int Token
+        {
             get { return m_event; }
         }
-        
+
         public override int GetHashCode()
         {
             return m_event;
         }
-        
+
         public override bool Equals(Object obj)
         {
             if (obj is EventToken)
@@ -43,25 +47,20 @@ namespace System.Reflection.Emit {
             else
                 return false;
         }
-        
+
         public bool Equals(EventToken obj)
         {
             return obj.m_event == m_event;
         }
-    
+
         public static bool operator ==(EventToken a, EventToken b)
         {
             return a.Equals(b);
         }
-        
+
         public static bool operator !=(EventToken a, EventToken b)
         {
             return !(a == b);
         }
-            
     }
-
-
-
-
 }

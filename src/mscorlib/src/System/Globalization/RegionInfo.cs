@@ -15,14 +15,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-namespace System.Globalization {
-
+namespace System.Globalization
+{
     using System;
     using System.Runtime.Serialization;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [Serializable] 
+    [Serializable]
     public partial class RegionInfo
     {
         //--------------------------------------------------------------------//
@@ -41,7 +41,7 @@ namespace System.Globalization {
         //
         // The CultureData instance that we are going to read data from.
         //
-        [NonSerialized]internal CultureData m_cultureData;
+        [NonSerialized] internal CultureData m_cultureData;
 
         //
         // The RegionInfo for our current region
@@ -59,15 +59,16 @@ namespace System.Globalization {
         //  In Silverlight we enforce that RegionInfos must be created with a full culture name
         //
         ////////////////////////////////////////////////////////////////////////
-        public RegionInfo(String name) {
-            if (name==null)
+        public RegionInfo(String name)
+        {
+            if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0) //The InvariantCulture has no matching region
-            { 
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_NoRegionInvariantCulture"), nameof(name));
             }
-            
+
             Contract.EndContractBlock();
 
             //
@@ -75,7 +76,7 @@ namespace System.Globalization {
             // that we can pick up custom cultures *before* built-in ones (if they want to
             // prefer built-in cultures they will pass "us" instead of "en-US").
             //
-            this.m_cultureData = CultureData.GetCultureDataForRegion(name,true);
+            this.m_cultureData = CultureData.GetCultureDataForRegion(name, true);
             // this.m_name = name.ToUpper(CultureInfo.InvariantCulture);
 
             if (this.m_cultureData == null)
@@ -97,10 +98,10 @@ namespace System.Globalization {
         public RegionInfo(int culture)
         {
             if (culture == CultureInfo.LOCALE_INVARIANT) //The InvariantCulture has no matching region
-            { 
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_NoRegionInvariantCulture"));
             }
-            
+
             if (culture == CultureInfo.LOCALE_NEUTRAL)
             {
                 // Not supposed to be neutral
@@ -112,8 +113,8 @@ namespace System.Globalization {
                 // Not supposed to be neutral
                 throw new ArgumentException(Environment.GetResourceString("Argument_CustomCultureCannotBePassedByNumber", culture), nameof(culture));
             }
-            
-            this.m_cultureData = CultureData.GetCultureData(culture,true);
+
+            this.m_cultureData = CultureData.GetCultureData(culture, true);
             this.m_name = this.m_cultureData.SREGIONNAME;
 
             if (this.m_cultureData.IsNeutralCulture)
@@ -124,7 +125,7 @@ namespace System.Globalization {
             m_cultureId = culture;
         }
 #endif
-        
+
         internal RegionInfo(CultureData cultureData)
         {
             this.m_cultureData = cultureData;
@@ -137,14 +138,14 @@ namespace System.Globalization {
             this.m_name = this.m_cultureData.SREGIONNAME;
         }
 
-#region Serialization 
+        #region Serialization 
         //
         //  m_cultureId is needed for serialization only to detect the case if the region info is created using the name or using the LCID.
         //  in case m_cultureId is zero means that the RigionInfo is created using name. otherwise it is created using LCID.
         //
 
         [OptionalField(VersionAdded = 2)]
-        int m_cultureId;
+        private int m_cultureId;
         // the following field is defined to keep the compatibility with Everett.
         // don't change/remove the names/types of these field.
         [OptionalField(VersionAdded = 2)]
@@ -172,12 +173,12 @@ namespace System.Globalization {
             }
         }
 
-        [OnSerializing] 
-        private void OnSerializing(StreamingContext ctx) 
-        { 
+        [OnSerializing]
+        private void OnSerializing(StreamingContext ctx)
+        {
             // Used to fill in everett data item, unnecessary now
-        }   
-#endregion Serialization
+        }
+        #endregion Serialization
 
         ////////////////////////////////////////////////////////////////////////
         //
@@ -188,15 +189,17 @@ namespace System.Globalization {
         //  thread.
         //
         ////////////////////////////////////////////////////////////////////////
-        public static RegionInfo CurrentRegion {
-            get {
+        public static RegionInfo CurrentRegion
+        {
+            get
+            {
                 RegionInfo temp = s_currentRegionInfo;
                 if (temp == null)
                 {
                     temp = new RegionInfo(CultureInfo.CurrentCulture.m_cultureData);
 
                     // Need full name for custom cultures
-                    temp.m_name=temp.m_cultureData.SREGIONNAME;
+                    temp.m_name = temp.m_cultureData.SREGIONNAME;
                     s_currentRegionInfo = temp;
                 }
                 return temp;
@@ -210,8 +213,10 @@ namespace System.Globalization {
         //  Returns the name of the region (ie: en-US)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String Name {
-            get {
+        public virtual String Name
+        {
+            get
+            {
                 Debug.Assert(m_name != null, "Expected RegionInfo.m_name to be populated already");
                 return (m_name);
             }
@@ -241,9 +246,9 @@ namespace System.Globalization {
         //  if the current UI language is en-US)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String DisplayName 
+        public virtual String DisplayName
         {
-            get 
+            get
             {
                 return (this.m_cultureData.SLOCALIZEDCOUNTRY);
             }
@@ -319,17 +324,19 @@ namespace System.Globalization {
         //  Returns true if this region uses the metric measurement system
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual bool IsMetric {
-            get {
+        public virtual bool IsMetric
+        {
+            get
+            {
                 int value = this.m_cultureData.IMEASURE;
-                return (value==0);
+                return (value == 0);
             }
         }
 
 
-        public virtual int GeoId 
+        public virtual int GeoId
         {
-            get 
+            get
             {
                 return (this.m_cultureData.IGEOID);
             }
@@ -373,8 +380,10 @@ namespace System.Globalization {
         //  Currency Symbol for this locale, ie: Fr. or $
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String CurrencySymbol {
-            get {
+        public virtual String CurrencySymbol
+        {
+            get
+            {
                 return (this.m_cultureData.SCURRENCY);
             }
         }
@@ -386,8 +395,10 @@ namespace System.Globalization {
         //  ISO Currency Symbol for this locale, ie: CHF
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String ISOCurrencySymbol {
-            get {
+        public virtual String ISOCurrencySymbol
+        {
+            get
+            {
                 return (this.m_cultureData.SINTLSYMBOL);
             }
         }
@@ -439,6 +450,6 @@ namespace System.Globalization {
         public override String ToString()
         {
             return (Name);
-        }    
+        }
     }
 }
