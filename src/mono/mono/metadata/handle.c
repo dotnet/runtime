@@ -78,31 +78,68 @@ enum {
 	HANDLE_CHUNK_PTR_MASK = 0x1
 };
 
-#define HANDLE_CHUNK_IS_PTR_OBJ(ch) ((ch->chunk_ptr & HANDLE_CHUNK_PTR_MASK) == HANDLE_CHUNK_PTR_OBJ)
+/* number of bits in each word of the interior pointer bitmap */
+#define INTERIOR_HANDLE_BITMAP_BITS_PER_WORD (sizeof(guint32) << 3)
 
-#define HANDLE_CHUNK_IS_PTR_INTERIOR(ch) ((ch->chunk_ptr & HANDLE_CHUNK_PTR_MASK) == HANDLE_CHUNK_PTR_INTERIOR)
+static gboolean
+bitset_bits_test (guint32 *bitmaps, int idx)
+{
+	int w = idx / INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	int b = idx % INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	guint32 bitmap = bitmaps [w];
+	guint32 mask = 1u << b;
+	return ((bitmap & mask) != 0);
+}
+
+static void
+bitset_bits_set (guint32 *bitmaps, int idx)
+{
+	int w = idx / INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	int b = idx % INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	guint32 *bitmap = &bitmaps [w];
+	guint32 mask = 1u << b;
+	*bitmap |= mask;
+}
+static void
+bitset_bits_clear (guint32 *bitmaps, int idx)
+{
+	int w = idx / INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	int b = idx % INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+	guint32 *bitmap = &bitmaps [w];
+	guint32 mask = ~(1u << b);
+	*bitmap &= mask;
+}
 
 static gpointer*
 chunk_element_objslot_init (HandleChunk *chunk, int idx, gboolean interior)
 {
-	chunk->objects[idx].chunk_ptr = interior ? HANDLE_CHUNK_PTR_INTERIOR : HANDLE_CHUNK_PTR_OBJ;
-	return (gpointer*)&chunk->objects[idx].o;
+	if (interior)
+		bitset_bits_set (chunk->interior_bitmap, idx);
+	else
+		bitset_bits_clear (chunk->interior_bitmap, idx);
+	return &chunk->elems [idx].o;
 }
 
 static HandleChunkElem*
 chunk_element (HandleChunk *chunk, int idx)
 {
-	return &chunk->objects[idx];
+	return &chunk->elems[idx];
+}
+
+static guint
+chunk_element_kind (HandleChunk *chunk, int idx)
+{
+	return bitset_bits_test (chunk->interior_bitmap, idx) ? HANDLE_CHUNK_PTR_INTERIOR : HANDLE_CHUNK_PTR_OBJ;
 }
 
 static HandleChunkElem*
-handle_to_chunk (MonoObjectHandle o)
+handle_to_chunk_element (MonoObjectHandle o)
 {
 	return (HandleChunkElem*)o;
 }
 
 #ifdef MONO_HANDLE_TRACK_OWNER
-#define SET_OWNER(chunk,idx) do { (chunk)->objects[(idx)].owner = owner; } while (0)
+#define SET_OWNER(chunk,idx) do { (chunk)->elems[(idx)].owner = owner; } while (0)
 #else
 #define SET_OWNER(chunk,idx) do { } while (0)
 #endif
@@ -162,6 +199,7 @@ retry:
 	}
 	HandleChunk *new_chunk = g_new (HandleChunk, 1);
 	new_chunk->size = 0;
+	memset (new_chunk->interior_bitmap, 0, INTERIOR_HANDLE_BITMAP_WORDS);
 	new_chunk->prev = top;
 	new_chunk->next = NULL;
 	/* make sure size == 0 before new chunk is visible */
@@ -180,6 +218,7 @@ mono_handle_stack_alloc (void)
 	HandleChunk *chunk = g_new (HandleChunk, 1);
 
 	chunk->size = 0;
+	memset (chunk->interior_bitmap, 0, INTERIOR_HANDLE_BITMAP_WORDS);
 	chunk->prev = chunk->next = NULL;
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
@@ -221,15 +260,35 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 		return;
 
 	while (cur) {
-		int i;
-		for (i = 0; i < cur->size; ++i) {
-			HandleChunkElem* chunk = chunk_element (cur, i);
-			if ((precise && HANDLE_CHUNK_IS_PTR_OBJ (chunk)) ||
-			    (!precise && HANDLE_CHUNK_IS_PTR_INTERIOR (chunk))) {
-				MonoObject** obj_slot = &chunk->o;
-				if (*obj_slot != NULL)
-					func ((gpointer*)obj_slot, gc_data);
+		/* assume that object pointers will be much more common than interior pointers.
+		 * scan the object pointers by iterating over the chunk elements.
+		 * scan the interior pointers by iterating over the bitmap bits.
+		 */
+		if (precise) {
+			for (int i = 0; i < cur->size; ++i) {
+				HandleChunkElem* elem = chunk_element (cur, i);
+				int kind = chunk_element_kind (cur, i);
+				gpointer* obj_slot = &elem->o;
+				if (kind == HANDLE_CHUNK_PTR_OBJ && *obj_slot != NULL)
+					func (obj_slot, gc_data);
 			}
+		} else {
+			int elem_idx = 0;
+			for (int i = 0; i < INTERIOR_HANDLE_BITMAP_WORDS; ++i) {
+				elem_idx = i * INTERIOR_HANDLE_BITMAP_BITS_PER_WORD;
+				if (elem_idx >= cur->size)
+					break;
+				/* no interior pointers in the range */ 
+				if (cur->interior_bitmap [i] == 0)
+					continue;
+				for (int j = 0; j < INTERIOR_HANDLE_BITMAP_BITS_PER_WORD && elem_idx < cur->size; ++j,++elem_idx) {
+					HandleChunkElem *elem = chunk_element (cur, elem_idx);
+					int kind = chunk_element_kind (cur, elem_idx);
+					gpointer *ptr_slot = &elem->o;
+					if (kind == HANDLE_CHUNK_PTR_INTERIOR && *ptr_slot != NULL)
+						func (ptr_slot, gc_data);
+				}
+			}	     
 		}
 		if (cur == last)
 			break;
@@ -311,10 +370,10 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
-	/* If the handle is an interior pointer, we have to always make a pinned gchandle. */
-	HandleChunkElem* chunk = handle_to_chunk (handle);
-	pinned |= HANDLE_CHUNK_IS_PTR_INTERIOR (chunk);
-	return mono_gchandle_new (chunk->o, pinned);
+	/* FIXME: Want to assert that handle isn't an interior pointer,
+	 * gchandle can't deal with interior pointers.  But it's expensive to
+	 * convert from a handle to its chunk and index. */
+	return mono_gchandle_new (MONO_HANDLE_RAW (handle), pinned);
 }
 
 MonoObjectHandle

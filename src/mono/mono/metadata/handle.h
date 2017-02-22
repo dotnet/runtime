@@ -56,17 +56,21 @@ typedef struct _HandleChunk HandleChunk;
 /* #define MONO_HANDLE_TRACK_OWNER */
 
 typedef struct {
-	MonoObject *o; /* handle chunk ptr */
-	guint8 chunk_ptr; /* HANDLE_CHUNK_PTR_XXX */
+	gpointer o; /* MonoObject ptr or interior ptr */
 #ifdef MONO_HANDLE_TRACK_OWNER
 	const char *owner;
 #endif
 } HandleChunkElem;
 
+/* number of guint32's needed to store the interior pointers bitmap */
+#define INTERIOR_HANDLE_BITMAP_WORDS ((OBJECTS_PER_HANDLES_CHUNK + 31) / 32)
+
 struct _HandleChunk {
-	int size; //number of bytes
+	int size; //number of handles
+	/* bits in the range 0..size-1 of interior_bitmap are valid; rest are ignored. */
+	guint32 interior_bitmap [INTERIOR_HANDLE_BITMAP_WORDS];
 	HandleChunk *prev, *next;
-	HandleChunkElem objects [OBJECTS_PER_HANDLES_CHUNK];
+	HandleChunkElem elems [OBJECTS_PER_HANDLES_CHUNK];
 };
 
 typedef struct {
