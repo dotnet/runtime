@@ -1080,10 +1080,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_ARG_4                REG_R8
   #define REG_ARG_5                REG_R9
 
-  SELECTANY const regNumber intArgRegs[] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
-  SELECTANY const regMaskTP intArgMasks[] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
-  SELECTANY const regNumber fltArgRegs[] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
-  SELECTANY const regMaskTP fltArgMasks[] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
+  SELECTANY const regNumber intArgRegs [] = { REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_R8, REG_R9 };
+  SELECTANY const regMaskTP intArgMasks[] = { RBM_EDI, RBM_ESI, RBM_EDX, RBM_ECX, RBM_R8, RBM_R9 };
+  SELECTANY const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7 };
+  SELECTANY const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3, RBM_XMM4, RBM_XMM5, RBM_XMM6, RBM_XMM7 };
 
   #define RBM_ARG_0                RBM_RDI
   #define RBM_ARG_1                RBM_RSI
@@ -1103,9 +1103,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_ARG_2                REG_R8
   #define REG_ARG_3                REG_R9
 
-  SELECTANY const regNumber intArgRegs[] = { REG_ECX, REG_EDX, REG_R8, REG_R9 };
+  SELECTANY const regNumber intArgRegs [] = { REG_ECX, REG_EDX, REG_R8, REG_R9 };
   SELECTANY const regMaskTP intArgMasks[] = { RBM_ECX, RBM_EDX, RBM_R8, RBM_R9 };
-  SELECTANY const regNumber fltArgRegs[] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3 };
+  SELECTANY const regNumber fltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3 };
   SELECTANY const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3 };
 
   #define RBM_ARG_0                RBM_ECX
