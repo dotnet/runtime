@@ -10,7 +10,8 @@ param(
     [Parameter(Mandatory=$true)][string]$HostFxrNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
     [Parameter(Mandatory=$true)][string]$TargetArchitecture,
-    [Parameter(Mandatory=$true)][string]$WixObjRoot
+    [Parameter(Mandatory=$true)][string]$WixObjRoot,
+    [Parameter(Mandatory=$true)][string]$HostFxrUpgradeCode
 )
 
 . "$PSScriptRoot\..\..\..\scripts\common\_common.ps1"
@@ -65,6 +66,7 @@ function RunCandle
         -dNugetVersion="$HostFxrNugetVersion" `
         -dComponentVersion="$ComponentVersion" `
         -dTargetArchitecture="$TargetArchitecture" `
+        -dUpgradeCode="$HostFxrUpgradeCode" `
         -arch $Architecture `
         -ext WixDependencyExtension.dll `
         "$AuthWsxRoot\hostfxr.wxs" `
