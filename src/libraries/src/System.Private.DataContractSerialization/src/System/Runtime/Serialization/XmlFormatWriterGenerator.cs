@@ -167,7 +167,7 @@ namespace System.Runtime.Serialization
                     _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetAdapterMethod);
                 }
                 //Copy the KeyValuePair<K,T> to a KeyValuePairAdapter<K,T>. 
-                else if (objType.GetTypeInfo().IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
+                else if (objType.IsGenericType && objType.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePairAdapter)
                 {
                     ClassDataContract dc = (ClassDataContract)DataContract.GetDataContract(objType);
                     _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfKeyValuePair.MakeGenericType(dc.KeyValuePairGenericArguments));
@@ -426,7 +426,7 @@ namespace System.Runtime.Serialization
                     MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                     if (moveNextMethod == null || getCurrentMethod == null)
                     {
-                        if (enumeratorType.GetTypeInfo().IsInterface)
+                        if (enumeratorType.IsInterface)
                         {
                             if (moveNextMethod == null)
                                 moveNextMethod = XmlFormatGeneratorStatics.MoveNextMethod;
@@ -442,7 +442,7 @@ namespace System.Runtime.Serialization
                                 Type[] interfaceTypes = enumeratorType.GetInterfaces();
                                 foreach (Type interfaceType in interfaceTypes)
                                 {
-                                    if (interfaceType.GetTypeInfo().IsGenericType
+                                    if (interfaceType.IsGenericType
                                         && interfaceType.GetGenericTypeDefinition() == Globals.TypeOfIEnumeratorGeneric
                                         && interfaceType.GetGenericArguments()[0] == collectionContract.ItemType)
                                     {
@@ -511,7 +511,7 @@ namespace System.Runtime.Serialization
                     return false;
 
                 // load xmlwriter
-                if (type.GetTypeInfo().IsValueType)
+                if (type.IsValueType)
                 {
                     _ilg.Load(_xmlWriterArg);
                 }
@@ -598,9 +598,9 @@ namespace System.Runtime.Serialization
             private void WriteValue(LocalBuilder memberValue, bool writeXsiType)
             {
                 Type memberType = memberValue.LocalType;
-                bool isNullableOfT = (memberType.GetTypeInfo().IsGenericType &&
+                bool isNullableOfT = (memberType.IsGenericType &&
                                       memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
-                if (memberType.GetTypeInfo().IsValueType && !isNullableOfT)
+                if (memberType.IsValueType && !isNullableOfT)
                 {
                     PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(memberType);
                     if (primitiveContract != null && !writeXsiType)
@@ -684,7 +684,7 @@ namespace System.Runtime.Serialization
                 Label onNull = _ilg.DefineLabel();
                 Label end = _ilg.DefineLabel();
                 _ilg.Load(memberValue);
-                while (memberType.GetTypeInfo().IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+                while (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable)
                 {
                     Type innerType = memberType.GetGenericArguments()[0];
                     _ilg.Dup();

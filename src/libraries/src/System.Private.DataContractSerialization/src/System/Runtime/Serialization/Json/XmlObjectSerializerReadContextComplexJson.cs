@@ -223,7 +223,7 @@ namespace System.Runtime.Serialization.Json
         {
             bool verifyType = true;
             CollectionDataContract collectionContract = declaredContract as CollectionDataContract;
-            if (collectionContract != null && collectionContract.UnderlyingType.GetTypeInfo().IsInterface)
+            if (collectionContract != null && collectionContract.UnderlyingType.IsInterface)
             {
                 switch (collectionContract.Kind)
                 {

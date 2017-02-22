@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
             DataContract dataContract = GetGeneratedDataContract(type);
             if (dataContract == null)
             {
-                if (type.GetTypeInfo().IsInterface && !CollectionDataContract.IsCollectionInterface(type))
+                if (type.IsInterface && !CollectionDataContract.IsCollectionInterface(type))
                 {
                     type = Globals.TypeOfObject;
                     dataContract = GetGeneratedDataContract(type);
@@ -544,7 +544,7 @@ namespace System.Runtime.Serialization
                             {
                                 if (type.IsArray)
                                     dataContract = new CollectionDataContract(type);
-                                else if (type.GetTypeInfo().IsEnum)
+                                else if (type.IsEnum)
                                     dataContract = new EnumDataContract(type);
                                 else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
                                     dataContract = new XmlDataContract(type);
@@ -552,12 +552,12 @@ namespace System.Runtime.Serialization
                                     dataContract = Globals.CreateScriptObjectClassDataContract();
                                 else
                                 {
-                                    //if (type.GetTypeInfo().ContainsGenericParameters)
+                                    //if (type.ContainsGenericParameters)
                                     //    ThrowInvalidDataContractException(SR.Format(SR.TypeMustNotBeOpenGeneric, type), type);
 
                                     if (!CollectionDataContract.TryCreate(type, out dataContract))
                                     {
-                                        if (!type.IsSerializable && !type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
+                                        if (!type.IsSerializable && !type.IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
                                         {
                                             ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
                                         }
@@ -632,7 +632,7 @@ namespace System.Runtime.Serialization
                 {
                     return Globals.TypeOfDateTimeOffsetAdapter;
                 }
-                if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
                 {
                     return Globals.TypeOfKeyValuePairAdapter.MakeGenericType(type.GetGenericArguments());
                 }
@@ -660,7 +660,7 @@ namespace System.Runtime.Serialization
 
             public static DataContract GetBuiltInDataContract(Type type)
             {
-                if (type.GetTypeInfo().IsInterface && !CollectionDataContract.IsCollectionInterface(type))
+                if (type.IsInterface && !CollectionDataContract.IsCollectionInterface(type))
                     type = Globals.TypeOfObject;
 
                 lock (s_initBuiltInContractsLock)
@@ -776,7 +776,7 @@ namespace System.Runtime.Serialization
 
             public static bool TryCreateBuiltInDataContract(Type type, out DataContract dataContract)
             {
-                if (type.GetTypeInfo().IsEnum) // Type.GetTypeCode will report Enums as TypeCode.IntXX
+                if (type.IsEnum) // Type.GetTypeCode will report Enums as TypeCode.IntXX
                 {
                     dataContract = null;
                     return false;
@@ -1012,7 +1012,7 @@ namespace System.Runtime.Serialization
                         s_clrTypeStrings = new Dictionary<string, XmlDictionaryString>();
                         try
                         {
-                            s_clrTypeStrings.Add(Globals.TypeOfInt.GetTypeInfo().Assembly.FullName, s_clrTypeStringsDictionary.Add(Globals.MscorlibAssemblyName));
+                            s_clrTypeStrings.Add(Globals.TypeOfInt.Assembly.FullName, s_clrTypeStringsDictionary.Add(Globals.MscorlibAssemblyName));
                         }
                         catch (Exception ex)
                         {
@@ -1076,7 +1076,7 @@ namespace System.Runtime.Serialization
             {
                 _underlyingType = type;
                 SetTypeForInitialization(type);
-                _isValueType = type.GetTypeInfo().IsValueType;
+                _isValueType = type.IsValueType;
             }
 
             internal Type UnderlyingType
@@ -1256,9 +1256,9 @@ namespace System.Runtime.Serialization
             Type itemType;
 
             if (type.IsSerializable ||
-                type.GetTypeInfo().IsEnum ||
-                type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false) ||
-                type.GetTypeInfo().IsInterface ||
+                type.IsEnum ||
+                type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
+                type.IsInterface ||
                 type.IsPointer ||
                 //Special casing DBNull as its considered a Primitive but is no longer Serializable
                 type == Globals.TypeOfDBNull ||
@@ -1294,7 +1294,7 @@ namespace System.Runtime.Serialization
         internal static Type UnwrapRedundantNullableType(Type type)
         {
             Type nullableType = type;
-            while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
             {
                 nullableType = type;
                 type = type.GetGenericArguments()[0];
@@ -1304,7 +1304,7 @@ namespace System.Runtime.Serialization
 
         internal static Type UnwrapNullableType(Type type)
         {
-            while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
                 type = type.GetGenericArguments()[0];
             return type;
         }
@@ -1406,7 +1406,7 @@ namespace System.Runtime.Serialization
                 name = dataContractAttribute.Name;
                 if (name == null || name.Length == 0)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidDataContractName, DataContract.GetClrTypeFullName(type))));
-                if (type.GetTypeInfo().IsGenericType && !type.GetTypeInfo().IsGenericTypeDefinition)
+                if (type.IsGenericType && !type.IsGenericTypeDefinition)
                     name = ExpandGenericParameters(name, type);
                 name = DataContract.EncodeLocalName(name);
             }
@@ -1477,7 +1477,7 @@ namespace System.Runtime.Serialization
         {
             dataContractAttribute = null;
 
-            object[] dataContractAttributes = type.GetTypeInfo().GetCustomAttributes(Globals.TypeOfDataContractAttribute, false).ToArray();
+            object[] dataContractAttributes = type.GetCustomAttributes(Globals.TypeOfDataContractAttribute, false).ToArray();
             if (dataContractAttributes != null && dataContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1493,7 +1493,7 @@ namespace System.Runtime.Serialization
         internal static XmlQualifiedName GetCollectionStableName(Type type, Type itemType, out CollectionDataContractAttribute collectionContractAttribute)
         {
             string name, ns;
-            object[] collectionContractAttributes = type.GetTypeInfo().GetCustomAttributes(Globals.TypeOfCollectionDataContractAttribute, false).ToArray();
+            object[] collectionContractAttributes = type.GetCustomAttributes(Globals.TypeOfCollectionDataContractAttribute, false).ToArray();
             if (collectionContractAttributes != null && collectionContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1506,7 +1506,7 @@ namespace System.Runtime.Serialization
                     name = collectionContractAttribute.Name;
                     if (name == null || name.Length == 0)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractName, DataContract.GetClrTypeFullName(type))));
-                    if (type.GetTypeInfo().IsGenericType && !type.GetTypeInfo().IsGenericTypeDefinition)
+                    if (type.IsGenericType && !type.IsGenericTypeDefinition)
                         name = ExpandGenericParameters(name, type);
                     name = DataContract.EncodeLocalName(name);
                 }
@@ -1576,7 +1576,7 @@ namespace System.Runtime.Serialization
             }
             if (arrayPrefix != null)
                 typeName = arrayPrefix + typeName;
-            if (type.GetTypeInfo().IsGenericType)
+            if (type.IsGenericType)
             {
                 StringBuilder localName = new StringBuilder();
                 StringBuilder namespaces = new StringBuilder();
@@ -1585,7 +1585,7 @@ namespace System.Runtime.Serialization
                 if (iParam >= 0)
                     typeName = typeName.Substring(0, iParam);
                 IList<int> nestedParamCounts = GetDataContractNameForGenericName(typeName, localName);
-                bool isTypeOpenGeneric = type.GetTypeInfo().IsGenericTypeDefinition;
+                bool isTypeOpenGeneric = type.IsGenericTypeDefinition;
                 Type[] genParams = type.GetGenericArguments();
                 for (int i = 0; i < genParams.Length; i++)
                 {
@@ -1619,9 +1619,9 @@ namespace System.Runtime.Serialization
             string clrNs = type.Namespace;
             if (clrNs == null)
                 clrNs = String.Empty;
-            string ns = GetGlobalDataContractNamespace(clrNs, type.GetTypeInfo().Module.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
+            string ns = GetGlobalDataContractNamespace(clrNs, type.Module.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
             if (ns == null)
-                ns = GetGlobalDataContractNamespace(clrNs, type.GetTypeInfo().Assembly.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
+                ns = GetGlobalDataContractNamespace(clrNs, type.Assembly.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
 
             if (ns == null)
                 ns = GetDefaultStableNamespace(type);
@@ -1762,7 +1762,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetClrTypeFullName(Type type)
         {
-            return !type.GetTypeInfo().IsGenericTypeDefinition && type.GetTypeInfo().ContainsGenericParameters ? String.Format(CultureInfo.InvariantCulture, "{0}.{1}", type.Namespace, type.Name) : type.FullName;
+            return !type.IsGenericTypeDefinition && type.ContainsGenericParameters ? String.Format(CultureInfo.InvariantCulture, "{0}.{1}", type.Namespace, type.Name) : type.FullName;
         }
 
         internal static void GetClrNameAndNamespace(string fullTypeName, out string localName, out string ns)
@@ -2011,8 +2011,8 @@ namespace System.Runtime.Serialization
 
         internal static bool IsTypeNullable(Type type)
         {
-            return !type.GetTypeInfo().IsValueType ||
-                    (type.GetTypeInfo().IsGenericType &&
+            return !type.IsValueType ||
+                    (type.IsGenericType &&
                     type.GetGenericTypeDefinition() == Globals.TypeOfNullable);
         }
 
@@ -2034,7 +2034,7 @@ namespace System.Runtime.Serialization
                     return;
 
                 typesChecked.Add(type, type);
-                object[] knownTypeAttributes = type.GetTypeInfo().GetCustomAttributes(Globals.TypeOfKnownTypeAttribute, false).ToArray();
+                object[] knownTypeAttributes = type.GetCustomAttributes(Globals.TypeOfKnownTypeAttribute, false).ToArray();
                 if (knownTypeAttributes != null)
                 {
                     KnownTypeAttribute kt;
@@ -2122,7 +2122,7 @@ namespace System.Runtime.Serialization
                 }
 #endif
 
-                type = type.GetTypeInfo().BaseType;
+                type = type.BaseType;
             }
         }
 
@@ -2154,7 +2154,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         internal static bool IsTypeVisible(Type t)
         {
-            if (!t.GetTypeInfo().IsVisible && !IsTypeVisibleInSerializationModule(t))
+            if (!t.IsVisible && !IsTypeVisibleInSerializationModule(t))
                 return false;
 
             foreach (Type genericType in t.GetGenericArguments())
@@ -2206,7 +2206,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private static bool IsTypeVisibleInSerializationModule(Type type)
         {
-            return (type.GetTypeInfo().Module.Equals(typeof(DataContract).GetTypeInfo().Module) || IsAssemblyFriendOfSerialization(type.GetTypeInfo().Assembly)) && !type.GetTypeInfo().IsNestedPrivate;
+            return (type.Module.Equals(typeof(DataContract).Module) || IsAssemblyFriendOfSerialization(type.Assembly)) && !type.IsNestedPrivate;
         }
 
         /// <SecurityNote>

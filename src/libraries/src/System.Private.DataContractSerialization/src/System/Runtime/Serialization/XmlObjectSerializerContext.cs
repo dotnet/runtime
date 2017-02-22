@@ -279,7 +279,7 @@ namespace System.Runtime.Serialization
             if (dataContract == null)
             {
                 if (memberTypeContract != null
-                    && !memberTypeContract.UnderlyingType.GetTypeInfo().IsInterface
+                    && !memberTypeContract.UnderlyingType.IsInterface
                     && memberTypeContract.StableName == qname)
                 {
                     dataContract = memberTypeContract;
