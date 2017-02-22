@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1-t-*",
+  "version": "2.0.0-beta-*",
   "buildOptions": {
     "emitEntryPoint": true,
     "compile": {
@@ -16,6 +16,7 @@
 
   "packOptions": {
     "files": {
+      "include": "prefercliruntime",
       "mappings":{
         "lib/netcoreapp1.0/tool/": {
           "include": "tool/**/*"
