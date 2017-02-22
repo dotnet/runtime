@@ -9450,6 +9450,13 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     genRestoreCalleeSavedFltRegs(compiler->compLclFrameSize);
 #endif // !FEATURE_STACK_FP_X87
 
+#ifdef JIT32_GCENCODER
+    // On IA32, we start the OS-reported portion of the epilog after restoring any callee-saved
+    // floating-point registers. This avoids the need to update the x86 unwinder and retains binary
+    // compatibility between later versions of the JIT and earlier versions of the runtime.
+    getEmitter()->emitStartEpilog();
+#endif
+
     /* Compute the size in bytes we've pushed/popped */
 
     if (!doubleAlignOrFramePointerUsed())
