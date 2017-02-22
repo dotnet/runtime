@@ -195,7 +195,7 @@ namespace System.Runtime.Serialization.Json
         {
             DataContract dataContract;
             bool verifyKnownType = false;
-            bool isDeclaredTypeInterface = declaredType.GetTypeInfo().IsInterface;
+            bool isDeclaredTypeInterface = declaredType.IsInterface;
 
             if (isDeclaredTypeInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
@@ -260,7 +260,7 @@ namespace System.Runtime.Serialization.Json
         {
             bool verifyKnownType = false;
             Type declaredType = rootTypeDataContract.UnderlyingType;
-            bool isDeclaredTypeInterface = declaredType.GetTypeInfo().IsInterface;
+            bool isDeclaredTypeInterface = declaredType.IsInterface;
 
             if (!(isDeclaredTypeInterface && CollectionDataContract.IsCollectionInterface(declaredType))
                 && !declaredType.IsArray)//Array covariance is not supported in XSD. If declared type is array do not write xsi:type. Instead write xsi:type for each item
@@ -391,7 +391,7 @@ namespace System.Runtime.Serialization.Json
         internal static DataContract GetRevisedItemContract(DataContract oldItemContract)
         {
             if ((oldItemContract != null) &&
-                oldItemContract.UnderlyingType.GetTypeInfo().IsGenericType &&
+                oldItemContract.UnderlyingType.IsGenericType &&
                 (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
             {
                 return DataContract.GetDataContract(oldItemContract.UnderlyingType);
