@@ -200,8 +200,12 @@ endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
-add_subdirectory(dll)
-add_subdirectory(crossgen)
+if (FEATURE_MERGE_JIT_AND_ENGINE)
+  # Despite the directory being named "dll", it creates a static library "clrjit_static" to link into the VM.
+  add_subdirectory(dll)
+  add_subdirectory(crossgen)
+endif (FEATURE_MERGE_JIT_AND_ENGINE)
+
 add_subdirectory(standalone)
 
 if (CLR_CMAKE_PLATFORM_ARCH_ARM)
