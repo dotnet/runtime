@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "hostfxr", "generatemsi.ps1"),
-                inputDir, HostFxrMsi, WixRoot, hostFxrBrandName, hostFxrMsiVersion, hostFxrNugetVersion, MSIBuildArch, TargetArch, wixObjRoot,upgradeCode)
+                inputDir, HostFxrMsi, WixRoot, hostFxrBrandName, hostFxrMsiVersion, hostFxrNugetVersion, MSIBuildArch, TargetArch, wixObjRoot, upgradeCode)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
