@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 namespace System.Data
 {
     [Serializable]
-    public sealed class OperationAbortedException : Exception
+    public sealed class OperationAbortedException : SystemException
     {
         private OperationAbortedException(string message, Exception innerException) : base(message, innerException)
         {
