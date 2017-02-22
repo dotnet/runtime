@@ -1062,6 +1062,15 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             LclVarDsc* varDsc = &comp->lvaTable[varNum];
             type              = varDsc->lvType;
         }
+        else if (arg->OperGet() == GT_SIMD)
+        {
+            assert((arg->AsSIMD()->gtSIMDSize == 16) || (arg->AsSIMD()->gtSIMDSize == 12));
+
+            if (arg->AsSIMD()->gtSIMDSize == 12)
+            {
+                type = TYP_SIMD12;
+            }
+        }
     }
 #endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
