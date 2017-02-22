@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(9543, TestPlatforms.Windows)] // reuseClient==false fails in debug/release, reuseClient==true fails sporadically in release
+        [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(6, false)]
         [InlineData(3, true)]
