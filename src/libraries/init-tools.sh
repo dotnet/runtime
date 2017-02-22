@@ -164,9 +164,6 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         fi
     fi
 
-    echo Copying supplemental overrides from Tools-Override.
-    cp $__scriptpath/Tools-Override/* $__scriptpath/Tools
-
     Tools-Override/crossgen.sh $__scriptpath/Tools
 
     touch $__INIT_TOOLS_DONE_MARKER
