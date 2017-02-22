@@ -295,10 +295,10 @@ namespace System.Runtime.Serialization.Json
                                     _knownDataContracts.Add(itemContract.StableName, itemContract);
                                 }
 
-                                if (collectionDataContract.ItemType.GetTypeInfo().IsGenericType
+                                if (collectionDataContract.ItemType.IsGenericType
                                     && collectionDataContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                                 {
-                                    DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetTypeInfo().GenericTypeArguments));
+                                    DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GenericTypeArguments));
                                     if (!_knownDataContracts.ContainsKey(itemDataContract.StableName))
                                     {
                                         _knownDataContracts.Add(itemDataContract.StableName, itemDataContract);

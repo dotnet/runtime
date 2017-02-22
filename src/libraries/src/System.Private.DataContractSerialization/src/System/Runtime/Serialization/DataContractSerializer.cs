@@ -390,7 +390,7 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContract(DataContract declaredTypeContract, Type declaredType, Type objectType)
         {
-            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 return declaredTypeContract;
             }
