@@ -5169,7 +5169,11 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     if (info.ebpFrame)
     {
         _ASSERTE(stackDepth == 0);
-        taArgBase = *pContext->GetEbpLocation();
+#if defined(WIN64EXCEPTIONS)
+        taArgBase = GetCallerSp(pContext) - 2 * sizeof(TADDR);
+#else
+        taArgBase = *pContext->pEbp;
+#endif
     }
     else
     {
@@ -5340,7 +5344,11 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
         return NULL;
     }
 
+#if defined(WIN64EXCEPTIONS)
+    TADDR fp = GetCallerSp(pContext) - 2 * sizeof(TADDR);
+#else
     TADDR fp = GetRegdisplayFP(pContext);
+#endif
     TADDR taParamTypeArg = *PTR_TADDR(fp - GetParamTypeArgOffset(&info));
     return PTR_VOID(taParamTypeArg);
 
