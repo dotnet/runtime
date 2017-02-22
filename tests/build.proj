@@ -15,10 +15,16 @@
   <PropertyGroup>
     <TraversalBuildDependsOn>
       BatchRestorePackages;
+      BuildTargetingPack;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
-  
+
+  <Target Name="BuildTargetingPack" DependsOnTargets="BatchRestorePackages">
+    <Message Text="Building Targeting Pack" Importance="High" />
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
+  </Target>
+
   <Target Name="BatchRestorePackages" DependsOnTargets="VerifyDependencies">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
     
