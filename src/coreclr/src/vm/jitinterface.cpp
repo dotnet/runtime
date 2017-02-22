@@ -7060,6 +7060,28 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD_NATIVE)->GetMemberDef())
+    {
+        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
+        
+        static BYTE ilcode[] = { CEE_LDARG_0, CEE_LDARG_1,
+            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), 0,0,0,0,
+            CEE_MUL,
+            CEE_ADD,
+            CEE_RET };
+
+        ilcode[4] = (BYTE)(tokGenericArg);
+        ilcode[5] = (BYTE)(tokGenericArg >> 8);
+        ilcode[6] = (BYTE)(tokGenericArg >> 16);
+        ilcode[7] = (BYTE)(tokGenericArg >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 3;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
     else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ARE_SAME)->GetMemberDef())
     {
         // Compare the two arguments
