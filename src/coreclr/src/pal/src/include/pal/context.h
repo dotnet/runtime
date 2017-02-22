@@ -639,6 +639,21 @@ LPVOID GetNativeContextPC(const native_context_t *context);
 
 /*++
 Function :
+    GetNativeContextSP
+
+    Returns the stack pointer from the native context.
+
+Parameters :
+    const native_context_t *native : native context
+
+Return value :
+    The stack pointer from the native context.
+
+--*/
+LPVOID GetNativeContextSP(const native_context_t *context);
+
+/*++
+Function :
     CONTEXTGetExceptionCodeForSignal
     
     Translates signal and context information to a Win32 exception code.

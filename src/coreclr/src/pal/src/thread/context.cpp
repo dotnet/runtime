@@ -617,6 +617,35 @@ LPVOID GetNativeContextPC(const native_context_t *context)
 
 /*++
 Function :
+    GetNativeContextSP
+
+    Returns the stack pointer from the native context.
+
+Parameters :
+    const native_context_t *native : native context
+
+Return value :
+    The stack pointer from the native context.
+
+--*/
+LPVOID GetNativeContextSP(const native_context_t *context)
+{
+#ifdef _AMD64_
+    return (LPVOID)MCREG_Rsp(context->uc_mcontext);
+#elif defined(_X86_)
+    return (LPVOID) MCREG_Esp(context->uc_mcontext);
+#elif defined(_ARM_)
+    return (LPVOID) MCREG_Sp(context->uc_mcontext);
+#elif defined(_ARM64_)
+    return (LPVOID) MCREG_Sp(context->uc_mcontext);
+#else
+#   error implement me for this architecture
+#endif
+}
+
+
+/*++
+Function :
     CONTEXTGetExceptionCodeForSignal
     
     Translates signal and context information to a Win32 exception code.

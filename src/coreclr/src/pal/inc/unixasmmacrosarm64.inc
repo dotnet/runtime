@@ -67,6 +67,7 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
+        .cfi_def_cfa_register fp
         .endif
 .endm
 
@@ -77,6 +78,7 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, 8
         .ifc \reg1, fp
         mov fp, sp
+        .cfi_def_cfa_register fp
         .endif
 .endm
 
