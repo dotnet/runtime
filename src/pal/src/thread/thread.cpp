@@ -28,6 +28,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/handlemgr.hpp"
 #include "pal/cs.hpp"
 #include "pal/seh.hpp"
+#include "pal/signal.hpp"
 
 #include "procprivate.hpp"
 #include "pal/process.h"
@@ -177,6 +178,10 @@ static void InternalEndCurrentThreadWrapper(void *arg)
     // in InternalEndCurrentThread.
     InternalEndCurrentThread(pThread);
     pthread_setspecific(thObjKey, NULL);
+
+#if !HAVE_MACH_EXCEPTIONS
+    FreeSignalAlternateStack();
+#endif // !HAVE_MACH_EXCEPTIONS
 }
 
 /*++
@@ -1658,6 +1663,14 @@ CPalThread::ThreadEntry(
         ASSERT("THREAD pointer is NULL!\n");
         goto fail;
     }
+
+#if !HAVE_MACH_EXCEPTIONS
+    if (!EnsureSignalAlternateStack())
+    {
+        ASSERT("Cannot allocate alternate stack for SIGSEGV!\n");
+        goto fail;
+    }
+#endif // !HAVE_MACH_EXCEPTIONS
 
 #if defined(FEATURE_PAL_SXS) && defined(_DEBUG)
     // We cannot assert yet, as we haven't set in this thread into the TLS, and so __ASSERT_ENTER
