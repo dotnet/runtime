@@ -903,7 +903,7 @@ namespace System.Xml.Serialization
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            return Compiler.GetTempAssemblyName(type.GetTypeInfo().Assembly.GetName(), defaultNamespace);
+            return Compiler.GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.UnknownNode"]/*' />
