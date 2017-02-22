@@ -2436,7 +2436,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	}
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		signature->pinvoke = 1;
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 		/*
 		 * On Windows the default pinvoke calling convention is STDCALL but
 		 * we need CDECL since this is actually an icall.
