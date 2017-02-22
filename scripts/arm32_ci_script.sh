@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# The following script is not executed temporarily to confirm normal operation of netci.groovy.
-# Will be enabled ASAP.
-exit 0
-
 #Usage message
 function usage {
     echo 'ARM Emulator Cross Build Script'
@@ -216,7 +212,6 @@ function cross_build_core_setup_with_docker {
     # Cross building core-setup with rootfs in Docker
     __buildCmd="./build.sh --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1"
     $__dockerCmd $__buildCmd
-    sudo chown -R $(id -u -n) ./bin
 }
 
 #Define script variables
