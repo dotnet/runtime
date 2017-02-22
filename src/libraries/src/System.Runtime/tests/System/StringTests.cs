@@ -816,6 +816,22 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Hello", 'o', true)]
+        [InlineData("Hello", 'O', false)]
+        [InlineData("o", 'o', true)]
+        [InlineData("o", 'O', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
+        public static void EndsWith(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value));
+        }
+
+        [Theory]
         [ActiveIssue("dotnet/coreclr#2051", TestPlatforms.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
@@ -2094,6 +2110,22 @@ namespace System.Tests
                 Assert.Equal(expected, s.StartsWith(value));
             }
             Assert.Equal(expected, s.StartsWith(value, comparisonType));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'H', true)]
+        [InlineData("Hello", 'h', false)]
+        [InlineData("H", 'H', true)]
+        [InlineData("H", 'h', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
+        public static void StartsWith(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.StartsWith(value));
         }
 
         [Theory]
