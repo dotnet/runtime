@@ -528,7 +528,7 @@ namespace System.Runtime.Serialization
             {
                 if (!s_typeOfSafeSerializationManagerSet)
                 {
-                    s_typeOfSafeSerializationManager = TypeOfInt.GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.SafeSerializationManager");
+                    s_typeOfSafeSerializationManager = TypeOfInt.Assembly.GetType("System.Runtime.Serialization.SafeSerializationManager");
                     s_typeOfSafeSerializationManagerSet = true;
                 }
                 return s_typeOfSafeSerializationManager;

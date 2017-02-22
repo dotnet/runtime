@@ -153,9 +153,9 @@ namespace System.Runtime.Serialization
 
             internal XmlDataContractCriticalHelper(Type type) : base(type)
             {
-                if (type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false))
+                if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
-                if (type.GetTypeInfo().IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+                if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
                 XmlSchemaType xsdType;
                 bool hasRoot;
@@ -166,7 +166,7 @@ namespace System.Runtime.Serialization
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[] xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetTypeInfo().GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[] xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization
         {
             Type type = UnderlyingType;
 
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
                 return null;
 
             ConstructorInfo ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Array.Empty<Type>());
@@ -289,7 +289,7 @@ namespace System.Runtime.Serialization
                     throw;
                 }
             }
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 System.Reflection.Emit.LocalBuilder local = ilg.DeclareLocal(type, type.Name + "Value");
                 ilg.Ldloca(local);
@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization
                 ConstructorInfo ctor = GetConstructor();
                 if (!ctor.IsPublic && type.FullName == "System.Xml.Linq.XElement")
                 {
-                    Type xName = type.GetTypeInfo().Assembly.GetType("System.Xml.Linq.XName");
+                    Type xName = type.Assembly.GetType("System.Xml.Linq.XName");
                     if (xName != null)
                     {
                         MethodInfo XName_op_Implicit = xName.GetMethod(
@@ -365,7 +365,7 @@ namespace System.Runtime.Serialization
 
         internal IXmlSerializable ReflectionCreateXmlSerializable(Type type)
         {
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 throw new NotImplementedException("ReflectionCreateXmlSerializable - value type");
             }

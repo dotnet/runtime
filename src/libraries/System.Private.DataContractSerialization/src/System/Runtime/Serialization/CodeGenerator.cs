@@ -106,7 +106,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_serializationModule == null)
                 {
-                    s_serializationModule = typeof(CodeGenerator).GetTypeInfo().Module;   // could to be replaced by different dll that has SkipVerification set to false
+                    s_serializationModule = typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
                 }
                 return s_serializationModule;
             }
@@ -373,7 +373,7 @@ namespace System.Runtime.Serialization
         {
             Type type = GetVariableType(value);
             TypeCode typeCode = type.GetTypeCode();
-            if ((typeCode == TypeCode.Object && type.GetTypeInfo().IsValueType) ||
+            if ((typeCode == TypeCode.Object && type.IsValueType) ||
                 typeCode == TypeCode.DateTime || typeCode == TypeCode.Decimal)
             {
                 LoadDefaultValue(type);
@@ -548,7 +548,7 @@ namespace System.Runtime.Serialization
 
         internal void Call(MethodInfo methodInfo)
         {
-            if (methodInfo.IsVirtual && !methodInfo.DeclaringType.GetTypeInfo().IsValueType)
+            if (methodInfo.IsVirtual && !methodInfo.DeclaringType.IsValueType)
             {
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction("Callvirt " + methodInfo.ToString() + " on type " + methodInfo.DeclaringType.ToString());
@@ -637,7 +637,7 @@ namespace System.Runtime.Serialization
 
         private static bool IsStruct(Type objType)
         {
-            return objType.GetTypeInfo().IsValueType && !objType.GetTypeInfo().IsPrimitive;
+            return objType.IsValueType && !objType.IsPrimitive;
         }
 
         internal Type LoadMember(MemberInfo memberInfo)
@@ -722,7 +722,7 @@ namespace System.Runtime.Serialization
 
         internal void LoadDefaultValue(Type type)
         {
-            if (type.GetTypeInfo().IsValueType)
+            if (type.IsValueType)
             {
                 switch (type.GetTypeCode())
                 {
@@ -931,7 +931,7 @@ namespace System.Runtime.Serialization
                 Ldtoken((Type)o);
                 Call(GetTypeFromHandle);
             }
-            else if (valueType.GetTypeInfo().IsEnum)
+            else if (valueType.IsEnum)
             {
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceComment("Ldc " + o.GetType() + "." + o);
@@ -1072,7 +1072,7 @@ namespace System.Runtime.Serialization
 
         internal void LdlocAddress(LocalBuilder localBuilder)
         {
-            if (localBuilder.LocalType.GetTypeInfo().IsValueType)
+            if (localBuilder.LocalType.IsValueType)
                 Ldloca(localBuilder);
             else
                 Ldloc(localBuilder);
@@ -1105,7 +1105,7 @@ namespace System.Runtime.Serialization
 
         internal void LdargAddress(ArgBuilder argBuilder)
         {
-            if (argBuilder.ArgType.GetTypeInfo().IsValueType)
+            if (argBuilder.ArgType.IsValueType)
                 Ldarga(argBuilder);
             else
                 Ldarg(argBuilder);
@@ -1222,7 +1222,7 @@ namespace System.Runtime.Serialization
 
         internal void Ldelem(Type arrayElementType)
         {
-            if (arrayElementType.GetTypeInfo().IsEnum)
+            if (arrayElementType.IsEnum)
             {
                 Ldelem(Enum.GetUnderlyingType(arrayElementType));
             }
@@ -1286,7 +1286,7 @@ namespace System.Runtime.Serialization
 
         internal void Stelem(Type arrayElementType)
         {
-            if (arrayElementType.GetTypeInfo().IsEnum)
+            if (arrayElementType.IsEnum)
                 Stelem(Enum.GetUnderlyingType(arrayElementType));
             else
             {
@@ -1462,9 +1462,9 @@ namespace System.Runtime.Serialization
         {
             if (target == source)
                 return;
-            if (target.GetTypeInfo().IsValueType)
+            if (target.IsValueType)
             {
-                if (source.GetTypeInfo().IsValueType)
+                if (source.IsValueType)
                 {
                     OpCode opCode = GetConvOpCode(target.GetTypeCode());
                     if (opCode.Equals(OpCodes.Nop))
@@ -1487,7 +1487,7 @@ namespace System.Runtime.Serialization
             }
             else if (target.IsAssignableFrom(source))
             {
-                if (source.GetTypeInfo().IsValueType)
+                if (source.IsValueType)
                 {
                     if (isAddress)
                         Ldobj(source);
@@ -1498,7 +1498,7 @@ namespace System.Runtime.Serialization
             {
                 Castclass(target);
             }
-            else if (target.GetTypeInfo().IsInterface || source.GetTypeInfo().IsInterface)
+            else if (target.IsInterface || source.IsInterface)
             {
                 Castclass(target);
             }
@@ -1660,7 +1660,7 @@ namespace System.Runtime.Serialization
         {
             if (type != Globals.TypeOfString)
             {
-                if (type.GetTypeInfo().IsValueType)
+                if (type.IsValueType)
                 {
                     Box(type);
                 }

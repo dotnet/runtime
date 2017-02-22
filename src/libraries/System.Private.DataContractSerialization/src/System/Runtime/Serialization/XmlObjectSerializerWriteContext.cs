@@ -161,7 +161,7 @@ namespace System.Runtime.Serialization
             bool verifyKnownType = false;
             Type declaredType = rootTypeDataContract.UnderlyingType;
 
-            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 if (DataContractResolver != null)
                 {
@@ -180,7 +180,7 @@ namespace System.Runtime.Serialization
             bool verifyKnownType = false;
 #if !NET_NATIVE
             DataContract dataContract;
-            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 dataContract = GetDataContractSkipValidation(DataContract.GetId(objectTypeHandle), objectTypeHandle, objectType);
                 if (OnHandleIsReference(xmlWriter, dataContract, obj))
