@@ -677,75 +677,164 @@ namespace System
                     Unsafe.Add<byte>(ref b, 6) = 0;
                     return;
                 case 8:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     return;
                 case 9:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.Add<byte>(ref b, 8) = 0;
                     return;
                 case 10:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     return;
                 case 11:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     Unsafe.Add<byte>(ref b, 10) = 0;
                     return;
                 case 12:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     return;
                 case 13:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     Unsafe.Add<byte>(ref b, 12) = 0;
                     return;
                 case 14:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
                     return;
                 case 15:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
                     Unsafe.Add<byte>(ref b, 14) = 0;
                     return;
                 case 16:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     return;
                 case 17:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.Add<byte>(ref b, 16) = 0;
                     return;
                 case 18:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     return;
                 case 19:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     Unsafe.Add<byte>(ref b, 18) = 0;
                     return;
                 case 20:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     return;
                 case 21:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     Unsafe.Add<byte>(ref b, 20) = 0;
                     return;
                 case 22:
+#if BIT64
                     Unsafe.As<byte, long>(ref b) = 0;
                     Unsafe.As<byte, long>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+#else
+                    Unsafe.As<byte, int>(ref b) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 4)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 8)) = 0;
+                    Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 12)) = 0;
+#endif
                     Unsafe.As<byte, int>(ref Unsafe.Add<byte>(ref b, 16)) = 0;
                     Unsafe.As<byte, short>(ref Unsafe.Add<byte>(ref b, 20)) = 0;
                     return;
