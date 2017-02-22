@@ -1302,27 +1302,5 @@ namespace System.Net.Sockets.Tests
 
             Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
         }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void TcpClient_ConnectAsync_StringHost_NotSupportedAfterClientAccess()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                var tmp = client.Client;
-                Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync("localhost", 12345); });
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
-        public void TcpClient_ConnectAsync_ArrayOfAddresses_NotSupportedAfterClientAccess()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                var tmp = client.Client;
-                Assert.Throws<PlatformNotSupportedException>(() => { client.ConnectAsync(new[] { IPAddress.Loopback }, 12345); });
-            }
-        }
     }
 }
