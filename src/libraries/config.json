@@ -198,12 +198,6 @@
       "values": [],
       "defaultValue": ""
     },
-    "RestoreForTestsAgainstPackagesOnly": {
-      "description": "MsBuild target that restores the packages.",
-      "valueType": "property",
-      "values": ["true", "false"],
-      "defaultValue": "true"
-    },
     "GenerateVersionHeader": {
       "description": "MsBuild target that generates the version header.",
       "valueType": "target",
