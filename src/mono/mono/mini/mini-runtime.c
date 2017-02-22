@@ -852,7 +852,7 @@ mono_jit_set_domain (MonoDomain *domain)
 static void
 mono_thread_abort (MonoObject *obj)
 {
-	/* MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id); */
+	/* MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls (); */
 
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
@@ -1838,7 +1838,7 @@ add_current_thread (MonoJitTlsData *jit_tls)
 static gboolean
 should_wait_for_available_cpu_capacity (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 
 	//We can't suspend threads that are already JIT'ing something or we risk deadlocking
 	if (jit_tls->active_jit_methods > 0)
@@ -1858,7 +1858,7 @@ should_wait_for_available_cpu_capacity (void)
 static gboolean
 wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 	JitCompilationEntry *entry;
 
 
@@ -1921,7 +1921,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 static void
 unregister_method_for_compile (MonoMethod *method, MonoDomain *target_domain)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 
 	lock_compilation_data ();
 
