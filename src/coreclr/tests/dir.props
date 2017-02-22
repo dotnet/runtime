@@ -54,6 +54,11 @@
     <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
   </PropertyGroup>
 
+    <!-- Targeting Package paths -->
+  <PropertyGroup>
+    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(RootBinDir)TargetingPack\</TargetingPackPath>
+  </PropertyGroup>
+
   <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
 
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
