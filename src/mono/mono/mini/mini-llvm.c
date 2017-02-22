@@ -1431,7 +1431,10 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			pindex ++;
 			break;
 		case LLVMArgAsIArgs:
-			param_types [pindex] = LLVMArrayType (IntPtrType (), ainfo->nslots);
+			if (ainfo->esize == 8)
+				param_types [pindex] = LLVMArrayType (LLVMInt64Type (), ainfo->nslots);
+			else
+				param_types [pindex] = LLVMArrayType (IntPtrType (), ainfo->nslots);
 			pindex ++;
 			break;
 		case LLVMArgVtypeByRef:
@@ -3490,7 +3493,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		}
 		case LLVMArgAsIArgs:
 			g_assert (addresses [reg]);
-			args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (IntPtrType (), ainfo->nslots), 0)), "");
+			if (ainfo->esize == 8)
+				args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (LLVMInt64Type (), ainfo->nslots), 0)), "");
+			else
+				args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (IntPtrType (), ainfo->nslots), 0)), "");
 			break;
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();

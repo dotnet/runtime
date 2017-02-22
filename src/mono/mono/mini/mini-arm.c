@@ -1515,6 +1515,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
 			ainfo->storage = RegTypeStructByVal;
 			ainfo->struct_size = size;
+			ainfo->align = align;
 			/* FIXME: align stack_size if needed */
 			if (eabi_supported) {
 				if (align >= 8 && (gr & 1))
@@ -2166,7 +2167,16 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case RegTypeStructByVal:
 			lainfo->storage = LLVMArgAsIArgs;
-			lainfo->nslots = ainfo->struct_size / sizeof (gpointer);
+			if (eabi_supported && ainfo->align == 8) {
+				/* LLVM models this by passing an int64 array */
+				lainfo->nslots = ALIGN_TO (ainfo->struct_size, 8) / 8;
+				lainfo->esize = 8;
+			} else {
+				lainfo->nslots = ainfo->struct_size / sizeof (gpointer);
+				lainfo->esize = 4;
+			}
+
+			printf ("D: %d\n", ainfo->align);
 			break;
 		case RegTypeStructByAddr:
 		case RegTypeStructByAddrOnStack:

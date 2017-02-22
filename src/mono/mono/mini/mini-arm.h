@@ -208,7 +208,7 @@ typedef struct {
 	guint8  reg;
 	ArgStorage  storage;
 	/* RegTypeStructByVal */
-	gint32  struct_size;
+	gint32  struct_size, align;
 	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 } ArgInfo;
 

@@ -826,7 +826,7 @@ typedef struct {
 	 * in the structure.
 	 */
 	int nslots;
-	/* Only if storage == LLVMArgAsFpArgs/LLVMArgFpStruct (4/8) */
+	/* Only if storage == LLVMArgAsIArgs/LLVMArgAsFpArgs/LLVMArgFpStruct (4/8) */
 	int esize;
 	/* Parameter index in the LLVM signature */
 	int pindex;
