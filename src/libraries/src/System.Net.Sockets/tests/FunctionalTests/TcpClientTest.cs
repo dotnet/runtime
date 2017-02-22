@@ -6,9 +6,7 @@ using Xunit;
 using Xunit.Abstractions;
 
 using System.Threading.Tasks;
-using System.Net.Test.Common;
 using System.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Sockets.Tests
@@ -20,6 +18,38 @@ namespace System.Net.Sockets.Tests
         public TcpClientTest(ITestOutputHelper output)
         {
             _log = output;
+        }
+
+        [Theory]
+        [InlineData(AddressFamily.Banyan)]
+        [InlineData(AddressFamily.DataLink)]
+        [InlineData(AddressFamily.NetBios)]
+        [InlineData(AddressFamily.Unix)]
+        [InlineData(AddressFamily.Unknown)]
+        public void Ctor_InvalidFamily_Throws(AddressFamily family)
+        {
+            Assert.Throws<ArgumentException>(() => new TcpClient(family));
+        }
+
+        [Fact]
+        public void Ctor_NullAddress_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => new TcpClient(null));
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void Ctor_StringInt_ConnectsSuccessfully()
+        {
+            string host = System.Net.Test.Common.Configuration.Sockets.SocketServer.IdnHost;
+            int port = System.Net.Test.Common.Configuration.Sockets.SocketServer.Port;
+
+            using (TcpClient client = new TcpClient(host, port))
+            {
+                Assert.True(client.Connected);
+                Assert.NotNull(client.Client);
+                Assert.Same(client.Client, client.Client);
+            }
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -85,6 +115,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
+        [InlineData(3)]
         public void Connect_DnsEndPoint_Success(int mode)
         {
             using (TcpClient client = new TcpClient())
@@ -98,10 +129,15 @@ namespace System.Net.Sockets.Tests
                 {
                     client.Connect(host, port);
                 }
+                else if (mode == 1)
+                {
+                    client.Client = null;
+                    client.Connect(host, port);
+                }
                 else
                 {
                     IPAddress[] addresses = Dns.GetHostAddresses(host);
-                    if (mode == 1)
+                    if (mode == 2)
                     {
                         client.Connect(addresses[0], port);
                     }
@@ -150,27 +186,13 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
-        public void ExclusiveAddressUse_NullClient_Windows()
+        public void ExclusiveAddressUse_NullClient()
         {
             using (TcpClient client = new TcpClient())
             {
                 client.Client = null;
 
                 Assert.False(client.ExclusiveAddressUse);
-            }
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]  // ExclusiveAddressUse=false only supported on Windows
-        public void ExclusiveAddressUse_NullClient_NonWindows()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                client.Client = null;
-
-                Assert.True(client.ExclusiveAddressUse);
             }
         }
 
@@ -218,6 +240,11 @@ namespace System.Net.Sockets.Tests
                 client.LingerState = new LingerOption(true, 42);
                 Assert.True(client.LingerState.Enabled);
                 Assert.Equal(42, client.LingerState.LingerTime);
+
+                client.LingerState = new LingerOption(true, 0);
+                Assert.True(client.LingerState.Enabled);
+                Assert.Equal(0, client.LingerState.LingerTime);
+
                 client.LingerState = new LingerOption(false, 0);
                 Assert.False(client.LingerState.Enabled);
                 Assert.Equal(0, client.LingerState.LingerTime);
@@ -244,9 +271,9 @@ namespace System.Net.Sockets.Tests
             using (TcpClient client = new TcpClient())
             {
                 client.ReceiveBufferSize = 4096;
-                Assert.Equal(4096, client.ReceiveBufferSize);
+                Assert.InRange(client.ReceiveBufferSize, 4096, int.MaxValue);
                 client.ReceiveBufferSize = 8192;
-                Assert.Equal(8192, client.ReceiveBufferSize);
+                Assert.InRange(client.ReceiveBufferSize, 8192, int.MaxValue);
             }
         }
 
@@ -257,9 +284,9 @@ namespace System.Net.Sockets.Tests
             using (TcpClient client = new TcpClient())
             {
                 client.SendBufferSize = 4096;
-                Assert.Equal(4096, client.SendBufferSize);
+                Assert.InRange(client.SendBufferSize, 4096, int.MaxValue);
                 client.SendBufferSize = 8192;
-                Assert.Equal(8192, client.SendBufferSize);
+                Assert.InRange(client.SendBufferSize, 8192, int.MaxValue);
             }
         }
 
