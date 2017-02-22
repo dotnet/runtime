@@ -60,6 +60,7 @@ namespace Microsoft.DotNet.Host.Build
 
         [Target]
         [BuildPlatforms(BuildPlatform.Ubuntu, "14.04")]
+        [BuildArchitectures(BuildArchitecture.x64)]
         public static BuildTargetResult PublishDotnetDebToolPackage(BuildTargetContext c)
         {
             string nugetFeedUrl = EnvVars.EnsureVariable("CLI_NUGET_FEED_URL");
