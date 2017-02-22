@@ -1638,20 +1638,9 @@ double ValueNumStore::GetConstantDouble(ValueNum argVN)
 float ValueNumStore::GetConstantSingle(ValueNum argVN)
 {
     assert(IsVNConstant(argVN));
-    var_types argVNtyp = TypeOfVN(argVN);
-    assert(argVNtyp == TYP_FLOAT);
+    assert(TypeOfVN(argVN) == TYP_FLOAT);
 
-    float result = 0;
-
-    switch (argVNtyp)
-    {
-        case TYP_FLOAT:
-            result = ConstantValue<float>(argVN);
-            break;
-        default:
-            unreached();
-    }
-    return result;
+    return ConstantValue<float>(argVN);
 }
 
 // Compute the proper value number when the VNFunc has all constant arguments
@@ -3289,6 +3278,10 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormVal(arg0VN));
+
+    // If the math intrinsic is not implemented by target-specific instructions, such as implemented
+    // by user calls, then don't do constant folding on it. This minimizes precision loss.
+
     if (IsVNConstant(arg0VN) && Compiler::IsTargetIntrinsic(gtMathFN))
     {
         assert(varTypeIsFloating(TypeOfVN(arg0VN)));
@@ -3297,9 +3290,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
         {
             // Both operand and its result must be of the same floating point type.
             assert(typ == TypeOfVN(arg0VN));
-
-            // If the math intrinsic is not implemented by target-specific instructions, such as implemented
-            // by user calls, then don't do constant folding on it. This minimizes precision loss.
             double arg0Val = GetConstantDouble(arg0VN);
 
             double res = 0.0;
@@ -3330,9 +3320,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
         {
             // Both operand and its result must be of the same floating point type.
             assert(typ == TypeOfVN(arg0VN));
-
-            // If the math intrinsic is not implemented by target-specific instructions, such as implemented
-            // by user calls, then don't do constant folding on it. This minimizes precision loss.
             float arg0Val = GetConstantSingle(arg0VN);
 
             float res = 0.0f;
@@ -3361,33 +3348,30 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMat
         }
         else
         {
+            // CORINFO_INTRINSIC_Round is currently the only intrinsic that takes floating-point arguments
+            // and that returns a non floating-point result.
+
             assert(typ == TYP_INT);
             assert(gtMathFN == CORINFO_INTRINSIC_Round);
 
             int res = 0;
-            if (gtMathFN == CORINFO_INTRINSIC_Round)
+
+            switch (TypeOfVN(arg0VN))
             {
-                switch (TypeOfVN(arg0VN))
+                case TYP_DOUBLE:
                 {
-                    case TYP_DOUBLE:
-                    {
-                        double arg0Val = GetConstantDouble(arg0VN);
-                        res            = int(FloatingPointUtils::round(arg0Val));
-                        break;
-                    }
-                    case TYP_FLOAT:
-                    {
-                        float arg0Val = GetConstantSingle(arg0VN);
-                        res           = int(FloatingPointUtils::round(arg0Val));
-                        break;
-                    }
-                    default:
-                        unreached();
+                    double arg0Val = GetConstantDouble(arg0VN);
+                    res            = int(FloatingPointUtils::round(arg0Val));
+                    break;
                 }
-            }
-            else
-            {
-                unreached(); // the above is the only math intrinsics at the time of this writing.
+                case TYP_FLOAT:
+                {
+                    float arg0Val = GetConstantSingle(arg0VN);
+                    res           = int(FloatingPointUtils::round(arg0Val));
+                    break;
+                }
+                default:
+                    unreached();
             }
 
             return VNForIntCon(res);
