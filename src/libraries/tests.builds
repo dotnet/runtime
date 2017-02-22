@@ -10,8 +10,13 @@
   <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
+  <PropertyGroup>
+    <_ProjectPattern Condition="'$(Performance)'!='true'">.Tests</_ProjectPattern>
+    <_ProjectPattern Condition="'$(Performance)'=='true'">.Performance.Tests</_ProjectPattern>
+  </PropertyGroup>
+  
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(TestProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).csproj" Exclude="@(TestProjectExclusions)" />
   </ItemGroup>
 
   <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets')" />
