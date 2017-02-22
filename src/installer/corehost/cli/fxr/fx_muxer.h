@@ -33,8 +33,8 @@ private:
         const std::vector<pal::string_t>& probe_realpaths,
         const runtime_config_t& config,
         pal::string_t* impl_dir);
-    static void resolve_roll_forward(pal::string_t& fx_dir, const pal::string_t& fx_ver, const fx_ver_t& specified);
-    static pal::string_t resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config, const pal::string_t& specified_fx_version);
+    static void resolve_roll_forward(pal::string_t& fx_dir, const pal::string_t& fx_ver, const fx_ver_t& specified, const bool& patch_roll_fwd, const int& roll_fwd_on_no_candidate_fx);
+    static pal::string_t resolve_fx_dir(host_mode_t mode, const pal::string_t& own_dir, const runtime_config_t& config, const pal::string_t& specified_fx_version, const int& roll_fwd_on_no_candidate_fx_val);
     static pal::string_t resolve_cli_version(const pal::string_t& global);
     static bool resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::string_t* cli_sdk);
 };
