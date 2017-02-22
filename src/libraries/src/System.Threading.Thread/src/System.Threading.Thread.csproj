@@ -5,8 +5,6 @@
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <!-- Type being defined conflicts with imported type from dependency assembly -->
     <NoWarn>436</NoWarn>
     <ProjectGuid>{06197EED-FF48-43F3-976D-463839D43E8C}</ProjectGuid>
