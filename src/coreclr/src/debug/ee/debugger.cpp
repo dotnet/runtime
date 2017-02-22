@@ -8134,8 +8134,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     pExState->GetFlags()->SetDebugCatchHandlerFound();
 
 #ifdef DEBUGGING_SUPPORTED
-
-
+#ifdef DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
     if ( (pThread != NULL) &&
          (pThread->IsExceptionInProgress()) &&
          (pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo()) )
@@ -8146,6 +8145,7 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
         //
         ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_CHAIN_END) pExceptionPointers->ExceptionRecord);
     }
+#endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 #endif // DEBUGGING_SUPPORTED
 
     return EXCEPTION_CONTINUE_SEARCH;
