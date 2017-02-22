@@ -121,6 +121,7 @@ namespace System.Diagnostics.Tests
                     return name == "StructPayload";
                 };
 
+                Assert.False(listener.IsEnabled());
                 using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate))
                 {
                     Assert.False(source.IsEnabled("Uninteresting"));
@@ -129,6 +130,7 @@ namespace System.Diagnostics.Tests
                     Assert.True(source.IsEnabled("StructPayload", "arg1", "arg2"));
                     Assert.True(seenUninteresting);
                     Assert.True(seenStructPayload);
+                    Assert.True(listener.IsEnabled());
                 }
             }
         }

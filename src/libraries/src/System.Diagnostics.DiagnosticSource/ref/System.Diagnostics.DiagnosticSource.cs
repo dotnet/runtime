@@ -11,6 +11,7 @@ namespace System.Diagnostics {
     public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
     public static IObservable<DiagnosticListener> AllListeners { get { throw null; } } 
     public virtual void Dispose() { }
+    public bool IsEnabled() { throw null; }
     public override bool IsEnabled(string name) { throw null; }
     public override bool IsEnabled(string name, object arg1, object arg2 = null) { throw null; }
     public System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer) { throw null; }
