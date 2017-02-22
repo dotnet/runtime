@@ -230,6 +230,30 @@ double ValueNumStore::EvalOp<double>(VNFunc vnf, double v0, double v1, ValueNum*
     }
 }
 
+// Specialize for float for floating operations, that doesn't involve unsigned.
+template <>
+float ValueNumStore::EvalOp<float>(VNFunc vnf, float v0, float v1, ValueNum* pExcSet)
+{
+    genTreeOps oper = genTreeOps(vnf);
+    // Here we handle those that are the same for floating-point types.
+    switch (oper)
+    {
+        case GT_ADD:
+            return v0 + v1;
+        case GT_SUB:
+            return v0 - v1;
+        case GT_MUL:
+            return v0 * v1;
+        case GT_DIV:
+            return v0 / v1;
+        case GT_MOD:
+            return fmodf(v0, v1);
+
+        default:
+            unreached();
+    }
+}
+
 template <typename T>
 int ValueNumStore::EvalComparison(VNFunc vnf, T v0, T v1)
 {
@@ -961,6 +985,17 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     }
 }
 
+// Windows x86 and Windows ARM/ARM64 may not define _isnanf() but they do define _isnan().
+// We will redirect the macros to these other functions if the macro is not defined for the
+// platform. This has the side effect of a possible implicit upcasting for arguments passed.
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+
+#if !defined(_isnanf)
+#define _isnanf _isnan
+#endif
+
+#endif
+
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
     assert(arg0VN != NoVN && arg1VN != NoVN);
@@ -988,8 +1023,12 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // We don't try to fold a binary operation when one of the constant operands
         // is a floating-point constant and the other is not.
         //
-        bool arg0IsFloating = varTypeIsFloating(TypeOfVN(arg0VN));
-        bool arg1IsFloating = varTypeIsFloating(TypeOfVN(arg1VN));
+        var_types arg0VNtyp      = TypeOfVN(arg0VN);
+        bool      arg0IsFloating = varTypeIsFloating(arg0VNtyp);
+
+        var_types arg1VNtyp      = TypeOfVN(arg1VN);
+        bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
+
         if (arg0IsFloating != arg1IsFloating)
         {
             canFold = false;
@@ -999,8 +1038,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         // comparison would return false, an unordered comparison
         // will return true if any operands are a NaN. We only perform
         // ordered NaN comparison in EvalComparison.
-        if ((arg0IsFloating && _isnan(GetConstantDouble(arg0VN))) ||
-            (arg1IsFloating && _isnan(GetConstantDouble(arg1VN))))
+        if ((arg0IsFloating && (((arg0VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg0VN))) ||
+                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg0VN))))) ||
+            (arg1IsFloating && (((arg1VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg1VN))) ||
+                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg1VN))))))
         {
             canFold = false;
         }
@@ -1609,28 +1650,14 @@ INT64 ValueNumStore::GetConstantInt64(ValueNum argVN)
     return result;
 }
 
-// Given a float or a double constant value number return its value as a double.
+// Given a double constant value number return its value as a double.
 //
 double ValueNumStore::GetConstantDouble(ValueNum argVN)
 {
     assert(IsVNConstant(argVN));
-    var_types argVNtyp = TypeOfVN(argVN);
-    assert(varTypeIsFloating(argVNtyp));
+    assert(TypeOfVN(argVN) == TYP_DOUBLE);
 
-    double result = 0;
-
-    switch (argVNtyp)
-    {
-        case TYP_FLOAT:
-            result = (double)ConstantValue<float>(argVN);
-            break;
-        case TYP_DOUBLE:
-            result = ConstantValue<double>(argVN);
-            break;
-        default:
-            unreached();
-    }
-    return result;
+    return ConstantValue<double>(argVN);
 }
 
 // Given a float constant value number return its value as a float.
@@ -1809,40 +1836,52 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
     assert(CanEvalForConstantArgs(func));
     assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
-    // We expect both argument types to be floating point types
+    // We expect both argument types to be floating-point types
     var_types arg0VNtyp = TypeOfVN(arg0VN);
     var_types arg1VNtyp = TypeOfVN(arg1VN);
 
     assert(varTypeIsFloating(arg0VNtyp));
     assert(varTypeIsFloating(arg1VNtyp));
 
-    double arg0Val = GetConstantDouble(arg0VN);
-    double arg1Val = GetConstantDouble(arg1VN);
+    // We also expect both arguments to be of the same floating-point type
+    assert(arg0VNtyp == arg1VNtyp);
 
     ValueNum result; // left uninitialized, we are required to initialize it on all paths below.
 
     if (VNFuncIsComparison(func))
     {
         assert(genActualType(typ) == TYP_INT);
-        result = VNForIntCon(EvalComparison(func, arg0Val, arg1Val));
+
+        if (arg0VNtyp == TYP_FLOAT)
+        {
+            result = VNForIntCon(EvalComparison(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN)));
+        }
+        else
+        {
+            assert(arg0VNtyp == TYP_DOUBLE);
+            result = VNForIntCon(EvalComparison(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN)));
+        }
     }
     else
     {
-        assert(varTypeIsFloating(typ)); // We must be computing a floating point result
+        // We expect the return type to be the same as the argument type
+        assert(varTypeIsFloating(typ));
+        assert(arg0VNtyp == typ);
 
-        // We always compute the result using a double
-        ValueNum exception       = VNForEmptyExcSet();
-        double   doubleResultVal = EvalOp(func, arg0Val, arg1Val, &exception);
-        assert(exception == VNForEmptyExcSet()); // Floating point ops don't throw.
+        ValueNum exception = VNForEmptyExcSet();
 
         if (typ == TYP_FLOAT)
         {
-            float floatResultVal = float(doubleResultVal);
-            result               = VNForFloatCon(floatResultVal);
+            float floatResultVal = EvalOp(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN), &exception);
+            assert(exception == VNForEmptyExcSet()); // Floating point ops don't throw.
+            result = VNForFloatCon(floatResultVal);
         }
         else
         {
             assert(typ == TYP_DOUBLE);
+
+            double doubleResultVal = EvalOp(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN), &exception);
+            assert(exception == VNForEmptyExcSet()); // Floating point ops don't throw.
             result = VNForDoubleCon(doubleResultVal);
         }
     }
@@ -2038,6 +2077,47 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     }
             }
         case TYP_FLOAT:
+        {
+            float arg0Val = GetConstantSingle(arg0VN);
+
+            switch (castToType)
+            {
+                case TYP_BYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT8(arg0Val));
+                case TYP_BOOL:
+                case TYP_UBYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT8(arg0Val));
+                case TYP_SHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT16(arg0Val));
+                case TYP_CHAR:
+                case TYP_USHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT16(arg0Val));
+                case TYP_INT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT32(arg0Val));
+                case TYP_UINT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT32(arg0Val));
+                case TYP_LONG:
+                    assert(typ == TYP_LONG);
+                    return VNForLongCon(INT64(arg0Val));
+                case TYP_ULONG:
+                    assert(typ == TYP_LONG);
+                    return VNForLongCon(UINT64(arg0Val));
+                case TYP_FLOAT:
+                    assert(typ == TYP_FLOAT);
+                    return VNForFloatCon(arg0Val);
+                case TYP_DOUBLE:
+                    assert(typ == TYP_DOUBLE);
+                    return VNForDoubleCon(double(arg0Val));
+                default:
+                    unreached();
+            }
+        }
         case TYP_DOUBLE:
         {
             double arg0Val = GetConstantDouble(arg0VN);
