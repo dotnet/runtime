@@ -1518,14 +1518,21 @@ protected:
     // IG of the epilog, and use it to find the epilog offset at the end of code generation.
     struct EpilogList
     {
-        EpilogList* elNext;
-        insGroup*   elIG;
+        EpilogList*  elNext;
+        emitLocation elLoc;
+
+        EpilogList()
+            : elNext(nullptr), elLoc()
+        {
+        }
     };
 
     EpilogList* emitEpilogList; // per method epilog list - head
     EpilogList* emitEpilogLast; // per method epilog list - tail
 
 public:
+    void emitStartEpilog();
+
     bool emitHasEpilogEnd();
 
     size_t emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp);
@@ -1534,8 +1541,6 @@ public:
 
     void emitBegPrologEpilog(insGroup* igPh);
     void emitEndPrologEpilog();
-
-    emitLocation emitEpilogBegLoc;
 
     void emitBegFnEpilog(insGroup* igPh);
     void emitEndFnEpilog();

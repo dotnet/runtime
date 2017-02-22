@@ -1027,7 +1027,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPlaceholderList = emitPlaceholderLast = nullptr;
 
 #ifdef JIT32_GCENCODER
-    emitEpilogList = emitEpilogLast = NULL;
+    emitEpilogList = emitEpilogLast = nullptr;
 #endif // JIT32_GCENCODER
 
     /* We don't have any jumps */
@@ -1215,14 +1215,12 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
     EpilogList* el;
     size_t      sz;
 
-    for (el = emitEpilogList, sz = 0; el; el = el->elNext)
+    for (el = emitEpilogList, sz = 0; el != nullptr; el = el->elNext)
     {
-        assert(el->elIG->igFlags & IGF_EPILOG);
+        assert(el->elLoc.GetIG()->igFlags & IGF_EPILOG);
 
-        UNATIVE_OFFSET ofs =
-            el->elIG->igOffs; // The epilog starts at the beginning of the IG, so the IG offset is correct
-
-        sz += fp(cp, ofs);
+        // The epilog starts at the location recorded in the epilog list.
+        sz += fp(cp, el->elLoc.CodeOffset(this));
     }
 
     return sz;
@@ -1957,22 +1955,20 @@ void emitter::emitBegFnEpilog(insGroup* igPh)
 
 #ifdef JIT32_GCENCODER
 
-    EpilogList* el = new (emitComp, CMK_GC) EpilogList;
-    el->elNext     = NULL;
-    el->elIG       = emitCurIG;
+    EpilogList* el = new (emitComp, CMK_GC) EpilogList();
 
-    if (emitEpilogLast)
+    if (emitEpilogLast != nullptr)
+    {
         emitEpilogLast->elNext = el;
+    }
     else
+    {
         emitEpilogList = el;
+    }
 
     emitEpilogLast = el;
 
 #endif // JIT32_GCENCODER
-
-    /* Remember current position so that we can compute total epilog size */
-
-    emitEpilogBegLoc.CaptureLocation(this);
 }
 
 /*****************************************************************************
@@ -1984,8 +1980,11 @@ void emitter::emitEndFnEpilog()
 {
     emitEndPrologEpilog();
 
+#ifdef JIT32_GCENCODER
+    assert(emitEpilogLast != nullptr);
+
     UNATIVE_OFFSET newSize;
-    UNATIVE_OFFSET epilogBegCodeOffset = emitEpilogBegLoc.CodeOffset(this);
+    UNATIVE_OFFSET epilogBegCodeOffset = emitEpilogLast->elLoc.CodeOffset(this);
 #ifdef _TARGET_XARCH_
     UNATIVE_OFFSET epilogExitSeqStartCodeOffset = emitExitSeqBegLoc.CodeOffset(this);
 #else
@@ -2021,6 +2020,7 @@ void emitter::emitEndFnEpilog()
     }
 
 #endif // _TARGET_X86_
+#endif // JIT32_GCENCODER
 }
 
 #if FEATURE_EH_FUNCLETS
@@ -2067,7 +2067,18 @@ void emitter::emitEndFuncletEpilog()
 
 #endif // FEATURE_EH_FUNCLETS
 
+
 #ifdef JIT32_GCENCODER
+
+//
+// emitter::emitStartEpilog:
+//   Mark the current position so that we can later compute the total epilog size.
+//
+void emitter::emitStartEpilog()
+{
+    assert(emitEpilogLast != nullptr);
+    emitEpilogLast->elLoc.CaptureLocation(this);
+}
 
 /*****************************************************************************
  *
