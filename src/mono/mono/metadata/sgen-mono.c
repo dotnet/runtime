@@ -1051,7 +1051,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 {
 	int p_var, size_var, real_size_var, thread_var G_GNUC_UNUSED;
 	gboolean slowpath = variant == MANAGED_ALLOCATOR_SLOW_PATH;
-	guint32 fastpath_branch, max_size_branch;
+	guint32 fastpath_branch, max_size_branch, no_oom_branch;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
@@ -1353,6 +1353,13 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	} else {
 		g_assert_not_reached ();
 	}
+
+	/* if (ret == NULL) throw OOM; */
+	mono_mb_emit_byte (mb, CEE_DUP);
+	no_oom_branch = mono_mb_emit_branch (mb, CEE_BRTRUE);
+	mono_mb_emit_exception (mb, "OutOfMemoryException", NULL);
+
+	mono_mb_patch_branch (mb, no_oom_branch);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* Fastpath */
