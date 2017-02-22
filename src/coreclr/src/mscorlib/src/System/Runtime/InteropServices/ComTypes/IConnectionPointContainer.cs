@@ -11,11 +11,11 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
-
-    [Guid("B196B284-BAB4-101A-B69C-00AA00341D07")]   
+    [Guid("B196B284-BAB4-101A-B69C-00AA00341D07")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface IConnectionPointContainer

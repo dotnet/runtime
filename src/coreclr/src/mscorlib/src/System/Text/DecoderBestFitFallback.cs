@@ -5,21 +5,22 @@
 //
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
 //
+
+using System;
+using System.Text;
+using System.Threading;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Text;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     internal sealed class InternalDecoderBestFitFallback : DecoderFallback
     {
         // Our variables
         internal Encoding encoding = null;
-        internal char[]   arrayBestFit = null;
-        internal char     cReplacement = '?';
+        internal char[] arrayBestFit = null;
+        internal char cReplacement = '?';
 
         internal InternalDecoderBestFitFallback(Encoding encoding)
         {
@@ -61,10 +62,10 @@ namespace System.Text
     internal sealed class InternalDecoderBestFitFallbackBuffer : DecoderFallbackBuffer
     {
         // Our variables
-        internal char                   cBestFit = '\0';
-        internal int                    iCount = -1;
-        internal int                    iSize;
-        private InternalDecoderBestFitFallback  oFallback;
+        internal char cBestFit = '\0';
+        internal int iCount = -1;
+        internal int iSize;
+        private InternalDecoderBestFitFallback oFallback;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
@@ -84,12 +85,12 @@ namespace System.Text
         // Constructor
         public InternalDecoderBestFitFallbackBuffer(InternalDecoderBestFitFallback fallback)
         {
-            this.oFallback = fallback;
+            oFallback = fallback;
 
             if (oFallback.arrayBestFit == null)
             {
                 // Lock so we don't confuse ourselves.
-                lock(InternalSyncObject)
+                lock (InternalSyncObject)
                 {
                     // Double check before we do it again.
                     if (oFallback.arrayBestFit == null)
@@ -119,7 +120,7 @@ namespace System.Text
             // We want it to get < 0 because == 0 means that the current/last character is a fallback
             // and we need to detect recursion.  We could have a flag but we already have this counter.
             iCount--;
-            
+
             // Do we have anything left? 0 is now last fallback char, negative is nothing left
             if (iCount < 0)
                 return '\0';
@@ -228,7 +229,7 @@ namespace System.Text
             }
 
             for (index = lowBound; index < highBound; index += 2)
-            {               
+            {
                 if (oFallback.arrayBestFit[index] == cCheck)
                 {
                     // We found it

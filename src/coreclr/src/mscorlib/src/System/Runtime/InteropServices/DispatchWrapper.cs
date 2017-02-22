@@ -11,11 +11,12 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-   
-    using System;
-    using System.Security;
 
+using System;
+using System.Security;
+
+namespace System.Runtime.InteropServices
+{
     [Serializable]
     public sealed class DispatchWrapper
     {
@@ -32,9 +33,9 @@ namespace System.Runtime.InteropServices {
             m_WrappedObject = obj;
         }
 
-        public Object WrappedObject 
+        public Object WrappedObject
         {
-            get 
+            get
             {
                 return m_WrappedObject;
             }

@@ -11,10 +11,11 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-   
-    using System;
 
+using System;
+
+namespace System.Runtime.InteropServices
+{
     [Serializable]
     public sealed class ErrorWrapper
     {
@@ -28,16 +29,16 @@ namespace System.Runtime.InteropServices {
             if (!(errorCode is int))
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeInt32"), nameof(errorCode));
             m_ErrorCode = (int)errorCode;
-        }        
+        }
 
         public ErrorWrapper(Exception e)
         {
             m_ErrorCode = Marshal.GetHRForException(e);
         }
 
-        public int ErrorCode 
+        public int ErrorCode
         {
-            get 
+            get
             {
                 return m_ErrorCode;
             }

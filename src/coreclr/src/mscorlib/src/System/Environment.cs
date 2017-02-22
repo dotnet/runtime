@@ -11,7 +11,9 @@
 **
 **
 ============================================================*/
-namespace System {
+
+namespace System
+{
     using System.IO;
     using System.Security;
     using System.Resources;
@@ -40,18 +42,19 @@ namespace System {
     public static partial class Environment
     {
         // Assume the following constants include the terminating '\0' - use <, not <=
-        const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
+        private const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
         // System environment variables are stored in the registry, and have 
         // a size restriction that is separate from both normal environment 
         // variables and registry value name lengths, according to MSDN.
         // MSDN doesn't detail whether the name is limited to 1024, or whether
         // that includes the contents of the environment variable.
-        const int MaxSystemEnvVariableLength = 1024;
-        const int MaxUserEnvVariableLength = 255;
+        private const int MaxSystemEnvVariableLength = 1024;
+        private const int MaxUserEnvVariableLength = 255;
 
         internal sealed class ResourceHelper
         {
-            internal ResourceHelper(String name) {
+            internal ResourceHelper(String name)
+            {
                 m_name = name;
             }
 
@@ -61,7 +64,7 @@ namespace System {
             // To avoid infinite loops when calling GetResourceString.  See comments
             // in GetResourceString for this field.
             private List<string> currentlyLoading;
-        
+
             // process-wide state (since this is only used in one domain), 
             // used to avoid the TypeInitialization infinite recusion
             // in GetResourceStringCode
@@ -69,9 +72,11 @@ namespace System {
 
             // Is this thread currently doing infinite resource lookups?
             private int infinitelyRecursingCount;
-            
-            internal String GetResourceString(String key)  {
-                if (key == null || key.Length == 0) {
+
+            internal String GetResourceString(String key)
+            {
+                if (key == null || key.Length == 0)
+                {
                     Debug.Assert(false, "Environment::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
                     return "[Resource lookup failed - null or empty resource name]";
                 }
@@ -87,7 +92,7 @@ namespace System {
                 // this is not a bounded set of code, and we need to fix the problem.
                 // Fortunately, this is limited to mscorlib's error lookups and is NOT
                 // a general problem for all user code using the ResourceManager.
-                
+
                 // The solution is to make sure only one thread at a time can call 
                 // GetResourceString.  Also, since resource lookups can be 
                 // reentrant, if the same thread comes into GetResourceString
@@ -169,13 +174,16 @@ namespace System {
 
         private static volatile ResourceHelper m_resHelper;  // Doesn't need to be initialized as they're zero-init.
 
-        private const  int    MaxMachineNameLength = 256;
+        private const int MaxMachineNameLength = 256;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject {
-            get {
-                if (s_InternalSyncObject == null) {
+        private static Object InternalSyncObject
+        {
+            get
+            {
+                if (s_InternalSyncObject == null)
+                {
                     Object o = new Object();
                     Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
                 }
@@ -192,25 +200,28 @@ namespace System {
         **Arguments: None
         **Exceptions: None
         ==============================================================================*/
-        public static extern int TickCount {
+        public static extern int TickCount
+        {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
-        
+
         // Terminates this process with the given exit code.
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         internal static extern void _Exit(int exitCode);
 
-        public static void Exit(int exitCode) {
+        public static void Exit(int exitCode)
+        {
             _Exit(exitCode);
         }
 
 
-        public static extern int ExitCode {
+        public static extern int ExitCode
+        {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
-    
+
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             set;
         }
@@ -246,22 +257,26 @@ namespace System {
         ==============================================================================*/
         internal static String CurrentDirectory
         {
-            get{
+            get
+            {
                 return Directory.GetCurrentDirectory();
             }
 
-            set { 
+            set
+            {
                 Directory.SetCurrentDirectory(value);
             }
         }
 
         // Returns the system directory (ie, C:\WinNT\System32).
-        internal static String SystemDirectory {
-            get {
+        internal static String SystemDirectory
+        {
+            get
+            {
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
                 Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r==0) __Error.WinIOError();
+                if (r == 0) __Error.WinIOError();
                 String path = sb.ToString();
 
                 return path;
@@ -274,14 +289,16 @@ namespace System {
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
-            if (name.Length == 0) {
+            if (name.Length == 0)
+            {
                 return name;
             }
 
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode()) {
+            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
+            {
                 // Environment variable accessors are not approved modern API.
                 // Behave as if no variables are defined in this case.
-                return name; 
+                return name;
             }
 
             int currentSize = 100;
@@ -314,8 +331,9 @@ namespace System {
             size = Win32Native.ExpandEnvironmentStrings(name, blob, currentSize);
             if (size == 0)
                 Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            
-            while (size > currentSize) {
+
+            while (size > currentSize)
+            {
                 currentSize = size;
                 blob.Capacity = currentSize;
                 blob.Length = 0;
@@ -329,9 +347,10 @@ namespace System {
             return blob.ToString();
         }
 
-        public static String MachineName {
-            get {
-
+        public static String MachineName
+        {
+            get
+            {
                 // UWP Debug scenarios
                 if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
                 {
@@ -353,8 +372,10 @@ namespace System {
         [SuppressUnmanagedCodeSecurity]
         private static extern Int32 GetProcessorCount();
 
-        public static int ProcessorCount {
-            get {
+        public static int ProcessorCount
+        {
+            get
+            {
                 return GetProcessorCount();
             }
         }
@@ -381,7 +402,7 @@ namespace System {
              * So our best bet is to simply use the commandLine that was used to invoke the process.
              * in case it is present.
              */
-            if(s_CommandLineArgs != null)
+            if (s_CommandLineArgs != null)
                 return (string[])s_CommandLineArgs.Clone();
 
             return GetCommandLineArgsNative();
@@ -450,8 +471,10 @@ namespace System {
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public static String NewLine {
-            get {
+        public static String NewLine
+        {
+            get
+            {
                 Contract.Ensures(Contract.Result<String>() != null);
 #if !PLATFORM_UNIX
                 return "\r\n";
@@ -461,21 +484,22 @@ namespace System {
             }
         }
 
-        
+
         /*===================================Version====================================
         **Action: Returns the COM+ version struct, describing the build number.
         **Returns:
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        public static Version Version {
-            get {
-
+        public static Version Version
+        {
+            get
+            {
                 // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
                 // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part.Starting with 4.6 we switched to a file versioning
                 // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
-                
-                return new Version(4,0,30319,42000);
+
+                return new Version(4, 0, 30319, 42000);
             }
         }
 
@@ -485,17 +509,20 @@ namespace System {
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        internal static OperatingSystem OSVersion {
-            get {
+        internal static OperatingSystem OSVersion
+        {
+            get
+            {
                 Contract.Ensures(Contract.Result<OperatingSystem>() != null);
 
-                if (m_os==null) { // We avoid the lock since we don't care if two threads will set this at the same time.
-
+                if (m_os == null)
+                { // We avoid the lock since we don't care if two threads will set this at the same time.
                     Microsoft.Win32.Win32Native.OSVERSIONINFO osvi = new Microsoft.Win32.Win32Native.OSVERSIONINFO();
-                    if (!GetVersion(osvi)) {
+                    if (!GetVersion(osvi))
+                    {
                         throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_GetVersion"));
                     }
-                            
+
                     Microsoft.Win32.Win32Native.OSVERSIONINFOEX osviEx = new Microsoft.Win32.Win32Native.OSVERSIONINFOEX();
                     if (!GetVersionEx(osviEx))
                         throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_GetVersion"));
@@ -506,7 +533,7 @@ namespace System {
                     PlatformID id = PlatformID.Win32NT;
 #endif // PLATFORM_UNIX
 
-                    Version v =  new Version(osvi.MajorVersion, osvi.MinorVersion, osvi.BuildNumber, (osviEx.ServicePackMajor << 16) |osviEx.ServicePackMinor);
+                    Version v = new Version(osvi.MajorVersion, osvi.MinorVersion, osvi.BuildNumber, (osviEx.ServicePackMajor << 16) | osviEx.ServicePackMinor);
                     m_os = new OperatingSystem(id, v, osvi.CSDVersion);
                 }
                 Debug.Assert(m_os != null, "m_os != null");
@@ -515,15 +542,19 @@ namespace System {
         }
 
 
-        internal static bool IsWindows8OrAbove {
-            get {
+        internal static bool IsWindows8OrAbove
+        {
+            get
+            {
                 return true;
             }
         }
 
 #if FEATURE_COMINTEROP
-        internal static bool IsWinRTSupported {
-            get {
+        internal static bool IsWinRTSupported
+        {
+            get
+            {
                 return true;
             }
         }
@@ -531,10 +562,10 @@ namespace System {
 
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool GetVersion(Microsoft.Win32.Win32Native.OSVERSIONINFO  osVer);
+        internal static extern bool GetVersion(Microsoft.Win32.Win32Native.OSVERSIONINFO osVer);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool GetVersionEx(Microsoft.Win32.Win32Native.OSVERSIONINFOEX  osVer);
+        internal static extern bool GetVersionEx(Microsoft.Win32.Win32Native.OSVERSIONINFOEX osVer);
 
 
         /*==================================StackTrace==================================
@@ -543,8 +574,10 @@ namespace System {
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        public static String StackTrace {
-            get {
+        public static String StackTrace
+        {
+            get
+            {
                 Contract.Ensures(Contract.Result<String>() != null);
 
                 return GetStackTrace(null, true);
@@ -564,28 +597,31 @@ namespace System {
                 st = new StackTrace(e, needFileInfo);
 
             // Do no include a trailing newline for backwards compatibility
-            return st.ToString( System.Diagnostics.StackTrace.TraceFormat.Normal );
+            return st.ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
-        private static void InitResourceHelper() {
+        private static void InitResourceHelper()
+        {
             // Only the default AppDomain should have a ResourceHelper.  All calls to 
             // GetResourceString from any AppDomain delegate to GetResourceStringLocal 
             // in the default AppDomain via the fcall GetResourceFromDefault.
 
             bool tookLock = false;
             RuntimeHelpers.PrepareConstrainedRegions();
-            try {
-
+            try
+            {
                 Monitor.Enter(Environment.InternalSyncObject, ref tookLock);
 
-                if (m_resHelper == null) {
+                if (m_resHelper == null)
+                {
                     ResourceHelper rh = new ResourceHelper(System.CoreLib.Name);
 
                     System.Threading.Thread.MemoryBarrier();
-                    m_resHelper =rh;
+                    m_resHelper = rh;
                 }
             }
-            finally {
+            finally
+            {
                 if (tookLock)
                     Monitor.Exit(Environment.InternalSyncObject);
             }
@@ -596,14 +632,16 @@ namespace System {
         // if you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-        internal static String GetResourceStringLocal(String key) {
+        internal static String GetResourceStringLocal(String key)
+        {
             if (m_resHelper == null)
                 InitResourceHelper();
 
             return m_resHelper.GetResourceString(key);
         }
 
-        internal static String GetResourceString(String key) {
+        internal static String GetResourceString(String key)
+        {
             return GetResourceStringLocal(key);
         }
 
@@ -650,14 +688,16 @@ namespace System {
             return String.Format(CultureInfo.CurrentCulture, rs, values);
         }
 
-        public static extern bool HasShutdownStarted {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern bool HasShutdownStarted
+        {
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
         internal static bool UserInteractive
         {
-            get {
+            get
+            {
                 return true;
             }
         }
@@ -680,11 +720,11 @@ namespace System {
         // TODO: Consider flushing the executionIdCache on Wait operations or similar 
         // actions that are likely to result in changing the executing core
         [ThreadStatic]
-        static int t_executionIdCache;
+        private static int t_executionIdCache;
 
-        const int ExecutionIdCacheShift = 16;
-        const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
-        const int ExecutionIdRefreshRate = 5000;
+        private const int ExecutionIdCacheShift = 16;
+        private const int ExecutionIdCacheCountDownMask = (1 << ExecutionIdCacheShift) - 1;
+        private const int ExecutionIdRefreshRate = 5000;
 
         private static int RefreshExecutionId()
         {

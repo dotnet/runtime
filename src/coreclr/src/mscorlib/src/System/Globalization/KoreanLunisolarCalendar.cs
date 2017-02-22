@@ -2,27 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Globalization {
-    using System;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Diagnostics.Contracts;
 
+namespace System.Globalization
+{
     ////////////////////////////////////////////////////////////////////////////
     //
     //  Notes about KoreanLunisolarCalendar
     //
     ////////////////////////////////////////////////////////////////////////////
-     /*
-     **  Calendar support range:
-     **      Calendar               Minimum             Maximum
-     **      ==========     ==========  ==========
-     **      Gregorian              918/02/14          2051/02/10
-     **      KoreanLunisolar    918/01/01          2050/13/29
-     */
+    /*
+    **  Calendar support range:
+    **      Calendar               Minimum             Maximum
+    **      ==========     ==========  ==========
+    **      Gregorian              918/02/14          2051/02/10
+    **      KoreanLunisolar    918/01/01          2050/13/29
+    */
 
     [Serializable]
-    public class KoreanLunisolarCalendar : EastAsianLunisolarCalendar {
-
-
+    public class KoreanLunisolarCalendar : EastAsianLunisolarCalendar
+    {
         //
         // The era value for the current era.
         //
@@ -34,9 +34,9 @@ namespace System.Globalization {
         internal const int MIN_LUNISOLAR_YEAR = 918;
         internal const int MAX_LUNISOLAR_YEAR = 2050;
 
-        internal const int MIN_GREGORIAN_YEAR  = 918;
+        internal const int MIN_GREGORIAN_YEAR = 918;
         internal const int MIN_GREGORIAN_MONTH = 2;
-        internal const int MIN_GREGORIAN_DAY   = 14;
+        internal const int MIN_GREGORIAN_DAY = 14;
 
         internal const int MAX_GREGORIAN_YEAR = 2051;
         internal const int MAX_GREGORIAN_MONTH = 2;
@@ -45,7 +45,8 @@ namespace System.Globalization {
         internal static DateTime minDate = new DateTime(MIN_GREGORIAN_YEAR, MIN_GREGORIAN_MONTH, MIN_GREGORIAN_DAY);
         internal static DateTime maxDate = new DateTime((new DateTime(MAX_GREGORIAN_YEAR, MAX_GREGORIAN_MONTH, MAX_GREGORIAN_DAY, 23, 59, 59, 999)).Ticks + 9999);
 
-        public override DateTime MinSupportedDateTime {
+        public override DateTime MinSupportedDateTime
+        {
             get
             {
                 return (minDate);
@@ -54,7 +55,8 @@ namespace System.Globalization {
 
 
 
-        public override DateTime MaxSupportedDateTime {
+        public override DateTime MaxSupportedDateTime
+        {
             get
             {
                 return (maxDate);
@@ -71,7 +73,7 @@ namespace System.Globalization {
             }
         }
 
-        static readonly int  [,] yinfo =
+        private static readonly int[,] yinfo =
         {
 /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
 918    */{    0    ,    2    ,    14    ,    21936    },/*    29    30    29    30    29    30    29    30    30    29    30    30    0    355
@@ -1210,66 +1212,73 @@ namespace System.Globalization {
         */};
 
 
-        internal override int MinCalendarYear {
+        internal override int MinCalendarYear
+        {
             get
             {
                 return (MIN_LUNISOLAR_YEAR);
             }
         }
 
-        internal override int MaxCalendarYear {
+        internal override int MaxCalendarYear
+        {
             get
             {
                 return (MAX_LUNISOLAR_YEAR);
             }
         }
 
-        internal override DateTime MinDate {
+        internal override DateTime MinDate
+        {
             get
             {
                 return (minDate);
             }
         }
 
-        internal override DateTime MaxDate {
+        internal override DateTime MaxDate
+        {
             get
             {
                 return (maxDate);
             }
         }
 
-        internal override EraInfo[] CalEraInfo {
+        internal override EraInfo[] CalEraInfo
+        {
             get
             {
                 return null;
             }
         }
 
-        internal override int  GetYearInfo(int LunarYear, int Index) {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR)) {
+        internal override int GetYearInfo(int LunarYear, int Index)
+        {
+            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            {
                 throw new ArgumentOutOfRangeException(
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
                                 Environment.GetResourceString("ArgumentOutOfRange_Range"),
                                 MIN_LUNISOLAR_YEAR,
-                                MAX_LUNISOLAR_YEAR ));
+                                MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
-        return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
-    }
+            return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+        }
 
-    internal override int GetYear(int year, DateTime time) 
-    {
+        internal override int GetYear(int year, DateTime time)
+        {
             return year;
-    }
+        }
 
-    internal override int GetGregorianYear(int year, int era) 
-    {
-            if (era != CurrentEra && era != GregorianEra) 
+        internal override int GetGregorianYear(int year, int era)
+        {
+            if (era != CurrentEra && era != GregorianEra)
                 throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
 
-            if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR) 
+            if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
@@ -1280,7 +1289,7 @@ namespace System.Globalization {
             Contract.EndContractBlock();
 
             return year;
-    }
+        }
 
         /*=================================GetDefaultInstance==========================
         **Action: Internal method to provide a default intance of KoreanLunisolarCalendar.  Used by NLS+ implementation
@@ -1301,33 +1310,41 @@ namespace System.Globalization {
 
         // Construct an instance of KoreanLunisolar calendar.
 
-        public KoreanLunisolarCalendar() {
+        public KoreanLunisolarCalendar()
+        {
         }
 
 
 
-        public override int GetEra(DateTime time) {
+        public override int GetEra(DateTime time)
+        {
             CheckTicksRange(time.Ticks);
             return (GregorianEra);
         }
 
-        internal override int BaseCalendarID {
-            get {
+        internal override int BaseCalendarID
+        {
+            get
+            {
                 return (CAL_KOREA);
             }
         }
 
-        internal override int ID {
-            get {
+        internal override int ID
+        {
+            get
+            {
                 return (CAL_KOREANLUNISOLAR);
             }
         }
 
 
 
-        public override int[] Eras {
-            get {
-                return (new int[] {GregorianEra});
+        public override int[] Eras
+        {
+            get
+            {
+                return (new int[] { GregorianEra });
             }
         }
     }

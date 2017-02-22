@@ -9,23 +9,24 @@
 **
 ** 
 ===========================================================*/
-namespace System.Threading
-{    
-    using System;
-    using System.Security;
-    using System.Runtime.Remoting;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Runtime.ExceptionServices;
-    using System.Runtime.Serialization;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Diagnostics.CodeAnalysis;
 
+using System;
+using System.Security;
+using System.Runtime.Remoting;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
+using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Diagnostics.CodeAnalysis;
+
+namespace System.Threading
+{
     public delegate void ContextCallback(Object state);
 
     internal struct ExecutionContextSwitcher
@@ -42,7 +43,7 @@ namespace System.Threading
             {
                 currentThread.SynchronizationContext = m_sc;
             }
-            
+
             if (currentThread.ExecutionContext != m_ec)
             {
                 ExecutionContext.Restore(currentThread, m_ec);
@@ -178,11 +179,11 @@ namespace System.Threading
 
             ExecutionContext previous = currentThread.ExecutionContext ?? Default;
             currentThread.ExecutionContext = executionContext;
-            
+
             // New EC could be null if that's what ECS.Undo saved off.
             // For the purposes of dealing with context change, treat this as the default EC
             executionContext = executionContext ?? Default;
-            
+
             if (previous != executionContext)
             {
                 OnContextChanged(previous, executionContext);
@@ -192,8 +193,8 @@ namespace System.Threading
         static internal void EstablishCopyOnWriteScope(Thread currentThread, ref ExecutionContextSwitcher ecsw)
         {
             Debug.Assert(currentThread == Thread.CurrentThread);
-            
-            ecsw.m_ec = currentThread.ExecutionContext; 
+
+            ecsw.m_ec = currentThread.ExecutionContext;
             ecsw.m_sc = currentThread.SynchronizationContext;
         }
 
@@ -203,7 +204,7 @@ namespace System.Threading
             Debug.Assert(previous != null);
             Debug.Assert(current != null);
             Debug.Assert(previous != current);
-            
+
             foreach (IAsyncLocal local in previous.m_localChangeNotifications)
             {
                 object previousValue;
@@ -237,10 +238,10 @@ namespace System.Threading
                 catch (Exception ex)
                 {
                     Environment.FailFast(
-                        Environment.GetResourceString("ExecutionContext_ExceptionInAsyncLocalNotification"), 
+                        Environment.GetResourceString("ExecutionContext_ExceptionInAsyncLocalNotification"),
                         ex);
                 }
-            }        
+            }
         }
 
         internal static object GetLocalValue(IAsyncLocal local)

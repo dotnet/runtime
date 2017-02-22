@@ -13,10 +13,12 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections.Generic {
-    using System;
-    using System.Diagnostics.Contracts;
 
+using System;
+using System.Diagnostics.Contracts;
+
+namespace System.Collections.Generic
+{
     // An IDictionary is a possibly unordered set of key-value pairs.
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
@@ -26,29 +28,32 @@ namespace System.Collections.Generic {
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries 
         // in the Dictionary.
-        TValue this[TKey key] {
+        TValue this[TKey key]
+        {
             get;
             set;
         }
-    
+
         // Returns a collections of the keys in this dictionary.
-        ICollection<TKey> Keys {
+        ICollection<TKey> Keys
+        {
             get;
         }
-    
+
         // Returns a collections of the values in this dictionary.
-        ICollection<TValue> Values {
+        ICollection<TValue> Values
+        {
             get;
         }
-    
+
         // Returns whether this dictionary contains a particular key.
         //
         bool ContainsKey(TKey key);
-    
+
         // Adds a key-value pair to the dictionary.
         // 
         void Add(TKey key, TValue value);
-    
+
         // Removes a particular key from the dictionary.
         //
         bool Remove(TKey key);

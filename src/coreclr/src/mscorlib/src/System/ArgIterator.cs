@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-    
+namespace System
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
@@ -24,10 +24,10 @@ namespace System {
 
         // Note, sigPtrLen is actually a DWORD, but on 64bit systems this structure becomes
         // 8-byte aligned, which requires us to pad it.
-            
+
         private IntPtr ArgPtr;                  // Pointer to remaining args.
-        private int    RemainingArgs;           // # of remaining args.
-        
+        private int RemainingArgs;           // # of remaining args.
+
 #if VARARGS_ENABLED //The JIT doesn't support Varargs calling convention.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
@@ -145,18 +145,18 @@ namespace System {
             throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
         }
 
-        public void End() 
-        { 
+        public void End()
+        {
             throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
         }
 
-        public override bool Equals(Object o) 
-        {  
+        public override bool Equals(Object o)
+        {
             throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
         }
 
         public override int GetHashCode()
-        { 
+        {
             throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
         }
 
@@ -178,7 +178,7 @@ namespace System {
         }
 
         public int GetRemainingCount()
-        {  
+        {
             throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
         }
 #endif //VARARGS_ENABLED

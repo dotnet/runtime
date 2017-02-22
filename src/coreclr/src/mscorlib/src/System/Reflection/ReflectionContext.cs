@@ -13,10 +13,10 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Reflection
 {
-    using System;
-
     public abstract class ReflectionContext
     {
         protected ReflectionContext() { }

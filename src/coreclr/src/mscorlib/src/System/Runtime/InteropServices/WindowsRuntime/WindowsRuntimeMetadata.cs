@@ -4,22 +4,22 @@
 
 //
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.Contracts;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics.Contracts;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Security;
-    
     internal static class WindowsRuntimeMetadata
     {
         private static EventHandler<DesignerNamespaceResolveEventArgs> DesignerNamespaceResolve;
-        
+
         internal static string[] OnDesignerNamespaceResolveEvent(AppDomain appDomain, string namespaceName)
         {
             EventHandler<DesignerNamespaceResolveEventArgs> eventHandler = DesignerNamespaceResolve;
@@ -52,11 +52,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     }
                 }
             }
-            
+
             return null;
         }
     }
-    
+
 
     internal class DesignerNamespaceResolveEventArgs : EventArgs
     {

@@ -13,8 +13,9 @@
 **
 ** 
 ===========================================================*/
-namespace System.Resources {
 
+namespace System.Resources
+{
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -41,7 +42,6 @@ namespace System.Resources {
     //
     internal class ManifestBasedResourceGroveler : IResourceGroveler
     {
-
         private ResourceManager.ResourceManagerMediator _mediator;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
@@ -131,7 +131,6 @@ namespace System.Resources {
 
         private CultureInfo UltimateFallbackFixup(CultureInfo lookForCulture)
         {
-
             CultureInfo returnCulture = lookForCulture;
 
             // If our neutral resources were written in this culture AND we know the main assembly
@@ -154,15 +153,18 @@ namespace System.Resources {
             Debug.Assert(a != null, "assembly != null");
             string cultureName = null;
             short fallback = 0;
-            if (GetNeutralResourcesLanguageAttribute(((RuntimeAssembly)a).GetNativeHandle(), 
-                                                        JitHelpers.GetStringHandleOnStack(ref cultureName), 
-                                                        out fallback)) {
-                if ((UltimateResourceFallbackLocation)fallback < UltimateResourceFallbackLocation.MainAssembly || (UltimateResourceFallbackLocation)fallback > UltimateResourceFallbackLocation.Satellite) {
+            if (GetNeutralResourcesLanguageAttribute(((RuntimeAssembly)a).GetNativeHandle(),
+                                                        JitHelpers.GetStringHandleOnStack(ref cultureName),
+                                                        out fallback))
+            {
+                if ((UltimateResourceFallbackLocation)fallback < UltimateResourceFallbackLocation.MainAssembly || (UltimateResourceFallbackLocation)fallback > UltimateResourceFallbackLocation.Satellite)
+                {
                     throw new ArgumentException(Environment.GetResourceString("Arg_InvalidNeutralResourcesLanguage_FallbackLoc", fallback));
                 }
                 fallbackLocation = (UltimateResourceFallbackLocation)fallback;
             }
-            else {
+            else
+            {
                 fallbackLocation = UltimateResourceFallbackLocation.MainAssembly;
                 return CultureInfo.InvariantCulture;
             }
@@ -179,7 +181,7 @@ namespace System.Resources {
                 // fires, please fix the build process for the BCL directory.
                 if (a == typeof(Object).Assembly)
                 {
-                    Debug.Assert(false, System.CoreLib.Name+"'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + cultureName + "\"  Exception: " + e);
+                    Debug.Assert(false, System.CoreLib.Name + "'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + cultureName + "\"  Exception: " + e);
                     return CultureInfo.InvariantCulture;
                 }
 
@@ -201,10 +203,10 @@ namespace System.Resources {
             if (store.CanSeek && store.Length > 4)
             {
                 long startPos = store.Position;
-                
+
                 // not disposing because we want to leave stream open
                 BinaryReader br = new BinaryReader(store);
-                
+
                 // Look for our magic number as a little endian Int32.
                 int bytes = br.ReadInt32();
                 if (bytes == ResourceManager.MagicNumber)
@@ -293,7 +295,6 @@ namespace System.Resources {
                 {
                     store.Position = startPos;
                 }
-
             }
 
             if (_mediator.UserResourceSet == null)
@@ -491,7 +492,7 @@ namespace System.Resources {
         private String GetSatelliteAssemblyName()
         {
             String satAssemblyName = _mediator.MainAssembly.GetSimpleName();
-                satAssemblyName += ".resources";
+            satAssemblyName += ".resources";
             return satAssemblyName;
         }
 
@@ -529,8 +530,8 @@ namespace System.Resources {
             if (_mediator.MainAssembly == typeof(Object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
             {
                 // This would break CultureInfo & all our exceptions.
-                Debug.Assert(false, "Couldn't get " + System.CoreLib.Name+ResourceManager.ResFileExtension + " from "+System.CoreLib.Name+"'s assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
-                
+                Debug.Assert(false, "Couldn't get " + System.CoreLib.Name + ResourceManager.ResFileExtension + " from " + System.CoreLib.Name + "'s assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");
+
                 // We cannot continue further - simply FailFast.
                 string mesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
                 System.Environment.FailFast(mesgFailFast);
@@ -544,9 +545,9 @@ namespace System.Resources {
             throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoNeutralAsm", resName, _mediator.MainAssembly.GetSimpleName()));
         }
 
-            [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-            [System.Security.SuppressUnmanagedCodeSecurity]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            internal static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [System.Security.SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetNeutralResourcesLanguageAttribute(RuntimeAssembly assemblyHandle, StringHandleOnStack cultureName, out short fallbackLocation);
     }
 }

@@ -10,11 +10,13 @@
 // 
 
 //
-namespace System.Reflection {
-    
-    using System;
-    
-    public interface IReflectableType {
+
+using System;
+
+namespace System.Reflection
+{
+    public interface IReflectableType
+    {
         TypeInfo GetTypeInfo();
     }
 }

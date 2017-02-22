@@ -20,10 +20,10 @@ namespace System.Reflection
     public class ParameterInfo : ICustomAttributeProvider, IObjectReference
     {
         #region Legacy Protected Members
-        protected String NameImpl; 
-        protected Type ClassImpl; 
-        protected int PositionImpl; 
-        protected ParameterAttributes AttrsImpl; 
+        protected String NameImpl;
+        protected Type ClassImpl;
+        protected int PositionImpl;
+        protected ParameterAttributes AttrsImpl;
         protected Object DefaultValueImpl; // cannot cache this as it may be non agile user defined enum
         protected MemberInfo MemberImpl;
         #endregion
@@ -43,63 +43,65 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
-        protected ParameterInfo() 
-        { 
-        }         
+        protected ParameterInfo()
+        {
+        }
         #endregion
 
         #region Internal Members
         // this is an internal api for DynamicMethod. A better solution is to change the relationship
         // between ParameterInfo and ParameterBuilder so that a ParameterBuilder can be seen as a writer
         // api over a ParameterInfo. However that is a possible breaking change so it needs to go through some process first
-        internal void SetName(String name) 
+        internal void SetName(String name)
         {
             NameImpl = name;
         }
-        
-        internal void SetAttributes(ParameterAttributes attributes) 
+
+        internal void SetAttributes(ParameterAttributes attributes)
         {
             AttrsImpl = attributes;
         }
         #endregion
 
         #region Public Methods
-        public virtual Type ParameterType 
-        { 
-            get 
+        public virtual Type ParameterType
+        {
+            get
             {
                 return ClassImpl;
-            } 
-        }            
-        
-        public virtual String Name 
-        { 
-            get 
-            {
-                return NameImpl;
-            } 
+            }
         }
 
-        public virtual bool HasDefaultValue { get { throw new NotImplementedException(); }  }
+        public virtual String Name
+        {
+            get
+            {
+                return NameImpl;
+            }
+        }
+
+        public virtual bool HasDefaultValue { get { throw new NotImplementedException(); } }
 
         public virtual Object DefaultValue { get { throw new NotImplementedException(); } }
-        public virtual Object RawDefaultValue  { get { throw new NotImplementedException(); } } 
+        public virtual Object RawDefaultValue { get { throw new NotImplementedException(); } }
 
-        public virtual int Position { get { return PositionImpl; } }                                    
+        public virtual int Position { get { return PositionImpl; } }
         public virtual ParameterAttributes Attributes { get { return AttrsImpl; } }
 
-        public virtual MemberInfo Member {
-            get {
+        public virtual MemberInfo Member
+        {
+            get
+            {
                 Contract.Ensures(Contract.Result<MemberInfo>() != null);
                 return MemberImpl;
             }
         }
 
-        public bool IsIn { get { return((Attributes & ParameterAttributes.In) != 0); } }        
-        public bool IsOut { get { return((Attributes & ParameterAttributes.Out) != 0); } }
-        public bool IsLcid { get { return((Attributes & ParameterAttributes.Lcid) != 0); } }
-        public bool IsRetval { get { return((Attributes & ParameterAttributes.Retval) != 0); } }        
-        public bool IsOptional { get { return((Attributes & ParameterAttributes.Optional) != 0); } }
+        public bool IsIn { get { return ((Attributes & ParameterAttributes.In) != 0); } }
+        public bool IsOut { get { return ((Attributes & ParameterAttributes.Out) != 0); } }
+        public bool IsLcid { get { return ((Attributes & ParameterAttributes.Lcid) != 0); } }
+        public bool IsRetval { get { return ((Attributes & ParameterAttributes.Retval) != 0); } }
+        public bool IsOptional { get { return ((Attributes & ParameterAttributes.Optional) != 0); } }
 
         public virtual int MetadataToken
         {
@@ -117,12 +119,12 @@ namespace System.Reflection
             }
         }
 
-        public virtual Type[] GetRequiredCustomModifiers() 
+        public virtual Type[] GetRequiredCustomModifiers()
         {
             return EmptyArray<Type>.Value;
         }
 
-        public virtual Type[] GetOptionalCustomModifiers() 
+        public virtual Type[] GetOptionalCustomModifiers()
         {
             return EmptyArray<Type>.Value;
         }
@@ -413,7 +415,7 @@ namespace System.Reflection
         {
             // Change ownership
             MemberImpl = member;
-            
+
             // The original owner should always be a method, because this method is only used to 
             // change the owner from a method to a property.
             m_originalMember = accessor.MemberImpl as MethodBase;
@@ -665,7 +667,7 @@ namespace System.Reflection
         {
             get
             {
-                return m_tkParamDef; 
+                return m_tkParamDef;
             }
         }
 

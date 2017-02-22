@@ -10,7 +10,7 @@ using System.Reflection;
 
 namespace System.Reflection
 {
-    [AttributeUsage (AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class ObfuscateAssemblyAttribute : Attribute
     {
         private bool m_assemblyIsPrivate;

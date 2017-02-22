@@ -13,10 +13,12 @@
 **
 =============================================================================*/
 
-namespace System.Reflection {
-    using System;
-    
-    public class ManifestResourceInfo {
+using System;
+
+namespace System.Reflection
+{
+    public class ManifestResourceInfo
+    {
         private Assembly _containingAssembly;
         private String _containingFileName;
         private ResourceLocation _resourceLocation;
@@ -32,21 +34,24 @@ namespace System.Reflection {
 
         public virtual Assembly ReferencedAssembly
         {
-            get {
+            get
+            {
                 return _containingAssembly;
             }
         }
 
         public virtual String FileName
         {
-            get {
+            get
+            {
                 return _containingFileName;
             }
         }
 
         public virtual ResourceLocation ResourceLocation
         {
-            get {
+            get
+            {
                 return _resourceLocation;
             }
         }
@@ -54,7 +59,7 @@ namespace System.Reflection {
 
     // The ResourceLocation is a combination of these flags, set or not.
     // Linked means not Embedded.
-[Serializable]
+    [Serializable]
     [Flags]
     public enum ResourceLocation
     {

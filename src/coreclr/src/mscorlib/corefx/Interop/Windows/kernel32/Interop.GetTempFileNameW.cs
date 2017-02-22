@@ -6,9 +6,9 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
-partial class Interop
+internal partial class Interop
 {
-    partial class Kernel32
+    internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern uint GetTempFileNameW(string tmpPath, string prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);

@@ -11,13 +11,13 @@
 ** Purpose: Base interface for read-only generic lists.
 ** 
 ===========================================================*/
+
 using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-
     // Provides a read-only, covariant view of a generic list.
 
     // Note that T[] : IReadOnlyList<T>, and we want to ensure that if you use

@@ -12,18 +12,19 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-    using System;
+using System;
 
+namespace System.Runtime.InteropServices
+{
     //====================================================================
     // The enum of the return value of IQuerable.GetInterface
     //====================================================================
     [Serializable]
     public enum CustomQueryInterfaceResult
     {
-        Handled                 = 0,
-        NotHandled              = 1,
-        Failed                  = 2,
+        Handled = 0,
+        NotHandled = 1,
+        Failed = 2,
     }
 
     //====================================================================

@@ -139,27 +139,25 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 
     // Specify size directly instead of fields to avoid warnings
-    [StructLayoutAttribute(LayoutKind.Sequential, Size=8)]
+    [StructLayoutAttribute(LayoutKind.Sequential, Size = 8)]
     [WindowsRuntimeImport]
     internal struct Point
     {
-
         // float X;
         // float Y;        
     }
 
     // Specify size directly instead of fields to avoid warnings
-    [StructLayoutAttribute(LayoutKind.Sequential, Size=8)]
+    [StructLayoutAttribute(LayoutKind.Sequential, Size = 8)]
     [WindowsRuntimeImport]
     internal struct Size
     {
-
         // float Width;
         // float Height;   
     }
 
     // Specify size directly instead of fields to avoid warnings
-    [StructLayoutAttribute(LayoutKind.Sequential, Size=16)]
+    [StructLayoutAttribute(LayoutKind.Sequential, Size = 16)]
     [WindowsRuntimeImport]
     internal struct Rect
     {
@@ -167,5 +165,5 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // float Y;
         // float Width;
         // float Height;        
-    }    
+    }
 }

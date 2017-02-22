@@ -87,10 +87,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { -1 });
             // list.CopyTo(items, 0);
 
-            if(srcLen > (destLen - (arrayIndex - destLB)))
+            if (srcLen > (destLen - (arrayIndex - destLB)))
                 throw new ArgumentException(Environment.GetResourceString("Argument_InsufficientSpaceToCopyCollection"));
 
-            if(arrayIndex - destLB > destLen)
+            if (arrayIndex - destLB > destLen)
                 throw new ArgumentException(Environment.GetResourceString("Argument_IndexOutOfArrayBounds"));
 
             // We need to verify the index as we;

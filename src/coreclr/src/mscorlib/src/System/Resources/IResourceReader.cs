@@ -12,11 +12,13 @@
 **
 ** 
 ===========================================================*/
-namespace System.Resources {    
-    using System;
-    using System.IO;
-    using System.Collections;
-    
+
+using System;
+using System.IO;
+using System.Collections;
+
+namespace System.Resources
+{
     public interface IResourceReader : IEnumerable, IDisposable
     {
         // Interface does not need to be marked with the serializable attribute

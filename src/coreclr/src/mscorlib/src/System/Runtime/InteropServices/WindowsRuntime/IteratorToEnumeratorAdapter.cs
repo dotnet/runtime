@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             Debug.Assert(false, "This class is never instantiated");
         }
-        
+
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable<T>.
         internal IEnumerator<T> GetEnumerator_Stub<T>()
         {
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 return (JitHelpers.UnsafeCast<GetEnumerator_Delegate<T>>(target))();
             }
-            
+
             if (fUseString)
             {
                 return JitHelpers.UnsafeCast<IEnumerator<T>>(GetEnumerator_Stub<string>());
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             public NonGenericToGenericIterator(IBindableIterator iterator)
             { this.iterator = iterator; }
 
-            public object Current  { get { return iterator.Current; } }
+            public object Current { get { return iterator.Current; } }
             public bool HasCurrent { get { return iterator.HasCurrent; } }
             public bool MoveNext() { return iterator.MoveNext(); }
             public int GetMany(object[] items) { throw new NotSupportedException(); }

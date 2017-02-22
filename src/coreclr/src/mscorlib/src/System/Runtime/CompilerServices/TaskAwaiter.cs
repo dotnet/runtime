@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        public bool IsCompleted 
+        public bool IsCompleted
         {
             get { return m_task.IsCompleted; }
         }
@@ -84,7 +84,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
         {
-            OnCompletedInternal(m_task, continuation, continueOnCapturedContext:true, flowExecutionContext:true);
+            OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: true);
         }
 
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
         {
-            OnCompletedInternal(m_task, continuation, continueOnCapturedContext:true, flowExecutionContext:false);
+            OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: false);
         }
 
         /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task"/>.</summary>
@@ -240,7 +240,7 @@ namespace System.Runtime.CompilerServices
                 etwLog.TaskWaitBegin(
                     (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler.Id : TaskScheduler.Default.Id),
                     (currentTaskAtBegin != null ? currentTaskAtBegin.Id : 0),
-                    task.Id, TplEtwProvider.TaskWaitBehavior.Asynchronous, 
+                    task.Id, TplEtwProvider.TaskWaitBehavior.Asynchronous,
                     (continuationTask != null ? continuationTask.Id : 0));
             }
 
@@ -303,7 +303,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Gets whether the task being awaited is completed.</summary>
         /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        public bool IsCompleted 
+        public bool IsCompleted
         {
             get { return m_task.IsCompleted; }
         }
@@ -315,7 +315,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
         {
-            TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext:true, flowExecutionContext:true);
+            TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: true);
         }
 
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
@@ -325,7 +325,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
         {
-            TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext:true, flowExecutionContext:false);
+            TaskAwaiter.OnCompletedInternal(m_task, continuation, continueOnCapturedContext: true, flowExecutionContext: false);
         }
 
         /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
@@ -390,7 +390,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            public bool IsCompleted 
+            public bool IsCompleted
             {
                 get { return m_task.IsCompleted; }
             }
@@ -402,7 +402,7 @@ namespace System.Runtime.CompilerServices
             /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
             {
-                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext:true);
+                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext: true);
             }
 
             /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
@@ -412,7 +412,7 @@ namespace System.Runtime.CompilerServices
             /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)
             {
-                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext:false);
+                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext: false);
             }
 
             /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task"/>.</summary>
@@ -475,7 +475,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Gets whether the task being awaited is completed.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
             /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-            public bool IsCompleted 
+            public bool IsCompleted
             {
                 get { return m_task.IsCompleted; }
             }
@@ -487,7 +487,7 @@ namespace System.Runtime.CompilerServices
             /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
             {
-                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext:true);
+                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext: true);
             }
 
             /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
@@ -497,7 +497,7 @@ namespace System.Runtime.CompilerServices
             /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)
             {
-                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext:false);
+                TaskAwaiter.OnCompletedInternal(m_task, continuation, m_continueOnCapturedContext, flowExecutionContext: false);
             }
 
             /// <summary>Ends the await on the completed <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>

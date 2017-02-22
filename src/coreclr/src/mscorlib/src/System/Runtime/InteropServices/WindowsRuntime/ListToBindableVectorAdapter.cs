@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal object GetAt(uint index)
         {
             IList _this = JitHelpers.UnsafeCast<IList>(this);
-            EnsureIndexInt32(index, _this.Count);        
+            EnsureIndexInt32(index, _this.Count);
 
             try
             {
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal void RemoveAt(uint index)
         {
             IList _this = JitHelpers.UnsafeCast<IList>(this);
-            EnsureIndexInt32(index, _this.Count); 
+            EnsureIndexInt32(index, _this.Count);
 
             try
             {

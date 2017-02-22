@@ -36,7 +36,6 @@ namespace System.Threading
     [DebuggerDisplay("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
     public class ThreadLocal<T> : IDisposable
     {
-
         // a delegate that returns the created value, if null the created value will be default(T)
         private Func<T> m_valueFactory;
 
@@ -48,10 +47,10 @@ namespace System.Threading
         // the ThreadLocal<T> instance.
         //
         [ThreadStatic]
-        static LinkedSlotVolatile[] ts_slotArray;
+        private static LinkedSlotVolatile[] ts_slotArray;
 
         [ThreadStatic]
-        static FinalizationHelper ts_finalizationHelper;
+        private static FinalizationHelper ts_finalizationHelper;
 
         // Slot ID of this ThreadLocal<> instance. We store a bitwise complement of the ID (that is ~ID), which allows us to distinguish
         // between the case when ID is 0 and an incompletely initialized object, either due to a thread abort in the constructor, or
@@ -276,7 +275,7 @@ namespace System.Threading
                     && id < slotArray.Length   // Is the table large enough?
                     && (slot = slotArray[id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
                     && m_initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
-                ) 
+                )
                 {
                     // We verified that the instance has not been disposed *after* we got a reference to the slot.
                     // This guarantees that we have a reference to the right slot.

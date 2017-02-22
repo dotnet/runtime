@@ -65,9 +65,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Anything not covered by the Scalar union gets stored in this reference.
-        readonly object _reference;
-        readonly Scalar _scalar;
-        readonly int _scalarLength;
+        private readonly object _reference;
+        private readonly Scalar _scalar;
+        private readonly int _scalarLength;
 
         private PropertyValue(object value)
         {

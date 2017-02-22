@@ -12,58 +12,71 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
 
-    using System;
-    using System.Globalization;
-    using System.Runtime.Serialization;
+using System;
+using System.Globalization;
+using System.Runtime.Serialization;
+
+namespace System.Runtime.InteropServices
+{
     // Base exception for COM Interop errors &; Structured Exception Handler
     // exceptions.
     // 
     [Serializable]
-    public class ExternalException : SystemException {
-        public ExternalException() 
-            : base(Environment.GetResourceString("Arg_ExternalException")) {
-            SetErrorCode(__HResults.E_FAIL);
-        }
-        
-        public ExternalException(String message) 
-            : base(message) {
-            SetErrorCode(__HResults.E_FAIL);
-        }
-        
-        public ExternalException(String message, Exception inner) 
-            : base(message, inner) {
+    public class ExternalException : SystemException
+    {
+        public ExternalException()
+            : base(Environment.GetResourceString("Arg_ExternalException"))
+        {
             SetErrorCode(__HResults.E_FAIL);
         }
 
-        public ExternalException(String message,int errorCode) 
-            : base(message) {
+        public ExternalException(String message)
+            : base(message)
+        {
+            SetErrorCode(__HResults.E_FAIL);
+        }
+
+        public ExternalException(String message, Exception inner)
+            : base(message, inner)
+        {
+            SetErrorCode(__HResults.E_FAIL);
+        }
+
+        public ExternalException(String message, int errorCode)
+            : base(message)
+        {
             SetErrorCode(errorCode);
         }
 
-        protected ExternalException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        protected ExternalException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
-        public virtual int ErrorCode {
-            get {
+        public virtual int ErrorCode
+        {
+            get
+            {
                 return HResult;
             }
         }
 
-        public override String ToString() {
+        public override String ToString()
+        {
             String message = Message;
             String s;
             String _className = GetType().ToString();
             s = _className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
 
-            if (!(String.IsNullOrEmpty(message))) {
+            if (!(String.IsNullOrEmpty(message)))
+            {
                 s = s + ": " + message;
             }
 
             Exception _innerException = InnerException;
 
-            if (_innerException!=null) {
+            if (_innerException != null)
+            {
                 s = s + " ---> " + _innerException.ToString();
             }
 

@@ -66,8 +66,6 @@
 // assignments in a static class constructor are under a lock implicitly.
 
 
-namespace System.Runtime.InteropServices
-{
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -77,12 +75,13 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
-
+namespace System.Runtime.InteropServices
+{
     public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
         // Steal UIntPtr.MaxValue as our uninitialized value.
-        private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ? 
-            ((UIntPtr) UInt32.MaxValue) : ((UIntPtr) UInt64.MaxValue);
+        private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ?
+            ((UIntPtr)UInt32.MaxValue) : ((UIntPtr)UInt64.MaxValue);
 
         private UIntPtr _numBytes;
 
@@ -108,7 +107,7 @@ using System.Diagnostics.Contracts;
             if (numBytes >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
 
-            _numBytes = (UIntPtr) numBytes;
+            _numBytes = (UIntPtr)numBytes;
         }
 
         /// <summary>
@@ -130,7 +129,7 @@ using System.Diagnostics.Contracts;
             if (numElements * sizeOfEachElement >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numElements), Environment.GetResourceString("ArgumentOutOfRange_UIntPtrMax-1"));
 
-            _numBytes = checked((UIntPtr) (numElements * sizeOfEachElement));
+            _numBytes = checked((UIntPtr)(numElements * sizeOfEachElement));
         }
 
         /// <summary>
@@ -209,7 +208,8 @@ using System.Diagnostics.Contracts;
         /// may have to consider alignment.</param>
         /// <returns>An instance of T read from memory.</returns>
         [CLSCompliant(false)]
-        public T Read<T>(ulong byteOffset) where T : struct {
+        public T Read<T>(ulong byteOffset) where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
@@ -282,7 +282,8 @@ using System.Diagnostics.Contracts;
         /// may have to consider alignment.</param>
         /// <param name="value">The value type to write to memory.</param>
         [CLSCompliant(false)]
-        public void Write<T>(ulong byteOffset, T value) where T : struct {
+        public void Write<T>(ulong byteOffset, T value) where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
@@ -326,7 +327,7 @@ using System.Diagnostics.Contracts;
             uint alignedSizeofT = Marshal.AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
             SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
-            
+
             bool mustCallRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -347,23 +348,25 @@ using System.Diagnostics.Contracts;
         /// Returns the number of bytes in the memory region.
         /// </summary>
         [CLSCompliant(false)]
-        public ulong ByteLength {
-            get {
+        public ulong ByteLength
+        {
+            get
+            {
                 if (_numBytes == Uninitialized)
                     throw NotInitialized();
 
-                return (ulong) _numBytes; 
+                return (ulong)_numBytes;
             }
         }
 
         /* No indexer.  The perf would be misleadingly bad.  People should use 
          * AcquirePointer and ReleasePointer instead.  */
-        
+
         private void SpaceCheck(byte* ptr, ulong sizeInBytes)
         {
             if ((ulong)_numBytes < sizeInBytes)
                 NotEnoughRoom();
-            if ((ulong)(ptr - (byte*) handle) > ((ulong)_numBytes) - sizeInBytes)
+            if ((ulong)(ptr - (byte*)handle) > ((ulong)_numBytes) - sizeInBytes)
                 NotEnoughRoom();
         }
 
