@@ -120,15 +120,13 @@ namespace System.Linq
             // we cannot use the expression tree in a context which has only execution
             // permissions.  We should endeavour to translate constants into 
             // new constants which have public types.
-            TypeInfo typeInfo = t.GetTypeInfo();
-            if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition().GetTypeInfo().ImplementedInterfaces.Contains(typeof(IGrouping<,>)))
+            if (t.IsGenericType && t.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>)))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
-            if (!typeInfo.IsNestedPrivate)
+            if (!t.IsNestedPrivate)
                 return t;
-            foreach (Type iType in typeInfo.ImplementedInterfaces)
+            foreach (Type iType in t.GetInterfaces())
             {
-                TypeInfo iTypeInfo = iType.GetTypeInfo();
-                if (iTypeInfo.IsGenericType && iTypeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                if (iType.IsGenericType && iType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return iType;
             }
             if (typeof(IEnumerable).IsAssignableFrom(t))
@@ -153,22 +151,21 @@ namespace System.Linq
             if (!_equivalentTypeCache.TryGetValue(type, out equiv))
             {
                 Type pubType = GetPublicType(type);
-                TypeInfo info = pubType.GetTypeInfo();
-                if (info.IsInterface && info.IsGenericType)
+                if (pubType.IsInterface && pubType.IsGenericType)
                 {
-                    Type genericType = info.GetGenericTypeDefinition();
+                    Type genericType = pubType.GetGenericTypeDefinition();
                     if (genericType == typeof(IOrderedEnumerable<>))
                         equiv = pubType;
                     else if (genericType == typeof(IOrderedQueryable<>))
-                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(pubType.GenericTypeArguments[0]);
                     else if (genericType == typeof(IEnumerable<>))
                         equiv = pubType;
                     else if (genericType == typeof(IQueryable<>))
-                        equiv = typeof(IEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                        equiv = typeof(IEnumerable<>).MakeGenericType(pubType.GenericTypeArguments[0]);
                 }
                 if (equiv == null)
                 {
-                    var interfacesWithInfo = info.ImplementedInterfaces.Select(IntrospectionExtensions.GetTypeInfo).ToArray();
+                    var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
                         .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
                         .Select(i => new {Info = i, GenType = i.GetGenericTypeDefinition() })
