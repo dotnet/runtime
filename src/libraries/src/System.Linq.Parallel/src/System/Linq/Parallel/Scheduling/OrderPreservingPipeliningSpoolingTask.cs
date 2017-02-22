@@ -22,7 +22,6 @@ namespace System.Linq.Parallel
     class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
-        private readonly TaskScheduler _taskScheduler; // The task manager to execute the query.
         private readonly QueryOperatorEnumerator<TOutput, TKey> _partition; // The source partition.
         private readonly bool[] _consumerWaiting; // Whether a consumer is waiting on a particular producer
         private readonly bool[] _producerWaiting; // Whether a particular producer is waiting on the consumer
@@ -60,7 +59,6 @@ namespace System.Linq.Parallel
             int partitionIndex,
             Queue<Pair<TKey, TOutput>>[] buffers,
             object bufferLock,
-            TaskScheduler taskScheduler,
             bool autoBuffered)
             : base(partitionIndex, taskGroupState)
         {
@@ -80,7 +78,6 @@ namespace System.Linq.Parallel
             _partitionIndex = partitionIndex;
             _buffers = buffers;
             _bufferLock = bufferLock;
-            _taskScheduler = taskScheduler;
             _autoBuffered = autoBuffered;
         }
 
@@ -176,7 +173,7 @@ namespace System.Linq.Parallel
                     {
                         QueryTask asyncTask = new OrderPreservingPipeliningSpoolingTask<TOutput, TKey>(
                             partitions[i], groupState, consumerWaiting, producerWaiting,
-                            producerDone, i, buffers, bufferLocks[i], taskScheduler, autoBuffered);
+                            producerDone, i, buffers, bufferLocks[i], autoBuffered);
                         asyncTask.RunAsynchronously(taskScheduler);
                     }
                 });
