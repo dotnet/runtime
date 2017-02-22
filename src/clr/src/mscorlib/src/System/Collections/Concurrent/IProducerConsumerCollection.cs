@@ -16,7 +16,6 @@ using System.Diagnostics;
 
 namespace System.Collections.Concurrent
 {
-
     /// <summary>
     /// Defines methods to manipulate thread-safe collections intended for producer/consumer usage.
     /// </summary>
@@ -64,6 +63,5 @@ namespace System.Collections.Concurrent
     internal sealed class SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<T>
     {
         private IProducerConsumerCollection<T> m_collection; // The collection being viewed.
-
     }
 }

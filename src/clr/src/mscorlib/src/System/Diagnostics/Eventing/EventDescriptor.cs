@@ -53,14 +53,14 @@ namespace System.Diagnostics.Tracing
                 long keywords
                 )
         {
-            this.m_id = 0;
-            this.m_version = 0;
-            this.m_channel = 0;
-            this.m_traceloggingId = traceloggingId;
-            this.m_level = level;
-            this.m_opcode = opcode;
-            this.m_task = 0;
-            this.m_keywords = keywords;
+            m_id = 0;
+            m_version = 0;
+            m_channel = 0;
+            m_traceloggingId = traceloggingId;
+            m_level = level;
+            m_opcode = opcode;
+            m_task = 0;
+            m_keywords = keywords;
         }
 
         public EventDescriptor(
@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tracing
             if (!(obj is EventDescriptor))
                 return false;
 
-            return Equals((EventDescriptor) obj);
+            return Equals((EventDescriptor)obj);
         }
 
         public override int GetHashCode()

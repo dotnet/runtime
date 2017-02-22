@@ -182,7 +182,8 @@ namespace System.Threading.Tasks
             newSegment.m_state.m_last = 1;
             newSegment.m_state.m_lastCopy = 1;
 
-            try { } finally 
+            try { }
+            finally
             {
                 // Finally block to protect against corruption due to a thread abort 
                 // between setting m_next and setting m_tail.
@@ -271,8 +272,8 @@ namespace System.Threading.Tasks
         {
             for (Segment segment = m_head; segment != null; segment = segment.m_next)
             {
-                for (int pt = segment.m_state.m_first; 
-                    pt != segment.m_state.m_last; 
+                for (int pt = segment.m_state.m_first;
+                    pt != segment.m_state.m_last;
                     pt = (pt + 1) & (segment.m_array.Length - 1))
                 {
                     yield return segment.m_array[pt];
@@ -307,7 +308,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>A segment in the queue containing one or more items.</summary>
-        [StructLayout(LayoutKind.Sequential)] 
+        [StructLayout(LayoutKind.Sequential)]
         private sealed class Segment
         {
             /// <summary>The next segment in the linked list of segments.</summary>
@@ -367,7 +368,7 @@ namespace System.Threading.Tasks
     }
 
     /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    static class PaddingHelpers
+    internal static class PaddingHelpers
     {
         /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
         internal const int CACHE_LINE_SIZE = 128;
@@ -375,8 +376,7 @@ namespace System.Threading.Tasks
 
     /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
     [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(Int32))] // Based on common case of 64-byte cache lines
-    struct PaddingFor32
+    internal struct PaddingFor32
     {
     }
-    
 }

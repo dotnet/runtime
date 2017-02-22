@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Runtime.InteropServices
-{    
+{
     using System;
     using System.Runtime.CompilerServices;
     using System.Threading;
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices
 #endif
             InternalFree(GetHandleValue(handle));
         }
-        
+
         // Target property - allows getting / updating of the handle's referent.
         public Object Target
         {
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices
                 ValidateHandle();
                 return InternalGet(GetHandleValue());
             }
-    
+
             set
             {
                 ValidateHandle();
@@ -198,7 +198,7 @@ namespace System.Runtime.InteropServices
             }
 #endif
             return value.m_handle;
-        }       
+        }
 
         public override int GetHashCode()
         {
@@ -208,12 +208,12 @@ namespace System.Runtime.InteropServices
         public override bool Equals(Object o)
         {
             GCHandle hnd;
-            
+
             // Check that o is a GCHandle first
-            if(o == null || !(o is GCHandle))
+            if (o == null || !(o is GCHandle))
                 return false;
-            else 
-                hnd = (GCHandle) o;
+            else
+                hnd = (GCHandle)o;
 
             return m_handle == hnd.m_handle;
         }

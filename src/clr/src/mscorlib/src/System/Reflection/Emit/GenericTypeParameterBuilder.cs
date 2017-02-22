@@ -4,19 +4,20 @@
 
 // 
 
+using System;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Diagnostics.Contracts;
+
 namespace System.Reflection.Emit
 {
-    using System;
-    using System.Reflection;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Diagnostics.Contracts;
-
-    public sealed class GenericTypeParameterBuilder: TypeInfo
+    public sealed class GenericTypeParameterBuilder : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo){
-            if(typeInfo==null) return false;            
+        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo)
+        {
+            if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 
@@ -32,14 +33,14 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Object Overrides
-        public override String ToString() 
-        { 
+        public override String ToString()
+        {
             return m_type.Name;
         }
-        public override bool Equals(object o) 
-        { 
+        public override bool Equals(object o)
+        {
             GenericTypeParameterBuilder g = o as GenericTypeParameterBuilder;
-            
+
             if (g == null)
                 return false;
 
@@ -62,22 +63,22 @@ namespace System.Reflection.Emit
 
         #region Type Overrides
 
-        public override Type MakePointerType() 
-        { 
-            return SymbolType.FormCompoundType("*", this, 0); 
+        public override Type MakePointerType()
+        {
+            return SymbolType.FormCompoundType("*", this, 0);
         }
 
-        public override Type MakeByRefType() 
+        public override Type MakeByRefType()
         {
             return SymbolType.FormCompoundType("&", this, 0);
         }
 
-        public override Type MakeArrayType() 
+        public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0);
         }
 
-        public override Type MakeArrayType(int rank) 
+        public override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
@@ -88,9 +89,9 @@ namespace System.Reflection.Emit
             {
                 szrank = "*";
             }
-            else 
+            else
             {
-                for(int i = 1; i < rank; i++)
+                for (int i = 1; i < rank; i++)
                     szrank += ",";
             }
 
@@ -113,7 +114,7 @@ namespace System.Reflection.Emit
 
         public override String AssemblyQualifiedName { get { return null; } }
 
-        public override Type BaseType { get { return m_type.BaseType; } } 
+        public override Type BaseType { get { return m_type.BaseType; } }
 
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
 
@@ -209,7 +210,7 @@ namespace System.Reflection.Emit
 
         #region Public Members
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-        {   
+        {
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
         }
 

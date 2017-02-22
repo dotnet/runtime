@@ -28,7 +28,7 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format)
         {
             collector.BeginBufferedArray();
-            this.elementInfo.WriteMetadata(collector, name, format);
+            elementInfo.WriteMetadata(collector, name, format);
             collector.EndBufferedArray();
         }
 
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
             {
                 foreach (var element in enumerable)
                 {
-                    this.elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(element));
+                    elementInfo.WriteData(collector, elementInfo.PropertyValueFactory(element));
                     count++;
                 }
             }

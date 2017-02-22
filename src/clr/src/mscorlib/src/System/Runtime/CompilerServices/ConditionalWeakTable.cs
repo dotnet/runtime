@@ -164,7 +164,6 @@ namespace System.Runtime.CompilerServices
                 {
                     CreateEntry(key, value);
                 }
-
             }
         }
 
@@ -797,7 +796,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 return Resize(newSize);
-            }            
+            }
 
             internal Container Resize(int newSize)
             {
@@ -1114,7 +1113,7 @@ namespace System.Runtime.CompilerServices
             {
                 IntPtr handle = _handle;
                 _handle = (IntPtr)0;
-                 nFree(handle);
+                nFree(handle);
             }
         }
         #endregion

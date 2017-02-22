@@ -10,14 +10,14 @@
 //    objects which support custom attributes.
 //
 //
-namespace System.Reflection {
-    
-    using System;
 
+using System;
+
+namespace System.Reflection
+{
     // Interface does not need to be marked with the serializable attribute
     public interface ICustomAttributeProvider
     {
-
         // Return an array of custom attributes identified by Type
         Object[] GetCustomAttributes(Type attributeType, bool inherit);
 
@@ -25,9 +25,8 @@ namespace System.Reflection {
         // Return an array of all of the custom attributes (named attributes are not included)
         Object[] GetCustomAttributes(bool inherit);
 
-    
+
         // Returns true if one or more instance of attributeType is defined on this member. 
-        bool IsDefined (Type attributeType, bool inherit);
-    
+        bool IsDefined(Type attributeType, bool inherit);
     }
 }

@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.Win32 {
-    using Microsoft.Win32.SafeHandles;
+using Microsoft.Win32.SafeHandles;
 
-    sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid {
-        internal SafeLibraryHandle() : base(true) {}
+namespace Microsoft.Win32
+{
+    sealed internal class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        internal SafeLibraryHandle() : base(true) { }
 
         override protected bool ReleaseHandle()
         {

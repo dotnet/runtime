@@ -11,25 +11,25 @@
 **
 **
 ===========================================================*/
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Remoting;
+using System.Globalization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Security;
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.Serialization
 {
-
-    using System;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Runtime.Remoting;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Security;
-    using System.Runtime.CompilerServices;
-
     public sealed class SerializationInfo
     {
         private const int defaultSize = 4;
         private const string s_mscorlibAssemblySimpleName = System.CoreLib.Name;
         private const string s_mscorlibFileName = s_mscorlibAssemblySimpleName + ".dll";
-        
+
         // Even though we have a dictionary, we're still keeping all the arrays around for back-compat. 
         // Otherwise we may run into potentially breaking behaviors like GetEnumerator() not returning entries in the same order they were added.
         internal String[] m_members;
@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization
                     throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
-           
+
                 m_fullTypeName = value;
                 isFullTypeNameSetExplicit = true;
             }
@@ -113,9 +113,9 @@ namespace System.Runtime.Serialization
                     throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
-                if (this.requireSameTokenInPartialTrust)
+                if (requireSameTokenInPartialTrust)
                 {
-                    DemandForUnsafeAssemblyNameAssignments(this.m_assemName, value);
+                    DemandForUnsafeAssemblyNameAssignments(m_assemName, value);
                 }
                 m_assemName = value;
                 isAssemblyNameSetExplicit = true;
@@ -130,7 +130,7 @@ namespace System.Runtime.Serialization
             }
             Contract.EndContractBlock();
 
-            if (this.requireSameTokenInPartialTrust)
+            if (requireSameTokenInPartialTrust)
             {
                 DemandForUnsafeAssemblyNameAssignments(this.ObjectType.Assembly.FullName, type.Assembly.FullName);
             }
@@ -382,7 +382,6 @@ namespace System.Runtime.Serialization
                 m_data[index] = value;
                 m_types[index] = type;
             }
-
         }
 
         private int FindElement(String name)
@@ -451,7 +450,6 @@ namespace System.Runtime.Serialization
 
         public Object GetValue(String name, Type type)
         {
-
             if ((object)type == null)
             {
                 throw new ArgumentNullException(nameof(type));
@@ -698,6 +696,5 @@ namespace System.Runtime.Serialization
             }
             return m_converter.ToString(value);
         }
-
     }
 }

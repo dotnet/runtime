@@ -5,12 +5,11 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
+using System;
+
 namespace System.Runtime.CompilerServices
 {
-    using System;
-
-
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class InternalsVisibleToAttribute : Attribute
     {
         private string _assemblyName;
@@ -18,12 +17,12 @@ namespace System.Runtime.CompilerServices
 
         public InternalsVisibleToAttribute(string assemblyName)
         {
-            this._assemblyName = assemblyName;
+            _assemblyName = assemblyName;
         }
 
-        public string AssemblyName 
+        public string AssemblyName
         {
-            get 
+            get
             {
                 return _assemblyName;
             }
@@ -52,7 +51,8 @@ namespace System.Runtime.CompilerServices
         AllowMultiple = false,
         Inherited = false)]
     [FriendAccessAllowed]
-    internal sealed class FriendAccessAllowedAttribute : Attribute {
+    internal sealed class FriendAccessAllowedAttribute : Attribute
+    {
     }
 }
 

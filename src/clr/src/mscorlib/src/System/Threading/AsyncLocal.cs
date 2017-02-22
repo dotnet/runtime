@@ -46,7 +46,7 @@ namespace System.Threading
         //
         // Constructs an AsyncLocal<T> that does not receive change notifications.
         //
-        public AsyncLocal() 
+        public AsyncLocal()
         {
         }
 
@@ -54,21 +54,21 @@ namespace System.Threading
         // Constructs an AsyncLocal<T> with a delegate that is called whenever the current value changes
         // on any thread.
         //
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) 
+        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler)
         {
             m_valueChangedHandler = valueChangedHandler;
         }
 
         public T Value
         {
-            get 
-            { 
+            get
+            {
                 object obj = ExecutionContext.GetLocalValue(this);
                 return (obj == null) ? default(T) : (T)obj;
             }
-            set 
+            set
             {
-                ExecutionContext.SetLocalValue(this, value, m_valueChangedHandler != null); 
+                ExecutionContext.SetLocalValue(this, value, m_valueChangedHandler != null);
             }
         }
 
@@ -93,7 +93,7 @@ namespace System.Threading
     {
         public T PreviousValue { get; private set; }
         public T CurrentValue { get; private set; }
-        
+
         //
         // If the value changed because we changed to a different ExecutionContext, this is true.  If it changed
         // because someone set the Value property, this is false.
@@ -114,7 +114,7 @@ namespace System.Threading
     // Implementations are specialized based on the number of elements in the immutable
     // map in order to minimize memory consumption and look-up times.
     //
-    interface IAsyncLocalValueMap
+    internal interface IAsyncLocalValueMap
     {
         bool TryGetValue(IAsyncLocal key, out object value);
         IAsyncLocalValueMap Set(IAsyncLocal key, object value);

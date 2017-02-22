@@ -10,50 +10,52 @@
 **
 **
 ============================================================*/
+
+using System;
+using System.Diagnostics.Contracts;
+using System.Reflection;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Diagnostics.Contracts;
-    using System.Reflection;
-
-    [AttributeUsage(AttributeTargets.Field, Inherited=false)]
-    public sealed class OptionalFieldAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
+    public sealed class OptionalFieldAttribute : Attribute
     {
-        int versionAdded = 1;
+        private int versionAdded = 1;
         public OptionalFieldAttribute() { }
-        
-        public int VersionAdded 
+
+        public int VersionAdded
         {
-            get {
-                return this.versionAdded;
+            get
+            {
+                return versionAdded;
             }
-            set {
+            set
+            {
                 if (value < 1)
                     throw new ArgumentException(Environment.GetResourceString("Serialization_OptionalFieldVersionValue"));
                 Contract.EndContractBlock();
-                this.versionAdded = value;
+                versionAdded = value;
             }
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-    public sealed class OnSerializingAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class OnSerializingAttribute : Attribute
     {
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-    public sealed class OnSerializedAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class OnSerializedAttribute : Attribute
     {
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-    public sealed class OnDeserializingAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class OnDeserializingAttribute : Attribute
     {
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited=false)]
-    public sealed class OnDeserializedAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class OnDeserializedAttribute : Attribute
     {
     }
-
 }

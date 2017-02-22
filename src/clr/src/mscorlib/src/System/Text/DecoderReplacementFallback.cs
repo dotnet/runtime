@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     public sealed class DecoderReplacementFallback : DecoderFallback
     {
@@ -26,11 +26,11 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Make sure it doesn't have bad surrogate pairs
-            bool bFoundHigh=false;
+            bool bFoundHigh = false;
             for (int i = 0; i < replacement.Length; i++)
             {
                 // Found a surrogate?
-                if (Char.IsSurrogate(replacement,i))
+                if (Char.IsSurrogate(replacement, i))
                 {
                     // High or Low?
                     if (Char.IsHighSurrogate(replacement, i))
@@ -66,10 +66,10 @@ namespace System.Text
 
         public String DefaultString
         {
-             get
-             {
+            get
+            {
                 return strDefault;
-             }
+            }
         }
 
         public override DecoderFallbackBuffer CreateFallbackBuffer()
@@ -91,7 +91,7 @@ namespace System.Text
             DecoderReplacementFallback that = value as DecoderReplacementFallback;
             if (that != null)
             {
-                return (this.strDefault == that.strDefault);
+                return (strDefault == that.strDefault);
             }
             return (false);
         }
@@ -108,13 +108,13 @@ namespace System.Text
     {
         // Store our default string
         private String strDefault;
-        int fallbackCount = -1;
-        int fallbackIndex = -1;
+        private int fallbackCount = -1;
+        private int fallbackIndex = -1;
 
         // Construction
         public DecoderReplacementFallbackBuffer(DecoderReplacementFallback fallback)
         {
-            this.strDefault = fallback.DefaultString;
+            strDefault = fallback.DefaultString;
         }
 
         // Fallback Methods
@@ -160,7 +160,7 @@ namespace System.Text
             Debug.Assert(fallbackIndex < strDefault.Length && fallbackIndex >= 0,
                             "Index exceeds buffer range");
 
-            return strDefault[fallbackIndex];            
+            return strDefault[fallbackIndex];
         }
 
         public override bool MovePrevious()

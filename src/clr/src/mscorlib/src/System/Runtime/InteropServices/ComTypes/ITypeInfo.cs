@@ -11,61 +11,61 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
+    [Serializable]
+    public enum TYPEKIND
+    {
+        TKIND_ENUM = 0,
+        TKIND_RECORD = TKIND_ENUM + 1,
+        TKIND_MODULE = TKIND_RECORD + 1,
+        TKIND_INTERFACE = TKIND_MODULE + 1,
+        TKIND_DISPATCH = TKIND_INTERFACE + 1,
+        TKIND_COCLASS = TKIND_DISPATCH + 1,
+        TKIND_ALIAS = TKIND_COCLASS + 1,
+        TKIND_UNION = TKIND_ALIAS + 1,
+        TKIND_MAX = TKIND_UNION + 1
+    }
 
     [Serializable]
-    public enum TYPEKIND 
-    {
-        TKIND_ENUM      = 0,
-        TKIND_RECORD    = TKIND_ENUM + 1,
-        TKIND_MODULE    = TKIND_RECORD + 1,
-        TKIND_INTERFACE = TKIND_MODULE + 1,
-        TKIND_DISPATCH  = TKIND_INTERFACE + 1,
-        TKIND_COCLASS   = TKIND_DISPATCH + 1,
-        TKIND_ALIAS     = TKIND_COCLASS + 1,
-        TKIND_UNION     = TKIND_ALIAS + 1,
-        TKIND_MAX       = TKIND_UNION + 1
-    }
-
-[Serializable]
-[Flags()]
+    [Flags()]
     public enum TYPEFLAGS : short
     {
-        TYPEFLAG_FAPPOBJECT         = 0x1,
-        TYPEFLAG_FCANCREATE         = 0x2,
-        TYPEFLAG_FLICENSED          = 0x4,
-        TYPEFLAG_FPREDECLID         = 0x8,
-        TYPEFLAG_FHIDDEN            = 0x10,
-        TYPEFLAG_FCONTROL           = 0x20,
-        TYPEFLAG_FDUAL              = 0x40,
-        TYPEFLAG_FNONEXTENSIBLE     = 0x80,
-        TYPEFLAG_FOLEAUTOMATION     = 0x100,
-        TYPEFLAG_FRESTRICTED        = 0x200,
-        TYPEFLAG_FAGGREGATABLE      = 0x400,
-        TYPEFLAG_FREPLACEABLE       = 0x800,
-        TYPEFLAG_FDISPATCHABLE      = 0x1000,
-        TYPEFLAG_FREVERSEBIND       = 0x2000,
-        TYPEFLAG_FPROXY             = 0x4000
+        TYPEFLAG_FAPPOBJECT = 0x1,
+        TYPEFLAG_FCANCREATE = 0x2,
+        TYPEFLAG_FLICENSED = 0x4,
+        TYPEFLAG_FPREDECLID = 0x8,
+        TYPEFLAG_FHIDDEN = 0x10,
+        TYPEFLAG_FCONTROL = 0x20,
+        TYPEFLAG_FDUAL = 0x40,
+        TYPEFLAG_FNONEXTENSIBLE = 0x80,
+        TYPEFLAG_FOLEAUTOMATION = 0x100,
+        TYPEFLAG_FRESTRICTED = 0x200,
+        TYPEFLAG_FAGGREGATABLE = 0x400,
+        TYPEFLAG_FREPLACEABLE = 0x800,
+        TYPEFLAG_FDISPATCHABLE = 0x1000,
+        TYPEFLAG_FREVERSEBIND = 0x2000,
+        TYPEFLAG_FPROXY = 0x4000
     }
 
-[Serializable]
-[Flags()]
+    [Serializable]
+    [Flags()]
     public enum IMPLTYPEFLAGS
     {
-        IMPLTYPEFLAG_FDEFAULT       = 0x1,
-        IMPLTYPEFLAG_FSOURCE        = 0x2,
-        IMPLTYPEFLAG_FRESTRICTED    = 0x4,
+        IMPLTYPEFLAG_FDEFAULT = 0x1,
+        IMPLTYPEFLAG_FSOURCE = 0x2,
+        IMPLTYPEFLAG_FRESTRICTED = 0x4,
         IMPLTYPEFLAG_FDEFAULTVTABLE = 0x8,
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct TYPEATTR
-    { 
+    {
         // Constant used with the memid fields.
-        public const int MEMBER_ID_NIL = unchecked((int)0xFFFFFFFF); 
+        public const int MEMBER_ID_NIL = unchecked((int)0xFFFFFFFF);
 
         // Actual fields of the TypeAttr struct.
         public Guid guid;
@@ -91,55 +91,55 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential)]
 
     public struct FUNCDESC
-    { 
+    {
         public int memid;                   //MEMBERID memid;
         public IntPtr lprgscode;            // /* [size_is(cScodes)] */ SCODE RPC_FAR *lprgscode;
         public IntPtr lprgelemdescParam;    // /* [size_is(cParams)] */ ELEMDESC __RPC_FAR *lprgelemdescParam;
-        public FUNCKIND    funckind;           //FUNCKIND funckind;
+        public FUNCKIND funckind;           //FUNCKIND funckind;
         public INVOKEKIND invkind;          //INVOKEKIND invkind;
-        public CALLCONV    callconv;           //CALLCONV callconv;
+        public CALLCONV callconv;           //CALLCONV callconv;
         public Int16 cParams;               //short cParams;
         public Int16 cParamsOpt;            //short cParamsOpt;
         public Int16 oVft;                  //short oVft;
         public Int16 cScodes;               //short cScodes;
-        public ELEMDESC    elemdescFunc;       //ELEMDESC elemdescFunc;
+        public ELEMDESC elemdescFunc;       //ELEMDESC elemdescFunc;
         public Int16 wFuncFlags;            //WORD wFuncFlags;
     }
 
-[Serializable]
-[Flags()]
-    public enum IDLFLAG : short 
+    [Serializable]
+    [Flags()]
+    public enum IDLFLAG : short
     {
-        IDLFLAG_NONE    = PARAMFLAG.PARAMFLAG_NONE,
-        IDLFLAG_FIN     = PARAMFLAG.PARAMFLAG_FIN,
-        IDLFLAG_FOUT    = PARAMFLAG.PARAMFLAG_FOUT,
-        IDLFLAG_FLCID   = PARAMFLAG.PARAMFLAG_FLCID,
+        IDLFLAG_NONE = PARAMFLAG.PARAMFLAG_NONE,
+        IDLFLAG_FIN = PARAMFLAG.PARAMFLAG_FIN,
+        IDLFLAG_FOUT = PARAMFLAG.PARAMFLAG_FOUT,
+        IDLFLAG_FLCID = PARAMFLAG.PARAMFLAG_FLCID,
         IDLFLAG_FRETVAL = PARAMFLAG.PARAMFLAG_FRETVAL
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct IDLDESC
     {
-        public IntPtr     dwReserved;
-        public IDLFLAG    wIDLFlags;
+        public IntPtr dwReserved;
+        public IDLFLAG wIDLFlags;
     }
 
-[Serializable]
-[Flags()]
-    public enum PARAMFLAG :short 
+    [Serializable]
+    [Flags()]
+    public enum PARAMFLAG : short
     {
-        PARAMFLAG_NONE    = 0,
-        PARAMFLAG_FIN    = 0x1,
-        PARAMFLAG_FOUT    = 0x2,
-        PARAMFLAG_FLCID    = 0x4,
+        PARAMFLAG_NONE = 0,
+        PARAMFLAG_FIN = 0x1,
+        PARAMFLAG_FOUT = 0x2,
+        PARAMFLAG_FLCID = 0x4,
         PARAMFLAG_FRETVAL = 0x8,
-        PARAMFLAG_FOPT    = 0x10,
+        PARAMFLAG_FOPT = 0x10,
         PARAMFLAG_FHASDEFAULT = 0x20,
         PARAMFLAG_FHASCUSTDATA = 0x40
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct PARAMDESC
     {
@@ -147,21 +147,21 @@ namespace System.Runtime.InteropServices.ComTypes
         public PARAMFLAG wParamFlags;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct TYPEDESC
-    { 
+    {
         public IntPtr lpValue;
         public Int16 vt;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct ELEMDESC
     {
         public TYPEDESC tdesc;
 
-        [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit, CharSet=CharSet.Unicode)]
+        [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
 
         public struct DESCUNION
         {
@@ -176,20 +176,20 @@ namespace System.Runtime.InteropServices.ComTypes
     [Serializable]
     public enum VARKIND : int
     {
-        VAR_PERINSTANCE     = 0x0,
-        VAR_STATIC          = 0x1,
-        VAR_CONST           = 0x2,
-        VAR_DISPATCH        = 0x3
+        VAR_PERINSTANCE = 0x0,
+        VAR_STATIC = 0x1,
+        VAR_CONST = 0x2,
+        VAR_DISPATCH = 0x3
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct VARDESC
     {
-        public int memid;                   
+        public int memid;
         public String lpstrSchema;
 
-        [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit, CharSet=CharSet.Unicode)]
+        [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
 
         public struct DESCUNION
         {
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public VARKIND varkind;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct DISPPARAMS
     {
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public int cNamedArgs;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct EXCEPINFO
     {
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public int dwHelpContext;
         public IntPtr pvReserved;
         public IntPtr pfnDeferredFillIn;
-        public Int32  scode;
+        public Int32 scode;
     }
 
     [Serializable]
@@ -241,8 +241,8 @@ namespace System.Runtime.InteropServices.ComTypes
         FUNC_DISPATCH = 4
     }
 
-[Serializable]
-[Flags]
+    [Serializable]
+    [Flags]
     public enum INVOKEKIND : int
     {
         INVOKE_FUNC = 0x1,
@@ -254,54 +254,54 @@ namespace System.Runtime.InteropServices.ComTypes
     [Serializable]
     public enum CALLCONV : int
     {
-        CC_CDECL    =1,
-        CC_MSCPASCAL=2,
-        CC_PASCAL   =CC_MSCPASCAL,
-        CC_MACPASCAL=3,
-        CC_STDCALL  =4,
-        CC_RESERVED =5,
-        CC_SYSCALL  =6,
-        CC_MPWCDECL =7,
-        CC_MPWPASCAL=8,
-        CC_MAX      =9 
+        CC_CDECL = 1,
+        CC_MSCPASCAL = 2,
+        CC_PASCAL = CC_MSCPASCAL,
+        CC_MACPASCAL = 3,
+        CC_STDCALL = 4,
+        CC_RESERVED = 5,
+        CC_SYSCALL = 6,
+        CC_MPWCDECL = 7,
+        CC_MPWPASCAL = 8,
+        CC_MAX = 9
     }
 
-[Serializable]
-[Flags()]
+    [Serializable]
+    [Flags()]
     public enum FUNCFLAGS : short
     {
-        FUNCFLAG_FRESTRICTED=       0x1,
-        FUNCFLAG_FSOURCE    =       0x2,
-        FUNCFLAG_FBINDABLE    =       0x4,
-        FUNCFLAG_FREQUESTEDIT =     0x8,
-        FUNCFLAG_FDISPLAYBIND =     0x10,
-        FUNCFLAG_FDEFAULTBIND =     0x20,
-        FUNCFLAG_FHIDDEN =          0x40,
-        FUNCFLAG_FUSESGETLASTERROR= 0x80,
-        FUNCFLAG_FDEFAULTCOLLELEM=  0x100,
-        FUNCFLAG_FUIDEFAULT =       0x200,
-        FUNCFLAG_FNONBROWSABLE =    0x400,
-        FUNCFLAG_FREPLACEABLE =     0x800,
-        FUNCFLAG_FIMMEDIATEBIND =   0x1000
+        FUNCFLAG_FRESTRICTED = 0x1,
+        FUNCFLAG_FSOURCE = 0x2,
+        FUNCFLAG_FBINDABLE = 0x4,
+        FUNCFLAG_FREQUESTEDIT = 0x8,
+        FUNCFLAG_FDISPLAYBIND = 0x10,
+        FUNCFLAG_FDEFAULTBIND = 0x20,
+        FUNCFLAG_FHIDDEN = 0x40,
+        FUNCFLAG_FUSESGETLASTERROR = 0x80,
+        FUNCFLAG_FDEFAULTCOLLELEM = 0x100,
+        FUNCFLAG_FUIDEFAULT = 0x200,
+        FUNCFLAG_FNONBROWSABLE = 0x400,
+        FUNCFLAG_FREPLACEABLE = 0x800,
+        FUNCFLAG_FIMMEDIATEBIND = 0x1000
     }
 
-[Serializable]
-[Flags()]
+    [Serializable]
+    [Flags()]
     public enum VARFLAGS : short
     {
-        VARFLAG_FREADONLY           =0x1,
-        VARFLAG_FSOURCE             =0x2,
-        VARFLAG_FBINDABLE           =0x4,
-        VARFLAG_FREQUESTEDIT        =0x8,
-        VARFLAG_FDISPLAYBIND        =0x10,
-        VARFLAG_FDEFAULTBIND        =0x20,
-        VARFLAG_FHIDDEN             =0x40,
-        VARFLAG_FRESTRICTED         =0x80,
-        VARFLAG_FDEFAULTCOLLELEM    =0x100,
-        VARFLAG_FUIDEFAULT          =0x200,
-        VARFLAG_FNONBROWSABLE       =0x400,
-        VARFLAG_FREPLACEABLE        =0x800,
-        VARFLAG_FIMMEDIATEBIND      =0x1000
+        VARFLAG_FREADONLY = 0x1,
+        VARFLAG_FSOURCE = 0x2,
+        VARFLAG_FBINDABLE = 0x4,
+        VARFLAG_FREQUESTEDIT = 0x8,
+        VARFLAG_FDISPLAYBIND = 0x10,
+        VARFLAG_FDEFAULTBIND = 0x20,
+        VARFLAG_FHIDDEN = 0x40,
+        VARFLAG_FRESTRICTED = 0x80,
+        VARFLAG_FDEFAULTCOLLELEM = 0x100,
+        VARFLAG_FUIDEFAULT = 0x200,
+        VARFLAG_FNONBROWSABLE = 0x400,
+        VARFLAG_FREPLACEABLE = 0x800,
+        VARFLAG_FIMMEDIATEBIND = 0x1000
     }
 
     [Guid("00020401-0000-0000-C000-000000000046")]

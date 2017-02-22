@@ -4,7 +4,7 @@
 
 // 
 
-namespace System.Reflection 
+namespace System.Reflection
 {
     [Flags()]
     public enum GenericParameterAttributes

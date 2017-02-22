@@ -27,7 +27,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal TraceLoggingMetadataCollector()
         {
-            this.impl = new Impl();
+            impl = new Impl();
         }
 
         /// <summary>
@@ -39,8 +39,8 @@ namespace System.Diagnostics.Tracing
             TraceLoggingMetadataCollector other,
             FieldMetadata group)
         {
-            this.impl = other.impl;
-            this.currentGroup = group;
+            impl = other.impl;
+            currentGroup = group;
         }
 
         /// <summary>
@@ -55,22 +55,22 @@ namespace System.Diagnostics.Tracing
 
         internal int ScratchSize
         {
-            get { return this.impl.scratchSize; }
+            get { return impl.scratchSize; }
         }
 
         internal int DataCount
         {
-            get { return this.impl.dataCount; }
+            get { return impl.dataCount; }
         }
 
         internal int PinCount
         {
-            get { return this.impl.pinCount; }
+            get { return impl.pinCount; }
         }
 
         private bool BeginningBufferedArray
         {
-            get { return this.bufferedArrayFieldCount == 0; }
+            get { return bufferedArrayFieldCount == 0; }
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tracing
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
 
-            this.impl.AddScalar(size);
+            impl.AddScalar(size);
             this.AddField(new FieldMetadata(name, type, this.Tags, this.BeginningBufferedArray));
         }
 
@@ -186,8 +186,8 @@ namespace System.Diagnostics.Tracing
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
 
-            this.impl.AddScalar(2);
-            this.impl.AddNonscalar();
+            impl.AddScalar(2);
+            impl.AddNonscalar();
             this.AddField(new FieldMetadata(name, type, this.Tags, this.BeginningBufferedArray));
         }
 
@@ -235,31 +235,31 @@ namespace System.Diagnostics.Tracing
                 throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
             }
 
-            this.impl.AddScalar(2);
-            this.impl.AddNonscalar();
+            impl.AddScalar(2);
+            impl.AddNonscalar();
             this.AddField(new FieldMetadata(name, type, this.Tags, true));
         }
 
         public void BeginBufferedArray()
         {
-            if (this.bufferedArrayFieldCount >= 0)
+            if (bufferedArrayFieldCount >= 0)
             {
                 throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedNestedArraysEnums"));
             }
 
-            this.bufferedArrayFieldCount = 0;
-            this.impl.BeginBuffered();
+            bufferedArrayFieldCount = 0;
+            impl.BeginBuffered();
         }
 
         public void EndBufferedArray()
         {
-            if (this.bufferedArrayFieldCount != 1)
+            if (bufferedArrayFieldCount != 1)
             {
                 throw new InvalidOperationException(Resources.GetResourceString("EventSource_IncorrentlyAuthoredTypeInfo"));
             }
 
-            this.bufferedArrayFieldCount = int.MinValue;
-            this.impl.EndBuffered();
+            bufferedArrayFieldCount = int.MinValue;
+            impl.EndBuffered();
         }
 
         /// <summary>
@@ -277,8 +277,8 @@ namespace System.Diagnostics.Tracing
                 throw new NotSupportedException(Resources.GetResourceString("EventSource_NotSupportedCustomSerializedData"));
             }
 
-            this.impl.AddScalar(2);
-            this.impl.AddNonscalar();
+            impl.AddScalar(2);
+            impl.AddNonscalar();
             this.AddField(new FieldMetadata(
                 name,
                 type,
@@ -288,21 +288,21 @@ namespace System.Diagnostics.Tracing
 
         internal byte[] GetMetadata()
         {
-            var size = this.impl.Encode(null);
+            var size = impl.Encode(null);
             var metadata = new byte[size];
-            this.impl.Encode(metadata);
+            impl.Encode(metadata);
             return metadata;
         }
 
         private void AddField(FieldMetadata fieldMetadata)
         {
             this.Tags = EventFieldTags.None;
-            this.bufferedArrayFieldCount++;
-            this.impl.fields.Add(fieldMetadata);
+            bufferedArrayFieldCount++;
+            impl.fields.Add(fieldMetadata);
 
-            if (this.currentGroup != null)
+            if (currentGroup != null)
             {
-                this.currentGroup.IncrementStructFieldCount();
+                currentGroup.IncrementStructFieldCount();
             }
         }
 
@@ -317,23 +317,23 @@ namespace System.Diagnostics.Tracing
 
             public void AddScalar(int size)
             {
-                if (this.bufferNesting == 0)
+                if (bufferNesting == 0)
                 {
-                    if (!this.scalar)
+                    if (!scalar)
                     {
                         this.dataCount = checked((sbyte)(this.dataCount + 1));
                     }
 
-                    this.scalar = true;
+                    scalar = true;
                     this.scratchSize = checked((short)(this.scratchSize + size));
                 }
             }
 
             public void AddNonscalar()
             {
-                if (this.bufferNesting == 0)
+                if (bufferNesting == 0)
                 {
-                    this.scalar = false;
+                    scalar = false;
                     this.pinCount = checked((sbyte)(this.pinCount + 1));
                     this.dataCount = checked((sbyte)(this.dataCount + 1));
                 }
@@ -341,17 +341,17 @@ namespace System.Diagnostics.Tracing
 
             public void BeginBuffered()
             {
-                if (this.bufferNesting == 0)
+                if (bufferNesting == 0)
                 {
                     this.AddNonscalar();
                 }
 
-                this.bufferNesting++;
+                bufferNesting++;
             }
 
             public void EndBuffered()
             {
-                this.bufferNesting--;
+                bufferNesting--;
             }
 
             public int Encode(byte[] metadata)

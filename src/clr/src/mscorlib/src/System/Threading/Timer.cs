@@ -4,7 +4,7 @@
 
 //
 
-namespace System.Threading 
+namespace System.Threading
 {
     using System;
     using System.Security;
@@ -19,7 +19,7 @@ namespace System.Threading
     using Microsoft.Win32.SafeHandles;
 
 
-        
+
     public delegate void TimerCallback(Object state);
 
     //
@@ -43,12 +43,12 @@ namespace System.Threading
     //
     // Note that all instance methods of this class require that the caller hold a lock on TimerQueue.Instance.
     //
-    class TimerQueue
+    internal class TimerQueue
     {
         #region singleton pattern implementation
 
         // The one-and-only TimerQueue for the AppDomain.
-        static TimerQueue s_queue = new TimerQueue();
+        private static TimerQueue s_queue = new TimerQueue();
 
         public static TimerQueue Instance
         {
@@ -100,7 +100,7 @@ namespace System.Threading
         //
         // We use a SafeHandle to ensure that the native timer is destroyed when the AppDomain is unloaded.
         //
-        class AppDomainTimerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+        private class AppDomainTimerSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public AppDomainTimerSafeHandle()
                 : base(true)
@@ -113,11 +113,11 @@ namespace System.Threading
             }
         }
 
-        AppDomainTimerSafeHandle m_appDomainTimer;
+        private AppDomainTimerSafeHandle m_appDomainTimer;
 
-        bool m_isAppDomainTimerScheduled;
-        int m_currentAppDomainTimerStartTicks;
-        uint m_currentAppDomainTimerDuration;
+        private bool m_isAppDomainTimerScheduled;
+        private int m_currentAppDomainTimerStartTicks;
+        private uint m_currentAppDomainTimerDuration;
 
         private bool EnsureAppDomainTimerFiresBy(uint requestedDuration)
         {
@@ -145,13 +145,13 @@ namespace System.Threading
 
             // If Pause is underway then do not schedule the timers
             // A later update during resume will re-schedule
-            if(m_pauseTicks != 0)
+            if (m_pauseTicks != 0)
             {
                 Debug.Assert(!m_isAppDomainTimerScheduled);
                 Debug.Assert(m_appDomainTimer == null);
                 return true;
             }
- 
+
             if (m_appDomainTimer == null || m_appDomainTimer.IsInvalid)
             {
                 Debug.Assert(!m_isAppDomainTimerScheduled);
@@ -195,15 +195,15 @@ namespace System.Threading
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime);
+        private static extern AppDomainTimerSafeHandle CreateAppDomainTimer(uint dueTime);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
+        private static extern bool ChangeAppDomainTimer(AppDomainTimerSafeHandle handle, uint dueTime);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        static extern bool DeleteAppDomainTimer(IntPtr handle);
+        private static extern bool DeleteAppDomainTimer(IntPtr handle);
 
         #endregion
 
@@ -212,10 +212,10 @@ namespace System.Threading
         //
         // The list of timers
         //
-        TimerQueueTimer m_timers;
+        private TimerQueueTimer m_timers;
 
 
-        volatile int m_pauseTicks = 0; // Time when Pause was called
+        private volatile int m_pauseTicks = 0; // Time when Pause was called
 
 
         //
@@ -386,7 +386,7 @@ namespace System.Threading
     //
     // A timer in our TimerQueue.
     //
-    sealed class TimerQueueTimer
+    internal sealed class TimerQueueTimer
     {
         //
         // All fields of this class are protected by a lock on TimerQueue.Instance.
@@ -414,9 +414,9 @@ namespace System.Threading
         //
         // Info about the user's callback
         //
-        readonly TimerCallback m_timerCallback;
-        readonly Object m_state;
-        readonly ExecutionContext m_executionContext;
+        private readonly TimerCallback m_timerCallback;
+        private readonly Object m_state;
+        private readonly ExecutionContext m_executionContext;
 
 
         //
@@ -426,9 +426,9 @@ namespace System.Threading
         // m_callbacksRunning.  We set m_notifyWhenNoCallbacksRunning only when m_callbacksRunning
         // reaches zero.
         //
-        int m_callbacksRunning;
-        volatile bool m_canceled;
-        volatile WaitHandle m_notifyWhenNoCallbacksRunning;
+        private int m_callbacksRunning;
+        private volatile bool m_canceled;
+        private volatile WaitHandle m_notifyWhenNoCallbacksRunning;
 
 
         internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period)
@@ -612,17 +612,17 @@ namespace System.Threading
     // change, because any code that happened to be suppressing finalization of Timer objects would now
     // unwittingly be changing the lifetime of those timers.
     //
-    sealed class TimerHolder
+    internal sealed class TimerHolder
     {
         internal TimerQueueTimer m_timer;
-        
-        public TimerHolder(TimerQueueTimer timer) 
-        { 
-            m_timer = timer; 
+
+        public TimerHolder(TimerQueueTimer timer)
+        {
+            m_timer = timer;
         }
 
-        ~TimerHolder() 
-        { 
+        ~TimerHolder()
+        {
             //
             // If shutdown has started, another thread may be suspended while holding the timer lock.
             // So we can't safely close the timer.  
@@ -636,7 +636,7 @@ namespace System.Threading
             if (Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload())
                 return;
 
-            m_timer.Close(); 
+            m_timer.Close();
         }
 
         public void Close()
@@ -651,7 +651,6 @@ namespace System.Threading
             GC.SuppressFinalize(this);
             return result;
         }
-
     }
 
 
@@ -661,64 +660,64 @@ namespace System.Threading
 
         private TimerHolder m_timer;
 
-        public Timer(TimerCallback callback, 
-                     Object        state,  
-                     int           dueTime,
-                     int           period)
+        public Timer(TimerCallback callback,
+                     Object state,
+                     int dueTime,
+                     int period)
         {
             if (dueTime < -1)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-            if (period < -1 )
+            if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
 
-            TimerSetup(callback,state,(UInt32)dueTime,(UInt32)period);
+            TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
         }
 
-        public Timer(TimerCallback callback, 
-                     Object        state,  
-                     TimeSpan      dueTime,
-                     TimeSpan      period)
-        {                
+        public Timer(TimerCallback callback,
+                     Object state,
+                     TimeSpan dueTime,
+                     TimeSpan period)
+        {
             long dueTm = (long)dueTime.TotalMilliseconds;
             if (dueTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTm),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTm), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (dueTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(dueTm),Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(dueTm), Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
 
             long periodTm = (long)period.TotalMilliseconds;
             if (periodTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(periodTm),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(periodTm), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (periodTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(periodTm),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(periodTm), Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
 
-            TimerSetup(callback,state,(UInt32)dueTm,(UInt32)periodTm);
+            TimerSetup(callback, state, (UInt32)dueTm, (UInt32)periodTm);
         }
 
         [CLSCompliant(false)]
-        public Timer(TimerCallback callback, 
-                     Object        state,  
-                     UInt32        dueTime,
-                     UInt32        period)
+        public Timer(TimerCallback callback,
+                     Object state,
+                     UInt32 dueTime,
+                     UInt32 period)
         {
-            TimerSetup(callback,state,dueTime,period);
+            TimerSetup(callback, state, dueTime, period);
         }
 
-        public Timer(TimerCallback callback, 
-                     Object        state,  
-                     long          dueTime,
-                     long          period)
+        public Timer(TimerCallback callback,
+                     Object state,
+                     long dueTime,
+                     long period)
         {
             if (dueTime < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (dueTime > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_TimeoutTooLarge"));
             if (period > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_PeriodTooLarge"));
             Contract.EndContractBlock();
-            TimerSetup(callback,state,(UInt32) dueTime, (UInt32) period);
+            TimerSetup(callback, state, (UInt32)dueTime, (UInt32)period);
         }
 
         public Timer(TimerCallback callback)
@@ -727,12 +726,12 @@ namespace System.Threading
             int period = -1;    // Change after a timer instance is created.  This is to avoid the potential
                                 // for a timer to be fired before the returned value is assigned to the variable,
                                 // potentially causing the callback to reference a bogus value (if passing the timer to the callback). 
-            
+
             TimerSetup(callback, this, (UInt32)dueTime, (UInt32)period);
         }
 
         private void TimerSetup(TimerCallback callback,
-                                Object state, 
+                                Object state,
                                 UInt32 dueTime,
                                 UInt32 period)
         {
@@ -742,13 +741,13 @@ namespace System.Threading
 
             m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
         }
-     
+
         public bool Change(int dueTime, int period)
         {
-            if (dueTime < -1 )
-                throw new ArgumentOutOfRangeException(nameof(dueTime),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+            if (dueTime < -1)
+                throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period),Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             Contract.EndContractBlock();
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
@@ -756,7 +755,7 @@ namespace System.Threading
 
         public bool Change(TimeSpan dueTime, TimeSpan period)
         {
-            return Change((long) dueTime.TotalMilliseconds, (long) period.TotalMilliseconds);
+            return Change((long)dueTime.TotalMilliseconds, (long)period.TotalMilliseconds);
         }
 
         [CLSCompliant(false)]
@@ -767,7 +766,7 @@ namespace System.Threading
 
         public bool Change(long dueTime, long period)
         {
-            if (dueTime < -1 )
+            if (dueTime < -1)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
@@ -779,16 +778,16 @@ namespace System.Threading
 
             return m_timer.m_timer.Change((UInt32)dueTime, (UInt32)period);
         }
-    
+
         public bool Dispose(WaitHandle notifyObject)
         {
-            if (notifyObject==null)
+            if (notifyObject == null)
                 throw new ArgumentNullException(nameof(notifyObject));
             Contract.EndContractBlock();
 
             return m_timer.Close(notifyObject);
         }
-         
+
         public void Dispose()
         {
             m_timer.Close();

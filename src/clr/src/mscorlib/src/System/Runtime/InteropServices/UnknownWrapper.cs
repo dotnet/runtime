@@ -11,10 +11,11 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-   
-    using System;
 
+using System;
+
+namespace System.Runtime.InteropServices
+{
     [Serializable]
     public sealed class UnknownWrapper
     {
@@ -23,9 +24,9 @@ namespace System.Runtime.InteropServices {
             m_WrappedObject = obj;
         }
 
-        public Object WrappedObject 
+        public Object WrappedObject
         {
-            get 
+            get
             {
                 return m_WrappedObject;
             }

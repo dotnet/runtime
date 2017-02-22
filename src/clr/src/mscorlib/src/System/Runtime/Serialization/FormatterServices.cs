@@ -11,25 +11,26 @@
 **
 **
 ============================================================*/
-namespace System.Runtime.Serialization {
-    
-    using System;
-    using System.Reflection;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Security;    
-    using System.Runtime.Remoting;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Threading;
-    using System.IO;
-    using System.Text;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
-    public static class FormatterServices {
-    
+using System;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
+using System.Security;
+using System.Runtime.Remoting;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.IO;
+using System.Text;
+using System.Globalization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
+namespace System.Runtime.Serialization
+{
+    public static class FormatterServices
+    {
         // Gets a new instance of the object.  The entire object is initalized to 0 and no 
         // constructors have been run. **THIS MEANS THAT THE OBJECT MAY NOT BE IN A STATE
         // CONSISTENT WITH ITS INTERNAL REQUIREMENTS** This method should only be used for
@@ -37,23 +38,26 @@ namespace System.Runtime.Serialization {
         // will not create an unitialized string because it is non-sensical to create an empty
         // instance of an immutable type.
         //
-        public static Object GetUninitializedObject(Type type) {
-            if ((object)type == null) {
+        public static Object GetUninitializedObject(Type type)
+        {
+            if ((object)type == null)
+            {
                 throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
-    
-            if (!(type is RuntimeType)) {
+
+            if (!(type is RuntimeType))
+            {
                 throw new SerializationException(Environment.GetResourceString("Serialization_InvalidType", type.ToString()));
             }
 
             return nativeGetUninitializedObject((RuntimeType)type);
         }
-    
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Object nativeGetUninitializedObject(RuntimeType type);
         private static Binder s_binder = Type.DefaultBinder;
-    
+
         /*============================LoadAssemblyFromString============================
         **Action: Loads an assembly from a given string.  The current assembly loading story
         **        is quite confusing.  If the assembly is in the fusion cache, we can load it
@@ -65,7 +69,8 @@ namespace System.Runtime.Serialization {
         **Arguments: assemblyName -- The stringized assembly name.
         **Exceptions: None
         ==============================================================================*/
-        internal static Assembly LoadAssemblyFromString(String assemblyName) {
+        internal static Assembly LoadAssemblyFromString(String assemblyName)
+        {
             //
             // Try using the stringized assembly name to load from the fusion cache.
             //

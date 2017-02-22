@@ -350,7 +350,7 @@ namespace System
         {
             ThrowHelper.ThrowNotSupportedException_CannotCallEqualsOnSpan();
             // Prevent compiler error CS0161: 'Span<T>.Equals(object)': not all code paths return a value
-            return default(bool); 
+            return default(bool);
         }
 
         /// <summary>
@@ -365,7 +365,7 @@ namespace System
         {
             ThrowHelper.ThrowNotSupportedException_CannotCallGetHashCodeOnSpan();
             // Prevent compiler error CS0161: 'Span<T>.GetHashCode()': not all code paths return a value
-            return default(int); 
+            return default(int);
         }
 
         /// <summary>

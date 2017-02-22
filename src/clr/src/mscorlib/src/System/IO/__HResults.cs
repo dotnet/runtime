@@ -11,8 +11,11 @@
 //
 //
 //===========================================================================*/
-namespace System.IO {
-    using System;
+
+using System;
+
+namespace System.IO
+{
     // Only static data no need to serialize
     internal static class __HResults
     {

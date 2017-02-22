@@ -4,14 +4,14 @@
 
 // 
 
-namespace System.Reflection.Emit 
+namespace System.Reflection.Emit
 {
     using System.Runtime.InteropServices;
     using System;
     using System.Reflection;
     using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
-    
+
     internal sealed class SymbolMethod : MethodInfo
     {
         #region Private Data Members
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        internal SymbolMethod(ModuleBuilder mod, MethodToken token, Type arrayClass, String methodName, 
+        internal SymbolMethod(ModuleBuilder mod, MethodToken token, Type arrayClass, String methodName,
             CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
         {
             // This is a kind of MethodInfo to represent methods for array type of unbaked type
@@ -47,9 +47,9 @@ namespace System.Reflection.Emit
             }
             else
             {
-                m_parameterTypes = EmptyArray<Type>.Value; 
+                m_parameterTypes = EmptyArray<Type>.Value;
             }
-   
+
             m_module = mod;
             m_containingType = arrayClass;
             m_name = methodName;
@@ -70,28 +70,28 @@ namespace System.Reflection.Emit
         {
             return mod.GetArrayMethodToken(m_containingType, m_name, m_callingConvention, m_returnType, m_parameterTypes);
         }
-        
+
         #endregion
 
         #region MemberInfo Overrides
-        public override Module Module 
-        { 
-            get { return m_module; } 
-        } 
+        public override Module Module
+        {
+            get { return m_module; }
+        }
 
         public override Type ReflectedType
         {
             get { return m_containingType as Type; }
         }
 
-        public override String Name 
+        public override String Name
         {
             get { return m_name; }
         }
 
-        public override Type DeclaringType 
+        public override Type DeclaringType
         {
-            get {return m_containingType;}
+            get { return m_containingType; }
         }
         #endregion
 
@@ -101,23 +101,23 @@ namespace System.Reflection.Emit
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
         }
-            
+
         public override MethodImplAttributes GetMethodImplementationFlags()
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
         }
-            
-        public override MethodAttributes Attributes 
+
+        public override MethodAttributes Attributes
         {
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod")); }
         }
-            
-        public override CallingConventions CallingConvention 
+
+        public override CallingConventions CallingConvention
         {
             get { return m_callingConvention; }
         }
 
-        public override RuntimeMethodHandle MethodHandle 
+        public override RuntimeMethodHandle MethodHandle
         {
             get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod")); }
         }
@@ -133,16 +133,16 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes 
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes
         {
-            get { return null; } 
+            get { return null; }
         }
-                              
+
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
         }
-            
+
         public override MethodInfo GetBaseDefinition()
         {
             return this;
@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
         }
-            
+
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
@@ -164,7 +164,7 @@ namespace System.Reflection.Emit
         {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_SymbolMethod"));
         }
-        
+
         #endregion
 
         #region Public Members

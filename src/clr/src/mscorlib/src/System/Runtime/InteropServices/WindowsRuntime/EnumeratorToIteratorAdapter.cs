@@ -51,20 +51,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             public NonGenericToGenericEnumerator(IEnumerator enumerator)
             { this.enumerator = enumerator; }
 
-            public object Current  { get { return enumerator.Current; } }
+            public object Current { get { return enumerator.Current; } }
             public bool MoveNext() { return enumerator.MoveNext(); }
-            public void Reset()    { enumerator.Reset(); }
-            public void Dispose()  { }
+            public void Reset() { enumerator.Reset(); }
+            public void Dispose() { }
         }
 
         // This method is invoked when First is called on a managed implementation of IBindableIterable.
         internal IBindableIterator First_Stub()
         {
             IEnumerable _this = JitHelpers.UnsafeCast<IEnumerable>(this);
-            return new EnumeratorToIteratorAdapter<object>(new NonGenericToGenericEnumerator(_this.GetEnumerator()) );
+            return new EnumeratorToIteratorAdapter<object>(new NonGenericToGenericEnumerator(_this.GetEnumerator()));
         }
     }
-    
+
     // Adapter class which holds a managed IEnumerator<T>, exposing it as a Windows Runtime IIterator<T>
     internal sealed class EnumeratorToIteratorAdapter<T> : IIterator<T>, IBindableIterator
     {

@@ -62,7 +62,7 @@ namespace System.Threading
             // Remove the entry from the array.
             // This call includes a full memory fence which prevents potential reorderings of the reads below
             bool deregisterOccurred = TryDeregister();
-            
+
             // We guarantee that we will not return if the callback is being executed (assuming we are not currently called by the callback itself)
             // We achieve this by the following rules:
             //    1. if we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
@@ -124,7 +124,7 @@ namespace System.Threading
         /// </returns>
         public override bool Equals(object obj)
         {
-            return ((obj is CancellationTokenRegistration) && Equals((CancellationTokenRegistration) obj));
+            return ((obj is CancellationTokenRegistration) && Equals((CancellationTokenRegistration)obj));
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace System.Threading
         {
             if (m_registrationInfo.Source != null)
                 return m_registrationInfo.Source.GetHashCode() ^ m_registrationInfo.Index.GetHashCode();
-         
+
             return m_registrationInfo.Index.GetHashCode();
         }
     }

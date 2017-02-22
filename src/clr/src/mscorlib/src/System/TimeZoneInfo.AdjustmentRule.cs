@@ -221,7 +221,7 @@ namespace System
                 info.AddValue("NoDaylightTransitions", _noDaylightTransitions);
             }
 
-            AdjustmentRule(SerializationInfo info, StreamingContext context)
+            private AdjustmentRule(SerializationInfo info, StreamingContext context)
             {
                 if (info == null)
                 {

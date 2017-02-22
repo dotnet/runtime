@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             try
             {
-                return _this.GetAt((uint) index);
+                return _this.GetAt((uint)index);
 
                 // We delegate bounds checking to the underlying collection and if it detected a fault,
                 // we translate it to the right exception:
@@ -62,15 +62,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             bool fUseString;
             Delegate target = System.StubHelpers.StubHelpers.GetTargetForAmbiguousVariantCall(
-                this, 
-                typeof(IReadOnlyList<T>).TypeHandle.Value, 
+                this,
+                typeof(IReadOnlyList<T>).TypeHandle.Value,
                 out fUseString);
 
             if (target != null)
             {
                 return (JitHelpers.UnsafeCast<Indexer_Get_Delegate<T>>(target))(index);
             }
-            
+
             if (fUseString)
             {
                 return JitHelpers.UnsafeCast<T>(Indexer_Get<string>(index));

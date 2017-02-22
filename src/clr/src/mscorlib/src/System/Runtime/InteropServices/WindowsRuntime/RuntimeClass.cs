@@ -10,15 +10,15 @@
 **
 ** 
 ===========================================================*/
-namespace System.Runtime.InteropServices.WindowsRuntime {
-    
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Runtime.CompilerServices;
-    using System.Security;
 
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.CompilerServices;
+using System.Security;
 
+namespace System.Runtime.InteropServices.WindowsRuntime
+{
     // Local definition of Windows.Foundation.IStringable
     [ComImport]
     [Guid("96369f54-8eb6-48f0-abce-c1b211e627c3")]
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
         internal static string ToString(object obj)
         {
             IGetProxyTarget proxy = obj as IGetProxyTarget;
-            if (proxy != null) 
+            if (proxy != null)
                 obj = proxy.GetTarget();
 
             // Check whether the type implements IStringable.
@@ -41,12 +41,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
             if (stringableType != null)
             {
                 return stringableType.ToString();
-            }                   
-            
+            }
+
             return obj.ToString();
-        }        
+        }
     }
-    
+
     //
     // Base class for every WinRT class
     // We'll make it a ComImport and WindowsRuntimeImport in the type loader
@@ -57,11 +57,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
         //
         // Support for ToString/GetHashCode/Equals override
         //        
-        [MethodImpl(MethodImplOptions.InternalCall)]            
-        internal extern IntPtr GetRedirectedGetHashCodeMD();        
-        
-        [MethodImpl(MethodImplOptions.InternalCall)]            
-        internal extern int RedirectGetHashCode(IntPtr pMD);        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern IntPtr GetRedirectedGetHashCodeMD();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern int RedirectGetHashCode(IntPtr pMD);
 
         public override int GetHashCode()
         {
@@ -71,10 +71,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
             return RedirectGetHashCode(pMD);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]            
-        internal extern IntPtr GetRedirectedToStringMD();        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern IntPtr GetRedirectedToStringMD();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]            
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern string RedirectToString(IntPtr pMD);
 
         public override string ToString()
@@ -96,11 +96,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime {
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]            
-        internal extern IntPtr GetRedirectedEqualsMD();        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern IntPtr GetRedirectedEqualsMD();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]            
-        internal extern bool RedirectEquals(object obj, IntPtr pMD);        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern bool RedirectEquals(object obj, IntPtr pMD);
 
         public override bool Equals(object obj)
         {

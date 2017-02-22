@@ -13,6 +13,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 // Windows.Foundation.Diagnostics cannot be referenced from managed code because
 // they're hidden by the metadata adapter. We redeclare the interfaces manually
 // to be able to talk to native WinRT objects.
+
 namespace Windows.Foundation.Diagnostics
 {
     [ComImport]
@@ -47,16 +48,16 @@ namespace Windows.Foundation.Diagnostics
     [WindowsRuntimeImport]
     internal sealed class TracingStatusChangedEventArgs : ITracingStatusChangedEventArgs
     {
-        public extern bool Enabled 
+        public extern bool Enabled
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
-        
-        public extern CausalityTraceLevel TraceLevel 
+
+        public extern CausalityTraceLevel TraceLevel
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
-            get; 
+            get;
         }
     }
 
@@ -97,5 +98,4 @@ namespace Windows.Foundation.Diagnostics
         Error = 3,
         Started = 0
     }
-
 }

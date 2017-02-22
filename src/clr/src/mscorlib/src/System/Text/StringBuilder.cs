@@ -10,20 +10,22 @@
 ** class.
 **
 ===========================================================*/
-namespace System.Text {
-    using System.Text;
-    using System.Runtime;
-    using System.Runtime.Serialization;
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Security;
-    using System.Threading;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Collections.Generic;
 
+using System.Text;
+using System.Runtime;
+using System.Runtime.Serialization;
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Threading;
+using System.Globalization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Collections.Generic;
+
+namespace System.Text
+{
     // This class represents a mutable string.  It is convenient for situations in
     // which it is desirable to modify a string, perhaps by removing, replacing, or 
     // inserting characters, without creating a new String subsequent to
@@ -102,7 +104,8 @@ namespace System.Text {
         //  String.NullString).
         // 
         public StringBuilder(String value)
-            : this(value, DefaultCapacity) {
+            : this(value, DefaultCapacity)
+        {
         }
 
         // Creates a new string builder from the specified string with the specified 
@@ -112,34 +115,42 @@ namespace System.Text {
         // The maximum number of characters this string may contain is set by capacity.
         // 
         public StringBuilder(String value, int capacity)
-            : this(value, 0, ((value != null) ? value.Length : 0), capacity) {
+            : this(value, 0, ((value != null) ? value.Length : 0), capacity)
+        {
         }
 
         // Creates a new string builder from the specifed substring with the specified
         // capacity.  The maximum number of characters is set by capacity.
         // 
-        public StringBuilder(String value, int startIndex, int length, int capacity) {
-            if (capacity<0) {
+        public StringBuilder(String value, int startIndex, int length, int capacity)
+        {
+            if (capacity < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(capacity),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(capacity)));
             }
-            if (length<0) {
+            if (length < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(length)));
             }
-            if (startIndex<0) {
+            if (startIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
             Contract.EndContractBlock();
 
-            if (value == null) {
+            if (value == null)
+            {
                 value = String.Empty;
             }
-            if (startIndex > value.Length - length) {
+            if (startIndex > value.Length - length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
             }
             m_MaxCapacity = Int32.MaxValue;
-            if (capacity == 0) {
+            if (capacity == 0)
+            {
                 capacity = DefaultCapacity;
             }
             if (capacity < length)
@@ -148,7 +159,8 @@ namespace System.Text {
             m_ChunkChars = new char[capacity];
             m_ChunkLength = length;
 
-            unsafe {
+            unsafe
+            {
                 fixed (char* sourcePtr = value)
                     ThreadSafeCopy(sourcePtr + startIndex, m_ChunkChars, 0, length);
             }
@@ -156,20 +168,25 @@ namespace System.Text {
 
         // Creates an empty StringBuilder with a minimum capacity of capacity
         // and a maximum capacity of maxCapacity.
-        public StringBuilder(int capacity, int maxCapacity) {
-            if (capacity>maxCapacity) {
+        public StringBuilder(int capacity, int maxCapacity)
+        {
+            if (capacity > maxCapacity)
+            {
                 throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
             }
-            if (maxCapacity<1) {
+            if (maxCapacity < 1)
+            {
                 throw new ArgumentOutOfRangeException(nameof(maxCapacity), Environment.GetResourceString("ArgumentOutOfRange_SmallMaxCapacity"));
             }
-            if (capacity<0) {
+            if (capacity < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(capacity),
                                                       Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(capacity)));
             }
             Contract.EndContractBlock();
 
-            if (capacity == 0) {
+            if (capacity == 0)
+            {
                 capacity = Math.Min(DefaultCapacity, maxCapacity);
             }
 
@@ -177,7 +194,8 @@ namespace System.Text {
             m_ChunkChars = new char[capacity];
         }
 
-        private StringBuilder(SerializationInfo info, StreamingContext context) {
+        private StringBuilder(SerializationInfo info, StreamingContext context)
+        {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
@@ -189,8 +207,10 @@ namespace System.Text {
 
             // Get the data
             SerializationInfoEnumerator enumerator = info.GetEnumerator();
-            while (enumerator.MoveNext()) {
-                switch (enumerator.Name) {
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
                     case MaxCapacityField:
                         persistedMaxCapacity = info.GetInt32(MaxCapacityField);
                         break;
@@ -205,28 +225,33 @@ namespace System.Text {
                         // Ignore other fields for forward compatibility.
                         break;
                 }
-
             }
 
             // Check values and set defaults
-            if (persistedString == null) {
+            if (persistedString == null)
+            {
                 persistedString = String.Empty;
             }
-            if (persistedMaxCapacity < 1 || persistedString.Length > persistedMaxCapacity) {
+            if (persistedMaxCapacity < 1 || persistedString.Length > persistedMaxCapacity)
+            {
                 throw new SerializationException(Environment.GetResourceString("Serialization_StringBuilderMaxCapacity"));
             }
 
-            if (!capacityPresent) {
+            if (!capacityPresent)
+            {
                 // StringBuilder in V1.X did not persist the Capacity, so this is a valid legacy code path.
                 persistedCapacity = DefaultCapacity;
-                if (persistedCapacity < persistedString.Length) {
+                if (persistedCapacity < persistedString.Length)
+                {
                     persistedCapacity = persistedString.Length;
                 }
-                if (persistedCapacity > persistedMaxCapacity) {
+                if (persistedCapacity > persistedMaxCapacity)
+                {
                     persistedCapacity = persistedMaxCapacity;
                 }
             }
-            if (persistedCapacity < 0 || persistedCapacity < persistedString.Length || persistedCapacity > persistedMaxCapacity) {
+            if (persistedCapacity < 0 || persistedCapacity < persistedString.Length || persistedCapacity > persistedMaxCapacity)
+            {
                 throw new SerializationException(Environment.GetResourceString("Serialization_StringBuilderCapacity"));
             }
 
@@ -241,7 +266,8 @@ namespace System.Text {
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info==null) {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
@@ -255,11 +281,12 @@ namespace System.Text {
         }
 
         [System.Diagnostics.Conditional("_DEBUG")]
-        private void VerifyClassInvariant() {
+        private void VerifyClassInvariant()
+        {
             BCLDebug.Correctness((uint)(m_ChunkOffset + m_ChunkChars.Length) >= m_ChunkOffset, "Integer Overflow");
             StringBuilder currentBlock = this;
             int maxCapacity = this.m_MaxCapacity;
-            for (; ; )
+            for (;;)
             {
                 // All blocks have copy of the maxCapacity.
                 Debug.Assert(currentBlock.m_MaxCapacity == maxCapacity, "Bad maxCapacity");
@@ -281,21 +308,27 @@ namespace System.Text {
             }
         }
 
-        public int Capacity {
+        public int Capacity
+        {
             get { return m_ChunkChars.Length + m_ChunkOffset; }
-            set {
-                if (value < 0) {
+            set
+            {
+                if (value < 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
                 }
-                if (value > MaxCapacity) {
+                if (value > MaxCapacity)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_Capacity"));
                 }
-                if (value < Length) {
+                if (value < Length)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
                 }
                 Contract.EndContractBlock();
 
-                if (Capacity != value) {
+                if (Capacity != value)
+                {
                     int newLen = value - m_ChunkOffset;
                     char[] newArray = new char[newLen];
                     Array.Copy(m_ChunkChars, newArray, m_ChunkLength);
@@ -304,7 +337,8 @@ namespace System.Text {
             }
         }
 
-        public int MaxCapacity {
+        public int MaxCapacity
+        {
             get { return m_MaxCapacity; }
         }
 
@@ -313,8 +347,10 @@ namespace System.Text {
         // If capacity is greater than the capacity of this string builder, then the capacity
         // is set to capacity; otherwise the capacity is unchanged.
         // 
-        public int EnsureCapacity(int capacity) {
-            if (capacity < 0) {
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
             }
             Contract.EndContractBlock();
@@ -324,17 +360,19 @@ namespace System.Text {
             return Capacity;
         }
 
-        public override String ToString() {
+        public override String ToString()
+        {
             Contract.Ensures(Contract.Result<String>() != null);
 
             VerifyClassInvariant();
-            
+
             if (Length == 0)
                 return String.Empty;
 
             string ret = string.FastAllocateString(Length);
             StringBuilder chunk = this;
-            unsafe {
+            unsafe
+            {
                 fixed (char* destinationPtr = ret)
                 {
                     do
@@ -345,7 +383,7 @@ namespace System.Text {
                             char[] sourceArray = chunk.m_ChunkChars;
                             int chunkOffset = chunk.m_ChunkOffset;
                             int chunkLength = chunk.m_ChunkLength;
-    
+
                             // Check that we will not overrun our boundaries. 
                             if ((uint)(chunkLength + chunkOffset) <= (uint)ret.Length && (uint)chunkLength <= (uint)sourceArray.Length)
                             {
@@ -367,7 +405,8 @@ namespace System.Text {
 
 
         // Converts a substring of this string builder to a String.
-        public String ToString(int startIndex, int length) {
+        public String ToString(int startIndex, int length)
+        {
             Contract.Ensures(Contract.Result<String>() != null);
 
             int currentLength = this.Length;
@@ -395,7 +434,8 @@ namespace System.Text {
 
             string ret = string.FastAllocateString(length);
             int curDestIndex = length;
-            unsafe {
+            unsafe
+            {
                 fixed (char* destinationPtr = ret)
                 {
                     while (curDestIndex > 0)
@@ -405,7 +445,7 @@ namespace System.Text {
                         {
                             if (chunkEndIndex > chunk.m_ChunkLength)
                                 chunkEndIndex = chunk.m_ChunkLength;
-    
+
                             int countLeft = curDestIndex;
                             int chunkCount = countLeft;
                             int chunkStartIndex = chunkEndIndex - countLeft;
@@ -415,12 +455,12 @@ namespace System.Text {
                                 chunkStartIndex = 0;
                             }
                             curDestIndex -= chunkCount;
-    
+
                             if (chunkCount > 0)
                             {
                                 // work off of local variables so that they are stable even in the presence of race conditions
                                 char[] sourceArray = chunk.m_ChunkChars;
-    
+
                                 // Check that we will not overrun our boundaries. 
                                 if ((uint)(chunkCount + curDestIndex) <= (uint)length && (uint)(chunkCount + chunkStartIndex) <= (uint)sourceArray.Length)
                                 {
@@ -442,7 +482,8 @@ namespace System.Text {
         }
 
         // Convenience method for sb.Length=0;
-        public StringBuilder Clear() {
+        public StringBuilder Clear()
+        {
             this.Length = 0;
             return this;
         }
@@ -451,18 +492,23 @@ namespace System.Text {
         // instance, the StringBuilder is truncated.  If length is greater than the current 
         // instance, nulls are appended.  The capacity is adjusted to be the same as the length.
 
-        public int Length {
-            get {
+        public int Length
+        {
+            get
+            {
                 Contract.Ensures(Contract.Result<int>() >= 0);
                 return m_ChunkOffset + m_ChunkLength;
             }
-            set {
+            set
+            {
                 //If the new length is less than 0 or greater than our Maximum capacity, bail.
-                if (value<0) {
+                if (value < 0)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
                 }
 
-                if (value>MaxCapacity) {
+                if (value > MaxCapacity)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
                 }
                 Contract.EndContractBlock();
@@ -497,9 +543,9 @@ namespace System.Text {
 
                         Debug.Assert(newLen > chunk.m_ChunkChars.Length, "the new chunk should be larger than the one it is replacing");
                         Array.Copy(chunk.m_ChunkChars, newArray, chunk.m_ChunkLength);
-                        
+
                         m_ChunkChars = newArray;
-                        m_ChunkPrevious = chunk.m_ChunkPrevious;                        
+                        m_ChunkPrevious = chunk.m_ChunkPrevious;
                         m_ChunkOffset = chunk.m_ChunkOffset;
                     }
                     m_ChunkLength = value - chunk.m_ChunkOffset;
@@ -510,10 +556,12 @@ namespace System.Text {
         }
 
         [System.Runtime.CompilerServices.IndexerName("Chars")]
-        public char this[int index] {
-            get {
+        public char this[int index]
+        {
+            get
+            {
                 StringBuilder chunk = this;
-                for (; ; )
+                for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -527,9 +575,10 @@ namespace System.Text {
                         throw new IndexOutOfRangeException();
                 }
             }
-            set {
+            set
+            {
                 StringBuilder chunk = this;
-                for (; ; )
+                for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -547,21 +596,25 @@ namespace System.Text {
         }
 
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
-        public StringBuilder Append(char value, int repeatCount) {
-            if (repeatCount<0) {
+        public StringBuilder Append(char value, int repeatCount)
+        {
+            if (repeatCount < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(repeatCount), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
 
-            if (repeatCount==0) {
+            if (repeatCount == 0)
+            {
                 return this;
             }
 
             // this is where we can check if the repeatCount will put us over m_MaxCapacity
             // We are doing the check here to prevent the corruption of the StringBuilder.
             int newLength = Length + repeatCount;
-            if (newLength > m_MaxCapacity || newLength < repeatCount) {
+            if (newLength > m_MaxCapacity || newLength < repeatCount)
+            {
                 throw new ArgumentOutOfRangeException(nameof(repeatCount), Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             }
 
@@ -587,27 +640,34 @@ namespace System.Text {
         }
 
         // Appends an array of characters at the end of this string builder. The capacity is adjusted as needed. 
-        public StringBuilder Append(char[] value, int startIndex, int charCount) {
-            if (startIndex < 0) {
+        public StringBuilder Append(char[] value, int startIndex, int charCount)
+        {
+            if (startIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
-            if (charCount<0) {
+            if (charCount < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
 
-            if (value == null) {
-                if (startIndex == 0 && charCount == 0) {
+            if (value == null)
+            {
+                if (startIndex == 0 && charCount == 0)
+                {
                     return this;
                 }
                 throw new ArgumentNullException(nameof(value));
             }
-            if (charCount > value.Length - startIndex) {
+            if (charCount > value.Length - startIndex)
+            {
                 throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (charCount==0) {
+            if (charCount == 0)
+            {
                 return this;
             }
             unsafe
@@ -623,10 +683,12 @@ namespace System.Text {
 
 
         // Appends a copy of this string at the end of this string builder.
-        public StringBuilder Append(String value) {
+        public StringBuilder Append(String value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
-            if (value != null) {
+            if (value != null)
+            {
                 // This is a hand specialization of the 'AppendHelper' code below. 
                 // We could have just called AppendHelper.  
                 char[] chunkChars = m_ChunkChars;
@@ -644,7 +706,8 @@ namespace System.Text {
                     }
                     else
                     {
-                        unsafe {
+                        unsafe
+                        {
                             fixed (char* valuePtr = value)
                             fixed (char* destPtr = &chunkChars[chunkLength])
                                 string.wstrcpy(destPtr, valuePtr, valueLen);
@@ -661,8 +724,10 @@ namespace System.Text {
 
         // We put this fixed in its own helper to avoid the cost zero initing valueChars in the
         // case we don't actually use it.  
-        private void AppendHelper(string value) {
-            unsafe {
+        private void AppendHelper(string value)
+        {
+            unsafe
+            {
                 fixed (char* valueChars = value)
                     Append(valueChars, value.Length);
             }
@@ -676,30 +741,37 @@ namespace System.Text {
 
         // Appends a copy of the characters in value from startIndex to startIndex +
         // count at the end of this string builder.
-        public StringBuilder Append(String value, int startIndex, int count) {
-            if (startIndex < 0) {
+        public StringBuilder Append(String value, int startIndex, int count)
+        {
+            if (startIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (count < 0) {
+            if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
             //If the value being added is null, eat the null
             //and return.
-            if (value == null) {
-                if (startIndex == 0 && count == 0) {
+            if (value == null)
+            {
+                if (startIndex == 0 && count == 0)
+                {
                     return this;
                 }
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (count == 0) {
+            if (count == 0)
+            {
                 return this;
             }
 
-            if (startIndex > value.Length - count) {
+            if (startIndex > value.Length - count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
@@ -714,40 +786,49 @@ namespace System.Text {
             }
         }
 
-        public StringBuilder AppendLine() {
+        public StringBuilder AppendLine()
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(Environment.NewLine);
         }
 
-        public StringBuilder AppendLine(string value) {
+        public StringBuilder AppendLine(string value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Append(value);
             return Append(Environment.NewLine);
         }
 
-        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) {
-            if (destination == null) {
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        {
+            if (destination == null)
+            {
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            if (count < 0) {
+            if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("Arg_NegativeArgCount"));
             }
 
-            if (destinationIndex < 0) {
+            if (destinationIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex),
                     Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(destinationIndex)));
             }
 
-            if (destinationIndex > destination.Length - count) {
+            if (destinationIndex > destination.Length - count)
+            {
                 throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
             }
 
-            if ((uint)sourceIndex > (uint)Length) {
+            if ((uint)sourceIndex > (uint)Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(sourceIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (sourceIndex > Length - count) {
+            if (sourceIndex > Length - count)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Arg_LongerThanSrcString"));
             }
             Contract.EndContractBlock();
@@ -788,8 +869,10 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, this
         // string builder is not changed. 
         // 
-        public StringBuilder Insert(int index, String value, int count) {
-            if (count < 0) {
+        public StringBuilder Insert(int index, String value, int count)
+        {
+            if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -797,28 +880,33 @@ namespace System.Text {
 
             //Range check the index.
             int currentLength = Length;
-            if ((uint)index > (uint)currentLength) {
+            if ((uint)index > (uint)currentLength)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             //If value is null, empty or count is 0, do nothing. This is ECMA standard.
-            if (value == null || value.Length == 0 || count == 0) {
+            if (value == null || value.Length == 0 || count == 0)
+            {
                 return this;
             }
 
             //Ensure we don't insert more chars than we can hold, and we don't 
             //have any integer overflow in our inserted characters.
-            long insertingChars = (long) value.Length * count;
-            if (insertingChars > MaxCapacity - this.Length) {
+            long insertingChars = (long)value.Length * count;
+            if (insertingChars > MaxCapacity - this.Length)
+            {
                 throw new OutOfMemoryException();
             }
             Debug.Assert(insertingChars + this.Length < Int32.MaxValue);
 
             StringBuilder chunk;
             int indexInChunk;
-            MakeRoom(index, (int) insertingChars, out chunk, out indexInChunk, false);
-            unsafe {
-                fixed (char* valuePtr = value) {
+            MakeRoom(index, (int)insertingChars, out chunk, out indexInChunk, false);
+            unsafe
+            {
+                fixed (char* valuePtr = value)
+                {
                     while (count > 0)
                     {
                         ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
@@ -834,22 +922,27 @@ namespace System.Text {
         // The length of this string builder is reduced by 
         // length, but the capacity is unaffected.
         // 
-        public StringBuilder Remove(int startIndex, int length) {
-            if (length<0) {
+        public StringBuilder Remove(int startIndex, int length)
+        {
+            if (length < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
             }
 
-            if (startIndex<0) {
+            if (startIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
 
-            if (length > Length - startIndex) {
+            if (length > Length - startIndex)
+            {
                 throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
 
-            if (Length == length && startIndex == 0) {
+            if (Length == length && startIndex == 0)
+            {
                 // Optimization.  If we are deleting everything  
                 Length = 0;
                 return this;
@@ -874,7 +967,8 @@ namespace System.Text {
         ==============================================================================*/
         // Appends a boolean to the end of this string builder.
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(bool value) {
+        public StringBuilder Append(bool value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString());
         }
@@ -882,20 +976,23 @@ namespace System.Text {
         // Appends an sbyte to this string builder.
         // The capacity is adjusted as needed. 
         [CLSCompliant(false)]
-        public StringBuilder Append(sbyte value) {
+        public StringBuilder Append(sbyte value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends a ubyte to this string builder.
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(byte value) {
+        public StringBuilder Append(byte value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
-        public StringBuilder Append(char value) {
+        public StringBuilder Append(char value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
             if (m_ChunkLength < m_ChunkChars.Length)
@@ -907,40 +1004,46 @@ namespace System.Text {
 
         // Appends a short to this string builder.
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(short value) {
+        public StringBuilder Append(short value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends an int to this string builder.
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(int value) {
+        public StringBuilder Append(int value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends a long to this string builder. 
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(long value) {
+        public StringBuilder Append(long value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends a float to this string builder. 
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(float value) {
+        public StringBuilder Append(float value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends a double to this string builder. 
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(double value) {
+        public StringBuilder Append(double value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
-        public StringBuilder Append(decimal value) {
+        public StringBuilder Append(decimal value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
@@ -948,7 +1051,8 @@ namespace System.Text {
         // Appends an ushort to this string builder. 
         // The capacity is adjusted as needed. 
         [CLSCompliant(false)]
-        public StringBuilder Append(ushort value) {
+        public StringBuilder Append(ushort value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
@@ -956,7 +1060,8 @@ namespace System.Text {
         // Appends an uint to this string builder. 
         // The capacity is adjusted as needed. 
         [CLSCompliant(false)]
-        public StringBuilder Append(uint value) {
+        public StringBuilder Append(uint value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
@@ -964,17 +1069,20 @@ namespace System.Text {
         // Appends an unsigned long to this string builder. 
         // The capacity is adjusted as needed. 
         [CLSCompliant(false)]
-        public StringBuilder Append(ulong value) {
+        public StringBuilder Append(ulong value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Append(value.ToString(CultureInfo.CurrentCulture));
         }
 
         // Appends an Object to this string builder. 
         // The capacity is adjusted as needed. 
-        public StringBuilder Append(Object value) {
+        public StringBuilder Append(Object value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
-            if (null==value) {
+            if (null == value)
+            {
                 //Appending null is now a no-op.
                 return this;
             }
@@ -982,12 +1090,14 @@ namespace System.Text {
         }
 
         // Appends all of the characters in value to the current instance.
-        public StringBuilder Append(char[] value) {
+        public StringBuilder Append(char[] value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
             if (null != value && value.Length > 0)
             {
-                unsafe {
+                unsafe
+                {
                     fixed (char* valueChars = &value[0])
                         Append(valueChars, value.Length);
                 }
@@ -1086,8 +1196,10 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, String value) {
-            if ((uint)index > (uint)Length) {
+        public StringBuilder Insert(int index, String value)
+        {
+            if ((uint)index > (uint)Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -1095,7 +1207,8 @@ namespace System.Text {
 
             if (value != null)
             {
-                unsafe {
+                unsafe
+                {
                     fixed (char* sourcePtr = value)
                         Insert(index, sourcePtr, value.Length);
                 }
@@ -1108,7 +1221,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert( int index, bool value) {
+        public StringBuilder Insert(int index, bool value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(), 1);
         }
@@ -1119,7 +1233,8 @@ namespace System.Text {
         // StringBuilder is not changed.
         // 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, sbyte value) {
+        public StringBuilder Insert(int index, sbyte value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1129,7 +1244,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, byte value) {
+        public StringBuilder Insert(int index, byte value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1139,7 +1255,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, short value) {
+        public StringBuilder Insert(int index, short value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1148,10 +1265,12 @@ namespace System.Text {
         // the buffer at index. Existing characters are shifted to make room for the new text.
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
-        public StringBuilder Insert(int index, char value) {
+        public StringBuilder Insert(int index, char value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
-            unsafe {
+            unsafe
+            {
                 Insert(index, &value, 1);
             }
             return this;
@@ -1162,8 +1281,10 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, char[] value) {
-            if ((uint)index > (uint)Length) {
+        public StringBuilder Insert(int index, char[] value)
+        {
+            if ((uint)index > (uint)Length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -1178,16 +1299,19 @@ namespace System.Text {
         // value inserted into the buffer at index.  Existing characters are shifted
         // to make room for the new text and capacity is adjusted as required.  If value is null, the StringBuilder
         // is unchanged.  Characters are taken from value starting at position startIndex.
-        public StringBuilder Insert(int index, char[] value, int startIndex, int charCount) {
+        public StringBuilder Insert(int index, char[] value, int startIndex, int charCount)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
             int currentLength = Length;
-            if ((uint)index > (uint)currentLength) {
+            if ((uint)index > (uint)currentLength)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             //If they passed in a null char array, just jump out quickly.
-            if (value == null) {
+            if (value == null)
+            {
                 if (startIndex == 0 && charCount == 0)
                 {
                     return this;
@@ -1196,21 +1320,25 @@ namespace System.Text {
             }
 
             //Range check the array.
-            if (startIndex < 0) {
+            if (startIndex < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
             }
 
-            if (charCount < 0) {
+            if (charCount < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
 
-            if (startIndex > value.Length - charCount) {
+            if (startIndex > value.Length - charCount)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (charCount > 0)
             {
-                unsafe {
+                unsafe
+                {
                     fixed (char* sourcePtr = &value[startIndex])
                         Insert(index, sourcePtr, charCount);
                 }
@@ -1223,7 +1351,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, int value){
+        public StringBuilder Insert(int index, int value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1233,7 +1362,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, long value) {
+        public StringBuilder Insert(int index, long value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1243,7 +1373,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed.
         // 
-        public StringBuilder Insert(int index, float value) {
+        public StringBuilder Insert(int index, float value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1253,22 +1384,14 @@ namespace System.Text {
         // The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed. 
         // 
-        public StringBuilder Insert(int index, double value) {
+        public StringBuilder Insert(int index, double value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
 
-        public StringBuilder Insert(int index, decimal value) {
-            Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
-        }
-
-        // Returns a reference to the StringBuilder with value inserted into 
-        // the buffer at index. Existing characters are shifted to make room for the new text.
-        // The capacity is adjusted as needed. 
-        // 
-        [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ushort value) {
+        public StringBuilder Insert(int index, decimal value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1278,7 +1401,8 @@ namespace System.Text {
         // The capacity is adjusted as needed. 
         // 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, uint value) {
+        public StringBuilder Insert(int index, ushort value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1288,7 +1412,19 @@ namespace System.Text {
         // The capacity is adjusted as needed. 
         // 
         [CLSCompliant(false)]
-        public StringBuilder Insert(int index, ulong value) {
+        public StringBuilder Insert(int index, uint value)
+        {
+            Contract.Ensures(Contract.Result<StringBuilder>() != null);
+            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+        }
+
+        // Returns a reference to the StringBuilder with value inserted into 
+        // the buffer at index. Existing characters are shifted to make room for the new text.
+        // The capacity is adjusted as needed. 
+        // 
+        [CLSCompliant(false)]
+        public StringBuilder Insert(int index, ulong value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
         }
@@ -1298,30 +1434,36 @@ namespace System.Text {
         // new text.  The capacity is adjusted as needed. If value equals String.Empty, the
         // StringBuilder is not changed. No changes are made if value is null.
         // 
-        public StringBuilder Insert(int index, Object value) {
+        public StringBuilder Insert(int index, Object value)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            if (null == value) {
+            if (null == value)
+            {
                 return this;
             }
             return Insert(index, value.ToString(), 1);
         }
 
-        public StringBuilder AppendFormat(String format, Object arg0) {
+        public StringBuilder AppendFormat(String format, Object arg0)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(null, format, new ParamsArray(arg0));
         }
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1) {
+        public StringBuilder AppendFormat(String format, Object arg0, Object arg1)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
         }
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1, Object arg2) {
+        public StringBuilder AppendFormat(String format, Object arg0, Object arg1, Object arg2)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
         }
 
-        public StringBuilder AppendFormat(String format, params Object[] args) {
+        public StringBuilder AppendFormat(String format, params Object[] args)
+        {
             if (args == null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
@@ -1330,26 +1472,30 @@ namespace System.Text {
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
-            
+
             return AppendFormatHelper(null, format, new ParamsArray(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0) {
+        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(provider, format, new ParamsArray(arg0));
         }
-        
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1) {
+
+        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
         }
-        
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1, Object arg2) {
+
+        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1, Object arg2)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
         }
-        
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, params Object[] args) {
+
+        public StringBuilder AppendFormat(IFormatProvider provider, String format, params Object[] args)
+        {
             if (args == null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
@@ -1358,11 +1504,12 @@ namespace System.Text {
             }
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
-            
+
             return AppendFormatHelper(provider, format, new ParamsArray(args));
         }
-        
-        private static void FormatError() {
+
+        private static void FormatError()
+        {
             throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
         }
 
@@ -1370,8 +1517,10 @@ namespace System.Text {
         private const int Index_Limit = 1000000; // Note:            0 <= ArgIndex < Index_Limit
         private const int Width_Limit = 1000000; // Note: -Width_Limit <  ArgAlign < Width_Limit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args) {
-            if (format == null) {
+        internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args)
+        {
+            if (format == null)
+            {
                 throw new ArgumentNullException(nameof(format));
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
@@ -1383,12 +1532,15 @@ namespace System.Text {
             StringBuilder unescapedItemFormat = null;
 
             ICustomFormatter cf = null;
-            if (provider != null) {
+            if (provider != null)
+            {
                 cf = (ICustomFormatter)provider.GetFormat(typeof(ICustomFormatter));
             }
 
-            while (true) {
-                while (pos < len) {
+            while (true)
+            {
+                while (pos < len)
+                {
                     ch = format[pos];
 
                     pos++;
@@ -1424,7 +1576,7 @@ namespace System.Text {
                 // Argument Hole ::= { Index (, WS* Alignment WS*)? (: Formatting)? }
                 //
                 if (pos == len) break;
-                
+
                 //
                 //  Start of parsing required Index parameter.
                 //  Index ::= ('0'-'9')+ WS*
@@ -1434,7 +1586,8 @@ namespace System.Text {
                 // or character is not a digit then error (Unexpected Character)
                 if (pos == len || (ch = format[pos]) < '0' || ch > '9') FormatError();
                 int index = 0;
-                do {
+                do
+                {
                     index = index * 10 + ch - '0';
                     pos++;
                     // If reached end of text then error (Unexpected end of text)
@@ -1445,7 +1598,7 @@ namespace System.Text {
 
                 // If value of index is not within the range of the arguments passed in then error (Index out of range)
                 if (index >= args.Length) throw new FormatException(Environment.GetResourceString("Format_IndexOutOfRange"));
-                
+
                 // Consume optional whitespace.
                 while (pos < len && (ch = format[pos]) == ' ') pos++;
                 // End of parsing index parameter.
@@ -1457,18 +1610,20 @@ namespace System.Text {
                 bool leftJustify = false;
                 int width = 0;
                 // Is the character a comma, which indicates the start of alignment parameter.
-                if (ch == ',') {
+                if (ch == ',')
+                {
                     pos++;
- 
+
                     // Consume Optional whitespace
                     while (pos < len && format[pos] == ' ') pos++;
-                    
+
                     // If reached the end of the text then error (Unexpected end of text)
                     if (pos == len) FormatError();
-                    
+
                     // Is there a minus sign?
                     ch = format[pos];
-                    if (ch == '-') {
+                    if (ch == '-')
+                    {
                         // Yes, then alignment is left justified.
                         leftJustify = true;
                         pos++;
@@ -1476,11 +1631,12 @@ namespace System.Text {
                         if (pos == len) FormatError();
                         ch = format[pos];
                     }
- 
+
                     // If current character is not a digit then error (Unexpected character)
                     if (ch < '0' || ch > '9') FormatError();
                     // Parse alignment digits.
-                    do {
+                    do
+                    {
                         width = width * 10 + ch - '0';
                         pos++;
                         // If reached end of text then error. (Unexpected end of text)
@@ -1500,11 +1656,13 @@ namespace System.Text {
                 Object arg = args[index];
                 String itemFormat = null;
                 // Is current character a colon? which indicates start of formatting parameter.
-                if (ch == ':') {
+                if (ch == ':')
+                {
                     pos++;
                     int startPos = pos;
 
-                    while (true) {
+                    while (true)
+                    {
                         // If reached end of text then error. (Unexpected end of text)
                         if (pos == len) FormatError();
                         ch = format[pos];
@@ -1566,16 +1724,21 @@ namespace System.Text {
                 // Construct the output for this arg hole.
                 pos++;
                 String s = null;
-                if (cf != null) {
+                if (cf != null)
+                {
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
-                if (s == null) {
+                if (s == null)
+                {
                     IFormattable formattableArg = arg as IFormattable;
 
-                    if (formattableArg != null) {
+                    if (formattableArg != null)
+                    {
                         s = formattableArg.ToString(itemFormat, provider);
-                    } else if (arg != null) {
+                    }
+                    else if (arg != null)
+                    {
                         s = arg.ToString();
                     }
                 }
@@ -1596,12 +1759,13 @@ namespace System.Text {
         // count.  The strings to be replaced are checked on an ordinal basis (e.g. not culture aware).  If 
         // newValue is null, instances of oldValue are removed (e.g. replaced with nothing.).
         //
-        public StringBuilder Replace(String oldValue, String newValue) {
+        public StringBuilder Replace(String oldValue, String newValue)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             return Replace(oldValue, newValue, 0, Length);
         }
 
-        public bool Equals(StringBuilder sb) 
+        public bool Equals(StringBuilder sb)
         {
             if (sb == null)
                 return false;
@@ -1614,7 +1778,7 @@ namespace System.Text {
             int thisChunkIndex = thisChunk.m_ChunkLength;
             StringBuilder sbChunk = sb;
             int sbChunkIndex = sbChunk.m_ChunkLength;
-            for (; ; )
+            for (;;)
             {
                 // Decrement the pointer to the 'this' StringBuilder
                 --thisChunkIndex;
@@ -1731,24 +1895,28 @@ namespace System.Text {
         // replacing characters.  If startIndex and count are specified, we 
         // only replace characters in the range from startIndex to startIndex+count
         //
-        public StringBuilder Replace(char oldChar, char newChar) {
+        public StringBuilder Replace(char oldChar, char newChar)
+        {
             return Replace(oldChar, newChar, 0, Length);
         }
-        public StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) {
+        public StringBuilder Replace(char oldChar, char newChar, int startIndex, int count)
+        {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
             int currentLength = Length;
-            if ((uint)startIndex > (uint)currentLength) {
+            if ((uint)startIndex > (uint)currentLength)
+            {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
-            if (count < 0 || startIndex > currentLength - count) {
+            if (count < 0 || startIndex > currentLength - count)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             int endIndex = startIndex + count;
             StringBuilder chunk = this;
-            for (; ; )
+            for (;;)
             {
                 int endIndexInChunk = endIndex - chunk.m_ChunkOffset;
                 int startIndexInChunk = startIndex - chunk.m_ChunkOffset;
@@ -1785,7 +1953,8 @@ namespace System.Text {
             // this is where we can check if the valueCount will put us over m_MaxCapacity
             // We are doing the check here to prevent the corruption of the StringBuilder.
             int newLength = Length + valueCount;
-            if (newLength > m_MaxCapacity || newLength < valueCount) {
+            if (newLength > m_MaxCapacity || newLength < valueCount)
+            {
                 throw new ArgumentOutOfRangeException(nameof(valueCount), Environment.GetResourceString("ArgumentOutOfRange_LengthGreaterThanCapacity"));
             }
 
@@ -1849,21 +2018,22 @@ namespace System.Text {
             if (replacementsCount <= 0)
                 return;
 
-            unsafe {
+            unsafe
+            {
                 fixed (char* valuePtr = value)
                 {
                     // calculate the total amount of extra space or space needed for all the replacements.  
                     int delta = (value.Length - removeCount) * replacementsCount;
-    
+
                     StringBuilder targetChunk = sourceChunk;        // the target as we copy chars down
                     int targetIndexInChunk = replacements[0];
-    
+
                     // Make the room needed for all the new characters if needed. 
                     if (delta > 0)
                         MakeRoom(targetChunk.m_ChunkOffset + targetIndexInChunk, delta, out targetChunk, out targetIndexInChunk, true);
                     // We made certain that characters after the insertion point are not moved, 
                     int i = 0;
-                    for (; ; )
+                    for (;;)
                     {
                         // Copy in the new string for the ith replacement
                         ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
@@ -1871,7 +2041,7 @@ namespace System.Text {
                         i++;
                         if (i >= replacementsCount)
                             break;
-    
+
                         int gapEnd = replacements[i];
                         Debug.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
                         Debug.Assert(gapStart <= gapEnd, "negative gap size");
@@ -1888,7 +2058,7 @@ namespace System.Text {
                             Debug.Assert(targetIndexInChunk <= targetChunk.m_ChunkLength, "gap not in chunk");
                         }
                     }
-    
+
                     // Remove extra space if necessary. 
                     if (delta < 0)
                         Remove(targetChunk.m_ChunkOffset + targetIndexInChunk, -delta, out targetChunk, out targetIndexInChunk);
@@ -1934,7 +2104,7 @@ namespace System.Text {
         {
             if (count != 0)
             {
-                for (; ; )
+                for (;;)
                 {
                     int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
                     Debug.Assert(lengthInChunk >= 0, "index not in chunk");
@@ -1983,7 +2153,8 @@ namespace System.Text {
             {
                 if ((uint)sourceIndex <= (uint)source.Length && (sourceIndex + count) <= source.Length)
                 {
-                    unsafe {
+                    unsafe
+                    {
                         fixed (char* sourcePtr = &source[sourceIndex])
                             ThreadSafeCopy(sourcePtr, destination, destinationIndex, count);
                     }
@@ -1995,29 +2166,35 @@ namespace System.Text {
             }
         }
 
-         // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
-        internal unsafe void InternalCopy(IntPtr dest, int len) {
-            if(len ==0)
+        // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
+        internal unsafe void InternalCopy(IntPtr dest, int len)
+        {
+            if (len == 0)
                 return;
 
             bool isLastChunk = true;
-            byte* dstPtr = (byte*) dest.ToPointer();
+            byte* dstPtr = (byte*)dest.ToPointer();
             StringBuilder currentSrc = FindChunkForByte(len);
 
-            do {
-                int chunkOffsetInBytes = currentSrc.m_ChunkOffset*sizeof(char);
-                int chunkLengthInBytes = currentSrc.m_ChunkLength*sizeof(char);
-                fixed(char* charPtr = &currentSrc.m_ChunkChars[0]) {
-                    byte* srcPtr = (byte*) charPtr;
-                    if(isLastChunk) {
-                        isLastChunk= false;
+            do
+            {
+                int chunkOffsetInBytes = currentSrc.m_ChunkOffset * sizeof(char);
+                int chunkLengthInBytes = currentSrc.m_ChunkLength * sizeof(char);
+                fixed (char* charPtr = &currentSrc.m_ChunkChars[0])
+                {
+                    byte* srcPtr = (byte*)charPtr;
+                    if (isLastChunk)
+                    {
+                        isLastChunk = false;
                         Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, len - chunkOffsetInBytes);
-                    } else {
+                    }
+                    else
+                    {
                         Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, chunkLengthInBytes);
                     }
                 }
                 currentSrc = currentSrc.m_ChunkPrevious;
-            } while(currentSrc != null);
+            } while (currentSrc != null);
         }
 
         /// <summary>
@@ -2045,10 +2222,10 @@ namespace System.Text {
         /// <returns></returns>
         private StringBuilder FindChunkForByte(int byteIndex)
         {
-            Debug.Assert(0 <= byteIndex && byteIndex <= Length*sizeof(char), "Byte Index not in string");
+            Debug.Assert(0 <= byteIndex && byteIndex <= Length * sizeof(char), "Byte Index not in string");
 
             StringBuilder ret = this;
-            while (ret.m_ChunkOffset*sizeof(char) > byteIndex)
+            while (ret.m_ChunkOffset * sizeof(char) > byteIndex)
                 ret = ret.m_ChunkPrevious;
 
             Debug.Assert(ret != null, "Byte Index not in string");
@@ -2155,7 +2332,7 @@ namespace System.Text {
             // (typically the absolute front) of the buffer.    
             if (!doneMoveFollowingChars && chunk.m_ChunkLength <= DefaultCapacity * 2 && chunk.m_ChunkChars.Length - chunk.m_ChunkLength >= count)
             {
-                for (int i = chunk.m_ChunkLength; i > indexInChunk; )
+                for (int i = chunk.m_ChunkLength; i > indexInChunk;)
                 {
                     --i;
                     chunk.m_ChunkChars[i + count] = chunk.m_ChunkChars[i];
@@ -2172,10 +2349,12 @@ namespace System.Text {
             int copyCount1 = Math.Min(count, indexInChunk);
             if (copyCount1 > 0)
             {
-                unsafe {
-                    fixed (char* chunkCharsPtr = &chunk.m_ChunkChars[0]) {
+                unsafe
+                {
+                    fixed (char* chunkCharsPtr = &chunk.m_ChunkChars[0])
+                    {
                         ThreadSafeCopy(chunkCharsPtr, newChunk.m_ChunkChars, 0, copyCount1);
-    
+
                         // Slide characters in the current buffer over to make room. 
                         int copyCount2 = indexInChunk - copyCount1;
                         if (copyCount2 >= 0)
@@ -2228,7 +2407,7 @@ namespace System.Text {
             chunk = this;
             StringBuilder endChunk = null;
             int endIndexInChunk = 0;
-            for (; ; )
+            for (;;)
             {
                 if (endIndex - chunk.m_ChunkOffset >= 0)
                 {

@@ -4,15 +4,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-namespace System.Runtime.InteropServices {
-    using System;
+
+using System;
+
+namespace System.Runtime.InteropServices
+{
     // Use this in P/Direct function prototypes to specify 
     // which character set to use when marshalling Strings.
     // Using Ansi will marshal the strings as 1 byte char*'s.
     // Using Unicode will marshal the strings as 2 byte wchar*'s.
     // Generally you probably want to use Auto, which does the
     // right thing 99% of the time.
-    [Serializable] 
+    [Serializable]
     public enum CharSet
     {
         None = 1,        // User didn't specify how to marshal strings.

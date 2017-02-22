@@ -12,11 +12,12 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-    using System;
+using System;
 
+namespace System.Runtime.InteropServices
+{
     public interface ICustomAdapter
-    {        
-        [return:MarshalAs(UnmanagedType.IUnknown)] Object GetUnderlyingObject();
+    {
+        [return: MarshalAs(UnmanagedType.IUnknown)] Object GetUnderlyingObject();
     }
 }

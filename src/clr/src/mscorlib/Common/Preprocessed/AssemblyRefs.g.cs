@@ -15,19 +15,21 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-internal static class FXAssembly {
+internal static class FXAssembly
+{
     internal const string Version = "4.0.0.0";
 }
 
-internal static class ThisAssembly {
+internal static class ThisAssembly
+{
     internal const string Version = "4.0.0.0";
     internal const int DailyBuildNumber = 22306;
 }
 
-internal static class AssemblyRef {
-    internal const string EcmaPublicKey                              = "b77a5c561934e089";
-    internal const string EcmaPublicKeyToken                         = "b77a5c561934e089";
-    internal const string MicrosoftPublicKeyToken                    = "b03f5f7f11d50a3a";
-    internal const string SystemRuntimeWindowsRuntime                = "System.Runtime.WindowsRuntime, Version=" + FXAssembly.Version + ", Culture=neutral, PublicKeyToken=" + EcmaPublicKey;
-
+internal static class AssemblyRef
+{
+    internal const string EcmaPublicKey = "b77a5c561934e089";
+    internal const string EcmaPublicKeyToken = "b77a5c561934e089";
+    internal const string MicrosoftPublicKeyToken = "b03f5f7f11d50a3a";
+    internal const string SystemRuntimeWindowsRuntime = "System.Runtime.WindowsRuntime, Version=" + FXAssembly.Version + ", Culture=neutral, PublicKeyToken=" + EcmaPublicKey;
 }
