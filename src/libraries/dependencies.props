@@ -40,7 +40,8 @@
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0047</XunitPerfAnalysisPackageVersion>
+    <TraceEventPackageVersion>1.0.0-alpha-experimental</TraceEventPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -144,11 +145,10 @@
       <Version>1.0.1-prerelease-01001-04</Version>
     </StaticDependency>
 
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
+    <PerformancePackDependency Include="xunit.performance.core" />
+    <PerformancePackDependency Include="xunit.performance.api" />
+    <PerformancePackDependency Include="xunit.performance.execution" />
+    <PerformancePackDependency Include="xunit.performance.metrics" />
     <StaticDependency Include="@(PerformancePackDependency)">
       <Version>$(XunitPerfAnalysisPackageVersion)</Version>
     </StaticDependency>
