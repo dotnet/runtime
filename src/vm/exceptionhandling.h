@@ -26,11 +26,13 @@ ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
 
+#ifndef FEATURE_PAL
 void __declspec(noinline)
 ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
                  UINT_PTR          ReturnValue,
                  UINT_PTR          TargetIP,
                  UINT_PTR          TargetFrameSp);
+#endif // !FEATURE_PAL
 
 typedef DWORD_PTR   (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 
