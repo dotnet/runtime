@@ -292,10 +292,6 @@
       "value": null,
       "isSecret": true
     },
-    "PB_VstsFeedUrl": {
-      "value": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/dotnet-core-test/nuget/v3/index.json",
-      "allowOverride": true
-    },
     "VstsPat": {
       "value": null,
       "isSecret": true
