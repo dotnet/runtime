@@ -18,76 +18,9 @@ namespace System.Collections.Generic
     [TypeDependencyAttribute("System.Collections.Generic.ObjectEqualityComparer`1")]
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        static readonly EqualityComparer<T> defaultComparer = CreateComparer();
-
-        public static EqualityComparer<T> Default {
-            get {
-                Contract.Ensures(Contract.Result<EqualityComparer<T>>() != null);
-                return defaultComparer;
-            }
-        }
-
-        //
-        // Note that logic in this method is replicated in vm\compile.cpp to ensure that NGen
-        // saves the right instantiations
-        //
-        private static EqualityComparer<T> CreateComparer()
-        {
-            Contract.Ensures(Contract.Result<EqualityComparer<T>>() != null);
-            
-            object result = null;
-            RuntimeType t = (RuntimeType)typeof(T);
-            
-            // Specialize type byte for performance reasons
-            if (t == typeof(byte)) {
-                result = new ByteEqualityComparer();
-            }
-            // If T implements IEquatable<T> return a GenericEqualityComparer<T>
-            else if (typeof(IEquatable<T>).IsAssignableFrom(t))
-            {
-                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<int>), t);
-            }
-            else if (default(T) == null) // Reference type/Nullable
-            {
-                // If T is a Nullable<U> where U implements IEquatable<U> return a NullableEqualityComparer<U>
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {
-                    RuntimeType u = (RuntimeType)t.GetGenericArguments()[0];
-                    if (typeof(IEquatable<>).MakeGenericType(u).IsAssignableFrom(u)) {
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), u);
-                    }
-                }
-            }
-            // See the METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST and METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST_LONG cases in getILIntrinsicImplementation
-            else if (t.IsEnum) {
-                TypeCode underlyingTypeCode = Type.GetTypeCode(Enum.GetUnderlyingType(t));
-
-                // Depending on the enum type, we need to special case the comparers so that we avoid boxing
-                // Note: We have different comparers for Short and SByte because for those types we need to make sure we call GetHashCode on the actual underlying type as the 
-                // implementation of GetHashCode is more complex than for the other types.
-                switch (underlyingTypeCode) {
-                    case TypeCode.Int16: // short
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ShortEnumEqualityComparer<short>), t);
-                        break;
-                    case TypeCode.SByte:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(SByteEnumEqualityComparer<sbyte>), t);
-                        break;
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Byte:
-                    case TypeCode.UInt16: //ushort
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<int>), t);
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(LongEnumEqualityComparer<long>), t);
-                        break;
-                }
-            }
-            
-            return result != null ?
-                (EqualityComparer<T>)result :
-                new ObjectEqualityComparer<T>(); // Fallback to ObjectEqualityComparer, which uses boxing
-        }
+        // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
+        // as possible and define most of the creation logic in a non-generic class.
+        public static EqualityComparer<T> Default { get; } = (EqualityComparer<T>)ComparerHelpers.CreateDefaultEqualityComparer(typeof(T));
 
         [Pure]
         public abstract bool Equals(T x, T y);
