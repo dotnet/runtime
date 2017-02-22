@@ -10,7 +10,7 @@ def project = GithubProject
 def branch = GithubBranchName
 def isPR = true
 
-def platformList = ['Debian8.2:x64:Debug', 'PortableLinux:x64:Release', 'Ubuntu:arm:Release', 'Ubuntu:x64:Release', 'Ubuntu16.04:x64:Release', 'Ubuntu16.10:x64:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'RHEL7.2:x64:Release', 'CentOS7.1:x64:Debug', 'Fedora23:x64:Debug', 'OpenSUSE42.1:x64:Debug']
+def platformList = ['Debian8.2:x64:Debug', 'PortableLinux:x64:Release', 'Ubuntu:arm:Release', 'Ubuntu:x64:Release', 'Ubuntu16.04:arm:Release', 'Ubuntu16.04:x64:Release', 'Ubuntu16.10:x64:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'RHEL7.2:x64:Release', 'CentOS7.1:x64:Debug', 'Fedora23:x64:Debug', 'OpenSUSE42.1:x64:Debug']
 
 def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
@@ -41,9 +41,18 @@ platformList.each { platform ->
     }
     else if ((os.startsWith("Ubuntu") || os.startsWith("Tizen")) &&
              (architecture == 'arm' || architecture == 'armel')) {
-        version = "arm-cross-latest"
+        def linuxcodename = '';
+        if (os == 'Ubuntu') {
+            version = "arm-cross-latest"
+            linuxcodename = 'trusty'
+        }
+        else if (os == 'Ubuntu16.04') {
+            version = "latest-or-auto-docker"
+            linuxcodename = 'xenial'
+        }
+
         // Call the arm32_ci_script.sh script to perform the cross build by using docker
-        buildCommand = "./scripts/arm32_ci_script.sh --buildConfig=${configuration} --verbose"
+        buildCommand = "./scripts/arm32_ci_script.sh --buildConfig=${configuration} --${architecture} --linuxCodeName=${linuxcodename} --verbose"
     }
     else if (os == 'Ubuntu') {
         buildCommand = "./build.sh --skip-prereqs --configuration ${configuration} --docker ubuntu.14.04 --targets Default"
@@ -73,6 +82,13 @@ platformList.each { platform ->
                 shell(buildCommand)
             }
         }
+    }
+
+    // Currently Ubuntu16.04 ARM CI build is disabled,
+    // so it can't collect the results files like testResults.xml and archives.
+    // This line will be removed ASAP.
+    if (os == 'Ubuntu16.04' && architecture == 'arm') {
+        return;
     }
 
     Utilities.setMachineAffinity(newJob, os, version)
