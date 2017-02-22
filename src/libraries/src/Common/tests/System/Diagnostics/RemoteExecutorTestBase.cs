@@ -21,10 +21,11 @@ namespace System.Diagnostics
         protected static string HostRunner => Process.GetCurrentProcess().MainModule.FileName;
 
         /// <summary>A timeout (milliseconds) after which a wait on a remote operation should be considered a failure.</summary>
-        public const int FailWaitTimeoutMilliseconds = 30 * 1000;
+        public const int FailWaitTimeoutMilliseconds = 60 * 1000;
         /// <summary>The exit code returned when the test process exits successfully.</summary>
         internal const int SuccessExitCode = 42;
 
+        /// <summary>Determines if we're running on the .NET Framework (rather than .NET Core).</summary>
         internal static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -172,9 +173,13 @@ namespace System.Diagnostics
                     // needing to do this in every derived test and keep each test much simpler.
                     try
                     {
-                        Assert.True(Process.WaitForExit(Options.TimeOut));
+                        Assert.True(Process.WaitForExit(Options.TimeOut),
+                            $"Timed out after {Options.TimeOut}ms waiting for remote process {Process.Id}");
+
                         if (Options.CheckExitCode)
+                        {
                             Assert.Equal(SuccessExitCode, Process.ExitCode);
+                        }
                     }
                     finally
                     {
