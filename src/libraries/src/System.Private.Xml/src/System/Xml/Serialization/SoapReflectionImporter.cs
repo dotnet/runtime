@@ -182,7 +182,7 @@ namespace System.Xml.Serialization
         {
             SoapAttributes attrs = _attributeOverrides[type];
             if (attrs != null) return attrs;
-            return new SoapAttributes(type.GetTypeInfo());
+            return new SoapAttributes(type);
         }
 
         private SoapAttributes GetAttributes(MemberInfo memberInfo)
@@ -390,7 +390,7 @@ namespace System.Xml.Serialization
                 return true;
             if (model.TypeDesc.BaseTypeDesc != null)
             {
-                StructMapping baseMapping = ImportStructLikeMapping((StructModel)_modelScope.GetTypeModel(model.Type.GetTypeInfo().BaseType, false), limiter);
+                StructMapping baseMapping = ImportStructLikeMapping((StructModel)_modelScope.GetTypeModel(model.Type.BaseType, false), limiter);
 
                 // check to see if the import of the baseMapping was deferred
                 int baseIndex = limiter.DeferredWorkItems.IndexOf(mapping.BaseMapping);
@@ -443,7 +443,7 @@ namespace System.Xml.Serialization
             }
             mapping.Members = (MemberMapping[])members.ToArray(typeof(MemberMapping));
             if (mapping.BaseMapping == null) mapping.BaseMapping = GetRootMapping();
-            IncludeTypes(model.Type.GetTypeInfo(), limiter);
+            IncludeTypes(model.Type, limiter);
 
             return true;
         }
@@ -482,7 +482,7 @@ namespace System.Xml.Serialization
             }
             _typeScope.AddTypeMapping(mapping);
             _types.Add(mapping.TypeName, mapping.Namespace, mapping);
-            IncludeTypes(model.Type.GetTypeInfo());
+            IncludeTypes(model.Type);
             return mapping;
         }
 
@@ -602,7 +602,7 @@ namespace System.Xml.Serialization
                 mapping.TypeDesc = model.TypeDesc;
                 mapping.TypeName = typeName;
                 mapping.Namespace = typeNs;
-                mapping.IsFlags = model.Type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false);
+                mapping.IsFlags = model.Type.IsDefined(typeof(FlagsAttribute), false);
                 _typeScope.AddTypeMapping(mapping);
                 _types.Add(typeName, typeNs, mapping);
                 ArrayList constants = new ArrayList();
@@ -801,7 +801,7 @@ namespace System.Xml.Serialization
             if (a.SoapType != null && a.SoapType.TypeName.Length > 0)
                 typeName = a.SoapType.TypeName;
 
-            if (type.GetTypeInfo().IsGenericType && typeName.IndexOf('{') >= 0)
+            if (type.IsGenericType && typeName.IndexOf('{') >= 0)
             {
                 Type genType = type.GetGenericTypeDefinition();
                 Type[] names = genType.GetGenericArguments();

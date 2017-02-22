@@ -185,13 +185,13 @@ namespace System.Xml.Serialization
 
                 if (type == null)
                     continue;
-                if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
+                if (!type.IsPublic && !type.IsNestedPublic)
                     continue;
                 if (uniqueTypes[type] != null)
                     continue;
                 if (DynamicAssemblies.IsTypeDynamic(type))
                     continue;
-                if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters && DynamicAssemblies.IsTypeDynamic(type.GetGenericArguments()))
+                if (type.IsGenericType || type.ContainsGenericParameters && DynamicAssemblies.IsTypeDynamic(type.GetGenericArguments()))
                     continue;
                 uniqueTypes[type] = type;
                 _writer.Write("if (type == typeof(");
@@ -352,11 +352,11 @@ namespace System.Xml.Serialization
                     Type type = xmlMappings[i].Accessor.Mapping.TypeDesc.Type;
                     if (type == null)
                         continue;
-                    if (!type.GetTypeInfo().IsPublic && !type.GetTypeInfo().IsNestedPublic)
+                    if (!type.IsPublic && !type.IsNestedPublic)
                         continue;
                     if (DynamicAssemblies.IsTypeDynamic(type))
                         continue;
-                    if (type.GetTypeInfo().IsGenericType || type.GetTypeInfo().ContainsGenericParameters && DynamicAssemblies.IsTypeDynamic(type.GetGenericArguments()))
+                    if (type.IsGenericType || type.ContainsGenericParameters && DynamicAssemblies.IsTypeDynamic(type.GetGenericArguments()))
                         continue;
                     _writer.Write("if (type == typeof(");
                     _writer.Write(CodeIdentifier.GetCSharpName(type));

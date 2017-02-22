@@ -85,7 +85,7 @@ namespace System.Xml.Serialization
                 return;
             }
 
-            if (!mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.GetTypeInfo().IsPrimitive)
+            if (!mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.IsPrimitive)
             {
                 TopLevelElement();
             }

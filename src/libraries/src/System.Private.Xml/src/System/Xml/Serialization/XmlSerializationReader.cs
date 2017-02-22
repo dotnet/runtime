@@ -1734,14 +1734,14 @@ namespace System.Xml.Serialization
                                 isPrimitive = true;
                             }
                             else
-                                isPrimitive = elementType.GetTypeInfo().IsPrimitive;
+                                isPrimitive = elementType.IsPrimitive;
                             if (newQname != null) qname = newQname;
                         }
                     }
                 }
             }
             else
-                isPrimitive = elementType.GetTypeInfo().IsPrimitive;
+                isPrimitive = elementType.IsPrimitive;
 
             if (!_soap12 && arrayInfo.jaggedDimensions > 0)
             {
@@ -1761,9 +1761,9 @@ namespace System.Xml.Serialization
             int arrayLength = 0;
             Array array = null;
 
-            if (elementType.GetTypeInfo().IsValueType)
+            if (elementType.IsValueType)
             {
-                if (!isPrimitive && !elementType.GetTypeInfo().IsEnum)
+                if (!isPrimitive && !elementType.IsEnum)
                 {
                     throw new NotSupportedException(SR.Format(SR.XmlRpcArrayOfValueTypes, elementType.FullName));
                 }
@@ -1827,7 +1827,7 @@ namespace System.Xml.Serialization
                         if (currItem != null)
                         {
                             Type currItemType = currItem.GetType();
-                            if (currItemType.GetTypeInfo().IsValueType)
+                            if (currItemType.IsValueType)
                             {
                                 itemType = null;
                                 break;
