@@ -5,8 +5,6 @@
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
     <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT' AND '$(RunningOnUnix)' == 'true'">win7-x64</NugetRuntimeIdentifier>
     <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
-    <!-- WORKAROUND: Force external packages to be restored for x64 until arm packages are fully broughtup-->
-    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">$(RuntimeOS)-x64</NugetRuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
