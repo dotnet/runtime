@@ -6,12 +6,6 @@ namespace System
 {
     internal static class Environment
     {
-        public static int ProcessorCount
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public static int ProcessorCount => 1;
     }
 }
