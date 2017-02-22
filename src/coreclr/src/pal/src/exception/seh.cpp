@@ -27,7 +27,7 @@ Abstract:
 #include "pal/init.h"
 #include "pal/process.h"
 #include "pal/malloc.hpp"
-#include "signal.hpp"
+#include "pal/signal.hpp"
 
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
