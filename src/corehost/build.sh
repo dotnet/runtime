@@ -14,13 +14,9 @@ init_rid_plat()
         else
             if [ -e $ROOTFS_DIR/etc/os-release ]; then
                 source $ROOTFS_DIR/etc/os-release
-                if [ "$__runtime_id" ==  "$ID.$VERSION_ID-$__build_arch" ]; then
-                    export __rid_plat="$ID.$VERSION_ID"
-                else
-                    echo "ROOTFS_DIR and Target RID are different. Please use correct rootfs for cross compilation."
-                    exit -1
-                fi
+                export __rid_plat="$ID.$VERSION_ID"
             fi
+            echo "__rid_plat is $__rid_plat"
         fi
     else
         if [ -e /etc/os-release ]; then
@@ -45,11 +41,10 @@ init_rid_plat()
 
 usage()
 {
-    echo "Usage: $0 --arch <Architecture> --rid <Runtime Identifier> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
+    echo "Usage: $0 --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
     echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, armel)"
-    echo "  --rid <Runtime Identifier>        Target Runtime Identifier"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
     echo "  --apphostver <app host version>   Version of the apphost executable"
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
@@ -73,7 +68,6 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 __build_arch=
-__runtime_id=
 __host_ver=
 __apphost_ver=
 __policy_ver=
@@ -81,6 +75,7 @@ __fxr_ver=
 __CrossBuild=0
 __commit_hash=
 __linkPortable=0
+__configuration=Debug
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -93,9 +88,9 @@ while [ "$1" != "" ]; do
             shift
             __build_arch=$1
             ;;
-        --rid) 
+        --configuration)
             shift
-            __runtime_id=$1
+            __configuration=$1
             ;;
         --hostver)
             shift
@@ -129,7 +124,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-__cmake_defines=
+__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration}"
 
 case $__build_arch in
     amd64|x64)
@@ -197,9 +192,9 @@ if [ $__CrossBuild == 1 ]; then
         echo "Install clang-3.6 for cross compilation"
         exit 1
     fi
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
 else
-    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_RUNTIME_ID:STRING=$__runtime_id -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
+    cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash
 fi
 set +x # turn off trace
 make

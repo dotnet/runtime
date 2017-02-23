@@ -215,6 +215,80 @@ bool pal::get_local_dotnet_dir(pal::string_t* dir)
     return true;
 }
 
+// To determine the OS version, we are going to use RtlGetVersion API
+// since GetVersion call can be shimmed on Win8.1+.
+typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
+
+pal::string_t pal::get_current_os_rid_platform()
+{
+    pal::string_t ridOS;
+    
+    RTL_OSVERSIONINFOW osinfo;
+
+    // Init the buffer
+    ZeroMemory(&osinfo, sizeof(osinfo));
+    osinfo.dwOSVersionInfoSize = sizeof(osinfo);
+    HMODULE hmodNtdll = LoadLibrary("ntdll.dll");
+    if (hmodNtdll != NULL)
+    {
+        pFuncRtlGetVersion pRtlGetVersion = (pFuncRtlGetVersion)GetProcAddress(hmodNtdll, "RtlGetVersion");
+        if (pRtlGetVersion)
+        {
+            if ((*pRtlGetVersion)(&osinfo) == 0)
+            {
+                // Win7 RID is the minimum supported version.
+                int majorVer = 6;
+                int minorVer = 1;
+
+                if (osinfo.dwMajorVersion > majorVer)
+                {
+                    majorVer = osinfo.dwMajorVersion;
+                    
+                    // Reset the minor version since we picked a different major version.
+                    minorVer = 0;
+                }
+
+                if (osinfo.dwMinorVersion > minorVer)
+                {
+                    minorVer = osinfo.dwMinorVersion;
+                }
+
+                if (majorVer == 6)
+                {
+                    switch(minorVer)
+                    {
+                        case 1:
+                            ridOS.append(_X("win7"));
+                            break;
+                        case 2:
+                            ridOS.append(_X("win8"));
+                            break;
+                        case 3:
+                        default: 
+                            // For unknown version, we will support the highest RID that we know for this major version.
+                            ridOS.append(_X("win81"));
+                            break;
+                    }
+                }
+                else if (majorVer >= 10)
+                {
+                    switch(minorVer)
+                    {
+                        case 0:
+                        default: 
+                            // Use Win10-* RID even for newer platforms we do not know for so that existing Win10 assets can be used
+                            // to keep apps working.
+                            ridOS.append(_X("win10"));
+                            break;
+                    }
+                }
+            }
+        }
+    }
+    
+    return ridOS;
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
     return path.length() >= 2 && path[1] == L':';
