@@ -1211,7 +1211,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotSByte(ByVal operand As SByte, ByVal operandType As Type) As Object
             Dim result As SByte = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1220,7 +1220,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotByte(ByVal operand As Byte, ByVal operandType As Type) As Object
             Dim result As Byte = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1229,7 +1229,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotInt16(ByVal operand As Int16, ByVal operandType As Type) As Object
             Dim result As Int16 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1238,7 +1238,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotUInt16(ByVal operand As UInt16, ByVal operandType As Type) As Object
             Dim result As UInt16 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1247,7 +1247,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotInt32(ByVal operand As Int32, ByVal operandType As Type) As Object
             Dim result As Int32 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1256,7 +1256,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotUInt32(ByVal operand As UInt32, ByVal operandType As Type) As Object
             Dim result As UInt32 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1269,7 +1269,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotInt64(ByVal operand As Int64, ByVal operandType As Type) As Object
             Dim result As Int64 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
@@ -1278,7 +1278,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared Function NotUInt64(ByVal operand As UInt64, ByVal operandType As Type) As Object
             Dim result As UInt64 = Not operand
 
-            If operandType.GetTypeInfo.IsEnum Then
+            If operandType.IsEnum Then
                 Return System.Enum.ToObject(operandType, result)
             End If
             Return result
