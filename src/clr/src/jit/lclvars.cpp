@@ -2965,6 +2965,10 @@ void Compiler::lvaSortByRefCount()
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_PinningRef));
 #endif
         }
+        else if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
+        {
+            varDsc->lvTracked = 0;
+        }
 
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
