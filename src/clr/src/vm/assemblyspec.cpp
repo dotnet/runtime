@@ -1276,7 +1276,14 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::GetAssembly
     
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
-    pBinderContextForLookup = pSpec->GetBindingContext();
+    if(!pSpec->IsAssemblySpecForMscorlib())
+        pBinderContextForLookup = pSpec->GetBindingContext();
+    else
+    {
+        // For System.Private.Corelib Binding context is either not set or if set then it should be TPA
+        _ASSERTE(pSpec->GetBindingContext() == NULL || pSpec->GetBindingContext() == pSpecDomain->GetFusionContext());
+    }
+
     if (pBinderContextForLookup != NULL)
     {
         // We are working with the actual binding context in which the assembly was expected to be loaded.
