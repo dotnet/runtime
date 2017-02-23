@@ -1396,9 +1396,7 @@ MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */
-#ifdef ENABLE_LLVM
 MINI_OP(OP_LLVM_OUTARG_VT,	"llvm_outarg_vt", IREG, VREG, NONE)
-#endif
 
 MINI_OP(OP_OBJC_GET_SELECTOR, "objc_get_selector", IREG, NONE, NONE)
 
