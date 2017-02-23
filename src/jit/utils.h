@@ -381,6 +381,15 @@ public:
         return m_value;
     }
 
+    // Mark the value as read only; explicitly change the variable to the "read" phase.
+    void MarkAsReadOnly() const
+    {
+#ifdef DEBUG
+        assert(m_initialized);
+        (const_cast<PhasedVar*>(this))->m_writePhase = false;
+#endif // DEBUG
+    }
+
     // Functions/operators to write the value. Must be in the write phase.
 
     PhasedVar& operator=(const T& value)

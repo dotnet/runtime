@@ -50,6 +50,7 @@ void Compiler::lvaInit()
 #if FEATURE_FIXED_OUT_ARGS
     lvaPInvokeFrameRegSaveVar = BAD_VAR_NUM;
     lvaOutgoingArgSpaceVar    = BAD_VAR_NUM;
+    lvaOutgoingArgSpaceSize   = PhasedVar<unsigned>();
 #endif // FEATURE_FIXED_OUT_ARGS
 #ifdef _TARGET_ARM_
     lvaPromotedStructAssemblyScratchVar = BAD_VAR_NUM;
@@ -2240,9 +2241,14 @@ BYTE* Compiler::lvaGetGcLayout(unsigned varNum)
     return lvaTable[varNum].lvGcLayout;
 }
 
-/*****************************************************************************
- * Return the number of bytes needed for a local variable
- */
+//------------------------------------------------------------------------
+// lvaLclSize: returns size of a local variable, in bytes
+//
+// Arguments:
+//    varNum -- variable to query
+//
+// Returns:
+//    Number of bytes needed on the frame for such a local.
 
 unsigned Compiler::lvaLclSize(unsigned varNum)
 {
@@ -2258,10 +2264,8 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
 
         case TYP_LCLBLK:
 #if FEATURE_FIXED_OUT_ARGS
-            noway_assert(lvaOutgoingArgSpaceSize >= 0);
             noway_assert(varNum == lvaOutgoingArgSpaceVar);
             return lvaOutgoingArgSpaceSize;
-
 #else // FEATURE_FIXED_OUT_ARGS
             assert(!"Unknown size");
             NO_WAY("Target doesn't support TYP_LCLBLK");
@@ -3491,7 +3495,7 @@ void Compiler::lvaMarkLocalVars()
         }
     }
 
-    lvaAllocOutgoingArgSpace();
+    lvaAllocOutgoingArgSpaceVar();
 
 #if !FEATURE_EH_FUNCLETS
 
@@ -3626,7 +3630,7 @@ void Compiler::lvaMarkLocalVars()
     lvaSortByRefCount();
 }
 
-void Compiler::lvaAllocOutgoingArgSpace()
+void Compiler::lvaAllocOutgoingArgSpaceVar()
 {
 #if FEATURE_FIXED_OUT_ARGS
 
@@ -3642,21 +3646,6 @@ void Compiler::lvaAllocOutgoingArgSpace()
 
         lvaTable[lvaOutgoingArgSpaceVar].lvRefCnt    = 1;
         lvaTable[lvaOutgoingArgSpaceVar].lvRefCntWtd = BB_UNITY_WEIGHT;
-
-        if (lvaOutgoingArgSpaceSize == 0)
-        {
-            if (compUsesThrowHelper || compIsProfilerHookNeeded())
-            {
-                // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-                // 1. there are calls to THROW_HEPLPER methods.
-                // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
-                //    that even methods without any calls will have outgoing arg area space allocated.
-                //
-                // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
-                // the outgoing arg space if the method makes any calls.
-                lvaOutgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            }
-        }
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);
