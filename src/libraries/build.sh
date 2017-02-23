@@ -28,5 +28,5 @@ if [ $? -ne 0 ];then
    exit 1
 fi
 
-"$__scriptpath/build-managed.sh" $*
+"$__scriptpath/build-managed.sh" -BuildPackages=true $*
 exit $?
