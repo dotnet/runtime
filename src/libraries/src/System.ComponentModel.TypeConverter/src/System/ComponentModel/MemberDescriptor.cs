@@ -424,16 +424,16 @@ namespace System.ComponentModel
 
             if (publicOnly)
             {
-                result = componentClass.GetTypeInfo().GetMethod(name, args);
+                result = componentClass.GetMethod(name, args);
             }
             else
             {
                 // The original impementation requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not 
                 // available on .NET Core. The replacement will use the default BindingFlags, which may miss some methods that had been found
                 // on .NET Framework.
-                result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
+                result = componentClass.GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
             }
-            if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
+            if (result != null && !result.ReturnType.IsEquivalentTo(returnType))
             {
                 result = null;
             }
