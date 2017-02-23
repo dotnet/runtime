@@ -638,6 +638,8 @@ public:
     static unsigned __int64 convertDoubleToUInt64(double d);
 
     static double round(double x);
+
+    static float round(float x);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
