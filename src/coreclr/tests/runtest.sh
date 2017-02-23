@@ -368,7 +368,8 @@ function create_core_overlay {
     if [ -d "$mscorlibDir/bin" ]; then
         cp -f -v "$mscorlibDir/bin/"* "$coreOverlayDir/" 2>/dev/null
     fi
-    cp -n -v "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
+    cp -f -v "$testDependenciesDir/"xunit* "$coreOverlayDir/" 2>/dev/null
+    cp -n -v "$testDependenciesDir/"* "$coreOverlayDir/" 2>/dev/null
     if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
         # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
         rm -f "$coreOverlayDir/mscorlib.ni.dll"
