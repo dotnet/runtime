@@ -207,11 +207,31 @@ namespace System.Collections.Generic
         // Adds the given object to the end of this list. The size of the list is
         // increased by one. If required, the capacity of the list is doubled
         // before adding the new element.
-        //
-        public void Add(T item) {
-            if (_size == _items.Length) EnsureCapacity(_size + 1);
-            _items[_size++] = item;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(T item)
+        {
+            var array = _items;
+            var size = _size;
             _version++;
+            if ((uint)size < (uint)array.Length)
+            {
+                _size = size + 1;
+                array[size] = item;
+            }
+            else
+            {
+                AddWithResize(item);
+            }
+        }
+
+        // Non-inline from List.Add to improve its code quality as uncommon path
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddWithResize(T item)
+        {
+            var size = _size;
+            EnsureCapacity(size + 1);
+            _size = size + 1;
+            _items[size] = item;
         }
 
         int System.Collections.IList.Add(Object item)
