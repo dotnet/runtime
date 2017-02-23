@@ -1888,15 +1888,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Handles standard binary decimal based operators.
             This function is called twice by the EE for every binary operator it evaluates
             Here is how it works.
-        1.  The EE on finding an Expr asks the Expression binder to bind it. 
-        2.  At this time the expression binder just creates a new binopexpr and returns it to the EE,
-        the EE then uses the runtimesystem to find if any of the arguments of the expr can be evaluated to constants.
-        3.  If so it creates new arguments and expr, aliases the original expr to the new one and passes
-        it new expr to Expressionbinder to be bound. 
-        4.  This time the expression binder realizes that the 2 arguments are constants and tries to fold them.
-        If the folding is successful the value is used by the EE (and we have avoided a funceval)
-        5.  if the constant binding fails, then the Expression binders returns the same exp as it would have 
-        created for the compile case ( we func eval the same function as what would be executed at runtime).
         */
         private EXPR BindDecBinOp(ExpressionKind ek, EXPRFLAG flags, EXPR arg1, EXPR arg2)
         {
@@ -1905,15 +1896,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType typeDec = GetOptPDT(PredefinedType.PT_DECIMAL);
             Debug.Assert(typeDec != null);
 
-            EXPR argConst1 = arg1.GetConst();
-            EXPR argConst2 = arg2.GetConst();
-
-            CType typeRet = null;
+            CType typeRet;
 
             switch (ek)
             {
                 default:
                     VSFAIL("Bad kind");
+                    typeRet = null;
                     break;
                 case ExpressionKind.EK_ADD:
                 case ExpressionKind.EK_SUB:
@@ -1933,132 +1922,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
 #if CSEE
-            // In the EE, even if we don't have two constants, we want to emit an EXPRBINOP with the
+            // In the EE, we want to emit an EXPRBINOP with the
             // right EK so that when we evalsync we can just do the work ourselves instead of
             // delegating to method calls.
 
-            if (!argConst1 || !argConst2)
-            {
-                // We don't have 2 constants, so just emit an EXPRBINOP...
-                return GetExprFactory().CreateBinop(tree, ek, typeRet, arg1, arg2);
-            }
-            else
-            {
-                goto LBothConst;
-            }
-
-        LUserDefined:
+            return GetExprFactory().CreateBinop(tree, ek, typeRet, arg1, arg2);
 
 #endif // CSEE
 
-#if !CSEE
-            if (argConst2 != null && argConst1 != null)
-            {
-                goto LBothConst;
-            }
-#endif
-
-            // At this point, for the compiler we don't want to optimize the binop just yet. Maintain the correct tree until
-            // the arithmetic optimizer pass.
             return GetExprFactory().CreateBinop(ek, typeRet, arg1, arg2);
-
-        LBothConst:
-            decimal dec1;
-            decimal dec2;
-            decimal decRes = 0;
-            bool fRes = false;
-            bool fBool = false;
-
-            dec1 = argConst1.asCONSTANT().getVal().decVal;
-            dec2 = argConst2.asCONSTANT().getVal().decVal;
-
-            // Do the operation.
-            switch (ek)
-            {
-                case ExpressionKind.EK_ADD:
-                    decRes = dec1 + dec2;
-                    break;
-                case ExpressionKind.EK_SUB:
-                    decRes = dec1 - dec2;
-                    break;
-                case ExpressionKind.EK_MUL:
-                    decRes = dec1 * dec2;
-                    break;
-                case ExpressionKind.EK_DIV:
-                    if (dec2 == 0)
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_IntDivByZero);
-                        EXPR rval = GetExprFactory().CreateBinop(ek, typeDec, arg1, arg2);
-                        rval.SetError();
-                        return rval;
-                    }
-
-                    decRes = dec1 / dec2;
-                    break;
-
-                case ExpressionKind.EK_MOD:
-                    {
-                        /* n % d = n - d  truncate(n/d) */
-                        decimal decDiv;
-
-                        if (dec2 == 0)
-                        {
-                            GetErrorContext().Error(ErrorCode.ERR_IntDivByZero);
-                            EXPR rval = GetExprFactory().CreateBinop(ek, typeDec, arg1, arg2);
-                            rval.SetError();
-                            return rval;
-                        }
-
-                        decDiv = dec1 % dec2;
-                        break;
-                    }
-
-                default:
-                    fBool = true;
-
-                    switch (ek)
-                    {
-                        default:
-                            VSFAIL("Bad ek");
-                            break;
-                        case ExpressionKind.EK_EQ:
-                            fRes = dec1 == dec2;
-                            break;
-                        case ExpressionKind.EK_NE:
-                            fRes = dec1 != dec2;
-                            break;
-                        case ExpressionKind.EK_LE:
-                            fRes = dec1 <= dec2;
-                            break;
-                        case ExpressionKind.EK_LT:
-                            fRes = dec1 < dec2;
-                            break;
-                        case ExpressionKind.EK_GE:
-                            fRes = dec1 >= dec2;
-                            break;
-                        case ExpressionKind.EK_GT:
-                            fRes = dec1 > dec2;
-                            break;
-                    }
-                    break;
-            }
-
-            // Allocate the result node.
-            CONSTVAL cv;
-            EXPR exprRes;
-
-            if (fBool)
-            {
-                cv = ConstValFactory.GetBool(fRes);
-                exprRes = GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_BOOL), cv);
-            }
-            else
-            {
-                cv = GetExprConstants().Create(decRes);
-                exprRes = GetExprFactory().CreateConstant(typeDec, cv);
-            }
-
-            return exprRes;
         }
 
 
@@ -2072,35 +1944,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType typeDec = GetOptPDT(PredefinedType.PT_DECIMAL);
             Debug.Assert(typeDec != null);
-            ek = ek == ExpressionKind.EK_NEG ? ExpressionKind.EK_DECIMALNEG : ExpressionKind.EK_UPLUS;
 
-            // We want to fold if the argument is constant. Otherwise, keep the regular op.
-            EXPR argConst = arg.GetConst();
-            if (argConst == null) // Non-constant.
+            if (ek == ExpressionKind.EK_NEG)
             {
-                if (ek == ExpressionKind.EK_DECIMALNEG)
-                {
-                    PREDEFMETH predefMeth = PREDEFMETH.PM_DECIMAL_OPUNARYMINUS;
-                    return CreateUnaryOpForPredefMethodCall(ek, predefMeth, typeDec, arg);
-                }
-                return GetExprFactory().CreateUnaryOp(ek, typeDec, arg);
+                PREDEFMETH predefMeth = PREDEFMETH.PM_DECIMAL_OPUNARYMINUS;
+                return CreateUnaryOpForPredefMethodCall(ExpressionKind.EK_DECIMALNEG, predefMeth, typeDec, arg);
             }
-
-            // If its a uplus, just return it.
-            if (ek == ExpressionKind.EK_UPLUS)
-            {
-                return arg;
-            }
-
-            decimal dec = argConst.asCONSTANT().getVal().decVal;
-            dec = dec * -1;
-
-            // Allocate the result node.
-            CONSTVAL cv = GetExprConstants().Create(dec);
-
-            EXPR exprRes = GetExprFactory().CreateConstant(typeDec, cv);
-
-            return exprRes;
+            return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_UPLUS, typeDec, arg);
         }
 
 
@@ -2128,66 +1978,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedType ptOp = arg1.type.getPredefType();
             Debug.Assert(ptOp == PredefinedType.PT_INT || ptOp == PredefinedType.PT_UINT || ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG);
 
-            // We want to check up front if we have two constants, because constant folding is supposed to
-            // happen in the initial binding pass.
-            EXPR argConst1 = arg1.GetConst();
-            EXPR argConst2 = arg2.GetConst();
-
-            if (argConst1 == null || argConst2 == null) // One or more aren't constants, so don't fold anything.
-            {
-                return GetExprFactory().CreateBinop(ek, arg1.type, arg1, arg2);
-            }
-
-            // Both constants, so fold them.
-            CONSTVAL cv = new CONSTVAL();
-            int cbit = (ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG) ? 0x3f : 0x1f;
-            cv.iVal = argConst2.asCONSTANT().getVal().iVal & cbit;
-            cbit = cv.iVal;
-
-            // Fill in the CONSTVAL.
-            if (ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG)
-            {
-                Debug.Assert(0 <= cbit && cbit < 0x40);
-                ulong u1 = argConst1.asCONSTANT().getVal().ulongVal;
-                ulong uval;
-
-                switch (ek)
-                {
-                    case ExpressionKind.EK_LSHIFT:
-                        uval = u1 << cbit;
-                        break;
-                    case ExpressionKind.EK_RSHIFT:
-                        uval = (ptOp == PredefinedType.PT_LONG) ? (ulong)((long)u1 >> cbit) : (u1 >> cbit);
-                        break;
-                    default:
-                        VSFAIL("Unknown op");
-                        uval = 0;
-                        break;
-                }
-                cv = GetExprConstants().Create(uval);
-            }
-            else
-            {
-                Debug.Assert(0 <= cbit && cbit < 0x20);
-                uint u1 = argConst1.asCONSTANT().getVal().uiVal;
-
-                switch (ek)
-                {
-                    case ExpressionKind.EK_LSHIFT:
-                        cv.uiVal = u1 << cbit;
-                        break;
-                    case ExpressionKind.EK_RSHIFT:
-                        cv.uiVal = (ptOp == PredefinedType.PT_INT) ? (uint)((int)u1 >> cbit) : (u1 >> cbit);
-                        break;
-                    default:
-                        VSFAIL("Unknown op");
-                        cv.uiVal = 0;
-                        break;
-                }
-            }
-
-            EXPR exprRes = GetExprFactory().CreateConstant(GetReqPDT(ptOp), cv);
-            return exprRes;
+            return GetExprFactory().CreateBinop(ek, arg1.type, arg1, arg2);
         }
 
         /*
@@ -2587,43 +2378,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private static bool isDivByZero(ExpressionKind kind, EXPR op2)
-        {
-            return false;
-        }
-
-        private EXPR FoldIntegerConstants(ExpressionKind kind, EXPRFLAG flags, EXPR op1, EXPR op2, PredefinedType ptOp)
-        {
-            //Debug.Assert(kind.isRelational() || kind.isArithmetic() || kind.isBitwise());
-            Debug.Assert(ptOp == PredefinedType.PT_INT || ptOp == PredefinedType.PT_UINT || ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG);
-            CType typeOp = GetReqPDT(ptOp);
-            Debug.Assert(typeOp != null);
-            Debug.Assert(op1 != null && op1.type == typeOp);
-            Debug.Assert(op2 == null || op2.type == typeOp);
-            Debug.Assert((op2 == null) == (kind == ExpressionKind.EK_NEG || kind == ExpressionKind.EK_UPLUS || kind == ExpressionKind.EK_BITNOT));
-
-            EXPRCONSTANT opConst1 = op1.GetConst().asCONSTANT();
-            EXPRCONSTANT opConst2 = (op2 != null) ? op2.GetConst().asCONSTANT() : null;
-
-            // Fold operation if both args are constant.
-            if (opConst1 != null && (op2 == null || opConst2 != null))
-            {
-                if (ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG)
-                {
-                    return FoldConstI8Op(kind, op1, opConst1, op2, opConst2, ptOp);
-                }
-                else
-                {
-                    return FoldConstI4Op(kind, op1, opConst1, op2, opConst2, ptOp);
-                }
-            }
-
-            return null;
-        }
-
-
         /*
-            Convert and constant fold an expression involving I4, U4, I8 or U8 operands. The operands are
+            Convert an expression involving I4, U4, I8 or U8 operands. The operands are
             assumed to be already converted to the correct types.
         */
         private EXPR BindIntOp(ExpressionKind kind, EXPRFLAG flags, EXPR op1, EXPR op2, PredefinedType ptOp)
@@ -2635,22 +2391,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(op1 != null && op1.type == typeOp);
             Debug.Assert(op2 == null || op2.type == typeOp);
             Debug.Assert((op2 == null) == (kind == ExpressionKind.EK_NEG || kind == ExpressionKind.EK_UPLUS || kind == ExpressionKind.EK_BITNOT));
-
-            if (isDivByZero(kind, op2))
-            {
-                GetErrorContext().Error(ErrorCode.ERR_IntDivByZero);
-                EXPR rval = GetExprFactory().CreateBinop(kind, typeOp, op1, op2);
-                rval.SetError();
-                return rval;
-            }
-
-            // This optimization CANNOT be moved to a later pass.  See comments in
-            // FoldIntegerConstants.
-            EXPR exprFolded = FoldIntegerConstants(kind, flags, op1, op2, ptOp);
-            if (exprFolded != null)
-            {
-                return exprFolded;
-            }
 
             if (kind == ExpressionKind.EK_NEG)
             {
@@ -2718,378 +2458,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return exprRes;
         }
 
-        private EXPR FoldConstI4Op(ExpressionKind kind, EXPR op1, EXPRCONSTANT opConst1, EXPR op2, EXPRCONSTANT opConst2, PredefinedType ptOp)
-        {
-            Debug.Assert(ptOp == PredefinedType.PT_INT || ptOp == PredefinedType.PT_UINT);
-            Debug.Assert(opConst1.isCONSTANT_OK());
-            Debug.Assert(op1.type.isPredefType(ptOp) && op1.type == opConst1.type);
-            Debug.Assert(op2 == null && opConst2 == null ||
-                   op2 != null && opConst2 != null && opConst2.isCONSTANT_OK() && op1.type == op2.type && op1.type == opConst2.type);
-
-            bool fSigned = (ptOp == PredefinedType.PT_INT);
-
-            // Get the operands
-            uint u1 = opConst1.asCONSTANT().getVal().uiVal;
-            uint u2 = opConst2 != null ? opConst2.asCONSTANT().getVal().uiVal : 0;
-            uint uRes;
-
-            // The code below doesn't work if uint isn't 4 bytes!
-            Debug.Assert(sizeof(uint) == 4);
-
-            // The sign bit.
-            uint uSign = 0x80000000;
-
-            // Do the operation.
-            switch (kind)
-            {
-                case ExpressionKind.EK_ADD:
-                    uRes = u1 + u2;
-                    // For signed, we want either sign(u1) != sign(u2) or sign(u1) == sign(uRes).
-                    // For unsigned, the result should be at least as big as either operand (if it's bigger than
-                    // one, it will be bigger than the other as well).
-                    if (fSigned)
-                    {
-                        EnsureChecked(0 != (((u1 ^ u2) | (u1 ^ uRes ^ uSign)) & uSign));
-                    }
-                    else
-                    {
-                        EnsureChecked(uRes >= u1);
-                    }
-                    break;
-
-                case ExpressionKind.EK_SUB:
-                    uRes = u1 - u2;
-                    // For signed, we want either sign(u1) == sign(u2) or sign(u1) == sign(uRes).
-                    // For unsigned, the result should be no bigger than the first operand.
-                    if (fSigned)
-                    {
-                        EnsureChecked(0 != (((u1 ^ u2 ^ uSign) | (u1 ^ uRes ^ uSign)) & uSign));
-                    }
-                    else
-                    {
-                        EnsureChecked(uRes <= u1);
-                    }
-                    break;
-
-                case ExpressionKind.EK_MUL:
-                    // Multiply mod 2^32 doesn't depend on signed vs unsigned.
-                    uRes = u1 * u2;
-                    // Note that divide depends on signed-ness.
-                    // For signed, the first check detects 0x80000000 / 0xFFFFFFFF == 0x80000000.
-                    // This test needs to come first to avoid an integer overflow exception - yes we get this
-                    // in native code.
-                    if (u1 == 0 || u2 == 0)
-                    {
-                        break;
-                    }
-
-                    if (fSigned)
-                    {
-                        EnsureChecked((u2 != uRes || u1 == 1) && (int)uRes / (int)u1 == (int)u2);
-                    }
-                    else
-                    {
-                        EnsureChecked(uRes / u1 == u2);
-                    }
-                    break;
-
-                case ExpressionKind.EK_DIV:
-                    Debug.Assert(u2 != 0); // Caller should have handled this.
-                    if (!fSigned)
-                    {
-                        uRes = u1 / u2;
-                    }
-                    else if (u2 != 0)
-                    {
-                        uRes = (uint)((int)u1 / (int)u2);
-                    }
-                    else
-                    {
-                        uRes = (uint)-(int)u1;
-                        EnsureChecked(u1 != uSign);
-                    }
-                    break;
-
-                case ExpressionKind.EK_MOD:
-                    Debug.Assert(u2 != 0); // Caller should have handled this.
-                    if (!fSigned)
-                    {
-                        uRes = u1 % u2;
-                    }
-                    else if (u2 != 0)
-                    {
-                        uRes = (uint)((int)u1 % (int)u2);
-                    }
-                    else
-                    {
-                        uRes = 0;
-                    }
-                    break;
-
-                case ExpressionKind.EK_NEG:
-                    if (!fSigned)
-                    {
-                        // Special case: a unary minus promotes a uint to a long
-                        CONSTVAL cv = GetExprConstants().Create(-(long)u1);
-                        EXPRCONSTANT foldedConst = GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_LONG), cv);
-
-                        return foldedConst;
-                    }
-
-                    uRes = (uint)-(int)u1;
-                    EnsureChecked(u1 != uSign);
-                    break;
-
-                case ExpressionKind.EK_UPLUS:
-                    uRes = u1;
-                    break;
-                case ExpressionKind.EK_BITAND:
-                    uRes = u1 & u2;
-                    break;
-                case ExpressionKind.EK_BITOR:
-                    uRes = u1 | u2;
-                    break;
-                case ExpressionKind.EK_BITXOR:
-                    uRes = u1 ^ u2;
-                    break;
-                case ExpressionKind.EK_BITNOT:
-                    uRes = ~u1;
-                    break;
-                case ExpressionKind.EK_EQ:
-                    uRes = (uint)((u1 == u2) ? 1 : 0);
-                    break;
-                case ExpressionKind.EK_NE:
-                    uRes = (uint)((u1 != u2) ? 1 : 0);
-                    break;
-                case ExpressionKind.EK_LE:
-                    uRes = (uint)((fSigned ? (int)u1 <= (int)u2 : u1 <= u2) ? 1 : 0);
-                    break;
-                case ExpressionKind.EK_LT:
-                    uRes = (uint)((fSigned ? (int)u1 < (int)u2 : u1 < u2) ? 1 : 0);
-                    break;
-                case ExpressionKind.EK_GE:
-                    uRes = (uint)((fSigned ? (int)u1 >= (int)u2 : u1 >= u2) ? 1 : 0);
-                    break;
-                case ExpressionKind.EK_GT:
-                    uRes = (uint)((fSigned ? (int)u1 > (int)u2 : u1 > u2) ? 1 : 0);
-                    break;
-                default:
-                    VSFAIL("Unknown op");
-                    uRes = 0;
-                    break;
-            }
-
-            CType typeDest = GetOptPDT(kind.isRelational() ? PredefinedType.PT_BOOL : ptOp);
-            Debug.Assert(typeDest != null);
-
-            // Allocate the result node.
-            EXPR exprRes = GetExprFactory().CreateConstant(typeDest, ConstValFactory.GetUInt(uRes));
-
-            return exprRes;
-        }
-
         private void EnsureChecked(bool b)
         {
             if (!b && Context.CheckedConstant)
             {
                 GetErrorContext().Error(ErrorCode.ERR_CheckedOverflow);
             }
-        }
-
-        private EXPR FoldConstI8Op(ExpressionKind kind, EXPR op1, EXPRCONSTANT opConst1, EXPR op2, EXPRCONSTANT opConst2, PredefinedType ptOp)
-        {
-            Debug.Assert(ptOp == PredefinedType.PT_LONG || ptOp == PredefinedType.PT_ULONG);
-            Debug.Assert(opConst1.isCONSTANT_OK());
-            Debug.Assert(op1.type.isPredefType(ptOp) && op1.type == opConst1.type);
-            Debug.Assert(op2 == null && opConst2 == null ||
-                   op2 != null && opConst2 != null && opConst2.isCONSTANT_OK() && op1.type == op2.type && op1.type == opConst2.type);
-
-            bool fSigned = (ptOp == PredefinedType.PT_LONG);
-            bool fRes = false;
-            // Allocate the result node.
-            CType typeDest;
-            CONSTVAL cv = new CONSTVAL();
-
-
-            if (fSigned)
-            {
-                // long.
-                long u1 = opConst1.asCONSTANT().getVal().longVal;
-                long u2 = opConst2 != null ? opConst2.asCONSTANT().getVal().longVal : 0;
-                long uRes = 0;
-                switch (kind)
-                {
-                    case ExpressionKind.EK_ADD:
-                        uRes = u1 + u2;
-                        break;
-
-                    case ExpressionKind.EK_SUB:
-                        uRes = u1 - u2;
-                        break;
-
-                    case ExpressionKind.EK_MUL:
-                        uRes = u1 * u2;
-                        break;
-
-                    case ExpressionKind.EK_DIV:
-                        Debug.Assert(u2 != 0); // Caller should have handled this.
-                        uRes = u1 / u2;
-                        break;
-
-                    case ExpressionKind.EK_MOD:
-                        Debug.Assert(u2 != 0); // Caller should have handled this.
-                        uRes = u1 % u2;
-                        break;
-
-                    case ExpressionKind.EK_NEG:
-                        uRes = -u1;
-                        break;
-
-                    case ExpressionKind.EK_UPLUS:
-                        uRes = u1;
-                        break;
-                    case ExpressionKind.EK_BITAND:
-                        uRes = u1 & u2;
-                        break;
-                    case ExpressionKind.EK_BITOR:
-                        uRes = u1 | u2;
-                        break;
-                    case ExpressionKind.EK_BITXOR:
-                        uRes = u1 ^ u2;
-                        break;
-                    case ExpressionKind.EK_BITNOT:
-                        uRes = ~u1;
-                        break;
-                    case ExpressionKind.EK_EQ:
-                        fRes = (u1 == u2);
-                        break;
-                    case ExpressionKind.EK_NE:
-                        fRes = (u1 != u2);
-                        break;
-                    case ExpressionKind.EK_LE:
-                        fRes = u1 <= u2;
-                        break;
-                    case ExpressionKind.EK_LT:
-                        fRes = u1 < u2;
-                        break;
-                    case ExpressionKind.EK_GE:
-                        fRes = u1 >= u2;
-                        break;
-                    case ExpressionKind.EK_GT:
-                        fRes = u1 > u2;
-                        break;
-                    default:
-                        VSFAIL("Unknown op");
-                        uRes = 0;
-                        break;
-                }
-
-                if (kind.isRelational())
-                {
-                    cv.iVal = fRes ? 1 : 0;
-                    typeDest = GetReqPDT(PredefinedType.PT_BOOL);
-                }
-                else
-                {
-                    cv = GetExprConstants().Create(uRes);
-                    typeDest = GetOptPDT(ptOp);
-                    Debug.Assert(typeDest != null);
-                }
-            }
-            else
-            {
-                // ulong.
-                // Get the operands
-                ulong u1 = opConst1.asCONSTANT().getVal().ulongVal;
-                ulong u2 = opConst2 != null ? opConst2.asCONSTANT().getVal().ulongVal : 0;
-                ulong uRes = 0;
-
-                // Do the operation.
-                switch (kind)
-                {
-                    case ExpressionKind.EK_ADD:
-                        uRes = u1 + u2;
-                        break;
-
-                    case ExpressionKind.EK_SUB:
-                        uRes = u1 - u2;
-                        break;
-
-                    case ExpressionKind.EK_MUL:
-                        uRes = u1 * u2;
-                        break;
-
-                    case ExpressionKind.EK_DIV:
-                        Debug.Assert(u2 != 0); // Caller should have handled this.
-                        uRes = u1 / u2;
-                        break;
-
-                    case ExpressionKind.EK_MOD:
-                        Debug.Assert(u2 != 0); // Caller should have handled this.
-                        uRes = u1 % u2;
-                        break;
-
-                    case ExpressionKind.EK_NEG:
-                        // You can't do this!
-                        return BadOperatorTypesError(kind, op1, op2);
-
-                    case ExpressionKind.EK_UPLUS:
-                        uRes = u1;
-                        break;
-                    case ExpressionKind.EK_BITAND:
-                        uRes = u1 & u2;
-                        break;
-                    case ExpressionKind.EK_BITOR:
-                        uRes = u1 | u2;
-                        break;
-                    case ExpressionKind.EK_BITXOR:
-                        uRes = u1 ^ u2;
-                        break;
-                    case ExpressionKind.EK_BITNOT:
-                        uRes = ~u1;
-                        break;
-                    case ExpressionKind.EK_EQ:
-                        fRes = (u1 == u2);
-                        break;
-                    case ExpressionKind.EK_NE:
-                        fRes = (u1 != u2);
-                        break;
-                    case ExpressionKind.EK_LE:
-                        fRes = u1 <= u2;
-                        break;
-                    case ExpressionKind.EK_LT:
-                        fRes = u1 < u2;
-                        break;
-                    case ExpressionKind.EK_GE:
-                        fRes = u1 >= u2;
-                        break;
-                    case ExpressionKind.EK_GT:
-                        fRes = u1 > u2;
-                        break;
-                    default:
-                        VSFAIL("Unknown op");
-                        uRes = 0;
-                        break;
-                }
-
-                if (kind.isRelational())
-                {
-                    cv.iVal = fRes ? 1 : 0;
-                    typeDest = GetReqPDT(PredefinedType.PT_BOOL);
-                }
-                else
-                {
-                    cv = GetExprConstants().Create(uRes);
-                    typeDest = GetOptPDT(ptOp);
-                    Debug.Assert(typeDest != null);
-                }
-            }
-
-
-            // Allocate the result node.
-            EXPR exprRes = GetExprFactory().CreateConstant(typeDest, cv);
-
-            return exprRes;
         }
 
         /*
@@ -3103,104 +2477,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(op2 == null || op1.type == op2.type);
             Debug.Assert(op1.type.isPredefType(PredefinedType.PT_FLOAT) || op1.type.isPredefType(PredefinedType.PT_DOUBLE));
 
-            EXPR exprRes;
-            EXPR opConst1 = op1.GetConst();
-            EXPR opConst2 = op2?.GetConst();
+            // Allocate the result expression.
+            CType typeDest = kind.isRelational() ? GetReqPDT(PredefinedType.PT_BOOL) : op1.type;
 
-            // Check for constants and fold them.
-            if (opConst1 != null && (op2 == null || opConst2 != null))
-            {
-                // Get the operands
-                double d1 = opConst1.asCONSTANT().getVal().doubleVal;
-                double d2 = opConst2?.asCONSTANT().getVal().doubleVal ?? 0.0;
-                double result = 0;      // if isBoolResult is false
-                bool result_b = false;  // if isBoolResult is true
-
-                // Do the operation.
-                switch (kind)
-                {
-                    case ExpressionKind.EK_ADD:
-                        result = d1 + d2;
-                        break;
-                    case ExpressionKind.EK_SUB:
-                        result = d1 - d2;
-                        break;
-                    case ExpressionKind.EK_MUL:
-                        result = d1 * d2;
-                        break;
-                    case ExpressionKind.EK_DIV:
-                        result = d1 / d2;
-                        break;
-                    case ExpressionKind.EK_NEG:
-                        result = -d1;
-                        break;
-                    case ExpressionKind.EK_UPLUS:
-                        result = d1;
-                        break;
-                    case ExpressionKind.EK_MOD:
-                        result = d1 % d2;
-                        break;
-                    case ExpressionKind.EK_EQ:
-                        result_b = (d1 == d2);
-                        break;
-                    case ExpressionKind.EK_NE:
-                        result_b = (d1 != d2);
-                        break;
-                    case ExpressionKind.EK_LE:
-                        result_b = (d1 <= d2);
-                        break;
-                    case ExpressionKind.EK_LT:
-                        result_b = (d1 < d2);
-                        break;
-                    case ExpressionKind.EK_GE:
-                        result_b = (d1 >= d2);
-                        break;
-                    case ExpressionKind.EK_GT:
-                        result_b = (d1 > d2);
-                        break;
-                    default:
-                        Debug.Assert(false);
-                        result = 0.0;  // unexpected operation.
-                        break;
-                }
-
-                CType typeDest;
-                CONSTVAL cv = new CONSTVAL();
-
-                // Allocate the result node.
-                if (kind.isRelational())
-                {
-                    cv.iVal = result_b ? 1 : 0;
-                    typeDest = GetReqPDT(PredefinedType.PT_BOOL);
-                }
-                else
-                {
-                    // NaN has some implementation defined bits that differ between platforms.
-                    // Normalize it to produce identical images across all platforms
-                    /*
-                     * How do we get here?
-                    if (_isnan(result))
-                    {
-                        cv = ConstValFactory.GetNan();
-                    }
-                    else
-                    {
-                     * */
-                    cv = GetExprConstants().Create(result);
-
-                    typeDest = op1.type;
-                }
-                exprRes = GetExprFactory().CreateConstant(typeDest, cv);
-            }
-            else
-            {
-                // Allocate the result expression.
-                CType typeDest = kind.isRelational() ? GetReqPDT(PredefinedType.PT_BOOL) : op1.type;
-
-                exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
-                flags = ~EXPRFLAG.EXF_CHECKOVERFLOW;
-                exprRes.flags |= flags;
-            }
+            EXPR exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
+            flags = ~EXPRFLAG.EXF_CHECKOVERFLOW;
+            exprRes.flags |= flags;
 
             return exprRes;
         }
