@@ -29,11 +29,12 @@ namespace System
             {
                 char* a = ap;
                 char* b = bp;
+                int charA = 0, charB = 0;
 
                 while (length != 0)
                 {
-                    int charA = *a;
-                    int charB = *b;
+                    charA = *a;
+                    charB = *b;
 
                     Debug.Assert((charA | charB) <= 0x7F, "strings have to be ASCII");
 
@@ -43,7 +44,7 @@ namespace System
 
                     //Return the (case-insensitive) difference between them.
                     if (charA != charB)
-                        return charA - charB;
+                        goto ReturnCharAMinusCharB; // TODO: Workaround for https://github.com/dotnet/coreclr/issues/9692
 
                     // Next char
                     a++; b++;
@@ -51,6 +52,9 @@ namespace System
                 }
 
                 return strA.Length - strB.Length;
+
+                ReturnCharAMinusCharB:
+                return charA - charB;
             }
         }
 
