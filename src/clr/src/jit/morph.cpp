@@ -861,6 +861,10 @@ fgArgInfo::fgArgInfo(Compiler* comp, GenTreePtr call, unsigned numArgs)
 #if defined(UNIX_X86_ABI)
     padStkAlign = 0;
 #endif
+#if FEATURE_FIXED_OUT_ARGS
+    outArgSize = 0;
+#endif
+
     argTableSize = numArgs; // the allocated table size
 
     hasRegArgs   = false;
@@ -905,6 +909,9 @@ fgArgInfo::fgArgInfo(GenTreePtr newCall, GenTreePtr oldCall)
     stkLevel    = oldArgInfo->stkLevel;
 #if defined(UNIX_X86_ABI)
     padStkAlign = oldArgInfo->padStkAlign;
+#endif
+#if FEATURE_FIXED_OUT_ARGS
+    outArgSize = oldArgInfo->outArgSize;
 #endif
     argTableSize = oldArgInfo->argTableSize;
     argsComplete = false;
@@ -4336,10 +4343,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
 #if FEATURE_FIXED_OUT_ARGS
 
-    // Update the outgoing argument size.
-    // If the call is a fast tail call, it will setup its arguments in incoming arg
-    // area instead of the out-going arg area.  Therefore, don't consider fast tail
-    // calls to update lvaOutgoingArgSpaceSize.
+    // Record the outgoing argument size.  If the call is a fast tail
+    // call, it will setup its arguments in incoming arg area instead
+    // of the out-going arg area, so we don't need to track the
+    // outgoing arg size.
     if (!call->IsFastTailCall())
     {
         unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
@@ -4359,26 +4366,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         }
 #endif // UNIX_AMD64_ABI
 
-        // Check if we need to increase the size of our Outgoing Arg Space
-        if (preallocatedArgCount * REGSIZE_BYTES > lvaOutgoingArgSpaceSize)
-        {
-            lvaOutgoingArgSpaceSize = preallocatedArgCount * REGSIZE_BYTES;
+        const unsigned outgoingArgSpaceSize = preallocatedArgCount * REGSIZE_BYTES;
+        call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
-            // If a function has localloc, we will need to move the outgoing arg space when the
-            // localloc happens. When we do this, we need to maintain stack alignment. To avoid
-            // leaving alignment-related holes when doing this move, make sure the outgoing
-            // argument space size is a multiple of the stack alignment by aligning up to the next
-            // stack alignment boundary.
-            if (compLocallocUsed)
-            {
-                lvaOutgoingArgSpaceSize = (unsigned)roundUp(lvaOutgoingArgSpaceSize, STACK_ALIGN);
-            }
-        }
 #ifdef DEBUG
         if (verbose)
         {
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, lvaOutgoingArgSpaceSize=%d\n", argSlots,
-                   preallocatedArgCount, call->fgArgInfo->GetNextSlotNum(), lvaOutgoingArgSpaceSize);
+            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, outgoingArgSpaceSize=%d\n", argSlots,
+                   preallocatedArgCount, call->fgArgInfo->GetNextSlotNum(), outgoingArgSpaceSize);
         }
 #endif
     }
