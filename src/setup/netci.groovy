@@ -84,13 +84,6 @@ platformList.each { platform ->
         }
     }
 
-    // Currently Ubuntu16.04 ARM CI build is disabled,
-    // so it can't collect the results files like testResults.xml and archives.
-    // This line will be removed ASAP.
-    if (os == 'Ubuntu16.04' && architecture == 'arm') {
-        return;
-    }
-
     Utilities.setMachineAffinity(newJob, os, version)
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
@@ -98,7 +91,14 @@ platformList.each { platform ->
         Utilities.addXUnitDotNETResults(newJob, '**/*-testResults.xml')
     }
 
-    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
+    if (os == 'Ubuntu16.04' && architecture == 'arm') {
+        // Don't enable by default
+        def contextString = "${osForGHTrigger} ${architecture} ${configuration} Build"
+        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${contextString} Build", "(?i).*test\\W+${contextString}.*", true /* trigger on comment phrase only */)
+    }
+    else {
+        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
+    }
 
     ArchivalSettings settings = new ArchivalSettings();
     def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "artifacts/*/packages/*.${it},artifacts/*/corehost/*.${it},pkg/bin/packages/*.${it}" }.join(",")
@@ -147,3 +147,8 @@ platformList.each { platform ->
         Utilities.addGithubPushTrigger(newJob)
     }
 }
+
+// Make the call to generate the help job
+Utilities.createHelperJob(this, project, branch,
+    "Welcome to the ${project} Repository",  // This is prepended to the help message
+    "Have a nice day!")  // This is appended to the help message.  You might put known issues here.
