@@ -65,10 +65,14 @@ MCS = $(MCS_NO_LIB) -lib:$(CLASS)
 
 ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
 
-if FULL_AOT_TESTS
-TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)" --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
-else
 TEST_RUNNER = ./test-runner.exe --runtime $(top_builddir)/runtime/mono-wrapper --mono-path "$(CLASS)"
+
+if FULL_AOT_TESTS
+TEST_RUNNER += --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
+endif
+
+if HYBRID_AOT_TESTS
+TEST_RUNNER += --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
 endif
 
 
@@ -930,15 +934,17 @@ EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 	$(ILASM) -out:$@ $<
 
 if !FULL_AOT_TESTS
-if !HYBRID_AOT_TESTS
 TEST_DRIVER_HARD_KILL_FEATURE=-r:Mono.Posix.dll
-endif
 endif
 
 if FULL_AOT_TESTS
 TEST_DRIVER_DEPEND=TestDriver.dll$(PLATFORM_AOT_SUFFIX)
 else
+if HYBRID_AOT_TESTS
+TEST_DRIVER_DEPEND=TestDriver.dll$(PLATFORM_AOT_SUFFIX)
+else
 TEST_DRIVER_DEPEND=TestDriver.dll
+endif
 endif
 
 %.exe: %.cs $(TEST_DRIVER_DEPEND)
@@ -995,7 +1001,11 @@ bug-81466-lib.dll$(PLATFORM_AOT_SUFFIX)
 if FULL_AOT_TESTS
 prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
 else
+if HYBRID_AOT_TESTS
+prereqs: $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
+else
 prereqs: $(PREREQSI_IL) $(PREREQSI_CS)
+endif
 endif
 
 # Target to precompile the test executables
@@ -1038,6 +1048,9 @@ test-sgen : sgen-tests
 compile-tests:
 	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 if FULL_AOT_TESTS
+	$(MAKE) $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
+endif
+if HYBRID_AOT_TESTS
 	$(MAKE) $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
 endif
 
@@ -1462,6 +1475,9 @@ test-inline-call-stack-library.dll: $(TEST_DRIVER_DEPEND) $(srcdir)/test-inline-
 if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 test-inline-call-stack.exe: $(TEST_DRIVER_DEPEND) test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
@@ -1509,6 +1525,9 @@ bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-8167
 if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += bug-36848-a.cs
 bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
@@ -1516,6 +1535,9 @@ bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
 	$(MCS) -r:bug-36848-a.dll -out:bug-36848.exe $(srcdir)/bug-36848.cs
 	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs /define:WITH_STOP
 if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1533,6 +1555,9 @@ bug-81466-lib.dll: bug-81466-lib.il
 if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
 
@@ -1540,6 +1565,9 @@ EXTRA_DIST += bug-324535-il.il
 bug-324535-il.dll : bug-324535-il.il
 	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
 if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
@@ -1551,6 +1579,9 @@ custom-modifiers-lib.dll: custom-modifiers-lib.il
 if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 custom-modifiers.2.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
 	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.2.exe $(srcdir)/custom-modifiers.2.cs
 
@@ -1558,6 +1589,9 @@ EXTRA_DIST += bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
 	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
 if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1587,11 +1621,17 @@ generic-unboxing.2.dll : generic-unboxing.2.il
 if FULL_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 EXTRA_DIST += generic-boxing.2.il
 generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
 	$(ILASM) /dll /output:generic-boxing.2.dll $(srcdir)/generic-boxing.2.il
 if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 
@@ -1607,6 +1647,9 @@ EXTRA_DIST += generic-delegate2.2.cs generic-delegate2-lib.2.il
 generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
 	$(ILASM) /dll /output:$@ $(srcdir)/generic-delegate2-lib.2.il
 if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
 	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
 endif
 generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
