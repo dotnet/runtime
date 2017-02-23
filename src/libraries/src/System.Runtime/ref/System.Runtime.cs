@@ -6400,7 +6400,8 @@ namespace System.Runtime.CompilerServices
         public static void ProbeForSufficientStack() { }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public static object GetUninitializedObject(Type type) { throw null; }
-   }
+        public static bool IsReferenceOrContainsReferences<T>() { throw null; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
     {
