@@ -12274,6 +12274,23 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         }
                     }
                 }
+                else // we have an unsigned comparison
+                {
+                    if (op2->IsIntegralConst(0))
+                    {
+                        if ((oper == GT_GT) || (oper == GT_LE))
+                        {
+                            // IL doesn't have a cne instruction so compilers use cgt.un instead. The JIT
+                            // recognizes certain patterns that involve GT_NE (e.g (x & 4) != 0) and fails
+                            // if GT_GT is used instead. Transform (x GT_GT.unsigned 0) into (x GT_NE 0)
+                            // and (x GT_LE.unsigned 0) into (x GT_EQ 0). The later case is rare, it sometimes
+                            // occurs as a result of branch inversion.
+                            oper = (oper == GT_LE) ? GT_EQ : GT_NE;
+                            tree->SetOper(oper, GenTree::PRESERVE_VN);
+                            tree->gtFlags &= ~GTF_UNSIGNED;
+                        }
+                    }
+                }
 
             COMPARE:
 
