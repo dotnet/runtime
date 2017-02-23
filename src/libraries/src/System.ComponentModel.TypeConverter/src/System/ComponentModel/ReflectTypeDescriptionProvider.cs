@@ -195,7 +195,7 @@ namespace System.ComponentModel
 
             if (argTypes != null)
             {
-                obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
             }
             else
             {
@@ -219,7 +219,7 @@ namespace System.ComponentModel
                     argTypes = Array.Empty<Type>();
                 }
 
-                obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
             }
 
             return obj ?? Activator.CreateInstance(objectType, args);
@@ -233,7 +233,7 @@ namespace System.ComponentModel
         /// </summary> 
         private static object CreateInstance(Type objectType, Type callingType)
         {
-            return objectType.GetTypeInfo().GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
+            return objectType.GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
                 ?? Activator.CreateInstance(objectType);
         }
 
@@ -526,7 +526,7 @@ namespace System.ComponentModel
                         Type receiverType = eppa.ReceiverType;
                         if (receiverType != null)
                         {
-                            if (receiverType.GetTypeInfo().IsAssignableFrom(componentType))
+                            if (receiverType.IsAssignableFrom(componentType))
                             {
                                 propertyList.Add(prop);
                             }
@@ -778,7 +778,7 @@ namespace System.ComponentModel
                 Type type = (Type)de.Key;
                 ReflectedTypeData typeData = (ReflectedTypeData)de.Value;
 
-                if (type.GetTypeInfo().Module == module && typeData.IsPopulated)
+                if (type.Module == module && typeData.IsPopulated)
                 {
                     typeList.Add(type);
                 }
@@ -943,7 +943,7 @@ namespace System.ComponentModel
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetTypeInfo().GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
                     s_attributeCache[type] = attrs;
                 }
             }
@@ -1026,7 +1026,7 @@ namespace System.ComponentModel
                     // have both add and remove, we skip it here, because it
                     // will be picked up in our base class scan.
                     //
-                    EventInfo[] eventInfos = type.GetTypeInfo().GetEvents(bindingFlags);
+                    EventInfo[] eventInfos = type.GetEvents(bindingFlags);
                     events = new EventDescriptor[eventInfos.Length];
                     int eventCount = 0;
 
@@ -1037,7 +1037,7 @@ namespace System.ComponentModel
                         // GetEvents returns events that are on nonpublic types
                         // if those types are from our assembly.  Screen these.
                         // 
-                        if ((!(eventInfo.DeclaringType.GetTypeInfo().IsPublic || eventInfo.DeclaringType.GetTypeInfo().IsNestedPublic)) && (eventInfo.DeclaringType.GetTypeInfo().Assembly == typeof(ReflectTypeDescriptionProvider).GetTypeInfo().Assembly))
+                        if ((!(eventInfo.DeclaringType.IsPublic || eventInfo.DeclaringType.IsNestedPublic)) && (eventInfo.DeclaringType.Assembly == typeof(ReflectTypeDescriptionProvider).Assembly))
                         {
                             Debug.Fail("Hey, assumption holds true.  Rip this assert.");
                             continue;
@@ -1139,11 +1139,11 @@ namespace System.ComponentModel
 
                                 if (receiverType != null)
                                 {
-                                    MethodInfo getMethod = providerType.GetTypeInfo().GetMethod("Get" + provideAttr.PropertyName, new Type[] { receiverType });
+                                    MethodInfo getMethod = providerType.GetMethod("Get" + provideAttr.PropertyName, new Type[] { receiverType });
 
                                     if (getMethod != null && !getMethod.IsStatic && getMethod.IsPublic)
                                     {
-                                        MethodInfo setMethod = providerType.GetTypeInfo().GetMethod("Set" + provideAttr.PropertyName, new Type[] { receiverType, getMethod.ReturnType });
+                                        MethodInfo setMethod = providerType.GetMethod("Set" + provideAttr.PropertyName, new Type[] { receiverType, getMethod.ReturnType });
 
                                         if (setMethod != null && (setMethod.IsStatic || !setMethod.IsPublic))
                                         {
@@ -1220,7 +1220,7 @@ namespace System.ComponentModel
                     // "new" properties of the same name, so we must preserve
                     // the member info for each method individually.
                     //
-                    PropertyInfo[] propertyInfos = type.GetTypeInfo().GetProperties(bindingFlags);
+                    PropertyInfo[] propertyInfos = type.GetProperties(bindingFlags);
                     properties = new PropertyDescriptor[propertyInfos.Length];
                     int propertyCount = 0;
 
@@ -1327,7 +1327,7 @@ namespace System.ComponentModel
                         break;
                     }
 
-                    baseType = baseType.GetTypeInfo().BaseType;
+                    baseType = baseType.BaseType;
                 }
 
                 // Now make a scan through each value in the table, looking for interfaces.
@@ -1342,7 +1342,7 @@ namespace System.ComponentModel
                         DictionaryEntry de = e.Entry;
                         Type keyType = de.Key as Type;
 
-                        if (keyType != null && keyType.GetTypeInfo().IsInterface && keyType.GetTypeInfo().IsAssignableFrom(callingType))
+                        if (keyType != null && keyType.IsInterface && keyType.IsAssignableFrom(callingType))
                         {
                             hashEntry = de.Value;
                             string typeString = hashEntry as string;
@@ -1368,12 +1368,12 @@ namespace System.ComponentModel
                 //
                 if (hashEntry == null)
                 {
-                    if (callingType.GetTypeInfo().IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         // Check if it is a nullable value
                         hashEntry = table[s_intrinsicNullableKey];
                     }
-                    else if (callingType.GetTypeInfo().IsInterface)
+                    else if (callingType.IsInterface)
                     {
                         // Finally, check to see if the component type is some unknown interface.
                         // We have a custom converter for that.
@@ -1399,7 +1399,7 @@ namespace System.ComponentModel
                 if (type != null)
                 {
                     hashEntry = CreateInstance(type, callingType);
-                    if (type.GetTypeInfo().GetConstructor(s_typeConstructor) == null)
+                    if (type.GetConstructor(s_typeConstructor) == null)
                     {
                         table[callingType] = hashEntry;
                     }
