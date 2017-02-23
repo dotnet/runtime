@@ -77,49 +77,12 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <System.Runtime.CompilerServices.ExtensionAttribute()>
         Public Function GetTypeCode(type As Type) As TypeCode
-
-            If type Is Nothing Then
-                Return TypeCode.Empty
-            ElseIf GetType(Boolean).Equals(type) Then
-                Return TypeCode.Boolean
-            ElseIf GetType(Char).Equals(type) Then
-                Return TypeCode.Char
-            ElseIf GetType(SByte).Equals(type) Then
-                Return TypeCode.SByte
-            ElseIf GetType(Byte).Equals(type) Then
-                Return TypeCode.Byte
-            ElseIf GetType(Short).Equals(type) Then
-                Return TypeCode.Int16
-            ElseIf GetType(UShort).Equals(type) Then
-                Return TypeCode.UInt16
-            ElseIf GetType(Int32).Equals(type) Then
-                Return TypeCode.Int32
-            ElseIf GetType(UInt32).Equals(type) Then
-                Return TypeCode.UInt32
-            ElseIf GetType(Long).Equals(type) Then
-                Return TypeCode.Int64
-            ElseIf GetType(ULong).Equals(type) Then
-                Return TypeCode.UInt64
-            ElseIf GetType(Single).Equals(type) Then
-                Return TypeCode.Single
-            ElseIf GetType(Double).Equals(type) Then
-                Return TypeCode.Double
-            ElseIf GetType(Decimal).Equals(type) Then
-                Return TypeCode.Decimal
-            ElseIf GetType(DateTime).Equals(type) Then
-                Return TypeCode.DateTime
-            ElseIf GetType(String).Equals(type) Then
-                Return TypeCode.String
-            ElseIf type.GetTypeInfo().IsEnum Then
-                Return GetTypeCode([Enum].GetUnderlyingType(type))
-            Else
-                Return TypeCode.Object
-            End If
+            Return Type.GetTypeCode(type)
         End Function
 
         <System.Runtime.CompilerServices.ExtensionAttribute()>
         Public Function IsSubclassOf(source As Type, other As Type) As Boolean
-            Return source.GetTypeInfo().IsSubclassOf(other)
+            Return source.IsSubclassOf(other)
         End Function
 
         Public ReadOnly Property BindingFlagsInvokeMethod As BindingFlags
@@ -268,11 +231,11 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             If t1.IsGenericParameter Then
                 If t2.IsGenericParameter Then
                     ' If member's declaring type is not type parameter's declaring type, we assume that it is used as a type argument
-                    If t1.GetTypeInfo().DeclaringMethod Is Nothing AndAlso member1.DeclaringType.Equals(t1.GetTypeInfo().DeclaringType) Then
-                        If Not (t2.GetTypeInfo().DeclaringMethod Is Nothing AndAlso member2.DeclaringType.Equals(t2.GetTypeInfo().DeclaringType)) Then
+                    If t1.DeclaringMethod Is Nothing AndAlso member1.DeclaringType.Equals(t1.DeclaringType) Then
+                        If Not (t2.DeclaringMethod Is Nothing AndAlso member2.DeclaringType.Equals(t2.DeclaringType)) Then
                             Return t1.IsTypeParameterEquivalentToTypeInst(t2, member2)
                         End If
-                    ElseIf t2.GetTypeInfo().DeclaringMethod Is Nothing AndAlso member2.DeclaringType.Equals(t2.GetTypeInfo().DeclaringType) Then
+                    ElseIf t2.DeclaringMethod Is Nothing AndAlso member2.DeclaringType.Equals(t2.DeclaringType) Then
                         Return t2.IsTypeParameterEquivalentToTypeInst(t1, member1)
                     End If
 
@@ -288,7 +251,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             End If
 
             ' Recurse in for generic types arrays, byref and pointer types.
-            If t1.GetTypeInfo().IsGenericType AndAlso t2.GetTypeInfo().IsGenericType Then
+            If t1.IsGenericType AndAlso t2.IsGenericType Then
                 Dim args1 As Type() = t1.GetGenericArguments()
                 Dim args2 As Type() = t2.GetGenericArguments()
 
@@ -319,7 +282,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
             Debug.Assert(typeParam.IsGenericParameter)
 
-            If typeParam.GetTypeInfo().DeclaringMethod IsNot Nothing Then
+            If typeParam.DeclaringMethod IsNot Nothing Then
                 ' The type param is from a generic method. Since only methods can be generic, anything else
                 ' here means they are not equivalent.
                 If Not (TypeOf member Is MethodBase) Then
@@ -327,14 +290,14 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
                 End If
 
                 Dim method As MethodBase = DirectCast(member, MethodBase)
-                Dim position As Integer = typeParam.GetTypeInfo().GenericParameterPosition
+                Dim position As Integer = typeParam.GenericParameterPosition
                 Dim args As Type() = If(method.IsGenericMethod, method.GetGenericArguments(), Nothing)
 
                 Return args IsNot Nothing AndAlso
                        args.Length > position AndAlso
                        args(position).Equals(typeInst)
             Else
-                Return member.DeclaringType.GetGenericArguments()(typeParam.GetTypeInfo().GenericParameterPosition).Equals(typeInst)
+                Return member.DeclaringType.GetGenericArguments()(typeParam.GenericParameterPosition).Equals(typeInst)
             End If
         End Function
 
