@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -309,7 +310,10 @@ namespace System.Collections.Generic
                             _slots[last].next = _slots[i].next;
                         }
                         _slots[i].hashCode = -1;
-                        _slots[i].value = default(T);
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        {
+                            _slots[i].value = default(T);
+                        }
                         _slots[i].next = _freeList;
 
                         _count--;
