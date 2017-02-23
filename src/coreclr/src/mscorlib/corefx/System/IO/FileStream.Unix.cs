@@ -796,22 +796,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
-        /// <param name="position">The beginning of the range to lock.</param>
-        /// <param name="length">The range to be locked.</param>
-        private void LockInternal(long position, long length)
-        {
-            CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, Interop.Sys.LockType.F_WRLCK));
-        }
-
-        /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
-        /// <param name="position">The beginning of the range to unlock.</param>
-        /// <param name="length">The range to be unlocked.</param>
-        private void UnlockInternal(long position, long length)
-        {
-            CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, Interop.Sys.LockType.F_UNLCK));
-        }
-
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">
