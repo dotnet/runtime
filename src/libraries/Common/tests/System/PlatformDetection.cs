@@ -34,6 +34,62 @@ namespace System
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
+        private static int s_isWinRT = -1;
+
+        public static bool IsWinRT
+        {
+            get
+            {
+                if (s_isWinRT != -1)
+                    return s_isWinRT == 1;
+
+                if (!IsWindows || IsWindows7)
+                {
+                    s_isWinRT = 0;
+                    return false;
+                }
+
+                byte[] buffer = new byte[0];
+                uint bufferSize = 0;
+                try
+                {
+                    int result = GetCurrentApplicationUserModelId(ref bufferSize, buffer);
+                    switch (result)
+                    {
+                        case 15703: // APPMODEL_ERROR_NO_APPLICATION
+                            s_isWinRT = 0;
+                            break;
+                        case 0:     // ERROR_SUCCESS
+                        case 122:   // ERROR_INSUFFICIENT_BUFFER
+                                    // Success is actually insufficent buffer as we're really only looking for
+                                    // not NO_APPLICATION and we're not actually giving a buffer here. The
+                                    // API will always return NO_APPLICATION if we're not running under a
+                                    // WinRT process, no matter what size the buffer is.
+                            s_isWinRT = 1;
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Failed to get AppId, result was {result}.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    // We could catch this here, being friendly with older portable surface area should we
+                    // desire to use this method elsewhere.
+                    if (e.GetType().FullName.Equals("System.EntryPointNotFoundException", StringComparison.Ordinal))
+                    {
+                        // API doesn't exist, likely pre Win8
+                        s_isWinRT = 0;
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                return s_isWinRT == 1;
+            }
+        }
+
         private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
 
         public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
@@ -210,5 +266,73 @@ namespace System
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
             internal string szCSDVersion;
         }
+
+        private static int s_isWindowsElevated = -1;
+
+        public static bool IsWindowsAndElevated
+        {
+            get
+            {
+                if (s_isWindowsElevated != -1)
+                    return s_isWindowsElevated == 1;
+
+                if (!IsWindows || IsWinRT)
+                {
+                    s_isWindowsElevated = 0;
+                    return false;
+                }
+
+                IntPtr processToken;
+                Assert.True(OpenProcessToken(GetCurrentProcess(), TOKEN_READ, out processToken));
+
+                try
+                {
+                    uint tokenInfo;
+                    uint returnLength;
+                    Assert.True(GetTokenInformation(
+                        processToken, TokenElevation, out tokenInfo, sizeof(uint), out returnLength));
+
+                    s_isWindowsElevated = tokenInfo == 0 ? 0 : 1;
+                }
+                finally
+                {
+                    CloseHandle(processToken);
+                }
+
+                return s_isWindowsElevated == 1;
+            }
+        }
+
+        private const uint TokenElevation = 20;
+        private const uint STANDARD_RIGHTS_READ = 0x00020000;
+        private const uint TOKEN_QUERY = 0x0008;
+        private const uint TOKEN_READ = STANDARD_RIGHTS_READ | TOKEN_QUERY;
+
+        [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+        public static extern bool GetTokenInformation(
+            IntPtr TokenHandle,
+            uint TokenInformationClass,
+            out uint TokenInformation,
+            uint TokenInformationLength,
+            out uint ReturnLength);
+
+        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+        public static extern bool CloseHandle(
+            IntPtr handle);
+
+        [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+        public static extern bool OpenProcessToken(
+            IntPtr ProcessHandle,
+            uint DesiredAccesss,
+            out IntPtr TokenHandle);
+
+        // The process handle does NOT need closing
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        public static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        public static extern int GetCurrentApplicationUserModelId(
+            ref uint applicationUserModelIdLength,
+            byte[] applicationUserModelId);
     }
 }
