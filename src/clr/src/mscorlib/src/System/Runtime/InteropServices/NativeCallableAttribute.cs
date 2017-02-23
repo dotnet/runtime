@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class NativeCallableAttribute : Attribute
     {

@@ -90,14 +90,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
     public sealed class ReadOnlyArrayAttribute : Attribute
     {
-        public ReadOnlyArrayAttribute() {}
+        public ReadOnlyArrayAttribute() { }
     }
 
     // Applies to write-only array parameters
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
     public sealed class WriteOnlyArrayAttribute : Attribute
     {
-        public WriteOnlyArrayAttribute() {}
+        public WriteOnlyArrayAttribute() { }
     }
 
 
@@ -119,5 +119,4 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             get { return m_Name; }
         }
     }
-
 }

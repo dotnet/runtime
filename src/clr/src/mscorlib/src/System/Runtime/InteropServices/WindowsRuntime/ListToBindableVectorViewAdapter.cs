@@ -61,7 +61,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             try
             {
                 return list[(int)index];
-
             }
             catch (ArgumentOutOfRangeException ex)
             {

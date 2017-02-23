@@ -21,6 +21,5 @@ internal partial class Interop
             internal BOOL DeletePending;
             internal BOOL Directory;
         }
-
     }
 }

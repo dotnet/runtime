@@ -38,14 +38,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         [SuppressUnmanagedCodeSecurity]
         internal static unsafe extern int WindowsCreateString([MarshalAs(UnmanagedType.LPWStr)] string sourceString,
                                                               int length,
-                                                              [Out] IntPtr *hstring);
+                                                              [Out] IntPtr* hstring);
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
         [SuppressUnmanagedCodeSecurity]
-        internal static unsafe extern int WindowsCreateStringReference(char *sourceString,
+        internal static unsafe extern int WindowsCreateStringReference(char* sourceString,
                                                                        int length,
-                                                                       [Out] HSTRING_HEADER *hstringHeader,
-                                                                       [Out] IntPtr *hstring);
+                                                                       [Out] HSTRING_HEADER* hstringHeader,
+                                                                       [Out] IntPtr* hstring);
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
         [SuppressUnmanagedCodeSecurity]
@@ -53,6 +53,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
         [SuppressUnmanagedCodeSecurity]
-        internal static unsafe extern char* WindowsGetStringRawBuffer(IntPtr hstring, [Out] uint *length);
+        internal static unsafe extern char* WindowsGetStringRawBuffer(IntPtr hstring, [Out] uint* length);
     }
 }

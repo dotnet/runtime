@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-
     // Local definition of Windows.Foundation.IClosable
     [ComImport]
     [Guid("30d5a829-7fa4-4026-83bb-d75bae4ea99e")]

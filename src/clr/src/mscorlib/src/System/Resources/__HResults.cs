@@ -11,7 +11,8 @@
 //
 //===========================================================================*/
 #if FEATURE_APPX
-namespace System.Resources {
+namespace System.Resources
+{
     using System;
     // Only static data no need to serialize
     internal static class __HResults

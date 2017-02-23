@@ -69,7 +69,7 @@ namespace System.Reflection
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return System.Reflection.MemberTypes.Constructor; } }
         #endregion
-    
+
         #region Public Abstract\Virtual Members
         public abstract Object Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture);
         #endregion
@@ -119,9 +119,9 @@ namespace System.Reflection
             if (rtAssembly.IsFrameworkAssembly())
             {
                 int ctorToken = rtAssembly.InvocableAttributeCtorToken;
-                if (System.Reflection.MetadataToken.IsNullToken(ctorToken) || 
+                if (System.Reflection.MetadataToken.IsNullToken(ctorToken) ||
                     !CustomAttribute.IsAttributeDefined(GetRuntimeModule(), MetadataToken, ctorToken))
-                return true;
+                    return true;
             }
 
             if (GetRuntimeType().IsNonW8PFrameworkAPI())
@@ -143,7 +143,7 @@ namespace System.Reflection
 
                     //
                     // first take care of all the NO_INVOKE cases. 
-                    if ( declaringType == typeof(void) ||
+                    if (declaringType == typeof(void) ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs) ||
                          ((Attributes & MethodAttributes.RequireSecObject) == MethodAttributes.RequireSecObject))
@@ -160,9 +160,9 @@ namespace System.Reflection
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags |= RuntimeMethodHandle.GetSecurityFlags(this);
 
-                        if ( (invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0 &&
+                        if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0 &&
                              ((Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
-                              (declaringType != null && declaringType.NeedsReflectionSecurityCheck)) )
+                              (declaringType != null && declaringType.NeedsReflectionSecurityCheck)))
                         {
                             // If method is non-public, or declaring type is not visible
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
@@ -233,21 +233,21 @@ namespace System.Reflection
         }
 
         private RuntimeType ReflectedTypeInternal
-        { 
-            get 
-            { 
-                return m_reflectedTypeCache.GetRuntimeType(); 
-            } 
+        {
+            get
+            {
+                return m_reflectedTypeCache.GetRuntimeType();
+            }
         }
 
-        private void CheckConsistency(Object target) 
+        private void CheckConsistency(Object target)
         {
             if (target == null && IsStatic)
                 return;
 
             if (!m_declaringType.IsInstanceOfType(target))
             {
-                if (target == null) 
+                if (target == null)
                     throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatMethReqTarg"));
 
                 throw new TargetException(Environment.GetResourceString("RFLCT.Targ_ITargMismatch"));
@@ -258,7 +258,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override String ToString() 
+        public override String ToString()
         {
             // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
             if (m_toString == null)
@@ -282,8 +282,8 @@ namespace System.Reflection
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -296,12 +296,12 @@ namespace System.Reflection
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),nameof(attributeType));
+            if (attributeRuntimeType == null)
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }
-        
+
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
             return CustomAttributeData.GetCustomAttributesInternal(this);
@@ -315,12 +315,12 @@ namespace System.Reflection
             get { return RuntimeMethodHandle.GetName(this); }
         }
         public override MemberTypes MemberType { get { return MemberTypes.Constructor; } }
-        
-        public override Type DeclaringType 
-        { 
-            get 
-            { 
-                return m_reflectedTypeCache.IsGlobal ? null : m_declaringType; 
+
+        public override Type DeclaringType
+        {
+            get
+            {
+                return m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
             }
         }
 
@@ -349,8 +349,8 @@ namespace System.Reflection
         #region MethodBase Overrides
 
         // This seems to always returns System.Void.
-        internal override Type GetReturnType() { return Signature.ReturnType; } 
-        
+        internal override Type GetReturnType() { return Signature.ReturnType; }
+
         internal override ParameterInfo[] GetParametersNoCopy()
         {
             if (m_parameters == null)
@@ -366,7 +366,7 @@ namespace System.Reflection
 
             if (parameters.Length == 0)
                 return parameters;
-            
+
             ParameterInfo[] ret = new ParameterInfo[parameters.Length];
             Array.Copy(parameters, ret, parameters.Length);
             return ret;
@@ -377,7 +377,7 @@ namespace System.Reflection
             return RuntimeMethodHandle.GetImplAttributes(this);
         }
 
-        public override RuntimeMethodHandle MethodHandle 
+        public override RuntimeMethodHandle MethodHandle
         {
             get
             {
@@ -388,7 +388,7 @@ namespace System.Reflection
             }
         }
 
-        public override MethodAttributes Attributes 
+        public override MethodAttributes Attributes
         {
             get
             {
@@ -396,7 +396,7 @@ namespace System.Reflection
             }
         }
 
-        public override CallingConventions CallingConvention 
+        public override CallingConventions CallingConvention
         {
             get
             {
@@ -409,29 +409,29 @@ namespace System.Reflection
             if (declaringType == null)
                 throw new ArgumentNullException(nameof(declaringType));
             Contract.EndContractBlock();
-            
+
             // ctor is ReflectOnly
             if (declaringType is ReflectionOnlyType)
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyInvoke"));
-            
+
             // ctor is declared on interface class
             else if (declaringType.IsInterface)
                 throw new MemberAccessException(
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateInterfaceEx"), declaringType));
-            
+
             // ctor is on an abstract class
             else if (declaringType.IsAbstract)
                 throw new MemberAccessException(
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateAbstEx"), declaringType));
-            
+
             // ctor is on a class that contains stack pointers
             else if (declaringType.GetRootElementType() == typeof(ArgIterator))
                 throw new NotSupportedException();
-            
+
             // ctor is vararg
             else if (isVarArg)
                 throw new NotSupportedException();
-                        
+
             // ctor is generic or on a generic class
             else if (declaringType.ContainsGenericParameters)
             {
@@ -451,7 +451,7 @@ namespace System.Reflection
             // ctor is .cctor
             if ((Attributes & MethodAttributes.Static) == MethodAttributes.Static)
                 throw new MemberAccessException(Environment.GetResourceString("Acc_NotClassInit"));
-            
+
             throw new TargetException();
         }
 
@@ -463,14 +463,14 @@ namespace System.Reflection
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
 
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0) 
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
                 ThrowNoInvokeException();
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
 
 #if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0) 
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
             {
                 StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
                 RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
@@ -490,17 +490,17 @@ namespace System.Reflection
 
             // get the signature
             int formalCount = sig.Arguments.Length;
-            int actualCount =(parameters != null) ? parameters.Length : 0;
+            int actualCount = (parameters != null) ? parameters.Length : 0;
             if (formalCount != actualCount)
                 throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
-            
+
             // if we are here we passed all the previous checks. Time to look at the arguments
-            if (actualCount > 0) 
+            if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
                 Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false);
                 // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++) 
+                for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
@@ -510,7 +510,7 @@ namespace System.Reflection
         public override MethodBody GetMethodBody()
         {
             MethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null) 
+            if (mb != null)
                 mb.m_methodBase = this;
             return mb;
         }
@@ -549,12 +549,12 @@ namespace System.Reflection
 
             // get the declaring TypeHandle early for consistent exceptions in IntrospectionOnly context
             RuntimeTypeHandle declaringTypeHandle = m_declaringType.TypeHandle;
-            
+
             if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS | INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE)) != 0)
                 ThrowNoInvokeException();
 
 #if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0) 
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
             {
                 StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
                 RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
@@ -567,7 +567,7 @@ namespace System.Reflection
             Signature sig = Signature;
 
             int formalCount = sig.Arguments.Length;
-            int actualCount =(parameters != null) ? parameters.Length : 0;
+            int actualCount = (parameters != null) ? parameters.Length : 0;
             if (formalCount != actualCount)
                 throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
 
@@ -575,19 +575,19 @@ namespace System.Reflection
             // JIT/NGen will insert the call to .cctor in the instance ctor.
 
             // if we are here we passed all the previous checks. Time to look at the arguments
-            if (actualCount > 0) 
+            if (actualCount > 0)
             {
                 Object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
                 Object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true);
                 // copy out. This should be made only if ByRef are present.
-                for (int index = 0; index < arguments.Length; index++) 
+                for (int index = 0; index < arguments.Length; index++)
                     parameters[index] = arguments[index];
                 return retValue;
             }
             return RuntimeMethodHandle.InvokeMethod(null, null, sig, true);
         }
         #endregion
-    
+
         #region ISerializable Implementation
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -609,6 +609,6 @@ namespace System.Reflection
             // We don't need the return type for constructors.
             return FormatNameAndSig(true);
         }
-       #endregion
+        #endregion
     }
 }

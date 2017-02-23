@@ -199,10 +199,10 @@ namespace System.Diagnostics.Tracing
 
         internal NameInfo GetNameInfo(string name, EventTags tags)
         {
-            var ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
+            var ret = nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
             if (ret == null)
             {
-                ret = this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
+                ret = nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
             }
 
             return ret;

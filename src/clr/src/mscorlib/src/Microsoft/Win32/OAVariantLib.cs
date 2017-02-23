@@ -12,8 +12,9 @@
 **
 ** 
 ===========================================================*/
-namespace Microsoft.Win32 {
-    
+
+namespace Microsoft.Win32
+{
     using System;
     using System.Diagnostics.Contracts;
     using System.Reflection;
@@ -31,8 +32,8 @@ namespace Microsoft.Win32 {
         public const int NoUserOverride = 0x04;
         public const int CalendarHijri = 0x08;
         public const int LocalBool = 0x10;
-        
-        internal static readonly Type [] ClassTypes = {
+
+        internal static readonly Type[] ClassTypes = {
             typeof(Empty),
             typeof(void),
             typeof(Boolean),
@@ -58,12 +59,12 @@ namespace Microsoft.Win32 {
             typeof(DBNull),
         };
 
-    	// Keep these numbers in sync w/ the above array.
-        private const int CV_OBJECT=0x12;
-        
+        // Keep these numbers in sync w/ the above array.
+        private const int CV_OBJECT = 0x12;
+
         #endregion
 
-        
+
         #region Internal Methods
 
         /**
@@ -79,43 +80,45 @@ namespace Microsoft.Win32 {
                 throw new ArgumentNullException(nameof(targetClass));
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
-            Variant result = new Variant ();
-            ChangeTypeEx(ref result, ref source, 
+            Variant result = new Variant();
+            ChangeTypeEx(ref result, ref source,
 #if FEATURE_USE_LCID
-                         culture.LCID, 
+                         culture.LCID,
 #else
         // @CORESYSTODO: what does CoreSystem expect for this argument?
                         0,
 #endif
                          targetClass.TypeHandle.Value, GetCVTypeFromClass(targetClass), options);
             return result;
-        }       
+        }
 
         #endregion
 
 
         #region Private Helpers
 
-        private static int GetCVTypeFromClass(Type ctype) 
+        private static int GetCVTypeFromClass(Type ctype)
         {
             Contract.Requires(ctype != null);
 #if _DEBUG
             BCLDebug.Assert(ClassTypes[CV_OBJECT] == typeof(Object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
 #endif
-    
-            int cvtype=-1;
-            for (int i=0; i<ClassTypes.Length; i++) {
-                if (ctype.Equals(ClassTypes[i])) {
-                    cvtype=i;
+
+            int cvtype = -1;
+            for (int i = 0; i < ClassTypes.Length; i++)
+            {
+                if (ctype.Equals(ClassTypes[i]))
+                {
+                    cvtype = i;
                     break;
                 }
             }
-    
+
             // OleAut Binder works better if unrecognized
             // types were changed to Object.  So don't throw here.
             if (cvtype == -1)
                 cvtype = CV_OBJECT;
-    
+
             return cvtype;
         }
 

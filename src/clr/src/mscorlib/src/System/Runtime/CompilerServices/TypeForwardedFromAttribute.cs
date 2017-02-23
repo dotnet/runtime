@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface | AttributeTargets.Delegate, Inherited = false, AllowMultiple = false)]
     public sealed class TypeForwardedFromAttribute : Attribute
     {
-        string assemblyFullName;
+        private string assemblyFullName;
 
         private TypeForwardedFromAttribute()
         {
@@ -22,13 +22,14 @@ namespace System.Runtime.CompilerServices
             {
                 throw new ArgumentNullException(nameof(assemblyFullName));
             }
-            this.assemblyFullName = assemblyFullName;    
+            this.assemblyFullName = assemblyFullName;
         }
 
         public string AssemblyFullName
         {
-            get { 
-                return assemblyFullName; 
+            get
+            {
+                return assemblyFullName;
             }
         }
     }

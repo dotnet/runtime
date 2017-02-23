@@ -14,7 +14,8 @@
 ** 
 ===========================================================*/
 
-namespace System.Resources {    
+namespace System.Resources
+{
     using System;
     using System.IO;
     using System.Globalization;
@@ -44,14 +45,15 @@ namespace System.Resources {
     [FriendAccessAllowed]
     internal class WindowsRuntimeResourceManagerBase
     {
-        public virtual bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo){exceptionInfo = null; return false;}
+        public virtual bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo) { exceptionInfo = null; return false; }
 
-        public virtual String GetString(String stringName, String startingCulture, String neutralResourcesCulture){return null;}
+        public virtual String GetString(String stringName, String startingCulture, String neutralResourcesCulture) { return null; }
 
-        public virtual CultureInfo GlobalResourceContextBestFitCultureInfo { 
-            get { return null; } 
+        public virtual CultureInfo GlobalResourceContextBestFitCultureInfo
+        {
+            get { return null; }
         }
-        
+
         public virtual bool SetGlobalResourceContextDefaultCulture(CultureInfo ci) { return false; }
     }
 
@@ -150,8 +152,8 @@ namespace System.Resources {
     [Serializable]
     public class ResourceManager
     {
-
-        internal class CultureNameResourceSetPair {
+        internal class CultureNameResourceSetPair
+        {
             public String lastCultureName;
             public ResourceSet lastResourceSet;
         }
@@ -161,11 +163,11 @@ namespace System.Resources {
         // Don't synchronize ResourceSets - too fine-grained a lock to be effective
         [Obsolete("call InternalGetResourceSet instead")]
         internal Hashtable ResourceSets;
-        
+
 
         // don't serialize the cache of ResourceSets
         [NonSerialized]
-        private Dictionary <String,ResourceSet> _resourceSets;
+        private Dictionary<String, ResourceSet> _resourceSets;
         private String moduleDir;      // For assembly-ignorant directory location
         protected Assembly MainAssembly;   // Need the assembly manifest sometimes.
         private Type _locationInfo;    // For Assembly or type-based directory layout
@@ -182,11 +184,11 @@ namespace System.Resources {
         // unused! But need to keep for serialization
         [OptionalField(VersionAdded = 1)]
         private bool UseSatelliteAssem;  // Are all the .resources files in the 
-                  // main assembly, or in satellite assemblies for each culture?
+                                         // main assembly, or in satellite assemblies for each culture?
 #if RESOURCE_SATELLITE_CONFIG
         private static volatile Hashtable _installedSatelliteInfo;  // Give the user the option  
-               // to prevent certain satellite assembly probes via a config file.
-        // Note that config files are per-appdomain, not per-assembly nor process
+                                                                    // to prevent certain satellite assembly probes via a config file.
+                                                                    // Note that config files are per-appdomain, not per-assembly nor process
         private static volatile bool _checkedConfigFile;  // Did we read the app's config file?
 #endif
 
@@ -246,16 +248,16 @@ namespace System.Resources {
         // My private debugging aid.  Set to 5 or 6 for verbose output.  Set to 3
         // for summary level information.
         internal static readonly int DEBUG = 0; //Making this const causes C# to consider all of the code that it guards unreachable.
-        
+
         private static volatile bool s_IsAppXModel;
-        
+
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private void Init()
         {
             m_callingAssembly = (RuntimeAssembly)Assembly.GetCallingAssembly();
         }
 
-        protected ResourceManager() 
+        protected ResourceManager()
         {
             Init();
 
@@ -263,7 +265,7 @@ namespace System.Resources {
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             resourceGroveler = new ManifestBasedResourceGroveler(mediator);
         }
-	
+
         // Constructs a Resource Manager for files beginning with 
         // baseName in the directory specified by resourceDir
         // or in the current directory.  This Assembly-ignorant constructor is 
@@ -274,10 +276,11 @@ namespace System.Resources {
         //
         // Note: System.Windows.Forms uses this method at design time.
         // 
-        private ResourceManager(String baseName, String resourceDir, Type usingResourceSet) {
-            if (null==baseName)
+        private ResourceManager(String baseName, String resourceDir, Type usingResourceSet)
+        {
+            if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
-            if (null==resourceDir)
+            if (null == resourceDir)
                 throw new ArgumentNullException(nameof(resourceDir));
             Contract.EndContractBlock();
 
@@ -299,10 +302,10 @@ namespace System.Resources {
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(String baseName, Assembly assembly)
         {
-            if (null==baseName)
+            if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
 
-            if (null==assembly)
+            if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
@@ -330,9 +333,9 @@ namespace System.Resources {
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(String baseName, Assembly assembly, Type usingResourceSet)
         {
-            if (null==baseName)
+            if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
-            if (null==assembly)
+            if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
             Contract.EndContractBlock();
 
@@ -341,7 +344,7 @@ namespace System.Resources {
 
             MainAssembly = assembly;
             BaseNameField = baseName;
-    
+
             if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.IsSubclassOf(_minResourceSet)))
                 throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
@@ -355,11 +358,11 @@ namespace System.Resources {
             if (assembly == typeof(Object).Assembly && m_callingAssembly != assembly)
                 m_callingAssembly = null;
         }
-        
+
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ResourceManager(Type resourceSource)
         {
-            if (null==resourceSource)
+            if (null == resourceSource)
                 throw new ArgumentNullException(nameof(resourceSource));
             Contract.EndContractBlock();
 
@@ -369,7 +372,7 @@ namespace System.Resources {
             _locationInfo = resourceSource;
             MainAssembly = _locationInfo.Assembly;
             BaseNameField = resourceSource.Name;
-            
+
             SetAppXConfiguration();
 
             CommonAssemblyInit();
@@ -385,9 +388,9 @@ namespace System.Resources {
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            this._resourceSets = null;
-            this.resourceGroveler = null;
-            this._lastUsedResourceCache = null;
+            _resourceSets = null;
+            resourceGroveler = null;
+            _lastUsedResourceCache = null;
         }
 
         [OnDeserialized]
@@ -408,13 +411,13 @@ namespace System.Resources {
             }
 
             // correct callingAssembly for v2
-            if (this.m_callingAssembly == null)
+            if (m_callingAssembly == null)
             {
-                this.m_callingAssembly = (RuntimeAssembly)_callingAssembly;
+                m_callingAssembly = (RuntimeAssembly)_callingAssembly;
             }
 
             // v2 does this lazily
-            if (UseManifest && this._neutralResourcesCulture == null)
+            if (UseManifest && _neutralResourcesCulture == null)
             {
                 _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
             }
@@ -430,7 +433,7 @@ namespace System.Resources {
             ResourceSets = new Hashtable(); // for backward compatibility
 #pragma warning restore 618
         }
-      
+
 
         // Trying to unify code as much as possible, even though having to do a
         // security check in each constructor prevents it.
@@ -439,8 +442,8 @@ namespace System.Resources {
             if (_bUsingModernResourceManagement == false)
             {
                 UseManifest = true;
-        
-                _resourceSets = new Dictionary<String,ResourceSet>();
+
+                _resourceSets = new Dictionary<String, ResourceSet>();
                 _lastUsedResourceCache = new CultureNameResourceSetPair();
 
                 _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
@@ -453,20 +456,23 @@ namespace System.Resources {
         }
 
         // Gets the base name for the ResourceManager.
-        public virtual String BaseName {
+        public virtual String BaseName
+        {
             get { return BaseNameField; }
         }
-    
+
         // Whether we should ignore the capitalization of resources when calling
         // GetString or GetObject.
-        public virtual bool IgnoreCase {
+        public virtual bool IgnoreCase
+        {
             get { return _ignoreCase; }
             set { _ignoreCase = value; }
         }
 
         // Returns the Type of the ResourceSet the ResourceManager uses
         // to construct ResourceSets.
-        public virtual Type ResourceSetType {
+        public virtual Type ResourceSetType
+        {
             get { return (_userResourceSet == null) ? typeof(RuntimeResourceSet) : _userResourceSet; }
         }
 
@@ -491,13 +497,15 @@ namespace System.Resources {
 
             // If any calls to Close throw, at least leave ourselves in a
             // consistent state.
-            _resourceSets = new Dictionary<String,ResourceSet>();
+            _resourceSets = new Dictionary<String, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
-            
-            lock(localResourceSets) {
+
+            lock (localResourceSets)
+            {
                 IDictionaryEnumerator setEnum = localResourceSets.GetEnumerator();
 
-                while (setEnum.MoveNext()) {
+                while (setEnum.MoveNext())
+                {
                     ((ResourceSet)setEnum.Value).Close();
                 }
             }
@@ -507,7 +515,7 @@ namespace System.Resources {
         {
             return new ResourceManager(baseName, resourceDir, usingResourceSet);
         }
-      
+
         // Given a CultureInfo, GetResourceFileName generates the name for 
         // the binary file for the given CultureInfo.  This method uses 
         // CultureInfo's Name property as part of the file name for all cultures
@@ -518,7 +526,8 @@ namespace System.Resources {
         // 
         // This method can be overriden to look for a different extension,
         // such as ".ResX", or a completely different format for naming files.
-        protected virtual String GetResourceFileName(CultureInfo culture) {
+        protected virtual String GetResourceFileName(CultureInfo culture)
+        {
             StringBuilder sb = new StringBuilder(255);
             sb.Append(BaseNameField);
             // If this is the neutral culture, don't append culture name.
@@ -537,24 +546,26 @@ namespace System.Resources {
         internal ResourceSet GetFirstResourceSet(CultureInfo culture)
         {
             // Logic from ResourceFallbackManager.GetEnumerator()
-            if (_neutralResourcesCulture != null && culture.Name == _neutralResourcesCulture.Name) 
+            if (_neutralResourcesCulture != null && culture.Name == _neutralResourcesCulture.Name)
             {
                 culture = CultureInfo.InvariantCulture;
             }
 
-            if(_lastUsedResourceCache != null) {
-                lock (_lastUsedResourceCache) {
+            if (_lastUsedResourceCache != null)
+            {
+                lock (_lastUsedResourceCache)
+                {
                     if (culture.Name == _lastUsedResourceCache.lastCultureName)
                         return _lastUsedResourceCache.lastResourceSet;
                 }
             }
 
             // Look in the ResourceSet table
-            Dictionary<String,ResourceSet> localResourceSets = _resourceSets;
+            Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs = null;
-            if (localResourceSets != null) 
+            if (localResourceSets != null)
             {
-                lock (localResourceSets) 
+                lock (localResourceSets)
                 {
                     localResourceSets.TryGetValue(culture.Name, out rs);
                 }
@@ -563,8 +574,10 @@ namespace System.Resources {
             if (rs != null)
             {
                 // update the cache with the most recent ResourceSet
-                if (_lastUsedResourceCache != null) {
-                    lock (_lastUsedResourceCache) {
+                if (_lastUsedResourceCache != null)
+                {
+                    lock (_lastUsedResourceCache)
+                    {
                         _lastUsedResourceCache.lastCultureName = culture.Name;
                         _lastUsedResourceCache.lastResourceSet = rs;
                     }
@@ -584,15 +597,18 @@ namespace System.Resources {
         // loaded as well for resource inheritance.
         //         
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) {
-            if (null==culture)
+        public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+        {
+            if (null == culture)
                 throw new ArgumentNullException(nameof(culture));
             Contract.EndContractBlock();
 
-            Dictionary<String,ResourceSet> localResourceSets = _resourceSets;
+            Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs;
-            if (localResourceSets != null) {
-                lock (localResourceSets) {
+            if (localResourceSets != null)
+            {
+                lock (localResourceSets)
+                {
                     if (localResourceSets.TryGetValue(culture.Name, out rs))
                         return rs;
                 }
@@ -600,13 +616,15 @@ namespace System.Resources {
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
-            if (UseManifest && culture.HasInvariantCultureName) {
+            if (UseManifest && culture.HasInvariantCultureName)
+            {
                 string fileName = GetResourceFileName(culture);
                 RuntimeAssembly mainAssembly = (RuntimeAssembly)MainAssembly;
                 Stream stream = mainAssembly.GetManifestResourceStream(_locationInfo, fileName, m_callingAssembly == MainAssembly, ref stackMark);
-                if (createIfNotExists && stream!=null) {
+                if (createIfNotExists && stream != null)
+                {
                     rs = ((ManifestBasedResourceGroveler)resourceGroveler).CreateResourceSet(stream, MainAssembly);
-                    AddResourceSet(localResourceSets, culture.Name, ref rs);                    
+                    AddResourceSet(localResourceSets, culture.Name, ref rs);
                     return rs;
                 }
             }
@@ -627,12 +645,12 @@ namespace System.Resources {
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents) 
+        protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             Debug.Assert(culture != null, "culture != null");
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalGetResourceSet(culture,createIfNotExists,tryParents, ref stackMark);
+            return InternalGetResourceSet(culture, createIfNotExists, tryParents, ref stackMark);
         }
 
         // InternalGetResourceSet is a non-threadsafe method where all the logic
@@ -644,8 +662,10 @@ namespace System.Resources {
             Dictionary<String, ResourceSet> localResourceSets = _resourceSets;
             ResourceSet rs = null;
             CultureInfo foundCulture = null;
-            lock (localResourceSets) {
-                if (localResourceSets.TryGetValue(requestedCulture.Name, out rs)) {
+            lock (localResourceSets)
+            {
+                if (localResourceSets.TryGetValue(requestedCulture.Name, out rs))
+                {
                     return rs;
                 }
             }
@@ -654,10 +674,12 @@ namespace System.Resources {
 
             foreach (CultureInfo currentCultureInfo in mgr)
             {
-                lock(localResourceSets) {
-                    if (localResourceSets.TryGetValue(currentCultureInfo.Name, out rs)) {
+                lock (localResourceSets)
+                {
+                    if (localResourceSets.TryGetValue(currentCultureInfo.Name, out rs))
+                    {
                         // we need to update the cache if we fellback
-                        if(requestedCulture != currentCultureInfo) foundCulture = currentCultureInfo;
+                        if (requestedCulture != currentCultureInfo) foundCulture = currentCultureInfo;
                         break;
                     }
                 }
@@ -668,7 +690,7 @@ namespace System.Resources {
                 // Assembly load event, which could fail then call back into the 
                 // ResourceManager).  It's happened.
 
-                rs = resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets, 
+                rs = resourceGroveler.GrovelForResourceSet(currentCultureInfo, localResourceSets,
                                                            tryParents, createIfNotExists, ref stackMark);
 
                 // found a ResourceSet; we're done
@@ -677,7 +699,6 @@ namespace System.Resources {
                     foundCulture = currentCultureInfo;
                     break;
                 }
-
             }
 
             if (rs != null && foundCulture != null)
@@ -696,23 +717,26 @@ namespace System.Resources {
                     {
                         break;
                     }
-                } 
+                }
             }
 
             return rs;
         }
 
         // Simple helper to ease maintenance and improve readability.
-        private static void AddResourceSet(Dictionary<String,ResourceSet> localResourceSets, String cultureName, ref ResourceSet rs)
+        private static void AddResourceSet(Dictionary<String, ResourceSet> localResourceSets, String cultureName, ref ResourceSet rs)
         {
             // InternalGetResourceSet is both recursive and reentrant - 
             // assembly load callbacks in particular are a way we can call
             // back into the ResourceManager in unexpectedly on the same thread.
-            lock(localResourceSets) {
+            lock (localResourceSets)
+            {
                 // If another thread added this culture, return that.
                 ResourceSet lostRace;
-                if (localResourceSets.TryGetValue(cultureName, out lostRace)) {
-                    if (!Object.ReferenceEquals(lostRace, rs)) {
+                if (localResourceSets.TryGetValue(cultureName, out lostRace))
+                {
+                    if (!Object.ReferenceEquals(lostRace, rs))
+                    {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
                         // of those cultures.  If there is a race condition we must make sure our ResourceSet 
@@ -722,7 +746,8 @@ namespace System.Resources {
                         rs = lostRace;
                     }
                 }
-                else {
+                else
+                {
                     localResourceSets.Add(cultureName, rs);
                 }
             }
@@ -731,7 +756,8 @@ namespace System.Resources {
         protected static Version GetSatelliteContractVersion(Assembly a)
         {
             // Ensure that the assembly reference is not null
-            if (a == null) {
+            if (a == null)
+            {
                 throw new ArgumentNullException(nameof(a), Environment.GetResourceString("ArgumentNull_Assembly"));
             }
             Contract.EndContractBlock();
@@ -752,7 +778,7 @@ namespace System.Resources {
 
         // IGNORES VERSION
         internal static bool CompareNames(String asmTypeName1,
-                                          String typeName2, 
+                                          String typeName2,
                                           AssemblyName asmName2)
         {
             Debug.Assert(asmTypeName1 != null, "asmTypeName1 was unexpectedly null");
@@ -770,7 +796,7 @@ namespace System.Resources {
 
             // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
             // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while(Char.IsWhiteSpace(asmTypeName1[++comma]));
+            while (Char.IsWhiteSpace(asmTypeName1[++comma])) ;
 
             // case insensitive
             AssemblyName an1 = new AssemblyName(asmTypeName1.Substring(comma));
@@ -793,12 +819,14 @@ namespace System.Resources {
 
             byte[] pkt1 = an1.GetPublicKeyToken();
             byte[] pkt2 = asmName2.GetPublicKeyToken();
-            if ((pkt1 != null) && (pkt2 != null)) {
+            if ((pkt1 != null) && (pkt2 != null))
+            {
                 if (pkt1.Length != pkt2.Length)
                     return false;
 
-                for(int i=0; i < pkt1.Length; i++) {
-                    if(pkt1[i] != pkt2[i])
+                for (int i = 0; i < pkt1.Length; i++)
+                {
+                    if (pkt1[i] != pkt2[i])
                         return false;
                 }
             }
@@ -807,15 +835,16 @@ namespace System.Resources {
         }
 
 #if FEATURE_APPX
-        private string GetStringFromPRI(String stringName, String startingCulture, String neutralResourcesCulture) {
+        private string GetStringFromPRI(String stringName, String startingCulture, String neutralResourcesCulture)
+        {
             Debug.Assert(_bUsingModernResourceManagement);
             Debug.Assert(_WinRTResourceManager != null);
             Debug.Assert(_PRIonAppXInitialized);
             Debug.Assert(AppDomain.IsAppXModel());
-        
+
             if (stringName.Length == 0)
                 return null;
-            
+
             string resourceString = null;
 
             // Do not handle exceptions. See the comment in SetAppXConfiguration about throwing
@@ -824,7 +853,7 @@ namespace System.Resources {
                                        stringName,
                                        String.IsNullOrEmpty(startingCulture) ? null : startingCulture,
                                        String.IsNullOrEmpty(neutralResourcesCulture) ? null : neutralResourcesCulture);
-            
+
             return resourceString;
         }
 
@@ -882,9 +911,9 @@ namespace System.Resources {
                 if ((platformResourceRoots != null) && (platformResourceRoots != String.Empty))
                 {
                     string resourceAssemblyPath = resourcesAssembly.Location;
-                    
+
                     // Loop through the PLATFORM_RESOURCE_ROOTS and see if the assembly is contained in it.
-                    foreach(string pathPlatformResourceRoot in platformResourceRoots.Split(Path.PathSeparator))
+                    foreach (string pathPlatformResourceRoot in platformResourceRoots.Split(Path.PathSeparator))
                     {
                         if (resourceAssemblyPath.StartsWith(pathPlatformResourceRoot, StringComparison.CurrentCultureIgnoreCase))
                         {
@@ -945,16 +974,17 @@ namespace System.Resources {
 
                         WindowsRuntimeResourceManagerBase WRRM = null;
                         bool bWRRM_Initialized = false;
-                        
+
                         if (AppDomain.IsAppXDesignMode())
                         {
                             WRRM = GetWinRTResourceManager();
-                            try {
+                            try
+                            {
                                 PRIExceptionInfo exceptionInfo; // If the exception info is filled in, we will ignore it.
                                 bWRRM_Initialized = WRRM.Initialize(resourcesAssembly.Location, reswFilename, out exceptionInfo);
                                 bUsingSatelliteAssembliesUnderAppX = !bWRRM_Initialized;
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
                                 bUsingSatelliteAssembliesUnderAppX = true;
                                 if (e.IsTransient)
@@ -966,7 +996,7 @@ namespace System.Resources {
                         {
                             // See AssemblyNative::IsFrameworkAssembly for details on which kinds of assemblies are considered Framework assemblies.
                             // The Modern Resource Manager is not used for such assemblies - they continue to use satellite assemblies (i.e. .resources.dll files).
-                            _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly); 
+                            _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly);
 
                             if (_bUsingModernResourceManagement)
                             {
@@ -989,11 +1019,12 @@ namespace System.Resources {
                                     _WinRTResourceManager = WRRM;
                                     _PRIonAppXInitialized = true;
                                 }
-                                else 
+                                else
                                 {
                                     _WinRTResourceManager = GetWinRTResourceManager();
-                                    
-                                    try {
+
+                                    try
+                                    {
                                         _PRIonAppXInitialized = _WinRTResourceManager.Initialize(resourcesAssembly.Location, reswFilename, out _PRIExceptionInfo);
 
                                         // Note that _PRIExceptionInfo might be null - this is OK.
@@ -1007,12 +1038,12 @@ namespace System.Resources {
                                     // and since they are part of the portable profile, we cannot start throwing a new exception type
                                     // as that would break existing portable libraries. Hence we must save the exception information
                                     // now and throw the exception on the first call to GetString.
-                                    catch(FileNotFoundException)
+                                    catch (FileNotFoundException)
                                     {
                                         // We will throw MissingManifestResource_NoPRIresources from GetString
                                         // when we see that _PRIonAppXInitialized is false.
                                     }
-                                    catch(Exception e)
+                                    catch (Exception e)
                                     {
                                         // ERROR_MRM_MAP_NOT_FOUND can be thrown by the call to ResourceManager.get_AllResourceMaps
                                         // in WindowsRuntimeResourceManager.Initialize.
@@ -1053,31 +1084,33 @@ namespace System.Resources {
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual String GetString(String name) {
+        public virtual String GetString(String name)
+        {
             return GetString(name, (CultureInfo)null);
         }
-        
+
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual String GetString(String name, CultureInfo culture) {
-            if (null==name)
+        public virtual String GetString(String name, CultureInfo culture)
+        {
+            if (null == name)
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
 #if FEATURE_APPX
-            if(s_IsAppXModel)
+            if (s_IsAppXModel)
             {
-                 // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
-                 // null it out, so that we re-compute it.  If we use modern resource lookup, we may end up getting a "better"
-                 // match, since CultureInfo objects can't represent all the different languages the AppX resource model supports.
-                 // For classic resources, this causes us to ignore the languages list and instead use the older Win32 behavior,
-                 // which is the design choice we've made. (See the call a little later to GetCurrentUICultureNoAppX()).
-                 if(Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
-                 {
-                     culture = null;
-                 }              
+                // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
+                // null it out, so that we re-compute it.  If we use modern resource lookup, we may end up getting a "better"
+                // match, since CultureInfo objects can't represent all the different languages the AppX resource model supports.
+                // For classic resources, this causes us to ignore the languages list and instead use the older Win32 behavior,
+                // which is the design choice we've made. (See the call a little later to GetCurrentUICultureNoAppX()).
+                if (Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
+                {
+                    culture = null;
+                }
             }
 
             if (_bUsingModernResourceManagement)
@@ -1091,7 +1124,7 @@ namespace System.Resources {
 
                     throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoPRIresources"));
                 }
-            
+
                 // Throws WinRT hresults.
                 return GetStringFromPRI(name,
                                         culture == null ? null : culture.Name,
@@ -1100,7 +1133,8 @@ namespace System.Resources {
             else
 #endif // FEATURE_APPX
             {
-                if (null==culture) {
+                if (null == culture)
+                {
                     // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
                     // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
                     culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
@@ -1114,25 +1148,28 @@ namespace System.Resources {
                     if (value != null)
                         return value;
                 }
-                
-                
+
+
                 // This is the CultureInfo hierarchy traversal code for resource 
                 // lookups, similar but necessarily orthogonal to the ResourceSet 
                 // lookup logic.
                 ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
-                foreach (CultureInfo currentCultureInfo in mgr) {
-
+                foreach (CultureInfo currentCultureInfo in mgr)
+                {
                     ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
                     if (rs == null)
                         break;
 
-                    if (rs != last) {
+                    if (rs != last)
+                    {
                         String value = rs.GetString(name, _ignoreCase);
                         if (value != null)
                         {
                             // update last used ResourceSet
-                            if (_lastUsedResourceCache != null) {
-                                lock (_lastUsedResourceCache) {
+                            if (_lastUsedResourceCache != null)
+                            {
+                                lock (_lastUsedResourceCache)
+                                {
                                     _lastUsedResourceCache.lastCultureName = currentCultureInfo.Name;
                                     _lastUsedResourceCache.lastResourceSet = rs;
                                 }
@@ -1147,43 +1184,46 @@ namespace System.Resources {
 
             return null;
         }
-        
-        
+
+
         // Looks up a resource value for a particular name.  Looks in the 
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual Object GetObject(String name) {
+        public virtual Object GetObject(String name)
+        {
             return GetObject(name, (CultureInfo)null, true);
         }
-        
+
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        public virtual Object GetObject(String name, CultureInfo culture) {
+        public virtual Object GetObject(String name, CultureInfo culture)
+        {
             return GetObject(name, culture, true);
         }
 
         private Object GetObject(String name, CultureInfo culture, bool wrapUnmanagedMemStream)
         {
-            if (null==name)
+            if (null == name)
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
 #if FEATURE_APPX
-            if(s_IsAppXModel)
+            if (s_IsAppXModel)
             {
-                 // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
-                 // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
-                 // (See the call a little later to GetCurrentUICultureNoAppX()).
-                 if(Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
-                 {
-                     culture = null;
-                 }              
+                // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
+                // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
+                // (See the call a little later to GetCurrentUICultureNoAppX()).
+                if (Object.ReferenceEquals(culture, CultureInfo.CurrentUICulture))
+                {
+                    culture = null;
+                }
             }
 #endif
 
-            if (null==culture) {
+            if (null == culture)
+            {
                 // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
                 // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
                 culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
@@ -1194,7 +1234,7 @@ namespace System.Resources {
             {
                 Object value = last.GetObject(name, _ignoreCase);
 
-                if (value != null) 
+                if (value != null)
                 {
                     UnmanagedMemoryStream stream = value as UnmanagedMemoryStream;
                     if (stream != null && wrapUnmanagedMemStream)
@@ -1203,13 +1243,14 @@ namespace System.Resources {
                         return value;
                 }
             }
-            
+
             // This is the CultureInfo hierarchy traversal code for resource 
             // lookups, similar but necessarily orthogonal to the ResourceSet 
             // lookup logic.
             ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
-            
-            foreach (CultureInfo currentCultureInfo in mgr) {
+
+            foreach (CultureInfo currentCultureInfo in mgr)
+            {
                 // Note: Technically this method should be passed in a stack crawl mark that we then pass
                 // to InternalGetResourceSet for ensuring we demand permissions to read your private resources
                 // if you're reading resources from an assembly other than yourself.  But, we must call our
@@ -1219,12 +1260,16 @@ namespace System.Resources {
                 if (rs == null)
                     break;
 
-                if (rs != last) {
+                if (rs != last)
+                {
                     Object value = rs.GetObject(name, _ignoreCase);
-                    if (value != null) {
+                    if (value != null)
+                    {
                         // update the last used ResourceSet
-                        if (_lastUsedResourceCache != null) {
-                            lock (_lastUsedResourceCache) {
+                        if (_lastUsedResourceCache != null)
+                        {
+                            lock (_lastUsedResourceCache)
+                            {
                                 _lastUsedResourceCache.lastCultureName = currentCultureInfo.Name;
                                 _lastUsedResourceCache.lastResourceSet = rs;
                             }
@@ -1244,11 +1289,13 @@ namespace System.Resources {
             return null;
         }
 
-        public UnmanagedMemoryStream GetStream(String name) {
+        public UnmanagedMemoryStream GetStream(String name)
+        {
             return GetStream(name, (CultureInfo)null);
         }
-        
-        public UnmanagedMemoryStream GetStream(String name, CultureInfo culture) {
+
+        public UnmanagedMemoryStream GetStream(String name, CultureInfo culture)
+        {
             Object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;
             if (ums == null && obj != null)
@@ -1261,9 +1308,12 @@ namespace System.Resources {
         // satellite assembly probes for certain cultures via a config file.
         private bool TryLookingForSatellite(CultureInfo lookForCulture)
         {
-            if (!_checkedConfigFile) {
-                lock (this) {
-                    if (!_checkedConfigFile) {
+            if (!_checkedConfigFile)
+            {
+                lock (this)
+                {
+                    if (!_checkedConfigFile)
+                    {
                         _checkedConfigFile = true;
                         _installedSatelliteInfo = GetSatelliteAssembliesFromConfig();
                     }
@@ -1273,7 +1323,7 @@ namespace System.Resources {
             if (_installedSatelliteInfo == null)
                 return true;
 
-            String[] installedSatellites = (String[]) _installedSatelliteInfo[MainAssembly.FullName];
+            String[] installedSatellites = (String[])_installedSatelliteInfo[MainAssembly.FullName];
 
             if (installedSatellites == null)
                 return true;
@@ -1317,7 +1367,7 @@ namespace System.Resources {
                 get { return _rm._locationInfo; }
             }
 
-            internal Type UserResourceSet 
+            internal Type UserResourceSet
             {
                 get { return _rm._userResourceSet; }
             }
@@ -1358,7 +1408,7 @@ namespace System.Resources {
 
             internal UltimateResourceFallbackLocation FallbackLoc
             {
-                get { return _rm.FallbackLocation; } 
+                get { return _rm.FallbackLocation; }
                 set { _rm._fallbackLoc = value; }
             }
 

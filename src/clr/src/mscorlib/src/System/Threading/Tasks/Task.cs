@@ -29,7 +29,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Threading.Tasks
 {
-
     /// <summary>
     /// Utility class for allocating structs as heap variables
     /// </summary>
@@ -41,7 +40,6 @@ namespace System.Threading.Tasks
         {
             this.Value = value;
         }
-
     }
 
     /// <summary>
@@ -271,7 +269,7 @@ namespace System.Threading.Tasks
             // but haven't yet been waited on by the parent, lazily initialized.
             internal volatile List<Task> m_exceptionalChildren;
             // A task's parent, or null if parent-less. Only set during Task construction.
-            internal Task m_parent; 
+            internal Task m_parent;
 
             /// <summary>
             /// Sets the internal completion event.
@@ -569,8 +567,8 @@ namespace System.Threading.Tasks
 
 #if DEBUG
             // Check the validity of internalOptions
-            int illegalInternalOptions = 
-                    (int) (internalOptions &
+            int illegalInternalOptions =
+                    (int)(internalOptions &
                             ~(InternalTaskOptions.PromiseTask |
                               InternalTaskOptions.ContinuationTask |
                               InternalTaskOptions.LazyCancellation |
@@ -1785,7 +1783,7 @@ namespace System.Threading.Tasks
             catch (ThreadAbortException tae)
             {
                 AddException(tae);
-                FinishThreadAbortedTask(delegateRan:false);
+                FinishThreadAbortedTask(delegateRan: false);
             }
             catch (Exception e)
             {
@@ -2253,7 +2251,6 @@ namespace System.Threading.Tasks
                         tmp.Add(childTask);
                     }
                 }
-
             }
 
             if (Interlocked.Decrement(ref props.m_completionCountdown) == 0)
@@ -2352,7 +2349,7 @@ namespace System.Threading.Tasks
             if (!IsCompleted)
             {
                 HandleException(tae);
-                FinishThreadAbortedTask(delegateRan:false);
+                FinishThreadAbortedTask(delegateRan: false);
             }
         }
 
@@ -2479,7 +2476,7 @@ namespace System.Threading.Tasks
             finally
             {
                 currentTaskSlot = previousTask;
-                
+
                 // ETW event for Task Completed
                 if (etwIsEnabled)
                 {
@@ -2992,7 +2989,6 @@ namespace System.Threading.Tasks
                 {
                     Thread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
                 }
-
             }
 
             return IsCompleted;
@@ -3050,12 +3046,10 @@ namespace System.Threading.Tasks
                     // So we need to remeber whether we actually did the flip, so we can do clean up (finish continuations etc)
                     mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED, TASK_STATE_DELEGATE_INVOKED | TASK_STATE_CANCELED);
 
-
                     // PS: This is slightly different from the regular cancellation codepath 
                     // since we record the cancellation request *after* doing the state transition. 
                     // However that shouldn't matter too much because the task was never invoked, thus can't have children
                 }
-
             }
 
             if (!bCancelNonExecutingOnly || bPopSucceeded || mustCleanup)
@@ -3144,7 +3138,7 @@ namespace System.Threading.Tasks
                     oce = edi.SourceException as OperationCanceledException;
                     Debug.Assert(oce != null, "Expected EDI to contain an OCE");
                 }
-                Debug.Assert(oce.CancellationToken == tokenToRecord, 
+                Debug.Assert(oce.CancellationToken == tokenToRecord,
                                 "Expected OCE's token to match the provided token.");
 #endif
                 AddException(cancellationException, representsCancellation: true);
@@ -4169,7 +4163,7 @@ namespace System.Threading.Tasks
                 TaskContinuationOptions.LongRunning |
                 TaskContinuationOptions.DenyChildAttach |
                 TaskContinuationOptions.HideScheduler |
-                TaskContinuationOptions.AttachedToParent|
+                TaskContinuationOptions.AttachedToParent |
                 TaskContinuationOptions.RunContinuationsAsynchronously;
 
             // Check that LongRunning and ExecuteSynchronously are not specified together
@@ -4181,7 +4175,7 @@ namespace System.Threading.Tasks
 
             // Check that no illegal options were specified
             if ((continuationOptions &
-                ~(CreationOptionsMask | NotOnAnything | 
+                ~(CreationOptionsMask | NotOnAnything |
                     TaskContinuationOptions.LazyCancellation | TaskContinuationOptions.ExecuteSynchronously)) != 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.continuationOptions);
@@ -4434,7 +4428,6 @@ namespace System.Threading.Tasks
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;
-
                     }
                 }
             }
@@ -4517,7 +4510,6 @@ namespace System.Threading.Tasks
             }
 
             return WaitAll(tasks, (int)totalMilliseconds);
-
         }
 
         /// <summary>
@@ -5120,7 +5112,7 @@ namespace System.Threading.Tasks
             Debug.Assert(succeeded, "This should always succeed on a new task.");
             return task;
         }
-        
+
         /// <summary>Creates a <see cref="Task"/> that's completed due to cancellation with the specified token.</summary>
         /// <param name="cancellationToken">The token with which to complete the task.</param>
         /// <returns>The canceled task.</returns>
@@ -5129,7 +5121,7 @@ namespace System.Threading.Tasks
         {
             return FromCanceled(cancellationToken);
         }
-        
+
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed due to cancellation with the specified token.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="cancellationToken">The token with which to complete the task.</param>
@@ -5139,7 +5131,7 @@ namespace System.Threading.Tasks
         {
             return FromCanceled<TResult>(cancellationToken);
         }
-        
+
         #endregion
 
         #region Run methods
@@ -6137,8 +6129,8 @@ namespace System.Threading.Tasks
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
             //Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
-            if (this.m_continuationObject != this)
-                return GetDelegatesFromContinuationObject(this.m_continuationObject);
+            if (m_continuationObject != this)
+                return GetDelegatesFromContinuationObject(m_continuationObject);
             else
                 return null;
         }
@@ -6209,11 +6201,8 @@ namespace System.Threading.Tasks
 
         private static Task[] GetActiveTasks()
         {
-            
             return new List<Task>(s_currentActiveTasks.Values).ToArray();
         }
-
-
     }
 
     internal sealed class CompletionActionInvoker : IThreadPoolWorkItem
@@ -6732,5 +6721,4 @@ namespace System.Threading.Tasks
 
         public bool InvokeMayRunArbitraryCode { get { return true; } }
     }
-
 }

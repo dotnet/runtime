@@ -82,20 +82,20 @@ namespace System.Threading.Tasks
         internal static readonly Func<Task<Task>, Task<TResult>> TaskWhenAnyCast = completed => (Task<TResult>)completed.Result;
 
         // Construct a promise-style task without any options. 
-        internal Task() : 
+        internal Task() :
             base()
         {
         }
 
         // Construct a promise-style task with state and options.  
         internal Task(object state, TaskCreationOptions options) :
-            base(state, options, promiseStyle:true)
+            base(state, options, promiseStyle: true)
         {
         }
 
 
         // Construct a pre-completed Task<TResult>
-        internal Task(TResult result) : 
+        internal Task(TResult result) :
             base(false, TaskCreationOptions.None, default(CancellationToken))
         {
             m_result = result;
@@ -372,9 +372,9 @@ namespace System.Threading.Tasks
         // Debugger support
         private string DebuggerDisplayResultDescription
         {
-            get 
+            get
             {
-                return IsRanToCompletion ? "" + m_result : Environment.GetResourceString("TaskT_DebuggerNoResult"); 
+                return IsRanToCompletion ? "" + m_result : Environment.GetResourceString("TaskT_DebuggerNoResult");
             }
         }
 
@@ -441,7 +441,7 @@ namespace System.Threading.Tasks
                 bool success = TrySetResult(result);
 
                 // Nobody else has had a chance to complete this Task yet, so we should succeed.
-                Debug.Assert(success); 
+                Debug.Assert(success);
             }
             else
             {
@@ -477,7 +477,7 @@ namespace System.Threading.Tasks
             {
                 Debug.Assert(!IsWaitNotificationEnabledOrNotRanToCompletion,
                     "Should only be used when the task completed successfully and there's no wait notification enabled");
-                return m_result; 
+                return m_result;
             }
         }
 
@@ -539,7 +539,6 @@ namespace System.Threading.Tasks
             }
 
             return returnValue;
-
         }
 
         // internal helper function breaks out logic used by TaskCompletionSource and AsyncMethodBuilder
@@ -879,7 +878,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
         /// has already been disposed.
         /// </exception>
-        public Task ContinueWith(Action<Task<TResult>, Object> continuationAction, Object state,CancellationToken cancellationToken)
+        public Task ContinueWith(Action<Task<TResult>, Object> continuationAction, Object state, CancellationToken cancellationToken)
         {
             return ContinueWith(continuationAction, state, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
         }
@@ -942,7 +941,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="continuationOptions"/> argument specifies an invalid value for <see
         /// cref="T:System.Threading.Tasks.TaskContinuationOptions">TaskContinuationOptions</see>.
         /// </exception>
-        public Task ContinueWith(Action<Task<TResult>, Object> continuationAction, Object state,TaskContinuationOptions continuationOptions)
+        public Task ContinueWith(Action<Task<TResult>, Object> continuationAction, Object state, TaskContinuationOptions continuationOptions)
         {
             return ContinueWith(continuationAction, state, TaskScheduler.Current, default(CancellationToken), continuationOptions);
         }
@@ -1014,7 +1013,7 @@ namespace System.Threading.Tasks
                 out internalOptions);
 
             Task continuationTask = new ContinuationTaskFromResultTask<TResult>(
-                this, continuationAction, state, 
+                this, continuationAction, state,
                 creationOptions, internalOptions
             );
 
@@ -1229,7 +1228,7 @@ namespace System.Threading.Tasks
                 out creationOptions,
                 out internalOptions);
 
-            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult,TNewResult>(
+            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
                 this, continuationFunction, null,
                 creationOptions, internalOptions
             );
@@ -1452,7 +1451,7 @@ namespace System.Threading.Tasks
                 out creationOptions,
                 out internalOptions);
 
-            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult,TNewResult>(
+            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
                 this, continuationFunction, state,
                 creationOptions, internalOptions
             );
@@ -1467,7 +1466,7 @@ namespace System.Threading.Tasks
         #endregion
 
         #endregion
-        
+
         /// <summary>
         /// Subscribes an <see cref="IObserver{TResult}"/> to receive notification of the final state of this <see cref="Task{TResult}"/>.
         /// </summary>
@@ -1553,7 +1552,5 @@ namespace System.Threading.Tasks
         public int Id { get { return m_task.Id; } }
         public bool CancellationPending { get { return (m_task.Status == TaskStatus.WaitingToRun) && m_task.CancellationToken.IsCancellationRequested; } }
         public TaskStatus Status { get { return m_task.Status; } }
-
-
     }
 }

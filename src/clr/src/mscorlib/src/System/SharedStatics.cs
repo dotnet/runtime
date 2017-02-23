@@ -11,22 +11,22 @@
 **
 =============================================================================*/
 
+using System.Threading;
+using System.Runtime.Remoting;
+using System.Security;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System
 {
-    using System.Threading;
-    using System.Runtime.Remoting;
-    using System.Security;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     internal sealed class SharedStatics
     {
         // this is declared static but is actually forced to be the same object 
         // for each AppDomain at AppDomain create time.
         private static SharedStatics _sharedStatics;
-        
+
         // Note: Do not add any code in this ctor because it is not called 
         // when we set up _sharedStatics via AppDomain::SetupSharedStatics
         private SharedStatics()
@@ -42,13 +42,15 @@ namespace System
         internal static long AddMemoryFailPointReservation(long size)
         {
             // Size can legitimately be negative - see Dispose.
-            return Interlocked.Add(ref _sharedStatics._memFailPointReservedMemory, (long) size);
+            return Interlocked.Add(ref _sharedStatics._memFailPointReservedMemory, (long)size);
         }
 
-        internal static ulong MemoryFailPointReservedMemory {
-            get { 
+        internal static ulong MemoryFailPointReservedMemory
+        {
+            get
+            {
                 Debug.Assert(Volatile.Read(ref _sharedStatics._memFailPointReservedMemory) >= 0, "Process-wide MemoryFailPoint reserved memory was negative!");
-                return (ulong) Volatile.Read(ref _sharedStatics._memFailPointReservedMemory);
+                return (ulong)Volatile.Read(ref _sharedStatics._memFailPointReservedMemory);
             }
         }
     }

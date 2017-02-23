@@ -12,11 +12,12 @@
 **   Used by C# with this syntax: "fixed int buffer[10];"
 **
 ===========================================================*/
+
 using System;
 
 namespace System.Runtime.CompilerServices
 {
-    [AttributeUsage(AttributeTargets.Field, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public sealed class FixedBufferAttribute : Attribute
     {
         private Type elementType;
@@ -28,14 +29,18 @@ namespace System.Runtime.CompilerServices
             this.length = length;
         }
 
-        public Type ElementType {
-            get {
+        public Type ElementType
+        {
+            get
+            {
                 return elementType;
             }
         }
 
-        public int Length {
-            get {
+        public int Length
+        {
+            get
+            {
                 return length;
             }
         }

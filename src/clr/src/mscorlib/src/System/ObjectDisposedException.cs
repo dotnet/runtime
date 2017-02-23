@@ -48,7 +48,7 @@ namespace System
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("ObjectName",ObjectName,typeof(String));
+            info.AddValue("ObjectName", ObjectName, typeof(String));
         }
 
         /// <devdoc>

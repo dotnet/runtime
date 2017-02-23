@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 //
+
 using System;
 using System.Security;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace System.Text
     [Serializable]
     public abstract class DecoderFallback
     {
-        internal bool                  bIsMicrosoftBestFitFallback = false;
+        internal bool bIsMicrosoftBestFitFallback = false;
 
         private static volatile DecoderFallback replacementFallback; // Default fallback, uses no best fit & "?"
         private static volatile DecoderFallback exceptionFallback;
@@ -42,7 +43,7 @@ namespace System.Text
             get
             {
                 if (replacementFallback == null)
-                    lock(InternalSyncObject)
+                    lock (InternalSyncObject)
                         if (replacementFallback == null)
                             replacementFallback = new DecoderReplacementFallback();
 
@@ -56,7 +57,7 @@ namespace System.Text
             get
             {
                 if (exceptionFallback == null)
-                    lock(InternalSyncObject)
+                    lock (InternalSyncObject)
                         if (exceptionFallback == null)
                             exceptionFallback = new DecoderExceptionFallback();
 
@@ -103,13 +104,13 @@ namespace System.Text
 
         public virtual void Reset()
         {
-            while (GetNextChar() != (char)0);
+            while (GetNextChar() != (char)0) ;
         }
 
         // Internal items to help us figure out what we're doing as far as error messages, etc.
         // These help us with our performance and messages internally
-        internal     unsafe byte*    byteStart;
-        internal     unsafe char*    charEnd;
+        internal unsafe byte* byteStart;
+        internal unsafe char* charEnd;
 
         // Internal Reset
         internal unsafe void InternalReset()
@@ -137,9 +138,9 @@ namespace System.Text
         internal unsafe virtual bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
             // Copy bytes to array (slow, but right now that's what we get to do.
-          //  byte[] bytesUnknown = new byte[count];
-//            for (int i = 0; i < count; i++)
-//                bytesUnknown[i] = *(bytes++);
+            //  byte[] bytesUnknown = new byte[count];
+            //            for (int i = 0; i < count; i++)
+            //                bytesUnknown[i] = *(bytes++);
 
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
@@ -197,9 +198,9 @@ namespace System.Text
         // array, and we might need the index, hence the byte*
         {
             // Copy bytes to array (slow, but right now that's what we get to do.
-//            byte[] bytesUnknown = new byte[count];
-//            for (int i = 0; i < count; i++)
-  //              bytesUnknown[i] = *(bytes++);
+            //            byte[] bytesUnknown = new byte[count];
+            //            for (int i = 0; i < count; i++)
+            //              bytesUnknown[i] = *(bytes++);
 
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
@@ -266,6 +267,5 @@ namespace System.Text
                 Environment.GetResourceString("Argument_RecursiveFallbackBytes",
                     strBytes.ToString()), nameof(bytesUnknown));
         }
-
     }
 }

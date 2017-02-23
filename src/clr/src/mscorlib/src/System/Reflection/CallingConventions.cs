@@ -10,19 +10,22 @@
 //    in the system.
 //
 //
-namespace System.Reflection {
-    using System.Runtime.InteropServices;
-    using System;
+
+using System.Runtime.InteropServices;
+using System;
+
+namespace System.Reflection
+{
     [Serializable]
     [Flags]
     public enum CallingConventions
     {
         //NOTE: If you change this please update COMMember.cpp.  These
         //    are defined there.
-        Standard        = 0x0001,
-        VarArgs         = 0x0002,
-        Any             = Standard | VarArgs,
-        HasThis         = 0x0020,
-        ExplicitThis    = 0x0040,
+        Standard = 0x0001,
+        VarArgs = 0x0002,
+        Any = Standard | VarArgs,
+        HasThis = 0x0020,
+        ExplicitThis = 0x0040,
     }
 }

@@ -13,7 +13,9 @@
 **
 ** 
 ===========================================================*/
-namespace System.Resources {    
+
+namespace System.Resources
+{
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -39,7 +41,7 @@ namespace System.Resources {
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark) 
+        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
@@ -90,7 +92,7 @@ namespace System.Resources {
             {
 #if _DEBUG
                 if (ResourceManager.DEBUG >= 3)
-                    BCLDebug.Log("FindResourceFile: checking module dir: \""+_mediator.ModuleDir+'\"');
+                    BCLDebug.Log("FindResourceFile: checking module dir: \"" + _mediator.ModuleDir + '\"');
 #endif
 
                 String path = Path.Combine(_mediator.ModuleDir, fileName);
@@ -98,7 +100,7 @@ namespace System.Resources {
                 {
 #if _DEBUG
                     if (ResourceManager.DEBUG >= 3)
-                        BCLDebug.Log("Found resource file in module dir!  "+path);
+                        BCLDebug.Log("Found resource file in module dir!  " + path);
 #endif
                     return path;
                 }
@@ -106,7 +108,7 @@ namespace System.Resources {
 
 #if _DEBUG
             if (ResourceManager.DEBUG >= 3)
-                BCLDebug.Log("Couldn't find resource file in module dir, checking .\\"+fileName);
+                BCLDebug.Log("Couldn't find resource file in module dir, checking .\\" + fileName);
 #endif
 
             // look in .

@@ -72,22 +72,25 @@ namespace System.Threading.Tasks
         /// Initializes the ConcurrentExclusiveSchedulerPair.
         /// </summary>
         public ConcurrentExclusiveSchedulerPair() :
-            this(TaskScheduler.Default, DefaultMaxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK) { }
+            this(TaskScheduler.Default, DefaultMaxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK)
+        { }
 
         /// <summary>
         /// Initializes the ConcurrentExclusiveSchedulerPair to target the specified scheduler.
         /// </summary>
         /// <param name="taskScheduler">The target scheduler on which this pair should execute.</param>
         public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler) :
-            this(taskScheduler, DefaultMaxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK) { }
+            this(taskScheduler, DefaultMaxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK)
+        { }
 
         /// <summary>
         /// Initializes the ConcurrentExclusiveSchedulerPair to target the specified scheduler with a maximum concurrency level.
         /// </summary>
         /// <param name="taskScheduler">The target scheduler on which this pair should execute.</param>
         /// <param name="maxConcurrencyLevel">The maximum number of tasks to run concurrently.</param>
-        public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler, int maxConcurrencyLevel) : 
-            this(taskScheduler, maxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK) { }
+        public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler, int maxConcurrencyLevel) :
+            this(taskScheduler, maxConcurrencyLevel, DEFAULT_MAXITEMSPERTASK)
+        { }
 
         /// <summary>
         /// Initializes the ConcurrentExclusiveSchedulerPair to target the specified scheduler with a maximum 
@@ -141,7 +144,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a <see cref="System.Threading.Tasks.Task"/> that will complete when the scheduler has completed processing.</summary>
-        public Task Completion 
+        public Task Completion
         {
             // ValueLock not needed, but it's ok if it's held
             get { return EnsureCompletionStateInitialized().Task; }
@@ -162,7 +165,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Sets that completion has been requested.</summary>
-        private void RequestCompletion() 
+        private void RequestCompletion()
         {
             ContractAssertMonitorStatus(ValueLock, held: true);
             EnsureCompletionStateInitialized().m_completionRequested = true;
@@ -190,9 +193,9 @@ namespace System.Threading.Tasks
 
                 // Now, only allow shutdown if an exception occurred or if there are no more tasks to process.
                 var cs = EnsureCompletionStateInitialized();
-                return 
+                return
                     (cs.m_exceptions != null && cs.m_exceptions.Count > 0) ||
-                    (m_concurrentTaskScheduler.m_tasks.IsEmpty && m_exclusiveTaskScheduler.m_tasks.IsEmpty); 
+                    (m_concurrentTaskScheduler.m_tasks.IsEmpty && m_exclusiveTaskScheduler.m_tasks.IsEmpty);
             }
         }
 
@@ -330,7 +333,7 @@ namespace System.Threading.Tasks
                         }
                     }
                 }
-                
+
                 // Check to see if all tasks have completed and if completion has been requested.
                 CleanupStateIfCompletingAndQuiesced();
             }
@@ -370,7 +373,7 @@ namespace System.Threading.Tasks
                 // We're no longer processing exclusive tasks on the current thread
                 ProcessingMode currentMode;
                 m_threadProcessingMapping.TryRemove(Thread.CurrentThread.ManagedThreadId, out currentMode);
-                Debug.Assert(currentMode == ProcessingMode.ProcessingExclusiveTask, 
+                Debug.Assert(currentMode == ProcessingMode.ProcessingExclusiveTask,
                     "Somehow we ended up escaping exclusive mode.");
 
                 lock (ValueLock)
@@ -720,7 +723,7 @@ namespace System.Threading.Tasks
                 return mode;
             }
         }
-        
+
         /// <summary>Asserts that a given synchronization object is either held or not held.</summary>
         /// <param name="syncObj">The monitor to check.</param>
         /// <param name="held">Whether we want to assert that it's currently held or not held.</param>
@@ -748,7 +751,7 @@ namespace System.Threading.Tasks
             Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
 #endif
         }
-        
+
         /// <summary>Gets the options to use for tasks.</summary>
         /// <param name="isReplacementReplica">If this task is being created to replace another.</param>
         /// <remarks>
@@ -758,7 +761,7 @@ namespace System.Threading.Tasks
         /// <returns>The options to use.</returns>
         internal static TaskCreationOptions GetCreationOptionsForTask(bool isReplacementReplica = false)
         {
-            TaskCreationOptions options = 
+            TaskCreationOptions options =
 #if PRENET45
                 TaskCreationOptions.None;
 #else
@@ -784,5 +787,4 @@ namespace System.Threading.Tasks
             Completed = 0x8
         }
     }
-    
 }

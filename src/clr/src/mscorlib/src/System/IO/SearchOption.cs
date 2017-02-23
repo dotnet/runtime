@@ -18,7 +18,8 @@
 
 using System;
 
-namespace System.IO {
+namespace System.IO
+{
     [Serializable]
     public enum SearchOption
     {

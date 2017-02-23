@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             IDictionary<K, V> _this = JitHelpers.UnsafeCast<IDictionary<K, V>>(this);
             return (uint)_this.Count;
         }
-        
+
         // bool HasKey(K key)
         internal bool HasKey<K, V>(K key)
         {

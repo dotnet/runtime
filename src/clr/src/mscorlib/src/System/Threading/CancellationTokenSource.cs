@@ -45,18 +45,18 @@ namespace System.Threading
         //      the actual callback lists are only created on demand.
         //      Storing a registered callback costs around >60bytes, hence some overhead for the lists array is OK
         // At most 24 lists seems reasonable, and caps the cost of the listsArray to 96bytes(32-bit,24-way) or 192bytes(64-bit,24-way).
-        private static readonly int s_nLists = (PlatformHelper.ProcessorCount > 24) ? 24 : PlatformHelper.ProcessorCount; 
+        private static readonly int s_nLists = (PlatformHelper.ProcessorCount > 24) ? 24 : PlatformHelper.ProcessorCount;
 
         private volatile ManualResetEvent m_kernelEvent; //lazily initialized if required.
 
         private volatile SparselyPopulatedArray<CancellationCallbackInfo>[] m_registeredCallbacksLists;
- 
+
         // legal values for m_state
         private const int CANNOT_BE_CANCELED = 0;
         private const int NOT_CANCELED = 1;
         private const int NOTIFYING = 2;
         private const int NOTIFYINGCOMPLETE = 3;
-        
+
         //m_state uses the pattern "volatile int32 reads, with cmpxch writes" which is safe for updates and cannot suffer torn reads.
         private volatile int m_state;
 
@@ -68,13 +68,13 @@ namespace System.Threading
         private volatile int m_threadIDExecutingCallbacks = -1;
 
         private bool m_disposed;
-        
+
         // we track the running callback to assist ctr.Dispose() to wait for the target callback to complete.
         private volatile CancellationCallbackInfo m_executingCallback;
 
         // provided for CancelAfter and timer-related constructors
         private volatile Timer m_timer;
-        
+
         // ---------------------- 
         // ** public properties
 
@@ -168,11 +168,11 @@ namespace System.Threading
                 // fast path if already allocated.
                 if (m_kernelEvent != null)
                     return m_kernelEvent;
-                
+
                 // lazy-init the mre.
                 ManualResetEvent mre = new ManualResetEvent(false);
                 if (Interlocked.CompareExchange(ref m_kernelEvent, mre, null) != null)
-                {    
+                {
                     ((IDisposable)mre).Dispose();
                 }
 
@@ -211,9 +211,9 @@ namespace System.Threading
                     return 0;
 
                 int count = 0;
-                foreach(SparselyPopulatedArray<CancellationCallbackInfo> sparseArray in callbackLists)
+                foreach (SparselyPopulatedArray<CancellationCallbackInfo> sparseArray in callbackLists)
                 {
-                    if(sparseArray != null)
+                    if (sparseArray != null)
                     {
                         SparselyPopulatedArrayFragment<CancellationCallbackInfo> currCallbacks = sparseArray.Head;
                         while (currCallbacks != null)
@@ -379,7 +379,7 @@ namespace System.Threading
         public void Cancel(bool throwOnFirstException)
         {
             ThrowIfDisposed();
-            NotifyCancellation(throwOnFirstException);            
+            NotifyCancellation(throwOnFirstException);
         }
 
         /// <summary>
@@ -476,7 +476,7 @@ namespace System.Threading
                 }
             }
 
-            
+
             // It is possible that m_timer has already been disposed, so we must do
             // the following in a try/catch block.
             try
@@ -490,7 +490,6 @@ namespace System.Threading
                 // would not be a good way to deal with the observe/dispose
                 // race condition.
             }
-
         }
 
         private static readonly TimerCallback s_timerCallback = new TimerCallback(TimerCallbackLogic);
@@ -716,7 +715,7 @@ namespace System.Threading
 
                 // Record the threadID being used for running the callbacks.
                 ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
-                
+
                 // Set the event if it's been lazily initialized and hasn't yet been disposed of.  Dispose may
                 // be running concurrently, in which case either it'll have set m_kernelEvent back to null and
                 // we won't see it here, or it'll see that we've transitioned to NOTIFYING and will skip disposing it,
@@ -755,7 +754,7 @@ namespace System.Threading
                 Interlocked.Exchange(ref m_state, NOTIFYINGCOMPLETE);
                 return;
             }
-            
+
             try
             {
                 for (int index = 0; index < callbackLists.Length; index++)
@@ -799,13 +798,13 @@ namespace System.Threading
                                             CancellationCallbackCoreWork(args);
                                         }
                                     }
-                                    catch(Exception ex)
+                                    catch (Exception ex)
                                     {
                                         if (throwOnFirstException)
                                             throw;
-    
+
                                         // Otherwise, log it and proceed.
-                                        if(exceptionList == null)
+                                        if (exceptionList == null)
                                             exceptionList = new List<Exception>();
                                         exceptionList.Add(ex);
                                     }
@@ -1004,7 +1003,7 @@ namespace System.Threading
     {
         internal SparselyPopulatedArrayFragment<CancellationCallbackInfo> m_currArrayFragment;
         internal int m_currArrayIndex;
-        
+
         public CancellationCallbackCoreWorkArguments(SparselyPopulatedArrayFragment<CancellationCallbackInfo> currArrayFragment, int currArrayIndex)
         {
             m_currArrayFragment = currArrayFragment;
@@ -1040,7 +1039,6 @@ namespace System.Threading
             {
                 TargetSyncContext = targetSyncContext;
             }
-
         }
 
         internal CancellationCallbackInfo(
@@ -1066,7 +1064,7 @@ namespace System.Threading
                 // Lazily initialize the callback delegate; benign race condition
                 var callback = s_executionContextCallback;
                 if (callback == null) s_executionContextCallback = callback = new ContextCallback(ExecutionContextCallback);
-                
+
                 ExecutionContext.Run(
                     TargetExecutionContext,
                     callback,
@@ -1176,7 +1174,7 @@ namespace System.Threading
                             // If the slot is null, try to CAS our element into it.
                             int tryIndex = (start + i) % c;
                             Debug.Assert(tryIndex >= 0 && tryIndex < curr.m_elements.Length, "tryIndex is outside of bounds");
-                            
+
                             if (curr.m_elements[tryIndex] == null && Interlocked.CompareExchange(ref curr.m_elements[tryIndex], element, null) == null)
                             {
                                 // We adjust the free count by --. Note: if this drops to 0, we will skip
@@ -1282,7 +1280,7 @@ namespace System.Threading
         internal T SafeAtomicRemove(int index, T expectedElement)
         {
             T prevailingValue = Interlocked.CompareExchange(ref m_elements[index], null, expectedElement);
-            if (prevailingValue != null) 
+            if (prevailingValue != null)
                 ++m_freeCount;
             return prevailingValue;
         }
