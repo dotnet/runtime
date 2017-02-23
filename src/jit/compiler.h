@@ -5882,6 +5882,13 @@ public:
 
     typedef unsigned short AssertionIndex;
 
+    enum optAssertionEdge : AssertionIndex
+    {
+        // OAE_JUMP_EDGE  = 0x0000, // assertion holds for bbJumpDest (default)
+        OAE_NEXT_EDGE  = 0x8000, // assertion holds for bbNext
+        OAE_INDEX_MASK = 0x7fff
+    };
+
 protected:
     static fgWalkPreFn optAddCopiesCallback;
     static fgWalkPreFn optVNAssertionPropCurStmtVisitor;

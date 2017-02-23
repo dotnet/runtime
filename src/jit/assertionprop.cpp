@@ -1771,6 +1771,8 @@ Compiler::AssertionIndex Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree
     GenTreePtr op2 = relop->gtGetOp2();
 
     ValueNum vn = op1->gtVNPair.GetConservative();
+
+    ValueNumStore::ArrLenUnsignedBoundInfo arrLenUnsignedBnd;
     // Cases where op1 holds the condition with array arithmetic and op2 is 0.
     // Loop condition like: "i < a.len +/-k == 0"
     // Assertion: "i < a.len +/- k == 0"
@@ -1824,6 +1826,32 @@ Compiler::AssertionIndex Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree
         dsc.op2.u1.iconFlags = 0;
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
+        return index;
+    }
+    // Loop condition like "(uint)i < (uint)a.len" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < a.len (on the appropiate edge)
+    else if (vnStore->IsVNArrLenUnsignedBound(relop->gtVNPair.GetConservative(), &arrLenUnsignedBnd))
+    {
+        assert(arrLenUnsignedBnd.vnIdx != ValueNumStore::NoVN);
+        assert((arrLenUnsignedBnd.cmpOper == VNF_LT_UN) || (arrLenUnsignedBnd.cmpOper == VNF_GE_UN));
+        assert(vnStore->IsVNArrLen(arrLenUnsignedBnd.vnLen));
+
+        AssertionDsc dsc;
+        dsc.assertionKind = OAK_NO_THROW;
+        dsc.op1.kind      = O1K_ARR_BND;
+        dsc.op1.vn        = relop->gtVNPair.GetConservative();
+        dsc.op1.bnd.vnIdx = arrLenUnsignedBnd.vnIdx;
+        dsc.op1.bnd.vnLen = arrLenUnsignedBnd.vnLen;
+        dsc.op2.kind      = O2K_INVALID;
+        dsc.op2.vn        = ValueNumStore::NoVN;
+
+        AssertionIndex index = optAddAssertion(&dsc);
+        if ((arrLenUnsignedBnd.cmpOper == VNF_GE_UN) && (index != NO_ASSERTION_INDEX))
+        {
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= a.len but we're really
+            // after i < a.len so we need to change the assertion edge to "next".
+            index |= OAE_NEXT_EDGE;
+        }
         return index;
     }
     // Cases where op1 holds the condition bound check and op2 is 0.
@@ -4463,16 +4491,27 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             ASSERT_TP jumpDestValueGen = BitVecOps::MakeCopy(apTraits, valueGen);
 
             AssertionIndex index = jtrue->GetAssertion();
-            if (index != NO_ASSERTION_INDEX)
+            if ((index & OAE_INDEX_MASK) != NO_ASSERTION_INDEX)
             {
-                optImpliedAssertions(index, jumpDestValueGen);
-                BitVecOps::AddElemD(apTraits, jumpDestValueGen, index - 1);
-
-                index = optFindComplementary(index);
-                if (index != NO_ASSERTION_INDEX)
+                if ((index & OAE_NEXT_EDGE) != 0)
                 {
-                    optImpliedAssertions(index, valueGen);
+                    index &= OAE_INDEX_MASK;
+                    // Currently OAE_NEXT_EDGE is only used with OAK_NO_THROW assertions
+                    assert(optGetAssertion(index)->assertionKind == OAK_NO_THROW);
+                    // Don't bother with implied/complementary assertions, there aren't any for OAK_NO_THROW
                     BitVecOps::AddElemD(apTraits, valueGen, index - 1);
+                }
+                else
+                {
+                    optImpliedAssertions(index, jumpDestValueGen);
+                    BitVecOps::AddElemD(apTraits, jumpDestValueGen, index - 1);
+
+                    index = optFindComplementary(index);
+                    if (index != NO_ASSERTION_INDEX)
+                    {
+                        optImpliedAssertions(index, valueGen);
+                        BitVecOps::AddElemD(apTraits, valueGen, index - 1);
+                    }
                 }
             }
 
