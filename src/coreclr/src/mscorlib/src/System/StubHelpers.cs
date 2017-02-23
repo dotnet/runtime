@@ -1618,13 +1618,11 @@ namespace  System.StubHelpers {
         {
             if (pHandle == null)
             {
-                throw new ArgumentNullException(nameof(pHandle), Environment.GetResourceString("ArgumentNull_SafeHandle"));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }
-            Contract.EndContractBlock();
 
             pHandle.DangerousAddRef(ref success);
-
-            return (success ? pHandle.DangerousGetHandle() : IntPtr.Zero);
+            return pHandle.DangerousGetHandle();
         }
 
         // Releases the SH (to be called from finally block).
@@ -1632,9 +1630,8 @@ namespace  System.StubHelpers {
         {
             if (pHandle == null)
             {
-                throw new ArgumentNullException(nameof(pHandle), Environment.GetResourceString("ArgumentNull_SafeHandle"));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }
-            Contract.EndContractBlock();
 
             try
             {
