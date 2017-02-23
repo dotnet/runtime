@@ -1983,22 +1983,14 @@ void emitter::emitEndFnEpilog()
 #ifdef JIT32_GCENCODER
     assert(emitEpilogLast != nullptr);
 
-    UNATIVE_OFFSET newSize;
     UNATIVE_OFFSET epilogBegCodeOffset = emitEpilogLast->elLoc.CodeOffset(this);
-#ifdef _TARGET_XARCH_
     UNATIVE_OFFSET epilogExitSeqStartCodeOffset = emitExitSeqBegLoc.CodeOffset(this);
-#else
-    UNATIVE_OFFSET epilogExitSeqStartCodeOffset = emitCodeOffset(emitCurIG, emitCurOffset());
-#endif
-
-    newSize = epilogExitSeqStartCodeOffset - epilogBegCodeOffset;
-
-#ifdef _TARGET_X86_
+    UNATIVE_OFFSET newSize = epilogExitSeqStartCodeOffset - epilogBegCodeOffset;
 
     /* Compute total epilog size */
-
     assert(emitEpilogSize == 0 || emitEpilogSize == newSize); // All epilogs must be identical
-    emitEpilogSize                     = newSize;
+    emitEpilogSize = newSize;
+
     UNATIVE_OFFSET epilogEndCodeOffset = emitCodeOffset(emitCurIG, emitCurOffset());
     assert(epilogExitSeqStartCodeOffset != epilogEndCodeOffset);
 
@@ -2018,8 +2010,6 @@ void emitter::emitEndFnEpilog()
                );
         emitExitSeqSize = newSize;
     }
-
-#endif // _TARGET_X86_
 #endif // JIT32_GCENCODER
 }
 

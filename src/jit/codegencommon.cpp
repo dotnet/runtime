@@ -9451,9 +9451,16 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #endif // !FEATURE_STACK_FP_X87
 
 #ifdef JIT32_GCENCODER
-    // On IA32, we start the OS-reported portion of the epilog after restoring any callee-saved
-    // floating-point registers. This avoids the need to update the x86 unwinder and retains binary
-    // compatibility between later versions of the JIT and earlier versions of the runtime.
+    // When using the JIT32 GC encoder, we do not start the OS-reported portion of the epilog until after
+    // the above call to `genRestoreCalleeSavedFltRegs` because that function
+    //   a) does not actually restore any registers: there are none when targeting the Windows x86 ABI,
+    //      which is the only target that uses the JIT32 GC encoder
+    //   b) may issue a `vzeroupper` instruction to eliminate AVX -> SSE transition penalties.
+    // Because the `vzeroupper` instruction is not recognized by the VM's unwinder and there are no
+    // callee-save FP restores that the unwinder would need to see, we can avoid the need to change the
+    // unwinder (and break binary compat with older versions of the runtime) by starting the epilog
+    // after any `vzeroupper` instruction has been emitted. If either of the above conditions changes,
+    // we will need to rethink this.
     getEmitter()->emitStartEpilog();
 #endif
 
