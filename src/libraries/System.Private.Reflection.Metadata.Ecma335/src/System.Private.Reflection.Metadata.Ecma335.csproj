@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}</ProjectGuid>
     <AssemblyName>System.Private.Reflection.Metadata.Ecma335</AssemblyName>
-    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <RootNamespace>System.Reflection.Metadata</RootNamespace>
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
