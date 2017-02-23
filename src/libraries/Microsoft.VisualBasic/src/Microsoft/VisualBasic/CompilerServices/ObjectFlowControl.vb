@@ -21,7 +21,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         Public Shared Sub CheckForSyncLockOnValueType(ByVal expression As Object)
-            If expression IsNot Nothing AndAlso expression.GetType.GetTypeInfo().IsValueType() Then
+            If expression IsNot Nothing AndAlso expression.GetType.IsValueType() Then
                 Throw New ArgumentException(
                     GetResourceString(SR.SyncLockRequiresReferenceType1, VBFriendlyName(expression.GetType)))
             End If
@@ -50,7 +50,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Private Shared Function GetWidestType(ByVal type1 As System.Type, ByVal type2 As System.Type) As Type
                 If type1 Is Nothing OrElse type2 Is Nothing Then Return Nothing
 
-                If Not type1.GetTypeInfo().IsEnum AndAlso Not type2.GetTypeInfo().IsEnum Then
+                If Not type1.IsEnum AndAlso Not type2.IsEnum Then
                     Dim tc1 As TypeCode = GetTypeCode(type1)
                     Dim tc2 As TypeCode = GetTypeCode(type2)
 
@@ -173,11 +173,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ' of the loop the enum.
                 Dim currentEnumType As Type = Nothing
 
-                If (startTypeCode = widestTypeCode) AndAlso startType.GetTypeInfo().IsEnum Then
+                If (startTypeCode = widestTypeCode) AndAlso startType.IsEnum Then
                     currentEnumType = startType
                 End If
 
-                If (limitTypeCode = widestTypeCode) AndAlso limitType.GetTypeInfo().IsEnum Then
+                If (limitTypeCode = widestTypeCode) AndAlso limitType.IsEnum Then
                     If (Not currentEnumType Is Nothing) AndAlso
                        (Not currentEnumType Is limitType) Then
                         currentEnumType = Nothing
@@ -187,7 +187,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     currentEnumType = limitType
                 End If
 
-                If (stepTypeCode = widestTypeCode) AndAlso stepType.GetTypeInfo().IsEnum Then
+                If (stepTypeCode = widestTypeCode) AndAlso stepType.IsEnum Then
                     If (Not currentEnumType Is Nothing) AndAlso
                        (Not currentEnumType Is stepType) Then
                         currentEnumType = Nothing
