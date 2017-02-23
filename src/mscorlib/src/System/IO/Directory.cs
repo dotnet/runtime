@@ -25,8 +25,8 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    internal static class Directory {
-
+    internal static class Directory
+    {
         // Private class that holds search data that is passed around 
         // in the heap based stack recursion
         internal sealed class SearchData
@@ -85,8 +85,9 @@ namespace System.IO
         }
 #endif // PLATFORM_UNIX        
 
-        internal static String InternalGetDirectoryRoot(String path) {
-              if (path == null) return null;
+        internal static String InternalGetDirectoryRoot(String path)
+        {
+            if (path == null) return null;
             return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
@@ -131,16 +132,17 @@ namespace System.IO
 
         public static void SetCurrentDirectory(String path)
         {
-            if (path==null)
+            if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            if (path.Length==0)
+            if (path.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
             if (path.Length >= Path.MaxPath)
                 throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
 
             String fulldestDirName = Path.GetFullPath(path);
-            
-            if (!Win32Native.SetCurrentDirectory(fulldestDirName)) {
+
+            if (!Win32Native.SetCurrentDirectory(fulldestDirName))
+            {
                 // If path doesn't exist, this sets last error to 2 (File 
                 // not Found).  LEGACY: This may potentially have worked correctly
                 // on Win9x, maybe.

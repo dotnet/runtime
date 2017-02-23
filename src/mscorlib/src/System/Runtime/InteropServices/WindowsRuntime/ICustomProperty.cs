@@ -19,34 +19,34 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             [Pure]
             get;
         }
-        
-        string Name 
-        { 
+
+        string Name
+        {
             [Pure]
-            get; 
+            get;
         }
 
         [Pure]
         object GetValue(object target);
 
         void SetValue(object target, object value);
-        
+
         [Pure]
         object GetValue(object target, object indexValue);
-        
+
         void SetValue(object target, object value, object indexValue);
-        
-        bool CanWrite 
-        { 
+
+        bool CanWrite
+        {
             [Pure]
-            get; 
+            get;
         }
 
-        bool CanRead  
-        { 
+        bool CanRead
+        {
             [Pure]
-            get; 
-        }               
+            get;
+        }
     }
 }
- 
+

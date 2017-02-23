@@ -129,7 +129,7 @@ namespace System.Text
             // Fixed doesn't like empty arrays
             if (bytes.Length == 0)
                 bytes = new byte[1];
-            
+
             fixed (char* pChars = s) fixed (byte* pBytes = &bytes[0])
             {
                 return encoding.GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, encoder: null);
@@ -168,7 +168,7 @@ namespace System.Text
             // Fixed doesn't like 0 length arrays.
             if (bytes.Length == 0)
                 bytes = new byte[1];
-            
+
             // Just call the (internal) pointer version
             fixed (char* pChars = chars) fixed (byte* pBytes = &bytes[0])
             {
@@ -308,7 +308,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(bytes), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
             }
             Contract.EndContractBlock();
-            
+
             // Avoid problems with empty input buffer
             if (count == 0)
                 return string.Empty;

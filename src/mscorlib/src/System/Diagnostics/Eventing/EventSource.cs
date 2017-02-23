@@ -252,7 +252,6 @@ namespace System.Diagnostics.Tracing
     /// </remarks>
     public partial class EventSource : IDisposable
     {
-
 #if FEATURE_EVENTSOURCE_XPLAT
         private static readonly EventListener persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
 #endif //FEATURE_EVENTSOURCE_XPLAT
@@ -1160,7 +1159,6 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                     if (m_eventData[eventId].EnabledForETW)
                     {
-
 #if FEATURE_ACTIVITYSAMPLING
                         // this code should be kept in sync with WriteEventVarargs().
                         SessionMask etwSessions = SessionMask.All;
@@ -1243,7 +1241,6 @@ namespace System.Diagnostics.Tracing
                                                                     m_eventData[eventId].Tags,
                                                                     m_eventData[eventId].Parameters);
                                 Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, tlet, null);
-
                             }
                             EventSourceOptions opt = new EventSourceOptions
                             {
@@ -1548,18 +1545,18 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             public void Start()
             {
-                if (this.w == null)
+                if (w == null)
                 {
-                    this.w = new uint[85];
+                    w = new uint[85];
                 }
 
-                this.length = 0;
-                this.pos = 0;
-                this.w[80] = 0x67452301;
-                this.w[81] = 0xEFCDAB89;
-                this.w[82] = 0x98BADCFE;
-                this.w[83] = 0x10325476;
-                this.w[84] = 0xC3D2E1F0;
+                length = 0;
+                pos = 0;
+                w[80] = 0x67452301;
+                w[81] = 0xEFCDAB89;
+                w[82] = 0x98BADCFE;
+                w[83] = 0x10325476;
+                w[84] = 0xC3D2E1F0;
             }
 
             /// <summary>
@@ -1568,8 +1565,8 @@ namespace System.Diagnostics.Tracing
             /// <param name="input">Data to include in the hash.</param>
             public void Append(byte input)
             {
-                this.w[this.pos / 4] = (this.w[this.pos / 4] << 8) | input;
-                if (64 == ++this.pos)
+                w[pos / 4] = (w[pos / 4] << 8) | input;
+                if (64 == ++pos)
                 {
                     this.Drain();
                 }
@@ -1605,9 +1602,9 @@ namespace System.Diagnostics.Tracing
             /// </param>
             public void Finish(byte[] output)
             {
-                long l = this.length + 8 * this.pos;
+                long l = length + 8 * pos;
                 this.Append(0x80);
-                while (this.pos != 56)
+                while (pos != 56)
                 {
                     this.Append(0x00);
                 }
@@ -1626,9 +1623,9 @@ namespace System.Diagnostics.Tracing
                     int end = output.Length < 20 ? output.Length : 20;
                     for (int i = 0; i != end; i++)
                     {
-                        uint temp = this.w[80 + i / 4];
+                        uint temp = w[80 + i / 4];
                         output[i] = (byte)(temp >> 24);
-                        this.w[80 + i / 4] = temp << 8;
+                        w[80 + i / 4] = temp << 8;
                     }
                 }
             }
@@ -1640,54 +1637,54 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 16; i != 80; i++)
                 {
-                    this.w[i] = Rol1((this.w[i - 3] ^ this.w[i - 8] ^ this.w[i - 14] ^ this.w[i - 16]));
+                    w[i] = Rol1((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]));
                 }
 
                 unchecked
                 {
-                    uint a = this.w[80];
-                    uint b = this.w[81];
-                    uint c = this.w[82];
-                    uint d = this.w[83];
-                    uint e = this.w[84];
+                    uint a = w[80];
+                    uint b = w[81];
+                    uint c = w[82];
+                    uint d = w[83];
+                    uint e = w[84];
 
                     for (int i = 0; i != 20; i++)
                     {
                         const uint k = 0x5A827999;
                         uint f = (b & c) | ((~b) & d);
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = Rol5(a) + f + e + k + w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
                     }
 
                     for (int i = 20; i != 40; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0x6ED9EBA1;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = Rol5(a) + f + e + k + w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
                     }
 
                     for (int i = 40; i != 60; i++)
                     {
                         uint f = (b & c) | (b & d) | (c & d);
                         const uint k = 0x8F1BBCDC;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = Rol5(a) + f + e + k + w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
                     }
 
                     for (int i = 60; i != 80; i++)
                     {
                         uint f = b ^ c ^ d;
                         const uint k = 0xCA62C1D6;
-                        uint temp = Rol5(a) + f + e + k + this.w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
+                        uint temp = Rol5(a) + f + e + k + w[i]; e = d; d = c; c = Rol30(b); b = a; a = temp;
                     }
 
-                    this.w[80] += a;
-                    this.w[81] += b;
-                    this.w[82] += c;
-                    this.w[83] += d;
-                    this.w[84] += e;
+                    w[80] += a;
+                    w[81] += b;
+                    w[82] += c;
+                    w[83] += d;
+                    w[84] += e;
                 }
 
-                this.length += 512; // 64 bytes == 512 bits
-                this.pos = 0;
+                length += 512; // 64 bytes == 512 bits
+                pos = 0;
             }
 
             private static uint Rol1(uint input)
@@ -1731,7 +1728,7 @@ namespace System.Diagnostics.Tracing
 
             Type dataType = GetDataType(m_eventData[eventId], parameterId);
 
-            Again:
+        Again:
             if (dataType == typeof(IntPtr))
             {
                 return *((IntPtr*)dataPointer);
@@ -1843,7 +1840,6 @@ namespace System.Diagnostics.Tracing
                     // ETW strings are NULL-terminated, so marshal everything up to the first
                     // null in the string.
                     return System.Runtime.InteropServices.Marshal.PtrToStringUni(dataPointer);
-
                 }
                 finally
                 {
@@ -1995,7 +1991,6 @@ namespace System.Diagnostics.Tracing
                                                                     EventTags.None,
                                                                     m_eventData[eventId].Parameters);
                                 Interlocked.CompareExchange(ref m_eventData[eventId].TraceLoggingEventTypes, tlet, null);
-
                             }
                             // TODO: activity ID support
                             EventSourceOptions opt = new EventSourceOptions
@@ -2387,7 +2382,6 @@ namespace System.Diagnostics.Tracing
                 }
             }
             return true;
-
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private void ThrowEventSourceException(string eventName, Exception innerEx = null)
@@ -2476,7 +2470,7 @@ namespace System.Diagnostics.Tracing
         {
             public OverideEventProvider(EventSource eventSource)
             {
-                this.m_eventSource = eventSource;
+                m_eventSource = eventSource;
             }
             protected override void OnControllerCommand(ControllerCommand command, IDictionary<string, string> arguments,
                                                               int perEventSourceSessionId, int etwSessionId)
@@ -2559,7 +2553,7 @@ namespace System.Diagnostics.Tracing
                 if (m_completelyInited)
                 {
                     // After the first command arrive after construction, we are ready to get rid of the deferred commands
-                    this.m_deferredCommands = null;
+                    m_deferredCommands = null;
                     // We are fully initialized, do the command 
                     DoCommand(commandArgs);
                 }
@@ -2713,7 +2707,7 @@ namespace System.Diagnostics.Tracing
                     }
 
                     this.OnEventCommand(commandArgs);
-                    var eventCommandCallback = this.m_eventCommandExecuted;
+                    var eventCommandCallback = m_eventCommandExecuted;
                     if (eventCommandCallback != null)
                         eventCommandCallback(this, commandArgs);
 
@@ -3015,7 +3009,6 @@ namespace System.Diagnostics.Tracing
                     Debug.Assert(m_rawManifest == null);
                     m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
                     Debug.Assert(m_eventData != null);
-
                 }
                 else
                 {
@@ -3093,7 +3086,7 @@ namespace System.Diagnostics.Tracing
                 dataDescrs[1].Reserved = 0;
 
                 int chunkSize = ManifestEnvelope.MaxChunkSize;
-                TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE:
+            TRY_AGAIN_WITH_SMALLER_CHUNK_SIZE:
                 envelope.TotalChunks = (ushort)((dataLeft + (chunkSize - 1)) / chunkSize);
                 while (dataLeft > 0)
                 {
@@ -3467,7 +3460,6 @@ namespace System.Diagnostics.Tracing
                                             string.Compare(startEventMetadata.Name, 0, taskName, 0, taskName.Length) == 0 &&
                                             string.Compare(startEventMetadata.Name, taskName.Length, s_ActivityStartSuffix, 0, Math.Max(startEventMetadata.Name.Length - taskName.Length, s_ActivityStartSuffix.Length)) == 0)
                                         {
-
                                             // Make the stop event match the start event
                                             eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
                                             noTask = false;
@@ -3627,7 +3619,7 @@ namespace System.Diagnostics.Tracing
             }
 #endif
             return;
-            Error:
+        Error:
             manifest.ManifestError(Resources.GetResourceString("EventSource_EnumKindMismatch", staticField.Name, staticField.FieldType.Name, providerEnumKind));
         }
 
@@ -4101,7 +4093,7 @@ namespace System.Diagnostics.Tracing
 
         // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
         // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
-        ActivityTracker m_activityTracker;
+        private ActivityTracker m_activityTracker;
         internal const string s_ActivityStartSuffix = "Start";
         internal const string s_ActivityStopSuffix = "Stop";
 
@@ -4627,7 +4619,6 @@ namespace System.Diagnostics.Tracing
                     s_CreatingListener = false;
                 }
             }
-
         }
 
         // Instance fields
@@ -5019,7 +5010,7 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>Construct an EventAttribute with specified eventId</summary>
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
-        public EventAttribute(int eventId) { this.EventId = eventId; Level = EventLevel.Informational; this.m_opcodeSet = false; }
+        public EventAttribute(int eventId) { this.EventId = eventId; Level = EventLevel.Informational; m_opcodeSet = false; }
         /// <summary>Event's ID</summary>
         public int EventId { get; private set; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>
@@ -5035,8 +5026,8 @@ namespace System.Diagnostics.Tracing
             }
             set
             {
-                this.m_opcode = value;
-                this.m_opcodeSet = true;
+                m_opcode = value;
+                m_opcodeSet = true;
             }
         }
 
@@ -5076,7 +5067,7 @@ namespace System.Diagnostics.Tracing
         public EventActivityOptions ActivityOptions { get; set; }
 
         #region private
-        EventOpcode m_opcode;
+        private EventOpcode m_opcode;
         private bool m_opcodeSet;
         #endregion
     }
@@ -5115,7 +5106,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public 
 #endif
-    class EventChannelAttribute : Attribute
+    internal class EventChannelAttribute : Attribute
     {
         /// <summary>
         /// Specified whether the channel is enabled by default
@@ -5155,7 +5146,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public 
 #endif
-    enum EventChannelType
+    internal enum EventChannelType
     {
         /// <summary>The admin channel</summary>
         Admin = 1,
@@ -5566,7 +5557,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        #region private
+    #region private
 
         /// <summary>
         /// Creates a new ActivityFilter that is triggered by 'eventId' from 'source' ever
@@ -5735,7 +5726,7 @@ namespace System.Diagnostics.Tracing
 
         ActivityFilter m_next;      // We create a linked list of these
         Action<Guid> m_myActivityDelegate;
-        #endregion
+    #endregion
     };
 
 
@@ -5860,7 +5851,7 @@ namespace System.Diagnostics.Tracing
 
         public bool IsEqualOrSupersetOf(SessionMask m)
         {
-            return (this.m_mask | m.m_mask) == this.m_mask;
+            return (m_mask | m.m_mask) == m_mask;
         }
 
         public static SessionMask All
@@ -6139,7 +6130,7 @@ namespace System.Diagnostics.Tracing
 
         public ulong[] GetChannelData()
         {
-            if (this.channelTab == null)
+            if (channelTab == null)
             {
                 return new ulong[0];
             }
@@ -6147,7 +6138,7 @@ namespace System.Diagnostics.Tracing
             // We create an array indexed by the channel id for fast look up.
             // E.g. channelMask[Admin] will give you the bit mask for Admin channel.
             int maxkey = -1;
-            foreach (var item in this.channelTab.Keys)
+            foreach (var item in channelTab.Keys)
             {
                 if (item > maxkey)
                 {
@@ -6156,7 +6147,7 @@ namespace System.Diagnostics.Tracing
             }
 
             ulong[] channelMask = new ulong[maxkey + 1];
-            foreach (var item in this.channelTab)
+            foreach (var item in channelTab)
             {
                 channelMask[item.Key] = item.Value.Keywords;
             }
@@ -6328,7 +6319,6 @@ namespace System.Diagnostics.Tracing
 
         private string CreateManifestString()
         {
-
 #if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
             if (channelTab != null)
@@ -6396,7 +6386,6 @@ namespace System.Diagnostics.Tracing
             // Write out the tasks
             if (taskTab != null)
             {
-
                 sb.Append(" <tasks>").AppendLine();
                 var sortedTasks = new List<int>(taskTab.Keys);
                 sortedTasks.Sort();
@@ -6840,7 +6829,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        class ChannelInfo
+        private class ChannelInfo
         {
             public string Name;
             public ulong Keywords;
@@ -6848,15 +6837,15 @@ namespace System.Diagnostics.Tracing
         }
 #endif
 
-        Dictionary<int, string> opcodeTab;
-        Dictionary<int, string> taskTab;
+        private Dictionary<int, string> opcodeTab;
+        private Dictionary<int, string> taskTab;
 #if FEATURE_MANAGED_ETW_CHANNELS
-        Dictionary<int, ChannelInfo> channelTab;
+        private Dictionary<int, ChannelInfo> channelTab;
 #endif
-        Dictionary<ulong, string> keywordTab;
-        Dictionary<string, Type> mapsTab;
+        private Dictionary<ulong, string> keywordTab;
+        private Dictionary<string, Type> mapsTab;
 
-        Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones  
+        private Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones  
 
 #if FEATURE_MANAGED_ETW_CHANNELS
         // WCF used EventSource to mimic a existing ETW manifest.   To support this
@@ -6865,26 +6854,26 @@ namespace System.Diagnostics.Tracing
         // this set of channel keywords that we allow to be explicitly set.  You
         // can ignore these bits otherwise.  
         internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
-        ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
-        const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
+        private ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
+        private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
 #endif
 
-        StringBuilder sb;               // Holds the provider information. 
-        StringBuilder events;           // Holds the events. 
-        StringBuilder templates;
+        private StringBuilder sb;               // Holds the provider information. 
+        private StringBuilder events;           // Holds the events. 
+        private StringBuilder templates;
 
 #if FEATURE_MANAGED_ETW_CHANNELS
-        string providerName;
+        private string providerName;
 #endif
-        ResourceManager resources;      // Look up localized strings here.  
-        EventManifestOptions flags;
-        IList<string> errors;           // list of currently encountered errors
-        Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
+        private ResourceManager resources;      // Look up localized strings here.  
+        private EventManifestOptions flags;
+        private IList<string> errors;           // list of currently encountered errors
+        private Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 
         // State we track between StartEvent and EndEvent.  
-        string eventName;               // Name of the event currently being processed. 
-        int numParams;                  // keeps track of the number of args the event has. 
-        List<int> byteArrArgIndices;    // keeps track of the index of each byte[] argument
+        private string eventName;               // Name of the event currently being processed. 
+        private int numParams;                  // keeps track of the number of args the event has. 
+        private List<int> byteArrArgIndices;    // keeps track of the index of each byte[] argument
         #endregion
     }
 

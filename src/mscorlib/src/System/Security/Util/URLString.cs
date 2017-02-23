@@ -8,8 +8,8 @@
 //  Implementation of membership condition for zones
 //
 
-namespace System.Security.Util {
-    
+namespace System.Security.Util
+{
     using System;
     using System.Collections;
     using System.Collections.Generic;

@@ -23,7 +23,7 @@ namespace System.Threading.Tasks
     /// <summary>
     /// An implementation of TaskScheduler that uses the ThreadPool scheduler
     /// </summary>
-    internal sealed class ThreadPoolTaskScheduler: TaskScheduler
+    internal sealed class ThreadPoolTaskScheduler : TaskScheduler
     {
         /// <summary>
         /// Constructs a new ThreadPool task scheduler object
@@ -56,7 +56,7 @@ namespace System.Threading.Tasks
                 ThreadPool.UnsafeQueueCustomWorkItem(task, forceToGlobalQueue);
             }
         }
-        
+
         /// <summary>
         /// This internal function will do this:
         ///   (1) If the task had previously been queued, attempt to pop it and return false if that fails.

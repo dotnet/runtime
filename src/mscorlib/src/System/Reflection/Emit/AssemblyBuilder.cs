@@ -48,11 +48,11 @@ namespace System.Reflection.Emit
         None = 0x00000000,
 
         // Security attributes which affect the module security descriptor
-        AllCritical             = 0x00000001,
-        Aptca                   = 0x00000002,
-        Critical                = 0x00000004,
-        Transparent             = 0x00000008,
-        TreatAsSafe             = 0x00000010,
+        AllCritical = 0x00000001,
+        Aptca = 0x00000002,
+        Critical = 0x00000004,
+        Transparent = 0x00000008,
+        TreatAsSafe = 0x00000010,
     }
 
     // When the user calls AppDomain.DefineDynamicAssembly the loader creates a new InternalAssemblyBuilder. 
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
     // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which 
     // origionally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
     // because the Assembly returned via AssemblyGetAssemblies() will be an InternalAssemblyBuilder.
-    
+
     // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder. 
     // There is a 1-1 relationship between InternalAssemblyBuilder and AssemblyBuilder. 
     // AssemblyBuilder is composed of its InternalAssemblyBuilder.
@@ -186,7 +186,7 @@ namespace System.Reflection.Emit
             Contract.Requires(module != null);
             Debug.Assert(this.InternalAssembly == module.Assembly);
 
-            lock(SyncRoot)
+            lock (SyncRoot)
             {
                 // in CoreCLR there is only one module in each dynamic assembly, the manifest module
                 if (m_manifestModuleBuilder.InternalModule == module)
@@ -328,7 +328,7 @@ namespace System.Reflection.Emit
             // because it hasn't been initialized.
             // However, it can be used to set the custom attribute on the Assembly
             m_manifestModuleBuilder = new ModuleBuilder(this, modBuilder);
-            
+
             // We are only setting the name in the managed ModuleBuilderData here.
             // The name in the underlying metadata will be set when the
             // manifest module is created during nCreateDynamicAssembly.
@@ -424,7 +424,7 @@ namespace System.Reflection.Emit
         **********************************************/
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ModuleBuilder DefineDynamicModule(
-            String      name)
+            String name)
         {
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
 
@@ -434,29 +434,29 @@ namespace System.Reflection.Emit
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ModuleBuilder DefineDynamicModule(
-            String      name,
-            bool        emitSymbolInfo)         // specify if emit symbol info or not
+            String name,
+            bool emitSymbolInfo)         // specify if emit symbol info or not
         {
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return DefineDynamicModuleInternal( name, emitSymbolInfo, ref stackMark );
+            return DefineDynamicModuleInternal(name, emitSymbolInfo, ref stackMark);
         }
 
         private ModuleBuilder DefineDynamicModuleInternal(
-            String      name,
-            bool        emitSymbolInfo,         // specify if emit symbol info or not
+            String name,
+            bool emitSymbolInfo,         // specify if emit symbol info or not
             ref StackCrawlMark stackMark)
         {
-            lock(SyncRoot)
+            lock (SyncRoot)
             {
                 return DefineDynamicModuleInternalNoLock(name, emitSymbolInfo, ref stackMark);
             }
         }
 
         private ModuleBuilder DefineDynamicModuleInternalNoLock(
-            String      name,
-            bool        emitSymbolInfo,         // specify if emit symbol info or not
+            String name,
+            bool emitSymbolInfo,         // specify if emit symbol info or not
             ref StackCrawlMark stackMark)
         {
             if (name == null)
@@ -489,7 +489,7 @@ namespace System.Reflection.Emit
                 writer = SymWrapperCore.SymWriter.CreateSymWriter();
 
                 String fileName = "Unused"; // this symfile is never written to disk so filename does not matter.
-                
+
                 // Pass the "real" module to the VM
                 pInternalSymWriter = ModuleBuilder.nCreateISymWriterForDynamicModule(dynModule.InternalModule, fileName);
 
@@ -509,14 +509,14 @@ namespace System.Reflection.Emit
             return dynModule;
         } // DefineDynamicModuleInternalNoLock
 
-#endregion
+        #endregion
 
         internal void CheckContext(params Type[][] typess)
         {
             if (typess == null)
                 return;
-            
-            foreach(Type[] types in typess)
+
+            foreach (Type[] types in typess)
                 if (types != null)
                     CheckContext(types);
         }
@@ -525,7 +525,7 @@ namespace System.Reflection.Emit
         {
             if (types == null)
                 return;
-        
+
             foreach (Type type in types)
             {
                 if (type == null)
@@ -582,27 +582,27 @@ namespace System.Reflection.Emit
         {
             return InternalAssembly.GetManifestResourceNames();
         }
-        
+
         public override FileStream GetFile(String name)
         {
             return InternalAssembly.GetFile(name);
         }
-        
+
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             return InternalAssembly.GetFiles(getResourceModules);
         }
-        
+
         public override Stream GetManifestResourceStream(Type type, String name)
         {
             return InternalAssembly.GetManifestResourceStream(type, name);
         }
-        
+
         public override Stream GetManifestResourceStream(String name)
         {
             return InternalAssembly.GetManifestResourceStream(name);
         }
-                      
+
         public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             return InternalAssembly.GetManifestResourceInfo(resourceName);
@@ -623,7 +623,7 @@ namespace System.Reflection.Emit
                 return InternalAssembly.ImageRuntimeVersion;
             }
         }
-        
+
         public override String CodeBase
         {
             get
@@ -634,9 +634,9 @@ namespace System.Reflection.Emit
 
         // Override the EntryPoint method on Assembly.
         // This doesn't need to be synchronized because it is simple enough
-        public override MethodInfo EntryPoint 
+        public override MethodInfo EntryPoint
         {
-            get 
+            get
             {
                 return m_assemblyData.m_entryPointMethod;
             }
@@ -735,7 +735,8 @@ namespace System.Reflection.Emit
 
         public override bool IsDynamic
         {
-            get {
+            get
+            {
                 return true;
             }
         }
@@ -748,16 +749,16 @@ namespace System.Reflection.Emit
         *
         **********************************************/
         public ModuleBuilder GetDynamicModule(
-            String      name)                   // the name of module for the look up
+            String name)                   // the name of module for the look up
         {
-            lock(SyncRoot)
+            lock (SyncRoot)
             {
                 return GetDynamicModuleNoLock(name);
             }
         }
 
         private ModuleBuilder GetDynamicModuleNoLock(
-            String      name)                   // the name of module for the look up
+            String name)                   // the name of module for the look up
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -769,7 +770,7 @@ namespace System.Reflection.Emit
             int size = m_assemblyData.m_moduleBuilderList.Count;
             for (int i = 0; i < size; i++)
             {
-                ModuleBuilder moduleBuilder = (ModuleBuilder) m_assemblyData.m_moduleBuilderList[i];
+                ModuleBuilder moduleBuilder = (ModuleBuilder)m_assemblyData.m_moduleBuilderList[i];
                 if (moduleBuilder.m_moduleData.m_strModuleName.Equals(name))
                 {
                     return moduleBuilder;
@@ -789,8 +790,8 @@ namespace System.Reflection.Emit
             if (binaryAttribute == null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
             Contract.EndContractBlock();
-    
-            lock(SyncRoot)
+
+            lock (SyncRoot)
             {
                 SetCustomAttributeNoLock(con, binaryAttribute);
             }
@@ -825,7 +826,7 @@ namespace System.Reflection.Emit
             }
             Contract.EndContractBlock();
 
-            lock(SyncRoot)
+            lock (SyncRoot)
             {
                 SetCustomAttributeNoLock(customBuilder);
             }
@@ -834,7 +835,7 @@ namespace System.Reflection.Emit
         private void SetCustomAttributeNoLock(CustomAttributeBuilder customBuilder)
         {
             customBuilder.CreateCustomAttribute(
-                m_manifestModuleBuilder, 
+                m_manifestModuleBuilder,
                 AssemblyBuilderData.m_tkAssembly);          // This is the AssemblyDef token 
 
             // Track the CA for persistence
@@ -849,11 +850,11 @@ namespace System.Reflection.Emit
          * Private methods
          * 
          **********************************************/
-    
+
         /**********************************************
          * Make a private constructor so these cannot be constructed externally.
          * @internonly
          **********************************************/
-        private AssemblyBuilder() {}
+        private AssemblyBuilder() { }
     }
 }

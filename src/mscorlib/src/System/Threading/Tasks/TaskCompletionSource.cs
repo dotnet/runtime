@@ -131,7 +131,7 @@ namespace System.Threading.Tasks
         {
             // Spin wait until the completion is finalized by another thread.
             var sw = new SpinWait();
-            while (!m_task.IsCompleted) 
+            while (!m_task.IsCompleted)
                 sw.SpinOnce();
         }
 
@@ -185,7 +185,7 @@ namespace System.Threading.Tasks
         public bool TrySetException(IEnumerable<Exception> exceptions)
         {
             if (exceptions == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exceptions);
-            
+
             List<Exception> defensiveCopy = new List<Exception>();
             foreach (Exception e in exceptions)
             {
@@ -346,7 +346,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetCanceled()
         {
-            if(!TrySetCanceled())
+            if (!TrySetCanceled())
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
         }
     }

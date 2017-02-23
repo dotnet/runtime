@@ -14,9 +14,10 @@
 =============================================================================*/
 
 
+using System.Runtime.InteropServices;
+
 namespace System.Threading
 {
-    using System.Runtime.InteropServices;
     [ComVisibleAttribute(false)]
     public enum EventResetMode
     {

@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.Serialization;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Runtime.Serialization;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     public sealed class EncoderExceptionFallback : EncoderFallback
     {
@@ -49,7 +49,7 @@ namespace System.Text
 
     public sealed class EncoderExceptionFallbackBuffer : EncoderFallbackBuffer
     {
-        public EncoderExceptionFallbackBuffer(){}
+        public EncoderExceptionFallbackBuffer() { }
         public override bool Fallback(char charUnknown, int index)
         {
             // Fall back our char
@@ -106,10 +106,10 @@ namespace System.Text
     [Serializable]
     public sealed class EncoderFallbackException : ArgumentException
     {
-        char    charUnknown;
-        char    charUnknownHigh;
-        char    charUnknownLow;
-        int     index;
+        private char charUnknown;
+        private char charUnknownHigh;
+        private char charUnknownLow;
+        private int index;
 
         public EncoderFallbackException()
             : base(Environment.GetResourceString("Arg_ArgumentException"))
@@ -197,7 +197,7 @@ namespace System.Text
         // Return true if the unknown character is a surrogate pair.
         public bool IsUnknownSurrogate()
         {
-            return (this.charUnknownHigh != '\0');
+            return (charUnknownHigh != '\0');
         }
     }
 }

@@ -13,7 +13,7 @@
 =============================================================================*/
 
 namespace System.Runtime.InteropServices
-{    
+{
     using System;
     using System.Collections.Generic;
     using System.Reflection;
@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices
     [Serializable]
     public enum CustomQueryInterfaceMode
     {
-        Ignore  = 0,
+        Ignore = 0,
         Allow = 1
     }
 
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
     //========================================================================
 
     public static partial class Marshal
-    { 
+    {
         //====================================================================
         // Defines used inside the Marshal class.
         //====================================================================
@@ -101,10 +101,10 @@ namespace System.Runtime.InteropServices
         // The name, title and description of the assembly that will contain 
         // the dynamically generated interop types. 
         //====================================================================
-        private const String s_strConvertedTypeInfoAssemblyName   = "InteropDynamicTypes";
-        private const String s_strConvertedTypeInfoAssemblyTitle  = "Interop Dynamic Types";
-        private const String s_strConvertedTypeInfoAssemblyDesc   = "Type dynamically generated from ITypeInfo's";
-        private const String s_strConvertedTypeInfoNameSpace      = "InteropDynamicTypes";
+        private const String s_strConvertedTypeInfoAssemblyName = "InteropDynamicTypes";
+        private const String s_strConvertedTypeInfoAssemblyTitle = "Interop Dynamic Types";
+        private const String s_strConvertedTypeInfoAssemblyDesc = "Type dynamically generated from ITypeInfo's";
+        private const String s_strConvertedTypeInfoNameSpace = "InteropDynamicTypes";
 
 
         //====================================================================
@@ -112,22 +112,27 @@ namespace System.Runtime.InteropServices
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetSystemMaxDBCSCharSize();
-        
+
         unsafe public static String PtrToStringAnsi(IntPtr ptr)
         {
-            if (IntPtr.Zero == ptr) {
+            if (IntPtr.Zero == ptr)
+            {
                 return null;
             }
-            else if (IsWin32Atom(ptr)) {
+            else if (IsWin32Atom(ptr))
+            {
                 return null;
             }
-            else {
+            else
+            {
                 int nb = Win32Native.lstrlenA(ptr);
-                if( nb == 0) {
+                if (nb == 0)
+                {
                     return string.Empty;
                 }
-                else {
-                    return new String((sbyte *)ptr);
+                else
+                {
+                    return new String((sbyte*)ptr);
                 }
             }
         }
@@ -139,7 +144,7 @@ namespace System.Runtime.InteropServices
             if (len < 0)
                 throw new ArgumentException(null, nameof(len));
 
-            return new String((sbyte *)ptr, 0, len); 
+            return new String((sbyte*)ptr, 0, len);
         }
 
         unsafe public static String PtrToStringUni(IntPtr ptr, int len)
@@ -149,28 +154,31 @@ namespace System.Runtime.InteropServices
             if (len < 0)
                 throw new ArgumentException(null, nameof(len));
 
-            return new String((char *)ptr, 0, len);
+            return new String((char*)ptr, 0, len);
         }
-    
+
         public static String PtrToStringAuto(IntPtr ptr, int len)
         {
             // Ansi platforms are no longer supported
             return PtrToStringUni(ptr, len);
-        }    
-        
+        }
+
         unsafe public static String PtrToStringUni(IntPtr ptr)
         {
-            if (IntPtr.Zero == ptr) {
+            if (IntPtr.Zero == ptr)
+            {
                 return null;
             }
-            else if (IsWin32Atom(ptr)) {
+            else if (IsWin32Atom(ptr))
+            {
                 return null;
-            } 
-            else {
-                return new String((char *)ptr);
+            }
+            else
+            {
+                return new String((char*)ptr);
             }
         }
-        
+
         public static String PtrToStringAuto(IntPtr ptr)
         {
             // Ansi platforms are no longer supported
@@ -183,7 +191,7 @@ namespace System.Runtime.InteropServices
             return PtrToStringUTF8(ptr, nbBytes);
         }
 
-        unsafe public static String PtrToStringUTF8(IntPtr ptr,int byteLen)
+        unsafe public static String PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             if (byteLen < 0)
             {
@@ -285,7 +293,7 @@ namespace System.Runtime.InteropServices
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
-            
+
             FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (f == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_OffsetOfFieldNotFound", t.FullName), nameof(fieldName));
@@ -322,27 +330,27 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Copy blocks from CLR arrays to native memory.
         //====================================================================
-        public static void Copy(int[]     source, int startIndex, IntPtr destination, int length)
+        public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
-        public static void Copy(char[]    source, int startIndex, IntPtr destination, int length)
+        public static void Copy(char[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
-        public static void Copy(short[]   source, int startIndex, IntPtr destination, int length)
+        public static void Copy(short[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
-        public static void Copy(long[]    source, int startIndex, IntPtr destination, int length)
+        public static void Copy(long[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
-        public static void Copy(float[]   source, int startIndex, IntPtr destination, int length)
+        public static void Copy(float[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
-        public static void Copy(double[]  source, int startIndex, IntPtr destination, int length)
+        public static void Copy(double[] source, int startIndex, IntPtr destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
@@ -360,27 +368,27 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Copy blocks from native memory to CLR arrays
         //====================================================================
-        public static void Copy(IntPtr source, int[]     destination, int startIndex, int length)
+        public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
-        public static void Copy(IntPtr source, char[]    destination, int startIndex, int length)
+        public static void Copy(IntPtr source, char[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
-        public static void Copy(IntPtr source, short[]   destination, int startIndex, int length)
+        public static void Copy(IntPtr source, short[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
-        public static void Copy(IntPtr source, long[]    destination, int startIndex, int length)
+        public static void Copy(IntPtr source, long[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
-        public static void Copy(IntPtr source, float[]   destination, int startIndex, int length)
+        public static void Copy(IntPtr source, float[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
-        public static void Copy(IntPtr source, double[]  destination, int startIndex, int length)
+        public static void Copy(IntPtr source, double[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
@@ -407,7 +415,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 return *addr;
             }
             catch (NullReferenceException)
@@ -419,29 +427,29 @@ namespace System.Runtime.InteropServices
 
         public static byte ReadByte(IntPtr ptr)
         {
-            return ReadByte(ptr,0);
+            return ReadByte(ptr, 0);
         }
 
-        public static short ReadInt16([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
+        public static short ReadInt16([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
         }
- 
+
         public static unsafe short ReadInt16(IntPtr ptr, int ofs)
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x1) == 0)
                 {
                     // aligned read
-                    return *((short *)addr);
+                    return *((short*)addr);
                 }
                 else
                 {
                     // unaligned read
                     short val;
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     valPtr[0] = addr[0];
                     valPtr[1] = addr[1];
                     return val;
@@ -459,26 +467,26 @@ namespace System.Runtime.InteropServices
             return ReadInt16(ptr, 0);
         }
 
-        public static int ReadInt32([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
+        public static int ReadInt32([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
         }
- 
+
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x3) == 0)
                 {
                     // aligned read
-                    return *((int *)addr);
+                    return *((int*)addr);
                 }
                 else
                 {
                     // unaligned read
                     int val;
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     valPtr[0] = addr[0];
                     valPtr[1] = addr[1];
                     valPtr[2] = addr[2];
@@ -492,40 +500,40 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
         }
-    
+
         public static int ReadInt32(IntPtr ptr)
         {
-            return ReadInt32(ptr,0);
+            return ReadInt32(ptr, 0);
         }
-       
-        public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
+
+        public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            #if BIT64
-                return (IntPtr) ReadInt64(ptr, ofs);
-            #else // 32
+#if BIT64
+            return (IntPtr)ReadInt64(ptr, ofs);
+#else // 32
                 return (IntPtr) ReadInt32(ptr, ofs);
-            #endif
+#endif
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
-            #if BIT64
-                return (IntPtr) ReadInt64(ptr, ofs);
-            #else // 32
+#if BIT64
+            return (IntPtr)ReadInt64(ptr, ofs);
+#else // 32
                 return (IntPtr) ReadInt32(ptr, ofs);
-            #endif
-        }
-    
-        public static IntPtr ReadIntPtr(IntPtr ptr)
-        {
-            #if BIT64
-                return (IntPtr) ReadInt64(ptr, 0);
-            #else // 32
-                return (IntPtr) ReadInt32(ptr, 0);
-            #endif
+#endif
         }
 
-        public static long ReadInt64([MarshalAs(UnmanagedType.AsAny),In] Object ptr, int ofs)
+        public static IntPtr ReadIntPtr(IntPtr ptr)
+        {
+#if BIT64
+            return (IntPtr)ReadInt64(ptr, 0);
+#else // 32
+                return (IntPtr) ReadInt32(ptr, 0);
+#endif
+        }
+
+        public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
             throw new PlatformNotSupportedException();
         }
@@ -534,17 +542,17 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x7) == 0)
                 {
                     // aligned read
-                    return *((long *)addr);
+                    return *((long*)addr);
                 }
                 else
                 {
                     // unaligned read
                     long val;
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     valPtr[0] = addr[0];
                     valPtr[1] = addr[1];
                     valPtr[2] = addr[2];
@@ -562,13 +570,13 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
         }
-    
+
         public static long ReadInt64(IntPtr ptr)
         {
-            return ReadInt64(ptr,0);
+            return ReadInt64(ptr, 0);
         }
-    
-    
+
+
         //====================================================================
         // Write to memory
         //====================================================================
@@ -576,7 +584,7 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 *addr = val;
             }
             catch (NullReferenceException)
@@ -586,7 +594,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteByte([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, byte val)
+        public static void WriteByte([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, byte val)
         {
             throw new PlatformNotSupportedException();
         }
@@ -595,21 +603,21 @@ namespace System.Runtime.InteropServices
         {
             WriteByte(ptr, 0, val);
         }
-    
+
         public static unsafe void WriteInt16(IntPtr ptr, int ofs, short val)
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x1) == 0)
                 {
                     // aligned write
-                    *((short *)addr) = val;
+                    *((short*)addr) = val;
                 }
                 else
                 {
                     // unaligned write
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     addr[0] = valPtr[0];
                     addr[1] = valPtr[1];
                 }
@@ -621,7 +629,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt16([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, short val)
+        public static void WriteInt16([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, short val)
         {
             throw new PlatformNotSupportedException();
         }
@@ -629,37 +637,37 @@ namespace System.Runtime.InteropServices
         public static void WriteInt16(IntPtr ptr, short val)
         {
             WriteInt16(ptr, 0, val);
-        }    
-    
+        }
+
         public static void WriteInt16(IntPtr ptr, int ofs, char val)
         {
             WriteInt16(ptr, ofs, (short)val);
         }
-        
-        public static void WriteInt16([In,Out]Object ptr, int ofs, char val)
+
+        public static void WriteInt16([In, Out]Object ptr, int ofs, char val)
         {
             WriteInt16(ptr, ofs, (short)val);
         }
-    
+
         public static void WriteInt16(IntPtr ptr, char val)
         {
             WriteInt16(ptr, 0, (short)val);
         }
-    
+
         public static unsafe void WriteInt32(IntPtr ptr, int ofs, int val)
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x3) == 0)
                 {
                     // aligned write
-                    *((int *)addr) = val;
+                    *((int*)addr) = val;
                 }
                 else
                 {
                     // unaligned write
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     addr[0] = valPtr[0];
                     addr[1] = valPtr[1];
                     addr[2] = valPtr[2];
@@ -673,57 +681,57 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt32([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, int val)
+        public static void WriteInt32([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, int val)
         {
             throw new PlatformNotSupportedException();
         }
 
         public static void WriteInt32(IntPtr ptr, int val)
         {
-            WriteInt32(ptr,0,val);
-        }    
-    
+            WriteInt32(ptr, 0, val);
+        }
+
         public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
         {
-            #if BIT64
-                WriteInt64(ptr, ofs, (long)val);
-            #else // 32
+#if BIT64
+            WriteInt64(ptr, ofs, (long)val);
+#else // 32
                 WriteInt32(ptr, ofs, (int)val);
-            #endif
+#endif
         }
-        
-        public static void WriteIntPtr([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, IntPtr val)
+
+        public static void WriteIntPtr([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, IntPtr val)
         {
-            #if BIT64
-                WriteInt64(ptr, ofs, (long)val);
-            #else // 32
+#if BIT64
+            WriteInt64(ptr, ofs, (long)val);
+#else // 32
                 WriteInt32(ptr, ofs, (int)val);
-            #endif
+#endif
         }
-        
+
         public static void WriteIntPtr(IntPtr ptr, IntPtr val)
         {
-            #if BIT64
-                WriteInt64(ptr, 0, (long)val);
-            #else // 32
+#if BIT64
+            WriteInt64(ptr, 0, (long)val);
+#else // 32
                 WriteInt32(ptr, 0, (int)val);
-            #endif
+#endif
         }
 
         public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
         {
             try
             {
-                byte *addr = (byte *)ptr + ofs;
+                byte* addr = (byte*)ptr + ofs;
                 if ((unchecked((int)addr) & 0x7) == 0)
                 {
                     // aligned write
-                    *((long *)addr) = val;
+                    *((long*)addr) = val;
                 }
                 else
                 {
                     // unaligned write
-                    byte *valPtr = (byte *)&val;
+                    byte* valPtr = (byte*)&val;
                     addr[0] = valPtr[0];
                     addr[1] = valPtr[1];
                     addr[2] = valPtr[2];
@@ -741,7 +749,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt64([MarshalAs(UnmanagedType.AsAny),In,Out] Object ptr, int ofs, long val)
+        public static void WriteInt64([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, long val)
         {
             throw new PlatformNotSupportedException();
         }
@@ -750,21 +758,21 @@ namespace System.Runtime.InteropServices
         {
             WriteInt64(ptr, 0, val);
         }
-    
-    
+
+
         //====================================================================
         // GetLastWin32Error
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetLastWin32Error();
-    
+
 
         //====================================================================
         // SetLastWin32Error
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void SetLastWin32Error(int error);
-    
+
 
         //====================================================================
         // GetHRForLastWin32Error
@@ -784,7 +792,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void Prelink(MethodInfo m)
         {
-            if (m == null) 
+            if (m == null)
                 throw new ArgumentNullException(nameof(m));
             Contract.EndContractBlock();
 
@@ -795,7 +803,7 @@ namespace System.Runtime.InteropServices
 
             InternalPrelink(rmi);
         }
-    
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
         private static extern void InternalPrelink(IRuntimeMethodInfo m);
 
@@ -806,15 +814,15 @@ namespace System.Runtime.InteropServices
             Contract.EndContractBlock();
 
             MethodInfo[] mi = c.GetMethods();
-            if (mi != null) 
+            if (mi != null)
             {
-                for (int i = 0; i < mi.Length; i++) 
+                for (int i = 0; i < mi.Length; i++)
                 {
                     Prelink(mi[i]);
                 }
             }
         }
-    
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
@@ -844,7 +852,7 @@ namespace System.Runtime.InteropServices
         {
             PtrToStructure(ptr, (object)structure);
         }
-        
+
         //====================================================================
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
@@ -917,10 +925,10 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException(nameof(m),Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException(nameof(m), Environment.GetResourceString("Argument_MustBeRuntimeModule"));
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
-        }    
+        }
 
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurity]
@@ -952,14 +960,14 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
                 return GetExceptionForHRInternal(errorCode, IntPtr.Zero);
-            else 
+            else
                 return null;
         }
         public static Exception GetExceptionForHR(int errorCode, IntPtr errorInfo)
         {
             if (errorCode < 0)
                 return GetExceptionForHRInternal(errorCode, errorInfo);
-            else 
+            else
                 return null;
         }
 
@@ -987,7 +995,8 @@ namespace System.Runtime.InteropServices
 
             IntPtr pNewMem = Win32Native.LocalAlloc_NoSafeHandle(LMEM_FIXED, unchecked(numBytes));
 
-            if (pNewMem == IntPtr.Zero) {
+            if (pNewMem == IntPtr.Zero)
+            {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
@@ -997,11 +1006,13 @@ namespace System.Runtime.InteropServices
         {
             return AllocHGlobal((IntPtr)cb);
         }
-        
+
         public static void FreeHGlobal(IntPtr hglobal)
         {
-            if (IsNotWin32Atom(hglobal)) {
-                if (IntPtr.Zero != Win32Native.LocalFree(hglobal)) {
+            if (IsNotWin32Atom(hglobal))
+            {
+                if (IntPtr.Zero != Win32Native.LocalFree(hglobal))
+                {
                     ThrowExceptionForHR(GetHRForLastWin32Error());
                 }
             }
@@ -1010,7 +1021,8 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             IntPtr pNewMem = Win32Native.LocalReAlloc(pv, cb, LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero) {
+            if (pNewMem == IntPtr.Zero)
+            {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
@@ -1036,18 +1048,18 @@ namespace System.Runtime.InteropServices
 
                 UIntPtr len = new UIntPtr((uint)nb);
                 IntPtr hglobal = Win32Native.LocalAlloc_NoSafeHandle(LMEM_FIXED, len);
-                
+
                 if (hglobal == IntPtr.Zero)
                 {
                     throw new OutOfMemoryException();
                 }
                 else
                 {
-                    s.ConvertToAnsi((byte *)hglobal, nb, false, false);
+                    s.ConvertToAnsi((byte*)hglobal, nb, false, false);
                     return hglobal;
                 }
             }
-        }    
+        }
 
         unsafe public static IntPtr StringToHGlobalUni(String s)
         {
@@ -1065,7 +1077,7 @@ namespace System.Runtime.InteropServices
 
                 UIntPtr len = new UIntPtr((uint)nb);
                 IntPtr hglobal = Win32Native.LocalAlloc_NoSafeHandle(LMEM_FIXED, len);
-                
+
                 if (hglobal == IntPtr.Zero)
                 {
                     throw new OutOfMemoryException();
@@ -1105,7 +1117,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetHRForException_WinRT(Exception e);
 
-		internal static readonly Guid ManagedNameGuid = new Guid("{0F21F359-AB84-41E8-9A78-36D110E6D2F9}"); 
+        internal static readonly Guid ManagedNameGuid = new Guid("{0F21F359-AB84-41E8-9A78-36D110E6D2F9}");
 
         //====================================================================
         // Given a managed object that wraps an ITypeInfo, return its name
@@ -1115,7 +1127,7 @@ namespace System.Runtime.InteropServices
             if (typeInfo == null)
                 throw new ArgumentNullException(nameof(typeInfo));
             Contract.EndContractBlock();
-            
+
             String strTypeLibName = null;
             String strDocString = null;
             int dwHelpContext = 0;
@@ -1162,7 +1174,7 @@ namespace System.Runtime.InteropServices
         {
             throw new PlatformNotSupportedException();
         }
-        
+
 #if FEATURE_COMINTEROP
 
         //====================================================================
@@ -1263,7 +1275,7 @@ namespace System.Runtime.InteropServices
                 // Overflow checking
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
-                
+
                 IntPtr hglobal = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
                 if (hglobal == IntPtr.Zero)
@@ -1274,7 +1286,7 @@ namespace System.Runtime.InteropServices
                 {
                     fixed (char* firstChar = s)
                     {
-                        String.wstrcpy((char *)hglobal, firstChar, s.Length + 1);
+                        String.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
                     }
                     return hglobal;
                 }
@@ -1296,7 +1308,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr pMem = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb +1));
+                IntPtr pMem = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb + 1));
 
                 if (pMem == IntPtr.Zero)
                 {
@@ -1316,8 +1328,8 @@ namespace System.Runtime.InteropServices
         {
             // Ansi platforms are no longer supported
             return StringToCoTaskMemUni(s);
-        } 
-   
+        }
+
         unsafe public static IntPtr StringToCoTaskMemAnsi(String s)
         {
             if (s == null)
@@ -1340,7 +1352,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    s.ConvertToAnsi((byte *)hglobal, nb, false, false);
+                    s.ConvertToAnsi((byte*)hglobal, nb, false, false);
                     return hglobal;
                 }
             }
@@ -1348,7 +1360,8 @@ namespace System.Runtime.InteropServices
 
         public static void FreeCoTaskMem(IntPtr ptr)
         {
-            if (IsNotWin32Atom(ptr)) {
+            if (IsNotWin32Atom(ptr))
+            {
                 Win32Native.CoTaskMemFree(ptr);
             }
         }
@@ -1403,7 +1416,7 @@ namespace System.Runtime.InteropServices
         public static int ReleaseComObject(Object o)
         {
             __ComObject co = null;
-            
+
             // Make sure the obj is an __ComObject.
             try
             {
@@ -1413,14 +1426,14 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(o));
             }
-            
+
             return co.ReleaseSelf();
-        }    
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int InternalReleaseComObject(Object o);
 
-        
+
         //====================================================================
         // release the COM component and zombie this object
         // further usage of this Object might throw an exception
@@ -1442,11 +1455,11 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(o));
             }
-            
+
             co.FinalReleaseSelf();
 
             return 0;
-        }    
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalFinalReleaseComObject(Object o);
@@ -1537,12 +1550,12 @@ namespace System.Runtime.InteropServices
         // IUnknown Helpers
         //====================================================================
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int /* HRESULT */ QueryInterface(IntPtr /* IUnknown */ pUnk, ref Guid iid, out IntPtr ppv);    
+        public static extern int /* HRESULT */ QueryInterface(IntPtr /* IUnknown */ pUnk, ref Guid iid, out IntPtr ppv);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int /* ULONG */ AddRef(IntPtr /* IUnknown */ pUnk );
+        public static extern int /* ULONG */ AddRef(IntPtr /* IUnknown */ pUnk);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk );
+        public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void GetNativeVariantForObject(Object obj, /* VARIANT * */ IntPtr pDstNativeVariant);
@@ -1553,7 +1566,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern Object GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant );
+        public static extern Object GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
@@ -1561,13 +1574,13 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern Object[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars );
+        public static extern Object[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             object[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
             T[] result = null;
-            
+
             if (objects != null)
             {
                 result = new T[objects.Length];
@@ -1614,22 +1627,22 @@ namespace System.Runtime.InteropServices
             Contract.EndContractBlock();
 
             IList<CustomAttributeData> cas = CustomAttributeData.GetCustomAttributes(type);
-            for (int i = 0; i < cas.Count; i ++)
+            for (int i = 0; i < cas.Count; i++)
             {
                 if (cas[i].Constructor.DeclaringType == typeof(ProgIdAttribute))
                 {
                     // Retrieve the PROGID string from the ProgIdAttribute.
                     IList<CustomAttributeTypedArgument> caConstructorArgs = cas[i].ConstructorArguments;
                     Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
-                    
-                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];                    
+
+                    CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
                     Debug.Assert(progIdConstructorArg.ArgumentType == typeof(String), "progIdConstructorArg.ArgumentType == typeof(String)");
-                    
+
                     String strProgId = (String)progIdConstructorArg.Value;
-                    
+
                     if (strProgId == null)
-                        strProgId = String.Empty;    
-                    
+                        strProgId = String.Empty;
+
                     return strProgId;
                 }
             }
@@ -1673,10 +1686,10 @@ namespace System.Runtime.InteropServices
         //========================================================================
         private static IntPtr LoadLicenseManager()
         {
-            Assembly sys = Assembly.Load("System, Version="+ ThisAssembly.Version + 
+            Assembly sys = Assembly.Load("System, Version=" + ThisAssembly.Version +
                 ", Culture=neutral, PublicKeyToken=" + AssemblyRef.EcmaPublicKeyToken);
             Type t = sys.GetType("System.ComponentModel.LicenseManager");
-            if (t == null || !t.IsVisible) 
+            if (t == null || !t.IsVisible)
                 return IntPtr.Zero;
             return t.TypeHandle.Value;
         }
@@ -1705,17 +1718,17 @@ namespace System.Runtime.InteropServices
             // Validate the parameters
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
-            
+
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
             Contract.EndContractBlock();
-            
+
             if ((t as RuntimeType) == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(t));           
+                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(t));
 
             if (t.IsGenericType)
                 throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(t));
-            
+
             Type c = t.BaseType;
             if (c == null || (c != typeof(Delegate) && c != typeof(MulticastDelegate)))
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), nameof(t));
@@ -1748,12 +1761,14 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
-        public static IntPtr SecureStringToBSTR(SecureString s) {
-            if( s == null) {
+        public static IntPtr SecureStringToBSTR(SecureString s)
+        {
+            if (s == null)
+            {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
-            
+
 #if FEATURE_COMINTEROP
             return s.MarshalToBSTR();
 #else
@@ -1761,8 +1776,10 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s) {
-            if( s == null) {
+        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
+        {
+            if (s == null)
+            {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
@@ -1772,12 +1789,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
         {
-            if( s == null) {
+            if (s == null)
+            {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
-            return  s.MarshalToString(globalAlloc: false, unicode: true);
+            return s.MarshalToString(globalAlloc: false, unicode: true);
         }
 
 #if FEATURE_COMINTEROP
@@ -1806,8 +1824,10 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s) {
-            if( s == null) {
+        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
+        {
+            if (s == null)
+            {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
@@ -1815,21 +1835,25 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: false);
         }
 
-        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s) {
-            if( s == null) {
+        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
+        {
+            if (s == null)
+            {
                 throw new ArgumentNullException(nameof(s));
             }
             Contract.EndContractBlock();
 
-            return s.MarshalToString(globalAlloc: true, unicode: true);;
+            return s.MarshalToString(globalAlloc: true, unicode: true); ;
         }
 
-        public static void ZeroFreeGlobalAllocAnsi(IntPtr s) {
+        public static void ZeroFreeGlobalAllocAnsi(IntPtr s)
+        {
             Win32Native.ZeroMemory(s, (UIntPtr)(Win32Native.lstrlenA(s)));
             FreeHGlobal(s);
         }
 
-        public static void ZeroFreeGlobalAllocUnicode(IntPtr s) {
+        public static void ZeroFreeGlobalAllocUnicode(IntPtr s)
+        {
             Win32Native.ZeroMemory(s, (UIntPtr)(Win32Native.lstrlenW(s) * 2));
             FreeHGlobal(s);
         }

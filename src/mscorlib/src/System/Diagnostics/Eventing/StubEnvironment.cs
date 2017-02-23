@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing.Internal
                 return string.Format(fmt, args);
 
             string sargs = String.Empty;
-            foreach(var arg in args)
+            foreach (var arg in args)
             {
                 if (sargs != String.Empty)
                     sargs += ", ";
@@ -196,7 +196,7 @@ namespace Microsoft.Reflection
         String = 18,                // Unicode character string
     }
 #endif
-    static class ReflectionExtensions
+    internal static class ReflectionExtensions
     {
 #if (!ES_BUILD_PCL && !PROJECTN)
 

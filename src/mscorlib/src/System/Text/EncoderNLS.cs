@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Text;
+using System;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System.Runtime.Serialization;
-    using System.Text;
-    using System;
-    using System.Diagnostics.Contracts;
     // An Encoder is used to encode a sequence of blocks of characters into
     // a sequence of blocks of bytes. Following instantiation of an encoder,
     // sequential blocks of characters are converted into blocks of bytes through
@@ -24,22 +25,22 @@ namespace System.Text
     internal class EncoderNLS : Encoder, ISerializable
     {
         // Need a place for the last left over character, most of our encodings use this
-        internal char   charLeftOver;
-        
-        protected Encoding m_encoding;
-        
-        [NonSerialized] protected   bool     m_mustFlush;
-        [NonSerialized] internal    bool     m_throwOnOverflow;
-        [NonSerialized] internal    int      m_charsUsed;
+        internal char charLeftOver;
 
-#region Serialization
+        protected Encoding m_encoding;
+
+        [NonSerialized] protected bool m_mustFlush;
+        [NonSerialized] internal bool m_throwOnOverflow;
+        [NonSerialized] internal int m_charsUsed;
+
+        #region Serialization
 
         // Constructor called by serialization. called during deserialization.
         internal EncoderNLS(SerializationInfo info, StreamingContext context)
         {
             throw new NotSupportedException(
                         String.Format(
-                            System.Globalization.CultureInfo.CurrentCulture, 
+                            System.Globalization.CultureInfo.CurrentCulture,
                             Environment.GetResourceString("NotSupported_TypeCannotDeserialized"), this.GetType()));
         }
 
@@ -52,7 +53,7 @@ namespace System.Text
             info.SetType(typeof(Encoding.DefaultEncoder));
         }
 
-#endregion Serialization 
+        #endregion Serialization 
 
         internal EncoderNLS(Encoding encoding)
         {
@@ -83,7 +84,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index<0 ? nameof(index) : nameof(count)),
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (chars.Length - index < count)
@@ -130,7 +131,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? nameof(charIndex) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (chars.Length - charIndex < charCount)
@@ -151,11 +152,11 @@ namespace System.Text
 
             // Just call pointer version
             fixed (char* pChars = &chars[0])
-                fixed (byte* pBytes = &bytes[0])
+            fixed (byte* pBytes = &bytes[0])
 
-                    // Remember that charCount is # to decode, not size of array.
-                    return GetBytes(pChars + charIndex, charCount,
-                                    pBytes + byteIndex, byteCount, flush);
+                // Remember that charCount is # to decode, not size of array.
+                return GetBytes(pChars + charIndex, charCount,
+                                pBytes + byteIndex, byteCount, flush);
         }
 
         public unsafe override int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
@@ -166,7 +167,7 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -187,11 +188,11 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? nameof(charIndex) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? nameof(byteIndex) : nameof(byteCount)),
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (chars.Length - charIndex < charCount)
@@ -232,8 +233,8 @@ namespace System.Text
                 throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
                     Environment.GetResourceString("ArgumentNull_Array"));
             if (charCount < 0 || byteCount < 0)
-            throw new ArgumentOutOfRangeException((charCount<0 ? nameof(charCount) : nameof(byteCount)),
-                Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
+                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // We don't want to throw
@@ -283,6 +284,5 @@ namespace System.Text
         {
             m_mustFlush = false;
         }
-
     }
 }

@@ -353,8 +353,8 @@ namespace System.IO
             _writePos = 0;
 
             // Update the active buffer operation
-            _activeBufferOperation = HasActiveBufferOperation ? 
-                Task.WhenAll(_activeBufferOperation, flushTask) : 
+            _activeBufferOperation = HasActiveBufferOperation ?
+                Task.WhenAll(_activeBufferOperation, flushTask) :
                 flushTask;
 
             return flushTask;
@@ -1726,7 +1726,7 @@ namespace System.IO
                 return Task.CompletedTask;
             }
         }
-        
+
         private Task<int> TaskFromResultOrCache(int result)
         {
             Task<int> completedTask = _lastSynchronouslyCompletedTask;

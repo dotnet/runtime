@@ -13,26 +13,27 @@
 **
 **
 ===========================================================*/
+
+using System;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Runtime.Versioning;
+using Microsoft.Win32;
+using System.Diagnostics.Contracts;
+
 namespace System.Reflection
 {
-    using System;
-    using System.IO;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Security;
-    using System.Runtime.Versioning;
-    using Microsoft.Win32;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
-    public class StrongNameKeyPair : IDeserializationCallback, ISerializable 
+    public class StrongNameKeyPair : IDeserializationCallback, ISerializable
     {
-        private bool    _keyPairExported;
-        private byte[]  _keyPairArray;
-        private String  _keyPairContainer;
-        private byte[]  _publicKey;
+        private bool _keyPairExported;
+        private byte[] _keyPairArray;
+        private String _keyPairContainer;
+        private byte[] _publicKey;
 
         // Build key pair from file.
         public StrongNameKeyPair(FileStream keyPairFile)
@@ -60,19 +61,20 @@ namespace System.Reflection
 
             _keyPairExported = true;
         }
-        
-        protected StrongNameKeyPair (SerializationInfo info, StreamingContext context) {
-            _keyPairExported = (bool) info.GetValue("_keyPairExported", typeof(bool));
-            _keyPairArray = (byte[]) info.GetValue("_keyPairArray", typeof(byte[]));
-            _keyPairContainer = (string) info.GetValue("_keyPairContainer", typeof(string));
-            _publicKey = (byte[]) info.GetValue("_publicKey", typeof(byte[]));
+
+        protected StrongNameKeyPair(SerializationInfo info, StreamingContext context)
+        {
+            _keyPairExported = (bool)info.GetValue("_keyPairExported", typeof(bool));
+            _keyPairArray = (byte[])info.GetValue("_keyPairArray", typeof(byte[]));
+            _keyPairContainer = (string)info.GetValue("_keyPairContainer", typeof(string));
+            _publicKey = (byte[])info.GetValue("_publicKey", typeof(byte[]));
         }
 
         public StrongNameKeyPair(String keyPairContainer)
         {
             throw new PlatformNotSupportedException();
         }
-        
+
         public byte[] PublicKey
         {
             get
@@ -82,7 +84,8 @@ namespace System.Reflection
         }
 
         /// <internalonly/>
-        void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context) {
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
             info.AddValue("_keyPairExported", _keyPairExported);
             info.AddValue("_keyPairArray", _keyPairArray);
             info.AddValue("_keyPairContainer", _keyPairContainer);
@@ -90,6 +93,6 @@ namespace System.Reflection
         }
 
         /// <internalonly/>
-        void IDeserializationCallback.OnDeserialization (Object sender) {}
+        void IDeserializationCallback.OnDeserialization(Object sender) { }
     }
 }

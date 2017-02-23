@@ -10,7 +10,6 @@ internal partial class Interop
 {
     internal partial class NtDll
     {
-
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, EntryPoint = "RtlZeroMemory")]
         internal static extern void ZeroMemory(IntPtr address, UIntPtr length);
     }

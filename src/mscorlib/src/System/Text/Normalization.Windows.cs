@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Security;
+using System.Globalization;
+using System.Text;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System;
-    using System.Security;
-    using System.Globalization;
-    using System.Text;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     // This internal class wraps up our normalization behavior
 
     internal class Normalization
@@ -149,12 +149,12 @@ namespace System.Text
 
             int iError = ERROR_SUCCESS;
             bool result = nativeNormalizationIsNormalizedString(
-                                normForm, 
-                                ref iError, 
-                                strInput, 
+                                normForm,
+                                ref iError,
+                                strInput,
                                 strInput.Length);
 
-            switch(iError)
+            switch (iError)
             {
                 // Success doesn't need to do anything
                 case ERROR_SUCCESS:
@@ -164,7 +164,7 @@ namespace System.Text
                 case ERROR_INVALID_PARAMETER:
                 case ERROR_NO_UNICODE_TRANSLATION:
                     throw new ArgumentException(
-                        Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex" ),
+                        Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"),
                         nameof(strInput));
                 case ERROR_NOT_ENOUGH_MEMORY:
                     throw new OutOfMemoryException(
@@ -193,7 +193,7 @@ namespace System.Text
             {
                 if (iError == ERROR_INVALID_PARAMETER)
                     throw new ArgumentException(
-                        Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex" ),
+                        Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"),
                         nameof(strInput));
 
                 // We shouldn't really be able to get here..., guessing length is
@@ -220,18 +220,18 @@ namespace System.Text
                 cBuffer = new char[iLength];
 
                 iLength = nativeNormalizationNormalizeString(
-                                    normForm, 
+                                    normForm,
                                     ref iError,
-                                    strInput, 
-                                    strInput.Length, 
-                                    cBuffer, 
+                                    strInput,
+                                    strInput.Length,
+                                    cBuffer,
                                     cBuffer.Length);
-                
+
                 if (iError == ERROR_SUCCESS)
                     break;
 
                 // Could have an error (actually it'd be quite hard to have an error here)
-                switch(iError)
+                switch (iError)
                 {
                     // Do appropriate stuff for the individual errors:
                     case ERROR_INSUFFICIENT_BUFFER:
@@ -242,7 +242,7 @@ namespace System.Text
                     case ERROR_NO_UNICODE_TRANSLATION:
                         // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
                         throw new ArgumentException(
-                            Environment.GetResourceString("Argument_InvalidCharSequence", iLength ),
+                            Environment.GetResourceString("Argument_InvalidCharSequence", iLength),
                             nameof(strInput));
                     case ERROR_NOT_ENOUGH_MEMORY:
                         throw new OutOfMemoryException(

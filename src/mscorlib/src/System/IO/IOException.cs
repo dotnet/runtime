@@ -16,8 +16,8 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace System.IO {
-
+namespace System.IO
+{
     [Serializable]
     public class IOException : SystemException
     {
@@ -32,36 +32,42 @@ namespace System.IO {
         [NonSerialized]
         private String _maybeFullPath;  // For debuggers on partial trust code
 
-        public IOException() 
-            : base(Environment.GetResourceString("Arg_IOException")) {
-            SetErrorCode(__HResults.COR_E_IO);
-        }
-        
-        public IOException(String message) 
-            : base(message) {
+        public IOException()
+            : base(Environment.GetResourceString("Arg_IOException"))
+        {
             SetErrorCode(__HResults.COR_E_IO);
         }
 
-        public IOException(String message, int hresult) 
-            : base(message) {
+        public IOException(String message)
+            : base(message)
+        {
+            SetErrorCode(__HResults.COR_E_IO);
+        }
+
+        public IOException(String message, int hresult)
+            : base(message)
+        {
             SetErrorCode(hresult);
         }
 
         // Adding this for debuggers when looking at exceptions in partial
         // trust code that may not have interesting path information in
         // the exception message.
-        internal IOException(String message, int hresult, String maybeFullPath) 
-            : base(message) {
+        internal IOException(String message, int hresult, String maybeFullPath)
+            : base(message)
+        {
             SetErrorCode(hresult);
             _maybeFullPath = maybeFullPath;
         }
-        
-        public IOException(String message, Exception innerException) 
-            : base(message, innerException) {
+
+        public IOException(String message, Exception innerException)
+            : base(message, innerException)
+        {
             SetErrorCode(__HResults.COR_E_IO);
         }
 
-        protected IOException(SerializationInfo info, StreamingContext context) : base (info, context) {
+        protected IOException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

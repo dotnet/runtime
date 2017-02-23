@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Text;
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System.Runtime.Serialization;
-    using System.Text;
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     // An Encoder is used to encode a sequence of blocks of characters into
     // a sequence of blocks of bytes. Following instantiation of an encoder,
     // sequential blocks of characters are converted into blocks of bytes through
@@ -23,10 +24,10 @@ namespace System.Text
     [Serializable]
     public abstract class Encoder
     {
-        internal EncoderFallback         m_fallback = null;
+        internal EncoderFallback m_fallback = null;
 
         [NonSerialized]
-        internal EncoderFallbackBuffer   m_fallbackBuffer = null;
+        internal EncoderFallbackBuffer m_fallbackBuffer = null;
 
         internal void SerializeEncoder(SerializationInfo info)
         {
@@ -98,7 +99,7 @@ namespace System.Text
         // We avoid GetMaxByteCount() because a) we can't call the base encoder and b) it might be really big.
         public virtual void Reset()
         {
-            char[] charTemp = {};
+            char[] charTemp = { };
             byte[] byteTemp = new byte[GetByteCount(charTemp, 0, 0, true)];
             GetBytes(charTemp, 0, 0, byteTemp, 0, true);
             if (m_fallbackBuffer != null)
@@ -187,7 +188,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount<0 ? nameof(charCount) : nameof(byteCount)),
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -244,11 +245,11 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? nameof(charIndex) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? nameof(byteIndex) : nameof(byteCount)),
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (chars.Length - charIndex < charCount)
@@ -300,10 +301,10 @@ namespace System.Text
             if (bytes == null || chars == null)
                 throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
                     Environment.GetResourceString("ArgumentNull_Array"));
-                if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount<0 ? nameof(charCount) : nameof(byteCount)),
+            if (charCount < 0 || byteCount < 0)
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
-                Contract.EndContractBlock();
+            Contract.EndContractBlock();
 
             // Get ready to do it
             charsUsed = charCount;

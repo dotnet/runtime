@@ -6,13 +6,13 @@
 
 // #define DISPLAY_DEBUG_INFO
 
-namespace System {
-
+namespace System
+{
     using System;
     using System.Runtime.InteropServices;
     using System.Reflection;
     using Microsoft.Win32;
-    using CultureInfo = System.Globalization.CultureInfo;    
+    using CultureInfo = System.Globalization.CultureInfo;
 
     // Made serializable in anticipation of this class eventually having state.
     [Serializable]
@@ -25,16 +25,16 @@ namespace System {
             Variant myValue = new Variant(value);
             if (cultureInfo == null)
                 cultureInfo = CultureInfo.CurrentCulture;
-                
-    #if DISPLAY_DEBUG_INFO      
+
+#if DISPLAY_DEBUG_INFO
             Console.WriteLine("In OleAutBinder::ChangeType converting variant of type: {0} to type: {1}", myValue.VariantType, type.Name);
-    #endif
+#endif
 
             if (type.IsByRef)
             {
-    #if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Stripping byref from the type to convert to.");
-    #endif      
+#endif
                 type = type.GetElementType();
             }
 
@@ -42,9 +42,9 @@ namespace System {
             // need the OLEAUT change type, we can just use the normal COM+ mechanisms.
             if (!type.IsPrimitive && type.IsInstanceOfType(value))
             {
-    #if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Source variant can be assigned to destination type");
-    #endif      
+#endif
                 return value;
             }
 
@@ -53,9 +53,9 @@ namespace System {
             // Handle converting primitives to enums.
             if (type.IsEnum && srcType.IsPrimitive)
             {
-    #if DISPLAY_DEBUG_INFO      
+#if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Converting primitive to enum");
-    #endif      
+#endif
                 return Enum.Parse(type, value.ToString());
             }
 
@@ -78,7 +78,7 @@ namespace System {
 #if DISPLAY_DEBUG_INFO      
             catch(NotSupportedException e)
 #else
-            catch(NotSupportedException)
+            catch (NotSupportedException)
 #endif      
             {
 #if DISPLAY_DEBUG_INFO      

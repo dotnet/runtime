@@ -1123,7 +1123,7 @@ namespace System.Runtime.CompilerServices
         ///</summary>
         internal static Task TryGetContinuationTask(Action action)
         {
-            if (action != null) 
+            if (action != null)
             {
                 var asWrapper = action.Target as ContinuationWrapper;
                 if (asWrapper != null)

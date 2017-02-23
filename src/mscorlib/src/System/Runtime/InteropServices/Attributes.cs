@@ -4,17 +4,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-namespace System.Runtime.InteropServices{
 
-    using System;
-    using System.Reflection;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
+namespace System.Runtime.InteropServices
+{
     [AttributeUsage(AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
     public sealed class UnmanagedFunctionPointerAttribute : Attribute
     {
-        CallingConvention m_callingConvention;
+        private CallingConvention m_callingConvention;
 
         public UnmanagedFunctionPointerAttribute(CallingConvention callingConvention) { m_callingConvention = callingConvention; }
 
@@ -118,7 +119,6 @@ namespace System.Runtime.InteropServices{
         public ClassInterfaceAttribute(ClassInterfaceType classInterfaceType)
         {
             _val = classInterfaceType;
-
         }
         public ClassInterfaceAttribute(short classInterfaceType)
         {
@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices{
         {
             _val = lcid;
         }
-        public int Value { get {return _val;} }
+        public int Value { get { return _val; } }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
@@ -157,10 +157,10 @@ namespace System.Runtime.InteropServices{
         {
             _val = progId;
         }
-        public String Value { get {return _val;} }
+        public String Value { get { return _val; } }
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = true)] 
+    [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class ComSourceInterfacesAttribute : Attribute
     {
         internal String _val;
@@ -184,8 +184,8 @@ namespace System.Runtime.InteropServices{
         {
             _val = sourceInterface1.FullName + "\0" + sourceInterface2.FullName + "\0" + sourceInterface3.FullName + "\0" + sourceInterface4.FullName;
         }
-        public String Value { get {return _val;} }  
-    }    
+        public String Value { get { return _val; } }
+    }
 
     [Serializable]
     public enum VarEnum
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices{
         VT_CY = 6,
         VT_DATE = 7,
         VT_BSTR = 8,
-        VT_DISPATCH         = 9,
+        VT_DISPATCH = 9,
         VT_ERROR = 10,
         VT_BOOL = 11,
         VT_VARIANT = 12,
@@ -264,7 +264,7 @@ namespace System.Runtime.InteropServices{
 
         Currency = 0xf,         // A currency
 
-        BStr             = 0x13,        // OLE Unicode BSTR
+        BStr = 0x13,        // OLE Unicode BSTR
 
         LPStr = 0x14,        // Ptr to SBCS string
 
@@ -276,13 +276,13 @@ namespace System.Runtime.InteropServices{
 
         IUnknown = 0x19,        // COM IUnknown pointer. 
 
-        IDispatch        = 0x1a,        // COM IDispatch pointer
+        IDispatch = 0x1a,        // COM IDispatch pointer
 
         Struct = 0x1b,        // Structure
 
-        Interface        = 0x1c,        // COM interface
+        Interface = 0x1c,        // COM interface
 
-        SafeArray        = 0x1d,        // OLE SafeArray
+        SafeArray = 0x1d,        // OLE SafeArray
 
         ByValArray = 0x1e,        // Array of fixed size (only valid in structs)
 
@@ -290,13 +290,13 @@ namespace System.Runtime.InteropServices{
 
         SysUInt = 0x20,
 
-        VBByRefStr       = 0x22,         
+        VBByRefStr = 0x22,
 
-        AnsiBStr         = 0x23,        // OLE BSTR containing SBCS characters
+        AnsiBStr = 0x23,        // OLE BSTR containing SBCS characters
 
-        TBStr            = 0x24,        // Ptr to OS preferred (SBCS/Unicode) BSTR
+        TBStr = 0x24,        // Ptr to OS preferred (SBCS/Unicode) BSTR
 
-        VariantBool      = 0x25,        // OLE defined BOOLEAN (2 bytes, true == -1, false == 0)
+        VariantBool = 0x25,        // OLE defined BOOLEAN (2 bytes, true == -1, false == 0)
 
         FunctionPtr = 0x26,        // Function pointer
 
@@ -306,15 +306,15 @@ namespace System.Runtime.InteropServices{
 
         LPStruct = 0x2b,        // Pointer to a structure
 
-        CustomMarshaler  = 0x2c,        
+        CustomMarshaler = 0x2c,
 
         Error = 0x2d,
 
-        IInspectable     = 0x2e,
-        
-        HString          = 0x2f,        // Windows Runtime HSTRING
+        IInspectable = 0x2e,
 
-        LPUTF8Str        = 0x30,        // UTF8 string
+        HString = 0x2f,        // Windows Runtime HSTRING
+
+        LPUTF8Str = 0x30,        // UTF8 string
     }
 
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.ReturnValue, Inherited = false)]
@@ -403,11 +403,11 @@ namespace System.Runtime.InteropServices{
         public UnmanagedType Value { get { return _val; } }
 
         // Fields used with SubType = SafeArray.
-        public VarEnum            SafeArraySubType;
-        public Type               SafeArrayUserDefinedSubType;
+        public VarEnum SafeArraySubType;
+        public Type SafeArrayUserDefinedSubType;
 
         // Field used with iid_is attribute (interface pointers).
-        public int                IidParameterIndex;
+        public int IidParameterIndex;
 
         // Fields used with SubType = ByValArray and LPArray.
         // Array size =  parameter(PI) * PM + C
@@ -639,7 +639,6 @@ namespace System.Runtime.InteropServices{
         public CallingConvention CallingConvention;
         public bool BestFitMapping;
         public bool ThrowOnUnmappableChar;
-
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]

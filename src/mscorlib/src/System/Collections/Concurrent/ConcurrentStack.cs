@@ -306,7 +306,6 @@ namespace System.Collections.Concurrent
 
             result = default(T);
             return false;
-
         }
 
         /// <summary>

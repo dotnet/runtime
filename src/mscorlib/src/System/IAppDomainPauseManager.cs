@@ -11,15 +11,15 @@
 **
 =============================================================================*/
 
+using System;
+using System.Threading;
+using System.Security;
+using System.Diagnostics.Contracts;
+using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
+
 namespace System
 {
-    using System;
-    using System.Threading;
-    using System.Security;
-    using System.Diagnostics.Contracts;
-    using System.Runtime.Versioning;
-    using System.Runtime.CompilerServices;
-
     internal class AppDomainPauseManager
     {
         public AppDomainPauseManager()
@@ -30,9 +30,9 @@ namespace System
         static AppDomainPauseManager()
         {
         }
-        
-        static readonly AppDomainPauseManager instance = new AppDomainPauseManager();
-   
+
+        private static readonly AppDomainPauseManager instance = new AppDomainPauseManager();
+
         private static volatile bool isPaused;
 
         internal static bool IsPaused
@@ -42,7 +42,7 @@ namespace System
 
         internal static ManualResetEvent ResumeEvent
         {
-            get; 
+            get;
             set;
         }
     }

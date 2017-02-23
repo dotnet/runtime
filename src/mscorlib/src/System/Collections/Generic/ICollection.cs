@@ -13,11 +13,13 @@
 **
 ** 
 ===========================================================*/
-namespace System.Collections.Generic {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Diagnostics.Contracts;
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.Contracts;
+
+namespace System.Collections.Generic
+{
     // Base interface for all collections, defining enumerators, size, and 
     // synchronization methods.
 
@@ -38,13 +40,13 @@ namespace System.Collections.Generic {
 
         void Clear();
 
-        bool Contains(T item); 
-                
+        bool Contains(T item);
+
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
         // 
         void CopyTo(T[] array, int arrayIndex);
-                
+
         //void CopyTo(int sourceIndex, T[] destinationArray, int destinationIndex, int count);
 
         bool Remove(T item);

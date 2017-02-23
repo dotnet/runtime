@@ -35,11 +35,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal T GetAt<T>(uint index)
         {
             IReadOnlyList<T> _this = JitHelpers.UnsafeCast<IReadOnlyList<T>>(this);
-            EnsureIndexInt32(index, _this.Count);        
+            EnsureIndexInt32(index, _this.Count);
 
             try
             {
-                return _this[(int) index];
+                return _this[(int)index];
             }
             catch (ArgumentOutOfRangeException ex)
             {

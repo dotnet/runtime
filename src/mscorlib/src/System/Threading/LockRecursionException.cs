@@ -12,12 +12,12 @@
 // support it in its current state.
 ============================================================*/
 
+using System;
+using System.Runtime.Serialization;
+using System.Runtime.CompilerServices;
+
 namespace System.Threading
 {
-    using System;
-    using System.Runtime.Serialization;
-    using System.Runtime.CompilerServices;
-
     [Serializable]
     public class LockRecursionException : System.Exception
     {
@@ -26,5 +26,4 @@ namespace System.Threading
         protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
         public LockRecursionException(string message, Exception innerException) : base(message, innerException) { }
     }
-
 }

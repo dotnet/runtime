@@ -206,7 +206,7 @@ namespace System.IO
         /// </summary>
         internal unsafe static int GetRootLength(string path)
         {
-            fixed(char* value = path)
+            fixed (char* value = path)
             {
                 return GetRootLength(value, path.Length);
             }

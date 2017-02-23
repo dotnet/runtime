@@ -110,7 +110,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 _this.Remove(key);
                 return true;
-
             }
             catch (Exception ex)
             {
@@ -158,7 +157,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (Exception ex)
             {
-
                 if (__HResults.E_BOUNDS == ex._HResult)
                     throw new KeyNotFoundException(Environment.GetResourceString("Arg_KeyNotFound"));
                 throw;

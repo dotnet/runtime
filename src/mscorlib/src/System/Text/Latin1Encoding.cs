@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+
 namespace System.Text
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Security;
-    using System.Collections;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-
-
     //
     // Latin1Encoding is a simple override to optimize the GetString version of Latin1Encoding.
     // because of the best fit cases we can't do this when encoding the string, only when decoding
@@ -47,7 +46,7 @@ namespace System.Text
         {
             // Make sure to get the base stuff too This throws if info is null
             SerializeEncoding(info, context);
-            Debug.Assert(info!=null, "[Latin1Encoding.GetObjectData] Expected null info to throw");
+            Debug.Assert(info != null, "[Latin1Encoding.GetObjectData] Expected null info to throw");
 
             // In Everett this is a CodePageEncoding, so it needs maxCharSize
             info.AddValue("CodePageEncoding+maxCharSize", 1);
@@ -216,7 +215,7 @@ namespace System.Text
             if (fallback != null && fallback.MaxCharCount == 1)
             {
                 // Fast version
-                char cReplacement=fallback.DefaultString[0];
+                char cReplacement = fallback.DefaultString[0];
 
                 // Check for replacements in range, otherwise fall back to slow version.
                 if (cReplacement <= (char)0xff)
@@ -262,7 +261,7 @@ namespace System.Text
                     if (encoder != null)
                     {
                         encoder.charLeftOver = (char)0;
-                        encoder.m_charsUsed = (int)(chars-charStart);
+                        encoder.m_charsUsed = (int)(chars - charStart);
                     }
                     return (int)(bytes - byteStart);
                 }
@@ -335,7 +334,7 @@ namespace System.Text
                     {
                         // Didn't use this char, throw it.  Chars should've advanced by now
                         // If we had encoder fallback data it would've thrown before the loop
-                        Debug.Assert(chars > charStart, 
+                        Debug.Assert(chars > charStart,
                             "[Latin1Encoding.GetBytes]Expected chars to have advanced (fallback case)");
                         chars--;
                         fallbackBuffer.InternalReset();
@@ -357,7 +356,7 @@ namespace System.Text
                         "[Latin1Encoding.GetBytes]Expected fallback to have throw initially if insufficient space");
                     if (fallbackBuffer == null || fallbackBuffer.bFallingBack == false)
                     {
-                        Debug.Assert(chars > charStart, 
+                        Debug.Assert(chars > charStart,
                             "[Latin1Encoding.GetBytes]Expected chars to have advanced (fallback case)");
                         chars--;                                        // don't use last char
                     }
@@ -441,8 +440,8 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(charCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(charCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case high surrogate is ? * max fallback
@@ -461,8 +460,8 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(byteCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Just return length, SBCS stay the same length because they don't map to surrogate

@@ -11,56 +11,58 @@
 **
 **
 ===========================================================*/
-namespace System.Globalization {
-    
-    using System;
+
+using System;
+
+namespace System.Globalization
+{
     [Serializable]
     [Flags]
-    public enum NumberStyles {
+    public enum NumberStyles
+    {
         // Bit flag indicating that leading whitespace is allowed. Character values
         // 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, and 0x0020 are considered to be
         // whitespace.
-    
-        None                  = 0x00000000, 
 
-        AllowLeadingWhite     = 0x00000001, 
+        None = 0x00000000,
 
-        AllowTrailingWhite    = 0x00000002, //Bitflag indicating trailing whitespace is allowed.
+        AllowLeadingWhite = 0x00000001,
 
-        AllowLeadingSign      = 0x00000004, //Can the number start with a sign char.  
-                                            //Specified by NumberFormatInfo.PositiveSign and NumberFormatInfo.NegativeSign
+        AllowTrailingWhite = 0x00000002, //Bitflag indicating trailing whitespace is allowed.
 
-        AllowTrailingSign     = 0x00000008, //Allow the number to end with a sign char
+        AllowLeadingSign = 0x00000004, //Can the number start with a sign char.  
+                                       //Specified by NumberFormatInfo.PositiveSign and NumberFormatInfo.NegativeSign
 
-        AllowParentheses      = 0x00000010, //Allow the number to be enclosed in parens
+        AllowTrailingSign = 0x00000008, //Allow the number to end with a sign char
 
-        AllowDecimalPoint     = 0x00000020, //Allow a decimal point
+        AllowParentheses = 0x00000010, //Allow the number to be enclosed in parens
 
-        AllowThousands        = 0x00000040, //Allow thousands separators (more properly, allow group separators)
+        AllowDecimalPoint = 0x00000020, //Allow a decimal point
 
-        AllowExponent         = 0x00000080, //Allow an exponent
+        AllowThousands = 0x00000040, //Allow thousands separators (more properly, allow group separators)
 
-        AllowCurrencySymbol   = 0x00000100, //Allow a currency symbol.
+        AllowExponent = 0x00000080, //Allow an exponent
 
-        AllowHexSpecifier     = 0x00000200, //Allow specifiying hexadecimal.
-        //Common uses.  These represent some of the most common combinations of these flags.
-    
+        AllowCurrencySymbol = 0x00000100, //Allow a currency symbol.
 
-        Integer  = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
+        AllowHexSpecifier = 0x00000200, //Allow specifiying hexadecimal.
+                                        //Common uses.  These represent some of the most common combinations of these flags.
+
+
+        Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 
         HexNumber = AllowLeadingWhite | AllowTrailingWhite | AllowHexSpecifier,
 
-        Number   = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
+        Number = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
                    AllowDecimalPoint | AllowThousands,
 
-        Float    = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | 
+        Float = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign |
                    AllowDecimalPoint | AllowExponent,
 
         Currency = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
-                   AllowParentheses  | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol,
+                   AllowParentheses | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol,
 
-        Any      = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
-                   AllowParentheses  | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol | AllowExponent,
-             
+        Any = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
+                   AllowParentheses | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol | AllowExponent,
     }
 }

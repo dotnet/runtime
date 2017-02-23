@@ -16,7 +16,6 @@ using System;
 
 namespace System.Diagnostics.CodeAnalysis
 {
-
     [AttributeUsage(
      AttributeTargets.All,
      Inherited = false,
@@ -32,41 +31,41 @@ namespace System.Diagnostics.CodeAnalysis
         private string scope;
         private string target;
         private string messageId;
-        
+
         public SuppressMessageAttribute(string category, string checkId)
         {
-            this.category  = category;
+            this.category = category;
             this.checkId = checkId;
         }
-        
+
         public string Category
         {
             get { return category; }
         }
-        
+
         public string CheckId
         {
             get { return checkId; }
         }
-        
+
         public string Scope
         {
             get { return scope; }
             set { scope = value; }
         }
-    
+
         public string Target
         {
             get { return target; }
             set { target = value; }
         }
-    
+
         public string MessageId
         {
             get { return messageId; }
             set { messageId = value; }
         }
-        
+
         public string Justification
         {
             get { return justification; }

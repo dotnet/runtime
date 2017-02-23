@@ -13,18 +13,18 @@
 **
 =============================================================================*/
 
+using System.Security;
+using System;
+using System.Runtime.Serialization;
+using System.Reflection;
+using System.Text;
+using System.Security.Policy;
+using System.IO;
+using System.Globalization;
+using System.Diagnostics.Contracts;
+
 namespace System.Security
 {
-    using System.Security;
-    using System;
-    using System.Runtime.Serialization;
-    using System.Reflection;
-    using System.Text;
-    using System.Security.Policy;
-    using System.IO;
-    using System.Globalization;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     public class SecurityException : SystemException
     {

@@ -10,8 +10,9 @@
 //    as a callback from Type.FindMembers.
 //
 //
-namespace System.Reflection {
 
+namespace System.Reflection
+{
     // Define the delegate
     [Serializable]
     public delegate bool MemberFilter(MemberInfo m, Object filterCriteria);

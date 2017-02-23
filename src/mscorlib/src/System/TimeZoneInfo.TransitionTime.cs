@@ -140,7 +140,7 @@ namespace System
                 info.AddValue("IsFixedDateRule", _isFixedDateRule);
             }
 
-            TransitionTime(SerializationInfo info, StreamingContext context)
+            private TransitionTime(SerializationInfo info, StreamingContext context)
             {
                 if (info == null)
                 {

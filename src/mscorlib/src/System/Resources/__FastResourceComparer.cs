@@ -13,13 +13,15 @@
 **
 ** 
 ===========================================================*/
-namespace System.Resources {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
+namespace System.Resources
+{
     internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
@@ -27,7 +29,7 @@ namespace System.Resources {
         // Implements IHashCodeProvider too, due to Hashtable requirements.
         public int GetHashCode(Object key)
         {
-            String s = (String) key;
+            String s = (String)key;
             return FastResourceComparer.HashFunction(s);
         }
 
@@ -45,9 +47,9 @@ namespace System.Resources {
             // others can read & write our .resources files.  Additionally, we
             // have a copy of it in InternalResGen as well.
             uint hash = 5381;
-            for(int i=0; i<key.Length; i++)
+            for (int i = 0; i < key.Length; i++)
                 hash = ((hash << 5) + hash) ^ key[i];
-            return (int) hash;
+            return (int)hash;
         }
 
         // Compares Strings quickly in a case-sensitive way
@@ -74,7 +76,7 @@ namespace System.Resources {
             if (a == b) return true;
             String sa = (String)a;
             String sb = (String)b;
-            return String.Equals(sa,sb);
+            return String.Equals(sa, sb);
         }
 
         // Input is one string to compare with, and a byte[] containing chars in 
@@ -93,10 +95,11 @@ namespace System.Resources {
                 numChars = bCharLength;
             if (bCharLength == 0)   // Can't use fixed on a 0-element array.
                 return (a.Length == 0) ? 0 : -1;
-            fixed(byte* pb = bytes) {
-
-                byte *pChar = pb;
-                while (i < numChars && r == 0) {
+            fixed (byte* pb = bytes)
+            {
+                byte* pChar = pb;
+                while (i < numChars && r == 0)
+                {
                     // little endian format
                     int b = pChar[0] | pChar[1] << 8;
                     r = a[i++] - b;
@@ -126,9 +129,10 @@ namespace System.Resources {
             int numChars = byteLen >> 1;
             if (numChars > b.Length)
                 numChars = b.Length;
-            while(i < numChars && r == 0) {
+            while (i < numChars && r == 0)
+            {
                 // Must compare character by character, not byte by byte.
-                char aCh = (char) (*a++ | (*a++ << 8));
+                char aCh = (char)(*a++ | (*a++ << 8));
                 r = aCh - b[i++];
             }
             if (r != 0) return r;

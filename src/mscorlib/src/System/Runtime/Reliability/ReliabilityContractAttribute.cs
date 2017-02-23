@@ -16,25 +16,26 @@
 **
 ===========================================================*/
 
-namespace System.Runtime.ConstrainedExecution {
-    using System.Runtime.InteropServices;
-    using System;
+using System.Runtime.InteropServices;
+using System;
 
+namespace System.Runtime.ConstrainedExecution
+{
     [Serializable]
     public enum Consistency : int
     {
-        MayCorruptProcess   = 0,
+        MayCorruptProcess = 0,
         MayCorruptAppDomain = 1,
-        MayCorruptInstance  = 2,
+        MayCorruptInstance = 2,
         WillNotCorruptState = 3,
     }
 
     [Serializable]
     public enum Cer : int
     {
-        None                = 0,
-        MayFail             = 1,  // Might fail, but the method will say it failed
-        Success             = 2,
+        None = 0,
+        MayFail = 1,  // Might fail, but the method will say it failed
+        Success = 2,
     }
 
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Interface /* | AttributeTargets.Delegate*/, Inherited = false)]
@@ -49,11 +50,13 @@ namespace System.Runtime.ConstrainedExecution {
             _cer = cer;
         }
 
-        public Consistency ConsistencyGuarantee {
+        public Consistency ConsistencyGuarantee
+        {
             get { return _consistency; }
         }
 
-        public Cer Cer {
+        public Cer Cer
+        {
             get { return _cer; }
         }
     }

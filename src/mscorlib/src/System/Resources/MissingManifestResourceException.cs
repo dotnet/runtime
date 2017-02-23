@@ -16,26 +16,31 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace System.Resources {
+namespace System.Resources
+{
     [Serializable]
     public class MissingManifestResourceException : SystemException
     {
-        public MissingManifestResourceException() 
-            : base(Environment.GetResourceString("Arg_MissingManifestResourceException")) {
-            SetErrorCode(System.__HResults.COR_E_MISSINGMANIFESTRESOURCE);
-        }
-        
-        public MissingManifestResourceException(String message) 
-            : base(message) {
-            SetErrorCode(System.__HResults.COR_E_MISSINGMANIFESTRESOURCE);
-        }
-        
-        public MissingManifestResourceException(String message, Exception inner) 
-            : base(message, inner) {
+        public MissingManifestResourceException()
+            : base(Environment.GetResourceString("Arg_MissingManifestResourceException"))
+        {
             SetErrorCode(System.__HResults.COR_E_MISSINGMANIFESTRESOURCE);
         }
 
-        protected MissingManifestResourceException(SerializationInfo info, StreamingContext context) : base (info, context) {
+        public MissingManifestResourceException(String message)
+            : base(message)
+        {
+            SetErrorCode(System.__HResults.COR_E_MISSINGMANIFESTRESOURCE);
+        }
+
+        public MissingManifestResourceException(String message, Exception inner)
+            : base(message, inner)
+        {
+            SetErrorCode(System.__HResults.COR_E_MISSINGMANIFESTRESOURCE);
+        }
+
+        protected MissingManifestResourceException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
     }
 }

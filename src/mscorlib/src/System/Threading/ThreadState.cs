@@ -12,12 +12,12 @@
 **
 =============================================================================*/
 
-namespace System.Threading {
-
-[Serializable]
-[Flags]
+namespace System.Threading
+{
+    [Serializable]
+    [Flags]
     public enum ThreadState
-    {   
+    {
         /*=========================================================================
         ** Constants for thread states.
         =========================================================================*/

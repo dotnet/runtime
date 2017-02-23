@@ -4,13 +4,13 @@
 
 /*============================================================
 **
-** Class:  FormattableStringFactory
 **
 **
 ** Purpose: implementation of the FormattableStringFactory
 ** class.
 **
 ===========================================================*/
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>

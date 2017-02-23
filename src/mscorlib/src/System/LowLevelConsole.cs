@@ -23,7 +23,7 @@ namespace System
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);
 
-            fixed (byte * pBytes = bytes)
+            fixed (byte* pBytes = bytes)
             {
                 int bytesWritten;
                 Win32Native.WriteFile(_outputHandle, pBytes, bytes.Length, out bytesWritten, IntPtr.Zero);
@@ -39,14 +39,14 @@ namespace System
         {
             Write(Environment.NewLine);
         }
-     }
+    }
 
-     //
-     // Internal wrapper with the regular name for convenience. Note that it cannot be public to avoid colliding 
-     // with the full Console type.
-     //
-     internal static class Console
-     {
+    //
+    // Internal wrapper with the regular name for convenience. Note that it cannot be public to avoid colliding 
+    // with the full Console type.
+    //
+    internal static class Console
+    {
         public static void Write(string s)
         {
             LowLevelConsole.Write(s);

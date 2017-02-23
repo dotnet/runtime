@@ -513,7 +513,6 @@ namespace System
             if ((dateTime.Kind == DateTimeKind.Unspecified) ||
                 (dateTime.Kind == DateTimeKind.Local && s_cachedData.GetCorrespondingKind(this) == DateTimeKind.Local))
             {
-
                 // only check Unspecified and (Local when this TimeZoneInfo instance is Local)
                 AdjustmentRule rule = GetAdjustmentRuleForTime(dateTime);
 
@@ -868,7 +867,6 @@ namespace System
                         return false;
                     }
                 }
-
             }
             return sameRules;
         }
@@ -915,7 +913,6 @@ namespace System
                 AdjustmentRule[] adjustmentRules,
                 bool disableDaylightSavingTime)
         {
-
             bool adjustmentRulesSupportDst;
             ValidateTimeZoneInfo(id, baseUtcOffset, adjustmentRules, out adjustmentRulesSupportDst);
 
@@ -1034,7 +1031,7 @@ namespace System
             info.AddValue("SupportsDaylightSavingTime", _supportsDaylightSavingTime);
         }
 
-        TimeZoneInfo(SerializationInfo info, StreamingContext context)
+        private TimeZoneInfo(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
             {
@@ -1430,7 +1427,6 @@ namespace System
                         }
                         catch (ArgumentOutOfRangeException) { }
                     }
-
                 }
             }
 
@@ -1889,7 +1885,6 @@ namespace System
 
             if (UtcOffsetOutOfRange(baseUtcOffset))
             {
-
                 throw new ArgumentOutOfRangeException(nameof(baseUtcOffset), Environment.GetResourceString("ArgumentOutOfRange_UtcOffset"));
             }
 

@@ -18,7 +18,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
-
     /// <summary>
     /// Represents a synchronization primitive that is signaled when its count reaches zero.
     /// </summary>
@@ -80,7 +79,7 @@ namespace System.Threading
         /// </value>
         public int CurrentCount
         {
-            get 
+            get
             {
                 int observedCount = m_currentCount;
                 return observedCount < 0 ? 0 : observedCount;

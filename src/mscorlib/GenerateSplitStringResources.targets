@@ -14,7 +14,7 @@
           Outputs="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).txt')">
          
     <ItemGroup>
-      <Internal_ResGenDefines Remove="" />
+      <Internal_ResGenDefines Remove="@(Internal_ResGenDefines)" />
       <Internal_ResGenDefines Include="INCLUDE_DEBUG" />
       <Internal_ResGenDefines Include="INCLUDE_RUNTIME" />
       <Internal_ResGenDefines Include="%(SplitTextStringResource.ResGenDefines)" />
@@ -36,7 +36,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Internal_ResGenDefines Remove="" />
-    </ItemGroup>
+      <Internal_ResGenDefines Remove="@(Internal_ResGenDefines)" />
+    </ItemGroup>    
   </Target>
 </Project>
