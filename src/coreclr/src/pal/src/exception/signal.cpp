@@ -47,6 +47,33 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/context.h"
 
+#ifdef __ANDROID__
+// getcontext and setcontext are not available natively on Android
+int getcontext(ucontext_t *ucp)
+{
+    CONTEXT context;
+    RtlCaptureContext(&context);
+    CONTEXTToNativeContext(&context, ucp);
+
+    return 0;
+}
+
+int setcontext(const ucontext_t *ucp)
+{
+    CONTEXT context;
+    ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+#if defined(_AMD64_)
+    contextFlags |= CONTEXT_XSTATE;
+#endif
+
+    CONTEXTFromNativeContext(ucp, &context, contextFlags);
+    RtlRestoreContext(&context, NULL);
+
+    return 0;
+}
+#endif
+
 using namespace CorUnix;
 
 #ifdef SIGRTMIN
