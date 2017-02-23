@@ -858,6 +858,12 @@
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Unix.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' == 'true'">
+    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.OSX.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true'">
+    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Linux.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Win32.cs" />
