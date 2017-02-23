@@ -1277,6 +1277,10 @@ class fgArgInfo
                           // stack pointer before it was adjusted after each Call
 #endif
 
+#if FEATURE_FIXED_OUT_ARGS
+    unsigned outArgSize; // Size of the out arg area for the call, will be at least MIN_ARG_AREA_FOR_CALL
+#endif
+
     unsigned          argTableSize; // size of argTable array (equal to the argCount when done with fgMorphArgs)
     bool              hasRegArgs;   // true if we have one or more register arguments
     bool              hasStackArgs; // true if we have one or more stack arguments
@@ -1366,7 +1370,16 @@ public:
     {
         return argsComplete;
     }
-
+#if FEATURE_FIXED_OUT_ARGS
+    unsigned GetOutArgSize() const
+    {
+        return outArgSize;
+    }
+    void SetOutArgSize(unsigned newVal)
+    {
+        outArgSize = newVal;
+    }
+#endif // FEATURE_FIXED_OUT_ARGS
     // Get the late arg for arg at position argIndex.  Caller must ensure this position has a late arg.
     GenTreePtr GetLateArg(unsigned argIndex);
 };
@@ -2404,9 +2417,9 @@ public:
                                         // in case there are multiple BBJ_RETURN blocks in the inlinee.
 
 #if FEATURE_FIXED_OUT_ARGS
-    unsigned lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
-    unsigned lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
-#endif                                // FEATURE_FIXED_OUT_ARGS
+    unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
+    PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
+#endif                                           // FEATURE_FIXED_OUT_ARGS
 
 #ifdef _TARGET_ARM_
     // On architectures whose ABIs allow structs to be passed in registers, struct promotion will sometimes
@@ -2569,7 +2582,7 @@ public:
 
     void lvaMarkLocalVars(); // Local variable ref-counting
 
-    void lvaAllocOutgoingArgSpace(); // 'Commit' lvaOutgoingArgSpaceSize and lvaOutgoingArgSpaceVar
+    void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
     VARSET_VALRET_TP lvaStmtLclMask(GenTreePtr stmt);
 

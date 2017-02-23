@@ -1216,6 +1216,18 @@ public:
                 continue;
             }
 
+#if FEATURE_FIXED_OUT_ARGS
+            // Skip the OutgoingArgArea in computing frame size, since
+            // its size is not yet known and it doesn't affect local
+            // offsets from the frame pointer (though it may affect
+            // them from the stack pointer).
+            noway_assert(m_pCompiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
+            if (lclNum == m_pCompiler->lvaOutgoingArgSpaceVar)
+            {
+                continue;
+            }
+#endif // FEATURE_FIXED_OUT_ARGS
+
             bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
 
             // Some LclVars always have stack homes

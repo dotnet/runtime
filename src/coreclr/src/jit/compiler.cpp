@@ -5663,10 +5663,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     info.compCallUnmanaged   = 0;
     info.compLvFrameListRoot = BAD_VAR_NUM;
 
-#if FEATURE_FIXED_OUT_ARGS
-    lvaOutgoingArgSpaceSize = 0;
-#endif
-
     lvaGenericsContextUsed = false;
 
     info.compInitMem = ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0);
