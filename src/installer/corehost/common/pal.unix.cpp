@@ -247,27 +247,123 @@ bool pal::get_local_dotnet_dir(pal::string_t* recv)
     return true;
 }
 
-#if defined(__APPLE__)
-bool pal::get_os_moniker(os_moniker_t* moniker)
+pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
+    char_t quote_array[2] = {'\"', '\''};
+    for(int index = 0; index < sizeof(quote_array)/sizeof(quote_array[0]); index++)
+    {
+        size_t pos = stringToCleanup.find(quote_array[index]);
+        while(pos != std::string::npos)
+        {
+            stringToCleanup = stringToCleanup.erase(pos, 1);
+            pos = stringToCleanup.find(quote_array[index]);
+        }
+    }
+
+    return stringToCleanup;
+}
+
+#if defined(__APPLE__)
+pal::string_t pal::get_current_os_rid_platform()
+{
+    pal::string_t ridOS;
+    
     char str[256];
 
+    // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
+    // certain APIs work till 10.9 and have been deprecated and others require linking against
+    // UI frameworks to get the data.
+    //
+    // We will, instead, use kern.osrelease and use its major version number
+    // as a means to formulate the OSX 10.X RID.
+    //
+    // Needless to say, this will need to be updated if OSX RID were to become 11.* ever.
     size_t size = sizeof(str);
     int ret = sysctlbyname("kern.osrelease", str, &size, NULL, 0);
-    if (ret != 0)
+    if (ret == 0)
     {
-        return false;
+        std::string release(str, size);
+        size_t pos = release.find('.');
+        if (pos != std::string::npos)
+        {
+            // Extract the major version and subtract 4 from it
+            // to get the Minor version used in OSX versioning scheme.
+            // That is, given a version 10.X.Y, we will get X below.
+            int minorVersion = stoi(release.substr(0, pos)) - 4;
+            if (minorVersion < 10)
+            {
+                // On OSX, our minimum supported RID is 10.10.
+                minorVersion = 10;
+            }
+
+            ridOS.append(_X("10."));
+            ridOS.append(std::to_string(minorVersion));
+        }
     }
 
-    std::string release(str, size);
-    size_t pos = release.find('.');
-    if (pos == std::string::npos)
+    return ridOS;
+}
+#else
+pal::string_t pal::get_current_os_rid_platform()
+{
+    pal::string_t ridOS;
+    pal::string_t versionFile(_X("/etc/os-release"));
+
+    if (pal::file_exists(versionFile))
     {
-        return false;
+        // Read the file to get ID and VERSION_ID data that will be used
+        // to construct the RID.
+        std::fstream fsVersionFile;
+        
+        fsVersionFile.open(versionFile, std::fstream::in);
+
+        // Proceed only if we were able to open the file
+        if (fsVersionFile.good())
+        {
+            pal::string_t line;
+            pal::string_t strID(_X("ID="));
+            pal::string_t strVersionID(_X("VERSION_ID="));
+
+            bool fFoundID = false, fFoundVersion = false;
+
+            // Read the first line
+            std::getline(fsVersionFile, line);
+
+            // Loop until we are at the end of file
+            while (!fsVersionFile.eof())
+            {
+                size_t pos = line.find(strID);
+                if ((pos != std::string::npos) && (pos == 0))
+                {
+                    ridOS.append(line.substr(3));
+                    ridOS.append(_X("."));
+                    fFoundID = true;
+                }
+
+                pos = line.find(strVersionID);
+                if ((pos != std::string::npos) && (pos == 0))
+                {
+                    ridOS.append(line.substr(11));
+                    fFoundVersion = true;
+                }
+
+                if (fFoundID && fFoundVersion)
+                {
+                    // Remove any double-quotes
+                    ridOS = trim_quotes(ridOS);
+                    break;
+                }
+
+                // Read the next line
+                std::getline(fsVersionFile, line);
+            }
+
+            // Close the file now that we are done with it.
+            fsVersionFile.close();
+        }
     }
 
-    *moniker = (os_moniker_t) stoi(release.substr(0, pos));
-    return true;
+    return ridOS;
 }
 #endif
 
