@@ -67,6 +67,9 @@ namespace System.Net.Http
 
         #region private
 
+        private static readonly DiagnosticListener s_diagnosticListener =
+            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
+
         private async Task<HttpResponseMessage> SendInstrumentedAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Activity activity = null;
@@ -82,23 +85,21 @@ namespace System.Net.Http
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityPropagateName))
                 {
                     request.Headers.Add(HttpKnownHeaderNames.RequestId, activity.Id);
-                    
-                    //we expect baggage to be empty or contain a few items
-                    bool baggageIsEmpty = true;
-                    foreach (var _ in activity.Baggage)
-                    {
-                        baggageIsEmpty = false;
-                        break;
-                    }
 
-                    if (!baggageIsEmpty)
+                    //we expect baggage to be empty or contain a few items
+                    using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
                     {
-                        List<string> baggage = new List<string>();
-                        foreach (KeyValuePair<string, string> baggageItem in activity.Baggage)
+                        if (e.MoveNext())
                         {
-                            baggage.Add(new NameValueHeaderValue(baggageItem.Key, baggageItem.Value).ToString());
+                            var baggage = new List<string>();
+                            do
+                            {
+                                KeyValuePair<string, string> item = e.Current;
+                                baggage.Add(new NameValueHeaderValue(item.Key, item.Value).ToString());
+                            }
+                            while (e.MoveNext());
+                            request.Headers.Add(HttpKnownHeaderNames.CorrelationContext, baggage);
                         }
-                        request.Headers.Add(HttpKnownHeaderNames.CorrelationContext, baggage);
                     }
                 }
             }
@@ -119,9 +120,11 @@ namespace System.Net.Http
                 //If user decided to NOT instrument this request AND it threw an exception then:
                 //Activity.Current represents 'parent' Activity (presumably incoming request)
                 //So we let user log it as exception happened in this 'parent' activity
+                //Request is passed to provide some context if instrumentation was disabled and to avoid
+                //extensive Activity.Tags usage to tunnel request properties
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
-                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new {Exception = ex});
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new {Exception = ex, Request = request});
                 }
                 throw;
             }
@@ -193,9 +196,6 @@ namespace System.Net.Http
                     }
                 }, loggingRequestId, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
         }
-
-        private static readonly DiagnosticListener s_diagnosticListener =
-            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
         #endregion
     }

@@ -95,7 +95,7 @@ Event payload has following properties:
 This event is sent under the same conditions as "System.Net.Http.Activity.Start" event.
 
 ### System.Net.Http.Exception
-If request throws an exception, instrumentation sends **"System.Net.Http.Exception"** event with payload containing `Exception` property.
+If request throws an exception, instrumentation sends **"System.Net.Http.Exception"** event with payload containing `Exception` and `Request` properties.
 Exception event is sent if initial instrumentation preconditions are met and does not require current outgoing request to be instrumented.
 
 If current outgoing request is instrumented, `Activity.Current` represents it's context.
@@ -108,7 +108,7 @@ Otherwise, `Activity.Current` represent some 'parent' activity (presumably incom
 3. `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` - determines if this particular request should be instrumented
 4. `DiagnosticListener.Write("System.Net.Http.Activity.Start", new {Request})` - notifies that activity (outgoing request) was started
 5. `DiagnosticListener.IsEnabled("System.Net.Http.Exception")` - determines if exception event (if thrown) should be written
-6. `DiagnosticListener.Write("System.Net.Http.Activity.Exception", new {Exception})` - notifies about exception during request processing (if thrown)
+6. `DiagnosticListener.Write("System.Net.Http.Activity.Exception", new {Exception, Request})` - notifies about exception during request processing (if thrown)
 7. `DiagnosticListener.Write("System.Net.Http.Activity.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
 
 # Non-Activity events (deprecated)
