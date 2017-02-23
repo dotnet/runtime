@@ -102,7 +102,7 @@ namespace Mono.Linker.Steps {
 					catch (AssemblyResolutionException) {
 						continue;
 					}
-					var resolvedTypeAssembly = context.Resolve (resolvedExportedType.Scope);
+					context.Resolve (resolvedExportedType.Scope);
 					MarkType (context, resolvedExportedType);
 					context.Annotations.Mark (exported);
 					if (context.KeepTypeForwarderOnlyAssemblies) {
