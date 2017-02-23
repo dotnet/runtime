@@ -882,10 +882,6 @@ elif test x$with_runtime_preset = xhybridaot; then
    with_testing_aot_hybrid_default=yes
    TEST_PROFILE=testing_aot_hybrid 
 
-   mono_feature_disable_com='yes'
-   mono_feature_disable_remoting='yes'
-   mono_feature_disable_appdomains='yes'
-
    AOT_BUILD_FLAGS="--aot=hybrid,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--hybrid-aot"
 elif test x$with_runtime_preset = xaot; then
