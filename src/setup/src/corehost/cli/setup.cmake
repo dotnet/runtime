@@ -96,12 +96,6 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
       endif()
 endif ()
 
-if("${CLI_CMAKE_RUNTIME_ID}" STREQUAL "")
-    message(FATAL_ERROR "Runtime ID not specified")
-else()
-    add_definitions(-DTARGET_RUNTIME_ID="${CLI_CMAKE_RUNTIME_ID}")
-endif()
-
 if("${CLI_CMAKE_HOST_POLICY_VER}" STREQUAL "")
     message(FATAL_ERROR "Host policy version is not specified")
 else()

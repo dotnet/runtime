@@ -122,34 +122,35 @@ void deps_json_t::reconcile_libraries_with_targets(
     }
 }
 
-pal::string_t get_own_rid()
+// Returns the RID for the platform the host is running on.
+pal::string_t get_current_rid()
 {
-    // For OSX, try to dynamically detect OS version and use appropriate
-    // starting RID. This is to support Sierra even though host binaries
-    // are built on El-Cap and Yosemite.
-#if defined(__APPLE__)
-    pal::os_moniker_t moniker;
-    if (pal::get_os_moniker(&moniker)) {
-        if (moniker >= pal::os_moniker_t::sierra) {
-            return pal::string_t("osx.10.12-") + get_arch();
-        }
-        if (moniker >= pal::os_moniker_t::el_capitan) {
-            return pal::string_t("osx.10.11-") + get_arch();
+    
+    pal::string_t currentRid;
+    if (!pal::getenv(_X("DOTNET_RUNTIME_ID"), &currentRid))
+    {
+        currentRid = pal::get_current_os_rid_platform();
+        if (!currentRid.empty())
+        {
+        currentRid = currentRid + pal::string_t(_X("-")) + get_arch();
         }
     }
-#endif
+    
+    trace::info(_X("Host RID is %s"), currentRid.empty()? _X("not available"): currentRid.c_str());
 
-    // Otherwise, default to RID supplied during build time of the binary.
-#if defined(TARGET_RUNTIME_ID)
-    return _STRINGIFY(TARGET_RUNTIME_ID);
-#else
-#error "Cannot build the host without knowing host's root RID"
-#endif
+    return currentRid;
 }
 
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
-    pal::string_t host_rid = get_own_rid();
+    pal::string_t host_rid = get_current_rid();
+    if (host_rid.empty())
+    {
+        // We didnt get a valid host RID, so we cannot attempt RID fallback.
+        trace::info(_X("Skipping RID fallback processing since Host RID cannot be computed for the current platform!"));
+        return false;
+    }
+
     for (auto& package : portable_assets->libs)
     {
         pal::string_t matched_rid = package.second.rid_assets.count(host_rid) ? host_rid : _X("");
