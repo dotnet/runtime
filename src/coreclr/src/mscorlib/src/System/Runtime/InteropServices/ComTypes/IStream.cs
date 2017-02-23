@@ -11,11 +11,11 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
-
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct STATSTG
     {

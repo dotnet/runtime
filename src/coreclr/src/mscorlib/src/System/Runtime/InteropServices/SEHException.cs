@@ -11,30 +11,37 @@
 **
 =============================================================================*/
 
-namespace System.Runtime.InteropServices {
-    using System.Runtime.InteropServices;
-    using System;
-    using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
+using System;
+using System.Runtime.Serialization;
+
+namespace System.Runtime.InteropServices
+{
     // Exception for Structured Exception Handler exceptions.
     // 
     [Serializable]
-    public class SEHException : ExternalException {
-        public SEHException() 
-            : base() {
+    public class SEHException : ExternalException
+    {
+        public SEHException()
+            : base()
+        {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        public SEHException(String message) 
-            : base(message) {
+
+        public SEHException(String message)
+            : base(message)
+        {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        public SEHException(String message, Exception inner) 
-            : base(message, inner) {
+
+        public SEHException(String message, Exception inner)
+            : base(message, inner)
+        {
             SetErrorCode(__HResults.E_FAIL);
         }
-        
-        protected SEHException(SerializationInfo info, StreamingContext context) : base(info, context) {
+
+        protected SEHException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         // Exceptions can be resumable, meaning a filtered exception 
@@ -48,6 +55,6 @@ namespace System.Runtime.InteropServices {
         public virtual bool CanResume()
         {
             return false;
-        }    
+        }
     }
 }

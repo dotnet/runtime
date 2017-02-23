@@ -78,14 +78,14 @@ namespace System.Threading
         /// particularly in situations where related objects are being canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested 
+        public bool IsCancellationRequested
         {
             get
             {
                 return m_source != null && m_source.IsCancellationRequested;
             }
         }
-        
+
         /// <summary>
         /// Gets whether this token is capable of being in the canceled state.
         /// </summary>
@@ -153,12 +153,12 @@ namespace System.Threading
         public CancellationToken(bool canceled) :
             this()
         {
-            if(canceled)
+            if (canceled)
                 m_source = CancellationTokenSource.InternalGetStaticSource(canceled);
         }
 
         /* Methods */
-        
+
 
         private readonly static Action<Object> s_ActionToActionObjShunt = new Action<Object>(ActionToActionObjShunt);
         private static void ActionToActionObjShunt(object obj)
@@ -190,7 +190,7 @@ namespace System.Threading
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            
+
             return Register(
                 s_ActionToActionObjShunt,
                 callback,
@@ -225,7 +225,7 @@ namespace System.Threading
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            
+
             return Register(
                 s_ActionToActionObjShunt,
                 callback,
@@ -301,7 +301,7 @@ namespace System.Threading
                 true   // useExecutionContext=true
              );
         }
-        
+
         // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
         // has a handy signature, and skips capturing execution context.
         internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, Object state)
@@ -366,14 +366,14 @@ namespace System.Threading
             {
                 return other.m_source == CancellationTokenSource.InternalGetStaticSource(false);
             }
-            
+
             if (other.m_source == null)
             {
                 return m_source == CancellationTokenSource.InternalGetStaticSource(false);
             }
 
             // general case, we check if the sources are identical
-            
+
             return m_source == other.m_source;
         }
 
@@ -392,7 +392,7 @@ namespace System.Threading
         {
             if (other is CancellationToken)
             {
-                return Equals((CancellationToken) other);
+                return Equals((CancellationToken)other);
             }
 
             return false;
@@ -410,9 +410,9 @@ namespace System.Threading
                 return CancellationTokenSource.InternalGetStaticSource(false).GetHashCode();
             }
 
-            return m_source.GetHashCode(); 
+            return m_source.GetHashCode();
         }
-        
+
         /// <summary>
         /// Determines whether two <see cref="T:System.Threading.CancellationToken">CancellationToken</see> instances are equal.
         /// </summary>
@@ -455,7 +455,7 @@ namespace System.Threading
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public void ThrowIfCancellationRequested()
         {
-            if (IsCancellationRequested) 
+            if (IsCancellationRequested)
                 ThrowOperationCanceledException();
         }
 
@@ -479,7 +479,7 @@ namespace System.Threading
 
         // -----------------------------------
         // Private helpers
-        
+
         private void InitializeDefaultSource()
         {
             // Lazy is slower, and although multiple threads may try and set m_source repeatedly, the race condition is benign.

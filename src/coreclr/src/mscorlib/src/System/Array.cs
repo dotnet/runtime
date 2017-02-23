@@ -8,32 +8,35 @@
 ** Purpose: Base class which can be used to access any array
 **
 ===========================================================*/
-namespace System {
 
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-    using System.Security;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
+namespace System
+{
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     [Serializable]
-    public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable 
+    public abstract class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
-        internal Array() {}
+        internal Array() { }
 
-        public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array) {
-            if (array == null) {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);                
+        public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array)
+        {
+            if (array == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<ReadOnlyCollection<T>>() != null);
 
@@ -41,22 +44,25 @@ namespace System {
             return new ReadOnlyCollection<T>(array);
         }
 
-        public static void Resize<T>(ref T[] array, int newSize) {
+        public static void Resize<T>(ref T[] array, int newSize)
+        {
             if (newSize < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.newSize, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             Contract.Ensures(Contract.ValueAtReturn(out array) != null);
             Contract.Ensures(Contract.ValueAtReturn(out array).Length == newSize);
             Contract.EndContractBlock();
 
-            T[] larray = array;                
-            if (larray == null) {
+            T[] larray = array;
+            if (larray == null)
+            {
                 array = new T[newSize];
                 return;
             }
-        
-            if (larray.Length != newSize) {
+
+            if (larray.Length != newSize)
+            {
                 T[] newArray = new T[newSize];
-                Array.Copy(larray, 0, newArray, 0,  larray.Length > newSize? newSize : larray.Length);
+                Array.Copy(larray, 0, newArray, 0, larray.Length > newSize ? newSize : larray.Length);
                 array = newArray;
             }
         }
@@ -76,9 +82,9 @@ namespace System {
             RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            return InternalCreate((void*)t.TypeHandle.Value,1,&length,null);
+            return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
         }
-        
+
         public unsafe static Array CreateInstance(Type elementType, int length1, int length2)
         {
             if ((object)elementType == null)
@@ -98,9 +104,9 @@ namespace System {
             int* pLengths = stackalloc int[2];
             pLengths[0] = length1;
             pLengths[1] = length2;
-            return InternalCreate((void*)t.TypeHandle.Value,2,pLengths,null);
+            return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
         }
-        
+
         public unsafe static Array CreateInstance(Type elementType, int length1, int length2, int length3)
         {
             if ((object)elementType == null)
@@ -124,9 +130,9 @@ namespace System {
             pLengths[0] = length1;
             pLengths[1] = length2;
             pLengths[2] = length3;
-            return InternalCreate((void*)t.TypeHandle.Value,3,pLengths,null);
+            return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
         }
-        
+
         public unsafe static Array CreateInstance(Type elementType, params int[] lengths)
         {
             if ((object)elementType == null)
@@ -152,12 +158,13 @@ namespace System {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             fixed (int* pLengths = &lengths[0])
-                return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,null);
+                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)
         {
-            if( lengths == null) {
+            if (lengths == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             }
             if (lengths.Length == 0)
@@ -165,22 +172,22 @@ namespace System {
             Contract.Ensures(Contract.Result<Array>() != null);
             Contract.Ensures(Contract.Result<Array>().Rank == lengths.Length);
             Contract.EndContractBlock();
-            
+
             int[] intLengths = new int[lengths.Length];
 
-            for (int i = 0; i < lengths.Length; ++i) 
+            for (int i = 0; i < lengths.Length; ++i)
             {
                 long len = lengths[i];
                 if (len > Int32.MaxValue || len < Int32.MinValue)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.len, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intLengths[i] = (int) len;
+                intLengths[i] = (int)len;
             }
 
             return Array.CreateInstance(elementType, intLengths);
         }
 
-        
-        public unsafe static Array CreateInstance(Type elementType, int[] lengths,int[] lowerBounds)
+
+        public unsafe static Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -204,17 +211,17 @@ namespace System {
             // a good exception message if they are not; however we check this again inside the execution 
             // engine's low level allocation function after having made a copy of the array to prevent a 
             // malicious caller from mutating the array after this check.           
-            for (int i=0;i<lengths.Length;i++)
+            for (int i = 0; i < lengths.Length; i++)
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             fixed (int* pLengths = &lengths[0])
-                fixed(int* pLowerBounds = &lowerBounds[0])
-                    return InternalCreate((void*)t.TypeHandle.Value,lengths.Length,pLengths,pLowerBounds);
+            fixed (int* pLowerBounds = &lowerBounds[0])
+                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe static extern Array InternalCreate(void* elementType,int rank,int *pLengths,int *pLowerBounds);
+        private unsafe static extern Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
 
         internal static Array UnsafeCreateInstance(Type elementType, int length)
         {
@@ -240,11 +247,11 @@ namespace System {
 
             Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, false);
         }
-    
+
         // Copies length elements from sourceArray, starting at sourceIndex, to
         // destinationArray, starting at destinationIndex.
         //
-        public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length) 
+        public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, false);
         }
@@ -271,7 +278,7 @@ namespace System {
             if (length > Int32.MaxValue || length < Int32.MinValue)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            Array.Copy(sourceArray, destinationArray, (int) length);
+            Array.Copy(sourceArray, destinationArray, (int)length);
         }
 
         public static void Copy(Array sourceArray, long sourceIndex, Array destinationArray, long destinationIndex, long length)
@@ -283,16 +290,16 @@ namespace System {
             if (length > Int32.MaxValue || length < Int32.MinValue)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
 
-            Array.Copy(sourceArray, (int) sourceIndex, destinationArray, (int) destinationIndex, (int) length);
+            Array.Copy(sourceArray, (int)sourceIndex, destinationArray, (int)destinationIndex, (int)length);
         }
 
-    
+
         // Sets length elements in array to 0 (or null for Object arrays), starting
         // at index.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void Clear(Array array, int index, int length);
-        
+
         // The various Get values...
         public unsafe Object GetValue(params int[] indices)
         {
@@ -303,11 +310,11 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = &indices[0])
+            fixed (int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
-    
+
         public unsafe Object GetValue(int index)
         {
             if (Rank != 1)
@@ -318,7 +325,7 @@ namespace System {
             InternalGetReference(&elemref, 1, &index);
             return TypedReference.InternalToObject(&elemref);
         }
-    
+
         public unsafe Object GetValue(int index1, int index2)
         {
             if (Rank != 2)
@@ -333,7 +340,7 @@ namespace System {
             InternalGetReference(&elemref, 2, pIndices);
             return TypedReference.InternalToObject(&elemref);
         }
-    
+
         public unsafe Object GetValue(int index1, int index2, int index3)
         {
             if (Rank != 3)
@@ -356,7 +363,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            return this.GetValue((int) index);
+            return this.GetValue((int)index);
         }
 
         public Object GetValue(long index1, long index2)
@@ -367,7 +374,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            return this.GetValue((int) index1, (int) index2);
+            return this.GetValue((int)index1, (int)index2);
         }
 
         public Object GetValue(long index1, long index2, long index3)
@@ -379,8 +386,8 @@ namespace System {
             if (index3 > Int32.MaxValue || index3 < Int32.MinValue)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index3, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
-            
-            return this.GetValue((int) index1, (int) index2, (int) index3);
+
+            return this.GetValue((int)index1, (int)index2, (int)index3);
         }
 
         public Object GetValue(params long[] indices)
@@ -393,19 +400,19 @@ namespace System {
 
             int[] intIndices = new int[indices.Length];
 
-            for (int i = 0; i < indices.Length; ++i) 
+            for (int i = 0; i < indices.Length; ++i)
             {
                 long index = indices[i];
                 if (index > Int32.MaxValue || index < Int32.MinValue)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intIndices[i] = (int) index;
+                intIndices[i] = (int)index;
             }
 
             return this.GetValue(intIndices);
         }
 
-        
-        public unsafe void SetValue(Object value,int index)
+
+        public unsafe void SetValue(Object value, int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
@@ -413,10 +420,10 @@ namespace System {
 
             TypedReference elemref = new TypedReference();
             InternalGetReference(&elemref, 1, &index);
-            InternalSetValue(&elemref,value);
+            InternalSetValue(&elemref, value);
         }
-    
-        public unsafe void SetValue(Object value,int index1, int index2)
+
+        public unsafe void SetValue(Object value, int index1, int index2)
         {
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
@@ -428,10 +435,10 @@ namespace System {
 
             TypedReference elemref = new TypedReference();
             InternalGetReference(&elemref, 2, pIndices);
-            InternalSetValue(&elemref,value);
+            InternalSetValue(&elemref, value);
         }
-    
-        public unsafe void SetValue(Object value,int index1, int index2, int index3)
+
+        public unsafe void SetValue(Object value, int index1, int index2, int index3)
         {
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
@@ -444,10 +451,10 @@ namespace System {
 
             TypedReference elemref = new TypedReference();
             InternalGetReference(&elemref, 3, pIndices);
-            InternalSetValue(&elemref,value);
+            InternalSetValue(&elemref, value);
         }
-        
-        public unsafe void SetValue(Object value,params int[] indices)
+
+        public unsafe void SetValue(Object value, params int[] indices)
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
@@ -456,9 +463,9 @@ namespace System {
             Contract.EndContractBlock();
 
             TypedReference elemref = new TypedReference();
-            fixed(int* pIndices = &indices[0])
+            fixed (int* pIndices = &indices[0])
                 InternalGetReference(&elemref, indices.Length, pIndices);
-            InternalSetValue(&elemref,value);
+            InternalSetValue(&elemref, value);
         }
 
         public void SetValue(Object value, long index)
@@ -467,7 +474,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            this.SetValue(value, (int) index);
+            this.SetValue(value, (int)index);
         }
 
         public void SetValue(Object value, long index1, long index2)
@@ -478,7 +485,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index2, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            this.SetValue(value, (int) index1, (int) index2);
+            this.SetValue(value, (int)index1, (int)index2);
         }
 
         public void SetValue(Object value, long index1, long index2, long index3)
@@ -491,7 +498,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index3, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            this.SetValue(value, (int) index1, (int) index2, (int) index3);
+            this.SetValue(value, (int)index1, (int)index2, (int)index3);
         }
 
         public void SetValue(Object value, params long[] indices)
@@ -504,12 +511,12 @@ namespace System {
 
             int[] intIndices = new int[indices.Length];
 
-            for (int i = 0; i < indices.Length; ++i) 
+            for (int i = 0; i < indices.Length; ++i)
             {
                 long index = indices[i];
                 if (index > Int32.MaxValue || index < Int32.MinValue)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
-                intIndices[i] = (int) index;
+                intIndices[i] = (int)index;
             }
 
             this.SetValue(value, intIndices);
@@ -517,23 +524,25 @@ namespace System {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private unsafe extern void InternalGetReference(void * elemRef, int rank, int * pIndices);
+        private unsafe extern void InternalGetReference(void* elemRef, int rank, int* pIndices);
 
         // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
         // always throws not-supported exception
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe extern static void InternalSetValue(void * target, Object value);
+        private unsafe extern static void InternalSetValue(void* target, Object value);
 
-        public extern int Length {
+        public extern int Length
+        {
             [Pure]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
 
-        private static int GetMedian(int low, int hi) {
+        private static int GetMedian(int low, int hi)
+        {
             // Note both may be negative, if we are dealing with arrays w/ negative lower bounds.
             Contract.Requires(low <= hi);
-            Debug.Assert( hi - low >= 0, "Length overflow!");
+            Debug.Assert(hi - low >= 0, "Length overflow!");
             return low + ((hi - low) >> 1);
         }
 
@@ -545,7 +554,8 @@ namespace System {
         internal const int MaxArrayLength = 0X7FEFFFFF;
         internal const int MaxByteArrayLength = 0x7FFFFFC7;
 
-        public extern long LongLength {
+        public extern long LongLength
+        {
             [Pure]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -556,12 +566,14 @@ namespace System {
         public extern int GetLength(int dimension);
 
         [Pure]
-        public long GetLongLength(int dimension) {
+        public long GetLongLength(int dimension)
+        {
             //This method should throw an IndexOufOfRangeException for compat if dimension < 0 or >= Rank
             return GetLength(dimension);
         }
 
-        public extern int Rank {
+        public extern int Rank
+        {
             [Pure]
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -582,20 +594,21 @@ namespace System {
         int ICollection.Count
         { get { return Length; } }
 
-    
+
         // Returns an object appropriate for synchronizing access to this 
         // Array.
         public Object SyncRoot
         { get { return this; } }
-        
+
         // Is this Array read-only?
         public bool IsReadOnly
         { get { return false; } }
 
-        public bool IsFixedSize {
+        public bool IsFixedSize
+        {
             get { return true; }
         }
-    
+
         // Is this Array synchronized (i.e., thread-safe)?  If you want a synchronized
         // collection, you can use SyncRoot as an object to synchronize your 
         // collection with.  You could also call GetSynchronized() 
@@ -604,7 +617,8 @@ namespace System {
         { get { return false; } }
 
 
-        Object IList.this[int index] {
+        Object IList.this[int index]
+        {
             get { return GetValue(index); }
             set { SetValue(value, index); }
         }
@@ -652,8 +666,10 @@ namespace System {
             return MemberwiseClone();
         }
 
-        Int32 IStructuralComparable.CompareTo(Object other, IComparer comparer) {
-            if (other == null) {
+        Int32 IStructuralComparable.CompareTo(Object other, IComparer comparer)
+        {
+            if (other == null)
+            {
                 return 1;
             }
 
@@ -667,39 +683,45 @@ namespace System {
             int i = 0;
             int c = 0;
 
-            while (i < o.Length && c == 0) {
+            while (i < o.Length && c == 0)
+            {
                 object left = GetValue(i);
                 object right = o.GetValue(i);
 
                 c = comparer.Compare(left, right);
                 i++;
             }
-            
+
             return c;
         }
 
-        Boolean IStructuralEquatable.Equals(Object other, IEqualityComparer comparer) {
-
-            if (other == null) {
+        Boolean IStructuralEquatable.Equals(Object other, IEqualityComparer comparer)
+        {
+            if (other == null)
+            {
                 return false;
             }
 
-            if (Object.ReferenceEquals(this, other)) {
+            if (Object.ReferenceEquals(this, other))
+            {
                 return true;
             }
 
             Array o = other as Array;
 
-            if (o == null || o.Length != this.Length) {
+            if (o == null || o.Length != this.Length)
+            {
                 return false;
             }
 
             int i = 0;
-            while (i < o.Length) {
+            while (i < o.Length)
+            {
                 object left = GetValue(i);
                 object right = o.GetValue(i);
 
-                if (!comparer.Equals(left, right)) {
+                if (!comparer.Equals(left, right))
+                {
                     return false;
                 }
                 i++;
@@ -709,18 +731,21 @@ namespace System {
         }
 
         // From System.Web.Util.HashCodeCombiner
-        internal static int CombineHashCodes(int h1, int h2) {
+        internal static int CombineHashCodes(int h1, int h2)
+        {
             return (((h1 << 5) + h1) ^ h2);
         }
 
-        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer) {
+        int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
+        {
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
             Contract.EndContractBlock();
 
             int ret = 0;
 
-            for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++) {
+            for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
+            {
                 ret = CombineHashCodes(ret, comparer.GetHashCode(GetValue(i)));
             }
 
@@ -741,15 +766,16 @@ namespace System {
         // is larger than the given search value.
         // 
         [Pure]
-        public static int BinarySearch(Array array, Object value) {
-            if (array==null)
+        public static int BinarySearch(Array array, Object value)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures((Contract.Result<int>() >= array.GetLowerBound(0) && Contract.Result<int>() <= array.GetUpperBound(0)) || (Contract.Result<int>() < array.GetLowerBound(0) && ~Contract.Result<int>() <= array.GetUpperBound(0) + 1));
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
             return BinarySearch(array, lb, array.Length, value, null);
         }
-        
+
         // Searches a section of an array for a given element using a binary search
         // algorithm. Elements of the array are compared to the search value using
         // the IComparable interface, which must be implemented by all
@@ -764,10 +790,11 @@ namespace System {
         // is larger than the given search value.
         // 
         [Pure]
-        public static int BinarySearch(Array array, int index, int length, Object value) {
+        public static int BinarySearch(Array array, int index, int length, Object value)
+        {
             return BinarySearch(array, index, length, value, null);
         }
-        
+
         // Searches an array for a given element using a binary search algorithm.
         // Elements of the array are compared to the search value using the given
         // IComparer interface. If comparer is null, elements of the
@@ -783,14 +810,15 @@ namespace System {
         // is larger than the given search value.
         // 
         [Pure]
-        public static int BinarySearch(Array array, Object value, IComparer comparer) {
-            if (array==null)
+        public static int BinarySearch(Array array, Object value, IComparer comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
             return BinarySearch(array, lb, array.Length, value, comparer);
         }
-    
+
         // Searches a section of an array for a given element using a binary search
         // algorithm. Elements of the array are compared to the search value using
         // the given IComparer interface. If comparer is null,
@@ -807,8 +835,9 @@ namespace System {
         // is larger than the given search value.
         // 
         [Pure]
-        public static int BinarySearch(Array array, int index, int length, Object value, IComparer comparer) {
-            if (array==null) 
+        public static int BinarySearch(Array array, int index, int length, Object value, IComparer comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
@@ -820,9 +849,10 @@ namespace System {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
-            
+
             if (comparer == null) comparer = Comparer.Default;
-            if (comparer == Comparer.Default) {
+            if (comparer == Comparer.Default)
+            {
                 int retval;
                 bool r = TrySZBinarySearch(array, index, length, value, out retval);
                 if (r)
@@ -830,45 +860,57 @@ namespace System {
             }
 
             int lo = index;
-            int hi = index + length - 1;   
+            int hi = index + length - 1;
             Object[] objArray = array as Object[];
-            if(objArray != null) {
-                while (lo <= hi) {
+            if (objArray != null)
+            {
+                while (lo <= hi)
+                {
                     // i might overflow if lo and hi are both large positive numbers. 
                     int i = GetMedian(lo, hi);
 
                     int c = 0;
-                    try {
+                    try
+                    {
                         c = comparer.Compare(objArray[i], value);
                     }
-                    catch (Exception e) {
+                    catch (Exception e)
+                    {
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
                     }
                     if (c == 0) return i;
-                    if (c < 0) {
+                    if (c < 0)
+                    {
                         lo = i + 1;
                     }
-                    else {
+                    else
+                    {
                         hi = i - 1;
                     }
                 }
             }
-            else {
-                while (lo <= hi) {
-                    int i = GetMedian(lo, hi);                    
+            else
+            {
+                while (lo <= hi)
+                {
+                    int i = GetMedian(lo, hi);
 
                     int c = 0;
-                    try {
+                    try
+                    {
                         c = comparer.Compare(array.GetValue(i), value);
                     }
-                    catch (Exception e) {
+                    catch (Exception e)
+                    {
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
                     }
                     if (c == 0) return i;
-                    if (c < 0) {
+                    if (c < 0)
+                    {
                         lo = i + 1;
                     }
-                    else {
+                    else
+                    {
                         hi = i - 1;
                     }
                 }
@@ -878,31 +920,35 @@ namespace System {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, Object value, out int retVal);
-        
+
         [Pure]
-        public static int BinarySearch<T>(T[] array, T value) {
-            if (array==null)
+        public static int BinarySearch<T>(T[] array, T value)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             return BinarySearch<T>(array, 0, array.Length, value, null);
         }
 
         [Pure]
-        public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T> comparer) {
-            if (array==null)
+        public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T> comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             return BinarySearch<T>(array, 0, array.Length, value, comparer);
         }
 
         [Pure]
-        public static int BinarySearch<T>(T[] array, int index, int length, T value) {
+        public static int BinarySearch<T>(T[] array, int index, int length, T value)
+        {
             return BinarySearch<T>(array, index, length, value, null);
         }
 
         [Pure]
-        public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T> comparer) {
-            if (array==null) 
+        public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T> comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -916,12 +962,15 @@ namespace System {
             return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
         }
 
-        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput,TOutput> converter) {
-            if( array == null) {
+        public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput, TOutput> converter)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( converter == null) {
+            if (converter == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
             }
             Contract.Ensures(Contract.Result<TOutput[]>() != null);
@@ -929,7 +978,8 @@ namespace System {
             Contract.EndContractBlock();
 
             TOutput[] newArray = new TOutput[array.Length];
-            for( int i = 0; i< array.Length; i++) {
+            for (int i = 0; i < array.Length; i++)
+            {
                 newArray[i] = converter(array[i]);
             }
             return newArray;
@@ -959,7 +1009,7 @@ namespace System {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_HugeArrayNotSupported);
             Contract.EndContractBlock();
 
-            this.CopyTo(array, (int) index);
+            this.CopyTo(array, (int)index);
         }
 
         [Pure]
@@ -972,7 +1022,8 @@ namespace System {
             return EmptyArray<T>.Value;
         }
 
-        public static bool Exists<T>(T[] array, Predicate<T> match) {
+        public static bool Exists<T>(T[] array, Predicate<T> match)
+        {
             return Array.FindIndex(array, match) != -1;
         }
 
@@ -1012,45 +1063,57 @@ namespace System {
             }
         }
 
-        public static T Find<T>(T[] array, Predicate<T> match) {
-            if( array == null) {
+        public static T Find<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.EndContractBlock();
 
-            for(int i = 0 ; i < array.Length; i++) {
-                if(match(array[i])) {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (match(array[i]))
+                {
                     return array[i];
                 }
             }
             return default(T);
         }
 
-        public static T[] FindAll<T>(T[] array, Predicate<T> match) {
-            if( array == null) {
+        public static T[] FindAll<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.EndContractBlock();
 
-            List<T> list = new List<T>(); 
-            for(int i = 0 ; i < array.Length; i++) {
-                if(match(array[i])) {
+            List<T> list = new List<T>();
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (match(array[i]))
+                {
                     list.Add(array[i]);
                 }
             }
             return list.ToArray();
         }
 
-        public static int FindIndex<T>(T[] array, Predicate<T> match) {
-            if (array==null) {
+        public static int FindIndex<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
@@ -1059,62 +1122,77 @@ namespace System {
             return FindIndex(array, 0, array.Length, match);
         }
 
-        public static int FindIndex<T>(T[] array, int startIndex, Predicate<T> match) {
-            if (array==null) {
+        public static int FindIndex<T>(T[] array, int startIndex, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
             Contract.EndContractBlock();
-            
+
             return FindIndex(array, startIndex, array.Length - startIndex, match);
         }
 
-        public static int FindIndex<T>(T[] array, int startIndex, int count, Predicate<T> match) {
-            if (array==null) {
+        public static int FindIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( startIndex < 0 || startIndex > array.Length ) {
+            if (startIndex < 0 || startIndex > array.Length)
+            {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
-            if (count < 0 || startIndex > array.Length - count) {
+            if (count < 0 || startIndex > array.Length - count)
+            {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
             Contract.EndContractBlock();
 
             int endIndex = startIndex + count;
-            for( int i = startIndex; i < endIndex; i++) {
-                if( match(array[i])) return i;
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (match(array[i])) return i;
             }
             return -1;
         }
 
-        public static T FindLast<T>(T[] array, Predicate<T> match) {
-            if( array == null) {
+        public static T FindLast<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.EndContractBlock();
-            
-            for(int i = array.Length - 1 ; i >= 0; i--) {
-                if(match(array[i])) {
+
+            for (int i = array.Length - 1; i >= 0; i--)
+            {
+                if (match(array[i]))
+                {
                     return array[i];
                 }
             }
             return default(T);
         }
 
-        public static int FindLastIndex<T>(T[] array, Predicate<T> match) {
-            if( array == null) {
+        public static int FindLastIndex<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.EndContractBlock();
@@ -1122,63 +1200,79 @@ namespace System {
             return FindLastIndex(array, array.Length - 1, array.Length, match);
         }
 
-        public static int FindLastIndex<T>(T[] array, int startIndex, Predicate<T> match) {
-            if( array == null) {
+        public static int FindLastIndex<T>(T[] array, int startIndex, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.EndContractBlock();
-        
+
             return FindLastIndex(array, startIndex, startIndex + 1, match);
         }
 
-        public static int FindLastIndex<T>(T[] array, int startIndex, int count, Predicate<T> match) {
-            if( array == null) {
+        public static int FindLastIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.EndContractBlock();
 
-            if(array.Length == 0) {
+            if (array.Length == 0)
+            {
                 // Special case for 0 length List
-                if( startIndex != -1) {
+                if (startIndex != -1)
+                {
                     ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
                 }
             }
-            else {
+            else
+            {
                 // Make sure we're not out of range            
-                if ( startIndex < 0 || startIndex >= array.Length) {
+                if (startIndex < 0 || startIndex >= array.Length)
+                {
                     ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
                 }
             }
-            
+
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
-            if (count < 0 || startIndex - count + 1 < 0) {
+            if (count < 0 || startIndex - count + 1 < 0)
+            {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
             int endIndex = startIndex - count;
-            for( int i = startIndex; i > endIndex; i--) {
-                if( match(array[i])) {
+            for (int i = startIndex; i > endIndex; i--)
+            {
+                if (match(array[i]))
+                {
                     return i;
                 }
             }
             return -1;
         }
 
-        public static void ForEach<T>(T[] array, Action<T> action) {
-            if( array == null) {
+        public static void ForEach<T>(T[] array, Action<T> action)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( action == null) {
+            if (action == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
             Contract.EndContractBlock();
 
-            for(int i = 0 ; i < array.Length; i++) {
+            for (int i = 0; i < array.Length; i++)
+            {
                 action(array[i]);
             }
         }
@@ -1195,43 +1289,46 @@ namespace System {
             else
                 return new ArrayEnumerator(this, lowerBound, Length);
         }
-        
+
         // Returns the index of the first occurrence of a given value in an array.
         // The array is searched forwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value) {
-            if (array==null)
+        public static int IndexOf(Array array, Object value)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures(Contract.Result<int>() < array.GetLowerBound(0) + array.Length);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
             return IndexOf(array, value, lb, array.Length);
         }
-        
+
         // Returns the index of the first occurrence of a given value in a range of
         // an array. The array is searched forwards, starting at index
         // startIndex and ending at the last element of the array. The
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value, int startIndex) {
-            if (array==null)
+        public static int IndexOf(Array array, Object value, int startIndex)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures(Contract.Result<int>() < array.GetLowerBound(0) + array.Length);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
             return IndexOf(array, value, startIndex, array.Length - startIndex + lb);
         }
-        
+
         // Returns the index of the first occurrence of a given value in a range of
         // an array. The array is searched forwards, starting at index
         // startIndex and upto count elements. The
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, Object value, int startIndex, int count) {
-            if (array==null)
+        public static int IndexOf(Array array, Object value, int startIndex, int count)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
@@ -1252,27 +1349,36 @@ namespace System {
 
             Object[] objArray = array as Object[];
             int endIndex = startIndex + count;
-            if (objArray != null) {
-                if (value == null) {
-                    for (int i = startIndex; i < endIndex; i++) {
+            if (objArray != null)
+            {
+                if (value == null)
+                {
+                    for (int i = startIndex; i < endIndex; i++)
+                    {
                         if (objArray[i] == null) return i;
                     }
                 }
-                else {
-                    for (int i = startIndex; i < endIndex; i++) {
+                else
+                {
+                    for (int i = startIndex; i < endIndex; i++)
+                    {
                         Object obj = objArray[i];
                         if (obj != null && obj.Equals(value)) return i;
                     }
                 }
             }
-            else {                
-                for (int i = startIndex; i < endIndex; i++) {
+            else
+            {
+                for (int i = startIndex; i < endIndex; i++)
+                {
                     Object obj = array.GetValue(i);
-                    if( obj == null) {
-                        if(value == null) return i;
+                    if (obj == null)
+                    {
+                        if (value == null) return i;
                     }
-                    else {
-                        if( obj.Equals(value)) return i;
+                    else
+                    {
+                        if (obj.Equals(value)) return i;
                     }
                 }
             }
@@ -1280,12 +1386,14 @@ namespace System {
             // for arrays with a lower bound of -1 we will not return -1 when the
             // item was not found.  And for SZArrays (the vast majority), -1 still
             // works for them.
-            return lb-1;
+            return lb - 1;
         }
 
         [Pure]
-        public static int IndexOf<T>(T[] array, T value) {
-            if (array==null) {
+        public static int IndexOf<T>(T[] array, T value)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures((Contract.Result<int>() < 0) ||
@@ -1295,8 +1403,10 @@ namespace System {
             return IndexOf(array, value, 0, array.Length);
         }
 
-        public static int IndexOf<T>(T[] array, T value, int startIndex) {
-            if (array==null) {
+        public static int IndexOf<T>(T[] array, T value, int startIndex)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
@@ -1305,16 +1415,20 @@ namespace System {
             return IndexOf(array, value, startIndex, array.Length - startIndex);
         }
 
-        public static int IndexOf<T>(T[] array, T value, int startIndex, int count) {
-            if (array==null) {
+        public static int IndexOf<T>(T[] array, T value, int startIndex, int count)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (startIndex < 0 || startIndex > array.Length ) {
+            if (startIndex < 0 || startIndex > array.Length)
+            {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
-            if (count < 0 || count > array.Length - startIndex) {
+            if (count < 0 || count > array.Length - startIndex)
+            {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
@@ -1325,27 +1439,29 @@ namespace System {
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, Object value, out int retVal);
-        
+
 
         // Returns the index of the last occurrence of a given value in an array.
         // The array is searched backwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int LastIndexOf(Array array, Object value) {
-            if (array==null)
+        public static int LastIndexOf(Array array, Object value)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures(Contract.Result<int>() < array.GetLowerBound(0) + array.Length);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
             return LastIndexOf(array, value, array.Length - 1 + lb, array.Length);
         }
-        
+
         // Returns the index of the last occurrence of a given value in a range of
         // an array. The array is searched backwards, starting at index
         // startIndex and ending at index 0. The elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int LastIndexOf(Array array, Object value, int startIndex) {
+        public static int LastIndexOf(Array array, Object value, int startIndex)
+        {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures(Contract.Result<int>() < array.GetLowerBound(0) + array.Length);
@@ -1353,21 +1469,23 @@ namespace System {
             int lb = array.GetLowerBound(0);
             return LastIndexOf(array, value, startIndex, startIndex + 1 - lb);
         }
-        
+
         // Returns the index of the last occurrence of a given value in a range of
         // an array. The array is searched backwards, starting at index
         // startIndex and counting uptocount elements. The elements of
         // the array are compared to the given value using the Object.Equals
         // method.
         // 
-        public static int LastIndexOf(Array array, Object value, int startIndex, int count) {
-            if (array==null)
+        public static int LastIndexOf(Array array, Object value, int startIndex, int count)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.Ensures(Contract.Result<int>() < array.GetLowerBound(0) + array.Length);
             Contract.EndContractBlock();
             int lb = array.GetLowerBound(0);
-            if (array.Length == 0) {
-                return lb-1;
+            if (array.Length == 0)
+            {
+                return lb - 1;
             }
 
             if (startIndex < lb || startIndex >= array.Length + lb)
@@ -1387,35 +1505,46 @@ namespace System {
 
             Object[] objArray = array as Object[];
             int endIndex = startIndex - count + 1;
-            if (objArray!=null) {
-                if (value == null) {
-                    for (int i = startIndex; i >= endIndex; i--) {
+            if (objArray != null)
+            {
+                if (value == null)
+                {
+                    for (int i = startIndex; i >= endIndex; i--)
+                    {
                         if (objArray[i] == null) return i;
                     }
                 }
-                else {
-                    for (int i = startIndex; i >= endIndex; i--) {
+                else
+                {
+                    for (int i = startIndex; i >= endIndex; i--)
+                    {
                         Object obj = objArray[i];
                         if (obj != null && obj.Equals(value)) return i;
                     }
                 }
             }
-            else {
-                for (int i = startIndex; i >= endIndex; i--) {
+            else
+            {
+                for (int i = startIndex; i >= endIndex; i--)
+                {
                     Object obj = array.GetValue(i);
-                    if( obj == null) {
-                        if(value == null) return i;
+                    if (obj == null)
+                    {
+                        if (value == null) return i;
                     }
-                    else {
-                        if( obj.Equals(value)) return i;
+                    else
+                    {
+                        if (obj.Equals(value)) return i;
                     }
                 }
             }
-            return lb-1;  // Return lb-1 for arrays with negative lower bounds.
+            return lb - 1;  // Return lb-1 for arrays with negative lower bounds.
         }
-        
-        public static int LastIndexOf<T>(T[] array, T value) {
-            if (array==null) {
+
+        public static int LastIndexOf<T>(T[] array, T value)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
@@ -1424,50 +1553,59 @@ namespace System {
             return LastIndexOf(array, value, array.Length - 1, array.Length);
         }
 
-        public static int LastIndexOf<T>(T[] array, T value, int startIndex) {
-            if (array==null) {
+        public static int LastIndexOf<T>(T[] array, T value, int startIndex)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
             Contract.EndContractBlock();
             // if array is empty and startIndex is 0, we need to pass 0 as count
-            return LastIndexOf(array, value, startIndex, (array.Length == 0)? 0 : (startIndex + 1));
+            return LastIndexOf(array, value, startIndex, (array.Length == 0) ? 0 : (startIndex + 1));
         }
 
-        public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count) {
-            if (array==null) {
+        public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             Contract.Ensures(Contract.Result<int>() < array.Length);
             Contract.EndContractBlock();
-        
-            if(array.Length == 0) {
+
+            if (array.Length == 0)
+            {
                 //
                 // Special case for 0 length List
                 // accept -1 and 0 as valid startIndex for compablility reason.
                 //
-                if( startIndex != -1 && startIndex != 0) {
+                if (startIndex != -1 && startIndex != 0)
+                {
                     ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
                 }
 
                 // only 0 is a valid value for count if array is empty
-                if( count != 0) {
+                if (count != 0)
+                {
                     ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
                 }
                 return -1;
             }
 
             // Make sure we're not out of range            
-            if ( startIndex < 0 || startIndex >= array.Length) {
+            if (startIndex < 0 || startIndex >= array.Length)
+            {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
-            
+
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
-            if (count < 0 || startIndex - count + 1 < 0) {
+            if (count < 0 || startIndex - count + 1 < 0)
+            {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);            
+            return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1479,21 +1617,23 @@ namespace System {
         // located at index length - i - 1, where length is the
         // length of the array.
         // 
-        public static void Reverse(Array array) {
-            if (array==null)
+        public static void Reverse(Array array)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             Reverse(array, array.GetLowerBound(0), array.Length);
         }
-        
+
         // Reverses the elements in a range of an array. Following a call to this
         // method, an element in the range given by index and count
         // which was previously located at index i will now be located at
         // index index + (index + count - i - 1).
         // Reliability note: This may fail because it may have to box objects.
         // 
-        public static void Reverse(Array array, int index, int length) {
-            if (array==null) 
+        public static void Reverse(Array array, int index, int length)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lowerBound = array.GetLowerBound(0);
             if (index < lowerBound)
@@ -1514,8 +1654,10 @@ namespace System {
             int i = index;
             int j = index + length - 1;
             Object[] objArray = array as Object[];
-            if (objArray!=null) {
-                while (i < j) {
+            if (objArray != null)
+            {
+                while (i < j)
+                {
                     Object temp = objArray[i];
                     objArray[i] = objArray[j];
                     objArray[j] = temp;
@@ -1523,8 +1665,10 @@ namespace System {
                     j--;
                 }
             }
-            else {
-                while (i < j) {
+            else
+            {
+                while (i < j)
+                {
                     Object temp = array.GetValue(i);
                     array.SetValue(array.GetValue(j), i);
                     array.SetValue(temp, j);
@@ -1573,57 +1717,62 @@ namespace System {
         // other using the IComparable interface, which must be implemented
         // by all elements of the array.
         // 
-        public static void Sort(Array array) {
-            if (array==null)
+        public static void Sort(Array array)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             Sort(array, null, array.GetLowerBound(0), array.Length, null);
         }
-    
+
         // Sorts the elements of two arrays based on the keys in the first array.
         // Elements in the keys array specify the sort keys for
         // corresponding elements in the items array. The sort compares the
         // keys to each other using the IComparable interface, which must be
         // implemented by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items) {
-            if (keys==null)
+        public static void Sort(Array keys, Array items)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Contract.EndContractBlock();
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, null);
         }
-        
+
         // Sorts the elements in a section of an array. The sort compares the
         // elements to each other using the IComparable interface, which
         // must be implemented by all elements in the given section of the array.
         // 
-        public static void Sort(Array array, int index, int length) {
+        public static void Sort(Array array, int index, int length)
+        {
             Sort(array, null, index, length, null);
         }
-    
+
         // Sorts the elements in a section of two arrays based on the keys in the
         // first array. Elements in the keys array specify the sort keys for
         // corresponding elements in the items array. The sort compares the
         // keys to each other using the IComparable interface, which must be
         // implemented by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items, int index, int length) {
+        public static void Sort(Array keys, Array items, int index, int length)
+        {
             Sort(keys, items, index, length, null);
         }
-        
+
         // Sorts the elements of an array. The sort compares the elements to each
         // other using the given IComparer interface. If comparer is
         // null, the elements are compared to each other using the
         // IComparable interface, which in that case must be implemented by
         // all elements of the array.
         // 
-        public static void Sort(Array array, IComparer comparer) {
-            if (array==null)
+        public static void Sort(Array array, IComparer comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             Sort(array, null, array.GetLowerBound(0), array.Length, comparer);
         }
-    
+
         // Sorts the elements of two arrays based on the keys in the first array.
         // Elements in the keys array specify the sort keys for
         // corresponding elements in the items array. The sort compares the
@@ -1632,23 +1781,25 @@ namespace System {
         // the IComparable interface, which in that case must be implemented
         // by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items, IComparer comparer) {
-            if (keys==null)
+        public static void Sort(Array keys, Array items, IComparer comparer)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Contract.EndContractBlock();
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, comparer);
         }
-        
+
         // Sorts the elements in a section of an array. The sort compares the
         // elements to each other using the given IComparer interface. If
         // comparer is null, the elements are compared to each other using
         // the IComparable interface, which in that case must be implemented
         // by all elements in the given section of the array.
         // 
-        public static void Sort(Array array, int index, int length, IComparer comparer) {
+        public static void Sort(Array array, int index, int length, IComparer comparer)
+        {
             Sort(array, null, index, length, comparer);
         }
-        
+
         // Sorts the elements in a section of two arrays based on the keys in the
         // first array. Elements in the keys array specify the sort keys for
         // corresponding elements in the items array. The sort compares the
@@ -1657,8 +1808,9 @@ namespace System {
         // the IComparable interface, which in that case must be implemented
         // by all elements of the given section of the keys array.
         // 
-        public static void Sort(Array keys, Array items, int index, int length, IComparer comparer) {
-            if (keys==null)
+        public static void Sort(Array keys, Array items, int index, int length, IComparer comparer)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             if (keys.Rank != 1 || (items != null && items.Rank != 1))
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
@@ -1674,9 +1826,11 @@ namespace System {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             Contract.EndContractBlock();
-            
-            if (length > 1) {
-                if (comparer == Comparer.Default || comparer == null) {
+
+            if (length > 1)
+            {
+                if (comparer == Comparer.Default || comparer == null)
+                {
                     bool r = TrySZSort(keys, items, index, index + length - 1);
                     if (r)
                         return;
@@ -1686,58 +1840,67 @@ namespace System {
                 Object[] objItems = null;
                 if (objKeys != null)
                     objItems = items as Object[];
-                if (objKeys != null && (items==null || objItems != null)) {
+                if (objKeys != null && (items == null || objItems != null))
+                {
                     SorterObjectArray sorter = new SorterObjectArray(objKeys, objItems, comparer);
                     sorter.Sort(index, length);
                 }
-                else {
+                else
+                {
                     SorterGenericArray sorter = new SorterGenericArray(keys, items, comparer);
                     sorter.Sort(index, length);
                 }
             }
         }
-        
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool TrySZSort(Array keys, Array items, int left, int right);
 
-        public static void Sort<T>(T[] array) {
-            if (array==null)
+        public static void Sort<T>(T[] array)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             Sort<T>(array, 0, array.Length, null);
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items) {
-            if (keys==null)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
         }
 
-        public static void Sort<T>(T[] array, int index, int length) {
+        public static void Sort<T>(T[] array, int index, int length)
+        {
             Sort<T>(array, index, length, null);
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length) {
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length)
+        {
             Sort<TKey, TValue>(keys, items, index, length, null);
         }
 
-        public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T> comparer) {
+        public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T> comparer)
+        {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Contract.EndContractBlock();
             Sort<T>(array, 0, array.Length, comparer);
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, System.Collections.Generic.IComparer<TKey> comparer) {
-            if (keys==null)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, System.Collections.Generic.IComparer<TKey> comparer)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Contract.EndContractBlock();
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
 
-        public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T> comparer) {
-            if (array==null)
+        public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T> comparer)
+        {
+            if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -1747,19 +1910,23 @@ namespace System {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            if (length > 1) {
-                if ( comparer == null || comparer == Comparer<T>.Default ) {
-                    if(TrySZSort(array, null, index, index + length - 1)) {
+            if (length > 1)
+            {
+                if (comparer == null || comparer == Comparer<T>.Default)
+                {
+                    if (TrySZSort(array, null, index, index + length - 1))
+                    {
                         return;
                     }
                 }
 
-                ArraySortHelper<T>.Default.Sort(array, index, length, comparer);                
+                ArraySortHelper<T>.Default.Sort(array, index, length, comparer);
             }
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, System.Collections.Generic.IComparer<TKey> comparer) {
-            if (keys==null)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, System.Collections.Generic.IComparer<TKey> comparer)
+        {
+            if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -1769,13 +1936,16 @@ namespace System {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
-            if (length > 1) {
-                if ( comparer == null || comparer == Comparer<TKey>.Default ) {
-                    if(TrySZSort(keys, items, index, index + length - 1)) {
+            if (length > 1)
+            {
+                if (comparer == null || comparer == Comparer<TKey>.Default)
+                {
+                    if (TrySZSort(keys, items, index, index + length - 1))
+                    {
                         return;
                     }
                 }
-                
+
                 if (items == null)
                 {
                     Sort<TKey>(keys, index, length, comparer);
@@ -1786,12 +1956,15 @@ namespace System {
             }
         }
 
-        public static void Sort<T>(T[] array, Comparison<T> comparison) {
-            if( array == null) {
+        public static void Sort<T>(T[] array, Comparison<T> comparison)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( comparison == null) {
+            if (comparison == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
             Contract.EndContractBlock();
@@ -1799,18 +1972,23 @@ namespace System {
             ArraySortHelper<T>.Sort(array, 0, array.Length, comparison);
         }
 
-        public static bool TrueForAll<T>(T[] array, Predicate<T> match) {
-            if( array == null) {
+        public static bool TrueForAll<T>(T[] array, Predicate<T> match)
+        {
+            if (array == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if( match == null) {
+            if (match == null)
+            {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
             Contract.EndContractBlock();
 
-            for(int i = 0 ; i < array.Length; i++) {
-                if( !match(array[i])) {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (!match(array[i]))
+                {
                     return false;
                 }
             }
@@ -1823,15 +2001,16 @@ namespace System {
         {
             private Object[] keys;
             private Object[] items;
-            private IComparer comparer;    
-    
-            internal SorterObjectArray(Object[] keys, Object[] items, IComparer comparer) {
+            private IComparer comparer;
+
+            internal SorterObjectArray(Object[] keys, Object[] items, IComparer comparer)
+            {
                 if (comparer == null) comparer = Comparer.Default;
                 this.keys = keys;
                 this.items = items;
                 this.comparer = comparer;
             }
-    
+
             internal void SwapIfGreaterWithItems(int a, int b)
             {
                 if (a != b)
@@ -1907,9 +2086,9 @@ namespace System {
                         }
                         if (partitionSize == 3)
                         {
-                            SwapIfGreaterWithItems(lo, hi-1);
+                            SwapIfGreaterWithItems(lo, hi - 1);
                             SwapIfGreaterWithItems(lo, hi);
-                            SwapIfGreaterWithItems(hi-1, hi);
+                            SwapIfGreaterWithItems(hi - 1, hi);
                             return;
                         }
 
@@ -1948,7 +2127,7 @@ namespace System {
                     while (comparer.Compare(keys[++left], pivot) < 0) ;
                     while (comparer.Compare(pivot, keys[--right]) < 0) ;
 
-                    if(left >= right)
+                    if (left >= right)
                         break;
 
                     Swap(left, right);
@@ -1989,7 +2168,7 @@ namespace System {
                     if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
                         break;
                     keys[lo + i - 1] = keys[lo + child - 1];
-                    if(items != null)
+                    if (items != null)
                         items[lo + i - 1] = items[lo + child - 1];
                     i = child;
                 }
@@ -2010,17 +2189,17 @@ namespace System {
                     while (j >= lo && comparer.Compare(t, keys[j]) < 0)
                     {
                         keys[j + 1] = keys[j];
-                        if(items != null)
+                        if (items != null)
                             items[j + 1] = items[j];
                         j--;
                     }
                     keys[j + 1] = t;
-                    if(items != null)
+                    if (items != null)
                         items[j + 1] = ti;
                 }
             }
         }
-    
+
         // Private value used by the Sort methods for instances of Array.
         // This is slower than the one for Object[], since we can't use the JIT helpers
         // to access the elements.  We must use GetValue & SetValue.
@@ -2062,8 +2241,8 @@ namespace System {
                 Object t1 = keys.GetValue(i);
                 keys.SetValue(keys.GetValue(j), i);
                 keys.SetValue(t1, j);
-                
-                if(items != null)
+
+                if (items != null)
                 {
                     Object t2 = items.GetValue(i);
                     items.SetValue(items.GetValue(j), i);
@@ -2113,9 +2292,9 @@ namespace System {
                         }
                         if (partitionSize == 3)
                         {
-                            SwapIfGreaterWithItems(lo, hi-1);
+                            SwapIfGreaterWithItems(lo, hi - 1);
                             SwapIfGreaterWithItems(lo, hi);
-                            SwapIfGreaterWithItems(hi-1, hi);
+                            SwapIfGreaterWithItems(hi - 1, hi);
                             return;
                         }
 
@@ -2148,7 +2327,7 @@ namespace System {
                 Object pivot = keys.GetValue(mid);
                 Swap(mid, hi - 1);
                 int left = lo, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
-                
+
                 while (left < right)
                 {
                     while (comparer.Compare(keys.GetValue(++left), pivot) < 0) ;
@@ -2183,7 +2362,7 @@ namespace System {
             private void DownHeap(int i, int n, int lo)
             {
                 Object d = keys.GetValue(lo + i - 1);
-                Object dt = (items != null)? items.GetValue(lo + i - 1) : null;
+                Object dt = (items != null) ? items.GetValue(lo + i - 1) : null;
                 int child;
                 while (i <= n / 2)
                 {
@@ -2197,12 +2376,12 @@ namespace System {
                         break;
 
                     keys.SetValue(keys.GetValue(lo + child - 1), lo + i - 1);
-                    if(items != null)
+                    if (items != null)
                         items.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
                     i = child;
                 }
                 keys.SetValue(d, lo + i - 1);
-                if(items != null)
+                if (items != null)
                     items.SetValue(dt, lo + i - 1);
             }
 
@@ -2214,30 +2393,32 @@ namespace System {
                 {
                     j = i;
                     t = keys.GetValue(i + 1);
-                    dt = (items != null)? items.GetValue(i + 1) : null;
+                    dt = (items != null) ? items.GetValue(i + 1) : null;
 
                     while (j >= lo && comparer.Compare(t, keys.GetValue(j)) < 0)
                     {
                         keys.SetValue(keys.GetValue(j), j + 1);
-                        if(items != null)
+                        if (items != null)
                             items.SetValue(items.GetValue(j), j + 1);
                         j--;
                     }
 
                     keys.SetValue(t, j + 1);
-                    if(items != null)
+                    if (items != null)
                         items.SetValue(dt, j + 1);
                 }
             }
         }
 
-        [Serializable] private sealed class SZArrayEnumerator : IEnumerator, ICloneable
+        [Serializable]
+        private sealed class SZArrayEnumerator : IEnumerator, ICloneable
         {
             private Array _array;
             private int _index;
             private int _endIndex; // cache array length, since it's a little slow.
 
-            internal SZArrayEnumerator(Array array) {
+            internal SZArrayEnumerator(Array array)
+            {
                 Debug.Assert(array.Rank == 1 && array.GetLowerBound(0) == 0, "SZArrayEnumerator only works on single dimension arrays w/ a lower bound of zero.");
                 _array = array;
                 _index = -1;
@@ -2249,28 +2430,34 @@ namespace System {
                 return MemberwiseClone();
             }
 
-            public bool MoveNext() {
-                if (_index < _endIndex) {
+            public bool MoveNext()
+            {
+                if (_index < _endIndex)
+                {
                     _index++;
                     return (_index < _endIndex);
                 }
                 return false;
             }
-    
-            public Object Current {
-                get {
+
+            public Object Current
+            {
+                get
+                {
                     if (_index < 0) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                     if (_index >= _endIndex) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return _array.GetValue(_index);
                 }
             }
-    
-            public void Reset() {
+
+            public void Reset()
+            {
                 _index = -1;
             }
         }
-        
-        [Serializable] private sealed class ArrayEnumerator : IEnumerator, ICloneable
+
+        [Serializable]
+        private sealed class ArrayEnumerator : IEnumerator, ICloneable
         {
             private Array array;
             private int index;
@@ -2279,23 +2466,26 @@ namespace System {
             private int[] _indices;    // The current position in a multidim array
             private bool _complete;
 
-            internal ArrayEnumerator(Array array, int index, int count) {
+            internal ArrayEnumerator(Array array, int index, int count)
+            {
                 this.array = array;
                 this.index = index - 1;
                 startIndex = index;
                 endIndex = index + count;
                 _indices = new int[array.Rank];
                 int checkForZero = 1;  // Check for dimensions of size 0.
-                for(int i=0; i<array.Rank; i++) {
+                for (int i = 0; i < array.Rank; i++)
+                {
                     _indices[i] = array.GetLowerBound(i);
                     checkForZero *= array.GetLength(i);
                 }
                 // To make MoveNext simpler, decrement least significant index.
-                _indices[_indices.Length-1]--;
+                _indices[_indices.Length - 1]--;
                 _complete = (checkForZero == 0);
             }
 
-            private void IncArray() {
+            private void IncArray()
+            {
                 // This method advances us to the next valid array index,
                 // handling all the multiple dimension & bounds correctly.
                 // Think of it like an odometer in your car - we start with
@@ -2306,16 +2496,19 @@ namespace System {
                 // has rolled over it's upper bound, we're done.
                 //
                 int rank = array.Rank;
-                _indices[rank-1]++;
-                for(int dim=rank-1; dim>=0; dim--) {
-                    if (_indices[dim] > array.GetUpperBound(dim)) {
-                        if (dim==0) {
+                _indices[rank - 1]++;
+                for (int dim = rank - 1; dim >= 0; dim--)
+                {
+                    if (_indices[dim] > array.GetUpperBound(dim))
+                    {
+                        if (dim == 0)
+                        {
                             _complete = true;
                             break;
                         }
-                        for(int j=dim; j<rank; j++)
+                        for (int j = dim; j < rank; j++)
                             _indices[j] = array.GetLowerBound(j);
-                        _indices[dim-1]++;
+                        _indices[dim - 1]++;
                     }
                 }
             }
@@ -2325,8 +2518,10 @@ namespace System {
                 return MemberwiseClone();
             }
 
-            public bool MoveNext() {
-                if (_complete) {
+            public bool MoveNext()
+            {
+                if (_complete)
+                {
                     index = endIndex;
                     return false;
                 }
@@ -2334,25 +2529,29 @@ namespace System {
                 IncArray();
                 return !_complete;
             }
-    
-            public Object Current {
-                get {
+
+            public Object Current
+            {
+                get
+                {
                     if (index < startIndex) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                     if (_complete) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return array.GetValue(_indices);
                 }
             }
-    
-            public void Reset() {
+
+            public void Reset()
+            {
                 index = startIndex - 1;
                 int checkForZero = 1;
-                for(int i=0; i<array.Rank; i++) {
+                for (int i = 0; i < array.Rank; i++)
+                {
                     _indices[i] = array.GetLowerBound(i);
                     checkForZero *= array.GetLength(i);
                 }
                 _complete = (checkForZero == 0);
                 // To make MoveNext simpler, decrement least significant index.
-                _indices[_indices.Length-1]--;
+                _indices[_indices.Length - 1]--;
             }
         }
 
@@ -2393,16 +2592,19 @@ namespace System {
     // array that is castable to "T[]" (i.e. for primitivs and valuetypes, it will be exactly
     // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
     //----------------------------------------------------------------------------------------
-    sealed class SZArrayHelper {
+    internal sealed class SZArrayHelper
+    {
         // It is never legal to instantiate this class.
-        private SZArrayHelper() {
+        private SZArrayHelper()
+        {
             Debug.Assert(false, "Hey! How'd I get here?");
         }
 
         // -----------------------------------------------------------
         // ------- Implement IEnumerable<T> interface methods --------
         // -----------------------------------------------------------
-        internal IEnumerator<T> GetEnumerator<T>() {
+        internal IEnumerator<T> GetEnumerator<T>()
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
@@ -2413,7 +2615,8 @@ namespace System {
         // -----------------------------------------------------------
         // ------- Implement ICollection<T> interface methods --------
         // -----------------------------------------------------------
-        void CopyTo<T>(T[] array, int index) {
+        private void CopyTo<T>(T[] array, int index)
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
 
@@ -2421,7 +2624,8 @@ namespace System {
             Array.Copy(_this, 0, array, index, _this.Length);
         }
 
-        internal int get_Count<T>() {
+        internal int get_Count<T>()
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
@@ -2431,70 +2635,82 @@ namespace System {
         // -----------------------------------------------------------
         // ---------- Implement IList<T> interface methods -----------
         // -----------------------------------------------------------
-        internal T get_Item<T>(int index) {
+        internal T get_Item<T>(int index)
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
-            if ((uint)index >= (uint)_this.Length) {
+            if ((uint)index >= (uint)_this.Length)
+            {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             return _this[index];
         }
 
-        internal void set_Item<T>(int index, T value) {
+        internal void set_Item<T>(int index, T value)
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
-            if ((uint)index >= (uint)_this.Length) {
+            if ((uint)index >= (uint)_this.Length)
+            {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             _this[index] = value;
         }
 
-        void Add<T>(T value) {
+        private void Add<T>(T value)
+        {
             // Not meaningful for arrays.
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        bool Contains<T>(T value) {
+        private bool Contains<T>(T value)
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
             return Array.IndexOf(_this, value, 0, _this.Length) >= 0;
         }
-        
-        bool get_IsReadOnly<T>() {
-            return true; 
+
+        private bool get_IsReadOnly<T>()
+        {
+            return true;
         }
-        
-        void Clear<T>() {
+
+        private void Clear<T>()
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
 
-            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);                     
+            ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
 
-        int IndexOf<T>(T value) {
+        private int IndexOf<T>(T value)
+        {
             //! Warning: "this" is an array, not an SZArrayHelper. See comments above
             //! or you may introduce a security hole!
             T[] _this = JitHelpers.UnsafeCast<T[]>(this);
             return Array.IndexOf(_this, value, 0, _this.Length);
         }
-        
-        void Insert<T>(int index, T value) {
+
+        private void Insert<T>(int index, T value)
+        {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        bool Remove<T>(T value) {
+        private bool Remove<T>(T value)
+        {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default(bool);
         }
 
-        void RemoveAt<T>(int index) {
+        private void RemoveAt<T>(int index)
+        {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
@@ -2502,7 +2718,9 @@ namespace System {
         // This is a normal generic Enumerator for SZ arrays. It doesn't have any of the "this" stuff
         // that SZArrayHelper does.
         //
-        [Serializable] private sealed class SZGenericArrayEnumerator<T> : IEnumerator<T> {
+        [Serializable]
+        private sealed class SZGenericArrayEnumerator<T> : IEnumerator<T>
+        {
             private T[] _array;
             private int _index;
             private int _endIndex; // cache array length, since it's a little slow.
@@ -2510,37 +2728,45 @@ namespace System {
             // Passing -1 for endIndex so that MoveNext always returns false without mutating _index
             internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, -1);
 
-            internal SZGenericArrayEnumerator(T[] array, int endIndex) {
+            internal SZGenericArrayEnumerator(T[] array, int endIndex)
+            {
                 // We allow passing null array in case of empty enumerator. 
                 Debug.Assert(array != null || endIndex == -1, "endIndex should be -1 in the case of a null array (for the empty enumerator).");
                 _array = array;
                 _index = -1;
                 _endIndex = endIndex;
             }
-    
-            public bool MoveNext() {
-                if (_index < _endIndex) {
+
+            public bool MoveNext()
+            {
+                if (_index < _endIndex)
+                {
                     _index++;
                     return (_index < _endIndex);
                 }
                 return false;
             }
-    
-            public T Current {
-                get {
+
+            public T Current
+            {
+                get
+                {
                     if (_index < 0) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                     if (_index >= _endIndex) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
                     return _array[_index];
                 }
             }
-    
-            object IEnumerator.Current {
-                get {
+
+            object IEnumerator.Current
+            {
+                get
+                {
                     return Current;
                 }
             }
 
-            void IEnumerator.Reset() {
+            void IEnumerator.Reset()
+            {
                 _index = -1;
             }
 

@@ -14,15 +14,15 @@
 ** 
 ===========================================================*/
 
+using System;
+using System.Runtime.InteropServices;
+
 namespace System.Runtime.Remoting
 {
-    using System;
-    using System.Runtime.InteropServices;
-
-    public class ObjectHandle 
+    public class ObjectHandle
     {
         private Object WrappedObject;
-        
+
         private ObjectHandle()
         {
         }

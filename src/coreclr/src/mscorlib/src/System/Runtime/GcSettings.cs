@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Runtime {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Diagnostics.Contracts;
 
+namespace System.Runtime
+{
     // These settings are the same format as in clr\src\vm\gcpriv.h
     // make sure you change that file if you change this file!
 
@@ -22,30 +23,30 @@ namespace System.Runtime {
     [Serializable]
     public enum GCLatencyMode
     {
-        Batch = 0, 
+        Batch = 0,
         Interactive = 1,
         LowLatency = 2,
         SustainedLowLatency = 3,
         NoGCRegion = 4
     }
 
-    public static class GCSettings 
+    public static class GCSettings
     {
-        enum SetLatencyModeStatus
+        private enum SetLatencyModeStatus
         {
             Succeeded = 0,
             NoGCInProgress = 1 // NoGCRegion is in progress, can't change pause mode.
         };
-        
+
         public static GCLatencyMode LatencyMode
         {
-            get 
+            get
             {
                 return (GCLatencyMode)(GC.GetGCLatencyMode());
             }
 
             // We don't want to allow this API when hosted.
-            set 
+            set
             {
                 if ((value < GCLatencyMode.Batch) || (value > GCLatencyMode.SustainedLowLatency))
                 {
@@ -60,15 +61,15 @@ namespace System.Runtime {
 
         public static GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode
         {
-            get 
+            get
             {
                 return (GCLargeObjectHeapCompactionMode)(GC.GetLOHCompactionMode());
             }
 
             // We don't want to allow this API when hosted.
-            set 
+            set
             {
-                if ((value < GCLargeObjectHeapCompactionMode.Default) || 
+                if ((value < GCLargeObjectHeapCompactionMode.Default) ||
                     (value > GCLargeObjectHeapCompactionMode.CompactOnce))
                 {
                     throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Enum"));
@@ -79,11 +80,12 @@ namespace System.Runtime {
             }
         }
 
-        public static bool IsServerGC 
+        public static bool IsServerGC
         {
-            get {
+            get
+            {
                 return GC.IsServerGC();
             }
-        }            
+        }
     }
 }

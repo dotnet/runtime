@@ -3,21 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 //
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.Versioning;
+using System.Runtime;
+
 namespace System.Threading
 {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-    using System.Runtime;
-
     // After much discussion, we decided the Interlocked class doesn't need 
     // any HPA's for synchronization or external threading.  They hurt C#'s 
     // codegen for the yield keyword, and arguably they didn't protect much.  
     // Instead, they penalized people (and compilers) for writing threadsafe 
     // code.
     public static class Interlocked
-    {        
+    {
         /******************************
          * Increment
          *   Implemented: int
@@ -102,16 +103,16 @@ namespace System.Threading
          *****************************/
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int CompareExchange(ref int location1, int value, int comparand);    
+        public static extern int CompareExchange(ref int location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern long CompareExchange(ref long location1, long value, long comparand);    
+        public static extern long CompareExchange(ref long location1, long value, long comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float CompareExchange(ref float location1, float value, float comparand);    
+        public static extern float CompareExchange(ref float location1, float value, float comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double CompareExchange(ref double location1, double value, double comparand);    
+        public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern Object CompareExchange(ref Object location1, Object value, Object comparand);
@@ -142,7 +143,7 @@ namespace System.Threading
          * See getILIntrinsicImplementationForInterlocked() in VM\JitInterface.cpp
          * for details.
          *****************************************************************/
-        
+
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
             // _CompareExchange() passes back the value read from location1 via local named 'value'
@@ -169,22 +170,22 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern long ExchangeAdd(ref long location1, long value);
 
-        public static int Add(ref int location1, int value) 
+        public static int Add(ref int location1, int value)
         {
             return ExchangeAdd(ref location1, value) + value;
         }
 
-        public static long Add(ref long location1, long value) 
+        public static long Add(ref long location1, long value)
         {
             return ExchangeAdd(ref location1, value) + value;
         }
-     
+
         /******************************
          * Read
          *****************************/
         public static long Read(ref long location)
         {
-            return Interlocked.CompareExchange(ref location,0,0);
+            return Interlocked.CompareExchange(ref location, 0, 0);
         }
 
 

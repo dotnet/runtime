@@ -6,10 +6,10 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace System.Reflection.Emit 
+namespace System.Reflection.Emit
 {
     public sealed class LocalBuilder : LocalVariableInfo
-    { 
+    {
         #region Private Data Members
         private int m_localIndex;
         private Type m_localType;
@@ -19,9 +19,9 @@ namespace System.Reflection.Emit
 
         #region Constructor
         private LocalBuilder() { }
-        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder) 
+        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder)
             : this(localIndex, localType, methodBuilder, false) { }
-        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder, bool isPinned) 
+        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder, bool isPinned)
         {
             m_isPinned = isPinned;
             m_localIndex = localIndex;
@@ -31,11 +31,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal int GetLocalIndex() 
+        internal int GetLocalIndex()
         {
             return m_localIndex;
         }
-        internal MethodInfo GetMethodBuilder() 
+        internal MethodInfo GetMethodBuilder()
         {
             return m_methodBuilder;
         }
@@ -43,13 +43,13 @@ namespace System.Reflection.Emit
 
         #region LocalVariableInfo Override
         public override bool IsPinned { get { return m_isPinned; } }
-        public override Type LocalType 
+        public override Type LocalType
         {
-            get 
-            { 
-                return m_localType; 
+            get
+            {
+                return m_localType;
             }
-        }        
+        }
         public override int LocalIndex { get { return m_localIndex; } }
         #endregion
 
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit
         public void SetLocalSymInfo(String name)
         {
             SetLocalSymInfo(name, 0, 0);
-        }            
+        }
 
         public void SetLocalSymInfo(String name, int startOffset, int endOffset)
         {
@@ -69,27 +69,27 @@ namespace System.Reflection.Emit
             int index;
 
             MethodBuilder methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null) 
+            if (methodBuilder == null)
                 // it's a light code gen entity
                 throw new NotSupportedException();
-            dynMod = (ModuleBuilder) methodBuilder.Module;
+            dynMod = (ModuleBuilder)methodBuilder.Module;
             if (methodBuilder.IsTypeCreated())
             {
                 // cannot change method after its containing type has been created
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TypeHasBeenCreated"));
             }
-    
+
             // set the name and range of offset for the local
             if (dynMod.GetSymWriter() == null)
             {
                 // cannot set local name if not debug module
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotADebugModule"));
             }
-    
+
             sigHelp = SignatureHelper.GetFieldSigHelper(dynMod);
             sigHelp.AddArgument(m_localType);
             signature = sigHelp.InternalGetSignature(out sigLength);
-    
+
             // The symbol store doesn't want the calling convention on the
             // front of the signature, but InternalGetSignature returns
             // the callinging convention. So we strip it off. This is a
@@ -97,7 +97,7 @@ namespace System.Reflection.Emit
             // yet another array of bytes...  
             mungedSig = new byte[sigLength - 1];
             Buffer.BlockCopy(signature, 1, mungedSig, 0, sigLength - 1);
-            
+
             index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();
             if (index == -1)
             {
@@ -105,7 +105,7 @@ namespace System.Reflection.Emit
                 methodBuilder.m_localSymInfo.AddLocalSymInfo(
                      name,
                      mungedSig,
-                     m_localIndex,   
+                     m_localIndex,
                      startOffset,
                      endOffset);
             }
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit
                 methodBuilder.GetILGenerator().m_ScopeTree.AddLocalSymInfoToCurrentScope(
                      name,
                      mungedSig,
-                     m_localIndex,   
+                     m_localIndex,
                      startOffset,
                      endOffset);
             }

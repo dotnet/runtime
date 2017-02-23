@@ -47,14 +47,14 @@ namespace System.Diagnostics.Tracing
             GCHandle* pins,
             int pinCount)
         {
-            this.datasStart = datas;
-            this.scratchEnd = scratch + scratchSize;
-            this.datasEnd = datas + dataCount;
-            this.pinsEnd = pins + pinCount;
+            datasStart = datas;
+            scratchEnd = scratch + scratchSize;
+            datasEnd = datas + dataCount;
+            pinsEnd = pins + pinCount;
             this.scratch = scratch;
             this.datas = datas;
             this.pins = pins;
-            this.writingScalars = false;
+            writingScalars = false;
         }
 
         internal void Disable()
@@ -73,23 +73,23 @@ namespace System.Diagnostics.Tracing
         internal EventSource.EventData* Finish()
         {
             this.ScalarsEnd();
-            return this.datas;
+            return datas;
         }
 
         internal void AddScalar(void* value, int size)
         {
             var pb = (byte*)value;
-            if (this.bufferNesting == 0)
+            if (bufferNesting == 0)
             {
-                var scratchOld = this.scratch;
+                var scratchOld = scratch;
                 var scratchNew = scratchOld + size;
-                if (this.scratchEnd < scratchNew)
+                if (scratchEnd < scratchNew)
                 {
                     throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_AddScalarOutOfRange"));
                 }
 
                 this.ScalarsBegin();
-                this.scratch = scratchNew;
+                scratch = scratchNew;
 
                 for (int i = 0; i != size; i++)
                 {
@@ -98,12 +98,12 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                var oldPos = this.bufferPos;
-                this.bufferPos = checked(this.bufferPos + size);
+                var oldPos = bufferPos;
+                bufferPos = checked(bufferPos + size);
                 this.EnsureBuffer();
                 for (int i = 0; i != size; i++, oldPos++)
                 {
-                    this.buffer[oldPos] = pb[i];
+                    buffer[oldPos] = pb[i];
                 }
             }
         }
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tracing
                 size = ushort.MaxValue - 1;
             }
 
-            if (this.bufferNesting != 0)
+            if (bufferNesting != 0)
             {
                 this.EnsureBuffer(size + 2);
             }
@@ -124,19 +124,19 @@ namespace System.Diagnostics.Tracing
 
             if (size != 0)
             {
-                if (this.bufferNesting == 0)
+                if (bufferNesting == 0)
                 {
                     this.ScalarsEnd();
                     this.PinArray(value, size);
                 }
                 else
                 {
-                    var oldPos = this.bufferPos;
-                    this.bufferPos = checked(this.bufferPos + size);
+                    var oldPos = bufferPos;
+                    bufferPos = checked(bufferPos + size);
                     this.EnsureBuffer();
                     fixed (void* p = value)
                     {
-                        Marshal.Copy((IntPtr)p, this.buffer, oldPos, size);
+                        Marshal.Copy((IntPtr)p, buffer, oldPos, size);
                     }
                 }
             }
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tracing
             }
 
             var size = length * itemSize;
-            if (this.bufferNesting != 0)
+            if (bufferNesting != 0)
             {
                 this.EnsureBuffer(size + 2);
             }
@@ -164,17 +164,17 @@ namespace System.Diagnostics.Tracing
 
             if (length != 0)
             {
-                if (this.bufferNesting == 0)
+                if (bufferNesting == 0)
                 {
                     this.ScalarsEnd();
                     this.PinArray(value, size);
                 }
                 else
                 {
-                    var oldPos = this.bufferPos;
-                    this.bufferPos = checked(this.bufferPos + size);
+                    var oldPos = bufferPos;
+                    bufferPos = checked(bufferPos + size);
                     this.EnsureBuffer();
-                    Buffer.BlockCopy(value, 0, this.buffer, oldPos, size);
+                    Buffer.BlockCopy(value, 0, buffer, oldPos, size);
                 }
             }
         }
@@ -186,8 +186,8 @@ namespace System.Diagnostics.Tracing
         internal int BeginBufferedArray()
         {
             this.BeginBuffered();
-            this.bufferPos += 2; // Reserve space for the array length (filled in by EndEnumerable)
-            return this.bufferPos;
+            bufferPos += 2; // Reserve space for the array length (filled in by EndEnumerable)
+            return bufferPos;
         }
 
         /// <summary>
@@ -198,8 +198,8 @@ namespace System.Diagnostics.Tracing
         internal void EndBufferedArray(int bookmark, int count)
         {
             this.EnsureBuffer();
-            this.buffer[bookmark - 2] = unchecked((byte)count);
-            this.buffer[bookmark - 1] = unchecked((byte)(count >> 8));
+            buffer[bookmark - 2] = unchecked((byte)count);
+            buffer[bookmark - 1] = unchecked((byte)(count >> 8));
             this.EndBuffered();
         }
 
@@ -209,7 +209,7 @@ namespace System.Diagnostics.Tracing
         internal void BeginBuffered()
         {
             this.ScalarsEnd();
-            this.bufferNesting += 1;
+            bufferNesting += 1;
         }
 
         /// <summary>
@@ -217,9 +217,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal void EndBuffered()
         {
-            this.bufferNesting -= 1;
+            bufferNesting -= 1;
 
-            if (this.bufferNesting == 0)
+            if (bufferNesting == 0)
             {
                 /*
                 TODO (perf): consider coalescing adjacent buffered regions into a
@@ -230,16 +230,16 @@ namespace System.Diagnostics.Tracing
                 */
 
                 this.EnsureBuffer();
-                this.PinArray(this.buffer, this.bufferPos);
-                this.buffer = null;
-                this.bufferPos = 0;
+                this.PinArray(buffer, bufferPos);
+                buffer = null;
+                bufferPos = 0;
             }
         }
 
         private void EnsureBuffer()
         {
-            var required = this.bufferPos;
-            if (this.buffer == null || this.buffer.Length < required)
+            var required = bufferPos;
+            if (buffer == null || buffer.Length < required)
             {
                 this.GrowBuffer(required);
             }
@@ -247,8 +247,8 @@ namespace System.Diagnostics.Tracing
 
         private void EnsureBuffer(int additionalSize)
         {
-            var required = this.bufferPos + additionalSize;
-            if (this.buffer == null || this.buffer.Length < required)
+            var required = bufferPos + additionalSize;
+            if (buffer == null || buffer.Length < required)
             {
                 this.GrowBuffer(required);
             }
@@ -256,7 +256,7 @@ namespace System.Diagnostics.Tracing
 
         private void GrowBuffer(int required)
         {
-            var newSize = this.buffer == null ? 64 : this.buffer.Length;
+            var newSize = buffer == null ? 64 : buffer.Length;
 
             do
             {
@@ -264,25 +264,25 @@ namespace System.Diagnostics.Tracing
             }
             while (newSize < required);
 
-            Array.Resize(ref this.buffer, newSize);
+            Array.Resize(ref buffer, newSize);
         }
 
         private void PinArray(object value, int size)
         {
-            var pinsTemp = this.pins;
-            if (this.pinsEnd <= pinsTemp)
+            var pinsTemp = pins;
+            if (pinsEnd <= pinsTemp)
             {
                 throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_PinArrayOutOfRange"));
             }
 
-            var datasTemp = this.datas;
-            if (this.datasEnd <= datasTemp)
+            var datasTemp = datas;
+            if (datasEnd <= datasTemp)
             {
                 throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
             }
 
-            this.pins = pinsTemp + 1;
-            this.datas = datasTemp + 1;
+            pins = pinsTemp + 1;
+            datas = datasTemp + 1;
 
             *pinsTemp = GCHandle.Alloc(value, GCHandleType.Pinned);
             datasTemp->m_Ptr = (long)(ulong)(UIntPtr)(void*)pinsTemp->AddrOfPinnedObject();
@@ -291,27 +291,27 @@ namespace System.Diagnostics.Tracing
 
         private void ScalarsBegin()
         {
-            if (!this.writingScalars)
+            if (!writingScalars)
             {
-                var datasTemp = this.datas;
-                if (this.datasEnd <= datasTemp)
+                var datasTemp = datas;
+                if (datasEnd <= datasTemp)
                 {
                     throw new IndexOutOfRangeException(Resources.GetResourceString("EventSource_DataDescriptorsOutOfRange"));
                 }
 
-                datasTemp->m_Ptr = (long)(ulong)(UIntPtr)this.scratch;
-                this.writingScalars = true;
+                datasTemp->m_Ptr = (long)(ulong)(UIntPtr)scratch;
+                writingScalars = true;
             }
         }
 
         private void ScalarsEnd()
         {
-            if (this.writingScalars)
+            if (writingScalars)
             {
-                var datasTemp = this.datas;
-                datasTemp->m_Size = checked((int)(this.scratch - (byte*)datasTemp->m_Ptr));
-                this.datas = datasTemp + 1;
-                this.writingScalars = false;
+                var datasTemp = datas;
+                datasTemp->m_Size = checked((int)(scratch - (byte*)datasTemp->m_Ptr));
+                datas = datasTemp + 1;
+                writingScalars = false;
             }
         }
     }

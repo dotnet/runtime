@@ -13,17 +13,17 @@
 // 
 //
 
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+
 namespace Microsoft.Win32.SafeHandles
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-
     // Class of safe handle which uses 0 or -1 as an invalid handle.
     public abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
     {
-        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(IntPtr.Zero, ownsHandle) 
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
         {
         }
 
@@ -33,7 +33,8 @@ namespace Microsoft.Win32.SafeHandles
             throw new NotImplementedException();
         }
 
-        public override bool IsInvalid {
+        public override bool IsInvalid
+        {
             get { return handle.IsNull() || handle == new IntPtr(-1); }
         }
     }
@@ -41,7 +42,7 @@ namespace Microsoft.Win32.SafeHandles
     // Class of safe handle which uses only -1 as an invalid handle.
     public abstract class SafeHandleMinusOneIsInvalid : SafeHandle
     {
-        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(new IntPtr(-1), ownsHandle) 
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(new IntPtr(-1), ownsHandle)
         {
         }
 
@@ -51,7 +52,8 @@ namespace Microsoft.Win32.SafeHandles
             throw new NotImplementedException();
         }
 
-        public override bool IsInvalid {
+        public override bool IsInvalid
+        {
             get { return handle == new IntPtr(-1); }
         }
     }
@@ -59,11 +61,12 @@ namespace Microsoft.Win32.SafeHandles
     // Class of critical handle which uses 0 or -1 as an invalid handle.
     public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     {
-        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(IntPtr.Zero) 
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(IntPtr.Zero)
         {
         }
 
-        public override bool IsInvalid {
+        public override bool IsInvalid
+        {
             get { return handle.IsNull() || handle == new IntPtr(-1); }
         }
     }
@@ -71,11 +74,12 @@ namespace Microsoft.Win32.SafeHandles
     // Class of critical handle which uses only -1 as an invalid handle.
     public abstract class CriticalHandleMinusOneIsInvalid : CriticalHandle
     {
-        protected CriticalHandleMinusOneIsInvalid() : base(new IntPtr(-1)) 
+        protected CriticalHandleMinusOneIsInvalid() : base(new IntPtr(-1))
         {
         }
 
-        public override bool IsInvalid {
+        public override bool IsInvalid
+        {
             get { return handle == new IntPtr(-1); }
         }
     }

@@ -3,136 +3,160 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System {
-    // This file defines an internal class used to throw exceptions in BCL code.
-    // The main purpose is to reduce code size. 
-    // 
-    // The old way to throw an exception generates quite a lot IL code and assembly code.
-    // Following is an example:
-    //     C# source
-    //          throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
-    //     IL code:
-    //          IL_0003:  ldstr      "key"
-    //          IL_0008:  ldstr      "ArgumentNull_Key"
-    //          IL_000d:  call       string System.Environment::GetResourceString(string)
-    //          IL_0012:  newobj     instance void System.ArgumentNullException::.ctor(string,string)
-    //          IL_0017:  throw
-    //    which is 21bytes in IL.
-    // 
-    // So we want to get rid of the ldstr and call to Environment.GetResource in IL.
-    // In order to do that, I created two enums: ExceptionResource, ExceptionArgument to represent the
-    // argument name and resource name in a small integer. The source code will be changed to 
-    //    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
-    //
-    // The IL code will be 7 bytes.
-    //    IL_0008:  ldc.i4.4
-    //    IL_0009:  ldc.i4.4
-    //    IL_000a:  call       void System.ThrowHelper::ThrowArgumentNullException(valuetype System.ExceptionArgument)
-    //    IL_000f:  ldarg.0
-    //
-    // This will also reduce the Jitted code size a lot. 
-    //
-    // It is very important we do this for generic classes because we can easily generate the same code 
-    // multiple times for different instantiation. 
-    // 
+// This file defines an internal class used to throw exceptions in BCL code.
+// The main purpose is to reduce code size. 
+// 
+// The old way to throw an exception generates quite a lot IL code and assembly code.
+// Following is an example:
+//     C# source
+//          throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+//     IL code:
+//          IL_0003:  ldstr      "key"
+//          IL_0008:  ldstr      "ArgumentNull_Key"
+//          IL_000d:  call       string System.Environment::GetResourceString(string)
+//          IL_0012:  newobj     instance void System.ArgumentNullException::.ctor(string,string)
+//          IL_0017:  throw
+//    which is 21bytes in IL.
+// 
+// So we want to get rid of the ldstr and call to Environment.GetResource in IL.
+// In order to do that, I created two enums: ExceptionResource, ExceptionArgument to represent the
+// argument name and resource name in a small integer. The source code will be changed to 
+//    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
+//
+// The IL code will be 7 bytes.
+//    IL_0008:  ldc.i4.4
+//    IL_0009:  ldc.i4.4
+//    IL_000a:  call       void System.ThrowHelper::ThrowArgumentNullException(valuetype System.ExceptionArgument)
+//    IL_000f:  ldarg.0
+//
+// This will also reduce the Jitted code size a lot. 
+//
+// It is very important we do this for generic classes because we can easily generate the same code 
+// multiple times for different instantiation. 
+// 
 
-    using Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-    using System.Diagnostics.Contracts;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Diagnostics.Contracts;
 
+namespace System
+{
     [Pure]
-    internal static class ThrowHelper {    
-        internal static void ThrowArrayTypeMismatchException() {
+    internal static class ThrowHelper
+    {
+        internal static void ThrowArrayTypeMismatchException()
+        {
             throw new ArrayTypeMismatchException();
         }
 
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType) {
+        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        {
             throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeWithPointersNotSupported", targetType));
         }
 
-        internal static void ThrowIndexOutOfRangeException() {
+        internal static void ThrowIndexOutOfRangeException()
+        {
             throw new IndexOutOfRangeException();
         }
 
-        internal static void ThrowArgumentOutOfRangeException() {
+        internal static void ThrowArgumentOutOfRangeException()
+        {
             throw new ArgumentOutOfRangeException();
         }
 
-        internal static void ThrowArgumentException_DestinationTooShort() {
+        internal static void ThrowArgumentException_DestinationTooShort()
+        {
             throw new ArgumentException(Environment.GetResourceString("Argument_DestinationTooShort"));
         }
 
-        internal static void ThrowNotSupportedException_CannotCallEqualsOnSpan() {
+        internal static void ThrowNotSupportedException_CannotCallEqualsOnSpan()
+        {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallEqualsOnSpan"));
         }
 
-        internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan() {
+        internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan()
+        {
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallGetHashCodeOnSpan"));
         }
 
-        internal static void ThrowArgumentOutOfRange_IndexException() {
-            throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
+        internal static void ThrowArgumentOutOfRange_IndexException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_Index);
         }
 
-        internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException() {
-            throw GetArgumentOutOfRangeException(ExceptionArgument.index, 
+        internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        internal static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum() {
+        internal static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
+        {
             throw GetArgumentOutOfRangeException(ExceptionArgument.length,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index() {
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index()
+        {
             throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
                                                     ExceptionResource.ArgumentOutOfRange_Index);
         }
 
-        internal static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count() {
+        internal static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count()
+        {
             throw GetArgumentOutOfRangeException(ExceptionArgument.count,
                                                     ExceptionResource.ArgumentOutOfRange_Count);
         }
 
-        internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType) {
+        internal static void ThrowWrongKeyTypeArgumentException(object key, Type targetType)
+        {
             throw GetWrongKeyTypeArgumentException(key, targetType);
         }
 
-        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType) {
+        internal static void ThrowWrongValueTypeArgumentException(object value, Type targetType)
+        {
             throw GetWrongValueTypeArgumentException(value, targetType);
         }
 
-        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key) {
+        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
+        {
             return new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicateWithKey", key));
         }
 
-        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key) {
+        internal static void ThrowAddingDuplicateWithKeyArgumentException(object key)
+        {
             throw GetAddingDuplicateWithKeyArgumentException(key);
         }
 
-        internal static void ThrowKeyNotFoundException() {
+        internal static void ThrowKeyNotFoundException()
+        {
             throw new System.Collections.Generic.KeyNotFoundException();
         }
-        
-        internal static void ThrowArgumentException(ExceptionResource resource) {
+
+        internal static void ThrowArgumentException(ExceptionResource resource)
+        {
             throw GetArgumentException(resource);
         }
 
-        internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument) {
+        internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        {
             throw GetArgumentException(resource, argument);
         }
 
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument) {
+        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
+        {
             return new ArgumentNullException(GetArgumentName(argument));
         }
 
-        internal static void ThrowArgumentNullException(ExceptionArgument argument) {
+        internal static void ThrowArgumentNullException(ExceptionArgument argument)
+        {
             throw GetArgumentNullException(argument);
         }
 
-        internal static void ThrowArgumentNullException(ExceptionResource resource) {
+        internal static void ThrowArgumentNullException(ExceptionResource resource)
+        {
             throw new ArgumentNullException(GetResourceString(resource));
         }
 
@@ -141,87 +165,108 @@ namespace System {
             throw new ArgumentNullException(GetArgumentName(argument), GetResourceString(resource));
         }
 
-        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) {
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
+        {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
-        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        {
             throw GetArgumentOutOfRangeException(argument, resource);
         }
 
-        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource) {
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
+        {
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
         }
 
-        internal static void ThrowInvalidOperationException(ExceptionResource resource) {
+        internal static void ThrowInvalidOperationException(ExceptionResource resource)
+        {
             throw GetInvalidOperationException(resource);
         }
 
-        internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e) {
+        internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e)
+        {
             throw new InvalidOperationException(GetResourceString(resource), e);
         }
 
-        internal static void ThrowSerializationException(ExceptionResource resource) {
+        internal static void ThrowSerializationException(ExceptionResource resource)
+        {
             throw new SerializationException(GetResourceString(resource));
         }
 
-        internal static void  ThrowSecurityException(ExceptionResource resource) {
+        internal static void ThrowSecurityException(ExceptionResource resource)
+        {
             throw new System.Security.SecurityException(GetResourceString(resource));
         }
 
-        internal static void ThrowRankException(ExceptionResource resource) {
+        internal static void ThrowRankException(ExceptionResource resource)
+        {
             throw new RankException(GetResourceString(resource));
         }
 
-        internal static void ThrowNotSupportedException(ExceptionResource resource) {
+        internal static void ThrowNotSupportedException(ExceptionResource resource)
+        {
             throw new NotSupportedException(GetResourceString(resource));
         }
 
-        internal static void ThrowUnauthorizedAccessException(ExceptionResource resource) {
+        internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
+        {
             throw new UnauthorizedAccessException(GetResourceString(resource));
         }
 
-        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource) {
+        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
+        {
             throw new ObjectDisposedException(objectName, GetResourceString(resource));
         }
 
-        internal static void ThrowObjectDisposedException(ExceptionResource resource) {
+        internal static void ThrowObjectDisposedException(ExceptionResource resource)
+        {
             throw new ObjectDisposedException(null, GetResourceString(resource));
         }
 
-        internal static void ThrowNotSupportedException() {
+        internal static void ThrowNotSupportedException()
+        {
             throw new NotSupportedException();
         }
 
-        internal static void ThrowAggregateException(List<Exception> exceptions) {
+        internal static void ThrowAggregateException(List<Exception> exceptions)
+        {
             throw new AggregateException(exceptions);
         }
 
-        internal static void ThrowArgumentException_Argument_InvalidArrayType() {
+        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        {
             throw GetArgumentException(ExceptionResource.Argument_InvalidArrayType);
         }
 
-        internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted() {
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
+        {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumNotStarted);
         }
 
-        internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded() {
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded()
+        {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumEnded);
         }
 
-        internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion() {
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
+        {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumFailedVersion);
         }
 
-        internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen() {
+        internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
+        {
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_EnumOpCantHappen);
         }
 
-        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count) {
+        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
+        {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
         }
 
-        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count) {
+        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count)
+        {
             if (array == null)
                 return GetArgumentNullException(ExceptionArgument.array);
             if (offset < 0)
@@ -233,31 +278,38 @@ namespace System {
             return GetArgumentException(ExceptionResource.Argument_InvalidOffLen);
         }
 
-        private static ArgumentException GetArgumentException(ExceptionResource resource) {
+        private static ArgumentException GetArgumentException(ExceptionResource resource)
+        {
             return new ArgumentException(GetResourceString(resource));
         }
 
-        internal static InvalidOperationException GetInvalidOperationException(ExceptionResource resource) {
+        internal static InvalidOperationException GetInvalidOperationException(ExceptionResource resource)
+        {
             return new InvalidOperationException(GetResourceString(resource));
         }
 
-        private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType) {
+        private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
+        {
             return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), nameof(key));
         }
 
-        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType) {
+        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        {
             return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), nameof(value));
         }
 
-        internal static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource) {
+        internal static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
+        {
             return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
         }
 
-        private static ArgumentException GetArgumentException(ExceptionResource resource, ExceptionArgument argument) {
+        private static ArgumentException GetArgumentException(ExceptionResource resource, ExceptionArgument argument)
+        {
             return new ArgumentException(GetResourceString(resource), GetArgumentName(argument));
         }
 
-        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource) {
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
+        {
             return new ArgumentOutOfRangeException(GetArgumentName(argument) + "[" + paramNumber.ToString() + "]", GetResourceString(resource));
         }
 
@@ -265,7 +317,8 @@ namespace System {
         // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
         // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName) {
+        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName)
+        {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
             if (!(default(T) == null) && value == null)
                 ThrowHelper.ThrowArgumentNullException(argName);
@@ -273,7 +326,8 @@ namespace System {
 
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetArgumentName(ExceptionArgument argument) {
+        private static string GetArgumentName(ExceptionArgument argument)
+        {
             Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
@@ -282,7 +336,8 @@ namespace System {
 
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetResourceString(ExceptionResource resource) {
+        private static string GetResourceString(ExceptionResource resource)
+        {
             Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
@@ -293,7 +348,8 @@ namespace System {
     //
     // The convention for this enum is using the argument name as the enum name
     // 
-    internal enum ExceptionArgument {
+    internal enum ExceptionArgument
+    {
         obj,
         dictionary,
         dictionaryCreationThreshold,
@@ -374,23 +430,24 @@ namespace System {
     //
     // The convention for this enum is using the resource name as the enum name
     // 
-    internal enum ExceptionResource {
+    internal enum ExceptionResource
+    {
         Argument_ImplementIComparable,
-        Argument_InvalidType,     
+        Argument_InvalidType,
         Argument_InvalidArgumentForComparison,
-        Argument_InvalidRegistryKeyPermissionCheck,        
+        Argument_InvalidRegistryKeyPermissionCheck,
         ArgumentOutOfRange_NeedNonNegNum,
-        
+
         Arg_ArrayPlusOffTooSmall,
-        Arg_NonZeroLowerBound,        
-        Arg_RankMultiDimNotSupported,        
+        Arg_NonZeroLowerBound,
+        Arg_RankMultiDimNotSupported,
         Arg_RegKeyDelHive,
-        Arg_RegKeyStrLenBug,  
+        Arg_RegKeyStrLenBug,
         Arg_RegSetStrArrNull,
         Arg_RegSetMismatchedKind,
-        Arg_RegSubKeyAbsent,        
+        Arg_RegSubKeyAbsent,
         Arg_RegSubKeyValueAbsent,
-        
+
         Argument_AddingDuplicate,
         Serialization_InvalidOnDeser,
         Serialization_MissingKeys,

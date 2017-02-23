@@ -65,7 +65,7 @@ namespace System.Collections.Concurrent
         private volatile Tables m_tables; // Internal tables of the dictionary       
         // NOTE: this is only used for compat reasons to serialize the comparer.
         // This should not be accessed from anywhere else outside of the serialization methods.
-        internal IEqualityComparer<TKey> m_comparer; 
+        internal IEqualityComparer<TKey> m_comparer;
         private readonly bool m_growLockArray; // Whether to dynamically increase the size of the striped lock
 
         // How many times we resized becaused of collisions. 
@@ -709,7 +709,6 @@ namespace System.Collections.Concurrent
                     {
                         count += m_tables.m_countPerLock[i];
                     }
-
                 }
                 finally
                 {
@@ -1408,7 +1407,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private static int DefaultConcurrencyLevel
         {
-
             get { return DEFAULT_CONCURRENCY_MULTIPLIER * PlatformHelper.ProcessorCount; }
         }
 
@@ -1563,7 +1561,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private class DictionaryEnumerator : IDictionaryEnumerator
         {
-            IEnumerator<KeyValuePair<TKey, TValue>> m_enumerator; // Enumerator over the dictionary.
+            private IEnumerator<KeyValuePair<TKey, TValue>> m_enumerator; // Enumerator over the dictionary.
 
             internal DictionaryEnumerator(ConcurrentDictionary<TKey, TValue> dictionary)
             {

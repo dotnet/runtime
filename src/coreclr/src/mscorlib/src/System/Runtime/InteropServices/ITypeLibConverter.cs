@@ -16,9 +16,11 @@
 // ***       in src/inc/TlbImpExp.idl.
 // ***************************************************************************
 
-namespace System.Runtime.InteropServices {
-    
-    using System;
-    using System.Reflection;
-    using System.Reflection.Emit;
+
+using System;
+using System.Reflection;
+using System.Reflection.Emit;
+
+namespace System.Runtime.InteropServices
+{
 }

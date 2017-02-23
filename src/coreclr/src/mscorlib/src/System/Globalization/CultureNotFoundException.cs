@@ -3,18 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Globalization {
 
-    using System;
-    using System.Runtime.Serialization;
-    using System.Threading;
-    using System.Diagnostics.Contracts;
-    
+using System;
+using System.Runtime.Serialization;
+using System.Threading;
+using System.Diagnostics.Contracts;
+
+namespace System.Globalization
+{
     [Serializable]
     public partial class CultureNotFoundException : ArgumentException, ISerializable
     {
-        private string          m_invalidCultureName; // unrecognized culture name
-        private Nullable<int>   m_invalidCultureId;   // unrecognized culture Lcid
+        private string m_invalidCultureName; // unrecognized culture name
+        private Nullable<int> m_invalidCultureId;   // unrecognized culture Lcid
 
         public CultureNotFoundException()
             : base(DefaultMessage)
@@ -60,13 +61,16 @@ namespace System.Globalization {
             m_invalidCultureName = invalidCultureName;
         }
 
-        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) {
-            m_invalidCultureId      = (Nullable<int>) info.GetValue("InvalidCultureId", typeof(Nullable<int>));
-            m_invalidCultureName    = (string) info.GetValue("InvalidCultureName", typeof(string));
+        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            m_invalidCultureId = (Nullable<int>)info.GetValue("InvalidCultureId", typeof(Nullable<int>));
+            m_invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
-            if (info==null) {
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
@@ -88,13 +92,13 @@ namespace System.Globalization {
 
         private static String DefaultMessage
         {
-            get 
+            get
             {
                 return Environment.GetResourceString("Argument_CultureNotSupported");
             }
         }
-        
-        private String FormatedInvalidCultureId 
+
+        private String FormatedInvalidCultureId
         {
             get
             {
@@ -107,23 +111,22 @@ namespace System.Globalization {
             }
         }
 
-        public override String Message 
+        public override String Message
         {
-            get 
+            get
             {
                 String s = base.Message;
                 if (
-                    m_invalidCultureId != null || 
-                    m_invalidCultureName != null) 
+                    m_invalidCultureId != null ||
+                    m_invalidCultureName != null)
                 {
                     String valueMessage = Environment.GetResourceString("Argument_CultureInvalidIdentifier", FormatedInvalidCultureId);
                     if (s == null)
                         return valueMessage;
-                    return s + Environment.NewLine + valueMessage; 
+                    return s + Environment.NewLine + valueMessage;
                 }
                 return s;
             }
         }
-
     }
 }

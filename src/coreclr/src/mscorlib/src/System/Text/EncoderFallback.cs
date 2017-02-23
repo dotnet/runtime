@@ -13,9 +13,9 @@ namespace System.Text
     [Serializable]
     public abstract class EncoderFallback
     {
-// disable csharp compiler warning #0414: field assigned unused value
+        // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
-        internal bool                 bIsMicrosoftBestFitFallback = false;
+        internal bool bIsMicrosoftBestFitFallback = false;
 #pragma warning restore 0414
 
         private static volatile EncoderFallback replacementFallback; // Default fallback, uses no best fit & "?"
@@ -43,7 +43,7 @@ namespace System.Text
             get
             {
                 if (replacementFallback == null)
-                    lock(InternalSyncObject)
+                    lock (InternalSyncObject)
                         if (replacementFallback == null)
                             replacementFallback = new EncoderReplacementFallback();
 
@@ -57,7 +57,7 @@ namespace System.Text
             get
             {
                 if (exceptionFallback == null)
-                    lock(InternalSyncObject)
+                    lock (InternalSyncObject)
                         if (exceptionFallback == null)
                             exceptionFallback = new EncoderExceptionFallback();
 
@@ -107,19 +107,19 @@ namespace System.Text
 
         public virtual void Reset()
         {
-            while (GetNextChar() != (char)0);
+            while (GetNextChar() != (char)0) ;
         }
 
         // Internal items to help us figure out what we're doing as far as error messages, etc.
         // These help us with our performance and messages internally
-        internal    unsafe char*   charStart;
-        internal    unsafe char*   charEnd;
-        internal    EncoderNLS     encoder;
-        internal    bool           setEncoder;
-        internal    bool           bUsedEncoder;
-        internal    bool           bFallingBack = false;
-        internal    int            iRecursionCount = 0;
-        private const int          iMaxRecursion = 250;
+        internal unsafe char* charStart;
+        internal unsafe char* charEnd;
+        internal EncoderNLS encoder;
+        internal bool setEncoder;
+        internal bool bUsedEncoder;
+        internal bool bFallingBack = false;
+        internal int iRecursionCount = 0;
+        private const int iMaxRecursion = 250;
 
         // Internal Reset
         // For example, what if someone fails a conversion and wants to reset one of our fallback buffers?
@@ -227,6 +227,5 @@ namespace System.Text
                 Environment.GetResourceString("Argument_RecursiveFallback",
                     charRecursive), "chars");
         }
-
     }
 }

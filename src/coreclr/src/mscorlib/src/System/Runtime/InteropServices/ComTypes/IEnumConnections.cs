@@ -11,15 +11,15 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
-
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 
     public struct CONNECTDATA
-    {   
-        [MarshalAs(UnmanagedType.Interface)] 
+    {
+        [MarshalAs(UnmanagedType.Interface)]
         public Object pUnk;
         public int dwCookie;
     }

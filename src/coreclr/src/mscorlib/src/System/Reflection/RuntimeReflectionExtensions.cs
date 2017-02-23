@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 
@@ -47,8 +48,8 @@ namespace System.Reflection
 
         public static PropertyInfo GetRuntimeProperty(this Type type, string name)
         {
-             CheckAndThrow(type);
-             return type.GetProperty(name);
+            CheckAndThrow(type);
+            return type.GetProperty(name);
         }
         public static EventInfo GetRuntimeEvent(this Type type, string name)
         {
@@ -65,7 +66,8 @@ namespace System.Reflection
             CheckAndThrow(type);
             return type.GetField(name);
         }
-        public static MethodInfo GetRuntimeBaseDefinition(this MethodInfo method){
+        public static MethodInfo GetRuntimeBaseDefinition(this MethodInfo method)
+        {
             CheckAndThrow(method);
             return method.GetBaseDefinition();
         }

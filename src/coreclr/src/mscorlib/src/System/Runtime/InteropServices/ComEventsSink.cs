@@ -11,14 +11,15 @@
 **
 **/
 
-namespace System.Runtime.InteropServices {
-    using System;
-    using System.Diagnostics;
+using System;
+using System.Diagnostics;
 
+namespace System.Runtime.InteropServices
+{
     // see code:ComEventsHelper#ComEventsArchitecture
     internal class ComEventsSink : ICustomQueryInterface
     {
-#region private fields
+        #region private fields
 
         private Guid _iidSourceItf;
         private ComTypes.IConnectionPoint _connectionPoint;
@@ -26,38 +27,43 @@ namespace System.Runtime.InteropServices {
         private ComEventsMethod _methods;
         private ComEventsSink _next;
 
-#endregion  
+        #endregion
 
-        
-#region ctor
 
-        internal ComEventsSink(object rcw, Guid iid) {
+        #region ctor
+
+        internal ComEventsSink(object rcw, Guid iid)
+        {
             _iidSourceItf = iid;
             this.Advise(rcw);
-        } 
+        }
 
-#endregion
+        #endregion
 
-        
-#region static members
 
-        internal static ComEventsSink Find(ComEventsSink sinks, ref Guid iid) {
+        #region static members
 
+        internal static ComEventsSink Find(ComEventsSink sinks, ref Guid iid)
+        {
             ComEventsSink sink = sinks;
-            while (sink != null && sink._iidSourceItf != iid) {
+            while (sink != null && sink._iidSourceItf != iid)
+            {
                 sink = sink._next;
             }
 
             return sink;
         }
 
-        internal static ComEventsSink Add(ComEventsSink sinks, ComEventsSink sink) {
+        internal static ComEventsSink Add(ComEventsSink sinks, ComEventsSink sink)
+        {
             sink._next = sinks;
             return sink;
         }
 
-        internal static ComEventsSink RemoveAll(ComEventsSink sinks) {
-            while (sinks != null) {
+        internal static ComEventsSink RemoveAll(ComEventsSink sinks)
+        {
+            while (sinks != null)
+            {
                 sinks.Unadvise();
                 sinks = sinks._next;
             }
@@ -65,18 +71,23 @@ namespace System.Runtime.InteropServices {
             return null;
         }
 
-        internal static ComEventsSink Remove(ComEventsSink sinks, ComEventsSink sink) {
+        internal static ComEventsSink Remove(ComEventsSink sinks, ComEventsSink sink)
+        {
             BCLDebug.Assert(sinks != null, "removing event sink from empty sinks collection");
             BCLDebug.Assert(sink != null, "specify event sink is null");
 
-            if (sink == sinks) {
+            if (sink == sinks)
+            {
                 sinks = sinks._next;
-            } else {
+            }
+            else
+            {
                 ComEventsSink current = sinks;
                 while (current != null && current._next != sink)
                     current = current._next;
 
-                if (current != null) {
+                if (current != null)
+                {
                     current._next = sink._next;
                 }
             }
@@ -84,35 +95,40 @@ namespace System.Runtime.InteropServices {
             sink.Unadvise();
 
             return sinks;
-        } 
+        }
 
-#endregion
+        #endregion
 
 
-#region public methods
+        #region public methods
 
-        public ComEventsMethod RemoveMethod(ComEventsMethod method) {
+        public ComEventsMethod RemoveMethod(ComEventsMethod method)
+        {
             _methods = ComEventsMethod.Remove(_methods, method);
             return _methods;
         }
 
-        public ComEventsMethod FindMethod(int dispid) {
+        public ComEventsMethod FindMethod(int dispid)
+        {
             return ComEventsMethod.Find(_methods, dispid);
         }
 
-        public ComEventsMethod AddMethod(int dispid) {
+        public ComEventsMethod AddMethod(int dispid)
+        {
             ComEventsMethod method = new ComEventsMethod(dispid);
             _methods = ComEventsMethod.Add(_methods, method);
             return method;
-        } 
+        }
 
-#endregion
+        #endregion
 
-        static Guid IID_IManagedObject = new Guid("{C3FCC19E-A970-11D2-8B5A-00A0C9B7C9C4}");
+        private static Guid IID_IManagedObject = new Guid("{C3FCC19E-A970-11D2-8B5A-00A0C9B7C9C4}");
 
-        CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv) {
+        CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
+        {
             ppv = IntPtr.Zero;
-            if (iid == this._iidSourceItf || iid == typeof(NativeMethods.IDispatch).GUID) {
+            if (iid == _iidSourceItf || iid == typeof(NativeMethods.IDispatch).GUID)
+            {
                 ppv = Marshal.GetComInterfaceForObject(this, typeof(NativeMethods.IDispatch), CustomQueryInterfaceMode.Ignore);
                 return CustomQueryInterfaceResult.Handled;
             }
@@ -124,10 +140,11 @@ namespace System.Runtime.InteropServices {
             return CustomQueryInterfaceResult.NotHandled;
         }
 
-#region private methods
+        #region private methods
 
 
-        private void Advise(object rcw) {
+        private void Advise(object rcw)
+        {
             BCLDebug.Assert(_connectionPoint == null, "comevent sink is already advised");
 
             ComTypes.IConnectionPointContainer cpc = (ComTypes.IConnectionPointContainer)rcw;
@@ -141,21 +158,26 @@ namespace System.Runtime.InteropServices {
             _connectionPoint = cp;
         }
 
-        private void Unadvise() {
+        private void Unadvise()
+        {
             BCLDebug.Assert(_connectionPoint != null, "can not unadvise from empty connection point");
 
-            try {
+            try
+            {
                 _connectionPoint.Unadvise(_cookie);
                 Marshal.ReleaseComObject(_connectionPoint);
-            } catch (System.Exception) {
+            }
+            catch (System.Exception)
+            {
                 // swallow all exceptions on unadvise
                 // the host may not be available at this point
-            } finally {
+            }
+            finally
+            {
                 _connectionPoint = null;
             }
+        }
 
-        } 
-
-#endregion
+        #endregion
     };
 }

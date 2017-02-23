@@ -8,8 +8,7 @@ using System.Reflection;
 
 namespace System.Runtime.CompilerServices
 {
-    using System;
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class TypeForwardedToAttribute : Attribute
     {
         private Type _destination;
@@ -21,14 +20,14 @@ namespace System.Runtime.CompilerServices
 
         public Type Destination
         {
-            get {
+            get
+            {
                 return _destination;
             }
         }
-
     }
 }
 
 
- 
+
 

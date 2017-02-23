@@ -41,11 +41,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public int Count {
+        public int Count
+        {
             get { return dictionary.Count; }
         }
 
-        bool ICollection<TKey>.IsReadOnly {
+        bool ICollection<TKey>.IsReadOnly
+        {
             get { return true; }
         }
 
@@ -93,7 +95,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(dictionary));
 
             this.dictionary = dictionary;
-            this.enumeration = dictionary.GetEnumerator();
+            enumeration = dictionary.GetEnumerator();
         }
 
         void IDisposable.Dispose()
@@ -106,11 +108,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        Object IEnumerator.Current {
+        Object IEnumerator.Current
+        {
             get { return ((IEnumerator<TKey>)this).Current; }
         }
 
-        public TKey Current {
+        public TKey Current
+        {
             get { return enumeration.Current.Key; }
         }
 

@@ -12,13 +12,15 @@
 **   Emitted by VS, and can help catch deployment problems.
 **
 ===========================================================*/
+
 using System;
 using System.Diagnostics.Contracts;
 
-namespace System.Runtime.Versioning {
-
+namespace System.Runtime.Versioning
+{
     [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-    public sealed class TargetFrameworkAttribute : Attribute {
+    public sealed class TargetFrameworkAttribute : Attribute
+    {
         private String _frameworkName;  // A target framework moniker
         private String _frameworkDisplayName;
 
@@ -33,11 +35,13 @@ namespace System.Runtime.Versioning {
 
         // The target framework moniker that this assembly was compiled against.
         // Use the FrameworkName class to interpret target framework monikers.
-        public String FrameworkName {
+        public String FrameworkName
+        {
             get { return _frameworkName; }
         }
 
-        public String FrameworkDisplayName {
+        public String FrameworkDisplayName
+        {
             get { return _frameworkDisplayName; }
             set { _frameworkDisplayName = value; }
         }

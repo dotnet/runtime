@@ -10,8 +10,9 @@
 //    a list of Types.
 //
 //
-namespace System.Reflection {
 
+namespace System.Reflection
+{
     // Define the delegate
     [Serializable]
     public delegate bool TypeFilter(Type m, Object filterCriteria);

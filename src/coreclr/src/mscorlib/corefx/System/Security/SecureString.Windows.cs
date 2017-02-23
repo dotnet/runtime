@@ -158,7 +158,8 @@ namespace System.Security
                 int resultByteLength = (length + 1) * sizeof(char);
 
                 ptr = Win32Native.SysAllocStringLen(null, length);
-                if (ptr == IntPtr.Zero) {
+                if (ptr == IntPtr.Zero)
+                {
                     throw new OutOfMemoryException();
                 }
 

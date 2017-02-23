@@ -14,7 +14,7 @@ namespace System.ComponentModel
             browsableState = state;
         }
 
-        public EditorBrowsableAttribute () : this(EditorBrowsableState.Always) { }
+        public EditorBrowsableAttribute() : this(EditorBrowsableState.Always) { }
 
         public EditorBrowsableState State
         {
