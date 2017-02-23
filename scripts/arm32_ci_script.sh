@@ -264,7 +264,7 @@ do
     esac
 done
 
-if [[ $__linuxCodeName == "xenial" || $__linuxCodeName == "tizen" ]]; then
+if [[ $__linuxCodeName == "tizen" ]]; then
     # This case does not support CI build yet.
     # Will be enabled ASAP.
     exit 0
