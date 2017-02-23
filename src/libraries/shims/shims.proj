@@ -45,7 +45,7 @@
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlaceReferenceAssembly;BinPlaceRuntimeAssembly" />
+  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlace" />
   <Target Name="Clean">
     <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
   </Target>

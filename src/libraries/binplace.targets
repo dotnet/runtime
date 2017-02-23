@@ -18,9 +18,6 @@
     <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
     <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
 
-    <BinPlaceStuffDependsOn Condition="'$(BinPlaceRef)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
-    <BinPlaceStuffDependsOn Condition="'$(BinPlaceRuntime)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
-
     <BinplaceUseHardlinksIfPossible Condition="'$(BinplaceUseHardlinksIfPossible)' == ''">true</BinplaceUseHardlinksIfPossible>
   </PropertyGroup>
 
@@ -71,30 +68,16 @@
     </BinplaceConfiguration>
   </ItemGroup>
 
-  <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
-    <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
-    <Message Importance="low" Text="IsReferenceAssembly: $(IsReferenceAssembly)" />
-    <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
-  </Target>
+  <Target Name="BinPlace"
+          DependsOnTargets="GetBinplaceDirs;GetBinplaceItems" 
+          AfterTargets="CopyFilesToOutputDirectory"
+          Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'" >
 
-  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
-    <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''"
-          SourceFiles="@(BinplaceItem)"
-          DestinationFolder="%(TargetingPackDir.Identity)" 
-          SkipUnchangedFiles="true"
-          OverwriteReadOnlyFiles="true"
-          Retries="$(CopyRetryCount)"
-          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-          UseHardlinksIfPossible="$(BinplaceUseHardlinksIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-  </Target>
+    <Message Importance="low" Text="BinplaceDir: @(BinplaceDir)" />
 
-  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetBinplaceDirs;GetBinplaceItems">
-    <Copy Condition="'@(RuntimeDir)' != ''"
+    <Copy Condition="'@(BinplaceDir)' != ''"
           SourceFiles="@(BinplaceItem)"
-          DestinationFolder="%(RuntimeDir.Identity)"
+          DestinationFolder="%(BinplaceDir.Identity)" 
           SkipUnchangedFiles="true"
           OverwriteReadOnlyFiles="true"
           Retries="$(CopyRetryCount)"
@@ -126,8 +109,8 @@
     <ItemGroup>
       <_currentBinplaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
 
-      <RuntimeDir Include="%(_currentBinplaceConfigurations.RuntimePath)" />
-      <TargetingPackDir Include="%(_currentBinplaceConfigurations.RefPath)" />
+      <BinplaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinplaceConfigurations.RuntimePath)" />
+      <BinplaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinplaceConfigurations.RefPath)" />
     </ItemGroup>
   </Target>
 
