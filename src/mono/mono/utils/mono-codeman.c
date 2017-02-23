@@ -436,7 +436,7 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 }
 
 /**
- * mono_code_manager_reserve:
+ * mono_code_manager_reserve_align:
  * @cman: a code manager
  * @size: size of memory to allocate
  * @alignment: power of two alignment value

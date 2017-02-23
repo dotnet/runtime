@@ -2331,7 +2331,7 @@ mono_loader_unlock_if_inited (void)
 }
 
 /**
- * mono_method_signature:
+ * mono_method_signature_checked:
  *
  * Return the signature of the method M. On failure, returns NULL, and ERR is set.
  */

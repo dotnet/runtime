@@ -7517,7 +7517,7 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 }
 
 /**
- * mono_class_from_name_case:
+ * mono_class_from_name_case_checked:
  * @image: The MonoImage where the type is looked up in
  * @name_space: the type namespace
  * @name: the type short name.

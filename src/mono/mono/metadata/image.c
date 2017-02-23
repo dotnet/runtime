@@ -1396,7 +1396,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 }
 
 /**
- * mono_image_loaded:
+ * mono_image_loaded_full:
  * @name: path or assembly name of the image to load
  * @refonly: Check with respect to reflection-only loads?
  *

@@ -654,7 +654,7 @@ mono_compile_method (MonoMethod *method)
 }
 
 /**
- * mono_compile_method:
+ * mono_compile_method_checked:
  * @method: The method to compile.
  * @error: set on error.
  *
@@ -2746,7 +2746,7 @@ mono_object_get_virtual_method (MonoObject *obj_raw, MonoMethod *method)
 }
 
 /**
- * mono_object_get_virtual_method:
+ * mono_object_handle_get_virtual_method:
  * @obj: object to operate on.
  * @method: method 
  *
@@ -3995,7 +3995,7 @@ mono_runtime_get_main_args (void)
 }
 
 /**
- * mono_runtime_get_main_args:
+ * mono_runtime_get_main_args_checked:
  * @error: set on error
  *
  * Returns: a MonoArray with the arguments passed to the main
@@ -6066,7 +6066,7 @@ mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 le
 }
 
 /**
- * mono_string_new_utf32:
+ * mono_string_new_utf32_checked:
  * @text: a pointer to an utf32 string
  * @len: the length of the string
  * @error: set on failure.

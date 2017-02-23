@@ -225,7 +225,7 @@ mono_backtrace (int size)
 #endif
 
 /**
- * mono_mempool_alloc:
+ * get_next_size:
  * @pool: the memory pool to use
  * @size: size of the memory entity we are trying to allocate
  *
