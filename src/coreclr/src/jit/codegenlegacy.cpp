@@ -1897,10 +1897,22 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     {
         // If we need "arrRef" or "arrLen", and evaluating "index" displaced whichever of them we're using
         // from its register, get it back in a register.
+        regMaskTP indRegMask = RBM_ALLINT;
+        regMaskTP arrRegMask = RBM_ALLINT;
+        if (!(index->gtFlags & GTF_SPILLED))
+            arrRegMask = ~genRegMask(index->gtRegNum);
         if (arrRef != NULL)
-            genRecoverReg(arrRef, ~genRegMask(index->gtRegNum), RegSet::KEEP_REG);
+        {
+            genRecoverReg(arrRef, arrRegMask, RegSet::KEEP_REG);
+            indRegMask &= ~genRegMask(arrRef->gtRegNum);
+        }
         else if (!arrLen->IsCnsIntOrI())
-            genRecoverReg(arrLen, ~genRegMask(index->gtRegNum), RegSet::KEEP_REG);
+        {
+            genRecoverReg(arrLen, arrRegMask, RegSet::KEEP_REG);
+            indRegMask &= ~genRegMask(arrLen->gtRegNum);
+        }
+        if (index->gtFlags & GTF_SPILLED)
+            regSet.rsUnspillReg(index, indRegMask, RegSet::KEEP_REG);
 
         /* Make sure we have the values we expect */
         noway_assert(index->gtFlags & GTF_REG_VAL);
