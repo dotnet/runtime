@@ -45,13 +45,18 @@ namespace GCTest
             return 100;
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void CollectAndFinalize()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test1()
         {
             for (int i = 0; i < 50; i++)
                 s_arr[i] = new Test(i);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            CollectAndFinalize();
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test2()
@@ -62,52 +67,44 @@ namespace GCTest
                 s_arr[i].CheckValid();
                 s_arr[i] = null;
             }
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test3()
         {
+            CollectAndFinalize();
             for (int i = 0; i < 50; i++)
             {
                 if (s_arr[i] == null) throw new Exception();
                 s_arr[i].CheckValid();
                 s_arr[i] = null;
             }
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test4()
         {
+            CollectAndFinalize();
             for (int i = 0; i < 50; i++)
             {
                 if (s_arr[i] == null) throw new Exception();
                 s_arr[i].CheckValid();
                 s_arr[i] = null;
             }
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test5()
         {
+            CollectAndFinalize();
             for (int i = 0; i < 50; i++)
             {
                 if (s_arr[i] == null) throw new Exception();
                 s_arr[i].CheckValid();
                 s_arr[i] = null;
             }
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
         }
         [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void Test6()
         {
+            CollectAndFinalize();
             for (int i = 0; i < 50; i++)
             {
                 if (s_arr[i] == null) throw new Exception();
