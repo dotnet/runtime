@@ -136,6 +136,11 @@ namespace System {
             throw new ArgumentNullException(GetResourceString(resource));
         }
 
+        internal static void ThrowArgumentNullException(ExceptionArgument argument, ExceptionResource resource)
+        {
+            throw new ArgumentNullException(GetArgumentName(argument), GetResourceString(resource));
+        }
+
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
@@ -363,6 +368,7 @@ namespace System {
         callBack,
         type,
         stateMachine,
+        pHandle,
     }
 
     //
@@ -469,6 +475,7 @@ namespace System {
         ArgumentOutOfRange_Enum,
         InvalidOperation_HandleIsNotInitialized,
         AsyncMethodBuilder_InstanceNotInitialized,
+        ArgumentNull_SafeHandle,
     }
 }
 
