@@ -1983,9 +1983,9 @@ void emitter::emitEndFnEpilog()
 #ifdef JIT32_GCENCODER
     assert(emitEpilogLast != nullptr);
 
-    UNATIVE_OFFSET epilogBegCodeOffset = emitEpilogLast->elLoc.CodeOffset(this);
+    UNATIVE_OFFSET epilogBegCodeOffset          = emitEpilogLast->elLoc.CodeOffset(this);
     UNATIVE_OFFSET epilogExitSeqStartCodeOffset = emitExitSeqBegLoc.CodeOffset(this);
-    UNATIVE_OFFSET newSize = epilogExitSeqStartCodeOffset - epilogBegCodeOffset;
+    UNATIVE_OFFSET newSize                      = epilogExitSeqStartCodeOffset - epilogBegCodeOffset;
 
     /* Compute total epilog size */
     assert(emitEpilogSize == 0 || emitEpilogSize == newSize); // All epilogs must be identical
@@ -2056,7 +2056,6 @@ void emitter::emitEndFuncletEpilog()
 }
 
 #endif // FEATURE_EH_FUNCLETS
-
 
 #ifdef JIT32_GCENCODER
 

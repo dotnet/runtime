@@ -1521,8 +1521,7 @@ protected:
         EpilogList*  elNext;
         emitLocation elLoc;
 
-        EpilogList()
-            : elNext(nullptr), elLoc()
+        EpilogList() : elNext(nullptr), elLoc()
         {
         }
     };
