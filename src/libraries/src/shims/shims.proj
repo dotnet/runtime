@@ -12,9 +12,8 @@
   </Target>
 
   <PropertyGroup>
-    <GenFacadesInputPath>$(IntermediateOutputPath)PreGenFacades/</GenFacadesInputPath>
-    <GenFacadesResponseFile>$(GenFacadesInputPath)genfacades.rsp</GenFacadesResponseFile>
-    <GenFacadesSemaphoreFile>$(GenFacadesInputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
+    <GenFacadesResponseFile>$(IntermediateOutputPath)genfacades.rsp</GenFacadesResponseFile>
+    <GenFacadesSemaphoreFile>$(IntermediateOutputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
   </PropertyGroup>
 
   <!-- Generate Facades -->
@@ -32,7 +31,7 @@
       <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     </PropertyGroup>
 
-    <MakeDir Directories="$(GenFacadesInputPath)" />
+    <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(GenFacadesResponseFile)" Lines="$(GenFacadesArgs)" Overwrite="true" />
 
     <PropertyGroup>
@@ -43,31 +42,23 @@
 
     <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
-    <!-- Copy the facades to the package ref and lib folders to be included in the packages -->
-    <!-- TODO: replace with BinPlacing targets -->
-    <ItemGroup>
-      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/ref" Condition="'$(_bc_TargetGroup)'!='uapaot'"/>
-      <PackageOutputPaths Include="$(BinDir)pkg/uap/ref" Condition="'$(_bc_TargetGroup)'=='uapaot'"/>
-      <PackageOutputPaths Include="$(BinDir)pkg/$(TargetGroup)/lib" />
-      <PackageOutputPaths Include="$(RefPath)" />
-      <PackageOutputPaths Include="$(RuntimePath)" />
-      <PackageOutputPaths Condition="'$(BinplaceTestSharedFramework)' == 'true'" Include="$(NETCoreAppTestSharedFrameworkPath)" />
-      <ProducedFacades Include="$(GenFacadesOutputPath)*.dll" />
-      <FileWrites Include="@(ProducedFacades)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(ProducedFacades)" DestinationFolder="%(PackageOutputPaths.Identity)" >
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="RunGenFacades" />
+  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlaceReferenceAssembly;BinPlaceRuntimeAssembly" />
   <Target Name="Clean">
     <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
   </Target>
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <Target Name="GetBinplaceItems">
+    <ItemGroup>
+      <BinplaceItem Include="$(GenFacadesOutputPath)*.dll" />
+      <FileWrites Include="@(BinplaceItem)" />
+    </ItemGroup>
+  </Target>
 </Project>
+
+
