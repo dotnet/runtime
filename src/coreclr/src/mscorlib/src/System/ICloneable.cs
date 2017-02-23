@@ -8,9 +8,11 @@
 ** This interface is implemented by classes that support cloning.
 **
 ===========================================================*/
-namespace System {
-    
-    using System;
+
+using System;
+
+namespace System
+{
     // Defines an interface indicating that an object may be cloned.  Only objects 
     // that implement ICloneable may be cloned. The interface defines a single 
     // method which is called to create a clone of the object.   Object defines a method

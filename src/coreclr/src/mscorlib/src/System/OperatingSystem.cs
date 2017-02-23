@@ -10,15 +10,16 @@
 **
 **
 ===========================================================*/
-namespace System {
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics.Contracts;
 
+using System.Runtime.Serialization;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
 
+namespace System
+{
     [Serializable]
-    internal sealed class OperatingSystem : ICloneable , ISerializable
+    internal sealed class OperatingSystem : ICloneable, ISerializable
     {
         private Version _version;
         private PlatformID _platform;
@@ -28,32 +29,37 @@ namespace System {
         private OperatingSystem()
         {
         }
-    
-        internal OperatingSystem(PlatformID platform, Version version, string servicePack) {
-            if( platform < PlatformID.Win32S || platform > PlatformID.MacOSX) {
+
+        internal OperatingSystem(PlatformID platform, Version version, string servicePack)
+        {
+            if (platform < PlatformID.Win32S || platform > PlatformID.MacOSX)
+            {
                 throw new ArgumentException(
                     Environment.GetResourceString("Arg_EnumIllegalVal", (int)platform),
                     nameof(platform));
             }
 
-            if ((Object) version == null)
+            if ((Object)version == null)
                 throw new ArgumentNullException(nameof(version));
             Contract.EndContractBlock();
 
             _platform = platform;
-            _version = (Version) version.Clone();
+            _version = (Version)version.Clone();
             _servicePack = servicePack;
         }
-        
-        private OperatingSystem(SerializationInfo info, StreamingContext context) {            
-            SerializationInfoEnumerator enumerator = info.GetEnumerator();                        
-            while( enumerator.MoveNext()) {
-                switch( enumerator.Name) {
+
+        private OperatingSystem(SerializationInfo info, StreamingContext context)
+        {
+            SerializationInfoEnumerator enumerator = info.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                switch (enumerator.Name)
+                {
                     case "_version":
-                        _version = (Version) info.GetValue("_version", typeof(Version));
+                        _version = (Version)info.GetValue("_version", typeof(Version));
                         break;
                     case "_platform":
-                        _platform = (PlatformID) info.GetValue("_platform", typeof(PlatformID));
+                        _platform = (PlatformID)info.GetValue("_platform", typeof(PlatformID));
                         break;
                     case "_servicePack":
                         _servicePack = info.GetString("_servicePack");
@@ -61,13 +67,16 @@ namespace System {
                 }
             }
 
-            if (_version == null ) {
+            if (_version == null)
+            {
                 throw new SerializationException(Environment.GetResourceString("Serialization_MissField", "_version"));
             }
         }
 
-        public void GetObjectData(SerializationInfo info, StreamingContext context) {
-            if( info == null ) {
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
@@ -75,29 +84,35 @@ namespace System {
             info.AddValue("_version", _version);
             info.AddValue("_platform", _platform);
             info.AddValue("_servicePack", _servicePack);
-        }        
+        }
 
-        public Version Version {
+        public Version Version
+        {
             get { return _version; }
         }
-    
-        public Object Clone() {
+
+        public Object Clone()
+        {
             return new OperatingSystem(_platform,
-                                       _version, _servicePack );
+                                       _version, _servicePack);
         }
-    
-        public override String ToString() {
+
+        public override String ToString()
+        {
             return VersionString;
         }
 
-        public String VersionString {
-            get {
-                if(_versionString != null) {
+        public String VersionString
+        {
+            get
+            {
+                if (_versionString != null)
+                {
                     return _versionString;
                 }
 
                 String os;
-                switch(_platform)
+                switch (_platform)
                 {
                     case PlatformID.Win32NT:
                         os = "Microsoft Windows NT ";
@@ -123,14 +138,16 @@ namespace System {
                         break;
                 }
 
-                if( String.IsNullOrEmpty(_servicePack)) {
+                if (String.IsNullOrEmpty(_servicePack))
+                {
                     _versionString = os + _version.ToString();
                 }
-                else {
+                else
+                {
                     _versionString = os + _version.ToString(3) + " " + _servicePack;
                 }
 
-                return _versionString;            
+                return _versionString;
             }
         }
     }

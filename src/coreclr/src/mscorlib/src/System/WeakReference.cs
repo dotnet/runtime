@@ -8,18 +8,19 @@
 ** Purpose: A wrapper for establishing a WeakReference to an Object.
 **
 ===========================================================*/
-namespace System {
-    
-    using System;
-    using System.Runtime.Serialization;
-    using System.Security;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
 
+using System;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
+namespace System
+{
     [Serializable]
-    public class WeakReference : ISerializable 
+    public class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
@@ -27,7 +28,8 @@ namespace System {
         internal IntPtr m_handle;
 
         // Migrating InheritanceDemands requires this default ctor, so we can mark it SafeCritical
-        protected WeakReference() {
+        protected WeakReference()
+        {
             Debug.Assert(false, "WeakReference's protected default ctor should never be used!");
             throw new NotImplementedException();
         }
@@ -35,40 +37,46 @@ namespace System {
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
         //
-        public WeakReference(Object target) 
-            : this(target, false) {
+        public WeakReference(Object target)
+            : this(target, false)
+        {
         }
-    
+
         //Creates a new WeakReference that keeps track of target.
         //
-        public WeakReference(Object target, bool trackResurrection) {
+        public WeakReference(Object target, bool trackResurrection)
+        {
             Create(target, trackResurrection);
         }
 
-        protected WeakReference(SerializationInfo info, StreamingContext context) {
-            if (info==null) {
+        protected WeakReference(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
 
-            Object target = info.GetValue("TrackedObject",typeof(Object));
+            Object target = info.GetValue("TrackedObject", typeof(Object));
             bool trackResurrection = info.GetBoolean("TrackResurrection");
 
             Create(target, trackResurrection);
         }
-    
+
         //Determines whether or not this instance of WeakReference still refers to an object
         //that has not been collected.
         //
-        public extern virtual bool IsAlive {
+        public extern virtual bool IsAlive
+        {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
-         }
-    
+        }
+
         //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         //or just until they're finalized (false).
         //
-        public virtual bool TrackResurrection {
+        public virtual bool TrackResurrection
+        {
             // We need to call IsTrackResurrection non-virtually in GetObjectData, and so the virtual property cannot be FCall directly
             get { return IsTrackResurrection(); }
         }
@@ -76,13 +84,14 @@ namespace System {
         //Gets the Object stored in the handle if it's accessible.
         // Or sets it.
         //
-        public extern virtual Object Target {
+        public extern virtual Object Target
+        {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             set;
         }
-    
+
         // Free all system resources associated with this reference.
         //
         // Note: The WeakReference finalizer is not actually run, but
@@ -94,7 +103,8 @@ namespace System {
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info==null) {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
@@ -108,5 +118,4 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool IsTrackResurrection();
     }
-
 }

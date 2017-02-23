@@ -14,9 +14,10 @@
 ** 
 =============================================================================*/
 
-namespace System.Runtime.ExceptionServices {
-    using System;
-    
+using System;
+
+namespace System.Runtime.ExceptionServices
+{
     // This attribute can be applied to methods to indicate that ProcessCorruptedState
     // Exceptions should be delivered to them.
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]

@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Security;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.SymbolStore;
+
 namespace System.Reflection.Emit
 {
-    using System;
-    using System.Security;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Diagnostics.SymbolStore;
-
     //-----------------------------------------------------------------------------------
     // On Telesto, we don't ship the ISymWrapper.dll assembly. However, ReflectionEmit
     // relies on that assembly to write out managed PDBs.
@@ -31,7 +31,7 @@ namespace System.Reflection.Emit
     // SymWrapperCore is never instantiated and is used as an encapsulation class.
     // It is our "ISymWrapper.dll" assembly within an assembly.
     //------------------------------------------------------------------------------
-    class SymWrapperCore
+    internal class SymWrapperCore
     {
         //------------------------------------------------------------------------------
         // Block instantiation
@@ -49,7 +49,6 @@ namespace System.Reflection.Emit
         //------------------------------------------------------------------------------
         private unsafe class SymDocumentWriter : ISymbolDocumentWriter
         {
-    
             //------------------------------------------------------------------------------
             // Ctor
             //------------------------------------------------------------------------------
@@ -57,10 +56,10 @@ namespace System.Reflection.Emit
             {
                 m_pDocumentWriterSafeHandle = pDocumentWriterSafeHandle;
                 // The handle is actually a pointer to a native ISymUnmanagedDocumentWriter.
-                m_pDocWriter = (ISymUnmanagedDocumentWriter *)m_pDocumentWriterSafeHandle.DangerousGetHandle();
+                m_pDocWriter = (ISymUnmanagedDocumentWriter*)m_pDocumentWriterSafeHandle.DangerousGetHandle();
                 m_vtable = (ISymUnmanagedDocumentWriterVTable)(Marshal.PtrToStructure(m_pDocWriter->m_unmanagedVTable, typeof(ISymUnmanagedDocumentWriterVTable)));
             }
-    
+
             //------------------------------------------------------------------------------
             // Returns the underlying ISymUnmanagedDocumentWriter* (as a safehandle.)
             //------------------------------------------------------------------------------
@@ -68,7 +67,7 @@ namespace System.Reflection.Emit
             {
                 return m_pDocumentWriterSafeHandle;
             }
-    
+
 
             //=========================================================================================
             // Public interface methods start here. (Well actually, they're all NotSupported
@@ -82,11 +81,11 @@ namespace System.Reflection.Emit
             {
                 throw new NotSupportedException();   // Intentionally not supported to match desktop CLR
             }
-    
+
             //------------------------------------------------------------------------------
             // SetCheckSum() wrapper
             //------------------------------------------------------------------------------
-            void ISymbolDocumentWriter.SetCheckSum(Guid algorithmId, byte [] checkSum)
+            void ISymbolDocumentWriter.SetCheckSum(Guid algorithmId, byte[] checkSum)
             {
                 int hr = m_vtable.SetCheckSum(m_pDocWriter, algorithmId, (uint)checkSum.Length, checkSum);
                 if (hr < 0)
@@ -94,8 +93,8 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-    
-            private delegate int DSetCheckSum(ISymUnmanagedDocumentWriter * pThis, Guid algorithmId, uint checkSumSize, [In] byte[] checkSum);
+
+            private delegate int DSetCheckSum(ISymUnmanagedDocumentWriter* pThis, Guid algorithmId, uint checkSumSize, [In] byte[] checkSum);
 
             //------------------------------------------------------------------------------
             // This layout must match the unmanaged ISymUnmanagedDocumentWriter* COM vtable
@@ -105,14 +104,14 @@ namespace System.Reflection.Emit
             [StructLayout(LayoutKind.Sequential)]
             private struct ISymUnmanagedDocumentWriterVTable
             {
-                internal IntPtr                QueryInterface;
-                internal IntPtr                AddRef;
-                internal IntPtr                Release;
+                internal IntPtr QueryInterface;
+                internal IntPtr AddRef;
+                internal IntPtr Release;
 
-                internal IntPtr                SetSource;
-                internal DSetCheckSum          SetCheckSum;
+                internal IntPtr SetSource;
+                internal DSetCheckSum SetCheckSum;
             }
-    
+
             //------------------------------------------------------------------------------
             // This layout must match the (start) of the unmanaged ISymUnmanagedDocumentWriter
             // COM object.
@@ -128,15 +127,13 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             private PunkSafeHandle m_pDocumentWriterSafeHandle;
 
-            private ISymUnmanagedDocumentWriter * m_pDocWriter;
+            private ISymUnmanagedDocumentWriter* m_pDocWriter;
 
             //------------------------------------------------------------------------------
             // Stores the "managed vtable" (actually a structure full of delegates that
             // P/Invoke to the corresponding unmanaged COM methods.)
             //------------------------------------------------------------------------------
             private ISymUnmanagedDocumentWriterVTable m_vtable;
-
-    
         } // class SymDocumentWriter
 
 
@@ -146,8 +143,6 @@ namespace System.Reflection.Emit
         //------------------------------------------------------------------------------
         internal unsafe class SymWriter : ISymbolWriter
         {
-
-
             //------------------------------------------------------------------------------
             // Creates a SymWriter. The SymWriter is a managed wrapper around the unmanaged 
             // symbol writer provided by the runtime (ildbsymlib or diasymreader.dll).
@@ -166,7 +161,7 @@ namespace System.Reflection.Emit
             private SymWriter()
             {
             }
-            
+
             //------------------------------------------------------------------------------
             // DefineDocument() wrapper
             //------------------------------------------------------------------------------
@@ -188,7 +183,7 @@ namespace System.Reflection.Emit
                 }
                 return new SymDocumentWriter(psymUnmanagedDocumentWriter);
             }
-        
+
             //------------------------------------------------------------------------------
             // OpenMethod() wrapper
             //------------------------------------------------------------------------------
@@ -200,7 +195,7 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-        
+
             //------------------------------------------------------------------------------
             // CloseMethod() wrapper
             //------------------------------------------------------------------------------
@@ -212,7 +207,7 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-        
+
             //------------------------------------------------------------------------------
             // DefineSequencePoints() wrapper
             //------------------------------------------------------------------------------
@@ -248,11 +243,11 @@ namespace System.Reflection.Emit
                 {
                     return;
                 }
-                if ( (offsets != null && offsets.Length != spCount) ||
-                     (lines != null && lines.Length != spCount)     ||
+                if ((offsets != null && offsets.Length != spCount) ||
+                     (lines != null && lines.Length != spCount) ||
                      (columns != null && columns.Length != spCount) ||
                      (endLines != null && endLines.Length != spCount) ||
-                     (endColumns != null && endColumns.Length != spCount) )
+                     (endColumns != null && endColumns.Length != spCount))
                 {
                     throw new ArgumentException();
                 }
@@ -269,9 +264,8 @@ namespace System.Reflection.Emit
                 {
                     throw Marshal.GetExceptionForHR(hr);
                 }
-
             }
-        
+
             //------------------------------------------------------------------------------
             // OpenScope() wrapper
             //------------------------------------------------------------------------------
@@ -285,7 +279,7 @@ namespace System.Reflection.Emit
                 }
                 return ret;
             }
-        
+
             //------------------------------------------------------------------------------
             // CloseScope() wrapper
             //------------------------------------------------------------------------------
@@ -297,7 +291,7 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-    
+
             //------------------------------------------------------------------------------
             // DefineLocalVariable() wrapper
             //------------------------------------------------------------------------------
@@ -339,7 +333,7 @@ namespace System.Reflection.Emit
                     throw Marshal.GetExceptionForHR(hr);
                 }
             }
-        
+
             //------------------------------------------------------------------------------
             // UsingNamespace() wrapper
             //------------------------------------------------------------------------------
@@ -364,65 +358,65 @@ namespace System.Reflection.Emit
             internal void InternalSetUnderlyingWriter(IntPtr ppUnderlyingWriter)
             {
                 m_pWriter = *((ISymUnmanagedWriter**)ppUnderlyingWriter);
-                m_vtable  = (ISymUnmanagedWriterVTable) (Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)));
+                m_vtable = (ISymUnmanagedWriterVTable)(Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)));
             }
 
             //------------------------------------------------------------------------------
             // Define delegates for the unmanaged COM methods we invoke.
             //------------------------------------------------------------------------------
-            private delegate int DInitialize(ISymUnmanagedWriter*                     pthis,
-                                             IntPtr                                   emitter,  //IUnknown*
+            private delegate int DInitialize(ISymUnmanagedWriter* pthis,
+                                             IntPtr emitter,  //IUnknown*
                                              [MarshalAs(UnmanagedType.LPWStr)] String filename, //WCHAR*
-                                             IntPtr                                   pIStream, //IStream*
-                                             [MarshalAs(UnmanagedType.Bool)] bool     fFullBuild
+                                             IntPtr pIStream, //IStream*
+                                             [MarshalAs(UnmanagedType.Bool)] bool fFullBuild
                                              );
 
-            private delegate int DDefineDocument(ISymUnmanagedWriter*                     pthis,
+            private delegate int DDefineDocument(ISymUnmanagedWriter* pthis,
                                                  [MarshalAs(UnmanagedType.LPWStr)] String url,
-                                                 [In] ref Guid                            language,
-                                                 [In] ref Guid                            languageVender,
-                                                 [In] ref Guid                            documentType,
-                                                 [Out] out PunkSafeHandle                 ppsymUnmanagedDocumentWriter
+                                                 [In] ref Guid language,
+                                                 [In] ref Guid languageVender,
+                                                 [In] ref Guid documentType,
+                                                 [Out] out PunkSafeHandle ppsymUnmanagedDocumentWriter
                                                 );
-                                                                              
+
             private delegate int DSetUserEntryPoint(ISymUnmanagedWriter* pthis, int entryMethod);
             private delegate int DOpenMethod(ISymUnmanagedWriter* pthis, int entryMethod);
             private delegate int DCloseMethod(ISymUnmanagedWriter* pthis);
 
             private delegate int DDefineSequencePoints(ISymUnmanagedWriter* pthis,
-                                                       PunkSafeHandle       document,
-                                                       int                  spCount,
-                                                       [In] int[]           offsets,
-                                                       [In] int[]           lines,
-                                                       [In] int[]           columns,
-                                                       [In] int[]           endLines,
-                                                       [In] int[]           endColumns);
+                                                       PunkSafeHandle document,
+                                                       int spCount,
+                                                       [In] int[] offsets,
+                                                       [In] int[] lines,
+                                                       [In] int[] columns,
+                                                       [In] int[] endLines,
+                                                       [In] int[] endColumns);
 
             private delegate int DOpenScope(ISymUnmanagedWriter* pthis, int startOffset, [Out] out int pretval);
             private delegate int DCloseScope(ISymUnmanagedWriter* pthis, int endOffset);
 
             private delegate int DSetScopeRange(ISymUnmanagedWriter* pthis, int scopeID, int startOffset, int endOffset);
 
-            private delegate int DDefineLocalVariable(ISymUnmanagedWriter*                     pthis,
+            private delegate int DDefineLocalVariable(ISymUnmanagedWriter* pthis,
                                                       [MarshalAs(UnmanagedType.LPWStr)] String name,
-                                                      int                                      attributes,
-                                                      int                                      cSig,
-                                                      [In] byte[]                              signature,
-                                                      int                                      addrKind,
-                                                      int                                      addr1,
-                                                      int                                      addr2,
-                                                      int                                      addr3,
-                                                      int                                      startOffset,
-                                                      int                                      endOffset
+                                                      int attributes,
+                                                      int cSig,
+                                                      [In] byte[] signature,
+                                                      int addrKind,
+                                                      int addr1,
+                                                      int addr2,
+                                                      int addr3,
+                                                      int startOffset,
+                                                      int endOffset
                                                      );
 
             private delegate int DClose(ISymUnmanagedWriter* pthis);
 
-            private delegate int DSetSymAttribute(ISymUnmanagedWriter*                     pthis,
-                                                  int                                      parent,
+            private delegate int DSetSymAttribute(ISymUnmanagedWriter* pthis,
+                                                  int parent,
                                                   [MarshalAs(UnmanagedType.LPWStr)] String name,
-                                                  int                                      cData,
-                                                  [In] byte[]                              data
+                                                  int cData,
+                                                  [In] byte[] data
                                                  );
 
 
@@ -440,38 +434,37 @@ namespace System.Reflection.Emit
             [StructLayout(LayoutKind.Sequential)]
             private struct ISymUnmanagedWriterVTable
             {
-                internal IntPtr                QueryInterface;
-                internal IntPtr                AddRef;
-                internal IntPtr                Release;
+                internal IntPtr QueryInterface;
+                internal IntPtr AddRef;
+                internal IntPtr Release;
 
-                internal DDefineDocument       DefineDocument;
-                internal DSetUserEntryPoint    SetUserEntryPoint;
+                internal DDefineDocument DefineDocument;
+                internal DSetUserEntryPoint SetUserEntryPoint;
 
-                internal DOpenMethod           OpenMethod;
-                internal DCloseMethod          CloseMethod;
+                internal DOpenMethod OpenMethod;
+                internal DCloseMethod CloseMethod;
 
-                internal DOpenScope            OpenScope;
-                internal DCloseScope           CloseScope;
+                internal DOpenScope OpenScope;
+                internal DCloseScope CloseScope;
 
-                internal DSetScopeRange        SetScopeRange;
+                internal DSetScopeRange SetScopeRange;
 
-                internal DDefineLocalVariable  DefineLocalVariable;
-                internal IntPtr                DefineParameter;
-                internal IntPtr                DefineField;
-                internal IntPtr                DefineGlobalVariable;
+                internal DDefineLocalVariable DefineLocalVariable;
+                internal IntPtr DefineParameter;
+                internal IntPtr DefineField;
+                internal IntPtr DefineGlobalVariable;
 
-                internal DClose                Close;
-                internal DSetSymAttribute      SetSymAttribute;
+                internal DClose Close;
+                internal DSetSymAttribute SetSymAttribute;
 
-                internal DOpenNamespace        OpenNamespace;
-                internal DCloseNamespace       CloseNamespace;
-                internal DUsingNamespace       UsingNamespace;
+                internal DOpenNamespace OpenNamespace;
+                internal DCloseNamespace CloseNamespace;
+                internal DUsingNamespace UsingNamespace;
 
-                internal IntPtr                SetMethodSourceRange;
-                internal DInitialize           Initialize;
-                internal IntPtr                GetDebugInfo;
+                internal IntPtr SetMethodSourceRange;
+                internal DInitialize Initialize;
+                internal IntPtr GetDebugInfo;
                 internal DDefineSequencePoints DefineSequencePoints;
-        
             }
 
             //------------------------------------------------------------------------------
@@ -490,19 +483,14 @@ namespace System.Reflection.Emit
             // As with the real ISymWrapper.dll, ISymWrapper performs *no* Release (or AddRef) on this pointer.
             // Managing lifetime is up to the caller (coreclr.dll).
             //------------------------------------------------------------------------------
-            private ISymUnmanagedWriter      *m_pWriter;
+            private ISymUnmanagedWriter* m_pWriter;
 
             //------------------------------------------------------------------------------
             // Stores the "managed vtable" (actually a structure full of delegates that
             // P/Invoke to the corresponding unmanaged COM methods.)
             //------------------------------------------------------------------------------
             private ISymUnmanagedWriterVTable m_vtable;
-
         } // class SymWriter
-
-
-
-
     } //class SymWrapperCore
 
 
@@ -518,7 +506,7 @@ namespace System.Reflection.Emit
     //
     // Had to make this a non-nested class since FCall's don't like to bind to nested classes.
     //--------------------------------------------------------------------------------------
-    sealed class PunkSafeHandle : SafeHandle
+    internal sealed class PunkSafeHandle : SafeHandle
     {
         internal PunkSafeHandle()
             : base((IntPtr)0, true)

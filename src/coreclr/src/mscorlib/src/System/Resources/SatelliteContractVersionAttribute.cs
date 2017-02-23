@@ -14,12 +14,13 @@
 **
 ===========================================================*/
 
-namespace System.Resources {
-    using System;
-    using System.Diagnostics.Contracts;
-    
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=false)]  
-    public sealed class SatelliteContractVersionAttribute : Attribute 
+using System;
+using System.Diagnostics.Contracts;
+
+namespace System.Resources
+{
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
+    public sealed class SatelliteContractVersionAttribute : Attribute
     {
         private String _version;
 
@@ -31,7 +32,8 @@ namespace System.Resources {
             _version = version;
         }
 
-        public String Version {
+        public String Version
+        {
             get { return _version; }
         }
     }

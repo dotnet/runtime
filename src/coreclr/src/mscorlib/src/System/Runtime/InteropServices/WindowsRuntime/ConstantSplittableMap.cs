@@ -48,9 +48,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(data));
             Contract.EndContractBlock();
 
-            this.firstItemIndex = 0;
-            this.lastItemIndex = data.Count - 1;
-            this.items = CreateKeyValueArray(data.Count, data.GetEnumerator());
+            firstItemIndex = 0;
+            lastItemIndex = data.Count - 1;
+            items = CreateKeyValueArray(data.Count, data.GetEnumerator());
         }
 
 
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             this.lastItemIndex = lastItemIndex;
         }
 
-        
+
         private KeyValuePair<TKey, TValue>[] CreateKeyValueArray(Int32 count, IEnumerator<KeyValuePair<TKey, TValue>> data)
         {
             KeyValuePair<TKey, TValue>[] kvArray = new KeyValuePair<TKey, TValue>[count];
@@ -76,16 +76,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        public int Count {
-            get {
+        public int Count
+        {
+            get
+            {
                 return lastItemIndex - firstItemIndex + 1;
             }
         }
 
 
         // [CLSCompliant(false)]
-        public UInt32 Size {
-            get {
+        public UInt32 Size
+        {
+            get
+            {
                 return (UInt32)(lastItemIndex - firstItemIndex + 1);
             }
         }
@@ -118,17 +122,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             return ((IEnumerable<IKeyValuePair<TKey, TValue>>)this).GetEnumerator();
         }
-        
+
         public IIterator<IKeyValuePair<TKey, TValue>> First()
         {
             return new EnumeratorToIteratorAdapter<IKeyValuePair<TKey, TValue>>(GetEnumerator());
         }
-        
+
         public IEnumerator<IKeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return new IKeyValuePairEnumerator(items, firstItemIndex, lastItemIndex);
         }
-        
+
         public void Split(out IMapView<TKey, TValue> firstPartition, out IMapView<TKey, TValue> secondPartition)
         {
             if (Count < 2)
@@ -144,7 +148,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             secondPartition = new ConstantSplittableMap<TKey, TValue>(items, pivot + 1, lastItemIndex);
         }
 
-#region IReadOnlyDictionary members
+        #region IReadOnlyDictionary members
 
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -197,16 +201,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return false;
             }
 
-            public IKeyValuePair<TKey, TValue> Current {
-                get {
+            public IKeyValuePair<TKey, TValue> Current
+            {
+                get
+                {
                     if (_current < _start) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
                     if (_current > _end) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
                     return new CLRIKeyValuePairImpl<TKey, TValue>(ref _array[_current]);
                 }
             }
 
-            Object IEnumerator.Current {
-                get {
+            Object IEnumerator.Current
+            {
+                get
+                {
                     return Current;
                 }
             }
@@ -222,7 +230,5 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         #endregion IKeyValuePair Enumerator
-
     }  // internal ConstantSplittableMap<TKey, TValue>
-
 }  // namespace System.Runtime.InteropServices.WindowsRuntime

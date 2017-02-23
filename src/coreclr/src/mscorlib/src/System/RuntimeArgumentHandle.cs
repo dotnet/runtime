@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-    
-    using System;
+
+using System;
+
+namespace System
+{
     //  This value type is used for constructing System.ArgIterator. 
     // 
     //  SECURITY : m_ptr cannot be set to anything other than null by untrusted
@@ -19,5 +21,4 @@ namespace System {
 
         internal IntPtr Value { get { return m_ptr; } }
     }
-
 }

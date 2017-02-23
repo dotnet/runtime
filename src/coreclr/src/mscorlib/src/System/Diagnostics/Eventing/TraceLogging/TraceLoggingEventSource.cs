@@ -445,11 +445,11 @@ namespace System.Diagnostics.Tracing
             var pins = stackalloc GCHandle[pinCount];
 
             fixed (byte*
-                pMetadata0 = this.providerMetadata,
+                pMetadata0 = providerMetadata,
                 pMetadata1 = nameInfo.nameMetadata,
                 pMetadata2 = eventTypes.typeMetadata)
             {
-                descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
@@ -546,11 +546,11 @@ namespace System.Diagnostics.Tracing
                 var descriptors = stackalloc EventData[eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3];
 
                 fixed (byte*
-                    pMetadata0 = this.providerMetadata,
+                    pMetadata0 = providerMetadata,
                     pMetadata1 = nameInfo.nameMetadata,
                     pMetadata2 = eventTypes.typeMetadata)
                 {
-                    descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                    descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                     descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                     descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
                     int numDescrs = 3;
@@ -622,11 +622,11 @@ namespace System.Diagnostics.Tracing
                     var pins = stackalloc GCHandle[pinCount];
 
                     fixed (byte*
-                        pMetadata0 = this.providerMetadata,
+                        pMetadata0 = providerMetadata,
                         pMetadata1 = nameInfo.nameMetadata,
                         pMetadata2 = eventTypes.typeMetadata)
                     {
-                        descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                        descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                         descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 #endif // FEATURE_MANAGED_ETW
@@ -684,7 +684,6 @@ namespace System.Diagnostics.Tracing
                                 var eventData = (EventPayload)(eventTypes.typeInfos[0].GetData(data));
                                 WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, eventData);
                             }
-
                         }
                         catch (Exception ex)
                         {
@@ -715,9 +714,9 @@ namespace System.Diagnostics.Tracing
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
-            eventCallbackArgs.m_level = (EventLevel) eventDescriptor.Level;
-            eventCallbackArgs.m_keywords = (EventKeywords) eventDescriptor.Keywords;
-            eventCallbackArgs.m_opcode = (EventOpcode) eventDescriptor.Opcode;
+            eventCallbackArgs.m_level = (EventLevel)eventDescriptor.Level;
+            eventCallbackArgs.m_keywords = (EventKeywords)eventDescriptor.Keywords;
+            eventCallbackArgs.m_opcode = (EventOpcode)eventDescriptor.Opcode;
             eventCallbackArgs.m_tags = tags;
 
             // Self described events do not have an id attached. We mark it internally with -1.
@@ -852,7 +851,7 @@ namespace System.Diagnostics.Tracing
             {
                 return (c - 'A' + 10);
             }
-            
+
             throw new ArgumentException(Resources.GetResourceString("BadHexDigit", c), "traits");
         }
 

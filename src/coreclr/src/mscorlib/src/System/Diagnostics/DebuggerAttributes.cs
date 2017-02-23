@@ -10,32 +10,33 @@
 **
 **
 ===========================================================*/
-    
 
-namespace System.Diagnostics {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Diagnostics.Contracts;
-    
-[Serializable]
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+
+using System;
+using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
+
+namespace System.Diagnostics
+{
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
     public sealed class DebuggerStepThroughAttribute : Attribute
     {
-        public DebuggerStepThroughAttribute () {}
-    } 
-
-[Serializable]
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
-    public sealed class DebuggerHiddenAttribute : Attribute
-    {
-        public DebuggerHiddenAttribute () {}
+        public DebuggerStepThroughAttribute() { }
     }
 
-[Serializable]
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor |AttributeTargets.Struct, Inherited = false)]
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
+    public sealed class DebuggerHiddenAttribute : Attribute
+    {
+        public DebuggerHiddenAttribute() { }
+    }
+
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Struct, Inherited = false)]
     public sealed class DebuggerNonUserCodeAttribute : Attribute
     {
-       public DebuggerNonUserCodeAttribute () {}
+        public DebuggerNonUserCodeAttribute() { }
     }
 
     // Attribute class used by the compiler to mark modules.  
@@ -46,11 +47,11 @@ namespace System.Diagnostics {
     // or may not have included debugging information, and the Runtime
     // won't preserve the debugging info, which will make debugging after
     // a JIT attach difficult.
-    [AttributeUsage(AttributeTargets.Assembly|AttributeTargets.Module, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module, AllowMultiple = false)]
     public sealed class DebuggableAttribute : Attribute
     {
         [Flags]
-        public enum DebuggingModes 
+        public enum DebuggingModes
         {
             None = 0x0,
             Default = 0x1,
@@ -58,7 +59,7 @@ namespace System.Diagnostics {
             IgnoreSymbolStoreSequencePoints = 0x2,
             EnableEditAndContinue = 0x4
         }
-        
+
         private DebuggingModes m_debuggingModes;
 
         public DebuggableAttribute(bool isJITTrackingEnabled,
@@ -66,12 +67,12 @@ namespace System.Diagnostics {
         {
             m_debuggingModes = 0;
 
-            if (isJITTrackingEnabled) 
+            if (isJITTrackingEnabled)
             {
                 m_debuggingModes |= DebuggingModes.Default;
             }
 
-            if (isJITOptimizerDisabled) 
+            if (isJITOptimizerDisabled)
             {
                 m_debuggingModes |= DebuggingModes.DisableOptimizations;
             }
@@ -91,7 +92,7 @@ namespace System.Diagnostics {
         {
             get { return ((m_debuggingModes & DebuggingModes.DisableOptimizations) != 0); }
         }
-        
+
         public DebuggingModes DebuggingFlags
         {
             get { return m_debuggingModes; }
@@ -108,25 +109,25 @@ namespace System.Diagnostics {
 
     //  Please also change the code which validates DebuggerBrowsableState variable (in this file)
     //  if you change this enum.
-    public enum DebuggerBrowsableState 
-    { 
-        Never = 0, 
+    public enum DebuggerBrowsableState
+    {
+        Never = 0,
         //Expanded is not supported in this release
         //Expanded = 1, 
-        Collapsed = 2, 
+        Collapsed = 2,
         RootHidden = 3
     }
-    
-    
+
+
     // the one currently supported with the csee.dat 
     // (mcee.dat, autoexp.dat) file. 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class DebuggerBrowsableAttribute: Attribute
+    public sealed class DebuggerBrowsableAttribute : Attribute
     {
         private DebuggerBrowsableState state;
         public DebuggerBrowsableAttribute(DebuggerBrowsableState state)
         {
-            if( state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
+            if (state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
                 throw new ArgumentOutOfRangeException(nameof(state));
             Contract.EndContractBlock();
 
@@ -141,7 +142,7 @@ namespace System.Diagnostics {
 
     // DebuggerTypeProxyAttribute
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
-    public sealed class DebuggerTypeProxyAttribute: Attribute
+    public sealed class DebuggerTypeProxyAttribute : Attribute
     {
         private string typeName;
         private string targetName;
@@ -149,14 +150,15 @@ namespace System.Diagnostics {
 
         public DebuggerTypeProxyAttribute(Type type)
         {
-            if (type == null) {
+            if (type == null)
+            {
                 throw new ArgumentNullException(nameof(type));
             }
             Contract.EndContractBlock();
 
-            this.typeName = type.AssemblyQualifiedName;
+            typeName = type.AssemblyQualifiedName;
         }
-        
+
         public DebuggerTypeProxyAttribute(string typeName)
         {
             this.typeName = typeName;
@@ -168,16 +170,18 @@ namespace System.Diagnostics {
 
         public Type Target
         {
-            set { 
-                if( value == null) {
+            set
+            {
+                if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
-                
-                targetName = value.AssemblyQualifiedName; 
-                target = value; 
+
+                targetName = value.AssemblyQualifiedName;
+                target = value;
             }
-            
+
             get { return target; }
         }
 
@@ -185,10 +189,9 @@ namespace System.Diagnostics {
         {
             get { return targetName; }
             set { targetName = value; }
-
         }
     }
-    
+
     // This attribute is used to control what is displayed for the given class or field 
     // in the data windows in the debugger.  The single argument to this attribute is
     // the string that will be displayed in the value column for instances of the type.  
@@ -209,19 +212,21 @@ namespace System.Diagnostics {
 
         public DebuggerDisplayAttribute(string value)
         {
-            if( value == null ) {
+            if (value == null)
+            {
                 this.value = "";
             }
-            else {
+            else
+            {
                 this.value = value;
             }
             name = "";
             type = "";
-        }   
+        }
 
         public string Value
         {
-            get { return this.value; }
+            get { return value; }
         }
 
         public string Name
@@ -238,13 +243,15 @@ namespace System.Diagnostics {
 
         public Type Target
         {
-            set { 
-                if( value == null) {
+            set
+            {
+                if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value));
                 }
                 Contract.EndContractBlock();
-                
-                targetName = value.AssemblyQualifiedName; 
+
+                targetName = value.AssemblyQualifiedName;
                 target = value;
             }
             get { return target; }
@@ -254,7 +261,6 @@ namespace System.Diagnostics {
         {
             get { return targetName; }
             set { targetName = value; }
-    
         }
     }
 }

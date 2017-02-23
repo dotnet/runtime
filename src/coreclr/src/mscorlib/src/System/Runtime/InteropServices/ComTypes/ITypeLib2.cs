@@ -11,10 +11,10 @@
 **
 =============================================================================*/
 
+using System;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
-    using System;
-
     [Guid("00020411-0000-0000-C000-000000000046")]
     [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
@@ -23,12 +23,12 @@ namespace System.Runtime.InteropServices.ComTypes
         [PreserveSig]
         new int GetTypeInfoCount();
         new void GetTypeInfo(int index, out ITypeInfo ppTI);
-        new void GetTypeInfoType(int index, out TYPEKIND pTKind);       
-        new void GetTypeInfoOfGuid(ref Guid guid, out ITypeInfo ppTInfo);        
+        new void GetTypeInfoType(int index, out TYPEKIND pTKind);
+        new void GetTypeInfoOfGuid(ref Guid guid, out ITypeInfo ppTInfo);
         new void GetLibAttr(out IntPtr ppTLibAttr);
-        new void GetTypeComp(out ITypeComp ppTComp);        
+        new void GetTypeComp(out ITypeComp ppTComp);
         new void GetDocumentation(int index, out String strName, out String strDocString, out int dwHelpContext, out String strHelpFile);
-        [return : MarshalAs(UnmanagedType.Bool)] 
+        [return: MarshalAs(UnmanagedType.Bool)]
         new bool IsName([MarshalAs(UnmanagedType.LPWStr)] String szNameBuf, int lHashVal);
         new void FindName([MarshalAs(UnmanagedType.LPWStr)] String szNameBuf, int lHashVal, [MarshalAs(UnmanagedType.LPArray), Out] ITypeInfo[] ppTInfo, [MarshalAs(UnmanagedType.LPArray), Out] int[] rgMemId, ref Int16 pcFound);
         [PreserveSig]

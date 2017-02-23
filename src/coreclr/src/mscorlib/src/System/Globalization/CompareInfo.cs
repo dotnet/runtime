@@ -12,8 +12,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-namespace System.Globalization {
-
+namespace System.Globalization
+{
     //
     // We pass all of the sorting calls to the native side, preferrably to the OS to do
     // the actual work.
@@ -42,19 +42,19 @@ namespace System.Globalization {
     //
 
 
-[Serializable]
+    [Serializable]
     [Flags]
     public enum CompareOptions
     {
-        None                = 0x00000000,
-        IgnoreCase          = 0x00000001,
-        IgnoreNonSpace      = 0x00000002,
-        IgnoreSymbols       = 0x00000004,
-        IgnoreKanaType      = 0x00000008,   // ignore kanatype
-        IgnoreWidth         = 0x00000010,   // ignore width
-        OrdinalIgnoreCase   = 0x10000000,   // This flag can not be used with other flags.
-        StringSort          = 0x20000000,   // use string sort method
-        Ordinal             = 0x40000000,   // This flag can not be used with other flags.
+        None = 0x00000000,
+        IgnoreCase = 0x00000001,
+        IgnoreNonSpace = 0x00000002,
+        IgnoreSymbols = 0x00000004,
+        IgnoreKanaType = 0x00000008,   // ignore kanatype
+        IgnoreWidth = 0x00000010,   // ignore width
+        OrdinalIgnoreCase = 0x10000000,   // This flag can not be used with other flags.
+        StringSort = 0x20000000,   // use string sort method
+        Ordinal = 0x40000000,   // This flag can not be used with other flags.
 
         // StopOnNull      = 0x10000000,
 
@@ -90,7 +90,7 @@ namespace System.Globalization {
         [OptionalField(VersionAdded = 2)]
         private String m_name;  // The name used to construct this CompareInfo
 
-        [NonSerialized] 
+        [NonSerialized]
         private String m_sortName; // The name that defines our behavior
 
         [NonSerialized]
@@ -109,12 +109,12 @@ namespace System.Globalization {
         // identifier.
         internal CompareInfo(CultureInfo culture)
         {
-            this.m_name = culture.m_name;
-            this.m_sortName = culture.SortName;
+            m_name = culture.m_name;
+            m_sortName = culture.SortName;
 
             IntPtr handleOrigin;
-            this.m_dataHandle = InternalInitSortHandle(m_sortName, out handleOrigin);
-            this.m_handleOrigin = handleOrigin;
+            m_dataHandle = InternalInitSortHandle(m_sortName, out handleOrigin);
+            m_handleOrigin = handleOrigin;
         }
 
         /*=================================GetCompareInfo==========================
@@ -130,12 +130,15 @@ namespace System.Globalization {
         ============================================================================*/
 #if FEATURE_USE_LCID
         // Assembly constructor should be deprecated, we don't act on the assembly information any more
-        public static CompareInfo GetCompareInfo(int culture, Assembly assembly){
+        public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
+        {
             // Parameter checking.
-            if (assembly == null) {
+            if (assembly == null)
+            {
                 throw new ArgumentNullException(nameof(assembly));
             }
-            if (assembly!=typeof(Object).Module.Assembly) {
+            if (assembly != typeof(Object).Module.Assembly)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OnlyMscorlib"));
             }
             Contract.EndContractBlock();
@@ -157,13 +160,16 @@ namespace System.Globalization {
         **  ArgumentException if name is invalid.
         ============================================================================*/
         // Assembly constructor should be deprecated, we don't act on the assembly information any more
-        public static CompareInfo GetCompareInfo(String name, Assembly assembly){
-            if (name == null || assembly == null) {
+        public static CompareInfo GetCompareInfo(String name, Assembly assembly)
+        {
+            if (name == null || assembly == null)
+            {
                 throw new ArgumentNullException(name == null ? nameof(name) : nameof(assembly));
             }
             Contract.EndContractBlock();
 
-            if (assembly!=typeof(Object).Module.Assembly) {
+            if (assembly != typeof(Object).Module.Assembly)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_OnlyMscorlib"));
             }
 
@@ -214,19 +220,23 @@ namespace System.Globalization {
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        public static bool IsSortable(char ch) {
-            return(IsSortable(ch.ToString()));
+        public static bool IsSortable(char ch)
+        {
+            return (IsSortable(ch.ToString()));
         }
 
-        public static bool IsSortable(String text) {
-            if (text == null) {
+        public static bool IsSortable(String text)
+        {
+            if (text == null)
+            {
                 // A null param is invalid here.
                 throw new ArgumentNullException(nameof(text));
             }
 
-            if (0 == text.Length) {
+            if (0 == text.Length)
+            {
                 // A zero length string is not invalid, but it is also not sortable.
-                return(false);
+                return (false);
             }
 
             CompareInfo c = CultureInfo.InvariantCulture.CompareInfo;
@@ -235,43 +245,42 @@ namespace System.Globalization {
         }
 
 
-#region Serialization
+        #region Serialization
         // the following fields are defined to keep the compatibility with Whidbey.
         // don't change/remove the names/types of these fields.
 #if FEATURE_USE_LCID
-                [OptionalField(VersionAdded = 1)]
-                private int win32LCID;             // mapped sort culture id of this instance
-                private int culture;               // the culture ID used to create this instance.
+        [OptionalField(VersionAdded = 1)]
+        private int win32LCID;             // mapped sort culture id of this instance
+        private int culture;               // the culture ID used to create this instance.
 #endif
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            this.m_name          = null;
+            m_name = null;
         }
 
         private void OnDeserialized()
         {
             CultureInfo ci;
             // If we didn't have a name, use the LCID
-            if (this.m_name == null)
+            if (m_name == null)
             {
 #if FEATURE_USE_LCID
                 // From whidbey, didn't have a name
-                ci = CultureInfo.GetCultureInfo(this.culture);
-                this.m_name = ci.m_name;
-                this.m_sortName = ci.SortName;
+                ci = CultureInfo.GetCultureInfo(culture);
+                m_name = ci.m_name;
+                m_sortName = ci.SortName;
 #endif
             }
             else
             {
                 ci = CultureInfo.GetCultureInfo(m_name);
-                this.m_sortName = ci.SortName;
+                m_sortName = ci.SortName;
             }
 
             IntPtr handleOrigin;
-            this.m_dataHandle = InternalInitSortHandle(m_sortName, out handleOrigin);
-            this.m_handleOrigin = handleOrigin;
-
+            m_dataHandle = InternalInitSortHandle(m_sortName, out handleOrigin);
+            m_handleOrigin = handleOrigin;
         }
 
         [OnDeserialized]
@@ -295,7 +304,7 @@ namespace System.Globalization {
             OnDeserialized();
         }
 
-#endregion Serialization
+        #endregion Serialization
 
 
         ///////////////////////////----- Name -----/////////////////////////////////
@@ -321,18 +330,18 @@ namespace System.Globalization {
         }
 
         // These flags are used in the native Win32. so we need to map the managed options to those flags
-        private const int LINGUISTIC_IGNORECASE      = 0x00000010;       // linguistically appropriate 'ignore case'
-        private const int NORM_IGNORECASE            = 0x00000001;       // Ignores case.  (use LINGUISTIC_IGNORECASE instead)
-        private const int NORM_IGNOREKANATYPE        = 0x00010000;       // Does not differentiate between Hiragana and Katakana characters. Corresponding Hiragana and Katakana will compare as equal.
+        private const int LINGUISTIC_IGNORECASE = 0x00000010;       // linguistically appropriate 'ignore case'
+        private const int NORM_IGNORECASE = 0x00000001;       // Ignores case.  (use LINGUISTIC_IGNORECASE instead)
+        private const int NORM_IGNOREKANATYPE = 0x00010000;       // Does not differentiate between Hiragana and Katakana characters. Corresponding Hiragana and Katakana will compare as equal.
         private const int LINGUISTIC_IGNOREDIACRITIC = 0x00000020;       // linguistically appropriate 'ignore nonspace'
-        private const int NORM_IGNORENONSPACE        = 0x00000002;       // Ignores nonspacing. This flag also removes Japanese accent characters.  (use LINGUISTIC_IGNOREDIACRITIC instead)
-        private const int NORM_IGNORESYMBOLS         = 0x00000004;       // Ignores symbols.
-        private const int NORM_IGNOREWIDTH           = 0x00020000;       // Does not differentiate between a single-byte character and the same character as a double-byte character.
-        private const int SORT_STRINGSORT            = 0x00001000;       // Treats punctuation the same as symbols.
-        private const int COMPARE_OPTIONS_ORDINAL    = 0x40000000;       // Ordinal (handled by Comnlsinfo)
-        internal const int NORM_LINGUISTIC_CASING    = 0x08000000;       // use linguistic rules for casing
+        private const int NORM_IGNORENONSPACE = 0x00000002;       // Ignores nonspacing. This flag also removes Japanese accent characters.  (use LINGUISTIC_IGNOREDIACRITIC instead)
+        private const int NORM_IGNORESYMBOLS = 0x00000004;       // Ignores symbols.
+        private const int NORM_IGNOREWIDTH = 0x00020000;       // Does not differentiate between a single-byte character and the same character as a double-byte character.
+        private const int SORT_STRINGSORT = 0x00001000;       // Treats punctuation the same as symbols.
+        private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal (handled by Comnlsinfo)
+        internal const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing
 
-        
+
         private const int RESERVED_FIND_ASCII_STRING = 0x20000000;       // This flag used only to tell the sorting DLL can assume the string characters are in ASCII.
 
         [Pure]
@@ -346,15 +355,15 @@ namespace System.Globalization {
             // Use "linguistic casing" by default (load the culture's casing exception tables)
             int nativeCompareFlags = NORM_LINGUISTIC_CASING;
 
-            if ((options & CompareOptions.IgnoreCase)       != 0) { nativeCompareFlags |= NORM_IGNORECASE;        }
-            if ((options & CompareOptions.IgnoreKanaType)   != 0) { nativeCompareFlags |= NORM_IGNOREKANATYPE;    }
-            if ((options & CompareOptions.IgnoreNonSpace)   != 0) { nativeCompareFlags |= NORM_IGNORENONSPACE;    }
-            if ((options & CompareOptions.IgnoreSymbols)    != 0) { nativeCompareFlags |= NORM_IGNORESYMBOLS;     }
-            if ((options & CompareOptions.IgnoreWidth)      != 0) { nativeCompareFlags |= NORM_IGNOREWIDTH;       }
-            if ((options & CompareOptions.StringSort)       != 0) { nativeCompareFlags |= SORT_STRINGSORT;        }
+            if ((options & CompareOptions.IgnoreCase) != 0) { nativeCompareFlags |= NORM_IGNORECASE; }
+            if ((options & CompareOptions.IgnoreKanaType) != 0) { nativeCompareFlags |= NORM_IGNOREKANATYPE; }
+            if ((options & CompareOptions.IgnoreNonSpace) != 0) { nativeCompareFlags |= NORM_IGNORENONSPACE; }
+            if ((options & CompareOptions.IgnoreSymbols) != 0) { nativeCompareFlags |= NORM_IGNORESYMBOLS; }
+            if ((options & CompareOptions.IgnoreWidth) != 0) { nativeCompareFlags |= NORM_IGNOREWIDTH; }
+            if ((options & CompareOptions.StringSort) != 0) { nativeCompareFlags |= SORT_STRINGSORT; }
 
             // Suffix & Prefix shouldn't use this, make sure to turn off the NORM_LINGUISTIC_CASING flag
-            if (options == CompareOptions.Ordinal)                { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }
+            if (options == CompareOptions.Ordinal) { nativeCompareFlags = COMPARE_OPTIONS_ORDINAL; }
 
             Debug.Assert(((options & ~(CompareOptions.IgnoreCase |
                                           CompareOptions.IgnoreKanaType |
@@ -387,8 +396,8 @@ namespace System.Globalization {
             return (Compare(string1, string2, CompareOptions.None));
         }
 
-        public unsafe virtual int Compare(String string1, String string2, CompareOptions options){
-
+        public unsafe virtual int Compare(String string1, String string2, CompareOptions options)
+        {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
                 return String.Compare(string1, string2, StringComparison.OrdinalIgnoreCase);
@@ -400,9 +409,9 @@ namespace System.Globalization {
                 if (options != CompareOptions.Ordinal)
                 {
                     throw new ArgumentException(Environment.GetResourceString("Argument_CompareOptionOrdinal"), nameof(options));
-                        }
+                }
                 return String.CompareOrdinal(string1, string2);
-                    }
+            }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
@@ -411,13 +420,16 @@ namespace System.Globalization {
 
             //Our paradigm is that null sorts less than any other string and
             //that two nulls sort as equal.
-            if (string1 == null) {
-                if (string2 == null) {
+            if (string1 == null)
+            {
+                if (string2 == null)
+                {
                     return (0);     // Equal
                 }
                 return (-1);    // null < non-null
             }
-            if (string2 == null) {
+            if (string2 == null)
+            {
                 return (1);     // non-null > null
             }
 
@@ -446,8 +458,8 @@ namespace System.Globalization {
 
         public unsafe virtual int Compare(String string1, int offset1, String string2, int offset2, CompareOptions options)
         {
-            return Compare(string1, offset1, string1 == null ? 0 : string1.Length-offset1,
-                           string2, offset2, string2 == null ? 0 : string2.Length-offset2, options);
+            return Compare(string1, offset1, string1 == null ? 0 : string1.Length - offset1,
+                           string2, offset2, string2 == null ? 0 : string2.Length - offset2, options);
         }
 
 
@@ -461,9 +473,9 @@ namespace System.Globalization {
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
-                int result = String.Compare(string1, offset1, string2, offset2, length1<length2 ? length1 : length2, StringComparison.OrdinalIgnoreCase);
+                int result = String.Compare(string1, offset1, string2, offset2, length1 < length2 ? length1 : length2, StringComparison.OrdinalIgnoreCase);
                 if ((length1 != length2) && result == 0)
-                    return (length1 > length2? 1: -1);
+                    return (length1 > length2 ? 1 : -1);
                 return (result);
             }
 
@@ -517,9 +529,9 @@ namespace System.Globalization {
             {
                 return string.CompareOrdinalHelper(string1, offset1, length1, string2, offset2, length2);
             }
-            return InternalCompareString(this.m_dataHandle, this.m_handleOrigin, this.m_sortName, 
-                                         string1, offset1, length1, 
-                                         string2, offset2, length2, 
+            return InternalCompareString(m_dataHandle, m_handleOrigin, m_sortName,
+                                         string1, offset1, length1,
+                                         string2, offset2, length2,
                                          GetNativeCompareFlags(options));
         }
 
@@ -535,7 +547,8 @@ namespace System.Globalization {
 
         public unsafe virtual bool IsPrefix(String source, String prefix, CompareOptions options)
         {
-            if (source == null || prefix == null) {
+            if (source == null || prefix == null)
+            {
                 throw new ArgumentNullException((source == null ? nameof(source) : nameof(prefix)),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
@@ -557,7 +570,8 @@ namespace System.Globalization {
                 return source.StartsWith(prefix, StringComparison.Ordinal);
             }
 
-            if ((options & ValidIndexMaskOffFlags) != 0) {
+            if ((options & ValidIndexMaskOffFlags) != 0)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), nameof(options));
             }
 
@@ -565,7 +579,7 @@ namespace System.Globalization {
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return (InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_STARTSWITH | ((source.IsAscii() && prefix.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
                         source, source.Length, 0, prefix, prefix.Length,
                         null) > -1);
@@ -589,7 +603,8 @@ namespace System.Globalization {
 
         public unsafe virtual bool IsSuffix(String source, String suffix, CompareOptions options)
         {
-            if (source == null || suffix == null) {
+            if (source == null || suffix == null)
+            {
                 throw new ArgumentNullException((source == null ? nameof(source) : nameof(suffix)),
                     Environment.GetResourceString("ArgumentNull_String"));
             }
@@ -601,22 +616,25 @@ namespace System.Globalization {
                 return (true);
             }
 
-            if (options == CompareOptions.OrdinalIgnoreCase) {
+            if (options == CompareOptions.OrdinalIgnoreCase)
+            {
                 return source.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
             }
 
-            if (options == CompareOptions.Ordinal) {
+            if (options == CompareOptions.Ordinal)
+            {
                 return source.EndsWith(suffix, StringComparison.Ordinal);
             }
 
-            if ((options & ValidIndexMaskOffFlags) != 0) {
+            if ((options & ValidIndexMaskOffFlags) != 0)
+            {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag"), nameof(options));
             }
 
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_ENDSWITH | ((source.IsAscii() && suffix.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
                         source, source.Length, source.Length - 1, suffix, suffix.Length, null) >= 0;
         }
@@ -643,7 +661,7 @@ namespace System.Globalization {
 
         public unsafe virtual int IndexOf(String source, char value)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -653,7 +671,7 @@ namespace System.Globalization {
 
         public unsafe virtual int IndexOf(String source, String value)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -663,7 +681,7 @@ namespace System.Globalization {
 
         public unsafe virtual int IndexOf(String source, char value, CompareOptions options)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -673,7 +691,7 @@ namespace System.Globalization {
 
         public unsafe virtual int IndexOf(String source, String value, CompareOptions options)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -758,7 +776,7 @@ namespace System.Globalization {
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMSTART | ((source.IsAscii() && (value <= '\x007f')) ? RESERVED_FIND_ASCII_STRING : 0),
                         source, count, startIndex, new String(value, 1), 1, null);
         }
@@ -788,7 +806,7 @@ namespace System.Globalization {
             {
                 if (value.Length == 0)
                 {
-                    if(matchLengthPtr != null)
+                    if (matchLengthPtr != null)
                         *matchLengthPtr = 0;
                     return 0;
                 }
@@ -808,7 +826,7 @@ namespace System.Globalization {
                 int index = source.IndexOf(value, startIndex, count, StringComparison.OrdinalIgnoreCase);
                 if (index != -1)
                 {
-                    if(matchLengthPtr != null)
+                    if (matchLengthPtr != null)
                         *matchLengthPtr = value.Length;
                 }
                 return index;
@@ -843,7 +861,7 @@ namespace System.Globalization {
 
         public unsafe virtual int LastIndexOf(String source, char value)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -855,7 +873,7 @@ namespace System.Globalization {
 
         public virtual int LastIndexOf(String source, String value)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -867,7 +885,7 @@ namespace System.Globalization {
 
         public virtual int LastIndexOf(String source, char value, CompareOptions options)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -878,7 +896,7 @@ namespace System.Globalization {
 
         public unsafe virtual int LastIndexOf(String source, String value, CompareOptions options)
         {
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -927,7 +945,7 @@ namespace System.Globalization {
         public unsafe virtual int LastIndexOf(String source, char value, int startIndex, int count, CompareOptions options)
         {
             // Verify Arguments
-            if (source==null)
+            if (source == null)
                 throw new ArgumentNullException(nameof(source));
             Contract.EndContractBlock();
 
@@ -966,7 +984,7 @@ namespace System.Globalization {
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMEND | ((source.IsAscii() && (value <= '\x007f')) ? RESERVED_FIND_ASCII_STRING : 0),
                         source, count, startIndex, new String(value, 1), 1, null);
         }
@@ -1020,7 +1038,7 @@ namespace System.Globalization {
             // to let the sorting DLL do the call optimization in case of Ascii strings, we check if the strings are in Ascii and then send the flag RESERVED_FIND_ASCII_STRING  to 
             // the sorting DLL API SortFindString so sorting DLL don't have to check if the string is Ascii with every call to SortFindString.
             return InternalFindNLSStringEx(
-                        m_dataHandle, m_handleOrigin, m_sortName, 
+                        m_dataHandle, m_handleOrigin, m_sortName,
                         GetNativeCompareFlags(options) | Win32Native.FIND_FROMEND | ((source.IsAscii() && value.IsAscii()) ? RESERVED_FIND_ASCII_STRING : 0),
                         source, count, startIndex, value, value.Length, null);
         }
@@ -1046,7 +1064,7 @@ namespace System.Globalization {
 
         private SortKey CreateSortKey(String source, CompareOptions options)
         {
-            if (source==null) { throw new ArgumentNullException(nameof(source)); }
+            if (source == null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
             // Mask used to check if we have the right flags.
@@ -1087,7 +1105,7 @@ namespace System.Globalization {
             if (keyData == null)
             {
                 // Make an appropriate byte array
-                keyData  = new byte[length];
+                keyData = new byte[length];
 
                 // Fill up the array
                 length = InternalGetSortKey(m_dataHandle, m_handleOrigin, m_sortName, flags, source, source.Length, keyData, keyData.Length);
@@ -1204,7 +1222,7 @@ namespace System.Globalization {
             //
             //  Parameter validation
             //
-            if(null == source)
+            if (null == source)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -1215,14 +1233,14 @@ namespace System.Globalization {
             }
             Contract.EndContractBlock();
 
-            if(0 == source.Length)
+            if (0 == source.Length)
             {
-                return(0);
+                return (0);
             }
 
             //
             ////////////////////////////////////////////////////////////////////////
-            return (InternalGetGlobalizedHashCode(m_dataHandle, m_handleOrigin, this.m_sortName, source, source.Length, GetNativeCompareFlags(options), forceRandomizedHashing, additionalEntropy));
+            return (InternalGetGlobalizedHashCode(m_dataHandle, m_handleOrigin, m_sortName, source, source.Length, GetNativeCompareFlags(options), forceRandomizedHashing, additionalEntropy));
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1262,7 +1280,7 @@ namespace System.Globalization {
         {
             get
             {
-                if(m_SortVersion == null) 
+                if (m_SortVersion == null)
                 {
                     Win32Native.NlsVersionInfoEx v = new Win32Native.NlsVersionInfoEx();
                     v.dwNLSVersionInfoSize = Marshal.SizeOf(typeof(Win32Native.NlsVersionInfoEx));
@@ -1273,7 +1291,7 @@ namespace System.Globalization {
                 return m_SortVersion;
             }
         }
-        
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]

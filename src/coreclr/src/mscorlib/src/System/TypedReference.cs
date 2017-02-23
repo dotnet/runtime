@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-
+namespace System
+{
     // TypedReference is basically only ever seen on the call stack, and in param arrays.
     //  These are blob that must be dealt with by the compiler.
+
     using System;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ namespace System {
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
 
-    [CLSCompliant(false)] 
+    [CLSCompliant(false)]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public struct TypedReference
     {
@@ -22,7 +23,8 @@ namespace System {
         private IntPtr Type;
 
         [CLSCompliant(false)]
-        public static TypedReference MakeTypedReference(Object target, FieldInfo[] flds) {
+        public static TypedReference MakeTypedReference(Object target, FieldInfo[] flds)
+        {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
             if (flds == null)
@@ -43,25 +45,25 @@ namespace System {
 
                 if (field.IsInitOnly || field.IsStatic)
                     throw new ArgumentException(Environment.GetResourceString("Argument_TypedReferenceInvalidField"));
-                
+
                 if (targetType != field.GetDeclaringTypeInternal() && !targetType.IsSubclassOf(field.GetDeclaringTypeInternal()))
                     throw new MissingMemberException(Environment.GetResourceString("MissingMemberTypeRef"));
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
                 if (fieldType.IsPrimitive)
                     throw new ArgumentException(Environment.GetResourceString("Arg_TypeRefPrimitve"));
-                
+
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(Environment.GetResourceString("MissingMemberNestErr"));
-                
+
                 fields[i] = field.FieldHandle.Value;
                 targetType = fieldType;
             }
 
-            TypedReference result = new TypedReference ();
+            TypedReference result = new TypedReference();
 
             // reference to TypedReference is banned, so have to pass result as pointer
-            unsafe 
+            unsafe
             {
                 InternalMakeTypedReference(&result, target, fields, targetType);
             }
@@ -91,22 +93,22 @@ namespace System {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern static Object InternalToObject(void * value);
+        internal unsafe extern static Object InternalToObject(void* value);
 
-        internal bool IsNull 
-        { 
+        internal bool IsNull
+        {
             get
             {
-                return Value.IsNull() && Type.IsNull(); 
+                return Value.IsNull() && Type.IsNull();
             }
         }
 
-        public static Type GetTargetType (TypedReference value)
+        public static Type GetTargetType(TypedReference value)
         {
             return __reftype(value);
         }
 
-        public static RuntimeTypeHandle TargetTypeToken (TypedReference value)
+        public static RuntimeTypeHandle TargetTypeToken(TypedReference value)
         {
             return __reftype(value).TypeHandle;
         }
@@ -119,7 +121,6 @@ namespace System {
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern static void InternalSetTypedReference(void * target, Object value);
+        internal unsafe extern static void InternalSetTypedReference(void* target, Object value);
     }
-
 }

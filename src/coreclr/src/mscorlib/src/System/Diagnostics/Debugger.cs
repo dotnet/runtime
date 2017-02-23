@@ -5,16 +5,16 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Security;
-    using System.Runtime.Versioning;
-
     // No data, does not need to be marked with the serializable attribute
     public sealed class Debugger
     {
@@ -36,7 +36,7 @@ namespace System.Diagnostics
             BreakInternal();
         }
 
-        static void BreakCanThrow()
+        private static void BreakCanThrow()
         {
             BreakInternal();
         }
@@ -128,7 +128,5 @@ namespace System.Diagnostics
         // report the notification depending on its settings. 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void CustomNotification(ICustomDebuggerNotification data);
-
     }
-
 }

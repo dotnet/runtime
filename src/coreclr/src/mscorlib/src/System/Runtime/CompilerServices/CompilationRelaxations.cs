@@ -5,46 +5,45 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace System.Runtime.CompilerServices 
+
+using System;
+
+namespace System.Runtime.CompilerServices
 {
-
-    using System;
-
     /// IMPORTANT: Keep this in sync with corhdr.h
-[Serializable]
-[Flags]
+    [Serializable]
+    [Flags]
     public enum CompilationRelaxations : int
-    { 
-        NoStringInterning       = 0x0008, // Start in 0x0008, we had other non public flags in this enum before,
-                                          // so we'll start here just in case somebody used them. This flag is only
-                                          // valid when set for Assemblies.
+    {
+        NoStringInterning = 0x0008, // Start in 0x0008, we had other non public flags in this enum before,
+                                    // so we'll start here just in case somebody used them. This flag is only
+                                    // valid when set for Assemblies.
     };
-        
-[Serializable]
-[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Method)]  
-    public class CompilationRelaxationsAttribute : Attribute 
+
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Module | AttributeTargets.Class | AttributeTargets.Method)]
+    public class CompilationRelaxationsAttribute : Attribute
     {
         private int m_relaxations;      // The relaxations.
-        
-        public CompilationRelaxationsAttribute (
-            int relaxations) 
-        { 
-            m_relaxations = relaxations; 
+
+        public CompilationRelaxationsAttribute(
+            int relaxations)
+        {
+            m_relaxations = relaxations;
         }
-        
-        public CompilationRelaxationsAttribute (
-            CompilationRelaxations relaxations) 
-        { 
-            m_relaxations = (int) relaxations; 
+
+        public CompilationRelaxationsAttribute(
+            CompilationRelaxations relaxations)
+        {
+            m_relaxations = (int)relaxations;
         }
-        
+
         public int CompilationRelaxations
-        { 
-            get 
-            { 
-                return m_relaxations; 
-            } 
+        {
+            get
+            {
+                return m_relaxations;
+            }
         }
     }
-    
 }

@@ -8,18 +8,18 @@
 // participate in the creation and control the settings of new AppDomains.
 //
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Runtime.InteropServices;
+
 namespace System
 {
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Security;
-    using System.Runtime.InteropServices;
-
     internal class AppDomainManager : MarshalByRefObject
     {
-        public AppDomainManager () {}
+        public AppDomainManager() { }
 
-        public virtual void InitializeNewDomain (AppDomainSetup appDomainInfo)
+        public virtual void InitializeNewDomain(AppDomainSetup appDomainInfo)
         {
             // By default, InitializeNewDomain does nothing. AppDomain.CreateAppDomainManager relies on this fact.
         }
@@ -28,8 +28,10 @@ namespace System
         private static extern void GetEntryAssembly(ObjectHandleOnStack retAssembly);
 
         private Assembly m_entryAssembly = null;
-        public virtual Assembly EntryAssembly {
-            get {
+        public virtual Assembly EntryAssembly
+        {
+            get
+            {
                 // The default AppDomainManager sets the EntryAssembly depending on whether the
                 // AppDomain is a manifest application domain or not. In the first case, we parse
                 // the application manifest to find out the entry point assembly and return that assembly.
@@ -46,13 +48,15 @@ namespace System
             }
         }
 
-        internal static AppDomainManager CurrentAppDomainManager {
-            get {
+        internal static AppDomainManager CurrentAppDomainManager
+        {
+            get
+            {
                 return AppDomain.CurrentDomain.DomainManager;
             }
         }
 
-        public virtual bool CheckSecuritySettings (SecurityState state)
+        public virtual bool CheckSecuritySettings(SecurityState state)
         {
             return false;
         }

@@ -17,7 +17,8 @@
 
 using System;
 
-namespace System.IO {
+namespace System.IO
+{
     // Provides seek reference points.  To seek to the end of a stream,
     // call stream.Seek(0, SeekOrigin.End).
     [Serializable]

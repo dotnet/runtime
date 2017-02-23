@@ -21,8 +21,8 @@ using System.Runtime.Versioning;
 using Microsoft.Win32;
 using System.Threading;
 
-namespace Microsoft.Win32.SafeHandles {
- 
+namespace Microsoft.Win32.SafeHandles
+{
     public sealed class SafeWaitHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // Called by P/Invoke marshaler

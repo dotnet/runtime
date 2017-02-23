@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System {
-    
+namespace System
+{
     //Only contains static methods.  Does not require serialization
-    
+
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
@@ -57,7 +57,7 @@ namespace System {
                 if (count == 0)
                     return -1;
                 else if (*pByte == value)
-                    return (int) (pByte - src);
+                    return (int)(pByte - src);
 
                 count--;
                 pByte++;
@@ -87,7 +87,7 @@ namespace System {
                 if (t1 != 0)
                 {
                     // We've found a match for value, figure out which position it's in.
-                    int foundIndex = (int) (pByte - src);
+                    int foundIndex = (int)(pByte - src);
                     if (pByte[0] == value)
                         return foundIndex;
                     else if (pByte[1] == value)
@@ -100,14 +100,13 @@ namespace System {
 
                 count -= 4;
                 pByte += 4;
-
             }
 
             // Catch any bytes that might be left at the tail of the buffer
             while (count > 0)
             {
                 if (*pByte == value)
-                    return (int) (pByte - src);
+                    return (int)(pByte - src);
 
                 count--;
                 pByte++;
@@ -116,7 +115,7 @@ namespace System {
             // If we don't have a match return -1;
             return -1;
         }
-        
+
         // Returns a bool to indicate if the array is of primitive data types
         // or not.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -175,7 +174,7 @@ namespace System {
             _SetByte(array, index, value);
         }
 
-    
+
         // Gets a particular byte out of the array.  The array must be an
         // array of primitives.  
         //
@@ -200,31 +199,34 @@ namespace System {
 
         internal unsafe static void ZeroMemory(byte* src, long len)
         {
-            while(len-- > 0)
+            while (len-- > 0)
                 *(src + len) = 0;
         }
 
-        internal unsafe static void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len) {
-            Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
+        internal unsafe static void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
+        {
+            Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
             // If dest has 0 elements, the fixed statement will throw an 
             // IndexOutOfRangeException.  Special-case 0-byte copies.
-            if (len==0)
+            if (len == 0)
                 return;
-            fixed(byte* pDest = dest) {
+            fixed (byte* pDest = dest)
+            {
                 Memcpy(pDest + destIndex, src + srcIndex, len);
             }
         }
 
         internal unsafe static void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
         {
-            Debug.Assert( (srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");        
+            Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
             // If dest has 0 elements, the fixed statement will throw an 
             // IndexOutOfRangeException.  Special-case 0-byte copies.
-            if (len==0)
+            if (len == 0)
                 return;
-            fixed(byte* pSrc = src) {
+            fixed (byte* pSrc = src)
+            {
                 Memcpy(pDest + destIndex, pSrc + srcIndex, len);
             }
         }
@@ -244,7 +246,8 @@ namespace System {
         internal unsafe static extern void Memcpy(byte* dest, byte* src, int len);
 #else // ARM
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static void Memcpy(byte* dest, byte* src, int len) {
+        internal unsafe static void Memcpy(byte* dest, byte* src, int len)
+        {
             Debug.Assert(len >= 0, "Negative length in memcopy!");
             Memmove(dest, src, (uint)len);
         }
@@ -271,196 +274,196 @@ namespace System {
 
             switch (len)
             {
-            case 0:
-                return;
-            case 1:
-                *dest = *src;
-                return;
-            case 2:
-                *(short*)dest = *(short*)src;
-                return;
-            case 3:
-                *(short*)dest = *(short*)src;
-                *(dest + 2) = *(src + 2);
-                return;
-            case 4:
-                *(int*)dest = *(int*)src;
-                return;
-            case 5:
-                *(int*)dest = *(int*)src;
-                *(dest + 4) = *(src + 4);
-                return;
-            case 6:
-                *(int*)dest = *(int*)src;
-                *(short*)(dest + 4) = *(short*)(src + 4);
-                return;
-            case 7:
-                *(int*)dest = *(int*)src;
-                *(short*)(dest + 4) = *(short*)(src + 4);
-                *(dest + 6) = *(src + 6);
-                return;
-            case 8:
+                case 0:
+                    return;
+                case 1:
+                    *dest = *src;
+                    return;
+                case 2:
+                    *(short*)dest = *(short*)src;
+                    return;
+                case 3:
+                    *(short*)dest = *(short*)src;
+                    *(dest + 2) = *(src + 2);
+                    return;
+                case 4:
+                    *(int*)dest = *(int*)src;
+                    return;
+                case 5:
+                    *(int*)dest = *(int*)src;
+                    *(dest + 4) = *(src + 4);
+                    return;
+                case 6:
+                    *(int*)dest = *(int*)src;
+                    *(short*)(dest + 4) = *(short*)(src + 4);
+                    return;
+                case 7:
+                    *(int*)dest = *(int*)src;
+                    *(short*)(dest + 4) = *(short*)(src + 4);
+                    *(dest + 6) = *(src + 6);
+                    return;
+                case 8:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                return;
-            case 9:
+                    return;
+                case 9:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(dest + 8) = *(src + 8);
-                return;
-            case 10:
+                    *(dest + 8) = *(src + 8);
+                    return;
+                case 10:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(short*)(dest + 8) = *(short*)(src + 8);
-                return;
-            case 11:
+                    *(short*)(dest + 8) = *(short*)(src + 8);
+                    return;
+                case 11:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(short*)(dest + 8) = *(short*)(src + 8);
-                *(dest + 10) = *(src + 10);
-                return;
-            case 12:
+                    *(short*)(dest + 8) = *(short*)(src + 8);
+                    *(dest + 10) = *(src + 10);
+                    return;
+                case 12:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                return;
-            case 13:
+                    *(int*)(dest + 8) = *(int*)(src + 8);
+                    return;
+                case 13:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(dest + 12) = *(src + 12);
-                return;
-            case 14:
+                    *(int*)(dest + 8) = *(int*)(src + 8);
+                    *(dest + 12) = *(src + 12);
+                    return;
+                case 14:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(short*)(dest + 12) = *(short*)(src + 12);
-                return;
-            case 15:
+                    *(int*)(dest + 8) = *(int*)(src + 8);
+                    *(short*)(dest + 12) = *(short*)(src + 12);
+                    return;
+                case 15:
 #if BIT64
-                *(long*)dest = *(long*)src;
+                    *(long*)dest = *(long*)src;
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
 #endif
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(short*)(dest + 12) = *(short*)(src + 12);
-                *(dest + 14) = *(src + 14);
-                return;
-            case 16:
+                    *(int*)(dest + 8) = *(int*)(src + 8);
+                    *(short*)(dest + 12) = *(short*)(src + 12);
+                    *(dest + 14) = *(src + 14);
+                    return;
+                case 16:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                return;
-            case 17:
-#if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(dest + 16) = *(src + 16);
-                return;
-            case 18:
+                    return;
+                case 17:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(short*)(dest + 16) = *(short*)(src + 16);
-                return;
-            case 19:
+                    *(dest + 16) = *(src + 16);
+                    return;
+                case 18:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(short*)(dest + 16) = *(short*)(src + 16);
-                *(dest + 18) = *(src + 18);
-                return;
-            case 20:
+                    *(short*)(dest + 16) = *(short*)(src + 16);
+                    return;
+                case 19:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(int*)(dest + 16) = *(int*)(src + 16);
-                return;
-            case 21:
+                    *(short*)(dest + 16) = *(short*)(src + 16);
+                    *(dest + 18) = *(src + 18);
+                    return;
+                case 20:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(int*)(dest + 16) = *(int*)(src + 16);
-                *(dest + 20) = *(src + 20);
-                return;
-            case 22:
+                    *(int*)(dest + 16) = *(int*)(src + 16);
+                    return;
+                case 21:
 #if BIT64
-                *(long*)dest = *(long*)src;
-                *(long*)(dest + 8) = *(long*)(src + 8);
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
 #else
                 *(int*)dest = *(int*)src;
                 *(int*)(dest + 4) = *(int*)(src + 4);
                 *(int*)(dest + 8) = *(int*)(src + 8);
                 *(int*)(dest + 12) = *(int*)(src + 12);
 #endif
-                *(int*)(dest + 16) = *(int*)(src + 16);
-                *(short*)(dest + 20) = *(short*)(src + 20);
-                return;
+                    *(int*)(dest + 16) = *(int*)(src + 16);
+                    *(dest + 20) = *(src + 20);
+                    return;
+                case 22:
+#if BIT64
+                    *(long*)dest = *(long*)src;
+                    *(long*)(dest + 8) = *(long*)(src + 8);
+#else
+                *(int*)dest = *(int*)src;
+                *(int*)(dest + 4) = *(int*)(src + 4);
+                *(int*)(dest + 8) = *(int*)(src + 8);
+                *(int*)(dest + 12) = *(int*)(src + 12);
+#endif
+                    *(int*)(dest + 16) = *(int*)(src + 16);
+                    *(short*)(dest + 20) = *(short*)(src + 20);
+                    return;
             }
 
             // P/Invoke into the native version for large lengths
@@ -481,7 +484,7 @@ namespace System {
                 i += 2;
             }
 
-            IntAligned:
+        IntAligned:
 
 #if BIT64
             // On 64-bit IntPtr.Size == 8, so we want to advance to the next 8-aligned address. If
@@ -510,7 +513,7 @@ namespace System {
             // This is separated out into a different variable, so the i + 16 addition can be
             // performed at the start of the pipeline and the loop condition does not have
             // a dependency on the writes.
-            nuint counter; 
+            nuint counter;
 
             do
             {
@@ -534,7 +537,7 @@ namespace System {
 #endif
 
                 i = counter;
-                
+
                 // See notes above for why this wasn't used instead
                 // i += 16;
             }
@@ -550,12 +553,12 @@ namespace System {
 #endif
                 i += 8;
             }
-            if ((len & 4) != 0) 
+            if ((len & 4) != 0)
             {
                 *(int*)(dest + i) = *(int*)(src + i);
                 i += 4;
             }
-            if ((len & 2) != 0) 
+            if ((len & 2) != 0)
             {
                 *(short*)(dest + i) = *(short*)(src + i);
                 i += 2;
@@ -569,9 +572,8 @@ namespace System {
 
             return;
 
-            PInvoke:
+        PInvoke:
             _Memmove(dest, src, len);
-
         }
 
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path

@@ -20,7 +20,7 @@ namespace System.Reflection.Emit
             FullName,
             AssemblyQualifiedName,
         }
-        
+
         #region QCalls
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit
                 if (!type.IsGenericTypeDefinition && type.ContainsGenericParameters)
                     return null;
             }
-            
+
             TypeNameBuilder tnb = new TypeNameBuilder(CreateTypeNameBuilder());
             tnb.Clear();
             tnb.ConstructAssemblyQualifiedNameWorker(type, format);
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
         {
             if (elementType.HasElementType)
                 AddElementType(elementType.GetElementType());
-                
+
             if (elementType.IsPointer)
                 AddPointer();
 
@@ -113,7 +113,7 @@ namespace System.Reflection.Emit
             else if (elementType.IsArray)
                 AddArray(elementType.GetArrayRank());
         }
-        
+
         private void ConstructAssemblyQualifiedNameWorker(Type type, Format format)
         {
             Type rootType = type;
@@ -125,13 +125,13 @@ namespace System.Reflection.Emit
             List<Type> nestings = new List<Type>();
             for (Type t = rootType; t != null; t = t.IsGenericParameter ? null : t.DeclaringType)
                 nestings.Add(t);
-            
+
             for (int i = nestings.Count - 1; i >= 0; i--)
             {
                 Type enclosingType = nestings[i];
                 string name = enclosingType.Name;
 
-                if (i == nestings.Count - 1  && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
+                if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
                     name = enclosingType.Namespace + "." + name;
 
                 AddName(name);
@@ -146,7 +146,7 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Format genericArgumentsFormat = format == Format.FullName ? Format.AssemblyQualifiedName : format;
-                   
+
                     OpenGenericArgument();
                     ConstructAssemblyQualifiedNameWorker(genericArguments[i], genericArgumentsFormat);
                     CloseGenericArgument();
@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
             if (format == Format.AssemblyQualifiedName)
                 AddAssemblySpec(type.Module.Assembly.FullName);
         }
-        
+
         private void OpenGenericArguments() { OpenGenericArguments(m_typeNameBuilder); }
         private void CloseGenericArguments() { CloseGenericArguments(m_typeNameBuilder); }
         private void OpenGenericArgument() { OpenGenericArgument(m_typeNameBuilder); }

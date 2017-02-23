@@ -4,13 +4,13 @@
 
 // 
 
-namespace System.Reflection 
-{
-    using System;
-    using System.Runtime.Remoting;
-    using System.Runtime.Serialization;
-    using System.Diagnostics.Contracts;
+using System;
+using System.Runtime.Remoting;
+using System.Runtime.Serialization;
+using System.Diagnostics.Contracts;
 
+namespace System.Reflection
+{
     // This is not serializable because it is a reflection command.
     [Serializable]
     public sealed class Missing : ISerializable

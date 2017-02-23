@@ -11,7 +11,7 @@
 ===========================================================*/
 
 namespace System.Threading
-{    
+{
     using Microsoft.Win32.SafeHandles;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;
@@ -27,7 +27,7 @@ namespace System.Threading
 
 
     [Flags]
-    enum SynchronizationContextProperties
+    internal enum SynchronizationContextProperties
     {
         None = 0,
         RequireWaitNotification = 0x1
@@ -41,27 +41,27 @@ namespace System.Threading
     [FriendAccessAllowed]
     internal class WinRTSynchronizationContextFactoryBase
     {
-        public virtual SynchronizationContext Create(object coreDispatcher) {return null;}
+        public virtual SynchronizationContext Create(object coreDispatcher) { return null; }
     }
 #endif //FEATURE_COMINTEROP
 
     public class SynchronizationContext
     {
-        SynchronizationContextProperties _props = SynchronizationContextProperties.None;
-        
+        private SynchronizationContextProperties _props = SynchronizationContextProperties.None;
+
         public SynchronizationContext()
         {
         }
-                        
+
 
         // helper delegate to statically bind to Wait method
         private delegate int WaitDelegate(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout);
 
-        static Type s_cachedPreparedType1;
-        static Type s_cachedPreparedType2;
-        static Type s_cachedPreparedType3;
-        static Type s_cachedPreparedType4;
-        static Type s_cachedPreparedType5;
+        private static Type s_cachedPreparedType1;
+        private static Type s_cachedPreparedType2;
+        private static Type s_cachedPreparedType3;
+        private static Type s_cachedPreparedType4;
+        private static Type s_cachedPreparedType5;
 
         // protected so that only the derived sync context class can enable these flags
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "We never dereference s_cachedPreparedType*, so ordering is unimportant")]
@@ -87,11 +87,11 @@ namespace System.Threading
             {
                 RuntimeHelpers.PrepareDelegate(new WaitDelegate(this.Wait));
 
-                if (s_cachedPreparedType1 == null)      s_cachedPreparedType1  = type;
-                else if (s_cachedPreparedType2 == null) s_cachedPreparedType2  = type;
-                else if (s_cachedPreparedType3 == null) s_cachedPreparedType3  = type;
-                else if (s_cachedPreparedType4 == null) s_cachedPreparedType4  = type;
-                else if (s_cachedPreparedType5 == null) s_cachedPreparedType5  = type;
+                if (s_cachedPreparedType1 == null) s_cachedPreparedType1 = type;
+                else if (s_cachedPreparedType2 == null) s_cachedPreparedType2 = type;
+                else if (s_cachedPreparedType3 == null) s_cachedPreparedType3 = type;
+                else if (s_cachedPreparedType4 == null) s_cachedPreparedType4 = type;
+                else if (s_cachedPreparedType5 == null) s_cachedPreparedType5 = type;
             }
 
             _props |= SynchronizationContextProperties.RequireWaitNotification;
@@ -99,10 +99,10 @@ namespace System.Threading
 
         public bool IsWaitNotificationRequired()
         {
-            return ((_props & SynchronizationContextProperties.RequireWaitNotification) != 0);  
+            return ((_props & SynchronizationContextProperties.RequireWaitNotification) != 0);
         }
 
-    
+
         public virtual void Send(SendOrPostCallback d, Object state)
         {
             d(state);
@@ -113,7 +113,7 @@ namespace System.Threading
             ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
         }
 
-        
+
         /// <summary>
         ///     Optional override for subclasses, for responding to notification that operation is starting.
         /// </summary>
@@ -159,9 +159,9 @@ namespace System.Threading
             Thread.CurrentThread.SynchronizationContext = syncContext;
         }
 
-        public static SynchronizationContext Current 
+        public static SynchronizationContext Current
         {
-            get      
+            get
             {
                 SynchronizationContext context = Thread.CurrentThread.SynchronizationContext;
 
@@ -189,7 +189,7 @@ namespace System.Threading
         {
             Debug.Assert(Environment.IsWinRTSupported);
             Debug.Assert(AppDomain.IsAppXModel());
-    
+
             //
             // We call into the VM to get the dispatcher.  This is because:
             //
@@ -207,7 +207,7 @@ namespace System.Threading
             return null;
         }
 
-        static WinRTSynchronizationContextFactoryBase s_winRTContextFactory;
+        private static WinRTSynchronizationContextFactoryBase s_winRTContextFactory;
 
         private static WinRTSynchronizationContextFactoryBase GetWinRTSynchronizationContextFactory()
         {

@@ -11,8 +11,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-namespace System.Globalization {
-    
+namespace System.Globalization
+{
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
@@ -25,7 +25,7 @@ namespace System.Globalization {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //
         //--------------------------------------------------------------------//
-    
+
         //
         //  Variables.
         //
@@ -34,8 +34,8 @@ namespace System.Globalization {
         internal String localeName;       // locale identifier
 
         [OptionalField(VersionAdded = 1)] // LCID field so serialization is Whidbey compatible though we don't officially support it
-        internal int win32LCID;            
-                                          // Whidbey serialization 
+        internal int win32LCID;
+        // Whidbey serialization 
 
         internal CompareOptions options;  // options
         internal String m_String;         // original string
@@ -49,8 +49,8 @@ namespace System.Globalization {
         {
             this.m_KeyData = keyData;
             this.localeName = localeName;
-            this.options    = options;
-            this.m_String   = str;
+            this.options = options;
+            this.m_String = str;
         }
 
 #if FEATURE_USE_LCID
@@ -74,7 +74,7 @@ namespace System.Globalization {
             }
         }
 #endif //FEATURE_USE_LCID
-    
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  GetOriginalString
@@ -85,12 +85,13 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual String OriginalString
         {
-            get {
+            get
+            {
                 return (m_String);
             }
         }
-    
-    
+
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  GetKeyData
@@ -101,12 +102,13 @@ namespace System.Globalization {
         ////////////////////////////////////////////////////////////////////////
         public virtual byte[] KeyData
         {
-            get {
+            get
+            {
                 return (byte[])(m_KeyData.Clone());
             }
         }
-    
-    
+
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  Compare
@@ -116,45 +118,51 @@ namespace System.Globalization {
         //  and a number greater than 0 if sortkey1 is greater than sortkey2.
         //
         ////////////////////////////////////////////////////////////////////////
-        public static int Compare(SortKey sortkey1, SortKey sortkey2) {
-    
-            if (sortkey1==null || sortkey2==null) {
-                throw new ArgumentNullException((sortkey1==null ? nameof(sortkey1): nameof(sortkey2)));
+        public static int Compare(SortKey sortkey1, SortKey sortkey2)
+        {
+            if (sortkey1 == null || sortkey2 == null)
+            {
+                throw new ArgumentNullException((sortkey1 == null ? nameof(sortkey1) : nameof(sortkey2)));
             }
             Contract.EndContractBlock();
-    
+
             byte[] key1Data = sortkey1.m_KeyData;
             byte[] key2Data = sortkey2.m_KeyData;
-    
-            Debug.Assert(key1Data!=null, "key1Data!=null");
-            Debug.Assert(key2Data!=null, "key2Data!=null");
 
-            if (key1Data.Length == 0) {
-                if (key2Data.Length == 0) {
+            Debug.Assert(key1Data != null, "key1Data!=null");
+            Debug.Assert(key2Data != null, "key2Data!=null");
+
+            if (key1Data.Length == 0)
+            {
+                if (key2Data.Length == 0)
+                {
                     return (0);
                 }
                 return (-1);
             }
-            if (key2Data.Length == 0) {
+            if (key2Data.Length == 0)
+            {
                 return (1);
             }
-    
-            int compLen = (key1Data.Length<key2Data.Length)?key1Data.Length:key2Data.Length;
 
-            for (int i=0; i<compLen; i++) {
-                if (key1Data[i]>key2Data[i]) {
+            int compLen = (key1Data.Length < key2Data.Length) ? key1Data.Length : key2Data.Length;
+
+            for (int i = 0; i < compLen; i++)
+            {
+                if (key1Data[i] > key2Data[i])
+                {
                     return (1);
                 }
-                if (key1Data[i]<key2Data[i]) {
+                if (key1Data[i] < key2Data[i])
+                {
                     return (-1);
                 }
             }
-    
+
             return 0;
-    
         }
-    
-    
+
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  Equals
@@ -166,7 +174,7 @@ namespace System.Globalization {
         public override bool Equals(Object value)
         {
             SortKey that = value as SortKey;
-            
+
             if (that != null)
             {
                 return Compare(this, that) == 0;
@@ -174,8 +182,8 @@ namespace System.Globalization {
 
             return (false);
         }
-    
-    
+
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  GetHashCode
@@ -190,8 +198,8 @@ namespace System.Globalization {
             return (CompareInfo.GetCompareInfo(
                 this.localeName).GetHashCodeOfString(this.m_String, this.options));
         }
-    
-    
+
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  ToString

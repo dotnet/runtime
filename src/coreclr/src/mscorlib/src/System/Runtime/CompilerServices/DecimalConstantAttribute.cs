@@ -13,7 +13,7 @@ using System.Collections.Generic;
 namespace System.Runtime.CompilerServices
 {
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited=false)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed class DecimalConstantAttribute : Attribute
     {
         [CLSCompliant(false)]
@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
             uint low
         )
         {
-            dec = new System.Decimal((int) low, (int)mid, (int)hi, (sign != 0), scale);
+            dec = new System.Decimal((int)low, (int)mid, (int)hi, (sign != 0), scale);
         }
 
         public DecimalConstantAttribute(

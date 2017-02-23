@@ -15,9 +15,10 @@
 ** 
 =============================================================================*/
 
-namespace System.Runtime.ExceptionServices {
-    using System;
-    
+using System;
+
+namespace System.Runtime.ExceptionServices
+{
     // This class defines support for seperating the exception dispatch details
     // (like stack trace, watson buckets, etc) from the actual managed exception
     // object. This allows us to track error (via the exception object) independent
@@ -34,13 +35,13 @@ namespace System.Runtime.ExceptionServices {
         private object m_dynamicMethods;
         private UIntPtr m_IPForWatsonBuckets;
         private Object m_WatsonBuckets;
-        
+
         private ExceptionDispatchInfo(Exception exception)
         {
             // Copy over the details we need to save.
             m_Exception = exception;
             m_remoteStackTrace = exception.RemoteStackTrace;
-            
+
             // NOTE: don't be tempted to pass the fields for the out params; the containing object
             //       might be relocated during the call so the pointers will no longer be valid.
             object stackTrace;
@@ -50,14 +51,14 @@ namespace System.Runtime.ExceptionServices {
             m_dynamicMethods = dynamicMethods;
 
             m_IPForWatsonBuckets = exception.IPForWatsonBuckets;
-            m_WatsonBuckets = exception.WatsonBuckets;                                                        
+            m_WatsonBuckets = exception.WatsonBuckets;
         }
 
         internal UIntPtr IPForWatsonBuckets
         {
             get
             {
-                return m_IPForWatsonBuckets;   
+                return m_IPForWatsonBuckets;
             }
         }
 
@@ -65,10 +66,10 @@ namespace System.Runtime.ExceptionServices {
         {
             get
             {
-                return m_WatsonBuckets;   
+                return m_WatsonBuckets;
             }
         }
-        
+
         internal object BinaryStackTraceArray
         {
             get
@@ -102,20 +103,19 @@ namespace System.Runtime.ExceptionServices {
             {
                 throw new ArgumentNullException(nameof(source), Environment.GetResourceString("ArgumentNull_Obj"));
             }
-            
+
             return new ExceptionDispatchInfo(source);
         }
-    
+
         // Return the exception object represented by this ExceptionDispatchInfo instance
         public Exception SourceException
         {
-
             get
             {
-                return m_Exception;   
+                return m_Exception;
             }
         }
-        
+
         // When a framework needs to "Rethrow" an exception on a thread different (but not necessarily so) from
         // where it was thrown, it should invoke this method against the ExceptionDispatchInfo (EDI)
         // created for the exception in question.
@@ -127,7 +127,7 @@ namespace System.Runtime.ExceptionServices {
         {
             // Restore the exception dispatch details before throwing the exception.
             m_Exception.RestoreExceptionDispatchInfo(this);
-            throw m_Exception; 
+            throw m_Exception;
         }
     }
 }

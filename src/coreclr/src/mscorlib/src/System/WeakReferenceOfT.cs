@@ -8,19 +8,20 @@
 ** Purpose: A wrapper for establishing a WeakReference to a generic type.
 **
 ===========================================================*/
+
+using System;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Diagnostics.Contracts;
+
 namespace System
 {
-    using System;
-    using System.Runtime.Serialization;
-    using System.Security;
-    using System.Runtime;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
-    public sealed class WeakReference<T> : ISerializable 
+    public sealed class WeakReference<T> : ISerializable
         where T : class
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
@@ -45,7 +46,8 @@ namespace System
 
         internal WeakReference(SerializationInfo info, StreamingContext context)
         {
-            if (info == null) {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
@@ -97,7 +99,8 @@ namespace System
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null) {
+            if (info == null)
+            {
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();

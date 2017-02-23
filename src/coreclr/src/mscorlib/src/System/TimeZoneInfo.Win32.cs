@@ -1016,7 +1016,6 @@ namespace System
                     e = ex;
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
-
             }
         }
     }

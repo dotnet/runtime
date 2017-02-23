@@ -21,12 +21,13 @@
 ** through an internal runtime call.
 ===========================================================*/
 
-namespace System.Resources {
-    using System;
-    using System.Diagnostics.Contracts;
-    
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=false)]  
-    public sealed class NeutralResourcesLanguageAttribute : Attribute 
+using System;
+using System.Diagnostics.Contracts;
+
+namespace System.Resources
+{
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
+    public sealed class NeutralResourcesLanguageAttribute : Attribute
     {
         private String _culture;
         private UltimateResourceFallbackLocation _fallbackLoc;
@@ -53,11 +54,13 @@ namespace System.Resources {
             _fallbackLoc = location;
         }
 
-        public String CultureName {
+        public String CultureName
+        {
             get { return _culture; }
         }
 
-        public UltimateResourceFallbackLocation Location {
+        public UltimateResourceFallbackLocation Location
+        {
             get { return _fallbackLoc; }
         }
     }

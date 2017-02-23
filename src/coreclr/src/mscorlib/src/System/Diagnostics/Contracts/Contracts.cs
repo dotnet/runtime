@@ -42,8 +42,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Security;
 #endif
 
-namespace System.Diagnostics.Contracts {
-
+namespace System.Diagnostics.Contracts
+{
     #region Attributes
 
     /// <summary>
@@ -70,7 +70,8 @@ namespace System.Diagnostics.Contracts {
             _typeWithContracts = typeContainingContracts;
         }
 
-        public Type TypeContainingContracts {
+        public Type TypeContainingContracts
+        {
             get { return _typeWithContracts; }
         }
     }
@@ -89,7 +90,8 @@ namespace System.Diagnostics.Contracts {
             _typeIAmAContractFor = typeContractsAreFor;
         }
 
-        public Type TypeContractsAreFor {
+        public Type TypeContractsAreFor
+        {
             get { return _typeIAmAContractFor; }
         }
     }
@@ -175,7 +177,8 @@ namespace System.Diagnostics.Contracts {
 
         public ContractVerificationAttribute(bool value) { _value = value; }
 
-        public bool Value {
+        public bool Value
+        {
             get { return _value; }
         }
     }
@@ -196,7 +199,8 @@ namespace System.Diagnostics.Contracts {
             _publicName = name;
         }
 
-        public String Name {
+        public String Name
+        {
             get { return _publicName; }
         }
     }
@@ -246,19 +250,23 @@ namespace System.Diagnostics.Contracts {
             _value = value;
         }
 
-        public String Category {
+        public String Category
+        {
             get { return _category; }
         }
 
-        public String Setting {
+        public String Setting
+        {
             get { return _setting; }
         }
 
-        public bool Enabled {
+        public bool Enabled
+        {
             get { return _enabled; }
         }
 
-        public String Value {
+        public String Value
+        {
             get { return _value; }
         }
     }
@@ -295,7 +303,8 @@ namespace System.Diagnostics.Contracts {
 #endif
         public static void Assume(bool condition)
         {
-            if (!condition) {
+            if (!condition)
+            {
                 ReportFailure(ContractFailureKind.Assume, null, null, null);
             }
         }
@@ -315,7 +324,8 @@ namespace System.Diagnostics.Contracts {
 #endif
         public static void Assume(bool condition, String userMessage)
         {
-            if (!condition) {
+            if (!condition)
+            {
                 ReportFailure(ContractFailureKind.Assume, userMessage, null, null);
             }
         }
@@ -768,7 +778,8 @@ namespace System.Diagnostics.Contracts {
         #endregion
     }
 
-    public enum ContractFailureKind {
+    public enum ContractFailureKind
+    {
         Precondition,
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Postcondition")]
         Postcondition,
@@ -778,8 +789,6 @@ namespace System.Diagnostics.Contracts {
         Assert,
         Assume,
     }
-
-
 }
 
 // Note: In .NET FX 4.5, we duplicated the ContractHelper class in the System.Runtime.CompilerServices

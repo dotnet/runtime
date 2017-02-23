@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Text;
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Text
 {
-    using System.Runtime.Serialization;
-    using System.Text;
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
     // A Decoder is used to decode a sequence of blocks of bytes into a
     // sequence of blocks of characters. Following instantiation of a decoder,
     // sequential blocks of bytes are converted into blocks of characters through
@@ -23,17 +24,17 @@ namespace System.Text
     [Serializable]
     public abstract class Decoder
     {
-        internal DecoderFallback         m_fallback = null;
+        internal DecoderFallback m_fallback = null;
 
         [NonSerialized]
-        internal DecoderFallbackBuffer   m_fallbackBuffer = null;
+        internal DecoderFallbackBuffer m_fallbackBuffer = null;
 
         internal void SerializeDecoder(SerializationInfo info)
         {
             info.AddValue("m_fallback", this.m_fallback);
         }
 
-        protected Decoder( )
+        protected Decoder()
         {
             // We don't call default reset because default reset probably isn't good if we aren't initialized.
         }
@@ -193,7 +194,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
@@ -251,11 +252,11 @@ namespace System.Text
                       Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex<0 ? nameof(byteIndex) : nameof(byteCount)),
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex<0 ? nameof(charIndex) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
                       Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
 
             if (bytes.Length - byteIndex < byteCount)
@@ -308,7 +309,7 @@ namespace System.Text
                     Environment.GetResourceString("ArgumentNull_Array"));
 
             if (byteCount < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((byteCount<0 ? nameof(byteCount) : nameof(charCount)),
+                throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)),
                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 

@@ -6,13 +6,14 @@
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
+
+using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+
 namespace System.Text
 {
-
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Globalization;
     // Encodes text into and out of UTF-32.  UTF-32 is a way of writing
     // Unicode characters with a single storage unit (32 bits) per character,
     //
@@ -45,33 +46,33 @@ namespace System.Text
         private bool bigEndian = false;
 
 
-        public UTF32Encoding(): this(false, true, false)
+        public UTF32Encoding() : this(false, true, false)
         {
         }
 
 
-        public UTF32Encoding(bool bigEndian, bool byteOrderMark):
+        public UTF32Encoding(bool bigEndian, bool byteOrderMark) :
             this(bigEndian, byteOrderMark, false)
         {
         }
 
 
-        public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters):
+        public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) :
             base(bigEndian ? 12001 : 12000)
         {
             this.bigEndian = bigEndian;
-            this.emitUTF32ByteOrderMark = byteOrderMark;
-            this.isThrowException = throwOnInvalidCharacters;
+            emitUTF32ByteOrderMark = byteOrderMark;
+            isThrowException = throwOnInvalidCharacters;
 
             // Encoding's constructor already did this, but it'll be wrong if we're throwing exceptions
-            if (this.isThrowException)
+            if (isThrowException)
                 SetDefaultFallbacks();
         }
 
         internal override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
-            if (this.isThrowException)
+            if (isThrowException)
             {
                 this.encoderFallback = EncoderFallback.ExceptionFallback;
                 this.decoderFallback = DecoderFallback.ExceptionFallback;
@@ -176,13 +177,13 @@ namespace System.Text
         {
             return EncodingForwarder.GetString(this, bytes, index, count);
         }
-        
+
         // End of overridden methods which use EncodingForwarder
 
-        internal override unsafe int GetByteCount(char *chars, int count, EncoderNLS encoder)
+        internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
-            Debug.Assert(chars!=null, "[UTF32Encoding.GetByteCount]chars!=null");
-            Debug.Assert(count >=0, "[UTF32Encoding.GetByteCount]count >=0");
+            Debug.Assert(chars != null, "[UTF32Encoding.GetByteCount]chars!=null");
+            Debug.Assert(count >= 0, "[UTF32Encoding.GetByteCount]count >=0");
 
             char* end = chars + count;
             char* charStart = chars;
@@ -211,7 +212,7 @@ namespace System.Text
             fallbackBuffer.InternalInitialize(charStart, end, encoder, false);
 
             char ch;
-            TryAgain:
+        TryAgain:
 
             while (((ch = fallbackBuffer.InternalGetNextChar()) != 0) || chars < end)
             {
@@ -244,7 +245,7 @@ namespace System.Text
 
                     // We are missing our low surrogate, decrement chars and fallback the high surrogate
                     // The high surrogate may have come from the encoder, but nothing else did.
-                    Debug.Assert(chars > charStart, 
+                    Debug.Assert(chars > charStart,
                         "[UTF32Encoding.GetByteCount]Expected chars to have advanced if no low surrogate");
                     chars--;
 
@@ -254,7 +255,6 @@ namespace System.Text
                     // We're going to fallback the old high surrogate.
                     highSurrogate = '\0';
                     continue;
-
                 }
 
                 // Do we have another high surrogate?
@@ -304,13 +304,13 @@ namespace System.Text
             return byteCount;
         }
 
-        internal override unsafe int GetBytes(char *chars, int charCount,
+        internal override unsafe int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, EncoderNLS encoder)
         {
-            Debug.Assert(chars!=null, "[UTF32Encoding.GetBytes]chars!=null");
-            Debug.Assert(bytes!=null, "[UTF32Encoding.GetBytes]bytes!=null");
-            Debug.Assert(byteCount >=0, "[UTF32Encoding.GetBytes]byteCount >=0");
-            Debug.Assert(charCount >=0, "[UTF32Encoding.GetBytes]charCount >=0");
+            Debug.Assert(chars != null, "[UTF32Encoding.GetBytes]chars!=null");
+            Debug.Assert(bytes != null, "[UTF32Encoding.GetBytes]bytes!=null");
+            Debug.Assert(byteCount >= 0, "[UTF32Encoding.GetBytes]byteCount >=0");
+            Debug.Assert(charCount >= 0, "[UTF32Encoding.GetBytes]charCount >=0");
 
             char* charStart = chars;
             char* charEnd = chars + charCount;
@@ -340,7 +340,7 @@ namespace System.Text
             fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
 
             char ch;
-            TryAgain:
+        TryAgain:
 
             while (((ch = fallbackBuffer.InternalGetNextChar()) != 0) || chars < charEnd)
             {
@@ -367,7 +367,7 @@ namespace System.Text
                         //
                         // One surrogate pair will be translated into 4 bytes UTF32.
                         //
-                        if (bytes+3 >= byteEnd)
+                        if (bytes + 3 >= byteEnd)
                         {
                             // Don't have 4 bytes
                             if (fallbackBuffer.bFallingBack)
@@ -379,9 +379,9 @@ namespace System.Text
                             {
                                 // If we don't have enough room, then either we should've advanced a while
                                 // or we should have bytes==byteStart and throw below
-                                Debug.Assert(chars > charStart + 1 || bytes == byteStart, 
+                                Debug.Assert(chars > charStart + 1 || bytes == byteStart,
                                     "[UnicodeEncoding.GetBytes]Expected chars to have when no room to add surrogate pair");
-                                chars-=2;                                       // Aren't using those 2 chars
+                                chars -= 2;                                       // Aren't using those 2 chars
                             }
                             ThrowBytesOverflow(encoder, bytes == byteStart);    // Throw maybe (if no bytes written)
                             highSurrogate = (char)0;                            // Nothing left over (we backed up to start of pair if supplimentary)
@@ -407,7 +407,7 @@ namespace System.Text
 
                     // We are missing our low surrogate, decrement chars and fallback the high surrogate
                     // The high surrogate may have come from the encoder, but nothing else did.
-                    Debug.Assert(chars > charStart, 
+                    Debug.Assert(chars > charStart,
                         "[UTF32Encoding.GetBytes]Expected chars to have advanced if no low surrogate");
                     chars--;
 
@@ -440,7 +440,7 @@ namespace System.Text
                 }
 
                 // We get to add the character, yippee.
-                if (bytes+3 >= byteEnd)
+                if (bytes + 3 >= byteEnd)
                 {
                     // Don't have 4 bytes
                     if (fallbackBuffer.bFallingBack)
@@ -491,7 +491,7 @@ namespace System.Text
                 encoder.charLeftOver = highSurrogate;
 
                 // Need # chars used
-                encoder.m_charsUsed = (int)(chars-charStart);
+                encoder.m_charsUsed = (int)(chars - charStart);
             }
 
             // return the new length
@@ -500,8 +500,8 @@ namespace System.Text
 
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
-            Debug.Assert(bytes!=null, "[UTF32Encoding.GetCharCount]bytes!=null");
-            Debug.Assert(count >=0, "[UTF32Encoding.GetCharCount]count >=0");
+            Debug.Assert(bytes != null, "[UTF32Encoding.GetCharCount]bytes!=null");
+            Debug.Assert(count >= 0, "[UTF32Encoding.GetCharCount]count >=0");
 
             UTF32Decoder decoder = (UTF32Decoder)baseDecoder;
 
@@ -541,7 +541,7 @@ namespace System.Text
             while (bytes < end && charCount >= 0)
             {
                 // Get our next character
-                if(bigEndian)
+                if (bigEndian)
                 {
                     // Scoot left and add it to the bottom
                     iChar <<= 8;
@@ -564,11 +564,11 @@ namespace System.Text
                 readCount = 0;
 
                 // See if its valid to encode
-                if ( iChar > 0x10FFFF || (iChar >= 0xD800 && iChar <= 0xDFFF))
+                if (iChar > 0x10FFFF || (iChar >= 0xD800 && iChar <= 0xDFFF))
                 {
                     // Need to fall back these 4 bytes
                     byte[] fallbackBytes;
-                    if (this.bigEndian)
+                    if (bigEndian)
                     {
                         fallbackBytes = new byte[] {
                             unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
@@ -607,9 +607,9 @@ namespace System.Text
             {
                 // Oops, there's something left over with no place to go.
                 byte[] fallbackBytes = new byte[readCount];
-                if (this.bigEndian)
+                if (bigEndian)
                 {
-                    while(readCount > 0)
+                    while (readCount > 0)
                     {
                         fallbackBytes[--readCount] = unchecked((byte)iChar);
                         iChar >>= 8;
@@ -619,7 +619,7 @@ namespace System.Text
                 {
                     while (readCount > 0)
                     {
-                        fallbackBytes[--readCount] = unchecked((byte)(iChar>>24));
+                        fallbackBytes[--readCount] = unchecked((byte)(iChar >> 24));
                         iChar <<= 8;
                     }
                 }
@@ -643,10 +643,10 @@ namespace System.Text
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
-            Debug.Assert(chars!=null, "[UTF32Encoding.GetChars]chars!=null");
-            Debug.Assert(bytes!=null, "[UTF32Encoding.GetChars]bytes!=null");
-            Debug.Assert(byteCount >=0, "[UTF32Encoding.GetChars]byteCount >=0");
-            Debug.Assert(charCount >=0, "[UTF32Encoding.GetChars]charCount >=0");
+            Debug.Assert(chars != null, "[UTF32Encoding.GetChars]chars!=null");
+            Debug.Assert(bytes != null, "[UTF32Encoding.GetChars]bytes!=null");
+            Debug.Assert(byteCount >= 0, "[UTF32Encoding.GetChars]byteCount >=0");
+            Debug.Assert(charCount >= 0, "[UTF32Encoding.GetChars]charCount >=0");
 
             UTF32Decoder decoder = (UTF32Decoder)baseDecoder;
 
@@ -688,7 +688,7 @@ namespace System.Text
             while (bytes < byteEnd)
             {
                 // Get our next character
-                if(bigEndian)
+                if (bigEndian)
                 {
                     // Scoot left and add it to the bottom
                     iChar <<= 8;
@@ -711,11 +711,11 @@ namespace System.Text
                 readCount = 0;
 
                 // See if its valid to encode
-                if ( iChar > 0x10FFFF || (iChar >= 0xD800 && iChar <= 0xDFFF))
+                if (iChar > 0x10FFFF || (iChar >= 0xD800 && iChar <= 0xDFFF))
                 {
                     // Need to fall back these 4 bytes
                     byte[] fallbackBytes;
-                    if (this.bigEndian)
+                    if (bigEndian)
                     {
                         fallbackBytes = new byte[] {
                             unchecked((byte)(iChar>>24)), unchecked((byte)(iChar>>16)),
@@ -736,8 +736,8 @@ namespace System.Text
                         // going to throw in ThrowCharsOverflow because chars == charStart
                         Debug.Assert(bytes >= byteStart + 4 || chars == charStart,
                             "[UTF32Encoding.GetChars]Expected to have consumed bytes or throw (bad surrogate)");
-                        bytes-=4;                                       // get back to where we were
-                        iChar=0;                                        // Remembering nothing
+                        bytes -= 4;                                       // get back to where we were
+                        iChar = 0;                                        // Remembering nothing
                         fallbackBuffer.InternalReset();
                         ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
                         break;                                          // Stop here, didn't throw
@@ -760,8 +760,8 @@ namespace System.Text
                         // going to throw in ThrowCharsOverflow because chars == charStart
                         Debug.Assert(bytes >= byteStart + 4 || chars == charStart,
                             "[UTF32Encoding.GetChars]Expected to have consumed bytes or throw (surrogate)");
-                        bytes-=4;                                       // get back to where we were
-                        iChar=0;                                        // Remembering nothing
+                        bytes -= 4;                                       // get back to where we were
+                        iChar = 0;                                        // Remembering nothing
                         ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
                         break;                                          // Stop here, didn't throw
                     }
@@ -777,8 +777,8 @@ namespace System.Text
                     // going to throw in ThrowCharsOverflow because chars == charStart
                     Debug.Assert(bytes >= byteStart + 4 || chars == charStart,
                         "[UTF32Encoding.GetChars]Expected to have consumed bytes or throw (normal char)");
-                    bytes-=4;                                       // get back to where we were
-                    iChar=0;                                        // Remembering nothing                    
+                    bytes -= 4;                                       // get back to where we were
+                    iChar = 0;                                        // Remembering nothing                    
                     ThrowCharsOverflow(decoder, chars == charStart);// Might throw, if no chars output
                     break;                                          // Stop here, didn't throw
                 }
@@ -796,9 +796,9 @@ namespace System.Text
                 // Oops, there's something left over with no place to go.
                 byte[] fallbackBytes = new byte[readCount];
                 int tempCount = readCount;
-                if (this.bigEndian)
+                if (bigEndian)
                 {
-                    while(tempCount > 0)
+                    while (tempCount > 0)
                     {
                         fallbackBytes[--tempCount] = unchecked((byte)iChar);
                         iChar >>= 8;
@@ -808,7 +808,7 @@ namespace System.Text
                 {
                     while (tempCount > 0)
                     {
-                        fallbackBytes[--tempCount] = unchecked((byte)(iChar>>24));
+                        fallbackBytes[--tempCount] = unchecked((byte)(iChar >> 24));
                         iChar <<= 8;
                     }
                 }
@@ -878,8 +878,8 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(charCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(charCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case left over high surrogate is ? * max fallback
@@ -901,8 +901,8 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
-               throw new ArgumentOutOfRangeException(nameof(byteCount),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount),
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // A supplementary character becomes 2 surrogate characters, so 4 input bytes becomes 2 chars,
@@ -954,7 +954,7 @@ namespace System.Text
             {
                 return (emitUTF32ByteOrderMark == that.emitUTF32ByteOrderMark) &&
                        (bigEndian == that.bigEndian) &&
-//                       (isThrowException == that.isThrowException) && // same as encoder/decoderfallback being exceptions
+                       //                       (isThrowException == that.isThrowException) && // same as encoder/decoderfallback being exceptions
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
@@ -966,7 +966,7 @@ namespace System.Text
         {
             //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
-                   CodePage + (emitUTF32ByteOrderMark?4:0) + (bigEndian?8:0);
+                   CodePage + (emitUTF32ByteOrderMark ? 4 : 0) + (bigEndian ? 8 : 0);
         }
 
         [Serializable]

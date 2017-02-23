@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
                 typeAnalysis.tags)
         {
             if (typeAnalysis.properties.Length != 0)
-                this.properties = typeAnalysis.properties;
+                properties = typeAnalysis.properties;
         }
 
         public override void WriteMetadata(
@@ -44,9 +44,9 @@ namespace System.Diagnostics.Tracing
             EventFieldFormat format)
         {
             var groupCollector = collector.AddGroup(name);
-            if (this.properties != null)
+            if (properties != null)
             {
-                foreach (var property in this.properties)
+                foreach (var property in properties)
                 {
                     var propertyFormat = EventFieldFormat.Default;
                     var propertyAttribute = property.fieldAttribute;
@@ -66,9 +66,9 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            if (this.properties != null)
+            if (properties != null)
             {
-                foreach (var property in this.properties)
+                foreach (var property in properties)
                 {
                     property.typeInfo.WriteData(collector, property.getter(value));
                 }
@@ -77,11 +77,11 @@ namespace System.Diagnostics.Tracing
 
         public override object GetData(object value)
         {
-            if (this.properties != null)
+            if (properties != null)
             {
                 var membersNames = new List<string>();
                 var memebersValues = new List<object>();
-                for (int i = 0; i < this.properties.Length; i++)
+                for (int i = 0; i < properties.Length; i++)
                 {
                     var propertyValue = properties[i].propertyInfo.GetValue(value);
                     membersNames.Add(properties[i].name);

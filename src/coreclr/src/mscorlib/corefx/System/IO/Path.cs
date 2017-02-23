@@ -22,7 +22,7 @@ namespace System.IO
 
         // For generating random file names
         // 8 random bytes provides 12 chars in our encoding for the 8.3 name.
-        const int KeyLength = 8;
+        private const int KeyLength = 8;
 
         [Obsolete("Please use GetInvalidPathChars or GetInvalidFileNameChars instead.")]
         public static readonly char[] InvalidPathChars = GetInvalidPathChars();
@@ -128,7 +128,7 @@ namespace System.IO
         {
             if (path == null)
                 return null;
-            
+
             int offset = PathInternal.FindFileNameIndex(path);
             int count = path.Length - offset;
             return path.Substring(offset, count);
@@ -142,7 +142,7 @@ namespace System.IO
 
             int length = path.Length;
             int offset = PathInternal.FindFileNameIndex(path);
-            
+
             int end = path.LastIndexOf('.', length - 1, length - offset);
             return end == -1 ?
                 path.Substring(offset) : // No extension was found
@@ -153,7 +153,6 @@ namespace System.IO
         // used as either a folder name or a file name.
         public static unsafe string GetRandomFileName()
         {
-
             byte* pKey = stackalloc byte[KeyLength];
             GetCryptoRandomBytes(pKey, KeyLength);
 
@@ -190,7 +189,7 @@ namespace System.IO
         public static string Combine(string path1, string path2)
         {
             if (path1 == null || path2 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1): nameof(path2));
+                throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
@@ -202,7 +201,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3)
         {
             if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1): (path2 == null) ? nameof(path2): nameof(path3));
+                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);
@@ -215,7 +214,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4)
         {
             if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1): (path2 == null) ? nameof(path2): (path3 == null) ? nameof(path3): nameof(path4));
+                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
             Contract.EndContractBlock();
 
             PathInternal.CheckInvalidPathChars(path1);

@@ -5,12 +5,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace System.Runtime.CompilerServices 
+
+using System;
+using System.Runtime.InteropServices;
+
+namespace System.Runtime.CompilerServices
 {
-
-    using System;
-    using System.Runtime.InteropServices;
-
     /*
     NGenHint is not supported in Whidbey     
 
@@ -28,59 +28,59 @@ namespace System.Runtime.CompilerServices
     [Serializable]
     public enum LoadHint
     {
-        Default             = 0x0000, // No preference specified
-        
-        Always              = 0x0001, // Dependency is always loaded
-        Sometimes           = 0x0002, // Dependency is sometimes loaded
+        Default = 0x0000, // No preference specified
+
+        Always = 0x0001, // Dependency is always loaded
+        Sometimes = 0x0002, // Dependency is sometimes loaded
         //Never               = 0x0003, // Dependency is never loaded
     }
 
     [Serializable]
-    [AttributeUsage(AttributeTargets.Assembly)]  
-    public sealed class DefaultDependencyAttribute : Attribute 
+    [AttributeUsage(AttributeTargets.Assembly)]
+    public sealed class DefaultDependencyAttribute : Attribute
     {
         private LoadHint loadHint;
-    
-        public DefaultDependencyAttribute (
+
+        public DefaultDependencyAttribute(
             LoadHint loadHintArgument
             )
         {
             loadHint = loadHintArgument;
-        }  
-    
+        }
+
         public LoadHint LoadHint
         {
             get
             {
                 return loadHint;
             }
-        }       
-    } 
+        }
+    }
 
 
-[Serializable]
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]  
-    public sealed class DependencyAttribute : Attribute 
+    [Serializable]
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class DependencyAttribute : Attribute
     {
-        private String                dependentAssembly;
-        private LoadHint              loadHint;
+        private String dependentAssembly;
+        private LoadHint loadHint;
 
-        public DependencyAttribute (
-            String   dependentAssemblyArgument,
+        public DependencyAttribute(
+            String dependentAssemblyArgument,
             LoadHint loadHintArgument
             )
         {
-            dependentAssembly     = dependentAssemblyArgument;
-            loadHint              = loadHintArgument;
+            dependentAssembly = dependentAssemblyArgument;
+            loadHint = loadHintArgument;
         }
-        
+
         public String DependentAssembly
         {
             get
             {
                 return dependentAssembly;
             }
-        }       
+        }
 
         public LoadHint LoadHint
         {
@@ -88,7 +88,7 @@ namespace System.Runtime.CompilerServices
             {
                 return loadHint;
             }
-        }       
+        }
     }
 }
 

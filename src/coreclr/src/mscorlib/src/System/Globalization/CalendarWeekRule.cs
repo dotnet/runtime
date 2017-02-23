@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Globalization {
-    using System;
+using System;
 
-
+namespace System.Globalization
+{
     [Serializable]
     public enum CalendarWeekRule
     {
-
         FirstDay = 0,           // Week 1 begins on the first day of the year
 
         FirstFullWeek = 1,      // Week 1 begins on first FirstDayOfWeek not before the first day of the year
