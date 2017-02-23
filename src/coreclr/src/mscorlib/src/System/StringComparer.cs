@@ -16,10 +16,10 @@ namespace System
     [Serializable]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
     {
-        private static readonly StringComparer _invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);
-        private static readonly StringComparer _invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, true);
-        private static readonly StringComparer _ordinal = new OrdinalComparer();
-        private static readonly StringComparer _ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();        
+        private static readonly CultureAwareComparer _invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);
+        private static readonly CultureAwareComparer _invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, true);
+        private static readonly OrdinalComparer _ordinal = new OrdinalComparer();
+        private static readonly OrdinalIgnoreCaseComparer _ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();        
 
         public static StringComparer InvariantCulture
         {
