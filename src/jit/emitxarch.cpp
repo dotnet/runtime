@@ -2321,11 +2321,8 @@ void emitter::emitIns(instruction ins)
     }
 
 #ifndef LEGACY_BACKEND
-    // Account for 2-byte VEX prefix in case of vzeroupper
-    if (ins == INS_vzeroupper)
-    {
-        sz += 2;
-    }
+    // vzeroupper includes its 2-byte VEX prefix in its MR code.
+    assert((ins != INS_vzeroupper) || (sz == 3));
 #endif
 
     insFormat fmt = IF_NONE;
