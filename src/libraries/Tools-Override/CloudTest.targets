@@ -71,9 +71,7 @@
     <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'!='' And '$(TestProduct)'!='' And '$(Branch)'!=''">official/$(TestProduct)/$(Branch)/</HelixSource>
     <HelixSource Condition="'$(HelixSource)'=='' And '$(IsOfficial)'=='' And '$(TestProduct)'!='' And '$(Branch)'!=''">pr/$(TestProduct)/$(Branch)/</HelixSource>
     <HelixSource Condition="'$(HelixSource)'==''">pr/unknown/</HelixSource>
-    <_UseUpdatedHelixApi Condition="'$(HelixJobType)'!=''">true</_UseUpdatedHelixApi>
-    <HelixApiEndpoint Condition="'$(_UseUpdatedHelixApi)'=='true'">https://helix.dot.net/api/2016-06-28/jobs</HelixApiEndpoint>
-    <HelixApiEndpoint Condition="'$(HelixApiEndpoint)'==''">https://helix.dot.net/api/jobs</HelixApiEndpoint>
+    <HelixApiEndpoint>https://helix.dot.net/api/2016-06-28/jobs</HelixApiEndpoint>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)CloudTest.Perf.targets" Condition="'$(Performance)' == 'true'" />
@@ -467,21 +465,6 @@
           Outputs="%(TestListFile.BuildCompleteJson)">
     <!-- signal that the build is ready for testing -->
     <ItemGroup>
-      <BuildCompleteTemplate Include="%(TestListFile.BuildCompleteJson)">
-        <CorrelationId Condition=" '$(HelixApiAccessKey)' == '' ">%(TestListFile.CorrelationId)</CorrelationId>
-        <Creator Condition=" '$(HelixApiAccessKey)' == '' ">$(Creator)</Creator>
-        <DropContainerSAS>$(DropUriReadOnlyToken)</DropContainerSAS>
-        <ListUri>$(DropUri)%(TestListFile.Filename)%(TestListFile.Extension)$(DropUriReadOnlyToken)</ListUri>
-        <QueueId>$(TargetQueue)</QueueId>
-        <ResultsUri>$(ResultsUri)/%(TestListFile.CorrelationId)</ResultsUri>
-        <ResultsUriRSAS>$(ResultsReadOnlyToken)</ResultsUriRSAS>
-        <ResultsUriWSAS>$(ResultsWriteOnlyToken)</ResultsUriWSAS>
-        <Product>$(TestProduct)</Product>
-        <Architecture>$(Platform)</Architecture>
-        <Configuration>$(ConfigurationGroup)$(ConfigurationSuffix)</Configuration>
-        <BuildNumber>$(BuildMoniker)</BuildNumber>
-        <Branch>$(Branch)</Branch>
-      </BuildCompleteTemplate>
       <BuildCompleteTemplateV2 Include="%(TestListFile.BuildCompleteJson)">
         <DropContainerSAS>$(DropUriReadOnlyToken)</DropContainerSAS>
         <ListUri>$(DropUri)%(TestListFile.Filename)%(TestListFile.Extension)$(DropUriReadOnlyToken)</ListUri>
@@ -493,10 +476,9 @@
         <Build Condition="'$(IsOfficial)'=='true'">$(OfficialBuildId)</Build>
         <Type>$(HelixJobType)</Type>
         <Source>$(HelixSource)</Source>
-        <Properties>{ &quot;architecture&quot; : &quot;$(Platform)&quot;, &quot;configuration&quot;: &quot;$(ConfigurationGroup)&quot;, &quot;operatingSystem&quot; : &quot;$(TargetQueue)&quot; }</Properties>
+        <Properties>{ &quot;architecture&quot; : &quot;$(ArchGroup)&quot;, &quot;configuration&quot;: &quot;$(ConfigurationGroup)&quot;, &quot;operatingSystem&quot; : &quot;$(TargetQueue)&quot; }</Properties>
       </BuildCompleteTemplateV2>
-      <BuildComplete Condition="'$(_UseUpdatedHelixApi)'=='true'" Include="@(BuildCompleteTemplateV2)"/>
-      <BuildComplete Condition="'@(BuildComplete)'==''" Include="@(BuildCompleteTemplate)"/>
+      <BuildComplete Include="@(BuildCompleteTemplateV2)"/>
     </ItemGroup>
     <WriteItemsToJson JsonFileName="%(TestListFile.BuildCompleteJson)" Items="@(BuildComplete)" />
   </Target>
