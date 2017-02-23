@@ -1543,8 +1543,60 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 
             if (pFieldInfo->fldSize == 0)
             {
+                // Size of TYP_BLK, TYP_FUNC, TYP_VOID and TYP_STRUCT is zero.
+                // Early out if field type is other than TYP_STRUCT.
+                // This is a defensive check as we don't expect a struct to have
+                // fields of TYP_BLK, TYP_FUNC or TYP_VOID.
+                if (pFieldInfo->fldType != TYP_STRUCT)
+                {
+                    return;
+                }
+
                 // Non-primitive struct field.
-                return;
+                // Try to promote structs of single field of scalar types aligned at their
+                // natural boundary.
+
+                // Do Not promote if the struct field in turn has more than one field.
+                if (info.compCompHnd->getClassNumInstanceFields(pFieldInfo->fldTypeHnd) != 1)
+                {
+                    return;
+                }
+
+                // Do not promote if the single field is not aligned at its natural boundary within
+                // the struct field.
+                CORINFO_FIELD_HANDLE fHnd    = info.compCompHnd->getFieldInClass(pFieldInfo->fldTypeHnd, 0);
+                unsigned             fOffset = info.compCompHnd->getFieldOffset(fHnd);
+                if (fOffset != 0)
+                {
+                    return;
+                }
+
+                CORINFO_CLASS_HANDLE cHnd;
+                CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fHnd, &cHnd);
+                var_types            fieldVarType = JITtype2varType(fieldCorType);
+                unsigned             fieldSize    = genTypeSize(fieldVarType);
+
+                // Do not promote if either not a primitive type or size equal to ptr size on
+                // target or a struct containing a single floating-point field.
+                //
+                // TODO-PERF: Structs containing a single floating-point field on Amd64
+                // needs to be passed in integer registers. Right now LSRA doesn't support
+                // passing of floating-point LCL_VARS in integer registers.  Enabling promotion
+                // of such structs results in an assert in lsra right now.
+                //
+                // TODO-PERF: Right now promotion is confined to struct containing a ptr sized
+                // field (int/uint/ref/byref on 32-bits and long/ulong/ref/byref on 64-bits).
+                // Though this would serve the purpose of promoting Span<T> containing ByReference<T>,
+                // this can be extended to other primitive types as long as they are aligned at their
+                // natural boundary.
+                if (fieldSize == 0 || fieldSize != TARGET_POINTER_SIZE || varTypeIsFloating(fieldVarType))
+                {
+                    return;
+                }
+
+                // Retype the field as the type of the single field of the struct
+                pFieldInfo->fldType = fieldVarType;
+                pFieldInfo->fldSize = fieldSize;
             }
 
             if ((pFieldInfo->fldOffset % pFieldInfo->fldSize) != 0)
