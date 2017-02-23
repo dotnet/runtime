@@ -8,11 +8,15 @@
     <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
     <ApiCompatImplementationDirs>$(RefPath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
     <!-- If we are targeting uap or uapaot run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
-    <ApiCompatImplementationDirs Condition="'$(TargetGroup)'=='uap' or '$(TargetGroup)'=='uapaot'">$(RuntimePath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap'))">$(RuntimePath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
+    <_RunApiCompat>true</_RunApiCompat>
+    <!-- Disable running apicompat for uap scenarios because the RuntimePath is not correctly setup in BuildAllConfigurations mode -->
+    <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and $(TargetGroup.StartsWith('uap'))">false</_RunApiCompat>
   </PropertyGroup>
 
   <!-- Run ApiCompat -->
   <Target Name="RunApiCompat"
+          Condition="'$(_RunApiCompat)' == 'true'"
           Inputs="$(ApiCompatResponseFile);@(GenFacadesContracts)"
           Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)"
   >
