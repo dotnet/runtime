@@ -15,6 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SaveItems.cs" />
     <Compile Include="ConfigurationTask.cs" />
     <Compile Include="BuildTask.cs" />
     <Compile Include="Configuration\Configuration.cs" />
