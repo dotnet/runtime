@@ -75,27 +75,6 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
         .endm
 
 // ------------------------------------------------------------------
-//
-// Helpers for async (NullRef, AccessViolation) exceptions
-//
-
-        NESTED_ENTRY NakedThrowHelper2,_TEXT,UnhandledExceptionHandlerUnix
-        push         {r0, lr}
-
-        // On entry:
-        //
-        // R0 = Address of FaultingExceptionFrame
-        bl C_FUNC(LinkFrameAndThrow)
-
-        // Target should not return.
-        EMIT_BREAKPOINT
-
-        NESTED_END NakedThrowHelper2, _TEXT
-
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
-
-// ------------------------------------------------------------------
 
         // This helper enables us to call into a funclet after applying the non-volatiles
         NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
