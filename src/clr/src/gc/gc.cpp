@@ -1458,7 +1458,11 @@ inline bool can_use_write_watch_for_gc_heap()
 
 inline bool can_use_write_watch_for_card_table()
 {
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    return true;
+#else
     return can_use_hardware_write_watch();
+#endif
 }
 
 #else
@@ -2181,15 +2185,22 @@ void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_b
     args.operation = WriteBarrierOp::StompResize;
     args.is_runtime_suspended = is_runtime_suspended;
     args.requires_upper_bounds_check = requires_upper_bounds_check;
+
     args.card_table = g_gc_card_table;
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    args.card_bundle_table = g_gc_card_bundle_table;
+#endif
+
     args.lowest_address = g_gc_lowest_address;
     args.highest_address = g_gc_highest_address;
+
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     if (SoftwareWriteWatch::IsEnabledForGCHeap())
     {
         args.write_watch_table = g_gc_sw_ww_table;
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
     GCToEEInterface::StompWriteBarrier(&args);
 }
 
@@ -2210,6 +2221,11 @@ void stomp_write_barrier_initialize()
     args.is_runtime_suspended = true;
     args.requires_upper_bounds_check = false;
     args.card_table = g_gc_card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    args.card_bundle_table = g_gc_card_bundle_table;
+#endif
+    
     args.lowest_address = g_gc_lowest_address;
     args.highest_address = g_gc_highest_address;
     args.ephemeral_low = reinterpret_cast<uint8_t*>(1);
@@ -6286,6 +6302,150 @@ void gc_heap::make_c_mark_list (uint8_t** arr)
 }
 #endif //BACKGROUND_GC
 
+
+#ifdef CARD_BUNDLE
+
+// The card bundle keeps track of groups of card words.
+static const size_t card_bundle_word_width = 32;
+
+// How do we express the fact that 32 bits (card_word_width) is one uint32_t?
+static const size_t card_bundle_size = (size_t)(OS_PAGE_SIZE / (sizeof(uint32_t)*card_bundle_word_width));
+
+inline
+size_t card_bundle_word (size_t cardb)
+{
+    return cardb / card_bundle_word_width;
+}
+
+inline
+uint32_t card_bundle_bit (size_t cardb)
+{
+    return (uint32_t)(cardb % card_bundle_word_width);
+}
+
+size_t align_cardw_on_bundle (size_t cardw)
+{
+    return ((size_t)(cardw + card_bundle_size - 1) & ~(card_bundle_size - 1 ));
+}
+
+// Get the card bundle representing a card word
+size_t cardw_card_bundle (size_t cardw)
+{
+    return cardw / card_bundle_size;
+}
+
+// Get the first card word in a card bundle
+size_t card_bundle_cardw (size_t cardb)
+{
+    return cardb * card_bundle_size;
+}
+
+// Clear the specified card bundle
+void gc_heap::card_bundle_clear (size_t cardb)
+{
+    card_bundle_table [card_bundle_word (cardb)] &= ~(1 << card_bundle_bit (cardb));
+    dprintf (1,("Cleared card bundle %Ix [%Ix, %Ix[", cardb, (size_t)card_bundle_cardw (cardb),
+              (size_t)card_bundle_cardw (cardb+1)));
+}
+
+void gc_heap::card_bundle_set (size_t cardb)
+{
+    if (!card_bundle_set_p (cardb))
+    {
+        card_bundle_table [card_bundle_word (cardb)] |= (1 << card_bundle_bit (cardb));
+    }
+}
+
+// Set the card bundle bits between start_cardb and end_cardb
+void gc_heap::card_bundles_set (size_t start_cardb, size_t end_cardb)
+{
+    if (start_cardb == end_cardb)
+    {
+        card_bundle_set(start_cardb);
+        return;
+    }
+
+    size_t start_word = card_bundle_word (start_cardb);
+    size_t end_word = card_bundle_word (end_cardb);
+
+    if (start_word < end_word)
+    {
+        // Set the partial words
+        card_bundle_table [start_word] |= highbits (~0u, card_bundle_bit (start_cardb));
+
+        if (card_bundle_bit (end_cardb))
+            card_bundle_table [end_word] |= lowbits (~0u, card_bundle_bit (end_cardb));
+
+        // Set the full words
+        for (size_t i = start_word + 1; i < end_word; i++)
+            card_bundle_table [i] = ~0u;
+    }
+    else
+    {
+        card_bundle_table [start_word] |= (highbits (~0u, card_bundle_bit (start_cardb)) &
+                                            lowbits (~0u, card_bundle_bit (end_cardb)));
+    }
+}
+
+// Indicates whether the specified bundle is set.
+BOOL gc_heap::card_bundle_set_p (size_t cardb)
+{
+    return (card_bundle_table[card_bundle_word(cardb)] & (1 << card_bundle_bit (cardb)));
+}
+
+// Returns the size (in bytes) of a card bundle representing the region from 'from' to 'end'
+size_t size_card_bundle_of (uint8_t* from, uint8_t* end)
+{
+    // Number of heap bytes represented by a card bundle word
+    size_t cbw_span = card_size * card_word_width * card_bundle_size * card_bundle_word_width;
+
+    // Align the start of the region down
+    from = (uint8_t*)((size_t)from & ~(cbw_span - 1));
+
+    // Align the end of the region up
+    end = (uint8_t*)((size_t)(end + (cbw_span - 1)) & ~(cbw_span - 1));
+
+    // Make sure they're really aligned
+    assert (((size_t)from & (cbw_span - 1)) == 0);
+    assert (((size_t)end  & (cbw_span - 1)) == 0);
+
+    return ((end - from) / cbw_span) * sizeof (uint32_t);
+}
+
+// Takes a pointer to a card bundle table and an address, and returns a pointer that represents
+// where a theoretical card bundle table that represents every address (starting from 0) would
+// start if the bundle word representing the address were to be located at the pointer passed in.
+// The returned 'translated' pointer makes it convenient/fast to calculate where the card bundle
+// for a given address is using a simple shift operation on the address.
+uint32_t* translate_card_bundle_table (uint32_t* cb, uint8_t* lowest_address)
+{
+    // The number of bytes of heap memory represented by a card bundle word
+    const size_t heap_bytes_for_bundle_word = card_size * card_word_width * card_bundle_size * card_bundle_word_width;
+
+    // Each card bundle word is 32 bits
+    return (uint32_t*)((uint8_t*)cb - (((size_t)lowest_address / heap_bytes_for_bundle_word) * sizeof (uint32_t)));
+}
+
+void gc_heap::enable_card_bundles ()
+{
+    if (can_use_write_watch_for_card_table() && (!card_bundles_enabled()))
+    {
+        dprintf (1, ("Enabling card bundles"));
+
+        // We initially set all of the card bundles
+        card_bundles_set (cardw_card_bundle (card_word (card_of (lowest_address))),
+                          cardw_card_bundle (align_cardw_on_bundle (card_word (card_of (highest_address)))));
+        settings.card_bundles = TRUE;
+    }
+}
+
+BOOL gc_heap::card_bundles_enabled ()
+{
+    return settings.card_bundles;
+}
+
+#endif // CARD_BUNDLE
+
 #if defined (_TARGET_AMD64_)
 #define brick_size ((size_t)4096)
 #else
@@ -6415,8 +6575,18 @@ void gc_heap::clear_card (size_t card)
 inline
 void gc_heap::set_card (size_t card)
 {
-    card_table [card_word (card)] =
-        (card_table [card_word (card)] | (1 << card_bit (card)));
+    size_t word = card_word (card);
+    card_table[word] = (card_table [word] | (1 << card_bit (card)));
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // Also set the card bundle that corresponds to the card
+    size_t bundle_to_set = cardw_card_bundle(word);
+
+    card_bundle_set(bundle_to_set);
+
+    dprintf (3,("Set card %Ix [%Ix, %Ix[ and bundle %Ix", card, (size_t)card_address (card), (size_t)card_address (card+1), bundle_to_set));
+    assert(card_bundle_set_p(bundle_to_set) != 0);
+#endif
 }
 
 inline
@@ -6438,116 +6608,6 @@ size_t size_card_of (uint8_t* from, uint8_t* end)
 {
     return count_card_of (from, end) * sizeof(uint32_t);
 }
-
-#ifdef CARD_BUNDLE
-
-//The card bundle keeps track of groups of card words
-#define card_bundle_word_width ((size_t)32)
-//how do we express the fact that 32 bits (card_word_width) is one uint32_t?
-#define card_bundle_size ((size_t)(OS_PAGE_SIZE/(sizeof (uint32_t)*card_bundle_word_width)))
-
-inline
-size_t card_bundle_word (size_t cardb)
-{
-    return cardb / card_bundle_word_width;
-}
-
-inline
-uint32_t card_bundle_bit (size_t cardb)
-{
-    return (uint32_t)(cardb % card_bundle_word_width);
-}
-
-size_t align_cardw_on_bundle (size_t cardw)
-{
-    return ((size_t)(cardw + card_bundle_size - 1) & ~(card_bundle_size - 1 ));
-}
-
-size_t cardw_card_bundle (size_t cardw)
-{
-    return cardw/card_bundle_size;
-}
-
-size_t card_bundle_cardw (size_t cardb)
-{
-    return cardb*card_bundle_size;
-}
-
-void gc_heap::card_bundle_clear(size_t cardb)
-{
-    card_bundle_table [card_bundle_word (cardb)] &= ~(1 << card_bundle_bit (cardb));
-    dprintf (3,("Cleared card bundle %Ix [%Ix, %Ix[", cardb, (size_t)card_bundle_cardw (cardb),
-              (size_t)card_bundle_cardw (cardb+1)));
-//    printf ("Cleared card bundle %Ix\n", cardb);
-}
-
-void gc_heap::card_bundles_set (size_t start_cardb, size_t end_cardb)
-{
-    size_t start_word = card_bundle_word (start_cardb);
-    size_t end_word = card_bundle_word (end_cardb);
-    if (start_word < end_word)
-    {
-        //set the partial words
-        card_bundle_table [start_word] |= highbits (~0u, card_bundle_bit (start_cardb));
-
-        if (card_bundle_bit (end_cardb))
-            card_bundle_table [end_word] |= lowbits (~0u, card_bundle_bit (end_cardb));
-
-        for (size_t i = start_word+1; i < end_word; i++)
-            card_bundle_table [i] = ~0u;
-
-    }
-    else
-    {
-        card_bundle_table [start_word] |= (highbits (~0u, card_bundle_bit (start_cardb)) &
-                                           lowbits (~0u, card_bundle_bit (end_cardb)));
-
-    }
-
-}
-
-BOOL gc_heap::card_bundle_set_p (size_t cardb)
-{
-    return ( card_bundle_table [ card_bundle_word (cardb) ] & (1 << card_bundle_bit (cardb)));
-}
-
-size_t size_card_bundle_of (uint8_t* from, uint8_t* end)
-{
-    //align from to lower
-    from = (uint8_t*)((size_t)from & ~(card_size*card_word_width*card_bundle_size*card_bundle_word_width - 1));
-    //align to to upper
-    end = (uint8_t*)((size_t)(end + (card_size*card_word_width*card_bundle_size*card_bundle_word_width - 1)) &
-                  ~(card_size*card_word_width*card_bundle_size*card_bundle_word_width - 1));
-
-    assert (((size_t)from & ((card_size*card_word_width*card_bundle_size*card_bundle_word_width)-1)) == 0);
-    assert (((size_t)end  & ((card_size*card_word_width*card_bundle_size*card_bundle_word_width)-1)) == 0);
-
-    return ((end - from) / (card_size*card_word_width*card_bundle_size*card_bundle_word_width)) * sizeof (uint32_t);
-}
-
-uint32_t* translate_card_bundle_table (uint32_t* cb)
-{
-    return (uint32_t*)((uint8_t*)cb - ((((size_t)g_gc_lowest_address) / (card_size*card_word_width*card_bundle_size*card_bundle_word_width)) * sizeof (uint32_t)));
-}
-
-void gc_heap::enable_card_bundles ()
-{
-    if (can_use_write_watch_for_card_table() && (!card_bundles_enabled()))
-    {
-        dprintf (3, ("Enabling card bundles"));
-        //set all of the card bundles
-        card_bundles_set (cardw_card_bundle (card_word (card_of (lowest_address))),
-                          cardw_card_bundle (align_cardw_on_bundle (card_word (card_of (highest_address)))));
-        settings.card_bundles = TRUE;
-    }
-}
-
-BOOL gc_heap::card_bundles_enabled ()
-{
-    return settings.card_bundles;
-}
-
-#endif //CARD_BUNDLE
 
 // We don't store seg_mapping_table in card_table_info because there's only always one view.
 class card_table_info
@@ -6871,6 +6931,10 @@ void release_card_table (uint32_t* c_table)
             if (&g_gc_card_table[card_word (gcard_of(g_gc_lowest_address))] == c_table)
             {
                 g_gc_card_table = 0;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+                g_gc_card_bundle_table = 0;
+#endif
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
                 SoftwareWriteWatch::StaticClose();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -6919,8 +6983,12 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #ifdef CARD_BUNDLE
     if (can_use_write_watch_for_card_table())
     {
-        virtual_reserve_flags |= VirtualReserveFlags::WriteWatch;
         cb = size_card_bundle_of (g_gc_lowest_address, g_gc_highest_address);
+#ifndef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // If we're not manually managing the card bundles, we will need to use OS write
+        // watch APIs over this region to track changes.
+        virtual_reserve_flags |= VirtualReserveFlags::WriteWatch;
+#endif
     }
 #endif //CARD_BUNDLE
 
@@ -6979,6 +7047,11 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
 #ifdef CARD_BUNDLE
     card_table_card_bundle_table (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    g_gc_card_bundle_table = translate_card_bundle_table(card_table_card_bundle_table(ct), g_gc_lowest_address);
+#endif
+
 #endif //CARD_BUNDLE
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -7089,6 +7162,11 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         bool write_barrier_updated = false;
         uint32_t virtual_reserve_flags = VirtualReserveFlags::None;
         uint32_t* saved_g_card_table = g_gc_card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        uint32_t* saved_g_card_bundle_table = g_gc_card_bundle_table;
+#endif
+
         uint32_t* ct = 0;
         uint32_t* translated_ct = 0;
         short* bt = 0;
@@ -7109,8 +7187,13 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #ifdef CARD_BUNDLE
         if (can_use_write_watch_for_card_table())
         {
-            virtual_reserve_flags = VirtualReserveFlags::WriteWatch;
             cb = size_card_bundle_of (saved_g_lowest_address, saved_g_highest_address);
+
+#ifndef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            // If we're not manually managing the card bundles, we will need to use OS write
+            // watch APIs over this region to track changes.
+            virtual_reserve_flags |= VirtualReserveFlags::WriteWatch;
+#endif
         }
 #endif //CARD_BUNDLE
 
@@ -7272,6 +7355,11 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             }
 
             g_gc_card_table = translated_ct;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            g_gc_card_bundle_table = translate_card_bundle_table(card_table_card_bundle_table(ct), saved_g_lowest_address);
+#endif
+
             SoftwareWriteWatch::SetResizedUntranslatedTable(
                 mem + sw_ww_table_offset,
                 saved_g_lowest_address,
@@ -7296,6 +7384,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         {
             g_gc_card_table = translated_ct;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            g_gc_card_bundle_table = translate_card_bundle_table(card_table_card_bundle_table(ct), saved_g_lowest_address);
+#endif
         }
 
         seg_mapping_table = new_seg_mapping_table;
@@ -7326,6 +7418,10 @@ fail:
         if (mem)
         {
             assert(g_gc_card_table == saved_g_card_table);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            assert(g_gc_card_bundle_table  == saved_g_card_bundle_table);
+#endif
 
             //delete (uint32_t*)((uint8_t*)ct - sizeof(card_table_info));
             if (!GCToOSInterface::VirtualRelease (mem, alloc_size_aligned))
@@ -7430,12 +7526,23 @@ void gc_heap::copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
             (card_table_lowest_address (ct) <= start))
         {
             // or the card_tables
-            uint32_t* dest = &card_table [card_word (card_of (start))];
-            uint32_t* src = &((translate_card_table (ct)) [card_word (card_of (start))]);
+
+            size_t start_word = card_word (card_of (start));
+
+            uint32_t* dest = &card_table[start_word];
+            uint32_t* src = &((translate_card_table (ct))[start_word]);
             ptrdiff_t count = count_card_of (start, end);
             for (int x = 0; x < count; x++)
             {
                 *dest |= *src;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+                if (*src != 0)
+                {
+                    card_bundle_set(cardw_card_bundle(start_word+x));
+                }
+#endif
+
                 dest++;
                 src++;
             }
@@ -7511,7 +7618,10 @@ void gc_heap::copy_brick_card_table()
     size_t st = 0;
 #endif //GROWABLE_SEG_MAPPING_TABLE
 #endif //MARK_ARRAY && _DEBUG
-    card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct));
+    card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct), g_gc_lowest_address);
+
+    // Ensure that the word that represents g_gc_lowest_address in the translated table is located at the
+    // start of the untranslated table.
     assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_gc_lowest_address))))] ==
             card_table_card_bundle_table (ct));
 
@@ -9333,89 +9443,112 @@ static unsigned int tot_cycles = 0;
 
 #ifdef CARD_BUNDLE
 
+inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word)
+{
+#ifdef _DEBUG
+    for (size_t x = cardw_card_bundle (first_card_word); x < cardw_card_bundle (last_card_word); x++)
+    {
+        if (!card_bundle_set_p (x))
+        {
+            assert (!"Card bundle not set");
+            dprintf (3, ("Card bundle %Ix not set", x));
+        }
+    }
+#endif
+}
+
+// Verifies that any bundles that are not set represent only cards that are not set.
+inline void gc_heap::verify_card_bundles()
+{
+#ifdef _DEBUG
+    size_t lowest_card = card_word (card_of (lowest_address));
+    size_t highest_card = card_word (card_of (highest_address));
+    size_t cardb = cardw_card_bundle (lowest_card);
+    size_t end_cardb = cardw_card_bundle (align_cardw_on_bundle (highest_card));
+
+    while (cardb < end_cardb)
+    {
+        uint32_t* card_word = &card_table[max(card_bundle_cardw (cardb), lowest_card)];
+        uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb+1), highest_card)];
+
+        if (card_bundle_set_p (cardb) == 0)
+        {
+            // Verify that no card is set
+            while (card_word < card_word_end)
+            {
+                if (*card_word != 0)
+                {
+                    dprintf  (3, ("gc: %d, Card word %Ix for address %Ix set, card_bundle %Ix clear",
+                            dd_collection_count (dynamic_data_of (0)), 
+                            (size_t)(card_word-&card_table[0]),
+                            (size_t)(card_address ((size_t)(card_word-&card_table[0]) * card_word_width)), cardb));
+                }
+
+                assert((*card_word)==0);
+                card_word++;
+            }
+        }
+
+        cardb++;
+    }
+#endif
+}
+
+// If card bundles are enabled, use write watch to find pages in the card table that have 
+// been dirtied, and set the corresponding card bundle bits.
 void gc_heap::update_card_table_bundle()
 {
     if (card_bundles_enabled())
     {
+        // The address of the card word containing the card representing the lowest heap address
         uint8_t* base_address = (uint8_t*)(&card_table[card_word (card_of (lowest_address))]);
+
+        // The address of the card word containing the card representing the highest heap address
+        uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (highest_address))]);
+        
         uint8_t* saved_base_address = base_address;
         uintptr_t bcount = array_size;
-        uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (highest_address))]);
         size_t saved_region_size = align_on_page (high_address) - saved_base_address;
 
         do
         {
             size_t region_size = align_on_page (high_address) - base_address;
+
             dprintf (3,("Probing card table pages [%Ix, %Ix[", (size_t)base_address, (size_t)base_address+region_size));
-            bool success = GCToOSInterface::GetWriteWatch (false /* resetState */ , base_address, region_size,
-                                                           (void**)g_addresses,
-                                                           &bcount);
+            bool success = GCToOSInterface::GetWriteWatch(false /* resetState */,
+                                                          base_address,
+                                                          region_size,
+                                                          (void**)g_addresses,
+                                                          &bcount);
             assert (success && "GetWriteWatch failed!");
+
             dprintf (3,("Found %d pages written", bcount));
-            for (unsigned  i = 0; i < bcount; i++)
+            for (unsigned i = 0; i < bcount; i++)
             {
+                // Offset of the dirty page from the start of the card table (clamped to base_address)
                 size_t bcardw = (uint32_t*)(max(g_addresses[i],base_address)) - &card_table[0];
+
+                // Offset of the end of the page from the start of the card table (clamped to high addr)
                 size_t ecardw = (uint32_t*)(min(g_addresses[i]+OS_PAGE_SIZE, high_address)) - &card_table[0];
                 assert (bcardw >= card_word (card_of (g_gc_lowest_address)));
 
-                card_bundles_set (cardw_card_bundle (bcardw),
-                                  cardw_card_bundle (align_cardw_on_bundle (ecardw)));
+                // Set the card bundle bits representing the dirty card table page
+                card_bundles_set (cardw_card_bundle (bcardw), cardw_card_bundle (align_cardw_on_bundle (ecardw)));
+                dprintf (3,("Set Card bundle [%Ix, %Ix[", cardw_card_bundle (bcardw), cardw_card_bundle (align_cardw_on_bundle (ecardw))));
 
-                dprintf (3,("Set Card bundle [%Ix, %Ix[",
-                            cardw_card_bundle (bcardw), cardw_card_bundle (align_cardw_on_bundle (ecardw))));
-
-#ifdef _DEBUG
-                for (size_t x = cardw_card_bundle (bcardw); x < cardw_card_bundle (ecardw); x++)
-                {
-                    if (!card_bundle_set_p (x))
-                    {
-                        assert (!"Card bundle not set");
-                        dprintf (3, ("Card bundle %Ix not set", x));
-                    }
-                }
-#endif //_DEBUG
-
+                verify_card_bundle_bits_set(bcardw, ecardw);
             }
-            if (bcount >= array_size){
+
+            if (bcount >= array_size)
+            {
                 base_address = g_addresses [array_size-1] + OS_PAGE_SIZE;
                 bcount = array_size;
             }
+
         } while ((bcount >= array_size) && (base_address < high_address));
 
+        // Now that we've updated the card bundle bits, reset the write-tracking state. 
         GCToOSInterface::ResetWriteWatch (saved_base_address, saved_region_size);
-
-#ifdef _DEBUG
-
-        size_t lowest_card = card_word (card_of (lowest_address));
-        size_t highest_card = card_word (card_of (highest_address));
-        size_t cardb = cardw_card_bundle (lowest_card);
-        size_t end_cardb = cardw_card_bundle (align_cardw_on_bundle (highest_card));
-
-        //find a non null bundle
-        while (cardb < end_cardb)
-        {
-            if (card_bundle_set_p (cardb)==0)
-            {
-                //verify that the cards are indeed empty
-                uint32_t* card_word = &card_table[max(card_bundle_cardw (cardb), lowest_card)];
-                uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb+1), highest_card)];
-                while (card_word < card_word_end)
-                {
-                    if ((*card_word) != 0)
-                    {
-                        dprintf  (3, ("gc: %d, Card word %Ix for address %Ix set, card_bundle %Ix clear",
-                                dd_collection_count (dynamic_data_of (0)), 
-                                (size_t)(card_word-&card_table[0]),
-                                (size_t)(card_address ((size_t)(card_word-&card_table[0]) * card_word_width)), cardb));
-                    }
-                    assert((*card_word)==0);
-                    card_word++;
-                }
-            }
-            //end of verification
-            cardb++;
-        }
-#endif //_DEBUG
     }
 }
 #endif //CARD_BUNDLE
@@ -10338,7 +10471,7 @@ gc_heap::init_gc_heap (int  h_number)
     lowest_address = card_table_lowest_address (ct);
 
 #ifdef CARD_BUNDLE
-    card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct));
+    card_bundle_table = translate_card_bundle_table (card_table_card_bundle_table (ct), g_gc_lowest_address);
     assert (&card_bundle_table [card_bundle_word (cardw_card_bundle (card_word (card_of (g_gc_lowest_address))))] ==
             card_table_card_bundle_table (ct));
 #endif //CARD_BUNDLE
@@ -15211,6 +15344,10 @@ void gc_heap::gc1()
 
     assert (g_gc_card_table == card_table);
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    assert (g_gc_card_bundle_table == card_bundle_table);
+#endif    
+
     {
         if (n == max_generation)
         {
@@ -18598,6 +18735,12 @@ void gc_heap::fix_card_table ()
                 dprintf (2,("Set Cards [%Ix:%Ix, %Ix:%Ix[",
                       card_of (g_addresses [i]), (size_t)g_addresses [i],
                       card_of (g_addresses [i]+OS_PAGE_SIZE), (size_t)g_addresses [i]+OS_PAGE_SIZE));
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // We don't need to update card bundles here because this function is only used when
+    // we don't have write barriers.
+    #error Cannot have manually managed card bundles without write barriers.
+#endif
             }
 
             if (bcount >= array_size){
@@ -19536,7 +19679,15 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             {
 #endif //MULTIPLE_HEAPS
 
-                update_card_table_bundle ();
+#ifndef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+                // If we are manually managing card bundles, every write to the card table should already be
+                // accounted for in the card bundle table so there's nothing to update here.
+                update_card_table_bundle();
+#endif
+                if (card_bundles_enabled())
+                {
+                    verify_card_bundles();
+                }
 
 #ifdef MULTIPLE_HEAPS
                 gc_t_join.r_restart();
@@ -27019,6 +27170,14 @@ void gc_heap::copy_cards (size_t dst_card,
         if (!(++dstbit % 32))
         {
             card_table[dstwrd] = dsttmp;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            if (dsttmp != 0)
+            {
+                card_bundle_set(cardw_card_bundle(dstwrd));
+            }
+#endif
+
             dstwrd++;
             dsttmp = card_table[dstwrd];
             dstbit = 0;
@@ -27026,6 +27185,13 @@ void gc_heap::copy_cards (size_t dst_card,
     }
 
     card_table[dstwrd] = dsttmp;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    if (dsttmp != 0)
+    {
+        card_bundle_set(cardw_card_bundle(dstwrd));
+    }
+#endif
 }
 
 void gc_heap::copy_cards_for_addresses (uint8_t* dest, uint8_t* src, size_t len)
@@ -27086,6 +27252,10 @@ void gc_heap::copy_cards_for_addresses (uint8_t* dest, uint8_t* src, size_t len)
 
     if (card_set_p (card_of (src + len - 1)))
         set_card (end_dest_card);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    card_bundles_set(cardw_card_bundle(card_word(card_of(dest))), cardw_card_bundle(align_cardw_on_bundle(card_word(end_dest_card))));
+#endif
 }
 
 #ifdef BACKGROUND_GC
@@ -33336,6 +33506,10 @@ HRESULT GCHeap::Shutdown ()
     {
         destroy_card_table (ct);
         g_gc_card_table = nullptr;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        g_gc_card_bundle_table = nullptr;
+#endif
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         SoftwareWriteWatch::StaticClose();
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
