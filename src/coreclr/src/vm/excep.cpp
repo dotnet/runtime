@@ -6969,6 +6969,8 @@ bool IsGcMarker(DWORD exceptionCode, CONTEXT *pContext)
     return false;
 }
 
+#ifndef FEATURE_PAL
+
 // Return true if the access violation is well formed (has two info parameters
 // at the end)
 static inline BOOL
@@ -7039,6 +7041,8 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 #endif // DEBUGGING_SUPPORTED
     return false;
 }
+
+#endif // FEATURE_PAL
 
 #ifdef WIN64EXCEPTIONS
 
@@ -7188,6 +7192,8 @@ AdjustContextForWriteBarrier(
 #endif // ELSE
 }
 
+#if defined(USE_FEF) && !defined(FEATURE_PAL)
+
 struct SavedExceptionInfo
 {
     EXCEPTION_RECORD m_ExceptionRecord;
@@ -7241,9 +7247,6 @@ struct SavedExceptionInfo
         m_Crst.Init(CrstSavedExceptionInfo, CRST_UNSAFE_ANYMODE);
     }
 };
-
-
-#if defined(USE_FEF)
 
 SavedExceptionInfo g_SavedExceptionInfo;  // Globals are guaranteed zero-init;
 
@@ -7322,13 +7325,13 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
 }
 
-#else // USE_FEF
+#else // USE_FEF && !FEATURE_PAL
 
 void InitSavedExceptionInfo()
 {
 }
 
-#endif // USE_FEF
+#endif // USE_FEF && !FEATURE_PAL
 
 //
 // Init a new frame
@@ -7441,6 +7444,8 @@ bool ShouldHandleManagedFault(
     // caller should call HandleManagedFault and resume execution.
     return true;
 }
+
+#ifndef FEATURE_PAL
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo);
 
@@ -7877,7 +7882,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             // Remember the EIP for stress debugging purposes. 
             g_LastAccessViolationEIP = (void*) ::GetIP(pContext);
 
-#ifndef FEATURE_PAL
             // Note: we have a holder, called AVInRuntimeImplOkayHolder, that tells us that its okay to have an
             // AV in the Runtime's implementation in certain places. So, if its okay to have an AV at this
             // time, then skip the check for whether or not the AV is in our impl.
@@ -7941,7 +7945,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     EEPOLICY_HANDLE_FATAL_ERROR_USING_EXCEPTION_INFO(COR_E_EXECUTIONENGINE, pExceptionInfo);
                 }
             }
-#endif // !FEATURE_PAL
         }
     }
     else if (exceptionCode == BOOTUP_EXCEPTION_COMPLUS)
@@ -7952,6 +7955,8 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
     return VEH_NO_ACTION;
 }
+
+#endif // !FEATURE_PAL
 
 BOOL IsIPInEE(void *ip)
 {
@@ -8161,6 +8166,8 @@ public:
 
 #endif // defined(_TARGET_X86_)
 
+#ifndef FEATURE_PAL
+
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {
     //
@@ -8308,7 +8315,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
 
 #ifdef _DEBUG
-#ifndef FEATURE_PAL
 #ifndef WIN64EXCEPTIONS
         {
             CantAllocHolder caHolder;
@@ -8373,7 +8379,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 }
             }
         }
-#endif // !FEATURE_PAL
 #endif // _DEBUG
 
 #ifndef WIN64EXCEPTIONS
@@ -8390,6 +8395,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     return result;
 }
 
+#endif // !FEATURE_PAL
 
 // Contains the handle to the registered VEH
 static PVOID g_hVectoredExceptionHandler = NULL;
