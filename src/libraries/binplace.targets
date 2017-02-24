@@ -30,16 +30,16 @@
 
     <!-- binplace to directories for packages -->
     <BinplaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(OSGroup)">
-      <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</RefPath>
-      <RuntimePath>$(NETCoreAppPackageRuntimePath)</RuntimePath>
+      <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
     </BinplaceConfiguration>
     <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(OSGroup)">
-      <RefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</RefPath>
-      <RuntimePath>$(UAPPackageRuntimePath)</RuntimePath>
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
     </BinplaceConfiguration>
     <BinplaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(OSGroup)">
-      <RefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</RefPath>
-      <RuntimePath>$(UAPAOTPackageRuntimePath)</RuntimePath>
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinplaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
@@ -69,14 +69,17 @@
   </ItemGroup>
 
   <Target Name="BinPlace"
-          DependsOnTargets="GetBinplaceDirs;GetBinplaceItems" 
+          DependsOnTargets="GetBinplaceDirs;BinPlaceFiles;BinplaceProps"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'" >
+          Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'" />
+  
+  <Target Name="BinPlaceFiles"
+          Condition="'@(BinplaceDir)' != ''"
+          DependsOnTargets="GetBinplaceItems" >
 
     <Message Importance="low" Text="BinplaceDir: @(BinplaceDir)" />
 
-    <Copy Condition="'@(BinplaceDir)' != ''"
-          SourceFiles="@(BinplaceItem)"
+    <Copy SourceFiles="@(BinplaceItem)"
           DestinationFolder="%(BinplaceDir.Identity)" 
           SkipUnchangedFiles="true"
           OverwriteReadOnlyFiles="true"
@@ -85,6 +88,37 @@
           UseHardlinksIfPossible="$(BinplaceUseHardlinksIfPossible)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
+  </Target>
+
+  <UsingTask TaskName="SaveItems" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="BinplaceProps"
+          Condition="'@(PackageFileDir)' != ''"
+          DependsOnTargets="GetBinplaceItems" >
+    <PropertyGroup>
+      <_propsFilename>$(TargetName)</_propsFilename>
+      <_propsFilename Condition="'$(_propsFilename)' == ''">$(MSBuildProjectName)</_propsFilename>
+      <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <_itemsToSave Include="@(BinplaceItem)">
+        <!-- intentionally empty: to be set by pkgproj -->
+        <TargetPath></TargetPath>
+      </_itemsToSave>
+      
+      <!-- Include source files. -->
+      <_itemsToSave Condition="'@(Compile)' != ''" Include="@(Compile->'%(FullPath)')">
+        <TargetPath>src</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
+        <IsSourceCodeFile>true</IsSourceCodeFile>
+      </_itemsToSave>
+    </ItemGroup>
+    
+    <Message Importance="low" Text="PackageFileDir: @(PackageFileDir)" />
+
+    <SaveItems ItemName="FileToPackage"
+               Items="@(_itemsToSave)"
+               Files="@(PackageFileDir->'%(Identity)\$(_propsFilename).props')" />
   </Target>
 
   <Target Name="GetBinplaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">
@@ -111,6 +145,9 @@
 
       <BinplaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinplaceConfigurations.RuntimePath)" />
       <BinplaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinplaceConfigurations.RefPath)" />
+
+      <PackageFileDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinplaceConfigurations.PackageFileRuntimePath)" />
+      <PackageFileDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinplaceConfigurations.PackageFileRefPath)" />
     </ItemGroup>
   </Target>
 
