@@ -1012,27 +1012,6 @@ NESTED_END CallEHFilterFunclet, _TEXT
 
 
 // ------------------------------------------------------------------
-//
-// Helpers for async (NullRef, AccessViolation) exceptions
-//
-
-NESTED_ENTRY NakedThrowHelper2, _TEXT ,UnhandledExceptionHandlerUnix
-    PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, -16
-
-    // On entry:
-    //
-    // X0 = Address of FaultingExceptionFrame
-    bl C_FUNC(LinkFrameAndThrow)
-
-    // Target should not return.
-    EMIT_BREAKPOINT
-
-NESTED_END NakedThrowHelper2, _TEXT
-
-
-GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
-
-// ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
 // This method will perform a quick chained lookup of the entry if the
