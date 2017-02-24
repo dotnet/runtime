@@ -25,6 +25,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'OpenSUSE13.2': 'Linux',
                   'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
+                  'Tizen': 'Linux',
                   'LinuxARMEmulator': 'Linux',
                   'PortableLinux': 'Linux']
 
@@ -452,27 +453,33 @@ def buildArchConfiguration = ['Debug': 'x86',
 // (the machine affinity of the new job remains the same)
 // **************************
 [true, false].each { isPR ->
-    ['Debug', 'Release'].each { configurationGroup ->
-        ['LinuxARMEmulator'].each { osName ->
-            ['HardFP', 'SoftFP'].each { abi ->
+    ['netcoreapp'].each { targetGroup ->
+        ['Debug', 'Release'].each { configurationGroup ->
+            ['Ubuntu', 'Ubuntu16.04', 'Tizen'].each { osName ->
+                if (osName == "Ubuntu") {
+                    linuxCodeName="trusty"
+                    abi = "arm"
+                }
+                else if (osName == "Ubuntu16.04") {
+                    linuxCodeName="xenial"
+                    abi = "arm"
+                }
+                else if (osName == "Tizen") {
+                    linuxCodeName="tizen"
+                    abi = "armel"
+                }
+
                 def osGroup = osGroupMap[osName]
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
-
-                // Setup variables to hold emulator folder path and the rootfs mount path
-                def armemul_path = '/opt/linux-arm-emulator'
-                def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                     steps {
                         // Call the arm32_ci_script.sh script to perform the cross build of native corefx
-                        def script = "./scripts/arm32_ci_script.sh --emulatorPath=${armemul_path} --mountPath=${armrootfs_mountpath} --buildConfig=${configurationGroup.toLowerCase()} --verbose"
-                        if (abi == "SoftFP") {
-                            script += " --armel"
-                        }
+                        def script = "./cross/arm32_ci_script.sh --buildConfig=${configurationGroup.toLowerCase()} --${abi} --linuxCodeName=${linuxCodeName} --verbose"
                         shell(script)
 
-                        // Archive the native and managed binaries
-                        shell("tar -czf bin/build.tar.gz bin/*.${configurationGroup} bin/ref --exclude=*.Tests")
+                        // Tar up the appropriate bits.
+                        shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${abi}\" .")
                     }
                 }
 
@@ -489,16 +496,16 @@ def buildArchConfiguration = ['Debug': 'x86',
 
                 // Set up triggers
                 if (isPR) {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop Linux ARM Emulator ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+linuxarmemulator\\W+${abi}\\W+${configurationGroup}.*")
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
                 }
                 else {
                     // Set a push trigger
                     Utilities.addGithubPushTrigger(newJob)
                 }
-            }
-        }
-    }
-}
+            } // osName
+        } // configurationGroup
+    } // targetGroup
+} // isPR
 
 JobReport.Report.generateJobReport(out)
 
