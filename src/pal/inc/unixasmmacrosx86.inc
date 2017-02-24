@@ -66,6 +66,18 @@ C_FUNC(\Name\()_End):
         pop ebp
 .endm
 
+.macro ESP_PROLOG_BEG
+.endm
+
+.macro ESP_PROLOG_END
+.endm
+
+.macro ESP_EPILOG_BEG
+.endm
+
+.macro ESP_EPILOG_END
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, Reg
 .att_syntax
     call  0f

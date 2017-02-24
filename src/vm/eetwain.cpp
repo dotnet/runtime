@@ -3786,10 +3786,11 @@ void UnwindEbpDoubleAlignFrameProlog(
 /*****************************************************************************/
 
 bool UnwindEbpDoubleAlignFrame(
-        PREGDISPLAY pContext, 
-        hdrInfo * info, 
-        PTR_CBYTE methodStart, 
-        unsigned flags,
+        PREGDISPLAY     pContext,
+        EECodeInfo     *pCodeInfo,
+        hdrInfo        *info,
+        PTR_CBYTE       methodStart,
+        unsigned        flags,
         StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
 {
     LIMITED_METHOD_CONTRACT;
@@ -3805,6 +3806,25 @@ bool UnwindEbpDoubleAlignFrame(
     if (info->handlers && info->prologOffs == hdrInfo::NOT_IN_PROLOG)
     {
         TADDR baseSP;
+
+#ifdef WIN64EXCEPTIONS
+        // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
+        // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
+        // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
+        //      we need to change here accordingly. It is likely to have changes when introducing PSPSym.
+        // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
+        if (pCodeInfo->IsFunclet())
+        {
+            baseSP = curESP + 12; // padding for 16byte stack alignment allocated in genFuncletProlog()
+
+            pContext->PCTAddr = baseSP;
+            pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
+
+            pContext->SP = (DWORD)(baseSP + sizeof(TADDR));
+
+            return true;
+        }
+#else // WIN64EXCEPTIONS
 
         FrameType frameType = GetHandlerFrameInfo(info, curEBP,
                                                   curESP, (DWORD) IGNORE_VAL,
@@ -3860,6 +3880,7 @@ bool UnwindEbpDoubleAlignFrame(
 
             return true;
         }
+#endif // !WIN64EXCEPTIONS
     }
 
     //
@@ -3990,7 +4011,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  Now we know that have an EBP frame
          */
 
-        if (!UnwindEbpDoubleAlignFrame(pContext, info, methodStart, flags, pUnwindInfo))
+        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, methodStart, flags, pUnwindInfo))
             return false;
     }
 
