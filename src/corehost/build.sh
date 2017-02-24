@@ -167,6 +167,7 @@ fi
 
 __build_arch_lowcase=$(echo "$__build_arch" | tr '[:upper:]' '[:lower:]')
 __base_rid=$__rid_plat-$__build_arch_lowcase
+export __CrossToolChainTargetRID=$__base_rid
 
 # Set up the environment to be used for building with clang.
 if which "clang-3.5" > /dev/null 2>&1; then
