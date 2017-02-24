@@ -190,9 +190,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Locals\*">
             <Issue>8418</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_377155\DevDiv_377155\*">
-            <Issue>9282</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
