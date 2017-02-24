@@ -48,6 +48,7 @@ namespace System.IO.Tests
             using (FileStream fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 Assert.Throws<PlatformNotSupportedException>(() => fs.Lock(0, 100));
+                File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete).Dispose();
                 Assert.Throws<PlatformNotSupportedException>(() => fs.Unlock(0, 100));
             }
         }
