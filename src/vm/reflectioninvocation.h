@@ -89,8 +89,6 @@ public:
 class ReflectionSerialization {
 public:
     static FCDECL1(Object*, GetUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE);
-    static FCDECL1(Object*, GetSafeUninitializedObject, ReflectClassBaseObject* objTypeUNSAFE);
-    static FCDECL0(FC_BOOL_RET, GetEnableUnsafeTypeForwarders);
 };
 
 class ReflectionEnum {
