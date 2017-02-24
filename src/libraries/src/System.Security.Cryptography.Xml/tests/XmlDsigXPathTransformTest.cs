@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             XmlNodeList xnl = transform.UnprotectedGetInnerXml();
             Assert.Equal(1, xnl.Count);
-            Assert.Equal("<XPath xmlns=\"http://www.w3.org/2000/09/xmldsig#\"></XPath>", xnl[0].OuterXml);
+            Assert.Equal("<XPath xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", xnl[0].OuterXml);
         }
 
         [Fact]
