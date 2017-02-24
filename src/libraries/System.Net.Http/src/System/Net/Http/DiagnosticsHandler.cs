@@ -80,7 +80,7 @@ namespace System.Net.Http
 
                 s_diagnosticListener.StartActivity(activity, new { Request = request });
 
-                request.Headers.Add(HttpKnownHeaderNames.RequestId, activity.Id);
+                request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, activity.Id);
 
                 //we expect baggage to be empty or contain a few items
                 using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
@@ -94,7 +94,7 @@ namespace System.Net.Http
                             baggage.Add(new NameValueHeaderValue(item.Key, item.Value).ToString());
                         }
                         while (e.MoveNext());
-                        request.Headers.Add(HttpKnownHeaderNames.CorrelationContext, baggage);
+                        request.Headers.Add(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
                     }
                 }
             }
