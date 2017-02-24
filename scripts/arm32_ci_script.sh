@@ -9,23 +9,23 @@ function usage {
     echo '    core-setup source is at ~/core-setup'
     echo '$ cd ~/core-setup'
     echo '$ ./scripts/arm32_ci_script.sh'
-    echo '    --emulatorPath=/opt/linux-arm-emulator'
-    echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
     echo '    --armel'
     echo '    --verbose'
     echo ''
     echo 'Required Arguments:'
+    echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
+    echo '                                         Any other value is not accepted'
+    echo 'Optional Arguments:'
+    echo '    --mode=<mode>                      : docker (default) or emulator'
+    echo '    --arm                              : Build as arm (default)'
+    echo '    --armel                            : Build as armel'
+    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
+    echo '    --skipRootFS                       : Skip building rootfs'
     echo '    --emulatorPath=<path>              : Path of the emulator folder (without ending /)'
     echo '                                         <path>/platform/rootfs-t30.ext4 should exist'
     echo '    --mountPath=<path>                 : The desired path for mounting the emulator rootfs (without ending /)'
     echo '                                         This path is created if not already present'
-    echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
-    echo '                                         Any other value is not accepted'
-    echo 'Optional Arguments:'
-    echo '    --arm                              : Build as arm (default)'
-    echo '    --armel                            : Build as armel'
-    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -200,14 +200,16 @@ function cross_build_core_setup_with_docker {
     else
         exit_with_error "ERROR: unknown buildArch $__buildArch" false
     fi
-
-    # Build rootfs
     __dockerCmd="sudo docker run --privileged -i --rm -v $__currentWorkingDirectory:/opt/core-setup -w /opt/core-setup $__dockerImage"
-    __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
 
-    (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
-    $__dockerCmd $__buildRootfsCmd
-    sudo chown -R $(id -u -n) cross/rootfs
+    if [ $__skipRootFS == 0 ]; then
+        # Build rootfs
+        __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
+
+        (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
+        $__dockerCmd $__buildRootfsCmd
+        sudo chown -R $(id -u -n) cross/rootfs
+    fi
 
     # Cross building core-setup with rootfs in Docker
     __buildCmd="./build.sh --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1"
@@ -215,6 +217,7 @@ function cross_build_core_setup_with_docker {
 }
 
 #Define script variables
+__ciMode="docker"
 __ARMEmulPath="/opt/linux-arm-emulator"
 __ARMRootfsImageBase="rootfs-u1404.ext4"
 __ARMRootfsMountPath="/opt/linux-arm-emulator-root"
@@ -222,6 +225,7 @@ __buildConfig="Release"
 __verboseFlag=
 __buildArch="arm"
 __linuxCodeName="trusty"
+__skipRootFS=0
 __initialGitHead=`git rev-parse --verify HEAD`
 
 #Parse command line arguments
@@ -240,6 +244,9 @@ do
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
         ;;
+    --mode=*)
+        __ciMode=${arg#*=}
+        ;;
     --arm)
         __ARMRootfsImageBase="rootfs-u1404.ext4"
         __buildArch="arm"
@@ -251,6 +258,9 @@ do
         ;;
     --linuxCodeName=*)
         __linuxCodeName=${arg#*=}
+        ;;
+    --skipRootFS)
+        __skipRootFS=1
         ;;
     -v|--verbose)
         __verboseFlag="verbose"
@@ -278,10 +288,15 @@ if [[ $(git status -s) != "" ]]; then
    exit 1
 fi
 
-#Check if the compulsory arguments have been presented to the script and if the input paths exist
-exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
+exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
+if [ "$__ciMode" == "emulator" ]; then
+    #Check if the compulsory arguments have been presented to the script and if the input paths exist
+    exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
+    exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
+    exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
 
-__ARMRootfsMountPath="${__ARMRootfsMountPath}_${__buildArch}"
+    __ARMRootfsMountPath="${__ARMRootfsMountPath}_${__buildArch}"
+fi
 
 set -x
 set -e
@@ -291,7 +306,11 @@ set -e
 
 #Complete the cross build
 (set +x; echo 'Building core-setup...')
-cross_build_core_setup_with_docker
+if [ "$__ciMode" == "docker" ]; then
+    cross_build_core_setup_with_docker
+else
+    exit_with_error "Not supported emulator mode"
+fi
 
 #Clean the environment
 (set +x; echo 'Cleaning environment...')
