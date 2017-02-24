@@ -47,33 +47,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/context.h"
 
-#ifdef __ANDROID__
-// getcontext and setcontext are not available natively on Android
-int getcontext(ucontext_t *ucp)
-{
-    CONTEXT context;
-    RtlCaptureContext(&context);
-    CONTEXTToNativeContext(&context, ucp);
-
-    return 0;
-}
-
-int setcontext(const ucontext_t *ucp)
-{
-    CONTEXT context;
-    ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
-
-#if defined(_AMD64_)
-    contextFlags |= CONTEXT_XSTATE;
-#endif
-
-    CONTEXTFromNativeContext(ucp, &context, contextFlags);
-    RtlRestoreContext(&context, NULL);
-
-    return 0;
-}
-#endif
-
 using namespace CorUnix;
 
 #ifdef SIGRTMIN
@@ -98,7 +71,7 @@ typedef void (*SIGFUNC)(int, siginfo_t *, void *);
 struct SignalHandlerWorkerReturnPoint
 {
     bool returnFromHandler;
-    ucontext_t context;
+    CONTEXT context;
 };
 
 /* internal function declarations *********************************************/
@@ -419,7 +392,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // fault. We must disassemble the instruction at record.ExceptionAddress
     // to correctly fill in this value.
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
-    setcontext(&returnPoint->context);
+    RtlRestoreContext(&returnPoint->context, NULL);
 }
 
 /*++
@@ -457,7 +430,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         volatile bool contextInitialization = true;
 
         SignalHandlerWorkerReturnPoint returnPoint;
-        getcontext(&returnPoint.context);        
+        RtlCaptureContext(&returnPoint.context);
 
         // When the signal handler worker completes, it uses setcontext to return to this point
 
