@@ -17,10 +17,10 @@
     <ForShims>true</ForShims>
   </PropertyGroup>
   <ItemGroup>
-    <BinplaceConfiguration Include="$(Configuration)">
+    <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath Condition="'$(ForShims)' != 'true'">$(RefPath)</RefPath>
       <RefPath Condition="'$(ForShims)' == 'true'">$(NetFxRefPath)</RefPath>
-    </BinplaceConfiguration>
+    </BinPlaceConfiguration>
     
     <FileToExclude Include="System.EnterpriseServices" />
     <FileToExclude Include="System.EnterpriseServices.Thunk" />

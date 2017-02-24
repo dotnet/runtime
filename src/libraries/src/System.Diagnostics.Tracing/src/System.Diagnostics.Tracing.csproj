@@ -9,7 +9,7 @@
     <NoWarn>CA2002</NoWarn>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='uapaot'">true</GenFacadesIgnoreMissingTypes>
     <!-- Disable binplacing for now since we need to use the netcore50aot version of this assembly -->
-    <BinplaceILCInputFolder>false</BinplaceILCInputFolder>
+    <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
