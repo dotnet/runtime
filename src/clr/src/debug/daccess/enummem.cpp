@@ -266,6 +266,12 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 
         ReportMem( m_globalBase + g_dacGlobals.dac__g_FCDynamicallyAssignedImplementations,
                   sizeof(TADDR)*ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
+
+        // We need all of the dac variables referenced by the GC DAC global struct.
+        // This struct contains pointers to pointers, so we first dereference the pointers
+        // to obtain the location of the variable that's reported.
+#define GC_DAC_VAR(type, name) ReportMem(g_gcDacGlobals->name.GetAddr(), sizeof(type));
+#include "../../gc/gcinterface.dacvars.def"
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 

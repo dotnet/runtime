@@ -125,18 +125,8 @@ DEFINE_DACVAR(ULONG, PTR_Thread, dac__g_pSuspensionThread, ::g_pSuspensionThread
 DEFINE_DACVAR(ULONG, DWORD, IGCHeap__gcHeapType, IGCHeap::gcHeapType)
 #endif // FEATURE_SVR_GC
 
+DEFINE_DACVAR(ULONG, PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 DEFINE_DACVAR(ULONG, DWORD, IGCHeap__maxGeneration, IGCHeap::maxGeneration)
-DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__alloc_allocated, WKS::gc_heap::alloc_allocated)
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE /*PTR_heap_segment*/, WKS__gc_heap__ephemeral_heap_segment, WKS::gc_heap::ephemeral_heap_segment)
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE /*PTR_CFinalize*/, WKS__gc_heap__finalize_queue, WKS::gc_heap::finalize_queue)
-
-// Can not use MULTIPLE_HEAPS here because desktop build contains it is not defined for workstation GC
-// but we include workstation GC in mscorwks.dll.
-#ifdef FEATURE_SVR_GC
-DEFINE_DACVAR_SVR(ULONG, int, SVR__gc_heap__n_heaps, SVR::gc_heap::n_heaps)
-DEFINE_DACVAR_SVR(ULONG, UNKNOWN_POINTER_TYPE /*(PTR_gc_heap*)*/, SVR__gc_heap__g_heaps, SVR::gc_heap::g_heaps)
-#endif // FEATURE_SVR_GC
-DEFINE_DACVAR(ULONG, oom_history, WKS__gc_heap__oom_info, WKS::gc_heap::oom_info)
 
 DEFINE_DACVAR(ULONG, PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
 DEFINE_DACVAR(ULONG, ArrayListStatic, SystemDomain__m_appDomainIndexList, SystemDomain::m_appDomainIndexList)
@@ -184,20 +174,11 @@ DEFINE_DACVAR(ULONG, MscorlibBinder, dac__g_Mscorlib, ::g_Mscorlib)
 DEFINE_DACVAR(ULONG, ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__generation_table, WKS::generation_table)
 DEFINE_DACVAR(ULONG, PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_highest_address, ::g_highest_address)
 
 DEFINE_DACVAR(ULONG, IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
-
-#ifdef GC_CONFIG_DRIVEN
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_data_per_heap, WKS::interesting_data_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__compact_reasons_per_heap, WKS::compact_reasons_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__expand_mechanisms_per_heap, WKS::expand_mechanisms_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_mechanism_bits_per_heap, WKS::interesting_mechanism_bits_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__gc_global_mechanisms, ::gc_global_mechanisms)
-#endif //GC_CONFIG_DRIVEN
 
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)    
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pModuleIndexDispenser, ::g_pModuleIndexDispenser)    
@@ -282,18 +263,6 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pIPCManagerInterface, ::g_pIPC
 #endif // FEATURE_IPCMAN
 
 DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__g_FCDynamicallyAssignedImplementations, ::g_FCDynamicallyAssignedImplementations)
-
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE /*BYTE**/, WKS__gc_heap__internal_root_array, WKS::gc_heap::internal_root_array)
-DEFINE_DACVAR(ULONG, size_t, WKS__gc_heap__internal_root_array_index, WKS::gc_heap::internal_root_array_index)
-DEFINE_DACVAR(ULONG, ULONG, WKS__gc_heap__heap_analyze_success, WKS::gc_heap::heap_analyze_success)
-
-DEFINE_DACVAR(ULONG, SIZE_T, WKS__gc_heap__mark_array, WKS::gc_heap::mark_array)
-DEFINE_DACVAR(ULONG, SIZE_T, WKS__gc_heap__current_c_gc_state, WKS::gc_heap::current_c_gc_state)
-DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__next_sweep_obj, WKS::gc_heap::next_sweep_obj)
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE /* PTR_heap_segment */, WKS__gc_heap__saved_sweep_ephemeral_seg, WKS::gc_heap::saved_sweep_ephemeral_seg)
-DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__saved_sweep_ephemeral_start, WKS::gc_heap::saved_sweep_ephemeral_start)
-DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__background_saved_lowest_address, WKS::gc_heap::background_saved_lowest_address)
-DEFINE_DACVAR(ULONG, PTR_BYTE, WKS__gc_heap__background_saved_highest_address, WKS::gc_heap::background_saved_highest_address)
 
 #ifndef FEATURE_PAL
 DEFINE_DACVAR(ULONG, HANDLE, dac__g_hContinueStartupEvent, ::g_hContinueStartupEvent)

@@ -129,6 +129,8 @@ public:
     }
 };
 
+#include "gcinterface.dac.h"
+
 // stub type to abstract a heap segment
 struct gc_heap_segment_stub;
 typedef gc_heap_segment_stub *segment_handle;
@@ -162,8 +164,9 @@ class Object;
 class IGCHeap;
 
 // Initializes the garbage collector. Should only be called
-// once, during EE startup.
-IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC);
+// once, during EE startup. Returns true if the initialization
+// was successful, false otherwise.
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap **gcHeap, GcDacVars* gcDacVars);
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of

@@ -19,6 +19,10 @@
 #include <virtualcallstub.h>
 #include "peimagelayout.inl"
 
+#include "gcinterface.h"
+#include "gcinterface.dac.h"
+
+
 DacTableInfo g_dacTableInfo;
 DacGlobals g_dacGlobals;
 
