@@ -111,7 +111,6 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
-        [ActiveIssue(12637)]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
         {
