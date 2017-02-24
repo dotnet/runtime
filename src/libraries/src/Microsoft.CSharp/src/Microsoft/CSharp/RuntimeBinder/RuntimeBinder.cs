@@ -18,28 +18,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         #region Singleton Implementation
 
-        // The double checking lock, static lock initializer, and volatile instance
-        // field are all here to make the singleton thread-safe. Please see Richter,
-        // "CLR via C#" Ch. 24 for more information. This implementation was chosen
-        // because construction of the RuntimeBinder is expensive.
-
-        private static readonly object s_singletonLock = new object();
-        private static volatile RuntimeBinder s_instance;
+        private static readonly Lazy<RuntimeBinder> s_lazyInstance = new Lazy<RuntimeBinder>(() => new RuntimeBinder());
 
         public static RuntimeBinder GetInstance()
         {
-            if (s_instance == null)
-            {
-                lock (s_singletonLock)
-                {
-                    if (s_instance == null)
-                    {
-                        s_instance = new RuntimeBinder();
-                    }
-                }
-            }
-
-            return s_instance;
+            return s_lazyInstance.Value;
         }
 
         #endregion
