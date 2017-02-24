@@ -4329,12 +4329,14 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
 #define card_size ((size_t)(OS_PAGE_SIZE/card_word_width))
 #endif // BIT64
 
+// Returns the index of the card word a card is in
 inline
 size_t card_word (size_t card)
 {
     return card / card_word_width;
 }
 
+// Returns the index of a card within its card word
 inline
 unsigned card_bit (size_t card)
 {
