@@ -6420,12 +6420,6 @@ void gc_heap::set_card (size_t card)
 }
 
 inline
-void gset_card (size_t card)
-{
-    g_gc_card_table [card_word (card)] |= (1 << card_bit (card));
-}
-
-inline
 BOOL  gc_heap::card_set_p (size_t card)
 {
     return ( card_table [ card_word (card) ] & (1 << card_bit (card)));
