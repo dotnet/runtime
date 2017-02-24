@@ -16,5 +16,8 @@ namespace System.Net.Http
         public const string ExceptionEventName = "System.Net.Http.Exception";
         public const string ActivityName = "System.Net.Http.Activity";
         public const string ActivityPropagateName = "System.Net.Http.Activity.Propagate";
+
+        public const string RequestIdHeaderName = "Request-Id";
+        public const string CorrelationContextHeaderName = "Correlation-Context";
     }
 }
