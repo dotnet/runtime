@@ -79,7 +79,7 @@ OFFSET_OF_FRAME=(4 + SIZEOF__GSCookie)
 // Helpers for async (NullRef, AccessViolation) exceptions
 //
 
-        NESTED_ENTRY NakedThrowHelper2,_TEXT,FixContextHandler
+        NESTED_ENTRY NakedThrowHelper2,_TEXT,UnhandledExceptionHandlerUnix
         push         {r0, lr}
 
         // On entry:
