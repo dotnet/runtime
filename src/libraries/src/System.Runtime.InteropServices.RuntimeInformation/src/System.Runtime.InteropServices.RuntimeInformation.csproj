@@ -11,7 +11,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">uap</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">uap;uapaot;netcore50</DefineConstants>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='NOTAREALTARGETGROUP'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">true</GeneratePlatformNotSupportedAssembly>
     <!-- use netstandard1.1 refs for win8 and wpa81 -->
     <RefPath Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(RefRootPath)/netstandard1.1</RefPath>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
