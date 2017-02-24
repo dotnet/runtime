@@ -64,14 +64,15 @@ void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, 
     *--sp = fakeFrameReturnAddress;
 
     // Switch the current context to the signal_handler_worker and the original stack
-    ucontext_t ucontext2;
-    getcontext(&ucontext2);
+    CONTEXT context2;
+    RtlCaptureContext(&context2);
 
     // We don't care about the other registers state since the stack unwinding restores
     // them for the target frame directly from the signal context.
-    MCREG_Esp(ucontext2.uc_mcontext) = (size_t)sp;
-    MCREG_Ebp(ucontext2.uc_mcontext) = (size_t)fp;
-    MCREG_Eip(ucontext2.uc_mcontext) = (size_t)signal_handler_worker;
+    context2.Esp = (size_t)sp;
+    context2.ResumeEsp = (size_t)sp;
+    context2.Ebp = (size_t)fp;
+    context2.Eip = (size_t)signal_handler_worker;
 
-    setcontext(&ucontext2);
+    RtlRestoreContext(&context2, NULL);
 }
