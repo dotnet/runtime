@@ -33,7 +33,7 @@ class CQuickBytes;
  *   Always keep the definitions below in sync with the originals.
  * NOTES:
  *   Since SOS runs in a native debugger session, since it does not use EnC,
- *      and in roder to minimize the amount of duplication we changed the
+ *      and in order to minimize the amount of duplication we changed the
  *      method definitions that deal with UTSemReadWrite* arguments to take
  *      void* arguments instead.
  *   Also, some of the interface methods take CQuickBytes as arguments.
