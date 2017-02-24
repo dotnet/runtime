@@ -38,7 +38,8 @@
  * --------------------------------------------------------------------------- */
 
 ZapImage::ZapImage(Zapper *zapper)
-  : m_zapper(zapper)
+  : m_zapper(zapper),
+    m_stats(new ZapperStats())
     /* Everything else is initialized to 0 by default */
 {
 }
@@ -53,6 +54,8 @@ ZapImage::~ZapImage()
     //
     // Clean up.
     //
+    if (m_stats != NULL)
+	    delete m_stats;
 
     if (m_pModuleFileName != NULL)
         delete [] m_pModuleFileName;
@@ -1104,16 +1107,20 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
     HANDLE hFile = GenerateFile(wszOutputFileName, pNativeImageSig);
 
 
-
     return hFile;
 }
 
 void ZapImage::PrintStats(LPCWSTR wszOutputFileName)
 {
-    m_stats->m_gcInfoSize = m_pHotTouchedGCSection->GetSize() + m_pHotGCSection->GetSize() + m_pGCSection->GetSize();
+#define ACCUM_SIZE(dest, src) if( src != NULL ) dest+= src->GetSize()
+    ACCUM_SIZE(m_stats->m_gcInfoSize, m_pHotTouchedGCSection);
+    ACCUM_SIZE(m_stats->m_gcInfoSize, m_pHotGCSection);
+    ACCUM_SIZE(m_stats->m_gcInfoSize, m_pGCSection);
 #if defined(WIN64EXCEPTIONS)
-    m_stats->m_unwindInfoSize = m_pUnwindDataSection->GetSize() + 
-        m_pHotRuntimeFunctionSection->GetSize() + m_pRuntimeFunctionSection->GetSize() + m_pColdRuntimeFunctionSection->GetSize();
+    ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pUnwindDataSection);
+    ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pHotRuntimeFunctionSection);
+    ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pRuntimeFunctionSection);
+    ACCUM_SIZE(m_stats->m_unwindInfoSize, m_pColdRuntimeFunctionSection);
 #endif // defined(WIN64EXCEPTIONS)
 
     //
@@ -1134,36 +1141,39 @@ void ZapImage::PrintStats(LPCWSTR wszOutputFileName)
             m_stats->m_outputFileSize = outputData.nFileSizeLow;
     }
 
-    if (m_pAssemblyMetaData != NULL)
-        m_stats->m_metadataSize = m_pAssemblyMetaData->GetSize();
+    ACCUM_SIZE(m_stats->m_metadataSize, m_pAssemblyMetaData);
 
     DWORD dwPreloadSize = 0;
     for (int iSection = 0; iSection < CORCOMPILE_SECTION_COUNT; iSection++)
-        dwPreloadSize += m_pPreloadSections[iSection]->GetSize();
+        ACCUM_SIZE(dwPreloadSize, m_pPreloadSections[iSection]);
     m_stats->m_preloadImageSize = dwPreloadSize;
 
-    m_stats->m_hotCodeMgrSize = m_pHotCodeMethodDescsSection->GetSize();
-    m_stats->m_unprofiledCodeMgrSize = m_pCodeMethodDescsSection->GetSize();
-    m_stats->m_coldCodeMgrSize = m_pHotRuntimeFunctionLookupSection->GetSize();
+    ACCUM_SIZE(m_stats->m_hotCodeMgrSize, m_pHotCodeMethodDescsSection);
+    ACCUM_SIZE(m_stats->m_unprofiledCodeMgrSize, m_pCodeMethodDescsSection);
+    ACCUM_SIZE(m_stats->m_coldCodeMgrSize, m_pHotRuntimeFunctionLookupSection);
 
-    m_stats->m_eeInfoTableSize = m_pEEInfoTable->GetSize();
-    m_stats->m_helperTableSize = m_pHelperTableSection->GetSize();	
-    m_stats->m_dynamicInfoTableSize = m_pImportSectionsTable->GetSize();
-    m_stats->m_dynamicInfoDelayListSize = m_pDelayLoadInfoDelayListSectionEager->GetSize() + m_pDelayLoadInfoDelayListSectionHot->GetSize() + m_pDelayLoadInfoDelayListSectionCold->GetSize();
-    m_stats->m_importTableSize = m_pImportTable->GetSize();
+    ACCUM_SIZE(m_stats->m_eeInfoTableSize, m_pEEInfoTable);
+    ACCUM_SIZE(m_stats->m_helperTableSize, m_pHelperTableSection);
+    ACCUM_SIZE(m_stats->m_dynamicInfoTableSize, m_pImportSectionsTable);
 
-    m_stats->m_debuggingTableSize = m_pDebugSection->GetSize();
-    m_stats->m_headerSectionSize = m_pGCSection->GetSize();
-    m_stats->m_codeSectionSize = m_pHotCodeSection->GetSize();
-    m_stats->m_coldCodeSectionSize = m_pColdCodeSection->GetSize();
-    m_stats->m_exceptionSectionSize = m_pExceptionSection->GetSize();
-    m_stats->m_readOnlyDataSectionSize = m_pReadOnlyDataSection->GetSize();
-    m_stats->m_relocSectionSize =  m_pBaseRelocsSection->GetSize();
-    if (m_pILMetaData != NULL)
-        m_stats->m_ILMetadataSize = m_pILMetaData->GetSize();
-    m_stats->m_virtualImportThunkSize = m_pVirtualImportThunkSection->GetSize();
-    m_stats->m_externalMethodThunkSize = m_pExternalMethodThunkSection->GetSize();
-    m_stats->m_externalMethodDataSize = m_pExternalMethodDataSection->GetSize();
+    ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionEager);
+    ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionHot);
+    ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionCold);
+
+    ACCUM_SIZE(m_stats->m_importTableSize, m_pImportTable);
+
+    ACCUM_SIZE(m_stats->m_debuggingTableSize, m_pDebugSection);
+    ACCUM_SIZE(m_stats->m_headerSectionSize, m_pGCSection);
+    ACCUM_SIZE(m_stats->m_codeSectionSize, m_pHotCodeSection);
+    ACCUM_SIZE(m_stats->m_coldCodeSectionSize, m_pColdCodeSection);
+    ACCUM_SIZE(m_stats->m_exceptionSectionSize, m_pExceptionSection);
+    ACCUM_SIZE(m_stats->m_readOnlyDataSectionSize, m_pReadOnlyDataSection);
+    ACCUM_SIZE(m_stats->m_relocSectionSize, m_pBaseRelocsSection);
+    ACCUM_SIZE(m_stats->m_ILMetadataSize, m_pILMetaData);
+    ACCUM_SIZE(m_stats->m_virtualImportThunkSize, m_pVirtualImportThunkSection);
+    ACCUM_SIZE(m_stats->m_externalMethodThunkSize, m_pExternalMethodThunkSection);
+    ACCUM_SIZE(m_stats->m_externalMethodDataSize, m_pExternalMethodDataSection);
+#undef ACCUM_SIZE
 
     if (m_stats->m_failedMethods)
         m_zapper->Warning(W("Warning: %d methods (%d%%) could not be compiled.\n"),
