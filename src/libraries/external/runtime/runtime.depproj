@@ -8,6 +8,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
+    <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
+    <BinplaceILCInputFolder>false</BinplaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">

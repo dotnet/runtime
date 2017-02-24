@@ -31,6 +31,7 @@
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
+    <Compile Include="System\IO\FileStream.cs" Condition="'$(TargetGroup)' == 'uapaot'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
