@@ -15787,6 +15787,20 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 }
 
 //------------------------------------------------------------------------
+// canBeContained: check whether this tree node may be a subcomponent of its parent for purposes
+//                 of code generation.
+//
+// Return value: returns true if it is possible to contain this node and false otherwise.
+bool GenTree::canBeContained() const
+{
+    assert(IsLIR());
+
+    // It is not possible for nodes that do not produce values or that are not containable values
+    // to be contained.
+    return (OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) == 0;
+}
+
+//------------------------------------------------------------------------
 // isContained: check whether this tree node is a subcomponent of its parent for codegen purposes
 //
 // Return Value:
@@ -15801,14 +15815,16 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 //
 bool GenTree::isContained() const
 {
-    if (gtHasReg())
+    assert(IsLIR());
+
+    if (!canBeContained() || gtHasReg())
     {
         return false;
     }
 
     // these actually produce a register (the flags reg, we just don't model it)
     // and are a separate instruction from the branch that consumes the result
-    if (OperKind() & GTK_RELOP)
+    if ((OperKind() & GTK_RELOP) != 0)
     {
         return false;
     }
@@ -15819,75 +15835,25 @@ bool GenTree::isContained() const
         return false;
     }
 
-    switch (OperGet())
-    {
-        case GT_STOREIND:
-        case GT_JTRUE:
-        case GT_JCC:
-        case GT_RETURN:
-        case GT_RETFILT:
-        case GT_STORE_LCL_FLD:
-        case GT_STORE_LCL_VAR:
-        case GT_ARR_BOUNDS_CHECK:
-        case GT_LOCKADD:
-        case GT_NOP:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_PROF_HOOK:
-        case GT_RETURNTRAP:
-        case GT_COMMA:
-        case GT_PINVOKE_PROLOG:
-        case GT_PHYSREGDST:
-        case GT_PUTARG_STK:
-        case GT_MEMORYBARRIER:
-        case GT_STORE_BLK:
-        case GT_STORE_OBJ:
-        case GT_STORE_DYN_BLK:
-        case GT_SWITCH:
-#ifndef LEGACY_BACKEND
-        case GT_JMPTABLE:
-#endif
-        case GT_SWITCH_TABLE:
-        case GT_SWAP:
-        case GT_LCLHEAP:
-        case GT_CKFINITE:
-        case GT_JMP:
-        case GT_IL_OFFSET:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-
-#if !FEATURE_EH_FUNCLETS
-        case GT_END_LFIN:
-#endif
-            return false;
-
 #if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
-        case GT_LONG:
-            // GT_LONG nodes are normally contained. The only exception is when the result
-            // of a TYP_LONG operation is not used and this can only happen if the GT_LONG
-            // is the last node in the statement (in linear order).
-            return gtNext != nullptr;
+    if (OperGet() == GT_LONG)
+    {
+        // GT_LONG nodes are normally contained. The only exception is when the result
+        // of a TYP_LONG operation is not used and this can only happen if the GT_LONG
+        // is the last node in the statement (in linear order).
+        return gtNext != nullptr;
+    }
 #endif
 
-        case GT_CALL:
-            // Note: if you hit this assert you are probably calling isContained()
-            // before the LSRA phase has allocated physical register to the tree nodes
-            //
-            assert(gtType == TYP_VOID);
-            return false;
-
-        default:
-            // if it's contained it better have a parent
-            assert(gtNext || OperIsLocal());
-            return true;
-    }
+    // if it's contained it better have a user
+    assert((gtNext != nullptr) || OperIsLocal());
+    return true;
 }
 
 // return true if node is contained and an indir
 bool GenTree::isContainedIndir() const
 {
-    return isContained() && isIndir();
+    return isIndir() && isContained();
 }
 
 bool GenTree::isIndirAddrMode()

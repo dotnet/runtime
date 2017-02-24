@@ -46,7 +46,7 @@ GTNODE(CNS_STR          , "sconst"       ,GenTreeStrCon      ,0,GTK_LEAF|GTK_CON
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , "~"            ,GenTreeOp          ,0,GTK_UNOP)
-GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP)
+GTNODE(NOP              , "nop"          ,GenTree            ,0,GTK_UNOP|GTK_NOCONTAIN)
 GTNODE(NEG              , "unary -"      ,GenTreeOp          ,0,GTK_UNOP)
 GTNODE(COPY             , "copy"         ,GenTreeCopyOrReload,0,GTK_UNOP)               // Copies a variable from its current location to a register that satisfies
                                                                                         // code generation constraints.  The child is the actual lclVar node.
@@ -65,8 +65,8 @@ GTNODE(CMPXCHG          , "cmpxchg"      ,GenTreeCmpXchg     ,0,GTK_SPECIAL)
 GTNODE(MEMORYBARRIER    , "memoryBarrier",GenTree            ,0,GTK_LEAF|GTK_NOVALUE)
 
 GTNODE(CAST             , "cast"         ,GenTreeCast        ,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
-GTNODE(CKFINITE         , "ckfinite"     ,GenTreeOp          ,0,GTK_UNOP)               // Check for NaN
-GTNODE(LCLHEAP          , "lclHeap"      ,GenTreeOp          ,0,GTK_UNOP)               // alloca()
+GTNODE(CKFINITE         , "ckfinite"     ,GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // Check for NaN
+GTNODE(LCLHEAP          , "lclHeap"      ,GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // alloca()
 GTNODE(JMP              , "jump"         ,GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE)   // Jump to another function
 
 GTNODE(ADDR             , "addr"         ,GenTreeOp          ,0,GTK_UNOP)               // address of
@@ -226,7 +226,7 @@ GTNODE(FIELD            , "field"        ,GenTreeField       ,0,GTK_SPECIAL)    
 GTNODE(ARR_ELEM         , "arrMD&"       ,GenTreeArrElem     ,0,GTK_SPECIAL)            // Multi-dimensional array-element address
 GTNODE(ARR_INDEX        , "arrMDIdx"     ,GenTreeArrIndex    ,0,GTK_BINOP|GTK_EXOP)     // Effective, bounds-checked index for one dimension of a multi-dimensional array element
 GTNODE(ARR_OFFSET       , "arrMDOffs"    ,GenTreeArrOffs     ,0,GTK_SPECIAL)            // Flattened offset of multi-dimensional array element
-GTNODE(CALL             , "call()"       ,GenTreeCall        ,0,GTK_SPECIAL)
+GTNODE(CALL             , "call()"       ,GenTreeCall        ,0,GTK_SPECIAL|GTK_NOCONTAIN)
 
 //-----------------------------------------------------------------------------
 //  Statement operator nodes:
@@ -261,7 +261,7 @@ GTNODE(PHI_ARG          , "phiArg"       ,GenTreePhiArg      ,0,GTK_LEAF|GTK_LOC
 //-----------------------------------------------------------------------------
 
 #ifndef LEGACY_BACKEND
-GTNODE(JMPTABLE         , "jumpTable"    ,GenTreeJumpTable   ,0, GTK_LEAF)              // Generates the jump table for switches
+GTNODE(JMPTABLE         , "jumpTable"    ,GenTreeJumpTable   ,0, GTK_LEAF|GTK_NOCONTAIN) // Generates the jump table for switches
 #endif
 GTNODE(SWITCH_TABLE     , "tableSwitch"  ,GenTreeOp          ,0, GTK_BINOP|GTK_NOVALUE) // Jump Table based switch construct
 

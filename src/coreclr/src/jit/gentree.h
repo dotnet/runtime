@@ -120,6 +120,8 @@ enum genTreeKinds
     GTK_NOVALUE = 0x0400, // node does not produce a value
     GTK_NOTLIR  = 0x0800, // node is not allowed in LIR
 
+    GTK_NOCONTAIN = 0x1000, // this node is a value, but may not be contained
+
     /* Define composite value(s) */
 
     GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_RELOP | GTK_LOGOP)
@@ -554,6 +556,8 @@ public:
     // a full-size (unsigned) format, to localize the casts here.
 
     __declspec(property(get = GetRegNum, put = SetRegNum)) regNumber gtRegNum;
+
+    bool canBeContained() const;
 
     // for codegen purposes, is this node a subnode of its parent
     bool isContained() const;

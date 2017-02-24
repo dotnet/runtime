@@ -42,9 +42,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Lowering::MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode)
 {
     assert(!parentNode->OperIsLeaf());
+    assert(childNode->canBeContained());
+
     int srcCount = childNode->gtLsraInfo.srcCount;
     assert(srcCount >= 0);
     m_lsra->clearOperandCounts(childNode);
+
     assert(parentNode->gtLsraInfo.srcCount > 0);
     parentNode->gtLsraInfo.srcCount += srcCount - 1;
 }
