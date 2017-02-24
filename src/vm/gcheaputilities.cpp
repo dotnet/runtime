@@ -15,6 +15,10 @@ GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+uint32_t* g_card_bundle_table = nullptr;
+#endif
+
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
