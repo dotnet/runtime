@@ -174,6 +174,9 @@ int run(const int argc, const pal::char_t* argv[])
         return StatusCode::CoreHostLibLoadFailure;
     }
 
+    // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
+    trace::flush();
+
     // Obtain the entrypoints.
     hostfxr_main_fn main_fn = (hostfxr_main_fn) pal::get_symbol(fxr, "hostfxr_main");
     int code = main_fn(argc, argv);

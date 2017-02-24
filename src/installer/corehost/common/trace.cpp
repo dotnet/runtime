@@ -89,3 +89,9 @@ void trace::warning(const pal::char_t* format, ...)
         va_end(args);
     }
 }
+
+void trace::flush()
+{
+    pal::err_flush();
+    pal::out_flush();
+}
