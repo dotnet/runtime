@@ -171,11 +171,13 @@ void ZapImage::SaveCodeManagerEntry()
 
     if (m_stats)
     {
+#define ACCUM_SIZE(dest, src) if( src != NULL ) dest+= src->GetSize()
         // this is probably supposed to mean Hot+Unprofiled
-        m_stats->m_totalHotCodeSize = m_pHotCodeSection->GetSize(); 
-        m_stats->m_totalUnprofiledCodeSize = m_pCodeSection->GetSize();
-        m_stats->m_totalColdCodeSize = m_pColdCodeSection->GetSize();
-        m_stats->m_totalCodeSizeInProfiledMethods = m_pHotCodeSection->GetSize();
+        ACCUM_SIZE(m_stats->m_totalHotCodeSize, m_pHotCodeSection);
+        ACCUM_SIZE(m_stats->m_totalUnprofiledCodeSize, m_pCodeSection);
+        ACCUM_SIZE(m_stats->m_totalColdCodeSize, m_pColdCodeSection);
+        ACCUM_SIZE(m_stats->m_totalCodeSizeInProfiledMethods, m_pHotCodeSection);
+#undef ACCUM_SIZE
         m_stats->m_totalColdCodeSizeInProfiledMethods = codeManagerEntry.ColdUntrainedMethodOffset;
     }
 
