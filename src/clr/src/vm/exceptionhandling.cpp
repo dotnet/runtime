@@ -19,6 +19,7 @@
 
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
 #define ADJUST_PC_UNWOUND_TO_CALL
+#define USE_CALLER_SP_IN_FUNCLET
 #endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
 
 #ifndef DACCESS_COMPILE
@@ -574,7 +575,7 @@ UINT_PTR ExceptionTracker::CallCatchHandler(CONTEXT* pContextRecord, bool* pfAbo
     if (!fIntercepted)
     {
         _ASSERTE(m_uCatchToCallPC != 0 && m_pClauseForCatchToken != NULL);
-        uResumePC = CallHandler(m_uCatchToCallPC, sfStackFp, &m_ClauseForCatch, pMD, Catch ARM_ARG(pContextRecord) ARM64_ARG(pContextRecord));
+        uResumePC = CallHandler(m_uCatchToCallPC, sfStackFp, &m_ClauseForCatch, pMD, Catch X86_ARG(pContextRecord) ARM_ARG(pContextRecord) ARM64_ARG(pContextRecord));
     }
     else
     {
@@ -1289,12 +1290,12 @@ void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThis
         pRD->SP = sfEstablisherFrame.SP;
         pRD->ControlPC = pDispatcherContext->ControlPc;
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
+#ifdef USE_CALLER_SP_IN_FUNCLET
         pcfThisFrame->pRD->IsCallerSPValid = TRUE;
         
         // Assert our first pass assumptions for the Arm/Arm64
         _ASSERTE(sfEstablisherFrame.SP == GetSP(pDispatcherContext->ContextRecord));
-#endif // defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)    
+#endif // USE_CALLER_SP_IN_FUNCLET
 
     }
 
@@ -2872,7 +2873,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 SetEnclosingClauseInfo(fIsFunclet,
                                                               pcfThisFrame->GetRelOffset(),
                                                               GetSP(pcfThisFrame->GetRegisterSet()->pCallerContext));
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#ifdef USE_CALLER_SP_IN_FUNCLET
                                 // On ARM & ARM64, the OS passes us the CallerSP for the frame for which personality routine has been invoked.
                                 // Since IL filters are invoked in the first pass, we pass this CallerSP to the filter funclet which will
                                 // then lookup the actual frame pointer value using it since we dont have a frame pointer to pass to it
@@ -2887,11 +2888,11 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 _ASSERTE(pCurRegDisplay->IsCallerContextValid && pCurRegDisplay->IsCallerSPValid);
                                 // 3) CallerSP is intact
                                 _ASSERTE(GetSP(pCurRegDisplay->pCallerContext) == GetRegdisplaySP(pCurRegDisplay));
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // USE_CALLER_SP_IN_FUNCLET
                                 {
                                     // CallHandler expects to be in COOP mode.
                                     GCX_COOP();
-                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter ARM_ARG(pCurRegDisplay->pCallerContext) ARM64_ARG(pCurRegDisplay->pCallerContext));
+                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter X86_ARG(pCurRegDisplay->pCallerContext) ARM_ARG(pCurRegDisplay->pCallerContext) ARM64_ARG(pCurRegDisplay->pCallerContext));
                                 }
                             }
                             EX_CATCH
@@ -3124,7 +3125,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 // Since we also forbid GC during second pass, disable it now since
                                 // invocation of managed code can result in a GC.
                                 ENDFORBIDGC();
-                                dwStatus = CallHandler(dwHandlerStartPC, sf, &EHClause, pMD, FaultFinally ARM_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM64_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext));
+                                dwStatus = CallHandler(dwHandlerStartPC, sf, &EHClause, pMD, FaultFinally X86_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext) ARM64_ARG(pcfThisFrame->GetRegisterSet()->pCurrentContext));
                                 
                                 // Once we return from a funclet, forbid GC again (refer to comment before start of the loop for details)
                                 BEGINFORBIDGC();
@@ -3192,20 +3193,57 @@ lExit:
 
 #define OPTIONAL_SO_CLEANUP_UNWIND(pThread, pFrame)  if (pThread->GetFrame() < pFrame) { UnwindFrameChain(pThread, pFrame); }
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#ifdef USE_CALLER_SP_IN_FUNCLET
 // This is an assembly helper that enables us to call into EH funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR CallerSP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
+static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
+{
+#ifdef _TARGET_ARM_
+    return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#else
+    return (UINT_PTR)pfnHandler;
+#endif
+}
+
+static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
+{
+#if defined(_TARGET_ARM_)
+    return (UINT_PTR*)&(pContextRecord->R4);
+#elif defined(_TARGET_ARM64_)
+    return (UINT_PTR*)&(pContextRecord->X19);
+#elif defined(_TARGET_X86_)
+    return (UINT_PTR*)&(pContextRecord->Edi);
+#else
+    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
+    return NULL;
+#endif
+}
+
+static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
+{
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+    return GetSP(pContextRecord);
+#elif defined(_TARGET_X86_)
+    return pContextRecord->Ebp;
+#else
+    PORTABILITY_ASSERT("GetFrameRestoreBase");
+    return NULL;
+#endif
+}
+
+#endif // USE_CALLER_SP_IN_FUNCLET
+  
 DWORD_PTR ExceptionTracker::CallHandler(
     UINT_PTR               uHandlerStartPC,
     StackFrame             sf,
     EE_ILEXCEPTION_CLAUSE* pEHClause,
     MethodDesc*            pMD,
     EHFuncletType funcletType
+    X86_ARG(PCONTEXT pContextRecord)
     ARM_ARG(PCONTEXT pContextRecord)
     ARM64_ARG(PCONTEXT pContextRecord)
     )
@@ -3260,7 +3298,7 @@ DWORD_PTR ExceptionTracker::CallHandler(
         break;
     }
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#ifdef USE_CALLER_SP_IN_FUNCLET
     // Invoke the funclet. We pass throwable only when invoking the catch block.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
@@ -3269,14 +3307,9 @@ DWORD_PTR ExceptionTracker::CallHandler(
     if (funcletType != EHFuncletType::Filter)
     {
         dwResumePC = CallEHFunclet((funcletType == EHFuncletType::Catch)?OBJECTREFToObject(throwable):(Object *)NULL, 
-#ifdef _TARGET_ARM_
-                        DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler), 
-                        (UINT_PTR*)&(pContextRecord->R4), 
-#else
-                        (UINT_PTR)pfnHandler,
-                        &(pContextRecord->X19), 
-#endif // _TARGET_ARM_
-                        pFuncletCallerSP);
+                                   CastHandlerFn(pfnHandler),
+                                   GetFirstNonVolatileRegisterAddress(pContextRecord),
+                                   pFuncletCallerSP);
     }
     else
     {
@@ -3284,20 +3317,16 @@ DWORD_PTR ExceptionTracker::CallHandler(
         // it will retrieve the framepointer for accessing the locals in the parent
         // method.
         dwResumePC = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-                    GetSP(pContextRecord),
-#ifdef _TARGET_ARM_
-                    DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler), 
-#else
-                    (UINT_PTR)pfnHandler,
-#endif // _TARGET_ARM_
-                    pFuncletCallerSP);
+                                         GetFrameRestoreBase(pContextRecord),
+                                         CastHandlerFn(pfnHandler),
+                                         pFuncletCallerSP);
     }
-#else // defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#else // USE_CALLER_SP_IN_FUNCLET
     //
     // Invoke the funclet. 
     //    
     dwResumePC = pfnHandler(sf.SP, OBJECTREFToObject(throwable));
-#endif // _TARGET_ARM_
+#endif // !USE_CALLER_SP_IN_FUNCLET
 
     switch(funcletType)
     {

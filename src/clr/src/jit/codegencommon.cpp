@@ -10316,6 +10316,22 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 /*****************************************************************************
  *
  *  Generates code for an EH funclet prolog.
+ *
+ *
+ *  Funclets have the following incoming arguments:
+ *
+ *      catch/filter-handler: eax = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:               eax = the exception object that was caught (see GT_CATCH_ARG)
+ *      finally/fault:        none
+ *
+ *  Funclets set the following registers on exit:
+ *
+ *      catch/filter-handler: eax = the address at which execution should resume (see BBJ_EHCATCHRET)
+ *      filter:               eax = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
+ *      finally/fault:        none
+ *
+ *  Funclet prolog/epilog sequence and funclet frame layout are TBD.
+ *
  */
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
@@ -10331,10 +10347,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    // TODO Save callee-saved registers
-
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
+
+    // TODO We may need EBP restore sequence here if we introduce PSPSym
+
+    // Add a padding for 16-byte alignment
+    inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
 }
 
 /*****************************************************************************
@@ -10353,7 +10372,8 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
-    // TODO Restore callee-saved registers
+    // Revert a padding that was added for 16-byte alignment
+    inst_RV_IV(INS_add, REG_SPBASE, 12, EA_PTRSIZE);
 
     instGen_Return(0);
 }
