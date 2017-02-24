@@ -380,66 +380,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingNoPropagation()
-        {
-            RemoteInvoke(() =>
-            {
-                bool activityStartLogged = false;
-                bool activityStopLogged = false;
-
-                Activity parentActivity = new Activity("parent");
-                parentActivity.Start();
-
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
-                {
-                    if (kvp.Key.Equals("System.Net.Http.Activity.Start"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        Assert.NotNull(Activity.Current);
-                        Assert.Equal(parentActivity, Activity.Current.Parent);
-                        GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
-
-                        activityStartLogged = true;
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        Assert.NotNull(Activity.Current);
-                        Assert.Equal(parentActivity, Activity.Current.Parent);
-                        GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Response");
-
-                        activityStopLogged = true;
-                    }
-                });
-
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable(s => s != "System.Net.Http.Activity.Propagate");
-                    using (var client = new HttpClient())
-                    {
-                        LoopbackServer.CreateServerAsync(async (server, url) =>
-                        {
-                            Task<List<string>> requestLines = LoopbackServer.AcceptSocketAsync(server,
-                                (s, stream, reader, writer) => LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer));
-                            Task response = client.GetAsync(url);
-                            await Task.WhenAll(response, requestLines);
-
-                            AssertNoHeadersAreInjected(requestLines.Result);
-                        }).Wait();
-                    }
-
-                    Assert.True(activityStartLogged, "Activity.Start was not logged.");
-                    // Poll with a timeout since logging response is not synchronized with returning a response.
-                    WaitForTrue(() => activityStopLogged, TimeSpan.FromSeconds(1), "Activity.Stop was not logged within 1 second timeout.");
-                    diagnosticListenerObserver.Disable();
-                }
-
-                return SuccessExitCode;
-            }).Dispose();
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
         public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
             RemoteInvoke(() =>
