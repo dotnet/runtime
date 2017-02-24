@@ -107,6 +107,7 @@ void SetUseSSE3_4(bool value)
 {
     useSSE3_4Encodings = value;
 }
+bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSE4Instruction(instruction ins);
 
 bool hasRexPrefix(code_t code)
