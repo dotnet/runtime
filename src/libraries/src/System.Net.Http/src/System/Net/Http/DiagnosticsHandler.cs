@@ -58,9 +58,9 @@ namespace System.Net.Http
             else 
             {
                 Guid loggingRequestId = Guid.NewGuid();
-                LogHttpRequest(request, loggingRequestId);
+                LogHttpRequestDeprecated(request, loggingRequestId);
                 responseTask = base.SendAsync(request, cancellationToken);
-                LogHttpResponse(responseTask, loggingRequestId);
+                LogHttpResponseDeprecated(responseTask, loggingRequestId);
             }
             return responseTask;
         }
@@ -80,26 +80,21 @@ namespace System.Net.Http
 
                 s_diagnosticListener.StartActivity(activity, new { Request = request });
 
-                //inject headers unless user does not want it to happen
-                //we may pass request to IsEnabled, but not clear how useful it is
-                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityPropagateName))
-                {
-                    request.Headers.Add(HttpKnownHeaderNames.RequestId, activity.Id);
+                request.Headers.Add(HttpKnownHeaderNames.RequestId, activity.Id);
 
-                    //we expect baggage to be empty or contain a few items
-                    using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                //we expect baggage to be empty or contain a few items
+                using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                {
+                    if (e.MoveNext())
                     {
-                        if (e.MoveNext())
+                        var baggage = new List<string>();
+                        do
                         {
-                            var baggage = new List<string>();
-                            do
-                            {
-                                KeyValuePair<string, string> item = e.Current;
-                                baggage.Add(new NameValueHeaderValue(item.Key, item.Value).ToString());
-                            }
-                            while (e.MoveNext());
-                            request.Headers.Add(HttpKnownHeaderNames.CorrelationContext, baggage);
+                            KeyValuePair<string, string> item = e.Current;
+                            baggage.Add(new NameValueHeaderValue(item.Key, item.Value).ToString());
                         }
+                        while (e.MoveNext());
+                        request.Headers.Add(HttpKnownHeaderNames.CorrelationContext, baggage);
                     }
                 }
             }
@@ -143,14 +138,14 @@ namespace System.Net.Http
             return responseTask.Result;
         }
 
-        private static void LogHttpRequest(HttpRequestMessage request, Guid loggingRequestId)
+        private static void LogHttpRequestDeprecated(HttpRequestMessage request, Guid loggingRequestId)
         {
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteName))
+            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
             {
                 long timestamp = Stopwatch.GetTimestamp();
 
                 s_diagnosticListener.Write(
-                    DiagnosticsHandlerLoggingStrings.RequestWriteName,
+                    DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
                     new
                     {
                         Request = request,
@@ -161,7 +156,7 @@ namespace System.Net.Http
             }
         }
 
-        private static void LogHttpResponse(Task<HttpResponseMessage> responseTask, Guid loggingRequestId)
+        private static void LogHttpResponseDeprecated(Task<HttpResponseMessage> responseTask, Guid loggingRequestId)
         {
             responseTask.ContinueWith(
                 (t, s) =>
@@ -181,10 +176,10 @@ namespace System.Net.Http
                         );
                     }
 
-                    if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteName))
+                    if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                     {
                         s_diagnosticListener.Write(
-                            DiagnosticsHandlerLoggingStrings.ResponseWriteName,
+                            DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
                             new
                             {
                                 Response = t.Status == TaskStatus.RanToCompletion ? t.Result : null,

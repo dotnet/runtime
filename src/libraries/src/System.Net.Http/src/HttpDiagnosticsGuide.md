@@ -6,6 +6,20 @@ This document describes `HttpClientHandler` instrumentation with [DiagnosticSour
 Applications typically log outgoing HTTP requests; typically it's done with DelegatingHandler implementation that logs every request. However in existing system it may require extensive code changes, since DelegatingHandler needs to be added to HttpClient pipeline every time when new client is created.
 DiagnosticListener instrumentation allows to enable outgoing request tracing with a few lines of code; it also provides context necessary to correlate logs.
 
+Context is represented as `System.Diagnostics.Activity` class. Activity may be started as a child of another Activity and the whole operation is represented with a tree of Activities. You can find more details in [Activity User Guide](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md).
+
+Activity carries useful properties for logging such as Id, start time, Tags, Baggage and parent information. 
+
+Instrumentation ensures `Activity.Current` represents current outgoing request in Write event callbacks (if request is instrumented). Consumers **should not** assume `Activity.Current` is accurate in IsEnabled callbacks.
+
+In microservice environment some context should flow with outgoing requests to correlate telemtry from all services involved in operation processing.
+Instrumentation adds context into the request headers: 
+ * Request-Id header with `Activity.Id` value
+ * Correlation-Context header with `Activity.Baggage` key-value pair list in `k1=v1, k2=v2` format
+ 
+See [Http Protocol proposal](https://github.com/lmolkova/correlation/blob/master/http_protocol_proposal_v1.md) for more details
+[comment]: TODO: Update link once it's moved
+
 ## Subscription
 Instrumentation is off by default; to enable it, consumer first needs to subscribe to DiagnosticListener called "HttpHandlerDiagnosticListener". 
 
@@ -24,12 +38,6 @@ var subscription = DiagnosticListener.AllListeners.Subscribe(delegate (Diagnosti
 
 ## Events
 If there is a consumer, subscribed for "HttpHandlerDiagnosticListener" events, `HttpClientHandler` instruments outgoing request depending on subscription and request properties as well as request context.
-
-Request context is represented as `System.Diagnostics.Activity` class. Activity describes context for logical piece of work. Activity may be started as a child of another Activity and the whole operation is represented with a tree of Activities. You can find more details in [Activity User Guide](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md).
-
-Activity carries useful properties for logging such as Id, start time, Tags, Baggage and parent information. 
-
-Instrumentation ensures `Activity.Current` represents current outgoing request in Write event callbacks (if request is instrumented). Consumers **should not** assume `Activity.Current` is accurate in IsEnabled callbacks.
 
 Instrumentation starts a new Activity for outgoing Http request as a child of some other Activity (e.g. incoming request Activity). If there is no parent Activity, outgoing request **will not** be instrumented. This is important for sampling scenarios to minimize instrumentation costs.
 
@@ -61,23 +69,6 @@ Consumer may optionally provide predicate to DiagnosticListener to prevent some 
     }
     listener.Subscribe(observer, predicate);
 ```
-
-#### IsEnabled: System.Net.Http.Activity.Propagate
-In order to correlate logs in distributed systems, instrumentation adds context into the request headers: 
- * Request-Id header with `Activity.Id` value
- * Correlation-Context header with `Activity.Baggage` key-value pair list in `k1=v1, k2=v2` format
- 
-See [Http Protocol proposal](https://github.com/lmolkova/correlation/blob/master/http_protocol_proposal_v1.md) for more details
-
-[comment]: TODO: Update link once it's moved
- 
-Instrumentation will call `DiagnosticListener.IsEnabled("System.Net.Http.Activity.Propagate")` method, so consumer may enable or disable headers injection.
-
-```C#
-    listener.Subscribe(observer, name != "System.Net.Http.Activity.Propagate");
-```
-
-Above example demonstrates predicate that allows to instrument the request, but does not allow context propagation through headers. Note that in this case telemetry from downstream services cannot be correlated with telemetry from current and upstream services. 
 
 #### IsEnabled: System.Net.Http.Exception
 If request processing throws exception, instrumentation first checks if consumer wants to receive this event.
