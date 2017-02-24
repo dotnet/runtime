@@ -226,7 +226,11 @@ Parameters:
     PAL_SEHException* ex - the exception to throw.
 --*/
 extern "C"
+#ifdef _TARGET_X86_
+void __fastcall ThrowExceptionHelper(PAL_SEHException* ex)
+#else // _TARGET_X86_
 void ThrowExceptionHelper(PAL_SEHException* ex)
+#endif // !_TARGET_X86_
 {
     throw std::move(*ex);
 }

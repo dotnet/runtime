@@ -241,7 +241,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
         (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
     {
+#ifndef UNIX_X86_ABI
         inst_RV_RV(INS_mov, REG_ARG_0, REG_SPBASE, TYP_I_IMPL);
+#endif // !UNIX_X86_ABI
     }
     else
     {
