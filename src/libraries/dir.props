@@ -261,11 +261,13 @@
 
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinplaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinplaceTestSharedFramework>
+    <BinplaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinplaceILCInputFolder)' == ''">true</BinplaceILCInputFolder>
 
     <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
     <NETCoreAppTestRootPath>$(BinDir)testhost/$(BuildConfiguration)/</NETCoreAppTestRootPath>
     <NETCoreAppTestHostFxrPath>$(NETCoreAppTestRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
     <NETCoreAppTestSharedFrameworkPath>$(NETCoreAppTestRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
+    <ILCFXInputFolder>$(NETCoreAppTestRootPath)ILCInputFolder</ILCFXInputFolder>
 
     <!-- Constructed shared fx path for testing -->
     <TestSharedFxDir Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>

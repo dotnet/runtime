@@ -49,7 +49,10 @@
     <BinplaceConfiguration Condition="'$(BinplaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinplaceConfiguration>
-
+    <!-- Setup the ILCInputFolder directory for testing uapaot -->
+    <BinplaceConfiguration Condition="'$(BinplaceILCInputFolder)' == 'true'" Include="uapaot-$(OSGroup)">
+      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
+    </BinplaceConfiguration>
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinplaceConfiguration Include="netstandard-$(OSGroup)">
       <RefPath>$(RefRootPath)netstandard/</RefPath>

@@ -1,10 +1,6 @@
 Compat issues with assembly System.Runtime:
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.SafeHandles.CriticalHandleZeroOrMinusOneIsInvalid' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeFileHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeWaitHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Array.CreateInstance(System.Type, System.Int64[])' does not exist in the implementation but it does exist in the contract.
@@ -56,17 +52,7 @@ MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32)' d
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.ToOACurrency(System.Decimal)' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.Delegate' is sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Delegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.Clone()' is non-virtual in the implementation but is virtual in the contract.
 MembersMustExist : Member 'System.Delegate.CombineImpl(System.Delegate)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Delegate.DynamicInvokeImpl(System.Object[])' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.Equals(System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.GetHashCode()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.GetInvocationList()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.GetMethodImpl()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Delegate.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' is non-virtual in the implementation but is virtual in the contract.
 MembersMustExist : Member 'System.Delegate.RemoveImpl(System.Delegate)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Double.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Double.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
@@ -100,23 +86,6 @@ MembersMustExist : Member 'System.Int64.CompareTo(System.Object)' does not exist
 MembersMustExist : Member 'System.Int64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.ModuleHandle System.ModuleHandle.EmptyHandle' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.Equals(System.ModuleHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.GetRuntimeFieldHandleFromMetadataToken(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.GetRuntimeMethodHandleFromMetadataToken(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.GetRuntimeTypeHandleFromMetadataToken(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.MDStreamVersion.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.op_Equality(System.ModuleHandle, System.ModuleHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.op_Inequality(System.ModuleHandle, System.ModuleHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveFieldHandle(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveFieldHandle(System.Int32, System.RuntimeTypeHandle[], System.RuntimeTypeHandle[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveMethodHandle(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveMethodHandle(System.Int32, System.RuntimeTypeHandle[], System.RuntimeTypeHandle[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveTypeHandle(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ModuleHandle.ResolveTypeHandle(System.Int32, System.RuntimeTypeHandle[], System.RuntimeTypeHandle[])' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.MulticastDelegate' is sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Object, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.MulticastDelegate..ctor(System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.MulticastDelegate.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' is non-virtual in the implementation but is virtual in the contract.
 TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.RuntimeFieldHandle' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.RuntimeFieldHandle.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
@@ -186,7 +155,8 @@ MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITTrackingE
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.CompareInfo' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Globalization.TextInfo' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.IO.FileOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.FileStream' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.IO.FileStream..ctor(System.String, System.IO.FileMode, System.IO.FileAccess, System.IO.FileShare, System.Int32, System.IO.FileOptions)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Stream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.IO.Stream.CreateWaitHandle()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.IO.Stream.ObjectInvariant()' does not exist in the implementation but it does exist in the contract.
@@ -233,9 +203,6 @@ TypesMustExist : Type 'System.Runtime.CompilerServices.SuppressIldasmAttribute' 
 TypesMustExist : Type 'System.Runtime.ConstrainedExecution.Cer' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ConstrainedExecution.Consistency' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.ConstrainedExecution.ReliabilityContractAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.InteropServices.CriticalHandle' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeHandle' does not inherit from base type 'System.Runtime.ConstrainedExecution.CriticalFinalizerObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.SafeHandle.Close()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.StructLayoutAttribute..ctor(System.Int16)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.ISafeSerializationData' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.SafeSerializationEventArgs' does not exist in the implementation but it does exist in the contract.
@@ -273,4 +240,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task' does not im
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.Task.Dispose(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Tasks.Task<TResult>' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-Total Issues: 274
+Total Issues: 241

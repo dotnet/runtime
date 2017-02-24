@@ -13,6 +13,7 @@
     <Project Include="test-runtime/XUnit.Runtime.depproj" />
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="portable\portable.depproj" />
+    <Project Include="uapaotredist/uapaotredist.depproj" />
   </ItemGroup>
 
   <Import Project="../dir.traversal.targets" />

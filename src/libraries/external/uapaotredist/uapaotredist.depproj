@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <!-- This project is used to restore some netcore50aot assets from the old packages where code in corefx side was removed
+  and the build on corefx side for this framework doesn't have those types yet. Once we bring back those 3 project
+  builds, we should remove this project. -->
+  <PropertyGroup>
+    <NugetRuntimeIdentifier>win10-x64-aot</NugetRuntimeIdentifier>
+    <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <FileToInclude Include="System.Diagnostics.Tracing" />
+    <FileToInclude Include="System.Dynamic.Runtime" />
+    <FileToInclude Include="System.Net.Requests" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
