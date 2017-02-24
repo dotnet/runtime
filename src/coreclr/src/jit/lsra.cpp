@@ -2782,9 +2782,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
                 killMask = RBM_CALLEE_TRASH_NOGC;
-#if !NOGC_WRITE_BARRIERS && (defined(_TARGET_ARM_) || defined(_TARGET_AMD64_))
-                killMask |= (RBM_ARG_0 | RBM_ARG_1);
-#endif // !NOGC_WRITE_BARRIERS && (defined(_TARGET_ARM_) || defined(_TARGET_AMD64_))
             }
             break;
 
