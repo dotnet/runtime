@@ -18,7 +18,7 @@ this experience. Make sure to consult this document often.
 1. Create a new project
     - Create a new folder for your app
     - Ensure you have a "2.0.0-*" CLI installed on your path. You can check with `dotnet --info`.
-    - Create project file by running `dotnet new`
+    - Create project file by running `dotnet new console`
 
 2. Restore packages so that you're ready to play:
 
