@@ -1719,6 +1719,8 @@ event_Barrier_PhaseFinished=Barrier finishing phase {1}.
 ; Unix threading
 PlatformNotSupported_NamedSynchronizationPrimitives=The named version of this synchronization primitive is not supported on this platform.
 PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll=Wait operations on multiple wait handles including a named synchronization primitive are not supported on this platform.
+; OSX File locking
+PlatformNotSupported_OSXFileLocking=Locking/unlocking file regions is not supported on this platform. Use FileShare on the entire file instead.
 #endif
 
 ;
