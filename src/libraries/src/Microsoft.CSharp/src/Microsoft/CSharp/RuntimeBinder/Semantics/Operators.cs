@@ -2458,14 +2458,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return exprRes;
         }
 
-        private void EnsureChecked(bool b)
-        {
-            if (!b && Context.CheckedConstant)
-            {
-                GetErrorContext().Error(ErrorCode.ERR_CheckedOverflow);
-            }
-        }
-
         /*
           Bind an float/double operator: +, -, , /, %, <, >, <=, >=, ==, !=. If both operations are constants, the result
           will be a constant also. op2 can be null for a unary operator. The operands are assumed
