@@ -179,29 +179,28 @@ namespace System
         , IWellKnownStringEqualityComparer
 #endif
     {
-        private CompareInfo _compareInfo;
-        private bool _ignoreCase;
+        private readonly CompareInfo _compareInfo;
+        private readonly CompareOptions _options;
 
         internal CultureAwareComparer(CultureInfo culture, bool ignoreCase)
         {
             _compareInfo = culture.CompareInfo;
-            _ignoreCase = ignoreCase;
+            _options = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
         }
 
         public override int Compare(string x, string y)
         {
-            if (Object.ReferenceEquals(x, y)) return 0;
+            if (object.ReferenceEquals(x, y)) return 0;
             if (x == null) return -1;
             if (y == null) return 1;
-            return _compareInfo.Compare(x, y, _ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+            return _compareInfo.Compare(x, y, _options);
         }
 
         public override bool Equals(string x, string y)
         {
-            if (Object.ReferenceEquals(x, y)) return true;
+            if (object.ReferenceEquals(x, y)) return true;
             if (x == null || y == null) return false;
-
-            return (_compareInfo.Compare(x, y, _ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None) == 0);
+            return _compareInfo.Compare(x, y, _options) == 0;
         }
 
         public override int GetHashCode(string obj)
@@ -210,43 +209,28 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            Contract.EndContractBlock();
-
-            CompareOptions options = CompareOptions.None;
-
-            if (_ignoreCase)
-            {
-                options |= CompareOptions.IgnoreCase;
-            }
-
-            return _compareInfo.GetHashCodeOfString(obj, options);
+            return _compareInfo.GetHashCodeOfString(obj, _options);
         }
 
-        // Equals method for the comparer itself. 
-        public override bool Equals(Object obj)
+        // Equals method for the comparer itself.
+        public override bool Equals(object obj)
         {
-            CultureAwareComparer comparer = obj as CultureAwareComparer;
-            if (comparer == null)
-            {
-                return false;
-            }
-            return (_ignoreCase == comparer._ignoreCase) && (_compareInfo.Equals(comparer._compareInfo));
+            var comparer = obj as CultureAwareComparer;
+            return
+                comparer != null &&
+                _options == comparer._options &&
+                _compareInfo.Equals(comparer._compareInfo);
         }
 
         public override int GetHashCode()
         {
             int hashCode = _compareInfo.GetHashCode();
-            return _ignoreCase ? (~hashCode) : hashCode;
+            return _options == CompareOptions.None ? hashCode : ~hashCode;
         }
 
-#if FEATURE_RANDOMIZED_STRING_HASHING           
-
-        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization()
-        {
-            return this;
-        }
+#if FEATURE_RANDOMIZED_STRING_HASHING
+        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
 #endif
-
     }
 
     [Serializable]
