@@ -9,23 +9,23 @@ function usage {
     echo '    corefx source is at ~/cfx'
     echo '$ cd ~/cfx'
     echo '$ ./scripts/arm32_ci_script.sh'
-    echo '    --emulatorPath=/opt/linux-arm-emulator'
-    echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
     echo '    --armel'
     echo '    --verbose'
     echo ''
     echo 'Required Arguments:'
+    echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
+    echo '                                         Any other value is not accepted'
+    echo 'Optional Arguments:'
+    echo '    --mode=<mode>                      : docker (default) or emulator'
+    echo '    --arm                              : Build as arm (default)'
+    echo '    --armel                            : Build as armel'
+    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
+    echo '    --skipRootFS                       : Skip building rootfs'
     echo '    --emulatorPath=<path>              : Path of the emulator folder (without ending /)'
     echo '                                         <path>/platform/rootfs-t30.ext4 should exist'
     echo '    --mountPath=<path>                 : The desired path for mounting the emulator rootfs (without ending /)'
     echo '                                         This path is created if not already present'
-    echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
-    echo '                                         Any other value is not accepted'
-    echo 'Optional Arguments:'
-    echo '    --arm                              : Build as arm (default)'
-    echo '    --armel                            : Build as armel'
-    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
     echo '    -v --verbose                       : Build made verbose'
     echo '    -h --help                          : Prints this usage message and exits'
     echo ''
@@ -215,14 +215,16 @@ function cross_build_corefx_with_docker {
     else
         exit_with_error "ERROR: unknown buildArch $__buildArch" false
     fi
-
-    # Build rootfs
     __dockerCmd="sudo docker run --privileged -i --rm -v $__currentWorkingDirectory:/opt/corefx -w /opt/corefx $__dockerImage"
-    __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
 
-    (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
-    $__dockerCmd $__buildRootfsCmd
-    sudo chown -R $(id -u -n) cross/rootfs
+    if [ $__skipRootFS == 0 ]; then
+        # Build rootfs
+        __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
+
+        (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
+        $__dockerCmd $__buildRootfsCmd
+        sudo chown -R $(id -u -n) cross/rootfs
+    fi
 
     # Cross building corefx with rootfs in Docker
     __buildNativeCmd="/opt/corefx/build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag"
@@ -232,13 +234,35 @@ function cross_build_corefx_with_docker {
         # TODO-armel: We can use same option to arm, i.e. -buildArch and -RuntimeOS options for armel,
         #              when CoreCLR packages are also available at NuGet server for armel.
         __buildManagedCmd="./build-managed.sh -$__buildConfig -BuildPackages=false"
+
     fi
     $__dockerCmd $__buildNativeCmd
     $__dockerCmd $__buildManagedCmd
     sudo chown -R $(id -u -n) ./bin
+
+    if [ "$__buildArch" == "armel" ]; then
+        # TODO-armel: This is a workaround. We don't need this if we can build managed for armel in above.
+        # Construct runtime directory
+        if [[ "$__buildConfig" == "release" ]]; then
+            __runtimePath="./bin/runtime/netcoreapp-Linux-Release-armel"
+            __managedPath="./bin/runtime/netcoreapp-Linux-Release-x64"
+        else
+            __runtimePath="./bin/runtime/netcoreapp-Linux-Debug-armel"
+            __managedPath="./bin/runtime/netcoreapp-Linux-Debug-x64"
+        fi
+
+        pushd $__managedPath
+        rm apphost corerun dotnet
+        rm *.so
+        rm *.ni.dll
+        popd
+        mv $__managedPath/* $__runtimePath/
+        rmdir $__managedPath
+    fi 
 }
 
 #Define script variables
+__ciMode="docker"
 __ARMEmulPath=
 __ARMRootfsImageBase="rootfs-u1404.ext4"
 __ARMRootfsMountPath=
@@ -246,6 +270,7 @@ __buildConfig=
 __verboseFlag=
 __buildArch="arm"
 __linuxCodeName="trusty"
+__skipRootFS=0
 __initialGitHead=`git rev-parse --verify HEAD`
 
 #Parse command line arguments
@@ -264,6 +289,9 @@ do
             exit_with_error "--buildConfig can be only Debug or Release" true
         fi
         ;;
+    --mode=*)
+        __ciMode=${arg#*=}
+        ;;
     --arm)
         __ARMRootfsImageBase="rootfs-u1404.ext4"
         __buildArch="arm"
@@ -275,6 +303,9 @@ do
         ;;
     --linuxCodeName=*)
         __linuxCodeName=${arg#*=}
+        ;;
+    --skipRootFS)
+        __skipRootFS=1
         ;;
     -v|--verbose)
         __verboseFlag="verbose"
@@ -296,13 +327,15 @@ if [[ $(git status -s) != "" ]]; then
    exit 1
 fi
 
-#Check if the compulsory arguments have been presented to the script and if the input paths exist
-exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
-exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
-exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
+if [ "$__ciMode" == "emulator" ]; then
+    #Check if the compulsory arguments have been presented to the script and if the input paths exist
+    exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
+    exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
+    exit_if_path_absent "$__ARMEmulPath/platform/$__ARMRootfsImageBase" "Path specified in --emulatorPath does not have the rootfs" false
 
-__ARMRootfsMountPath="${__ARMRootfsMountPath}_${__buildArch}"
+    __ARMRootfsMountPath="${__ARMRootfsMountPath}_${__buildArch}"
+fi
 
 set -x
 set -e
@@ -312,7 +345,11 @@ set -e
 
 #Complete the cross build
 (set +x; echo 'Building corefx...')
-cross_build_corefx_with_docker
+if [ "$__ciMode" == "docker" ]; then
+    cross_build_corefx_with_docker
+else
+    cross_build_corefx
+fi
 
 #Clean the environment
 (set +x; echo 'Cleaning environment...')
