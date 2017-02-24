@@ -41,14 +41,37 @@ typedef BOOL (*pfnGetPhoneVersion)(LPOSVERSIONINFO lpVersionInformation);
 pfnGetPhoneVersion g_pfnGetPhoneVersion = NULL;
 #endif
 
+typedef void(WINAPI *pfnGetSystemTimeAsFileTime)(LPFILETIME lpSystemTimeAsFileTime);
+extern pfnGetSystemTimeAsFileTime g_pfnGetSystemTimeAsFileTime;
+
+void WINAPI InitializeGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
+{
+    pfnGetSystemTimeAsFileTime func = NULL;
+
+#ifndef FEATURE_PAL
+    HMODULE hKernel32 = WszLoadLibrary(W("kernel32.dll"));
+    if (hKernel32 != NULL)
+    {
+        func = (pfnGetSystemTimeAsFileTime)GetProcAddress(hKernel32, "GetSystemTimePreciseAsFileTime");
+    }
+    if (func == NULL)
+#endif
+    {
+        func = &::GetSystemTimeAsFileTime;
+    }
+    
+    g_pfnGetSystemTimeAsFileTime = func;
+    func(lpSystemTimeAsFileTime);
+}
+
+pfnGetSystemTimeAsFileTime g_pfnGetSystemTimeAsFileTime = &InitializeGetSystemTimeAsFileTime;
 
 FCIMPL0(INT64, SystemNative::__GetSystemTimeAsFileTime)
 {
     FCALL_CONTRACT;
 
     INT64 timestamp;
-
-    ::GetSystemTimeAsFileTime((FILETIME*)&timestamp);
+    g_pfnGetSystemTimeAsFileTime((FILETIME*)&timestamp);
 
 #if BIGENDIAN
     timestamp = (INT64)(((UINT64)timestamp >> 32) | ((UINT64)timestamp << 32));
