@@ -1016,7 +1016,7 @@ NESTED_END CallEHFilterFunclet, _TEXT
 // Helpers for async (NullRef, AccessViolation) exceptions
 //
 
-NESTED_ENTRY NakedThrowHelper2, _TEXT ,FixContextHandler
+NESTED_ENTRY NakedThrowHelper2, _TEXT ,UnhandledExceptionHandlerUnix
     PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, -16
 
     // On entry:
