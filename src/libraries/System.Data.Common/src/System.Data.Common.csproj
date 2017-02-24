@@ -295,7 +295,7 @@
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Transactions" />
+    <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
