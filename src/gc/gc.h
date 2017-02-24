@@ -41,21 +41,6 @@ typedef void enum_func (Object*);
 // callback functions for heap walkers
 typedef void object_callback_func(void * pvContext, void * pvDataLoc);
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-/* If you modify failure_get_memory and         */
-/* oom_reason be sure to make the corresponding */
-/* changes in toolbox\sos\strike\strike.cpp.    */
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-enum failure_get_memory
-{
-    fgm_no_failure = 0,
-    fgm_reserve_segment = 1,
-    fgm_commit_segment_beg = 2,
-    fgm_commit_eph_segment = 3,
-    fgm_grow_table = 4,
-    fgm_commit_table = 5
-};
-
 struct fgm_history
 {
     failure_get_memory fgm;
@@ -69,17 +54,6 @@ struct fgm_history
         size = s;
         loh_p = l;
     }
-};
-
-enum oom_reason
-{
-    oom_no_failure = 0,
-    oom_budget = 1,
-    oom_cant_commit = 2,
-    oom_cant_reserve = 3,
-    oom_loh = 4,
-    oom_low_mem = 5,
-    oom_unproductive_full_gc = 6
 };
 
 // TODO : it would be easier to make this an ORed value
@@ -100,19 +74,6 @@ enum gc_reason
     reason_max
 };
 
-struct oom_history
-{
-    oom_reason reason;
-    size_t alloc_size;
-    uint8_t* reserved;
-    uint8_t* allocated;
-    size_t gc_index;
-    failure_get_memory fgm;
-    size_t size;
-    size_t available_pagefile_mb;
-    BOOL loh_p;
-};
-
 /* forward declerations */
 class CObjectHeader;
 class Object;
@@ -124,7 +85,7 @@ class IGCHeapInternal;
 
 #ifdef GC_CONFIG_DRIVEN
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
-GARY_DECL(size_t, gc_global_mechanisms, MAX_GLOBAL_GC_MECHANISMS_COUNT);
+extern size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef DACCESS_COMPILE
@@ -141,6 +102,8 @@ extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
 extern "C" bool g_fFinalizerRunOnShutDown;
+extern "C" bool g_built_with_svr_gc;
+extern "C" uint8_t g_build_variant;
 
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
