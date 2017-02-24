@@ -72,6 +72,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
     <Compile Include="System\Configuration\AppSettingsTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
