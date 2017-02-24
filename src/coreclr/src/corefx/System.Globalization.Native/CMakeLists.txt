@@ -10,7 +10,7 @@ set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
 
 find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
 if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
-    message(FATAL_ERROR "Cannont find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
+    message(FATAL_ERROR "Cannot find utypes.h, try installing libicu-dev (or the appropriate package for your platform)")
     return()
 endif()
 
