@@ -94,16 +94,36 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         // Check if we need to update the card table
         // Calc pCardByte
         shr     rdi, 0x0B
+
         PREPARE_EXTERNAL_VAR g_card_table, r10
-        add     rdi, [r10]
+        mov     r10, [r10]
 
         // Check if this card is dirty
-        cmp     byte ptr [rdi], 0FFh
+        cmp     byte ptr [rdi + r10], 0FFh
+
         jne     UpdateCardTable_Debug
         REPRET
 
     UpdateCardTable_Debug:
+        mov     byte ptr [rdi + r10], 0FFh
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // Shift rdi by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
+        shr     rdi, 0x0A
+
+        PREPARE_EXTERNAL_VAR g_card_bundle_table, r10
+        add     rdi, [r10]
+
+        // Check if this bundle byte is dirty
+        cmp     byte ptr [rdi], 0FFh
+
+        jne     UpdateCardBundle_Debug
+        REPRET
+
+    UpdateCardBundle_Debug:
         mov     byte ptr [rdi], 0FFh
+#endif
+
         ret
 
     .balign 16

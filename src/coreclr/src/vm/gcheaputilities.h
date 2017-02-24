@@ -20,6 +20,7 @@ GPTR_DECL(uint32_t,g_card_table);
 }
 #endif // !DACCESS_COMPILE
 
+extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
 

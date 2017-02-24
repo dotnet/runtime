@@ -39,6 +39,11 @@ uint8_t* g_shadow_lowest_address = NULL;
 #endif
 
 uint32_t* g_gc_card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+uint32_t* g_gc_card_bundle_table;
+#endif
+
 uint8_t* g_gc_lowest_address  = 0;
 uint8_t* g_gc_highest_address = 0;
 bool g_fFinalizerRunOnShutDown = false;

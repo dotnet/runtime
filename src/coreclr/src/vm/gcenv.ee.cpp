@@ -1230,7 +1230,14 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->card_table != nullptr);
         assert(args->lowest_address != nullptr);
         assert(args->highest_address != nullptr);
+
         g_card_table = args->card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(args->card_bundle_table != nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
+
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         if (args->write_watch_table != nullptr)
         {
@@ -1274,7 +1281,14 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(!args->requires_upper_bounds_check && "the ephemeral generation must be at the top of the heap!");
 
         g_card_table = args->card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(g_card_bundle_table == nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
+
         FlushProcessWriteBuffers();
+        
         g_lowest_address = args->lowest_address;
         VolatileStore(&g_highest_address, args->highest_address);
         ::StompWriteBarrierResize(true, false);
