@@ -162,22 +162,22 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException($"{KeyValueElementName} must contain child element {DSAKeyValueElementName}");
             }
 
-            XmlNode yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}");
+            XmlNode yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}", xmlNamespaceManager);
             if (yNode == null)
                 throw new CryptographicException($"{YElementName} is missing");
 
-            XmlNode pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}");
-            XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}");
+            XmlNode pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}", xmlNamespaceManager);
+            XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
 
             if ((pNode == null && qNode != null) || (pNode != null && qNode == null))
                 throw new CryptographicException($"{PElementName} and {QElementName} can only occour in combination");
 
 
-            XmlNode gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}");
-            XmlNode jNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{JElementName}");
+            XmlNode gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}", xmlNamespaceManager);
+            XmlNode jNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{JElementName}", xmlNamespaceManager);
 
-            XmlNode seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}");
-            XmlNode pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}");
+            XmlNode seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}", xmlNamespaceManager);
+            XmlNode pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}", xmlNamespaceManager);
             if ((seedNode == null && pgenCounterNode != null) || (seedNode != null && pgenCounterNode == null))
                 throw new CryptographicException($"{SeedElementName} and {PgenCounterElementName} can only occur in combination");
 
@@ -191,10 +191,7 @@ namespace System.Security.Cryptography.Xml
                     Y = Convert.FromBase64String(yNode.InnerText),
                     J = (jNode != null) ? Convert.FromBase64String(jNode.InnerText) : null,
                     Seed = (seedNode != null) ? Convert.FromBase64String(seedNode.InnerText) : null,
-
-                    //https://github.com/peterwurzinger
-                    //TODO: I don't know if zero (0) is the correct default value if the counter-element is missing
-                    Counter = (seedNode != null) ? BitConverter.ToInt32(Convert.FromBase64String(pgenCounterNode.InnerText), 0) : 0
+                    Counter = (seedNode != null) ? Convert.FromBase64String(pgenCounterNode.InnerText)[0] : 0
                 });
             }
             catch (Exception ex)

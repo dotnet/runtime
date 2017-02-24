@@ -9,9 +9,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
-using Windows.Globalization.DateTimeFormatting;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -51,17 +52,29 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetXml()
         {
+
             DSAKeyValue dsa = new DSAKeyValue();
             XmlElement xmlkey = dsa.GetXml();
 
-            //From https://github.com/peterwurzinger:
-            //According to the schema (http://www.w3.org/TR/xmldsig-core/#sec-DSAKeyValue), the only parameter to occur necessarily is 'Y'. Rework?
+            XmlNamespaceManager ns = new XmlNamespaceManager(xmlkey.OwnerDocument.NameTable);
+            ns.AddNamespace("schema", SignedXml.XmlDsigNamespaceUrl);
 
-            // Schema check. Should not throw.
-            const string schema = "http://www.w3.org/2000/09/xmldsig#";
-            new [] { "P", "Q", "G", "Y", "Seed", "PgenCounter"}
-                .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[local-name()=DSAKeyValue and namespace-uri()='{schema}']/*[local-name()='{elementName}' and namespace-uri()='{schema}']").InnerText))
-                .ToArray();
+            IEnumerable<XmlNode> elements =
+                new[] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter" }
+                .Select(elementName => xmlkey.SelectSingleNode($"/schema:DSAKeyValue/schema:{elementName}", ns))
+                .Where(element => element != null);
+
+            //There MUST be existing elements
+            Assert.NotEmpty(elements);
+
+            //Existing elements MUST include a "Y"-Element
+            Assert.True(elements.SingleOrDefault(element => element.Name == "Y") != null);
+
+            //Existing elements MUST contain InnerText
+            Assert.True(elements.All(element => !string.IsNullOrEmpty(element.InnerText)));
+
+            //Existing elements MUST be convertible from BASE64
+            elements.Select(element => Convert.FromBase64String(element.InnerText));
         }
 
         [Fact]
@@ -76,20 +89,29 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void LoadXml_PlatformNotSupported()
+        public void LoadXml()
         {
-            //https://github.com/peterwurzinger
-            //I kind of 'fixed' this test. The value above, which is now commented, is the string which was compared against the XML of an empty DsaKeyValue - instance, which differs completely. Has something been lost in a commit?
+            const string pValue = "oDZlcdJA1Kf6UeNEIZqm4KDqA6zpX7CmEtAGWi9pgnBhWOUDVEfhswfsvTLR5BCbKfE6KoHvt5Hh8D1RcAko//iZkLZ+gds9y/5Oxape8tu3TUi1BnNPWu8ieXjMtdnpyudKFsCymssJked1rBeRePG23HTVwOV1DpopjRkjBEU=";
+            const string qValue = "0JxsZhjbIteTbrtfWmt5Uif6il8=";
+            const string gValue = "EOVCfv1saTWIc6Dgim24a07dqqyCJXmIT+5PrgrfV3M8/hfmaMfZtpvM0BUkXVv0dFScnN7txnSpnLWchBz0RfehL6c7Mofu/d2H1cp8zvwTasfiJhypQHDuC4p1aSXuQ1hnzzyYeHKzBH9r0PA78haL7/HnwrrscttXGhmU/L0=";
+            const string yValue = "HBHSdiOJDoZhRpK+B4Ft5hisHvRjz6rELay+aPrya2yKRUUN7ZysNi12PltAvljexay0gEpPncg6TrRtH1+7usTxbgkuIwcQ3RPPIzM7y+XldbcyVUfyze5+zXy9ALiugT+zP8DOMRj9Yj6kR6ZsgbnSdlH2hGIn9NctXgRQ6Kg=";
+            const string seedValue = "NKemrvYwT/4u8DNiXoPj9jO6LAg=";
+            const string pgenCounterValue = "uA==";
+            string dsaKey = $"<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>{pValue}</P><Q>{qValue}</Q><G>{gValue}</G><Y>{yValue}</Y><Seed>{seedValue}</Seed><PgenCounter>{pgenCounterValue}</PgenCounter></DSAKeyValue></KeyValue>";
 
-            //string dsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>xc+QZRWTgr390gzwNXF+WzoepZkvAQvCzfCm+YyXj0KPoeHHeSc5ORzXQw81V+7XJR3gupvlI4F7lW9YC538l+3eqGm8IQlCIS+U+7ICTDOFFKevqsYX0BnjO0vvE4aAtDyxfSOTCOAo1cJ+6G6xgcC1JGIBEYCtg1tH8wUewDE=</P><Q>yyfZb0S/rimXl9ScJ3zIba2oGl8=</Q><G>crLazMg+vgI7u6+Idgi9iTLdRa4fptat3gdY97zcc857+OVdmT+lVRpK3okWpmBbw2wSffU8QltwFf42BVs+/HGUOUo2hNqSSXgzl1i+1frO7/cqooHVcy5WX0xxaIPsKcREPI5pNPj/3g8apTgErLMGsHkFdngwbMed9DArTks=</G><Y>FlAozo17wV/LCMRrtnmMKxVQNpidJVkZNM1/0eR65x8giwPs6yXzJmFT8f2tmPJY2FIOAtp5JYin4xUhwIHF452Gg50wUrjV6WTGkiC+gzLC2fVIyGlVsFecLj6ue7J+MACG+b3NQnxFuT5maQnPnEeuGgjLXfwYsAR1vfU0Gas=</Y><J>+UPMvUPq9Fo6Q1fr2oEYDxfGMMtfdoQmVBxI+TkUYQsReodRzBbnvGV1uPLWTpKKd/uJNUHO/QGb05Cvc6u49/AToDJIyi4e01hTLNCzeQk/Hj19gowb5wkTIjyaH04VyPE5zYoTYfuu3Y3Q</J><Seed>+cvoO7bzdpAwAjnDDApPzBCl6zg=</Seed><PgenCounter>ATM=</PgenCounter></DSAKeyValue></KeyValue>";
-            string dsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>xc+QZRWTgr390gzwNXF+WzoepZkvAQvCzfCm+YyXj0KPoeHHeSc5ORzXQw81V+7XJR3gupvlI4F7lW9YC538l+3eqGm8IQlCIS+U+7ICTDOFFKevqsYX0BnjO0vvE4aAtDyxfSOTCOAo1cJ+6G6xgcC1JGIBEYCtg1tH8wUewDE=</P><Q>yyfZb0S/rimXl9ScJ3zIba2oGl8=</Q><G>crLazMg+vgI7u6+Idgi9iTLdRa4fptat3gdY97zcc857+OVdmT+lVRpK3okWpmBbw2wSffU8QltwFf42BVs+/HGUOUo2hNqSSXgzl1i+1frO7/cqooHVcy5WX0xxaIPsKcREPI5pNPj/3g8apTgErLMGsHkFdngwbMed9DArTks=</G><Y>FlAozo17wV/LCMRrtnmMKxVQNpidJVkZNM1/0eR65x8giwPs6yXzJmFT8f2tmPJY2FIOAtp5JYin4xUhwIHF452Gg50wUrjV6WTGkiC+gzLC2fVIyGlVsFecLj6ue7J+MACG+b3NQnxFuT5maQnPnEeuGgjLXfwYsAR1vfU0Gas=</Y><J>+UPMvUPq9Fo6Q1fr2oEYDxfGMMtfdoQmVBxI+TkUYQsReodRzBbnvGV1uPLWTpKKd/uJNUHO/QGb05Cvc6u49/AToDJIyi4e01hTLNCzeQk/Hj19gowb5wkTIjyaH04VyPE5zYoTYfuu3Y3Q</J><Seed>+cvoO7bzdpAwAjnDDApPzBCl6zg=</Seed><PgenCounter>ATM=</PgenCounter></DSAKeyValue></KeyValue>";
-            XmlDocument doc = new XmlDocument();
-            doc.LoadXml(dsaKey);
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(dsaKey);
 
-            DSAKeyValue dsa1 = new DSAKeyValue();
+            var dsaKeyValue = new DSAKeyValue();
+            dsaKeyValue.LoadXml(xmlDoc.DocumentElement);
 
-            string s = (dsa1.GetXml().OuterXml);
-            Assert.Equal(dsaKey, s);
+            var parameters = dsaKeyValue.Key.ExportParameters(false);
+            Assert.Equal(Convert.ToBase64String(parameters.P), pValue);
+            Assert.Equal(Convert.ToBase64String(parameters.Q), qValue);
+            Assert.Equal(Convert.ToBase64String(parameters.G), gValue);
+            Assert.Equal(Convert.ToBase64String(parameters.Y), yValue);
+            Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
+            Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
         }
 
         [Fact]
