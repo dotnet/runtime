@@ -26,8 +26,8 @@ namespace System.ComponentModel
         // class load anyway.
         private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
         private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
-        private static volatile Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
-        private static volatile WeakHashtable s_associationTable;
+        private static readonly Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
+        private static WeakHashtable s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild attributes.
 
         // This is an index that we use to create a unique name for a property in the
@@ -90,6 +90,8 @@ namespace System.ComponentModel
         ///     This value increments each time someone refreshes or changes metadata.
         /// </summary>
         internal static int MetadataVersion => s_metadataVersion;
+
+        private static WeakHashtable AssociationTable => LazyInitializer.EnsureInitialized(ref s_associationTable, () => new WeakHashtable());
 
         /// <summary>
         ///    Occurs when Refreshed is raised for a component.
@@ -309,17 +311,6 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviders == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_defaultProviders == null)
-                    {
-                        s_defaultProviders = new Hashtable();
-                    }
-                }
-            }
-
             if (s_defaultProviders.ContainsKey(type))
             {
                 return;
@@ -397,28 +388,18 @@ namespace System.ComponentModel
                 throw new ArgumentException(SR.TypeDescriptorSameAssociation);
             }
 
-            if (s_associationTable == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_associationTable == null)
-                    {
-                        s_associationTable = new WeakHashtable();
-                    }
-                }
-            }
-
-            IList associations = (IList)s_associationTable[primary];
+            WeakHashtable associationTable = AssociationTable;
+            IList associations = (IList)associationTable[primary];
 
             if (associations == null)
             {
-                lock (s_associationTable)
+                lock (associationTable)
                 {
-                    associations = (IList)s_associationTable[primary];
+                    associations = (IList)associationTable[primary];
                     if (associations == null)
                     {
                         associations = new ArrayList(4);
-                        s_associationTable.SetWeak(primary, associations);
+                        associationTable.SetWeak(primary, associations);
                     }
                 }
             }
@@ -604,7 +585,7 @@ namespace System.ComponentModel
             {
                 // Check our association table for a match.
                 //
-                Hashtable assocTable = s_associationTable;
+                Hashtable assocTable = AssociationTable;
                 IList associations = (IList) assocTable?[primary];
                 if (associations != null)
                 {
@@ -2482,7 +2463,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(secondary));
             }
 
-            Hashtable assocTable = s_associationTable;
+            Hashtable assocTable = AssociationTable;
             IList associations = (IList) assocTable?[primary];
             if (associations != null)
             {
@@ -2515,7 +2496,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(primary));
             }
 
-            Hashtable assocTable = s_associationTable;
+            Hashtable assocTable = AssociationTable;
             assocTable?.Remove(primary);
         }
 
