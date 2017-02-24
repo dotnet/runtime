@@ -1005,8 +1005,12 @@ currently used only to deliver exceptions.
 void
 mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data)
 {
-	/* An async call can only be setup on an async suspended thread */
-	g_assert (mono_thread_info_run_state (info) == STATE_ASYNC_SUSPENDED);
+	if (!mono_threads_is_coop_enabled ()) {
+		/* In non-coop mode, an async call can only be setup on an async suspended thread, but in coop mode, a thread
+		 * may be in blocking state, and will execute the async call when leaving the safepoint, leaving a gc safe
+		 * region or entering a gc unsafe region */
+		g_assert (mono_thread_info_run_state (info) == STATE_ASYNC_SUSPENDED);
+	}
 	/*FIXME this is a bad assert, we probably should do proper locking and fail if one is already set*/
 	g_assert (!info->async_target);
 	info->async_target = target_func;

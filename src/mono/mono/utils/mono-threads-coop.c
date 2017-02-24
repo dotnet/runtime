@@ -288,6 +288,12 @@ mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdat
 	default:
 		g_error ("Unknown thread state");
 	}
+
+	if (info->async_target) {
+		info->async_target (info->user_data);
+		info->async_target = NULL;
+		info->user_data = NULL;
+	}
 }
 
 void
@@ -353,6 +359,12 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 		break;
 	default:
 		g_error ("Unknown thread state");
+	}
+
+	if (info->async_target) {
+		info->async_target (info->user_data);
+		info->async_target = NULL;
+		info->user_data = NULL;
 	}
 
 	return info;
