@@ -242,6 +242,14 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean no
 	mono_register_jit_icall (func, name, sig, no_wrapper);
 }
 
+static void
+register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
+{
+	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
+
+	mono_register_jit_icall (func, name, sig, TRUE);
+}
+
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)
 {
@@ -335,7 +343,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr int32", FALSE);
 		register_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", "void ptr ptr int32", FALSE);
 		register_icall (g_free, "g_free", "void ptr", FALSE);
-		register_icall (mono_object_isinst_icall, "mono_object_isinst_icall", "object object ptr", FALSE);
+		register_icall_no_wrapper (mono_object_isinst_icall, "mono_object_isinst_icall", "object object ptr");
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
@@ -9702,7 +9710,8 @@ get_virtual_stelemref_wrapper (int kind)
 		mono_mb_emit_byte (mb, CEE_RET);
 		break;
 
-	case STELEMREF_COMPLEX:
+	case STELEMREF_COMPLEX: {
+		int b_fast;
 		/*
 		<ldelema (bound check)>
 		if (!value)
@@ -9718,6 +9727,7 @@ get_virtual_stelemref_wrapper (int kind)
 		*/
 
 		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
 
 #if 0
@@ -9746,6 +9756,13 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* aklass = array->vtable->klass->element_class */
 		load_array_class (mb, aklass);
+		/* vklass = value->vtable->klass */
+		load_value_class (mb, vklass);
+
+		/* fastpath */
+		mono_mb_emit_ldloc (mb, vklass);
+		mono_mb_emit_ldloc (mb, aklass);
+		b_fast = mono_mb_emit_branch (mb, CEE_BEQ);
 
 		/*if (mono_object_isinst (value, aklass)) */
 		mono_mb_emit_ldarg (mb, 2);
@@ -9755,6 +9772,7 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* do_store: */
 		mono_mb_patch_branch (mb, b1);
+		mono_mb_patch_branch (mb, b_fast);
 		mono_mb_emit_ldloc (mb, array_slot_addr);
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
@@ -9765,7 +9783,7 @@ get_virtual_stelemref_wrapper (int kind)
 
 		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 		break;
-
+	}
 	case STELEMREF_SEALED_CLASS:
 		/*
 		<ldelema (bound check)>
@@ -9787,7 +9805,6 @@ get_virtual_stelemref_wrapper (int kind)
 		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-
 
 		/* ldelema (implicit bound check) */
 		load_array_element_address (mb);
@@ -9820,7 +9837,9 @@ get_virtual_stelemref_wrapper (int kind)
 		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 		break;
 
-	case STELEMREF_CLASS:
+	case STELEMREF_CLASS: {
+		int b_fast;
+
 		/*
 		the method:
 		<ldelema (bound check)>
@@ -9861,6 +9880,11 @@ get_virtual_stelemref_wrapper (int kind)
 		/* vklass = value->vtable->klass */
 		load_value_class (mb, vklass);
 
+		/* fastpath */
+		mono_mb_emit_ldloc (mb, vklass);
+		mono_mb_emit_ldloc (mb, aklass);
+		b_fast = mono_mb_emit_branch (mb, CEE_BEQ);
+
 		/*if (mono_object_isinst (value, aklass)) */
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_ldloc (mb, aklass);
@@ -9898,6 +9922,7 @@ get_virtual_stelemref_wrapper (int kind)
 
 		/* do_store: */
 		mono_mb_patch_branch (mb, b1);
+		mono_mb_patch_branch (mb, b_fast);
 		mono_mb_emit_ldloc (mb, array_slot_addr);
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
@@ -9910,7 +9935,7 @@ get_virtual_stelemref_wrapper (int kind)
 
 		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
 		break;
-
+	}
 	case STELEMREF_INTERFACE:
 		/*Mono *klass;
 		MonoVTable *vt;
