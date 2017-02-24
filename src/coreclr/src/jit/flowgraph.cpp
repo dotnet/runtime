@@ -9074,14 +9074,13 @@ void Compiler::fgSimpleLowering()
                         }
                         break;
                     }
+#endif // FEATURE_FIXED_OUT_ARGS
 
                     default:
                     {
                         // No other operators need processing.
                         break;
                     }
-
-#endif // FEATURE_FIXED_OUT_ARGS
                 }
             } // foreach gtNext
         }     // foreach Stmt
