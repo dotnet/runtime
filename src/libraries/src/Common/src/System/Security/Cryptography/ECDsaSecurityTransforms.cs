@@ -281,7 +281,7 @@ namespace System.Security.Cryptography
                     {
                         long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeyPair.PublicKey);
 
-                        Debug.Assert(size == 256 || size == 384 || size == 512, $"Unknown keysize ({size})");
+                        Debug.Assert(size == 256 || size == 384 || size == 521, $"Unknown keysize ({size})");
                         KeySizeValue = (int)size;
                     }
                 }
