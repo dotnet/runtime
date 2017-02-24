@@ -190,6 +190,9 @@ namespace pal
     bool get_os_moniker(os_moniker_t* moniker);
 #endif
 
+    inline void err_flush() { std::fflush(stderr); }
+    inline void out_flush() { std::fflush(stdout); }
+
     bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
