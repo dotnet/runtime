@@ -51,7 +51,7 @@
     <!-- force a missing file if ref build is absent -->
     <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(FileToPackage)' == ''" />
 
-    <Dependency Include="@(BuildRid->'runtime.%(Identity).$(Id)')">
+    <Dependency Include="@(BuildRID->'runtime.%(Identity).$(Id)')">
       <TargetRuntime>%(Identity)</TargetRuntime>
       <Version>$(PackageVersion)</Version>
     </Dependency>
