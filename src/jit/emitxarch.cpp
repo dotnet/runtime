@@ -48,6 +48,15 @@ bool IsSSEOrAVXInstruction(instruction ins)
 #endif // !FEATURE_AVX_SUPPORT
 }
 
+bool IsAVXOnlyInstruction(instruction ins)
+{
+#ifdef FEATURE_AVX_SUPPORT
+    return (ins >= INS_FIRST_AVX_INSTRUCTION && ins <= INS_LAST_AVX_INSTRUCTION);
+#else
+    return false;
+#endif
+}
+
 bool emitter::IsAVXInstruction(instruction ins)
 {
 #ifdef FEATURE_AVX_SUPPORT
@@ -108,18 +117,9 @@ bool emitter::IsThreeOperandMoveAVXInstruction(instruction ins)
 //
 // Note that this should be true for any of the instructions in instrsXArch.h
 // that use the SSE38 or SSE3A macro.
-//
-// TODO-XArch-Cleanup: This is a temporary solution for now. Eventually this
-// needs to be addressed by expanding instruction encodings.
 bool emitter::Is4ByteAVXInstruction(instruction ins)
 {
-    return UseAVX() &&
-           (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq || ins == INS_pcmpgtq ||
-            ins == INS_vbroadcastss || ins == INS_vbroadcastsd || ins == INS_vpbroadcastb || ins == INS_vpbroadcastw ||
-            ins == INS_vpbroadcastd || ins == INS_vpbroadcastq || ins == INS_vextractf128 || ins == INS_vinsertf128 ||
-            ins == INS_pmulld || ins == INS_ptest || ins == INS_phaddd || ins == INS_pminsb || ins == INS_pminsd ||
-            ins == INS_pminuw || ins == INS_pminud || ins == INS_pmaxsb || ins == INS_pmaxsd || ins == INS_pmaxuw ||
-            ins == INS_pmaxud);
+    return UseAVX() && (IsSSE4Instruction(ins) || IsAVXOnlyInstruction(ins)) && EncodedBySSE38orSSE3A(ins);
 }
 #endif // FEATURE_AVX_SUPPORT
 
@@ -138,10 +138,7 @@ bool emitter::Is4ByteSSE4Instruction(instruction ins)
     // On legacy backend SSE3_4 is not enabled.
     return false;
 #else
-    return UseSSE3_4() && (ins == INS_dpps || ins == INS_dppd || ins == INS_insertps || ins == INS_pcmpeqq ||
-                           ins == INS_pcmpgtq || ins == INS_pmulld || ins == INS_ptest || ins == INS_phaddd ||
-                           ins == INS_pminsb || ins == INS_pminsd || ins == INS_pminuw || ins == INS_pminud ||
-                           ins == INS_pmaxsb || ins == INS_pmaxsd || ins == INS_pmaxuw || ins == INS_pmaxud);
+    return UseSSE3_4() && IsSSE4Instruction(ins) && EncodedBySSE38orSSE3A(ins);
 #endif
 }
 
@@ -944,72 +941,6 @@ inline size_t insCode(instruction ins)
 
 /*****************************************************************************
  *
- *  Returns the "[r/m], 32-bit icon" encoding of the given CPU instruction.
- */
-
-inline size_t insCodeMI(instruction ins)
-{
-    // clang-format off
-    const static
-    size_t          insCodesMI[] =
-    {
-        #define INST0(id, nm, fp, um, rf, wf, mr                )
-        #define INST1(id, nm, fp, um, rf, wf, mr                )
-        #define INST2(id, nm, fp, um, rf, wf, mr, mi            ) mi,
-        #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm        ) mi,
-        #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4    ) mi,
-        #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr) mi,
-        #include "instrs.h"
-        #undef  INST0
-        #undef  INST1
-        #undef  INST2
-        #undef  INST3
-        #undef  INST4
-        #undef  INST5
-    };
-    // clang-format on
-
-    assert((unsigned)ins < sizeof(insCodesMI) / sizeof(insCodesMI[0]));
-    assert((insCodesMI[ins] != BAD_CODE));
-
-    return insCodesMI[ins];
-}
-
-/*****************************************************************************
- *
- *  Returns the "reg, [r/m]" encoding of the given CPU instruction.
- */
-
-inline size_t insCodeRM(instruction ins)
-{
-    // clang-format off
-    const static
-    size_t          insCodesRM[] =
-    {
-        #define INST0(id, nm, fp, um, rf, wf, mr                )
-        #define INST1(id, nm, fp, um, rf, wf, mr                )
-        #define INST2(id, nm, fp, um, rf, wf, mr, mi            )
-        #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm        ) rm,
-        #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4    ) rm,
-        #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr) rm,
-        #include "instrs.h"
-        #undef  INST0
-        #undef  INST1
-        #undef  INST2
-        #undef  INST3
-        #undef  INST4
-        #undef  INST5
-    };
-    // clang-format on
-
-    assert((unsigned)ins < sizeof(insCodesRM) / sizeof(insCodesRM[0]));
-    assert((insCodesRM[ins] != BAD_CODE));
-
-    return insCodesRM[ins];
-}
-
-/*****************************************************************************
- *
  *  Returns the "AL/AX/EAX, imm" accumulator encoding of the given instruction.
  */
 
@@ -1076,6 +1007,86 @@ inline size_t insCodeRR(instruction ins)
 
 // clang-format off
 const static
+size_t          insCodesRM[] =
+{
+    #define INST0(id, nm, fp, um, rf, wf, mr                )
+    #define INST1(id, nm, fp, um, rf, wf, mr                )
+    #define INST2(id, nm, fp, um, rf, wf, mr, mi            )
+    #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm        ) rm,
+    #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4    ) rm,
+    #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr) rm,
+    #include "instrs.h"
+    #undef  INST0
+    #undef  INST1
+    #undef  INST2
+    #undef  INST3
+    #undef  INST4
+    #undef  INST5
+};
+// clang-format on
+
+// Returns true iff the give CPU instruction has an RM encoding.
+inline bool hasCodeRM(instruction ins)
+{
+    assert((unsigned)ins < sizeof(insCodesRM) / sizeof(insCodesRM[0]));
+    return ((insCodesRM[ins] != BAD_CODE));
+}
+
+/*****************************************************************************
+ *
+ *  Returns the "reg, [r/m]" encoding of the given CPU instruction.
+ */
+
+inline size_t insCodeRM(instruction ins)
+{
+    assert((unsigned)ins < sizeof(insCodesRM) / sizeof(insCodesRM[0]));
+    assert((insCodesRM[ins] != BAD_CODE));
+
+    return insCodesRM[ins];
+}
+
+// clang-format off
+const static
+size_t          insCodesMI[] =
+{
+    #define INST0(id, nm, fp, um, rf, wf, mr                )
+    #define INST1(id, nm, fp, um, rf, wf, mr                )
+    #define INST2(id, nm, fp, um, rf, wf, mr, mi            ) mi,
+    #define INST3(id, nm, fp, um, rf, wf, mr, mi, rm        ) mi,
+    #define INST4(id, nm, fp, um, rf, wf, mr, mi, rm, a4    ) mi,
+    #define INST5(id, nm, fp, um, rf, wf, mr, mi, rm, a4, rr) mi,
+    #include "instrs.h"
+    #undef  INST0
+    #undef  INST1
+    #undef  INST2
+    #undef  INST3
+    #undef  INST4
+    #undef  INST5
+};
+// clang-format on
+
+// Returns true iff the give CPU instruction has an MI encoding.
+inline bool hasCodeMI(instruction ins)
+{
+    assert((unsigned)ins < sizeof(insCodesMI) / sizeof(insCodesMI[0]));
+    return ((insCodesMI[ins] != BAD_CODE));
+}
+
+/*****************************************************************************
+ *
+ *  Returns the "[r/m], 32-bit icon" encoding of the given CPU instruction.
+ */
+
+inline size_t insCodeMI(instruction ins)
+{
+    assert((unsigned)ins < sizeof(insCodesMI) / sizeof(insCodesMI[0]));
+    assert((insCodesMI[ins] != BAD_CODE));
+
+    return insCodesMI[ins];
+}
+
+// clang-format off
+const static
 size_t          insCodesMR[] =
 {
     #define INST0(id, nm, fp, um, rf, wf, mr                )
@@ -1112,6 +1123,32 @@ inline size_t insCodeMR(instruction ins)
     assert((insCodesMR[ins] != BAD_CODE));
 
     return insCodesMR[ins];
+}
+
+// Return true if the instruction uses the SSE38 or SSE3A macro in instrsXArch.h.
+bool emitter::EncodedBySSE38orSSE3A(instruction ins)
+{
+    const size_t SSE38 = 0x0F660038;
+    const size_t SSE3A = 0x0F66003A;
+    const size_t MASK  = 0xFFFF00FF;
+
+    size_t insCode = 0;
+
+    if (hasCodeRM(ins))
+    {
+        insCode = insCodeRM(ins);
+    }
+    else if (hasCodeMI(ins))
+    {
+        insCode = insCodeMI(ins);
+    }
+    else if (hasCodeMR(ins))
+    {
+        insCode = insCodeMR(ins);
+    }
+
+    insCode &= MASK;
+    return insCode == SSE38 || insCode == SSE3A;
 }
 
 /*****************************************************************************
