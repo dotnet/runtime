@@ -16,10 +16,10 @@ namespace System
     [Serializable]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
     {
-        private static readonly StringComparer _invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);
-        private static readonly StringComparer _invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, true);
-        private static readonly StringComparer _ordinal = new OrdinalComparer(false);
-        private static readonly StringComparer _ordinalIgnoreCase = new OrdinalComparer(true);
+        private static readonly CultureAwareComparer _invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);
+        private static readonly CultureAwareComparer _invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, true);
+        private static readonly OrdinalComparer _ordinal = new OrdinalComparer();
+        private static readonly OrdinalIgnoreCaseComparer _ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();        
 
         public static StringComparer InvariantCulture
         {
@@ -249,96 +249,63 @@ namespace System
 
     }
 
-    // Provide x more optimal implementation of ordinal comparison.
     [Serializable]
-    internal sealed class OrdinalComparer : StringComparer
-#if FEATURE_RANDOMIZED_STRING_HASHING
+    internal sealed class OrdinalComparer : StringComparer 
+#if FEATURE_RANDOMIZED_STRING_HASHING           
         , IWellKnownStringEqualityComparer
 #endif
     {
-        private bool _ignoreCase;
+        public override int Compare(string x, string y) => string.CompareOrdinal(x, y);
 
-        internal OrdinalComparer(bool ignoreCase)
-        {
-            _ignoreCase = ignoreCase;
-        }
-
-        public override int Compare(string x, string y)
-        {
-            if (Object.ReferenceEquals(x, y)) return 0;
-            if (x == null) return -1;
-            if (y == null) return 1;
-
-            if (_ignoreCase)
-            {
-                return String.Compare(x, y, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return String.CompareOrdinal(x, y);
-        }
-
-        public override bool Equals(string x, string y)
-        {
-            if (Object.ReferenceEquals(x, y)) return true;
-            if (x == null || y == null) return false;
-
-            if (_ignoreCase)
-            {
-                if (x.Length != y.Length)
-                {
-                    return false;
-                }
-                return (String.Compare(x, y, StringComparison.OrdinalIgnoreCase) == 0);
-            }
-            return x.Equals(y);
-        }
+        public override bool Equals(string x, string y) => string.Equals(x, y);
 
         public override int GetHashCode(string obj)
         {
             if (obj == null)
             {
-                throw new ArgumentNullException(nameof(obj));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            Contract.EndContractBlock();
-
-            if (_ignoreCase)
-            {
-                return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
-            }
-
             return obj.GetHashCode();
         }
 
-        // Equals method for the comparer itself. 
-        public override bool Equals(Object obj)
-        {
-            OrdinalComparer comparer = obj as OrdinalComparer;
-            if (comparer == null)
-            {
-                return false;
-            }
-            return (_ignoreCase == comparer._ignoreCase);
-        }
-
-        public override int GetHashCode()
-        {
-            string name = "OrdinalComparer";
-            int hashCode = name.GetHashCode();
-            return _ignoreCase ? (~hashCode) : hashCode;
-        }
+        // Equals/GetHashCode methods for the comparer itself. 
+        public override bool Equals(object obj) => obj is OrdinalComparer;
+        public override int GetHashCode() => nameof(OrdinalComparer).GetHashCode();
 
 #if FEATURE_RANDOMIZED_STRING_HASHING           
-
-        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization()
-        {
-            return this;
-        }
+        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
 #endif
+    }
 
+    [Serializable]
+    internal sealed class OrdinalIgnoreCaseComparer : StringComparer
+#if FEATURE_RANDOMIZED_STRING_HASHING
+        , IWellKnownStringEqualityComparer
+#endif
+    {
+        public override int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+
+        public override bool Equals(string x, string y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
+
+        public override int GetHashCode(string obj)
+        {
+            if (obj == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
+            }
+            return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
+        }
+
+        // Equals/GetHashCode methods for the comparer itself. 
+        public override bool Equals(object obj) => obj is OrdinalIgnoreCaseComparer;
+        public override int GetHashCode() => nameof(OrdinalIgnoreCaseComparer).GetHashCode();
+
+#if FEATURE_RANDOMIZED_STRING_HASHING
+        IEqualityComparer IWellKnownStringEqualityComparer.GetEqualityComparerForSerialization() => this;
+#endif
     }
 
 #if FEATURE_RANDOMIZED_STRING_HASHING           
-
     // This interface is implemented by string comparers in the framework that can opt into
     // randomized hashing behaviors. 
     internal interface IWellKnownStringEqualityComparer
