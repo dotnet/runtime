@@ -40,7 +40,12 @@ namespace System.Security.Cryptography.Xml.Tests
         public void Ctor_Dsa_Null()
         {
             DSAKeyValue dsaKeyValue = new DSAKeyValue(null);
-            Assert.NotNull(dsaKeyValue.Key);
+
+            //From https://github.com/peterwurzinger:
+            //This assertion is incorrect, since the parameter value is stored unvalidated/unprocessed
+            //Assert.NotNull(dsaKeyValue.Key);
+
+            Assert.Null(dsaKeyValue.Key);
         }
 
         [Fact]
@@ -49,9 +54,12 @@ namespace System.Security.Cryptography.Xml.Tests
             DSAKeyValue dsa = new DSAKeyValue();
             XmlElement xmlkey = dsa.GetXml();
 
+            //From https://github.com/peterwurzinger:
+            //According to the schema (http://www.w3.org/TR/xmldsig-core/#sec-DSAKeyValue), the only parameter to occur necessarily is 'Y'. Rework?
+
             // Schema check. Should not throw.
             const string schema = "http://www.w3.org/2000/09/xmldsig#";
-            new [] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter"}
+            new [] { "P", "Q", "G", "Y", "Seed", "PgenCounter"}
                 .Select(elementName => Convert.FromBase64String(xmlkey.SelectSingleNode($"*[local-name()=DSAKeyValue and namespace-uri()='{schema}']/*[local-name()='{elementName}' and namespace-uri()='{schema}']").InnerText))
                 .ToArray();
         }
@@ -70,22 +78,25 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void LoadXml_PlatformNotSupported()
         {
+            //https://github.com/peterwurzinger
+            //I kind of 'fixed' this test. The value above, which is now commented, is the string which was compared against the XML of an empty DsaKeyValue - instance, which differs completely. Has something been lost in a commit?
+
+            //string dsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>xc+QZRWTgr390gzwNXF+WzoepZkvAQvCzfCm+YyXj0KPoeHHeSc5ORzXQw81V+7XJR3gupvlI4F7lW9YC538l+3eqGm8IQlCIS+U+7ICTDOFFKevqsYX0BnjO0vvE4aAtDyxfSOTCOAo1cJ+6G6xgcC1JGIBEYCtg1tH8wUewDE=</P><Q>yyfZb0S/rimXl9ScJ3zIba2oGl8=</Q><G>crLazMg+vgI7u6+Idgi9iTLdRa4fptat3gdY97zcc857+OVdmT+lVRpK3okWpmBbw2wSffU8QltwFf42BVs+/HGUOUo2hNqSSXgzl1i+1frO7/cqooHVcy5WX0xxaIPsKcREPI5pNPj/3g8apTgErLMGsHkFdngwbMed9DArTks=</G><Y>FlAozo17wV/LCMRrtnmMKxVQNpidJVkZNM1/0eR65x8giwPs6yXzJmFT8f2tmPJY2FIOAtp5JYin4xUhwIHF452Gg50wUrjV6WTGkiC+gzLC2fVIyGlVsFecLj6ue7J+MACG+b3NQnxFuT5maQnPnEeuGgjLXfwYsAR1vfU0Gas=</Y><J>+UPMvUPq9Fo6Q1fr2oEYDxfGMMtfdoQmVBxI+TkUYQsReodRzBbnvGV1uPLWTpKKd/uJNUHO/QGb05Cvc6u49/AToDJIyi4e01hTLNCzeQk/Hj19gowb5wkTIjyaH04VyPE5zYoTYfuu3Y3Q</J><Seed>+cvoO7bzdpAwAjnDDApPzBCl6zg=</Seed><PgenCounter>ATM=</PgenCounter></DSAKeyValue></KeyValue>";
             string dsaKey = "<KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>xc+QZRWTgr390gzwNXF+WzoepZkvAQvCzfCm+YyXj0KPoeHHeSc5ORzXQw81V+7XJR3gupvlI4F7lW9YC538l+3eqGm8IQlCIS+U+7ICTDOFFKevqsYX0BnjO0vvE4aAtDyxfSOTCOAo1cJ+6G6xgcC1JGIBEYCtg1tH8wUewDE=</P><Q>yyfZb0S/rimXl9ScJ3zIba2oGl8=</Q><G>crLazMg+vgI7u6+Idgi9iTLdRa4fptat3gdY97zcc857+OVdmT+lVRpK3okWpmBbw2wSffU8QltwFf42BVs+/HGUOUo2hNqSSXgzl1i+1frO7/cqooHVcy5WX0xxaIPsKcREPI5pNPj/3g8apTgErLMGsHkFdngwbMed9DArTks=</G><Y>FlAozo17wV/LCMRrtnmMKxVQNpidJVkZNM1/0eR65x8giwPs6yXzJmFT8f2tmPJY2FIOAtp5JYin4xUhwIHF452Gg50wUrjV6WTGkiC+gzLC2fVIyGlVsFecLj6ue7J+MACG+b3NQnxFuT5maQnPnEeuGgjLXfwYsAR1vfU0Gas=</Y><J>+UPMvUPq9Fo6Q1fr2oEYDxfGMMtfdoQmVBxI+TkUYQsReodRzBbnvGV1uPLWTpKKd/uJNUHO/QGb05Cvc6u49/AToDJIyi4e01hTLNCzeQk/Hj19gowb5wkTIjyaH04VyPE5zYoTYfuu3Y3Q</J><Seed>+cvoO7bzdpAwAjnDDApPzBCl6zg=</Seed><PgenCounter>ATM=</PgenCounter></DSAKeyValue></KeyValue>";
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(dsaKey);
 
             DSAKeyValue dsa1 = new DSAKeyValue();
-            Assert.Throws<PlatformNotSupportedException>(() => dsa1.LoadXml(doc.DocumentElement));
 
-            //string s = (dsa1.GetXml().OuterXml);
-            //Assert.Equal(dsaKey, s);
+            string s = (dsa1.GetXml().OuterXml);
+            Assert.Equal(dsaKey, s);
         }
 
         [Fact]
         public void LoadXml_Null()
         {
             DSAKeyValue dsa1 = new DSAKeyValue();
-            Assert.Throws<PlatformNotSupportedException>(() => dsa1.LoadXml(null));
+            Assert.Throws<ArgumentNullException>(() => dsa1.LoadXml(null));
         }
     }
 }
