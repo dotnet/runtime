@@ -76,24 +76,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Build RootFS",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "sudo",
-        "arguments": "docker exec --privileged $(PB_DockerContainerName) $(PB_GitDirectory)/cross/build-rootfs.sh $(PB_Architecture) $(CrossToolsetVersion) $(SkipUnmount)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Run Build",
       "timeoutInMinutes": 0,
       "task": {
@@ -103,25 +85,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec --privileged -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Cleanup RootFS",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "sudo",
-        "arguments": "docker exec --privileged $(PB_DockerContainerName) git clean -xdf $(PB_GitDirectory)/cross/",
+        "arguments": "exec --privileged -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -255,7 +219,7 @@
       "value": "chcosta/dotnetcore"
     },
     "PB_DockerTag": {
-      "value": "ubuntu1404_cross_prereqs_v1",
+      "value": "ubuntu1404_cross_prereqs_v2",
       "allowOverride": true
     },
     "PB_DockerImageName": {
@@ -268,12 +232,9 @@
       "value": "",
       "allowOverride": true
     },
-    "CrossToolsetVersion": {
-      "value": "",
+    "ROOTFS_DIR": {
+      "value": "/crossrootfs/$(PB_Architecture)",
       "allowOverride": true
-    },
-    "SkipUnmount": {
-      "value": "--SkipUnmount"
     },
     "TargetRid": {
       "value": "ubuntu.14.04-arm",

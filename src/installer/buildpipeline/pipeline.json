@@ -124,9 +124,8 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v1",
+            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
             "PB_Architecture": "arm",
-            "CrossToolsetVersion": "trusty",
             "TargetRid": "ubuntu.14.04-arm"
           },
           "ReportingParameters": {
@@ -137,9 +136,8 @@
         {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1604_cross_prereqs_v1",
+            "PB_DockerTag": "ubuntu1604_cross_prereqs_v2",
             "PB_Architecture": "arm",
-            "CrossToolsetVersion": "xenial",
             "TargetRid": "ubuntu.16.04-arm"
           },
           "ReportingParameters": {
