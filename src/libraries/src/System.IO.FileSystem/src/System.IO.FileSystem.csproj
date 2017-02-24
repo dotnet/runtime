@@ -6,6 +6,11 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!--
+      Currently the uap build is broken so forcing EnableWinRT = false to use Win32 code
+      https://github.com/dotnet/corefx/issues/16422
+    -->
+    <EnableWinRT>false</EnableWinRT>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -17,10 +22,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
-    <Reference Include="Windows" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
@@ -382,6 +383,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
