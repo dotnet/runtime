@@ -1718,7 +1718,13 @@ protected:
     PER_HEAP
     void card_bundle_clear(size_t cardb);
     PER_HEAP
+    void card_bundle_set (size_t cardb);
+    PER_HEAP
     void card_bundles_set (size_t start_cardb, size_t end_cardb);
+    PER_HEAP
+    void verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word);
+    PER_HEAP
+    void verify_card_bundles();
     PER_HEAP
     BOOL card_bundle_set_p (size_t cardb);
     PER_HEAP
