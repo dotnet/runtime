@@ -155,6 +155,7 @@ namespace System.Net
                         case 'K': potentialHeader = KeepAlive; goto TryMatch;  // [K]eep-Alive
                         case 'S': potentialHeader = SetCookie; goto TryMatch;  // [S]et-Cookie
                         case 'U': potentialHeader = UserAgent; goto TryMatch;  // [U]ser-Agent
+                        case 'R': potentialHeader = RequestId; goto TryMatch;  // [R]equest-Id
                     }
                     break;
 
@@ -240,11 +241,12 @@ namespace System.Net
                     break;
 
                 case 19:
-                    switch (charAt(key, startIndex))
+                    switch (charAt(key, startIndex + 2))
                     {
-                        case 'C': potentialHeader = ContentDisposition; goto TryMatch; // [C]ontent-Disposition
-                        case 'I': potentialHeader = IfUnmodifiedSince; goto TryMatch;  // [I]f-Unmodified-Since
-                        case 'P': potentialHeader = ProxyAuthorization; goto TryMatch; // [P]roxy-Authorization
+                        case 'n': potentialHeader = ContentDisposition; goto TryMatch; // Co[n]tent-Disposition
+                        case 'r': potentialHeader = CorrelationContext; goto TryMatch; // Co[r]relation-Context
+                        case '-': potentialHeader = IfUnmodifiedSince; goto TryMatch;  // If[-]Unmodified-Since
+                        case 'o': potentialHeader = ProxyAuthorization; goto TryMatch; // Pr[o]xy-Authorization
                     }
                     break;
 
