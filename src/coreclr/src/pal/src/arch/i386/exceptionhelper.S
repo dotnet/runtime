@@ -19,8 +19,8 @@
 
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         push  ebp
-        mov   eax, [esp + 12] // ebx: PAL_SEHException *
-        mov   ebx, [esp + 8]  // eax: CONTEXT *
+        mov   ecx, [esp + 12] // ecx: PAL_SEHException * (first argument for ThrowExceptionHelper)
+        mov   ebx, [esp + 8]  // ebx: CONTEXT *
 
         mov   ebp, [ebx + CONTEXT_Ebp]
         mov   esp, [ebx + CONTEXT_ResumeEsp]
@@ -32,9 +32,6 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
         // Indicate that now that we have moved the RSP to the target address,
         // the EBP is no longer saved in the current stack frame.
         .cfi_restore ebp
-
-        // Store PAL_SEHException as the first argument
-        push    eax
 
         // Store return address to the stack
         mov     ebx, [ebx + CONTEXT_Eip]
