@@ -97,7 +97,7 @@ create_group_sizes_array (const gint *gs, gint ml, MonoError *error)
 	MonoArray *ret;
 	int i, len = 0;
 
-	mono_error_init (error);
+	error_init (error);
 
 	for (i = 0; i < ml; i++) {
 		if (gs [i] == -1)
@@ -122,7 +122,7 @@ create_names_array_idx (const guint16 *names, int ml, MonoError *error)
 	MonoDomain *domain;
 	int i;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (names == NULL)
 		return NULL;
@@ -145,7 +145,7 @@ create_names_array_idx_dynamic (const guint16 *names, int ml, MonoError *error)
 	MonoDomain *domain;
 	int i, len = 0;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (names == NULL)
 		return NULL;
@@ -329,7 +329,7 @@ construct_culture (MonoCultureInfo *this_obj, const CultureInfoEntry *ci, MonoEr
 {
 	MonoDomain *domain = mono_domain_get ();
 
-	mono_error_init (error);
+	error_init (error);
 
 	this_obj->lcid = ci->lcid;
 	MONO_OBJECT_SETREF (this_obj, name, mono_string_new (domain, idx2string (ci->name)));

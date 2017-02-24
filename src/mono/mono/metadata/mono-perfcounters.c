@@ -1295,7 +1295,7 @@ custom_get_impl (SharedCategory *cat, MonoString *counter, MonoString* instance,
 	SharedInstance* inst;
 	char *name;
 
-	mono_error_init (error);
+	error_init (error);
 	scounter = find_custom_counter (cat, counter);
 	if (!scounter)
 		return NULL;
@@ -1689,7 +1689,7 @@ get_string_array (void **array, int count, gboolean is_process, MonoError *error
 {
 	int i;
 	MonoDomain *domain = mono_domain_get ();
-	mono_error_init (error);
+	error_init (error);
 	MonoArray * res = mono_array_new_checked (mono_domain_get (), mono_get_string_class (), count, error);
 	return_val_if_nok (error, NULL);
 	for (i = 0; i < count; ++i) {
@@ -1714,7 +1714,7 @@ get_string_array_of_strings (void **array, int count, MonoError *error)
 {
 	int i;
 	MonoDomain *domain = mono_domain_get ();
-	mono_error_init (error);
+	error_init (error);
 	MonoArray * res = mono_array_new_checked (mono_domain_get (), mono_get_string_class (), count, error);
 	return_val_if_nok (error, NULL);
 	for (i = 0; i < count; ++i) {
@@ -1732,7 +1732,7 @@ get_mono_instances (MonoError *error)
 	int res;
 	void **buf = NULL;
 	MonoArray *array;
-	mono_error_init (error);
+	error_init (error);
 	do {
 		count *= 2;
 		g_free (buf);
@@ -1750,7 +1750,7 @@ get_cpu_instances (MonoError *error)
 	void **buf = NULL;
 	int i, count;
 	MonoArray *array;
-	mono_error_init (error);
+	error_init (error);
 	count = mono_cpu_count () + 1; /* +1 for "_Total" */
 	buf = g_new (void*, count);
 	for (i = 0; i < count; ++i)
@@ -1767,7 +1767,7 @@ get_processes_instances (MonoError *error)
 	MonoArray *array;
 	int count = 0;
 	void **buf = mono_process_list (&count);
-	mono_error_init (error);
+	error_init (error);
 	if (!buf)
 		return get_string_array (NULL, 0, FALSE, error);
 	array = get_string_array (buf, count, TRUE, error);
@@ -1780,7 +1780,7 @@ get_networkinterface_instances (MonoError *error)
 {
 	MonoArray *array;
 	int count = 0;
-	mono_error_init (error);
+	error_init (error);
 	void **buf = mono_networkinterface_list (&count);
 	if (!buf)
 		return get_string_array_of_strings (NULL, 0, error);
@@ -1793,7 +1793,7 @@ static MonoArray*
 get_custom_instances (MonoString *category, MonoError *error)
 {
 	SharedCategory *scat;
-	mono_error_init (error);
+	error_init (error);
 	scat = find_custom_category (category);
 	if (scat) {
 		GSList *list = get_custom_instances_list (scat);

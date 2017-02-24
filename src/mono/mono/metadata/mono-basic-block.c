@@ -240,7 +240,7 @@ bb_split (MonoSimpleBasicBlock *first, MonoSimpleBasicBlock *hint, MonoSimpleBas
 {
 	MonoSimpleBasicBlock *res, *bb = first;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (bb_idx_is_contained (hint, target)) {
 		first = hint;
@@ -338,7 +338,7 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 	MonoSimpleBasicBlock *branch, *next, *current;
 	const MonoOpcode *opcode;
 
-	mono_error_init (error);
+	error_init (error);
 
 	current = bb;
 
@@ -469,7 +469,7 @@ bb_formation_eh_pass (MonoMethodHeader *header, MonoSimpleBasicBlock *bb, MonoSi
 	int i;
 	int end = header->code_size;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/*We must split at all points to verify for targets in the middle of an instruction*/
 	for (i = 0; i < header->num_clauses; ++i) {
@@ -527,7 +527,7 @@ mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *
 	MonoSimpleBasicBlock *bb, *root;
 	const unsigned char *start, *end;
 
-	mono_error_init (error);
+	error_init (error);
 
 	start = header->code;
 	end = start + header->code_size;

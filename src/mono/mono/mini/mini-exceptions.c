@@ -1375,7 +1375,7 @@ wrap_non_exception_throws (MonoMethod *m)
 static MonoArray*
 build_native_trace (MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 /* This puppy only makes sense on mobile, IOW, ARM. */
 #if defined (HAVE_BACKTRACE_SYMBOLS) && defined (TARGET_ARM)
 	MonoArray *res;
@@ -1638,7 +1638,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 				}
 
 				MonoError isinst_error;
-				mono_error_init (&isinst_error);
+				error_init (&isinst_error);
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, &error)) {
 					setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 					g_slist_free (dynamic_methods);
@@ -1946,7 +1946,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					filter_idx ++;
 				}
 
-				mono_error_init (&error);
+				error_init (&error);
 				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 				     mono_object_isinst_checked (ex_obj, catch_class, &error)) || filtered) {
 					/*

@@ -111,7 +111,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
-	mono_error_init (&error);
+	error_init (&error);
 
 	size = mono_security_win_get_token_name (token, &uniname);
 

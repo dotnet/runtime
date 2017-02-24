@@ -4150,7 +4150,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	gboolean it_has_sp = FALSE;
 
 	if (error)
-		mono_error_init (error);
+		error_init (error);
 
 	mono_seq_point_iterator_init (&it, seq_points);
 	while (mono_seq_point_iterator_next (&it)) {
@@ -4350,7 +4350,7 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 	MonoJitInfo *ji;
 
 	if (error)
-		mono_error_init (error);
+		error_init (error);
 
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	if (!code) {
@@ -4396,7 +4396,7 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 	int i;
 
 	if (error)
-		mono_error_init (error);
+		error_init (error);
 
 	// FIXME:
 	// - suspend/resume the vm to prevent code patching problems
@@ -8008,7 +8008,7 @@ get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf,
 {
 	HANDLE_FUNCTION_ENTER();
 	ErrorCode err = ERR_NONE;
-	mono_error_init (error);
+	error_init (error);
 	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
 	if (MONO_HANDLE_IS_NULL (o)) {
 		err = ERR_INVALID_OBJECT;
@@ -8659,7 +8659,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		MonoError error;
 		GPtrArray *array;
 
-		mono_error_init (&error);
+		error_init (&error);
 		array = mono_class_get_methods_by_name (klass, name, flags & ~BINDING_FLAGS_IGNORE_CASE, (flags & BINDING_FLAGS_IGNORE_CASE) != 0, TRUE, &error);
 		if (!is_ok (&error)) {
 			mono_error_cleanup (&error);

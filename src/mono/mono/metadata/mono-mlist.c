@@ -65,7 +65,7 @@ mono_mlist_alloc (MonoObject *data)
 MonoMList*
 mono_mlist_alloc_checked (MonoObject *data, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	MonoMList* res;
 	if (!monolist_item_vtable) {
 		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoListItem");
@@ -197,7 +197,7 @@ mono_mlist_prepend (MonoMList* list, MonoObject *data)
 MonoMList*
 mono_mlist_prepend_checked (MonoMList* list, MonoObject *data, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	MonoMList* res = mono_mlist_alloc_checked (data, error);
 	return_val_if_nok (error, NULL);
 
@@ -238,7 +238,7 @@ mono_mlist_append (MonoMList* list, MonoObject *data)
 MonoMList*
 mono_mlist_append_checked (MonoMList* list, MonoObject *data, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	MonoMList* res = mono_mlist_alloc_checked (data, error);
 	return_val_if_nok (error, NULL);
 

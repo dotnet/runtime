@@ -208,7 +208,7 @@ mono_exception_from_name_two_strings_checked (MonoImage *image, const char *name
 {
 	MonoClass *klass;
 
-	mono_error_init (error);
+	error_init (error);
 	klass = mono_class_load_from_name (image, name_space, name);
 
 	return create_exception_two_strings (klass, a1, a2, error);
@@ -269,7 +269,7 @@ mono_exception_from_token_two_strings_checked (MonoImage *image, guint32 token,
 {
 	MonoClass *klass;
 
-	mono_error_init (error);
+	error_init (error);
 
 	klass = mono_class_get_checked (image, token, error);
 	mono_error_assert_ok (error); /* FIXME handle the error. */
@@ -867,7 +867,7 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 	MonoMethod *method;
 	gpointer iter;
 
-	mono_error_init (error);
+	error_init (error);
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
 
@@ -1017,7 +1017,7 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *
 {
 	char *trace;
 	MonoStringHandle res;
-	mono_error_init (error);
+	error_init (error);
 
 	if (!exc) {
 		mono_error_set_argument_null (error, "exception", "");

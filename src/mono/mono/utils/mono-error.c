@@ -584,7 +584,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	MonoString *assembly_name = NULL, *type_name = NULL, *method_name = NULL, *field_name = NULL, *msg = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
-	mono_error_init (error_out);
+	error_init (error_out);
 
 	switch (error->error_code) {
 	case MONO_ERROR_NONE:
@@ -780,7 +780,7 @@ void
 mono_error_move (MonoError *dest, MonoError *src)
 {
 	memcpy (dest, src, sizeof (MonoErrorInternal));
-	mono_error_init (src);
+	error_init (src);
 }
 
 /**

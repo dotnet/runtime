@@ -413,7 +413,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		goto fail;
 
 	if (exc) {
-		mono_error_init (&error);
+		error_init (&error);
 		mono_error_set_exception_instance (&error, (MonoException *)exc);
 		goto fail;
 	}
@@ -1917,7 +1917,7 @@ static gboolean
 xdomain_copy_array_element_inplace (MonoArrayHandle arr, int i, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	mono_error_init (error);
+	error_init (error);
 	MonoObjectHandle item = MONO_HANDLE_NEW (MonoObject, NULL);
 	MONO_HANDLE_ARRAY_GETREF (item, arr, i);
 	
@@ -1940,7 +1940,7 @@ leave:
 MonoObjectHandle
 mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
 	if (MONO_HANDLE_IS_NULL (val))
 		goto leave;

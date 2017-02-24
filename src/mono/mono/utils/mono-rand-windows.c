@@ -127,7 +127,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 {
 	MONO_WIN32_CRYPT_PROVIDER_HANDLE provider;
 
-	mono_error_init (error);
+	error_init (error);
 
 	g_assert (handle);
 	provider = (MONO_WIN32_CRYPT_PROVIDER_HANDLE) *handle;

@@ -596,7 +596,7 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 	len = MAX_PATH + 1; /*FIXME this is too smal under most unix systems.*/
 	buf = g_new (gunichar2, len);
 	
-	mono_error_init (&error);
+	error_init (&error);
 	*io_error=ERROR_SUCCESS;
 	result = NULL;
 

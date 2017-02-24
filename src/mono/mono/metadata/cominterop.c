@@ -517,7 +517,7 @@ cominterop_get_interface_checked (MonoComObject* obj, MonoClass* ic, MonoError *
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
 
-	mono_error_init (error);
+	error_init (error);
 
 	mono_cominterop_lock ();
 	if (obj->itf_hash)
@@ -1522,7 +1522,7 @@ static gboolean cominterop_can_support_dispatch (MonoClass* klass)
 static void*
 cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	if (!object)
 		return NULL;
 
@@ -1942,7 +1942,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 	GList *ccw_list, *ccw_list_item;
 	MonoCustomAttrInfo *cinfo = NULL;
 
-	mono_error_init (error);
+	error_init (error);
 	
 	if (!object)
 		return NULL;
@@ -2446,7 +2446,7 @@ static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 
 static int
 cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 #ifdef HOST_WIN32
 	if (!ccw->free_marshaler) {
 		int ret = 0;
@@ -2817,7 +2817,7 @@ mono_string_from_bstr_checked (gpointer bstr, MonoError *error)
 {
 	MonoString * res = NULL;
 	
-	mono_error_init (error);
+	error_init (error);
 
 	if (!bstr)
 		return NULL;
@@ -3586,7 +3586,7 @@ MonoString *
 mono_string_from_bstr_checked (gpointer bstr, MonoError *error)
 {
 	MonoString *res = NULL;
-	mono_error_init (error);
+	error_init (error);
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32

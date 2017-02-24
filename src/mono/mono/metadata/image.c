@@ -691,7 +691,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
 	GList *list_iter, *valid_modules = NULL;
 	MonoImageOpenStatus status;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if ((image->module_count == 0) || (idx > image->module_count || idx <= 0))
 		return NULL;
@@ -2347,7 +2347,7 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 	const char *fname;
 	guint32 fname_id;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;

@@ -259,7 +259,7 @@ RuntimeMethod*
 mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	RuntimeMethod *rtm;
-	mono_error_init (error);
+	error_init (error);
 
 	mono_os_mutex_lock (&runtime_method_lookup_section);
 	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
@@ -1230,7 +1230,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
 
-	mono_error_init (error);
+	error_init (error);
 
 	frame.ex = NULL;
 

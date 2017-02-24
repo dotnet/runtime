@@ -825,7 +825,7 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	MonoArray *data;
 	MonoAddressFamily family;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/* Build a System.Net.SocketAddress object instance */
 	if (!domain->sockaddr_class)
@@ -1058,7 +1058,7 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 	gint32 family;
 	int len;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!domain->sockaddr_class)
 		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
@@ -2406,7 +2406,7 @@ addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray *
 	int addr_index;
 	MonoDomain *domain = mono_domain_get ();
 
-	mono_error_init (error);
+	error_init (error);
 	addr_index = 0;
 	*h_aliases = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
 	return_val_if_nok (error, FALSE);

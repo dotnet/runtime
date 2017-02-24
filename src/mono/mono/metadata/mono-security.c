@@ -226,7 +226,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
-	mono_error_init (&error);
+	error_init (&error);
 
 	size = internal_get_token_name (token, &uniname);
 
@@ -551,7 +551,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
 MonoBoolean
 ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssemblyHandle refass, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	if (MONO_HANDLE_IS_NULL (refass))
 		return FALSE;
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (refass, assembly);
@@ -587,7 +587,7 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 	MonoMethod *method;
 	void *params [2];
 
-	mono_error_init (error);
+	error_init (error);
 	
 	if (system_security_assembly == NULL) {
 		system_security_assembly = mono_image_loaded ("System.Security");

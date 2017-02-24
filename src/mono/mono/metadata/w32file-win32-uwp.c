@@ -117,7 +117,7 @@ HANDLE
 mono_w32file_get_console_output (void)
 {
 	MonoError mono_error;
-	mono_error_init (&mono_error);
+	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
 
@@ -133,7 +133,7 @@ HANDLE
 mono_w32file_get_console_input (void)
 {
 	MonoError mono_error;
-	mono_error_init (&mono_error);
+	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
 
@@ -149,7 +149,7 @@ HANDLE
 mono_w32file_get_console_error (void)
 {
 	MonoError mono_error;
-	mono_error_init (&mono_error);
+	error_init (&mono_error);
 
 	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");
 

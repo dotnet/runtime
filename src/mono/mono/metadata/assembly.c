@@ -1889,7 +1889,7 @@ has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_sco
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 
 	/*
 	 * This might be called during assembly loading, so do everything using the low-level
@@ -3261,7 +3261,7 @@ static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly)
 {
 	MonoError refasm_error;
-	mono_error_init (&refasm_error);
+	error_init (&refasm_error);
 	if (candidate && !refonly && mono_assembly_has_reference_assembly_attribute (candidate, &refasm_error)) {
 		candidate = NULL;
 	}

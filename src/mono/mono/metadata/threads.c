@@ -915,7 +915,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	 */
 	mono_threads_join_threads ();
 
-	mono_error_init (error);
+	error_init (error);
 
 	mono_threads_lock ();
 	if (shutting_down) {
@@ -1018,7 +1018,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gb
 	MonoInternalThread *internal;
 	gboolean res;
 
-	mono_error_init (error);
+	error_init (error);
 
 	internal = create_internal_thread_object ();
 
@@ -1550,7 +1550,7 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 	MonoError error;
 	MonoString* str;
 
-	mono_error_init (&error);
+	error_init (&error);
 
 	LOCK_THREAD (this_obj);
 	
@@ -1572,7 +1572,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 {
 	LOCK_THREAD (this_obj);
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (reset) {
 		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
@@ -1662,7 +1662,7 @@ byte_array_to_domain (MonoArray *arr, MonoDomain *domain, MonoError *error)
 {
 	MonoArray *copy;
 
-	mono_error_init (error);
+	error_init (error);
 	if (!arr)
 		return NULL;
 
@@ -1743,7 +1743,7 @@ mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError 
 	gint32 diff_ms;
 	gint32 wait = ms;
 
-	mono_error_init (error);
+	error_init (error);
 
 	start = (ms == -1) ? 0 : mono_msec_ticks ();
 	for (;;) {
@@ -1852,7 +1852,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, guint32 numhandles, gpointe
 	gint32 diff_ms;
 	gint32 wait = ms;
 
-	mono_error_init (error);
+	error_init (error);
 
 	start = (ms == -1) ? 0 : mono_100ns_ticks ();
 	do {
@@ -3661,7 +3661,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 	MonoDebugSourceLocation *location;
 	int tindex, nthreads;
 
-	mono_error_init (error);
+	error_init (error);
 	
 	*out_threads = NULL;
 	*out_stack_frames = NULL;
@@ -4903,7 +4903,7 @@ self_abort_internal (MonoError *error)
 {
 	MonoException *exc;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/* FIXME this is insanely broken, it doesn't cause interruption to happen synchronously
 	 * since passing FALSE to mono_thread_request_interruption makes sure it returns NULL */

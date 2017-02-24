@@ -154,7 +154,7 @@ mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, Mo
 	MonoBoolean f;
 	gpointer args [2];
 
-	mono_error_init (error);
+	error_init (error);
 	g_assert (work_item);
 
 	if (!threadpool_class)
@@ -270,7 +270,7 @@ static MonoObject*
 try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	mono_error_init (error);
+	error_init (error);
 	MonoObject *res = mono_runtime_try_invoke (mono_defaults.threadpool_perform_wait_callback_method, NULL, NULL, exc, error);
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
@@ -420,7 +420,7 @@ mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod
 	if (!async_call_klass)
 		async_call_klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 
-	mono_error_init (error);
+	error_init (error);
 
 	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL, error);
 	return_val_if_nok (error, NULL);
@@ -451,7 +451,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 {
 	MonoAsyncCall *ac;
 
-	mono_error_init (error);
+	error_init (error);
 	g_assert (exc);
 	g_assert (out_args);
 

@@ -143,7 +143,7 @@ process_set_field_string (MonoObject *obj, const gchar *fieldname, const gunicha
 	MonoClassField *field;
 	MonoString *string;
 
-	mono_error_init (error);
+	error_init (error);
 
 	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, g_utf16_to_utf8 (val, len, NULL, NULL, NULL)));
 
@@ -281,7 +281,7 @@ process_module_string_read (MonoObject *filever, gpointer data, const gchar *fie
 	gunichar2 *lang_key, *buffer;
 	UINT chars;
 
-	mono_error_init (error);
+	error_init (error);
 
 	lang_key_utf8 = g_strdup_printf (key, lang_lo, lang_hi, 0x04, 0xb0);
 
@@ -325,7 +325,7 @@ mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoE
 	gunichar2 lang_buf[128];
 	guint32 lang, lang_count;
 
-	mono_error_init (error);
+	error_init (error);
 
 	datalen = mono_w32process_get_fileversion_info_size (filename, &verinfohandle);
 	if (datalen) {
@@ -464,7 +464,7 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 	MODULEINFO modinfo;
 	BOOL ok;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/* Build a System.Diagnostics.ProcessModule with the data. */
 	item = mono_object_new_checked (domain, proc_class, error);
@@ -513,7 +513,7 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 	gchar *filename;
 	const gchar *modulename;
 
-	mono_error_init (error);
+	error_init (error);
 
 	domain = mono_domain_get ();
 

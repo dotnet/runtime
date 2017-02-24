@@ -256,7 +256,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	MonoObject *obj;
 	MonoClass *klass;
 
-	mono_error_init (error);
+	error_init (error);
 	
 	obj = lookup_dyn_token (assembly, token);
 	if (!obj) {
@@ -277,7 +277,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	return NULL;
 }
 #endif /* DISABLE_REFLECTION_EMIT */

@@ -236,7 +236,7 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionTypeHandle typ
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!type) {
 		sigbuffer_add_value (buf, MONO_TYPE_VOID);
@@ -252,7 +252,7 @@ static void
 encode_reflection_type_raw (MonoDynamicImage *assembly, MonoReflectionType* type_raw, SigBuffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER (); /* FIXME callers of encode_reflection_type_raw should use handles */
-	mono_error_init (error);
+	error_init (error);
 	MONO_HANDLE_DCL (MonoReflectionType, type);
 	encode_reflection_type (assembly, type, buf, error);
 	HANDLE_FUNCTION_RETURN ();
@@ -267,7 +267,7 @@ encode_custom_modifiers (MonoDynamicImage *assembly, MonoArrayHandle modreq, Mon
 
 	int i;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!MONO_HANDLE_IS_NULL (modreq)) {
 		for (i = 0; i < mono_array_handle_length (modreq); ++i) {
@@ -295,7 +295,7 @@ static void
 encode_custom_modifiers_raw (MonoDynamicImage *assembly, MonoArray *modreq_raw, MonoArray *modopt_raw, SigBuffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER (); /* FIXME callers of encode_custom_modifiers_raw should use handles */
-	mono_error_init (error);
+	error_init (error);
 	MONO_HANDLE_DCL (MonoArray, modreq);
 	MONO_HANDLE_DCL (MonoArray, modopt);
 	encode_custom_modifiers (assembly, modreq, modopt, buf, error);
@@ -354,7 +354,7 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/*
 	 * FIXME: reuse code from method_encode_signature().
@@ -424,7 +424,7 @@ mono_dynimage_encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *il
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -623,7 +623,7 @@ mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflection
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	SigBuffer buf;
 	guint32 idx;
@@ -858,7 +858,7 @@ static gboolean
 encode_sighelper_arg (MonoDynamicImage *assembly, int i, MonoArrayHandle helper_arguments, MonoArrayHandle helper_modreqs, MonoArrayHandle helper_modopts, SigBuffer* buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
-	mono_error_init (error);
+	error_init (error);
 	MonoArrayHandle modreqs = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoArrayHandle modopts = MONO_HANDLE_NEW (MonoArray, NULL);
 
@@ -886,7 +886,7 @@ mono_dynimage_encode_reflection_sighelper (MonoDynamicImage *assembly, MonoRefle
 	guint32 nargs;
 	guint32 i, idx;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!assembly->save)
 		return 0;
@@ -957,7 +957,7 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoErro
 	MonoArray *result;
 	SigBuffer buf;
 
-	mono_error_init (error);
+	error_init (error);
 
 	sigbuffer_init (&buf, 32);
 
@@ -991,7 +991,7 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig, MonoErro
 	MonoArray *result;
 	SigBuffer buf;
 
-	mono_error_init (error);
+	error_init (error);
 
 	sigbuffer_init (&buf, 32);
 
@@ -1029,7 +1029,7 @@ mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflecti
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	char *str;
 	SigBuffer buf;
@@ -1127,7 +1127,7 @@ mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoRe
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	SigBuffer buf;
 	guint32 nparams = 0;

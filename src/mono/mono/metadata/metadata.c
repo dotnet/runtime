@@ -1701,7 +1701,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	int count = 0; // Number of mod arguments
 	gboolean found;
 
-	mono_error_init (error);
+	error_init (error);
 
 	/*
 	 * According to the spec, custom modifiers should come before the byref
@@ -1944,7 +1944,7 @@ MonoMethodSignature*
 mono_metadata_parse_signature_checked (MonoImage *image, guint32 token, MonoError *error)
 {
 
-	mono_error_init (error);
+	error_init (error);
 	MonoTableInfo *tables = image->tables;
 	guint32 idx = mono_metadata_token_index (token);
 	guint32 sig;
@@ -2121,7 +2121,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (*ptr & 0x10)
 		gen_param_count = 1;
@@ -3135,7 +3135,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 	MonoGenericInst *nginst = NULL;
 	int i, count = 0;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!ginst->is_open)
 		return ginst;
@@ -3167,7 +3167,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 	MonoGenericInst *ginst;
 	int i;
 
-	mono_error_init (error);
+	error_init (error);
 	type_argv = g_new0 (MonoType*, count);
 
 	for (i = 0; i < count; i++) {
@@ -3198,7 +3198,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	MonoType *gtype;
 	int count;
 
-	mono_error_init (error);
+	error_init (error);
 
 	// XXX how about transient?
 	gtype = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, ptr, &ptr, error);
@@ -3294,7 +3294,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	if (rptr)
 		*rptr = ptr;
 
-	mono_error_init (error);
+	error_init (error);
 
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
@@ -3368,7 +3368,7 @@ mono_metadata_get_shared_type (MonoType *type)
 static gboolean
 compare_type_literals (MonoImage *image, int class_type, int type_type, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 
 	/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
 	 * See mcs/test/gtest-440. and #650936.
@@ -3418,7 +3418,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 static gboolean
 verify_var_type_and_container (MonoImage *image, int var_type, MonoGenericContainer *container, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 	if (var_type == MONO_TYPE_MVAR) {
 		if (!container->is_method) { //MVAR and a method container
 			mono_error_set_bad_image (error, image, "MVAR parsed in a context without a method container");
@@ -3459,7 +3459,7 @@ static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 							 gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
-	mono_error_init (error);
+	error_init (error);
 
 	type->type = (MonoTypeEnum)mono_metadata_decode_value (ptr, &ptr);
 	
@@ -3628,7 +3628,7 @@ parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr, Mo
 	guint32 sect_data_len;
 	MonoExceptionClause* clauses = NULL;
 
-	mono_error_init (error);
+	error_init (error);
 	
 	while (1) {
 		/* align on 32-bit boundary */
@@ -3796,7 +3796,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
 	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!ptr) {
 		mono_error_set_bad_image (error, m, "Method header with null pointer");
@@ -4334,7 +4334,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 	*interfaces = NULL;
 	*count = 0;
 
-	mono_error_init (error);
+	error_init (error);
 
 	if (!tdef->base)
 		return TRUE;
@@ -5690,7 +5690,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	const char *ptr;
 	MonoType *type, *type2;
 
-	mono_error_init (error);
+	error_init (error);
 
 	mono_image_lock (image);
 	type = (MonoType *)g_hash_table_lookup (image->typespec_cache, GUINT_TO_POINTER (type_spec));
@@ -6068,7 +6068,7 @@ method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *co
 	MonoMethod *result = NULL;
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
 
-	mono_error_init (error);
+	error_init (error);
 
 	switch (tok & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
@@ -6211,7 +6211,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	GSList *cons = NULL, *tmp;
 	MonoGenericContext *context = &container->context;
 
-	mono_error_init (error);
+	error_init (error);
 
 	*constraints = NULL;
 	found = 0;
@@ -6303,7 +6303,7 @@ mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 
 {
 
 	guint32 start_row, i, owner;
-	mono_error_init (error);
+	error_init (error);
 
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return TRUE;
