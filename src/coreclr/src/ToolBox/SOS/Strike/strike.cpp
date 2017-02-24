@@ -8838,28 +8838,28 @@ void PrintInterestingGCInfo(DacpGCInterestingInfoData* dataPerHeap)
 {
     ExtOut("Interesting data points\n");
     size_t* data = dataPerHeap->interestingDataPoints;
-    for (int i = 0; i < NUM_GC_DATA_POINTS; i++)
+    for (int i = 0; i < DAC_NUM_GC_DATA_POINTS; i++)
     {
         ExtOut("%20s: %d\n", str_interesting_data_points[i], data[i]);
     }
 
     ExtOut("\nCompacting reasons\n");
     data = dataPerHeap->compactReasons;
-    for (int i = 0; i < MAX_COMPACT_REASONS_COUNT; i++)
+    for (int i = 0; i < DAC_MAX_COMPACT_REASONS_COUNT; i++)
     {
         ExtOut("[%s]%35s: %d\n", (gc_heap_compact_reason_mandatory_p[i] ? "M" : "W"), str_heap_compact_reasons[i], data[i]);
     }
 
     ExtOut("\nExpansion mechanisms\n");
     data = dataPerHeap->expandMechanisms;
-    for (int i = 0; i < MAX_EXPAND_MECHANISMS_COUNT; i++)
+    for (int i = 0; i < DAC_MAX_EXPAND_MECHANISMS_COUNT; i++)
     {
         ExtOut("%30s: %d\n", str_heap_expand_mechanisms[i], data[i]);
     }
 
     ExtOut("\nOther mechanisms enabled\n");
     data = dataPerHeap->bitMechanisms;
-    for (int i = 0; i < MAX_GC_MECHANISM_BITS_COUNT; i++)
+    for (int i = 0; i < DAC_MAX_GC_MECHANISM_BITS_COUNT; i++)
     {
         ExtOut("%20s: %d\n", str_bit_mechanisms[i], data[i]);
     }
@@ -8881,7 +8881,7 @@ DECLARE_API(DumpGCData)
 
     DacpGCInterestingInfoData interestingInfo;
     interestingInfo.RequestGlobal(g_sos);
-    for (int i = 0; i < MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+    for (int i = 0; i < DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
     {
         ExtOut("%-30s: %d\n", str_gc_global_mechanisms[i], interestingInfo.globalMechanisms[i]);
     }

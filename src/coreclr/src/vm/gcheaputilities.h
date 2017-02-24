@@ -34,6 +34,21 @@ extern "C" bool g_sw_ww_enabled_for_gc_heap;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
+// g_gc_dac_vars is a structure of pointers to GC globals that the
+// DAC uses. It is not exposed directly to the DAC.
+extern GcDacVars g_gc_dac_vars;
+
+// Instead of exposing g_gc_dac_vars to the DAC, a pointer to it
+// is exposed here (g_gcDacGlobals). The reason for this is to avoid
+// a problem in which a debugger attaches to a program while the program
+// is in the middle of initializing the GC DAC vars - if the "publishing"
+// of DAC vars isn't atomic, the debugger could see a partially initialized
+// GcDacVars structure.
+//
+// Instead, the debuggee "publishes" GcDacVars by assigning a pointer to g_gc_dac_vars
+// to this global, and the DAC will read this global.
+typedef DPTR(GcDacVars) PTR_GcDacVars;
+GPTR_DECL(GcDacVars, g_gcDacGlobals);
 
 // GCHeapUtilities provides a number of static methods
 // that operate on the global heap instance. It can't be
@@ -112,27 +127,6 @@ public:
 #endif // FEATURE_SVR_GC
     }
 
-    // Gets the maximum generation number by reading the static field
-    // on IGCHeap. This should only be done by the DAC code paths - all other code
-    // should go through IGCHeap::GetMaxGeneration.
-    //
-    // The reason for this is that, while we are in the early stages of
-    // decoupling the GC, the GC and the DAC still remain tightly coupled
-    // and, in particular, the DAC needs to know how many generations the GC
-    // has. However, it is not permitted to invoke virtual methods on g_pGCHeap
-    // while on a DAC code path. Therefore, we need to determine the max generation
-    // non-virtually, while still in a manner consistent with the interface - 
-    // therefore, a static field is used.
-    //
-    // This is not without precedent - IGCHeap::gcHeapType is a static field used
-    // for a similar reason (the DAC needs to know what kind of heap it's looking at).
-    inline static unsigned GetMaxGeneration()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return IGCHeap::maxGeneration;
-    }
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
     // Returns True if software write watch is currently enabled for the GC Heap,
@@ -204,3 +198,4 @@ private:
 };
 
 #endif // _GCHEAPUTILITIES_H_
+

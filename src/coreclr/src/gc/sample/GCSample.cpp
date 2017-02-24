@@ -134,9 +134,12 @@ int __cdecl main(int argc, char* argv[])
     //
     // Initialize GC heap
     //
-    IGCHeap *pGCHeap = InitializeGarbageCollector(nullptr);
-    if (!pGCHeap)
+    GcDacVars dacVars;
+    IGCHeap *pGCHeap;
+    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &dacVars))
+    {
         return -1;
+    }
 
     if (FAILED(pGCHeap->Initialize()))
         return -1;

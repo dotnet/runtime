@@ -7,7 +7,6 @@ include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_DIR}/src/debug/ee)
-include_directories(${CLR_DIR}/src/gc)
 include_directories(${CLR_DIR}/src/gcdump)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
