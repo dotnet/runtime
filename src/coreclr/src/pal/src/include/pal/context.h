@@ -29,12 +29,6 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
-#ifdef __ANDROID__
-// getcontext and setcontext are not available natively on Android
-int setcontext(const ucontext_t *ucp);
-int getcontext(ucontext_t* ucp);
-#endif
-
 #if !HAVE_MACH_EXCEPTIONS
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
