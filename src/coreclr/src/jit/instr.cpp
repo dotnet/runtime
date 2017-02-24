@@ -3564,9 +3564,13 @@ instruction CodeGen::ins_FloatSqrt(var_types type)
     {
         ins = INS_sqrtsd;
     }
+    else if (type == TYP_FLOAT)
+    {
+        ins = INS_sqrtss;
+    }
     else
     {
-        // Right now sqrt of scalar single is not needed.
+        assert(!"ins_FloatSqrt: Unsupported type");
         unreached();
     }
 
