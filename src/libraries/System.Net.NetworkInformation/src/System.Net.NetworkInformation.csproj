@@ -6,7 +6,6 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'uap'">true</EnableWinRT>
   </PropertyGroup>
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>

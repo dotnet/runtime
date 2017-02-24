@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'uap'">true</EnableWinRT>
     <!-- // uncomment to use the managed "unix" implementation on Windows
       <TargetsWindows>false</TargetsWindows>
       <TargetsUnix>true</TargetsUnix>
