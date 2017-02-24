@@ -22445,21 +22445,31 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, GenTreePtr stmtAfter)
 {
-    // If this inlinee was passed a generic context but didn't look at
-    // it, we can decrement the "generic context was used" ref count.
+    // If this inlinee was passed a runtime lookup generic context and
+    // ignores it, we can decrement the "generic context was used" ref
+    // count, because we created a new lookup tree and incremented the
+    // count when we imported the type parameter argument to pass to
+    // the inlinee. See corresponding logic in impImportCall that
+    // checks the sig for CORINFO_CALLCONV_PARAMTYPE.
+    //
+    // Does this method require a context (type) parameter?
     if ((inlineInfo->inlineCandidateInfo->methInfo.args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0)
     {
-        // Did the context require the caller to perform a runtime lookup?
+        // Did the computation of that parameter require the
+        // caller to perform a runtime lookup?
         if (inlineInfo->inlineCandidateInfo->exactContextNeedsRuntimeLookup)
         {
-            // Fetch the temp for the generic context
+            // Fetch the temp for the generic context as it would
+            // appear in the inlinee's body.
             const unsigned typeCtxtArg = inlineInfo->typeContextArg;
             const unsigned tmpNum      = inlineInfo->lclTmpNum[typeCtxtArg];
 
             // Was it used in the inline body?
             if (tmpNum == BAD_VAR_NUM)
             {
-                // No, so the runtime lookup is not needed.
+                // No -- so the associated runtime lookup is not needed
+                // and also no longer provides evidence that the generic
+                // context should be kept alive.
                 JITDUMP("Inlinee ignores runtime lookup generics context\n");
                 assert(lvaGenericsContextUseCount > 0);
                 lvaGenericsContextUseCount--;
