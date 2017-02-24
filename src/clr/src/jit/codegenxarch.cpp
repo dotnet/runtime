@@ -7372,11 +7372,16 @@ void CodeGen::genIntrinsic(GenTreePtr treeNode)
     switch (treeNode->gtIntrinsic.gtIntrinsicId)
     {
         case CORINFO_INTRINSIC_Sqrt:
-            noway_assert(treeNode->TypeGet() == TYP_DOUBLE);
+        {
+            // Both operand and its result must be of the same floating point type.
+            GenTreePtr srcNode = treeNode->gtOp.gtOp1;
+            assert(varTypeIsFloating(srcNode));
+            assert(srcNode->TypeGet() == treeNode->TypeGet());
+
             genConsumeOperands(treeNode->AsOp());
-            getEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode,
-                                        treeNode->gtOp.gtOp1);
+            getEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
             break;
+        }
 
         case CORINFO_INTRINSIC_Abs:
             genSSE2BitwiseOp(treeNode);
