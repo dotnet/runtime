@@ -19,7 +19,7 @@ namespace System.ComponentModel
     {
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
-        ///    that occured.</para>
+        ///    that occurred.</para>
         /// </summary>
         public WarningException() : this(null, null, null)
         {

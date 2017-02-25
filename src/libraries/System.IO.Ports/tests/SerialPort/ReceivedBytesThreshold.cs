@@ -464,17 +464,17 @@ namespace System.IO.Ports.Tests
 
             public bool EventExists(SerialData eventType, int numEvents)
             {
-                int numOccurences = 0;
+                int numOccurrences = 0;
 
                 for (int i = 0; i < NumEventsHandled; i++)
                 {
                     if (eventType == _eventType[i])
                     {
-                        numOccurences++;
+                        numOccurrences++;
                     }
                 }
 
-                return numOccurences >= numEvents;
+                return numOccurrences >= numEvents;
             }
         }
         #endregion

@@ -4360,7 +4360,7 @@ namespace System.Data
                 && (-1 != proposedRecord)
                 && (-1 != row._newRecord))
             {
-                // DataRow will believe multiple edits occured and
+                // DataRow will believe multiple edits occurred and
                 // DataView.ListChanged event w/ ListChangedType.ItemChanged will raise DataRowView.PropertyChanged event and
                 // PropertyChangedEventArgs.PropertyName will now be empty string so
                 // WPF will refresh the entire row

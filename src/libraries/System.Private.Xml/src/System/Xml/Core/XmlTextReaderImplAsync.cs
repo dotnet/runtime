@@ -5397,7 +5397,7 @@ namespace System.Xml
                     throw;
                 }
                 string innerMessage;
-#if SILVERLIGHT // This is to remove the second "An error occured" from "An error has occurred while opening external entity 'bla.ent': An error occurred."
+#if SILVERLIGHT // This is to remove the second "An error occurred" from "An error has occurred while opening external entity 'bla.ent': An error occurred."
                 innerMessage = string.Empty;
 #else 
                 innerMessage = e.Message;

@@ -182,32 +182,32 @@ namespace System.IO.Ports.Tests
             
                 if (!pinChangedEventHandler.WaitForEvent(MAX_TIME_WAIT, 3))
                 {
-                    Fail("Err_2288ajied Expected 3 PinChangedEvents to be fired and only {0} occured",
+                    Fail("Err_2288ajied Expected 3 PinChangedEvents to be fired and only {0} occurred",
                         pinChangedEventHandler.NumEventsHandled);
                 }
             
                 if (!receivedEventHandler.WaitForEvent(MAX_TIME_WAIT, 2))
                 {
-                    Fail("Err_122808aoeid Expected 2 ReceivedEvents  to be fired and only {0} occured",
+                    Fail("Err_122808aoeid Expected 2 ReceivedEvents  to be fired and only {0} occurred",
                         receivedEventHandler.NumEventsHandled);
                 }
             
                 if (!errorEventHandler.WaitForEvent(MAX_TIME_WAIT, 2))
                 {
-                    Fail("Err_215887ajeid Expected 3 ErrorEvents to be fired and only {0} occured",
+                    Fail("Err_215887ajeid Expected 3 ErrorEvents to be fired and only {0} occurred",
                         errorEventHandler.NumEventsHandled);
                 }
 
-                //[] Verify all PinChangedEvents should have occured
+                //[] Verify all PinChangedEvents should have occurred
                 pinChangedEventHandler.Validate(SerialPinChange.DsrChanged, 0);
                 pinChangedEventHandler.Validate(SerialPinChange.CtsChanged, 0);
                 pinChangedEventHandler.Validate(SerialPinChange.Break, 0);
 
-                //[] Verify all ReceivedEvent should have occured
+                //[] Verify all ReceivedEvent should have occurred
                 receivedEventHandler.Validate(SerialData.Chars, 0);
                 receivedEventHandler.Validate(SerialData.Eof, 0);
             
-                //[] Verify all ErrorEvents should have occured
+                //[] Verify all ErrorEvents should have occurred
                 errorEventHandler.Validate(SerialError.RXParity, 0);
                 errorEventHandler.Validate(SerialError.Frame, 0);
             
@@ -243,7 +243,7 @@ namespace System.IO.Ports.Tests
 
                 if (!pinChangedEventHandler.WaitForEvent(MAX_TIME_WAIT, 1))
                 {
-                    Fail("Err_32688ajoid Expected 1 PinChangedEvents to be fired and only {0} occured",
+                    Fail("Err_32688ajoid Expected 1 PinChangedEvents to be fired and only {0} occurred",
                         pinChangedEventHandler.NumEventsHandled);
                 }
 
@@ -283,7 +283,7 @@ namespace System.IO.Ports.Tests
 
                 if (!receivedEventHandler.WaitForEvent(MAX_TIME_WAIT, 1))
                 {
-                    Fail("Err_122808aoeid Expected 1 ReceivedEvents  to be fired and only {0} occured",
+                    Fail("Err_122808aoeid Expected 1 ReceivedEvents  to be fired and only {0} occurred",
                         receivedEventHandler.NumEventsHandled);
                 }
 
@@ -323,7 +323,7 @@ namespace System.IO.Ports.Tests
 
                 if (!errorEventHandler.WaitForEvent(MAX_TIME_WAIT, 1))
                 {
-                    Fail("Err_215887ajeid Expected 1 ErrorEvents to be fired and only {0} occured",errorEventHandler.NumEventsHandled);
+                    Fail("Err_215887ajeid Expected 1 ErrorEvents to be fired and only {0} occurred",errorEventHandler.NumEventsHandled);
                 }
 
                 Task task = Task.Run(() => com1.Close());
