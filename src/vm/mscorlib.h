@@ -1005,6 +1005,8 @@ DEFINE_FIELD(INTPTR,                ZERO,                   Zero)
 // DEFINE_CLASS(UINTPTR,                System,                UIntPtr)
 DEFINE_FIELD(UINTPTR,               ZERO,                   Zero)
 
+DEFINE_CLASS(BITCONVERTER,          System,                 BitConverter)
+DEFINE_FIELD(BITCONVERTER,          ISLITTLEENDIAN,         IsLittleEndian)
 // Defined as element type alias
 // DEFINE_CLASS(STRING,                System,                 String)
 DEFINE_FIELD(STRING,                M_FIRST_CHAR,           m_firstChar)
