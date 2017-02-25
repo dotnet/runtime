@@ -418,8 +418,9 @@ namespace System.Data.SqlClient.Tests
                     using (SqlConnection sqlConnection = new SqlConnection(connectionString))
                     {
                         sqlConnection.Open();
+                        Console.WriteLine("SqlClient.DiagnosticsTest.ConnectionOpenTest:: Connection Opened ");
                     }
-                });
+                }, true);
                 return SuccessExitCode;
             }).Dispose();
         }
@@ -472,7 +473,7 @@ namespace System.Data.SqlClient.Tests
             }).Dispose();
         }
 
-        private static void CollectStatisticsDiagnostics(Action<string> sqlOperation)
+        private static void CollectStatisticsDiagnostics(Action<string> sqlOperation, bool enableServerLogging = false)
         {
             bool statsLogged = false;
             bool operationHasError = false;
@@ -656,8 +657,8 @@ namespace System.Data.SqlClient.Tests
 
             diagnosticListenerObserver.Enable();
             using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-            using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine()))
-            { 
+            using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine(), enableLog:enableServerLogging))
+            {
                 sqlOperation(server.ConnectionString);
 
                 Assert.True(statsLogged);
