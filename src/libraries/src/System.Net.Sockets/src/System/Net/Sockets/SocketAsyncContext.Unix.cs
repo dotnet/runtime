@@ -291,7 +291,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool result = SocketPal.TryCompleteConnect(context._socket, SocketAddressLen, out ErrorCode);
-                context.RegisterConnectResult(ErrorCode);
+                context._socket.RegisterConnectResult(ErrorCode);
                 return result;
             }
 
@@ -455,14 +455,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private SafeCloseSocket _socket;
+        private readonly SafeCloseSocket _socket;
         private OperationQueue<TransferOperation> _receiveQueue;
         private OperationQueue<AsyncOperation> _sendQueue;      // Note, can be either SendOperation or SendFileOperation
         private OperationQueue<AcceptOrConnectOperation> _acceptOrConnectQueue;
         private SocketAsyncEngine.Token _asyncEngineToken;
         private Interop.Sys.SocketEvents _registeredEvents;
         private bool _nonBlockingSet;
-        private bool _connectFailed;
 
         //
         // We have separate locks for send and receive queues, so they can proceed concurrently.  Accept and connect
@@ -548,22 +547,6 @@ namespace System.Net.Sockets
                 }
 
                 _nonBlockingSet = true;
-            }
-        }
-
-        public void CheckForPriorConnectFailure()
-        {
-            if (_connectFailed)
-            {
-                throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
-            }
-        }
-
-        public void RegisterConnectResult(SocketError error)
-        {
-            if (error != SocketError.Success && error != SocketError.WouldBlock)
-            {
-                _connectFailed = true;
             }
         }
 
@@ -713,12 +696,10 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            CheckForPriorConnectFailure();
-
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
-                RegisterConnectResult(errorCode);
+                _socket.RegisterConnectResult(errorCode);
                 return errorCode;
             }
 
@@ -762,14 +743,12 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
-            CheckForPriorConnectFailure();
-
             SetNonBlocking();
 
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
-                RegisterConnectResult(errorCode);
+                _socket.RegisterConnectResult(errorCode);
 
                 return errorCode;
             }
