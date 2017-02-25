@@ -1929,7 +1929,7 @@ GenTreePtr Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     // Collectible types requires that for shared generic code, if we use the generic context parameter
     // that we report it. (This is a conservative approach, we could detect some cases particularly when the
     // context parameter is this that we don't need the eager reporting logic.)
-    lvaGenericsContextUsed = true;
+    lvaGenericsContextUseCount++;
 
     if (kind == CORINFO_LOOKUP_THISOBJ)
     {
@@ -6376,7 +6376,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     GenTreeArgList*        args                           = nullptr;
     CORINFO_THIS_TRANSFORM constraintCallThisTransform    = CORINFO_NO_THIS_TRANSFORM;
     CORINFO_CONTEXT_HANDLE exactContextHnd                = nullptr;
-    BOOL                   exactContextNeedsRuntimeLookup = FALSE;
+    bool                   exactContextNeedsRuntimeLookup = false;
     bool                   canTailCall                    = true;
     const char*            szCanTailCallFailReason        = nullptr;
     int                    tailCall                       = prefixFlags & PREFIX_TAILCALL;
@@ -6634,10 +6634,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // Work out what sort of call we're making.
         // Dispense with virtual calls implemented via LDVIRTFTN immediately.
 
-        constraintCallThisTransform = callInfo->thisTransform;
-
+        constraintCallThisTransform    = callInfo->thisTransform;
         exactContextHnd                = callInfo->contextHandle;
-        exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup;
+        exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup == TRUE;
 
         // Recursive call is treaded as a loop to the begining of the method.
         if (methHnd == info.compMethodHnd)
@@ -7401,7 +7400,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, callInfo);
+                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
             }
 
             // append the call node.
@@ -7625,7 +7624,7 @@ DONE:
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, callInfo);
+        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
     }
 
 DONE_CALL:
@@ -17461,7 +17460,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // Ignore the type context argument
         if (hasTypeCtxtArg && (argCnt == typeCtxtArg))
         {
-            typeCtxtArg = 0xFFFFFFFF;
+            pInlineInfo->typeContextArg = typeCtxtArg;
+            typeCtxtArg                 = 0xFFFFFFFF;
             continue;
         }
 
@@ -18083,6 +18083,7 @@ BOOL Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTreePtr  ad
 
 void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
+                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo)
 {
     // Let the strategy know there's another call
@@ -18267,6 +18268,10 @@ void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
 
     // The old value should be NULL
     assert(call->gtInlineCandidateInfo == nullptr);
+
+    // The new value should not be NULL.
+    assert(inlineCandidateInfo != nullptr);
+    inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
 
     call->gtInlineCandidateInfo = inlineCandidateInfo;
 
