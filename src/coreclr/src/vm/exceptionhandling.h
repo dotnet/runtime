@@ -653,6 +653,11 @@ public:
     {
         return !m_ExceptionFlags.UnwindHasStarted();
     }
+
+    EHClauseInfo* GetEHClauseInfo()
+    {
+        return &m_EHClauseInfo;
+    }
     
 private: ;
 
