@@ -38,6 +38,8 @@ void Compiler::lvaInit()
     lvaRefCountingStarted = false;
     lvaLocalVarRefCounted = false;
 
+    lvaGenericsContextUseCount = 0;
+
     lvaSortAgain    = false; // false: We don't need to call lvaSortOnly()
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 

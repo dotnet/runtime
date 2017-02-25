@@ -2199,11 +2199,14 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         return false;
     }
 
+    const bool genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
+
 #ifdef JIT32_GCENCODER
+
     if (info.compFlags & CORINFO_FLG_SYNCH)
         return true;
 
-    if (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS)
+    if (genericsContextIsThis)
     {
         // TODO: Check if any of the exception clauses are
         // typed using a generic type. Else, we do not need to report this.
@@ -2213,18 +2216,29 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         if (opts.compDbgCode)
             return true;
 
-        if (lvaGenericsContextUsed)
+        if (lvaGenericsContextUseCount > 0)
+        {
+            JITDUMP("Reporting this as generic context: %u refs\n", lvaGenericsContextUseCount);
             return true;
+        }
     }
 #else // !JIT32_GCENCODER
     // If the generics context is the this pointer we need to report it if either
     // the VM requires us to keep the generics context alive or it is used in a look-up.
-    // We keep it alive in the lookup scenario, even when the VM didn't ask us too
+    // We keep it alive in the lookup scenario, even when the VM didn't ask us to,
     // because collectible types need the generics context when gc-ing.
-    if ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) &&
-        (lvaGenericsContextUsed || (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE)))
+    if (genericsContextIsThis)
     {
-        return true;
+        const bool isUsed   = lvaGenericsContextUseCount > 0;
+        const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+
+        if (isUsed || mustKeep)
+        {
+            JITDUMP("Reporting this as generic context: %u refs%s\n", lvaGenericsContextUseCount,
+                    mustKeep ? ", must keep" : "");
+
+            return true;
+        }
     }
 #endif
 
@@ -2250,7 +2264,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
-        if (lvaGenericsContextUsed)
+        if (lvaGenericsContextUseCount > 0)
         {
             return true;
         }
